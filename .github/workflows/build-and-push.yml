@@ -84,7 +84,7 @@ jobs:
         id: build_version
         run: |
           if ${{ github.event_name == 'pull_request' }}; then
-          if [[ "${{ github.event.pull_request.base.ref }}" == "main" || "${{ github.event.pull_request.base.ref }}" == "next" ]]; then
+            if [[ "${{ github.event.pull_request.base.ref }}" == "main" || "${{ github.event.pull_request.base.ref }}" == "next" ]]; then
               SOURCE_BRANCH=${{ github.event.pull_request.head.ref }}
               echo "value=${SOURCE_BRANCH##*/}-beta-${PR_NUMBER}" >> "$GITHUB_OUTPUT"
             else
@@ -92,7 +92,11 @@ jobs:
               echo "value=${TARGET_BRANCH##*/}-alpha-${PR_NUMBER}" >> "$GITHUB_OUTPUT"
             fi
           else
-            echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+            if ${{ github.base_ref == 'next' }}; then
+              echo "value=${GITHUB_RUN_NUMBER#v.next}" >> "$GITHUB_OUTPUT"
+            else
+              echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+            fi
           fi
 
       - name: Determine package name and set image name
