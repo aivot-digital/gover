@@ -93,7 +93,7 @@ jobs:
             fi
           else
             if ${{ github.base_ref == 'next' }}; then
-              echo "value=${GITHUB_RUN_NUMBER#next}" >> "$GITHUB_OUTPUT"
+              echo "value=${GITHUB_RUN_NUMBER#n}" >> "$GITHUB_OUTPUT"
             else
               echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
             fi
