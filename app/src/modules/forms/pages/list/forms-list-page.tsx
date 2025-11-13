@@ -370,7 +370,7 @@ export function FormsListPage() {
                         return extendedFormsPage;
                     }}
                     columnDefinitions={columns}
-                    getRowIdentifier={row => row.id.toString()}
+                    getRowIdentifier={row => `${row.id}_${row.developingDepartmentId}`}
                     noDataPlaceholder={
                         <Box
                             sx={{
