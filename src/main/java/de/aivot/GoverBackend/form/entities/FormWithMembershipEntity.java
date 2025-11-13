@@ -12,10 +12,7 @@ public class FormWithMembershipEntity {
     private Integer id;
     private String slug;
     private String internalTitle;
-    private String publicTitle;
     private Integer developingDepartmentId;
-    private Integer managingDepartmentId;
-    private Integer responsibleDepartmentId;
     private LocalDateTime created;
     private LocalDateTime updated;
     @Column(columnDefinition = "int2")
@@ -66,39 +63,12 @@ public class FormWithMembershipEntity {
         return this;
     }
 
-    public String getPublicTitle() {
-        return publicTitle;
-    }
-
-    public FormWithMembershipEntity setPublicTitle(String publicTitle) {
-        this.publicTitle = publicTitle;
-        return this;
-    }
-
     public Integer getDevelopingDepartmentId() {
         return developingDepartmentId;
     }
 
     public FormWithMembershipEntity setDevelopingDepartmentId(Integer developingDepartmentId) {
         this.developingDepartmentId = developingDepartmentId;
-        return this;
-    }
-
-    public Integer getManagingDepartmentId() {
-        return managingDepartmentId;
-    }
-
-    public FormWithMembershipEntity setManagingDepartmentId(Integer managingDepartmentId) {
-        this.managingDepartmentId = managingDepartmentId;
-        return this;
-    }
-
-    public Integer getResponsibleDepartmentId() {
-        return responsibleDepartmentId;
-    }
-
-    public FormWithMembershipEntity setResponsibleDepartmentId(Integer responsibleDepartmentId) {
-        this.responsibleDepartmentId = responsibleDepartmentId;
         return this;
     }
 

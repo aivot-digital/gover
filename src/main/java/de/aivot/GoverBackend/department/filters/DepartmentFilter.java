@@ -8,6 +8,7 @@ import org.springframework.data.jpa.domain.Specification;
 public class DepartmentFilter implements Filter<DepartmentEntity> {
     private String name;
     private Integer id;
+    private Integer themeId;
 
     public static DepartmentFilter create() {
         return new DepartmentFilter();
@@ -19,6 +20,7 @@ public class DepartmentFilter implements Filter<DepartmentEntity> {
                 .create(DepartmentEntity.class)
                 .withContains("name", name)
                 .withEquals("id", id)
+                .withEquals("themeId", themeId)
                 .build();
     }
 
@@ -37,6 +39,15 @@ public class DepartmentFilter implements Filter<DepartmentEntity> {
 
     public DepartmentFilter setId(Integer id) {
         this.id = id;
+        return this;
+    }
+
+    public Integer getThemeId() {
+        return themeId;
+    }
+
+    public DepartmentFilter setThemeId(Integer themeId) {
+        this.themeId = themeId;
         return this;
     }
 }

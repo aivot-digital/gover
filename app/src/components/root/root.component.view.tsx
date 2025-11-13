@@ -14,9 +14,7 @@ import {SummaryAttachmentsTooLargeKey} from '../summary/summary.component.view';
 import {SubmitPaymentDataKey} from '../submit/submit.component.view';
 import {ProcessingDataLoaderComponentView} from '../processing-data-loader/processing-data-loader.component.view';
 import {CustomerInputService} from '../../services/customer-input-service';
-import {AppFooter} from '../app-footer/app-footer';
-import {AppMode} from '../../data/app-mode';
-import {AppHeader} from '../app-header/app-header';
+import {RootComponentFooter} from './root-component-footer';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectLoadedForm} from '../../slices/app-slice';
@@ -32,6 +30,7 @@ import {Api, useApi} from '../../hooks/use-api';
 import {useSearchParams} from 'react-router-dom';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {FormsApiService} from '../../modules/forms/forms-api-service';
+import {FormsApiService as FormsApiServiceV2} from '../../modules/forms/forms-api-service-v2';
 import {SubmissionListResponseDTO} from '../../modules/submissions/dtos/submission-list-response-dto';
 import {SubmissionStatus} from '../../modules/submissions/enums/submission-status';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
@@ -41,7 +40,7 @@ import {StepElement} from '../../models/elements/steps/step-element';
 import {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {SummaryStepElement} from '../../models/elements/steps/summary-step-element';
 import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
-import {ElementData, ElementDataObject, newElementDataObject} from '../../models/element-data';
+import {ElementData, ElementDataObject, isElementData, newElementDataObject} from '../../models/element-data';
 import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
 import {SubmittedStepElement} from '../../models/elements/steps/submitted-step-element';
 import {collectErrors, ErrorAlert} from '../error-alert/error-alert';
@@ -53,6 +52,8 @@ import {isElementChangedByTrigger} from '../../utils/element-reference-utils';
 import {IdentityCustomerInputKey} from '../../modules/identity/constants/identity-customer-input-key';
 import {IdentityData} from '../../modules/identity/models/identity-data';
 import {CustomerInputLoader} from '../../dialogs/customer-input-loader/customer-input-loader';
+import {addDerivationLogItems} from '../../slices/logging-slice';
+import {RootComponentHeader} from './root-component-header';
 
 type AnyStepElement = StepElement | IntroductionStepElement | SummaryStepElement | SubmitStepElement | SubmittedStepElement;
 
@@ -256,7 +257,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
 
         // Check if submit step
         else if (currentStep === (totalStepCount - 1)) {
-            const formsApiService = new FormsApiService(api);
+            const formsApiService = new FormsApiServiceV2();
 
             setIsSubmitting(true);
 
@@ -281,7 +282,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                     }, submitElementData, identityId);
             } catch (error: ApiError | any) {
                 if (isApiError(error) || 'status' in error) {
-                    if (isApiError(error) && error.details != null && typeof error.details === 'object') {
+                    if (isApiError(error) && error.details != null && typeof error.details === 'object' && isElementData(error.details)) {
                         onElementDataChange(error.details as ElementData, []);
                     } else {
                         switch (error.status) {
@@ -425,7 +426,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
         try {
             const derivationResult = await withAsyncWrapper({
                 desiredMinRuntime: 600,
-                main: () => new FormsApiService(api).determineFormState(
+                main: () => new FormsApiServiceV2().determineFormState(
                     form.slug,
                     form.version,
                     elementData,
@@ -449,8 +450,10 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                 console.log('Derivation result:', derivationResult);
                 console.log('Element data buffer:', elementDataBufferRef.current);
 
+                dispatch(addDerivationLogItems(derivationResult.logItems));
+
                 const mergedElementData = mergeDerivedElementDataWithLocal(
-                    derivationResult,
+                    derivationResult.elementData,
                     elementDataBufferRef.current,
                     element,
                     {
@@ -461,12 +464,12 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                 onElementDataChange(mergedElementData, []);
             } else {
                 console.log('Setting derived element data directly');
-                onElementDataChange(derivationResult, []);
+                onElementDataChange(derivationResult.elementData, []);
             }
 
             console.groupEnd();
 
-            return collectErrors(currentStepElement, derivationResult).length === 0 || adminSettings.disableValidation;
+            return collectErrors(currentStepElement, derivationResult.elementData).length === 0 || adminSettings.disableValidation;
         } catch (err) {
             console.error(err);
             dispatch(showErrorSnackbar('Dynamische Funktionen konnten nicht ausgewertet werden.'));
@@ -608,13 +611,16 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
 
     return (
         <>
-            <AppHeader
-                mode={AppMode.Customer}
-                onDeleteFormData={() => {
-                    onElementDataChange({}, []);
-                    dispatch(setCurrentStep(0));
-                }}
-            />
+            {
+                form != null &&
+                <RootComponentHeader
+                    form={form}
+                    onDeleteFormData={() => {
+                        onElementDataChange({}, []);
+                        dispatch(setCurrentStep(0));
+                    }}
+                />
+            }
 
             {
                 form != null &&
@@ -793,9 +799,12 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                 }
             </main>
 
-            <AppFooter
-                mode={AppMode.Customer}
-            />
+            {
+                form != null &&
+                <RootComponentFooter
+                    form={form}
+                />
+            }
 
             <Dialog
                 open={isLoading}

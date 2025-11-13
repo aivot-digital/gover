@@ -32,10 +32,9 @@ class NoCodeEvaluationServiceTest {
                 context
         );
 
-        assertEquals(NoCodeDataType.Boolean, res.getDataType());
         assertEquals(true, res.getValue());
 
-        context.putInputValue("a", ElementType.Checkbox,true);
+        context.putInputValue("a", ElementType.Checkbox, true);
         context.putInputValue("b", ElementType.Checkbox, false);
         context.putInputValue("c", ElementType.Checkbox, true);
 
@@ -48,7 +47,6 @@ class NoCodeEvaluationServiceTest {
                 context
         );
 
-        assertEquals(NoCodeDataType.Boolean, result.getDataType());
         assertEquals(true, result.getValue());
 
         result = evalService.evaluate(
@@ -60,7 +58,6 @@ class NoCodeEvaluationServiceTest {
                 context
         );
 
-        assertEquals(NoCodeDataType.Boolean, result.getDataType());
         assertEquals(false, result.getValue());
 
         result = evalService.evaluate(
@@ -72,7 +69,6 @@ class NoCodeEvaluationServiceTest {
                 context
         );
 
-        assertEquals(NoCodeDataType.Boolean, result.getDataType());
         assertEquals(true, result.getValue());
 
         result = evalService.evaluate(
@@ -92,7 +88,6 @@ class NoCodeEvaluationServiceTest {
                 context
         );
 
-        assertEquals(NoCodeDataType.Boolean, result.getDataType());
         assertEquals(true, result.getValue());
     }
 
@@ -119,22 +114,19 @@ class NoCodeEvaluationServiceTest {
             }
 
             @Override
-            public NoCodeParameter[] getParameters() {
-                return new NoCodeParameter[]{
-                        new NoCodeParameter(NoCodeDataType.Boolean, "a"),
-                        new NoCodeParameter(NoCodeDataType.Boolean, "b"),
-                };
+            public NoCodeSignatur[] getSignatures() {
+                return NoCodeSignatur.of(
+                        NoCodeSignatur.of(
+                                NoCodeDataType.Boolean,
+                                new NoCodeParameter(NoCodeDataType.Boolean, "a", ""),
+                                new NoCodeParameter(NoCodeDataType.Boolean, "b", "")
+                        )
+                );
             }
-
-            @Override
-            public NoCodeDataType getReturnType() {
-                return null;
-            }
-
 
             @Override
             public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
-                return new NoCodeResult(NoCodeDataType.Boolean, Objects.equals(args[0], args[1]));
+                return new NoCodeResult(Objects.equals(args[0], args[1]));
             }
         };
 

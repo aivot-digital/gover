@@ -17,13 +17,7 @@ public record FormListResponseDTO(
         @Nonnull
         String internalTitle,
         @Nonnull
-        String publicTitle,
-        @Nonnull
         Integer developingDepartmentId,
-        @Nullable
-        Integer managingDepartmentId,
-        @Nullable
-        Integer responsibleDepartmentId,
         @Nonnull
         LocalDateTime created,
         @Nonnull
@@ -40,10 +34,7 @@ public record FormListResponseDTO(
                 form.getId(),
                 form.getSlug(),
                 form.getInternalTitle(),
-                form.getPublicTitle(),
                 form.getDevelopingDepartmentId(),
-                form.getManagingDepartmentId(),
-                form.getResponsibleDepartmentId(),
                 form.getCreated(),
                 form.getUpdated(),
                 form.getPublishedVersion(),
@@ -57,10 +48,7 @@ public record FormListResponseDTO(
                 form.getId(),
                 form.getSlug(),
                 form.getInternalTitle(),
-                form.getPublicTitle(),
                 form.getDevelopingDepartmentId(),
-                form.getManagingDepartmentId(),
-                form.getResponsibleDepartmentId(),
                 form.getCreated(),
                 form.getUpdated(),
                 form.getPublishedVersion(),
@@ -74,10 +62,7 @@ public record FormListResponseDTO(
                 form.getId(),
                 form.getSlug(),
                 form.getInternalTitle(),
-                form.getPublicTitle(),
                 form.getDevelopingDepartmentId(),
-                form.getManagingDepartmentId(),
-                form.getResponsibleDepartmentId(),
                 form.getCreated(),
                 form.getUpdated(),
                 form.getPublishedVersion(),
@@ -91,10 +76,7 @@ public record FormListResponseDTO(
                 formWithMembershipEntity.getId(),
                 formWithMembershipEntity.getSlug(),
                 formWithMembershipEntity.getInternalTitle(),
-                formWithMembershipEntity.getPublicTitle(),
                 formWithMembershipEntity.getDevelopingDepartmentId(),
-                formWithMembershipEntity.getManagingDepartmentId(),
-                formWithMembershipEntity.getResponsibleDepartmentId(),
                 formWithMembershipEntity.getCreated(),
                 formWithMembershipEntity.getUpdated(),
                 formWithMembershipEntity.getPublishedVersion(),

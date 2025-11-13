@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,22 +61,22 @@ public class NoCodeRegexExtractOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{
-                new NoCodeParameter(
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
                         NoCodeDataType.String,
-                        "Text"
-                ),
-                new NoCodeParameter(
-                        NoCodeDataType.String,
-                        "Regulärer Ausdruck"
-                ),
-        };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.List;
+                        new NoCodeParameter(
+                                NoCodeDataType.String,
+                                "Text",
+                                "Der Text, aus dem extrahiert werden soll."
+                        ),
+                        new NoCodeParameter(
+                                NoCodeDataType.String,
+                                "Regulärer Ausdruck",
+                                "Der reguläre Ausdruck, der die zu extrahierenden Muster definiert."
+                        )
+                )
+        );
     }
 
     @Override
@@ -95,6 +96,6 @@ public class NoCodeRegexExtractOperator extends NoCodeOperator {
             matches.add(matcher.group());
         }
 
-        return new NoCodeResult(NoCodeDataType.List, matches);
+        return new NoCodeResult(matches);
     }
 }

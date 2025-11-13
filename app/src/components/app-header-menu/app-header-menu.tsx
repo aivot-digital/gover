@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, {useCallback, useState} from 'react';
 import {type AppHeaderMenuProps} from './app-header-menu-props';
 import {Divider, ListItemIcon, ListItemText, Menu, MenuItem} from '@mui/material';
 import {AppMode} from '../../data/app-mode';
@@ -151,7 +151,7 @@ export function AppHeaderMenu(props: AppHeaderMenuProps) {
                 {
                     props.mode === AppMode.Staff &&
                     <LinkMenuItem
-                        label="Dokumente & Medieninhalte"
+                        label="Dateien & Medien"
                         icon={DriveFolderUploadOutlinedIcon}
                         to="/assets"
                     />

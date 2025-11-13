@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {AppToolbarAction, type AppToolbarProps} from './app-toolbar-props';
 import {AppBar, Box, Button, IconButton, styled, Toolbar, Tooltip, Typography} from '@mui/material';
 import {Link} from 'react-router-dom';
@@ -53,7 +53,7 @@ export function AppToolbar(props: AppToolbarProps) {
 
     return (
         <>
-            <AppBar position="fixed">
+            <AppBar position="sticky">
                 <Toolbar color="primary">
                     <Tooltip title="Zur Startseite">
                         <IconButton

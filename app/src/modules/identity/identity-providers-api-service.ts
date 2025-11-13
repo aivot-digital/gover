@@ -4,7 +4,6 @@ import {IdentityProviderDetailsDTO} from './models/identity-provider-details-dto
 import {IdentityProviderListDTO} from './models/identity-provider-list-dto';
 import {IdentityProviderRequestDTO} from './models/identity-provider-request-dto';
 import {IdentityProviderType} from './enums/identity-provider-type';
-import {IdentityProviderInfo} from './models/identity-provider-info';
 import {IdentityData} from './models/identity-data';
 import {IdentityIdHeader} from './constants/identity-id-header';
 import {createApiPath} from '../../utils/url-path-utils';

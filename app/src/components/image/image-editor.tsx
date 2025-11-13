@@ -90,9 +90,9 @@ export function ImageEditor(props: BaseEditorProps<ImageElement, ElementTreeEnti
             </Alert>
 
             <SelectAssetDialog
-                title="Bild suchen"
+                title="Bild auswählen"
                 show={showImageSearch}
-                mimetype="image/*"
+                mimetype="image/"
                 onSelect={(assetKey) => {
                     props.onPatch({
                         src: AssetsApiService.useAssetLink(assetKey),

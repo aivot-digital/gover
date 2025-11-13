@@ -1,0 +1,65 @@
+<div class="input-element table-element">
+    <div class="label">
+        <strong th:text="${child.element.label}"></strong>
+        <span th:if="${base.isBlankPrint() && child.element.required != null && child.element.required && (child.element.minimumRequiredRows == null || child.element.minimumRequiredRows == 0)}">
+                                                (Pflichtangabe, mindestens eine Zeile ausfüllen)
+                                            </span>
+        <span th:if="${base.isBlankPrint() && child.element.minimumRequiredRows != null && child.element.minimumRequiredRows > 0}">
+                                                (Pflichtangabe, mindestens
+                                                <span th:text="${child.element.minimumRequiredRows > 1 ? child.element.minimumRequiredRows + ' Zeilen' : 'eine Zeile'}"></span> ausfüllen)
+                                            </span>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th
+                        th:each="field: ${child.element.fields}"
+                        th:class="'table-header-cell' + ${field.datatype.name() == 'Number' ? ' number' : ''}"
+                >
+                    <strong th:text="${field.label}"></strong>
+                    <span th:if="${!(base.isNotBlankPrint() || field.optional)}">(Pflichtangabe)</span>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr
+                    th:if="${child.value == null || child.value.isEmpty()}"
+            >
+                <td
+                        th:colspan="${child.element.fields.size()}"
+                        class="table-value-cell"
+                >
+                    Keine Angaben
+                </td>
+            </tr>
+            <tr
+                    th:unless="${child.value() == null || child.value.isEmpty()}"
+                    th:each="row: ${child.value()}"
+            >
+                <td
+                        th:each="field: ${child.element.fields}"
+                        th:class="'table-value-cell' + ${field.datatype.name() == 'Number' ? ' number' : ''}"
+                >
+                                                        <span th:if="${base.isNotBlankPrint() and row.get(field.key) == null}">
+                                                            Keine Angaben
+                                                        </span>
+                    <span
+                            th:if="${base.isNotBlankPrint() and row.get(field.key) != null and field.datatype.name() == 'Number'}"
+                            th:text="${#numberformat.format(row.get(field.key), field.decimalPlaces)}"
+                    >
+                                                        </span>
+                    <span
+                            th:if="${base.isNotBlankPrint() and row.get(field.key) != null and field.datatype.name() != 'Number'}"
+                            th:text="${row.get(field.key)}"
+                    >
+                                                        </span>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="hint-wrapper">
+        <div th:insert="./form-parts/elements/_hint.html"></div>
+    </div>
+</div>

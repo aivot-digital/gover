@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {Box, Checkbox, FormControlLabel, IconButton} from '@mui/material';
 import {CheckboxTree} from './checkbox-tree';
 import {type CheckboxTreeOption} from './checkbox-tree-option';

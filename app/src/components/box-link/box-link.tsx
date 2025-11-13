@@ -1,9 +1,13 @@
 import React from 'react';
 import {type BoxLinkProps} from './box-link-props';
 import NorthWestOutlinedIcon from '@mui/icons-material/NorthWestOutlined';
-import { Box, Link } from '@mui/material';
+import {Box, Link} from '@mui/material';
+import Balancer from 'react-wrap-balancer';
 
 export function BoxLink(props: BoxLinkProps) {
+
+    const hasManualLineBreaks = props.text.includes('\n');
+
     const lines = props
         .text
         .split('\n')
@@ -30,24 +34,15 @@ export function BoxLink(props: BoxLinkProps) {
                 textDecoration: 'none',
                 borderRadius: '4px',
 
-                // Child span selector
-                '& span': {
-                    color: 'var(--gover-theme-primary)',
-                },
-
                 // Hover styles
                 '&:hover': {
                     backgroundColor: 'var(--gover-theme-primary)',
                     color: 'white',
                     cursor: 'pointer',
-
-                    '& span': {
-                        color: 'var(--gover-theme-secondary)',
-                    },
                 },
             }}
         >
-            {lines}
+            {hasManualLineBreaks ? lines : <Balancer>{props.text}</Balancer>}
             <Box
                 component="span"
                 sx={{
@@ -63,19 +58,10 @@ export function BoxLink(props: BoxLinkProps) {
 }
 
 function convertLine(line: string, index: number) {
-    if (index === 0) {
-        return (
-            <React.Fragment key={index}>
-                <span>{line}</span>
-                <br/>
-            </React.Fragment>
-        );
-    } else {
-        return (
-            <React.Fragment key={index}>
-                {line}
-                <br/>
-            </React.Fragment>
-        );
-    }
+    return (
+        <React.Fragment key={index}>
+            {line}
+            <br/>
+        </React.Fragment>
+    );
 }

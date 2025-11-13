@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.xrepository.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioFieldOption;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -9,7 +10,6 @@ import de.aivot.GoverBackend.xrepository.models.XRepositoryCodeList;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Nonnull;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpResponse;
@@ -38,7 +38,7 @@ public class XRepositoryCodeListService {
         try {
             response = httpService
                     .get(uri);
-        } catch (IOException | InterruptedException e) {
+        } catch (HttpConnectionException e) {
             throw ResponseException
                     .internalServerError(e, "Beim Abrufen der Codeliste mit der URN %s ist ein Fehler aufgetreten: %s", encodedCoreLisUrn, e.getMessage());
         }

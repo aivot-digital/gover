@@ -1,10 +1,13 @@
 package de.aivot.GoverBackend.form.controllers;
 
+import de.aivot.GoverBackend.asset.services.AssetService;
 import de.aivot.GoverBackend.destination.services.DestinationService;
+import de.aivot.GoverBackend.elements.dtos.ElementDerivationResponse;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
+import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.form.dtos.FormCitizenDetailsResponseDTO;
@@ -15,6 +18,7 @@ import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.form.filters.FormVersionWithDetailsFilter;
 import de.aivot.GoverBackend.form.services.FormPaymentService;
+import de.aivot.GoverBackend.form.services.FormVersionService;
 import de.aivot.GoverBackend.form.services.FormVersionWithDetailsService;
 import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
@@ -24,13 +28,17 @@ import de.aivot.GoverBackend.identity.filters.IdentityProviderFilter;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 import de.aivot.GoverBackend.identity.services.IdentityProviderService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.models.dtos.MaxFileSizeDto;
 import de.aivot.GoverBackend.payment.exceptions.PaymentException;
 import de.aivot.GoverBackend.payment.models.PaymentItem;
 import de.aivot.GoverBackend.payment.services.PaymentProviderService;
+import de.aivot.GoverBackend.theme.dtos.ThemeResponseDTO;
+import de.aivot.GoverBackend.theme.entities.ThemeEntity;
 import de.aivot.GoverBackend.user.services.UserService;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -41,10 +49,12 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * REST controller for citizen-facing form operations.
@@ -77,6 +87,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/public/forms/")
 public class CitizenFormController {
+    private final GoverConfig goverConfig;
     private final FormPaymentService paymentService;
     private final PaymentProviderService paymentProviderService;
     private final DestinationService destinationService;
@@ -84,14 +95,21 @@ public class CitizenFormController {
     private final IdentityCacheRepository identityCacheRepository;
     private final FormVersionWithDetailsService formVersionWithDetailsService;
     private final ElementDerivationService elementDerivationService;
+    private final AssetService assetService;
+    private final FormVersionService formVersionService;
 
     @Autowired
-    public CitizenFormController(FormPaymentService paymentService,
+    public CitizenFormController(GoverConfig goverConfig,
+                                 FormPaymentService paymentService,
                                  PaymentProviderService paymentProviderService,
                                  DestinationService destinationService,
                                  IdentityProviderService identityProviderService,
                                  IdentityCacheRepository identityCacheRepository,
-                                 FormVersionWithDetailsService formVersionWithDetailsService, ElementDerivationService elementDerivationService) {
+                                 FormVersionWithDetailsService formVersionWithDetailsService,
+                                 ElementDerivationService elementDerivationService,
+                                 AssetService assetService,
+                                 FormVersionService formVersionService) {
+        this.goverConfig = goverConfig;
         this.paymentService = paymentService;
         this.paymentProviderService = paymentProviderService;
         this.destinationService = destinationService;
@@ -99,6 +117,8 @@ public class CitizenFormController {
         this.identityCacheRepository = identityCacheRepository;
         this.formVersionWithDetailsService = formVersionWithDetailsService;
         this.elementDerivationService = elementDerivationService;
+        this.assetService = assetService;
+        this.formVersionService = formVersionService;
     }
 
     /**
@@ -133,8 +153,8 @@ public class CitizenFormController {
     public FormCitizenDetailsResponseDTO retrieve(@Nullable @AuthenticationPrincipal Jwt jwt,
                                                   @Nonnull @PathVariable String slug,
                                                   @Nullable @RequestParam(value = "version", required = false) Integer version,
-                                                  @Nullable @RequestHeader(value = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId) throws ResponseException {
-        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt);
+                                                  @Nullable @RequestHeader(value = IdentityController.IDENTITY_HEADER_NAME, required = false) UUID identityId) throws ResponseException {
+        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt, false);
 
         var identityCache = identityId == null ? Optional.empty() : identityCacheRepository
                 .findById(identityId);
@@ -162,7 +182,7 @@ public class CitizenFormController {
     public MaxFileSizeDto getMaxFileSize(@Nullable @AuthenticationPrincipal Jwt jwt,
                                          @Nonnull @PathVariable String slug,
                                          @Nullable @RequestParam(value = "version", required = false) Integer version) throws ResponseException {
-        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt);
+        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt, false);
 
         MaxFileSizeDto maxFileSizeDto = new MaxFileSizeDto();
         maxFileSizeDto.setMaxFileSize(100);
@@ -201,7 +221,7 @@ public class CitizenFormController {
                                                          @Nonnull @PathVariable String slug,
                                                          @Nullable @RequestParam(value = "version", required = false) Integer version,
                                                          @Nonnull @RequestBody ElementData customerData) throws PaymentException, ResponseException {
-        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt);
+        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt, false);
 
         if (formVersion.getPaymentProviderKey() == null) {
             return new FormCostCalculationResponseDTO(null, null, null);
@@ -246,7 +266,7 @@ public class CitizenFormController {
                                                          @Nonnull @PathVariable String slug,
                                                          @Nullable @RequestParam(value = "version", required = false) Integer version
     ) throws ResponseException {
-        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt);
+        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt, false);
 
         var identityProviderKeys = formVersion
                 .getIdentityProviders()
@@ -287,15 +307,15 @@ public class CitizenFormController {
      * @throws ResponseException if the form is not found or invalid.
      */
     @PostMapping("{slug}/derive")
-    public ElementData derive(@Nullable @AuthenticationPrincipal Jwt jwt,
-                              @Nonnull @PathVariable String slug,
-                              @Nullable @RequestParam(value = "version", required = false) Integer version,
-                              @Nonnull @Valid @RequestBody ElementData elementData,
-                              @Nullable @RequestParam(value = "skipErrorsFor") List<String> skipErrorsFor,
-                              @Nullable @RequestParam(value = "skipVisibilitiesFor") List<String> skipVisibilitiesFor,
-                              @Nullable @RequestParam(value = "skipValuesFor") List<String> skipValuesFor,
-                              @Nullable @RequestParam(value = "skipOverridesFor") List<String> skipOverridesFor) throws ResponseException {
-        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt);
+    public ElementDerivationResponse derive(@Nullable @AuthenticationPrincipal Jwt jwt,
+                                            @Nonnull @PathVariable String slug,
+                                            @Nullable @RequestParam(value = "version", required = false) Integer version,
+                                            @Nonnull @Valid @RequestBody ElementData elementData,
+                                            @Nullable @RequestParam(value = "skipErrorsFor") List<String> skipErrorsFor,
+                                            @Nullable @RequestParam(value = "skipVisibilitiesFor") List<String> skipVisibilitiesFor,
+                                            @Nullable @RequestParam(value = "skipValuesFor") List<String> skipValuesFor,
+                                            @Nullable @RequestParam(value = "skipOverridesFor") List<String> skipOverridesFor) throws ResponseException {
+        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt, false);
 
         var options = new ElementDerivationOptions()
                 .setSkipValuesForElementIds(skipValuesFor)
@@ -308,8 +328,9 @@ public class CitizenFormController {
                 .setElementData(elementData)
                 .setOptions(options);
 
+        var derivationLogger = new ElementDerivationLogger();
         var derivedElementData = elementDerivationService
-                .derive(request);
+                .derive(request, derivationLogger);
 
         var inputIdValue = elementData
                 .getOrDefault(IdentityValueKey.IdCustomerInputKey, new ElementDataObject(ElementType.SubmittedStep))
@@ -323,7 +344,56 @@ public class CitizenFormController {
             }
         }
 
-        return derivedElementData;
+        return ElementDerivationResponse
+                .from(elementData, derivationLogger, jwt != null);
+    }
+
+    @GetMapping("{slug}/theme/")
+    public ThemeResponseDTO getTheme(@Nullable @AuthenticationPrincipal Jwt jwt,
+                                     @Nonnull @PathVariable String slug,
+                                     @Nullable @RequestParam(value = "version", required = false) Integer version
+    ) throws ResponseException {
+        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt, true);
+        var theme = getFormTheme(formVersion);
+        return ThemeResponseDTO.fromEntity(theme);
+    }
+
+    @GetMapping("{slug}/logo/")
+    public void getLogo(@Nullable @AuthenticationPrincipal Jwt jwt,
+                        @Nonnull @PathVariable String slug,
+                        @Nullable @RequestParam(value = "version", required = false) Integer version,
+                        @Nonnull HttpServletResponse response
+    ) throws ResponseException, IOException {
+        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt, true);
+        var logoKey = getFormLogoKey(formVersion);
+
+        String redirectUrl;
+        if (logoKey == null) {
+            redirectUrl = goverConfig.getDefaultLogoUrl();
+        } else {
+            redirectUrl = assetService.createUrl(logoKey);
+        }
+
+        response.sendRedirect(redirectUrl);
+    }
+
+    @GetMapping("{slug}/favicon/")
+    public void getFavicon(@Nullable @AuthenticationPrincipal Jwt jwt,
+                           @Nonnull @PathVariable String slug,
+                           @Nullable @RequestParam(value = "version", required = false) Integer version,
+                           @Nonnull HttpServletResponse response
+    ) throws ResponseException, IOException {
+        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt, true);
+        var faviconKey = getFormFaviconKey(formVersion);
+
+        String redirectUrl;
+        if (faviconKey == null) {
+            redirectUrl = goverConfig.getDefaultFaviconUrl();
+        } else {
+            redirectUrl = assetService.createUrl(faviconKey);
+        }
+
+        response.sendRedirect(redirectUrl);
     }
 
     /**
@@ -337,13 +407,14 @@ public class CitizenFormController {
      */
     private FormVersionWithDetailsEntity getFormVersionWithDetailsEntity(@Nonnull String slug,
                                                                          @Nullable Integer version,
-                                                                         @Nullable @AuthenticationPrincipal Jwt jwt) throws ResponseException {
+                                                                         @Nullable @AuthenticationPrincipal Jwt jwt,
+                                                                         @Nonnull Boolean acceptUnauthenticated) throws ResponseException {
         var user = UserService
                 .fromJWT(jwt)
                 .orElse(null);
 
         FormVersionWithDetailsEntity formVersion;
-        if (user == null) {
+        if (user == null && !acceptUnauthenticated) {
             formVersion = formVersionWithDetailsService
                     .retrieve(FormVersionWithDetailsFilter
                             .create()
@@ -365,5 +436,36 @@ public class CitizenFormController {
             }
         }
         return formVersion;
+    }
+
+    @Nonnull
+    private ThemeEntity getFormTheme(FormVersionWithDetailsEntity formVersion) {
+        return formVersionService
+                .getFormThemesInOrderOfImportance(formVersion)
+                .getFirst();
+    }
+
+    @Nullable
+    private UUID getFormLogoKey(FormVersionWithDetailsEntity formVersion) {
+        var themes = formVersionService.getFormThemesInOrderOfImportance(formVersion);
+        for (var theme : themes) {
+            if (theme.getLogoKey() != null) {
+                return theme.getLogoKey();
+            }
+        }
+
+        return null;
+    }
+
+    @Nullable
+    private UUID getFormFaviconKey(FormVersionWithDetailsEntity formVersion) {
+        var themes = formVersionService.getFormThemesInOrderOfImportance(formVersion);
+        for (var theme : themes) {
+            if (theme.getFaviconKey() != null) {
+                return theme.getFaviconKey();
+            }
+        }
+
+        return null;
     }
 }

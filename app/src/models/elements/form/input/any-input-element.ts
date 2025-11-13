@@ -8,8 +8,8 @@ import {TableFieldElement} from './table-field-element';
 import {TextFieldElement} from './text-field-element';
 import {TimeFieldElement} from './time-field-element';
 import {ReplicatingContainerLayout} from '../layout/replicating-container-layout';
-import {FileUploadElement} from "./file-upload-element";
-import {ElementType} from "../../../../data/element-type/element-type";
+import {FileUploadElement} from './file-upload-element';
+import {ElementType} from '../../../../data/element-type/element-type';
 
 export type AnyInputElement = (
     CheckboxFieldElement |

@@ -3,28 +3,25 @@ import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Typography} from '@mui/material';
 import {EditOutlined} from '@mui/icons-material';
-import {useSelector} from 'react-redux';
-import {selectUser} from '../../../../slices/user-slice';
-import {useMemo} from 'react';
-import {isAdmin} from '../../../../utils/is-admin';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service';
-import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import {DataObjectSchema} from '../../models/data-object-schema';
-import DataArrayOutlinedIcon from '@mui/icons-material/DataArrayOutlined';
-import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
 import {uploadObjectFile} from '../../../../utils/download-utils';
 import {useNavigate} from 'react-router-dom';
 import {v4 as uuid4} from 'uuid';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
+import FolderData from '@aivot/mui-material-symbols-400-outlined/dist/folder-data/FolderData';
+import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
+import {useAccessGuard} from '../../../../hooks/use-admin-guard';
+import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 
 export function DataObjectSchemaListPage() {
-    useAdminGuard();
-
     const navigate = useNavigate();
-    const user = useSelector(selectUser);
-    const userIsAdmin = useMemo(() => isAdmin(user), [user]);
+    const hasAccess = useAccessGuard({
+        onlyGlobalAdmin: true,
+        messageType: 'snackbar',
+    });
 
     const handleImport = () => {
         uploadObjectFile<DataObjectSchema>('application/json')
@@ -34,7 +31,7 @@ export function DataObjectSchemaListPage() {
                 }
                 const importUUID = uuid4();
                 sessionStorage.setItem(`import/${importUUID}`, JSON.stringify(importedSchema));
-                navigate('/data-objects/new', {
+                navigate('/data-models/new', {
                     state: importedSchema,
                 });
             });
@@ -43,51 +40,54 @@ export function DataObjectSchemaListPage() {
     return (
         <>
             <PageWrapper
-                title="Datenobjektschemata"
+                title="Datenmodelle"
                 fullWidth
                 background
             >
                 <GenericListPage<DataObjectSchema>
                     header={{
-                        icon: <DataArrayOutlinedIcon />,
-                        title: 'Datenobjektschema',
+                        icon: <FolderData />,
+                        title: 'Datenmodelle',
                         actions: [
                             {
                                 icon: <CloudUploadOutlinedIcon />,
-                                disabled: !userIsAdmin,
                                 onClick: handleImport,
-                                variant: 'outlined',
-                                label: 'Schema importieren',
+                                variant: 'text',
+                                label: 'Importieren',
+                                disabled: !hasAccess,
                             },
                             {
-                                label: 'Neues Datenobjektschema',
+                                label: 'Neues Datenmodell',
                                 icon: <AddOutlinedIcon />,
-                                disabled: !userIsAdmin,
-                                tooltip: userIsAdmin ? undefined : 'Sie müssen globale Administrator:in sein, um diese Aktion durchführen zu können.',
-                                to: '/data-objects/new',
+                                to: '/data-models/new',
                                 variant: 'contained',
-                            }
+                                disabled: !hasAccess,
+                            },
                         ],
                         helpDialog: {
-                            title: 'Hilfe zu Datenobjektschemata',
+                            title: 'Hilfe zu Datenmodellen',
                             tooltip: 'Hilfe anzeigen',
                             content: (
                                 <>
                                     <Typography>
-                                        Ein Datenobjektschema beschreibt die Struktur eines Datenobjekts in Gover und legt fest, welche Datenfelder existieren, welche Datentypen diese haben und wie Werte geprüft werden. Es sorgt dafür, dass Daten aus Formularen, Workflows und Schnittstellen konsistent, valide und eindeutig interpretierbar sind.
+                                        Ein Datenmodell beschreibt die Struktur eines Datenobjekts in Gover und legt fest, welche Datenfelder existieren, welche Datentypen sie haben, welche Standardwerte gelten und wie Werte geprüft werden.
+                                        Es sorgt dafür, dass Daten aus Formularen, Prozessen und Schnittstellen konsistent, valide und eindeutig interpretierbar sind.
                                     </Typography>
-                                    <Typography sx={{ mt: 2 }}>
-                                        Typischerweise umfasst ein Schema Felder mit Schlüsseln, Datentypen wie Text, Zahl, Datum oder Wahrheitswerte, Validierungen für Pflichtangaben, Wertebereiche oder Muster, sowie die Möglichkeit verschachtelte Objekte abzubilden. Ergänzend können Metadaten wie Beschreibungen, Labels oder Sichtbarkeitsregeln hinterlegt und sinnvolle Standardwerte definiert werden.
+                                    <Typography sx={{mt: 2}}>
+                                        Dazu können auch verschachtelte Objekte, Pflichtangaben, Wertebereiche oder Muster sowie Beschreibungen, Labels und optionale Sichtbarkeitsregeln gehören. Dasselbe Datenmodell kann in mehreren
+                                        Prozessen und Komponenten wiederverwendet werden, sodass überall dieselbe Definition gilt. Bei der Ausgestaltung empfiehlt es sich, sprechende und langlebige Feldnamen zu verwenden,
+                                        Weiterentwicklungen kompatibel vorzunehmen (zum Beispiel Felder hinzufügen statt umzubenennen oder zu entfernen) und Validierungen deutlich zu setzen.
                                     </Typography>
-                                    <Typography sx={{ mt: 2 }}>
-                                        Das Schema unterstützt verschiedene Komponenten bei der einheitlichen Nutzung desselben Datenmodells. Bei der Ausgestaltung empfehlen sich sprechende, langlebige Feldnamen, kompatible Weiterentwicklungen (hinzufügen statt umbenennen/entfernen) und deutliche Validierungen.
+                                    <Typography sx={{mt: 2}}>
+                                        Bei der Beziehung zwischen Datenmodell und Datenobjekt gilt: Das Datenmodell definiert die Form und das Datenobjekt füllt diese Form mit konkreten Werten. Änderungen am Datenmodell beeinflussen, wie
+                                        neue oder geänderte Datenobjekte geprüft und gespeichert werden.
                                     </Typography>
                                 </>
                             ),
                         },
                     }}
-                    searchLabel="Datenobjektschema suchen"
-                    searchPlaceholder="Name des Datenobjektschemas eingeben…"
+                    searchLabel="Datenmodell suchen"
+                    searchPlaceholder="Name des Datenmodells eingeben…"
                     fetch={(options) => {
                         return new DataObjectSchemasApiService(options.api)
                             .list(
@@ -104,7 +104,7 @@ export function DataObjectSchemaListPage() {
                         {
                             field: 'icon',
                             headerName: '',
-                            renderCell: () => <CellContentWrapper><DataArrayOutlinedIcon /></CellContentWrapper>,
+                            renderCell: () => <CellContentWrapper><FolderData /></CellContentWrapper>,
                             disableColumnMenu: true,
                             width: 24,
                             sortable: false,
@@ -115,8 +115,8 @@ export function DataObjectSchemaListPage() {
                             flex: 1,
                             renderCell: (params) => (
                                 <CellLink
-                                    to={`/data-objects/${params.row.key}`}
-                                    title="Datenobjektschema bearbeiten"
+                                    to={`/data-models/${params.row.key}`}
+                                    title={hasAccess ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen'}
                                 >
                                     {String(params.value)}
                                 </CellLink>
@@ -129,19 +129,19 @@ export function DataObjectSchemaListPage() {
                         },
                     ]}
                     getRowIdentifier={row => row.key.toString()}
-                    noDataPlaceholder="Keine Datenobjektschemata angelegt"
-                    noSearchResultsPlaceholder="Keine Datenobjektschema gefunden"
+                    noDataPlaceholder="Keine Datenmodelle angelegt"
+                    noSearchResultsPlaceholder="Keine Datenmodelle gefunden"
                     rowActionsCount={2}
                     rowActions={(item: DataObjectSchema) => [
                         {
-                            icon: <EditOutlined />,
-                            to: `/data-objects/${item.key}`,
-                            tooltip: 'Datenobjektschema bearbeiten',
+                            icon: hasAccess ? <EditOutlined /> : <Visibility />,
+                            to: `/data-models/${item.key}`,
+                            tooltip: hasAccess ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
                         },
                         {
-                            icon: <CategoryOutlinedIcon />,
-                            to: `/data-objects/${item.key}/items`,
-                            tooltip: 'Datenobjekte anzeigen',
+                            icon: <DataObject />,
+                            to: `/data-objects/${item.key}`,
+                            tooltip: 'Datenobjekte zu diesem Modell anzeigen',
                         },
                     ]}
                     defaultSortField="name"

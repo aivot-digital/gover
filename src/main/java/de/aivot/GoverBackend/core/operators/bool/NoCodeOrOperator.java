@@ -3,10 +3,7 @@ package de.aivot.GoverBackend.core.operators.bool;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
-import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
-import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
-import de.aivot.GoverBackend.nocode.models.NoCodeParameterOption;
-import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.*;
 
 public class NoCodeOrOperator extends NoCodeOperator {
     @Override
@@ -58,26 +55,26 @@ public class NoCodeOrOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{
-                new NoCodeParameter(
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
                         NoCodeDataType.Boolean,
-                        "Wert 1",
-                        new NoCodeParameterOption("Wahr", "true"),
-                        new NoCodeParameterOption("Falsch", "false")
-                ),
-                new NoCodeParameter(
-                        NoCodeDataType.Boolean,
-                        "Wert 2",
-                        new NoCodeParameterOption("Wahr", "true"),
-                        new NoCodeParameterOption("Falsch", "false")
-                ),
-        };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Boolean;
+                        new NoCodeParameter(
+                                NoCodeDataType.Boolean,
+                                "Bedingung 1",
+                                "Die erste Bedingung für die ODER-Verknüpfung.",
+                                new NoCodeParameterOption("Wahr", "true"),
+                                new NoCodeParameterOption("Falsch", "false")
+                        ),
+                        new NoCodeParameter(
+                                NoCodeDataType.Boolean,
+                                "Bedingung 2",
+                                "Die zweite Bedingung für die ODER-Verknüpfung.",
+                                new NoCodeParameterOption("Wahr", "true"),
+                                new NoCodeParameterOption("Falsch", "false")
+                        )
+                )
+        );
     }
 
     @Override
@@ -85,6 +82,6 @@ public class NoCodeOrOperator extends NoCodeOperator {
         var arg0 = castToBoolean(args[0]);
         var arg1 = castToBoolean(args[1]);
 
-        return new NoCodeResult(NoCodeDataType.Boolean, arg0 || arg1);
+        return new NoCodeResult(arg0 || arg1);
     }
 }

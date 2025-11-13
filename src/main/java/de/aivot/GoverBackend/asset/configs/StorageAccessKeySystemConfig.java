@@ -2,7 +2,6 @@ package de.aivot.GoverBackend.asset.configs;
 
 import de.aivot.GoverBackend.config.enums.ConfigType;
 import de.aivot.GoverBackend.config.models.SystemConfigDefinition;
-import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Nonnull;

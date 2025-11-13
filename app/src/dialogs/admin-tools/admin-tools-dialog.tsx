@@ -1,18 +1,13 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {Box, Button, Dialog, DialogContent, FormControlLabel, FormGroup, FormHelperText, Grid, Switch, Typography} from '@mui/material';
-import {useDispatch} from 'react-redux';
-import {type AppDispatch, type RootState} from '../../store';
-import {type AdminSettingsState, setDevToolsTab, toggleAutoScrollForSteps, toggleValidation, toggleVisibility} from '../../slices/admin-settings-slice';
+import {type AppDispatch, type RootState} from '../../store.staff';
+import {type AdminSettingsState, setDevToolsTab, toggleAutoScrollForSteps, toggleElementContextMenu, toggleValidation, toggleVisibility} from '../../slices/admin-settings-slice';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {type AdminToolsDialogProps} from './admin-tools-dialog-props';
 import {selectLoadedForm} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {downloadBlobFile, downloadConfigFile} from '../../utils/download-utils';
 import ImportExportOutlinedIcon from '@mui/icons-material/ImportExportOutlined';
-import StackedLineChart from '@mui/icons-material/StackedLineChart';
-import {FormMetrics} from '../../components/form-metrics/form-metrics';
-import {selectBooleanSystemConfigValue} from '../../slices/system-config-slice';
-import {SystemConfigKeys} from '../../data/system-config-keys';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import {Form} from '../../models/entities/form';
 import {useApi} from '../../hooks/use-api';
@@ -48,6 +43,12 @@ const switches: Array<{
         onToggle: (dispatch) => dispatch(toggleAutoScrollForSteps()),
         isActive: (settings) => !settings.disableAutoScrollForSteps,
     },
+    {
+        label: 'Element-Kontextmenü',
+        hint: 'Das Element-Kontextmenü zeigt einen Button mit Menü an jedem Element an, mit dem Sie Kontextoptionen zu diesem Element erreichen. Sie können diesen Button z.B. für Demonstrationen oder Testläufe deaktivieren.',
+        onToggle: (dispatch) => dispatch(toggleElementContextMenu()),
+        isActive: (settings) => !settings.disableElementContextMenu,
+    },
 ];
 
 export function AdminToolsDialog(props: AdminToolsDialogProps) {
@@ -56,9 +57,7 @@ export function AdminToolsDialog(props: AdminToolsDialogProps) {
 
     const form = useAppSelector(selectLoadedForm);
     const adminSettings = useAppSelector((state: RootState) => state.adminSettings);
-    const experimentalFeatureComplexity = useAppSelector(selectBooleanSystemConfigValue(SystemConfigKeys.experimentalFeatures.complexity));
 
-    const [showMetrics, setShowMetrics] = useState(false);
     const [showPrefill, setShowPrefill] = useState(false);
     const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
@@ -126,16 +125,6 @@ export function AdminToolsDialog(props: AdminToolsDialogProps) {
         },
     ];
 
-    if (experimentalFeatureComplexity) {
-        actions.push({
-            label: 'Komplexitätseinschätzung',
-            icon: <StackedLineChart />,
-            onClick: () => {
-                setShowMetrics(true);
-            },
-        });
-    }
-
     return (
         <>
             <Dialog
@@ -193,8 +182,9 @@ export function AdminToolsDialog(props: AdminToolsDialogProps) {
                                     key={action.label}
                                     size={{
                                         xs: 12,
-                                        md: 6
-                                    }}>
+                                        md: 6,
+                                    }}
+                                >
                                     <Button
                                         fullWidth
                                         onClick={action.onClick}
@@ -212,33 +202,13 @@ export function AdminToolsDialog(props: AdminToolsDialogProps) {
                     </Grid>
                 </DialogContent>
             </Dialog>
-            <Dialog
-                open={showMetrics}
-                onClose={() => {
-                    setShowMetrics(false);
-                }}
-                fullWidth
-                maxWidth="md"
-            >
-                <DialogTitleWithClose
-                    onClose={() => {
-                        setShowMetrics(false);
-                    }}
-                >
-                    Komplexitätseinschätzung
-                </DialogTitleWithClose>
-                <DialogContent tabIndex={0}>
-                    {
-                        form?.rootElement != null &&
-                        <FormMetrics root={form.rootElement} />
-                    }
-                </DialogContent>
-            </Dialog>
+
             <ExportApplicationDialog
                 open={exportDialogOpen}
                 onCancel={() => setExportDialogOpen(false)}
                 onExport={startExportForm}
             />
+
             <PrefillFormDialog
                 open={showPrefill}
                 onClose={() => setShowPrefill(false)}

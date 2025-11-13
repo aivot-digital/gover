@@ -36,6 +36,13 @@ public class SecretJavascriptFunctionProvider implements JavascriptFunctionProvi
         return "Dieses Paket enthält Funktionen für Geheimnisse.";
     }
 
+    @Override
+    public String[] getMethodTypeDefinitions() {
+        return new String[]{
+                "get(key: string): string;"
+        };
+    }
+
     /**
      * Retrieves and decrypts a secret by its key.
      *

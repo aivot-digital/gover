@@ -1,12 +1,15 @@
-import {DialogTitle, DialogTitleProps, IconButton, Tooltip, Typography, useTheme} from '@mui/material';
+import {Box, DialogTitle, DialogTitleProps, IconButton, Tooltip, Typography, useTheme} from '@mui/material';
 import React from 'react';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
+import {Action} from '../actions/actions-props';
+import {Actions} from '../actions/actions';
 
 interface DialogTitleWithCloseProps extends DialogTitleProps {
     children?: React.ReactNode;
     onClose: () => void;
     closeTooltip?: string;
     bordered?: boolean;
+    actions?: Action[];
 }
 
 export const DialogTitleWithClose = (props: DialogTitleWithCloseProps) => {
@@ -16,6 +19,7 @@ export const DialogTitleWithClose = (props: DialogTitleWithCloseProps) => {
         onClose,
         closeTooltip,
         bordered,
+        actions,
         ...other
     } = props;
 
@@ -25,7 +29,10 @@ export const DialogTitleWithClose = (props: DialogTitleWithCloseProps) => {
                 m: 0,
                 p: 2,
                 pl: 2.8,
+                pr: onClose != null ? 8 : 2,
                 borderBottom: props.bordered ? `1px solid ${theme.palette.grey[300]}` : 'none',
+                display: 'flex',
+                justifyContent: 'space-between',
             }}
             {...other}
         >
@@ -35,6 +42,18 @@ export const DialogTitleWithClose = (props: DialogTitleWithCloseProps) => {
             >
                 {children}
             </Typography>
+
+            {
+                actions &&
+                <Actions
+                    actions={actions}
+                    sx={{
+                        mt: -0.5,
+                        justifyContent: 'end',
+                    }}
+                    dense
+                />
+            }
 
             {
                 onClose &&

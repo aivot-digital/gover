@@ -9,6 +9,7 @@ export type GenericDetailsPageContextType<ItemType, AdditionalData> = {
     setAdditionalData: (additionalData: AdditionalData) => void;
     isBusy: boolean;
     setIsBusy: (isBusy: boolean) => void;
+    isEditable: boolean;
 };
 
 export const GenericDetailsPageContext = createContext<GenericDetailsPageContextType<any, any>>({
@@ -23,4 +24,5 @@ export const GenericDetailsPageContext = createContext<GenericDetailsPageContext
     isBusy: false,
     setIsBusy: () => {
     },
+    isEditable: true,
 });

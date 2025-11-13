@@ -1,4 +1,4 @@
-import { PropsWithChildren } from 'react';
+import {PropsWithChildren} from 'react';
 import {SxProps, TypographyVariant} from '@mui/material';
 
 export type StatusTablePropsItem = PropsWithChildren<{

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {type StepElement} from '../../models/elements/steps/step-element';
 import {Box, Button, FormControl, FormLabel, Grid, Tooltip, Typography} from '@mui/material';
 import {StepIconsMap} from '../../data/step-icons';

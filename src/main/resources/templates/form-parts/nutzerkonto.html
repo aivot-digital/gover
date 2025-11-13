@@ -1,0 +1,31 @@
+<!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
+<!--/*@thymesVar id="identityProvider" type="de.aivot.GoverBackend.identity.entities.IdentityProviderEntity"*/-->
+<!--/*@thymesVar id="identityData" type="de.aivot.GoverBackend.identity.models.IdentityData"*/-->
+
+<section
+        th:fragment="identity-information"
+        th:if="${ (base.isStaffPrint || base.isDestinationPrint) && identityProvider != null && identityData != null }"
+>
+    <h2>Authentifizierungsinformationen</h2>
+    <p>
+        Angemeldet mit dem Nutzerkonto
+        <strong th:text="${ identityProvider.name }">Name des Nutzerkontenanbieters</strong>
+        .
+    </p>
+    <ul>
+        <li
+                th:each="attribute : ${ identityProvider.attributes }"
+                th:if="${ attribute.displayAttribute != null && attribute.displayAttribute }"
+        >
+            <span th:text="${ attribute.label }"></span>
+            :
+            <span
+                    th:text="${ identityData.attributes.get(attribute.keyInData) }"
+                    th:if="${ identityData.attributes.get(attribute.keyInData) != null }"
+            ></span>
+            <span
+                    th:if="${ identityData.attributes().get(attribute.keyInData) == null }"
+            >Keine Angaben</span>
+        </li>
+    </ul>
+</section>

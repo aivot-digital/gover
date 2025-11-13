@@ -18,7 +18,7 @@ export function getFunctionStatus(comp: AnyElement): FunctionStatusItem[] {
         const funcExists = (
             isStringNotNullOrEmpty(vis.javascriptCode?.code) ||
             vis.conditionSet != null ||
-            vis.expression != null
+            vis.noCode != null
         );
 
         if (isStringNotNullOrEmpty(vis.requirements)) {
@@ -39,7 +39,7 @@ export function getFunctionStatus(comp: AnyElement): FunctionStatusItem[] {
 
         const funcExists = (
             isStringNotNullOrEmpty(override.javascriptCode?.code) ||
-            override.expression != null
+            override.fieldNoCodeMap != null
         );
 
         if (isStringNotNullOrEmpty(override.requirements)) {
@@ -62,7 +62,7 @@ export function getFunctionStatus(comp: AnyElement): FunctionStatusItem[] {
             const funcExists = (
                 isStringNotNullOrEmpty(val.javascriptCode?.code) ||
                 val.conditionSet != null ||
-                val.expression != null
+                val.noCodeList != null
             );
 
             if (isStringNotNullOrEmpty(val.requirements)) {
@@ -83,7 +83,7 @@ export function getFunctionStatus(comp: AnyElement): FunctionStatusItem[] {
 
             const funcExists = (
                 isStringNotNullOrEmpty(val.javascriptCode?.code) ||
-                val.expression != null
+                val.noCode != null
             );
 
             if (isStringNotNullOrEmpty(val.requirements)) {

@@ -1,10 +1,12 @@
 package de.aivot.GoverBackend.theme.controllers;
 
-import de.aivot.GoverBackend.form.filters.FormVersionFilter;
-import de.aivot.GoverBackend.form.repositories.FormRepository;
-import de.aivot.GoverBackend.form.repositories.FormVersionRepository;
+import de.aivot.GoverBackend.audit.enums.AuditAction;
+import de.aivot.GoverBackend.audit.services.AuditService;
+import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.theme.entities.Theme;
+import de.aivot.GoverBackend.theme.dtos.ThemeRequestDTO;
+import de.aivot.GoverBackend.theme.dtos.ThemeResponseDTO;
+import de.aivot.GoverBackend.theme.entities.ThemeEntity;
 import de.aivot.GoverBackend.theme.filters.ThemeFilter;
 import de.aivot.GoverBackend.theme.services.ThemeService;
 import de.aivot.GoverBackend.user.services.UserService;
@@ -13,33 +15,29 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/themes/")
 public class ThemeController {
+    private final ScopedAuditService auditService;
     private final ThemeService service;
-    private final FormRepository formRepository;
-    private final FormVersionRepository formVersionRepository;
 
     @Autowired
-    public ThemeController(
-            ThemeService service,
-            FormRepository formRepository,
-            FormVersionRepository formVersionRepository) {
+    public ThemeController(AuditService auditService,
+                           ThemeService service) {
+        this.auditService = auditService.createScopedAuditService(ThemeController.class);
         this.service = service;
-        this.formRepository = formRepository;
-        this.formVersionRepository = formVersionRepository;
     }
 
     @GetMapping("")
-    public Page<Theme> list(
+    public Page<ThemeResponseDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PageableDefault Pageable pageable,
             @Nonnull @Valid ThemeFilter filter
@@ -49,25 +47,38 @@ public class ThemeController {
                 .orElseThrow(ResponseException::unauthorized);
 
         return service
-                .list(pageable, filter);
+                .list(pageable, filter)
+                .map(ThemeResponseDTO::fromEntity);
     }
 
     @PostMapping("")
-    public Theme create(
+    public ThemeResponseDTO create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @Valid @RequestBody Theme newTheme
+            @Nonnull @Valid @RequestBody ThemeRequestDTO newThemeRequest
     ) throws ResponseException {
-        UserService
+        var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
                 .asAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
-        return service.create(newTheme);
+        var newTheme = newThemeRequest
+                .toEntity();
+
+        var createdTheme = service
+                .create(newTheme);
+
+        auditService.logAction(user, AuditAction.Create, ThemeEntity.class, Map.of(
+                "id", createdTheme.getId(),
+                "name", createdTheme.getName()
+        ));
+
+        return ThemeResponseDTO
+                .fromEntity(createdTheme);
     }
 
     @GetMapping("{id}/")
-    public Theme retrieve(
+    public ThemeResponseDTO retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
@@ -77,24 +88,36 @@ public class ThemeController {
 
         return service
                 .retrieve(id)
+                .map(ThemeResponseDTO::fromEntity)
                 .orElseThrow(ResponseException::notFound);
     }
 
 
     @PutMapping("{id}/")
-    public Theme update(
+    public ThemeResponseDTO update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id,
-            @Nonnull @Valid @RequestBody Theme updatedTheme
+            @Nonnull @Valid @RequestBody ThemeRequestDTO changeThemeRequest
     ) throws ResponseException {
-        UserService
+        var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
                 .asAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
-        return service
-                .update(id, updatedTheme);
+        var changedTheme = changeThemeRequest
+                .toEntity();
+
+        var updatedTheme = service
+                .update(id, changedTheme);
+
+        auditService.logAction(user, AuditAction.Update, ThemeEntity.class, Map.of(
+                "id", updatedTheme.getId(),
+                "name", updatedTheme.getName()
+        ));
+
+        return ThemeResponseDTO
+                .fromEntity(updatedTheme);
     }
 
     @DeleteMapping("{id}/")
@@ -102,21 +125,18 @@ public class ThemeController {
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
-        UserService
+        var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
                 .asAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
-        var spec = FormVersionFilter
-                .create()
-                .setThemeId(id)
-                .build();
+        var deletedTheme = service
+                .delete(id);
 
-        if (formVersionRepository.exists(spec)) {
-            throw new ResponseException(HttpStatus.CONFLICT, "Das Farbschema wird noch von einem oder mehreren Formularen verwendet.");
-        }
-
-        service.delete(id);
+        auditService.logAction(user, AuditAction.Delete, ThemeEntity.class, Map.of(
+                "id", deletedTheme.getId(),
+                "name", deletedTheme.getName()
+        ));
     }
 }

@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.department.entities;
 
+import jakarta.annotation.Nullable;
 import org.hibernate.validator.constraints.Length;
 
 import jakarta.persistence.*;
@@ -51,6 +52,9 @@ public class DepartmentEntity {
     @Column(length = 255)
     private String departmentMail;
 
+    @Nullable
+    private Integer themeId;
+
     @NotNull
     private LocalDateTime created;
 
@@ -74,90 +78,110 @@ public class DepartmentEntity {
         return id;
     }
 
-    public void setId(Integer id) {
+    public DepartmentEntity setId(Integer id) {
         this.id = id;
+        return this;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public DepartmentEntity setName(String name) {
         this.name = name;
+        return this;
     }
 
     public String getAddress() {
         return address;
     }
 
-    public void setAddress(String address) {
+    public DepartmentEntity setAddress(String address) {
         this.address = address;
+        return this;
     }
 
     public String getImprint() {
         return imprint;
     }
 
-    public void setImprint(String imprint) {
+    public DepartmentEntity setImprint(String imprint) {
         this.imprint = imprint;
+        return this;
     }
 
     public String getPrivacy() {
         return privacy;
     }
 
-    public void setPrivacy(String privacy) {
+    public DepartmentEntity setPrivacy(String privacy) {
         this.privacy = privacy;
+        return this;
     }
 
     public String getAccessibility() {
         return accessibility;
     }
 
-    public void setAccessibility(String accessibility) {
+    public DepartmentEntity setAccessibility(String accessibility) {
         this.accessibility = accessibility;
+        return this;
     }
 
     public String getTechnicalSupportAddress() {
         return technicalSupportAddress;
     }
 
-    public void setTechnicalSupportAddress(String technicalSupportAddress) {
+    public DepartmentEntity setTechnicalSupportAddress(String technicalSupportAddress) {
         this.technicalSupportAddress = technicalSupportAddress;
+        return this;
     }
 
     public String getSpecialSupportAddress() {
         return specialSupportAddress;
     }
 
-    public void setSpecialSupportAddress(String specialSupportAddress) {
+    public DepartmentEntity setSpecialSupportAddress(String specialSupportAddress) {
         this.specialSupportAddress = specialSupportAddress;
-    }
-
-    public LocalDateTime getCreated() {
-        return created;
-    }
-
-    public void setCreated(LocalDateTime created) {
-        this.created = created;
-    }
-
-    public LocalDateTime getUpdated() {
-        return updated;
-    }
-
-    public void setUpdated(LocalDateTime updated) {
-        this.updated = updated;
+        return this;
     }
 
     public String getDepartmentMail() {
         return departmentMail;
     }
 
-    public void setDepartmentMail(String departmentMail) {
+    public DepartmentEntity setDepartmentMail(String departmentMail) {
         this.departmentMail = departmentMail;
+        return this;
     }
 
+    @Nullable
+    public Integer getThemeId() {
+        return themeId;
+    }
+
+    public DepartmentEntity setThemeId(@Nullable Integer themeId) {
+        this.themeId = themeId;
+        return this;
+    }
+
+    public LocalDateTime getCreated() {
+        return created;
+    }
+
+    public DepartmentEntity setCreated(LocalDateTime created) {
+        this.created = created;
+        return this;
+    }
+
+    public LocalDateTime getUpdated() {
+        return updated;
+    }
+
+    public DepartmentEntity setUpdated(LocalDateTime updated) {
+        this.updated = updated;
+        return this;
+    }
 
     // endregion
 }

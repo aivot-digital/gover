@@ -14,6 +14,7 @@ interface ElementDerivationContextProps {
     element: AnyElement;
     elementData: ElementData;
     onElementDataChange: (newData: ElementData) => void;
+    disabled?: boolean;
 }
 
 export function ElementDerivationContext(props: ElementDerivationContextProps) {
@@ -21,6 +22,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         element,
         elementData,
         onElementDataChange,
+        disabled,
     } = props;
 
     const api = useApi();
@@ -90,7 +92,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
                         skipValuesForElementIds: [],
                     },
                 });
-            onElementDataChange(res);
+            onElementDataChange(res.elementData);
         } catch (error) {
             if (isApiError(error) && error.displayableToUser) {
                 dispatch(showErrorSnackbar(error.message));
@@ -106,7 +108,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             rootElement={element}
             allElements={allElements}
             element={element}
-            isBusy={mode === 'busy'}
+            isBusy={mode === 'busy' || (disabled ?? false)}
             isDeriving={mode === 'deriving'}
             mode="viewer"
             elementData={elementData}

@@ -5,10 +5,11 @@ import {GenericDetailsPage} from '../../../../components/generic-details-page/ge
 import {SecretsApiService} from '../../secrets-api-service';
 import {Secret} from '../../models/secret';
 import React from 'react';
-import {useAdminGuard} from '../../../../hooks/use-admin-guard';
+import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
+import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
 
 export function SecretsDetailsPage() {
-    useAdminGuard();
+    const userIsAdmin = useUserIsAdmin();
 
     return (
         <PageWrapper
@@ -17,6 +18,7 @@ export function SecretsDetailsPage() {
             background
         >
             <GenericDetailsPage<Secret, string, undefined>
+                isEditable={() => userIsAdmin}
                 header={{
                     icon: <KeyOutlinedIcon />,
                     title: 'Geheimnis bearbeiten',
@@ -58,14 +60,15 @@ export function SecretsDetailsPage() {
                     }
                 }}
                 getHeaderTitle={(item, isNewItem, notFound) => {
-                    if (notFound) return "Geheimnis nicht gefunden";
-                    if (isNewItem) return "Neues Geheimnis anlegen";
-                    return `Geheimnis: ${item?.name ?? "Unbenannt"}`;
+                    if (notFound) return 'Geheimnis nicht gefunden';
+                    if (isNewItem) return 'Neues Geheimnis anlegen';
+                    return `Geheimnis: ${item?.name ?? 'Unbenannt'}`;
                 }}
                 parentLink={{
-                    label: "Liste der Geheimnisse",
-                    to: "/secrets",
+                    label: 'Liste der Geheimnisse',
+                    to: '/secrets',
                 }}
+                entityType={ServerEntityType.Secrets}
             />
         </PageWrapper>
     );

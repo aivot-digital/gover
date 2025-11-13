@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 
 import java.math.RoundingMode;
 
@@ -60,22 +61,22 @@ public class NoCodeRoundDownOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{
-                new NoCodeParameter(
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
                         NoCodeDataType.Number,
-                        "Wert"
-                ),
-                new NoCodeParameter(
-                        NoCodeDataType.Number,
-                        "Dezimalstellen"
-                ),
-        };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Number;
+                        new NoCodeParameter(
+                                NoCodeDataType.Number,
+                                "Wert",
+                                "Die Zahl, die abgerundet werden soll."
+                        ),
+                        new NoCodeParameter(
+                                NoCodeDataType.Number,
+                                "Dezimalstellen",
+                                "Die Anzahl der Dezimalstellen, auf die abgerundet werden soll."
+                        )
+                )
+        );
     }
 
     @Override
@@ -87,6 +88,6 @@ public class NoCodeRoundDownOperator extends NoCodeOperator {
         var number = castToNumber(args[0]);
         var decimalPlaces = castToNumber(args[1]).intValue();
 
-        return new NoCodeResult(NoCodeDataType.Number, number.setScale(decimalPlaces, RoundingMode.HALF_DOWN));
+        return new NoCodeResult(number.setScale(decimalPlaces, RoundingMode.HALF_DOWN));
     }
 }

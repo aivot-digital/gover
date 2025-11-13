@@ -6,12 +6,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.common.contenttype.ContentType;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioFieldOption;
-import de.aivot.GoverBackend.elements.models.elements.form.input.SelectField;
-import de.aivot.GoverBackend.elements.models.elements.form.input.TextField;
-import de.aivot.GoverBackend.elements.models.elements.form.input.TextPattern;
+import de.aivot.GoverBackend.elements.models.elements.form.input.*;
 import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
 import de.aivot.GoverBackend.enums.ElementType;
+import de.aivot.GoverBackend.enums.XBezahldienstStatus;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
 import de.aivot.GoverBackend.payment.exceptions.PaymentException;
@@ -19,7 +17,6 @@ import de.aivot.GoverBackend.payment.exceptions.PaymentMissingDataException;
 import de.aivot.GoverBackend.payment.models.PaymentProviderDefinition;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentTransaction;
-import de.aivot.GoverBackend.payment.models.XBezahldiensteRequestor;
 import de.aivot.GoverBackend.secrets.services.SecretService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,17 +68,19 @@ public class epay21PaymentProviderDefinition implements PaymentProviderDefinitio
     public GroupLayout getPaymentConfigLayout() throws ResponseException {
         var list = new LinkedList<BaseFormElement>();
 
-        var originatorIdInput = new TextField()
-                .setPlaceholder("Originator ID")
-                .setRequired(true)
-                .setLabel("Originator ID")
-                .setHint("Diese ID wird vom Zahlungsdienstleister festgelegt. Üblicherweise ist dies eine Kennzeichnung für das Formular wie z.B. der Formularname, eine LeiKa-ID etc.")
-                .setWeight(6.0d)
-                .setId(ORIGINATOR_ID_FIELD);
-        list.add((BaseFormElement) originatorIdInput);
+        var originatorIdInput = new TextField();
+        originatorIdInput.setPlaceholder("Originator ID");
+        originatorIdInput.setType(ElementType.Text);
+        originatorIdInput.setRequired(true);
+        originatorIdInput.setLabel("Originator ID");
+        originatorIdInput.setHint("Diese ID wird vom Zahlungsdienstleister festgelegt. Üblicherweise ist dies eine Kennzeichnung für das Formular wie z.B. der Formularname, eine LeiKa-ID etc.");
+        originatorIdInput.setWeight(6.0d);
+        originatorIdInput.setId(ORIGINATOR_ID_FIELD);
+        list.add(originatorIdInput);
 
         var endpointIdInput = new TextField();
         endpointIdInput.setId(ENDPOINT_ID_FIELD);
+        endpointIdInput.setType(ElementType.Text);
         endpointIdInput.setRequired(true);
         endpointIdInput.setLabel("Endpoint ID");
         endpointIdInput.setPlaceholder("Endpoint ID");
@@ -109,20 +108,21 @@ public class epay21PaymentProviderDefinition implements PaymentProviderDefinitio
         List<RadioFieldOption> clientSecretInputOptions = secretService
                 .list()
                 .stream()
-                .map(secret -> new RadioFieldOption()
-                        .setValue(secret.getKey().toString())
-                        .setLabel(secret.getName())
-                )
+                .map(secret -> RadioFieldOption.of(
+                        secret.getKey().toString(),
+                        secret.getName()
+                ))
                 .toList();
         passwordInput.setOptions(clientSecretInputOptions);
         passwordInput.setWeight(6.0d);
         list.add(passwordInput);
 
-        TextPattern urlPattern = new TextPattern()
-                .setRegex("^(https?:\\/\\/)?([\\da-z.-]+)\\.([a-z.]{2,6})([\\/\\w .-]*)*\\/?$")
-                .setMessage("Bitte geben Sie eine gültige URL ein (z. B. https://example.com).");
+        TextPattern urlPattern = new TextPattern();
+        urlPattern.setRegex("^(https?:\\/\\/)?([\\da-z.-]+)\\.([a-z.]{2,6})([\\/\\w .-]*)*\\/?$");
+        urlPattern.setMessage("Bitte geben Sie eine gültige URL ein (z. B. https://example.com).");
 
         var paymentTransactionUrlInput = new TextField();
+        paymentTransactionUrlInput.setType(ElementType.Text);
         paymentTransactionUrlInput.setId(PAYMENT_TRANSACTION_URL_FIELD);
         paymentTransactionUrlInput.setRequired(true);
         paymentTransactionUrlInput.setLabel("Basis-URL");
@@ -132,6 +132,7 @@ public class epay21PaymentProviderDefinition implements PaymentProviderDefinitio
         list.add(paymentTransactionUrlInput);
 
         var group = new GroupLayout();
+        group.setType(ElementType.Group);
         group.setId("epay21Config");
         group.setChildren(list);
 
@@ -245,7 +246,7 @@ public class epay21PaymentProviderDefinition implements PaymentProviderDefinitio
                 .newBuilder(URI.create(paymentPath))
                 .headers("Content-Type", ContentType.APPLICATION_JSON.getType())
                 .headers("Accept", ContentType.APPLICATION_JSON.getType())
-                .headers("Authorization", "Bearer " + auth)
+                .headers("Authorization", "Basic " + auth)
                 .GET()
                 .build();
 
@@ -276,6 +277,12 @@ public class epay21PaymentProviderDefinition implements PaymentProviderDefinitio
         }
 
         client.close();
+
+        if (updatedTransaction.getPaymentInformation().getStatus() != XBezahldienstStatus.INITIAL) {
+            updatedTransaction
+                    .getPaymentInformation()
+                    .setTransactionRedirectUrl(null);
+        }
 
         return updatedTransaction;
     }
@@ -328,7 +335,8 @@ public class epay21PaymentProviderDefinition implements PaymentProviderDefinitio
     }
 
     @Nonnull
-    private static String getNormalizedPaymentTransactionUrl(@Nonnull PaymentProviderEntity paymentProviderEntity, @Nonnull ElementData config) throws PaymentException {
+    private static String getNormalizedPaymentTransactionUrl(@Nonnull PaymentProviderEntity paymentProviderEntity,
+                                                             @Nonnull ElementData config) throws PaymentException {
         var paymentTransactionUrl = (String) config.get(PAYMENT_TRANSACTION_URL_FIELD).getValue();
         if (StringUtils.isNullOrEmpty(paymentTransactionUrl)) {
             throw new PaymentException("Payment transaction URL for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());

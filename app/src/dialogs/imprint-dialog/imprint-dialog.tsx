@@ -1,20 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import {Alert, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
+import React, {useEffect, useState} from 'react';
+import {Alert, Box, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {type Department} from '../../modules/departments/models/department';
 import {useSelector} from 'react-redux';
 import {selectLoadedForm} from '../../slices/app-slice';
 import {type ImprintDialogProps} from './imprint-dialog-props';
-import {useApi} from "../../hooks/use-api";
-import {useAppSelector} from "../../hooks/use-app-selector";
-import {selectSystemConfigValue} from "../../slices/system-config-slice";
-import {SystemConfigKeys} from "../../data/system-config-keys";
+import {useAppSelector} from '../../hooks/use-app-selector';
+import {selectSystemConfigValue} from '../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../data/system-config-keys';
 import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
 
 export const ImprintDialogId = 'imprint';
 
 export function ImprintDialog(props: ImprintDialogProps) {
-    const api = useApi();
     const application = useSelector(selectLoadedForm);
 
     const [department, setDepartment] = useState<Department>();
@@ -26,7 +24,7 @@ export function ImprintDialog(props: ImprintDialogProps) {
             application?.imprintDepartmentId != null &&
             (department == null || department.id !== application.imprintDepartmentId)
         ) {
-            new DepartmentsApiService(api)
+            new DepartmentsApiService()
                 .retrievePublic(application.imprintDepartmentId)
                 .then(setDepartment);
         } else if (
@@ -34,8 +32,8 @@ export function ImprintDialog(props: ImprintDialogProps) {
             imprintDepartmentId != null &&
             imprintDepartmentId != '' &&
             (department == null || department.id !== parseInt(imprintDepartmentId))
-        ){
-            new DepartmentsApiService(api)
+        ) {
+            new DepartmentsApiService()
                 .retrievePublic(parseInt(imprintDepartmentId))
                 .then(setDepartment);
         }
@@ -67,9 +65,9 @@ export function ImprintDialog(props: ImprintDialogProps) {
                     </DialogContent>
             }
             <DialogActions>
+                <Box/>
                 <Button
                     onClick={props.onHide}
-                    variant="contained"
                 >
                     Impressum schließen
                 </Button>

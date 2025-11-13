@@ -4,7 +4,7 @@ import {IdentityProviderDetailsPage} from './pages/details/identity-provider-det
 import {IdentityProviderDetailsPageIndex} from './pages/details/identity-provider-details-page-index';
 import {IdentityProviderDetailsPageTest} from './pages/details/identity-provider-details-page-test';
 import {IdentityProviderDetailsPageForms} from './pages/details/identity-provider-details-page-forms';
-import {IdentityProviderDetailsPageSetup} from "./pages/details/identity-provider-details-page-setup";
+import {IdentityProviderDetailsPageSetup} from './pages/details/identity-provider-details-page-setup';
 
 export const identityRoutes: RouteObject[] = [
     {

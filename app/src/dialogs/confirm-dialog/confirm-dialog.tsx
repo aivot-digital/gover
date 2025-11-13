@@ -1,9 +1,8 @@
-import { useState } from "react";
-import {Button, Dialog, DialogActions, DialogContent, TextField, Typography} from "@mui/material";
-import { DialogTitleWithClose } from "../../components/dialog-title-with-close/dialog-title-with-close";
-import { PropsWithChildren } from "react";
-import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
-import {TextFieldComponent} from "../../components/text-field/text-field-component";
+import {PropsWithChildren, useState} from 'react';
+import {Button, Dialog, DialogActions, DialogContent, Typography} from '@mui/material';
+import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
+import {TextFieldComponent} from '../../components/text-field/text-field-component';
 
 interface ConfirmDialogProps {
     title: string;
@@ -14,10 +13,11 @@ interface ConfirmDialogProps {
     inputPlaceholder?: string;
     isDestructive?: boolean;
     confirmButtonText?: string;
+    hideCancelButton?: boolean;
 }
 
 export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>) {
-    const [inputValue, setInputValue] = useState("");
+    const [inputValue, setInputValue] = useState('');
 
     const requiresInput = !!props.confirmationText;
     const isConfirmDisabled = requiresInput ? inputValue !== props.confirmationText : false;
@@ -35,16 +35,23 @@ export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>) {
                 {props.children}
                 {requiresInput && (
                     <>
-                        <Typography variant="body2" sx={{ mt: 2, mb: 1 }}>
+                        <Typography
+                            variant="body2"
+                            sx={{mt: 2, mb: 1}}
+                        >
                             Bitte geben Sie den folgenden Text ein, um die Aktion zu bestätigen:
-                            <Typography component="pre" variant="body2" sx={{ fontFamily: "monospace", fontSize: 14, fontWeight: "bold", backgroundColor: "#f0f0f0", py: .5, px: 1, borderRadius: 2, mt: 1 }}>
+                            <Typography
+                                component="pre"
+                                variant="body2"
+                                sx={{fontFamily: 'monospace', fontSize: 14, fontWeight: 'bold', backgroundColor: '#f0f0f0', py: .5, px: 1, borderRadius: 2, mt: 1}}
+                            >
                                 {props.confirmationText}
                             </Typography>
                         </Typography>
 
                         <TextFieldComponent
-                            sx={{ mt: 2 }}
-                            label={props.inputLabel || "Eingabe zur Bestätigung"}
+                            sx={{mt: 2}}
+                            label={props.inputLabel || 'Eingabe zur Bestätigung'}
                             value={inputValue}
                             onChange={(val) => setInputValue(val ?? '')}
                         />
@@ -52,23 +59,26 @@ export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>) {
                 )}
             </DialogContent>
 
-            <DialogActions sx={{ justifyContent: 'flex-start' }}>
+            <DialogActions sx={{justifyContent: 'flex-start'}}>
                 <Button
                     onClick={props.onConfirm}
                     variant="contained"
-                    color={props.isDestructive ? "error" : "primary"}
+                    color={props.isDestructive ? 'error' : 'primary'}
                     disabled={isConfirmDisabled}
                     startIcon={props.isDestructive ? <DeleteOutlinedIcon /> : undefined}
                 >
-                    {props.confirmButtonText || (props.isDestructive ? "Löschen" : "Bestätigen")}
+                    {props.confirmButtonText || (props.isDestructive ? 'Löschen' : 'Bestätigen')}
                 </Button>
 
-                <Button
-                    onClick={props.onCancel}
-                    variant="outlined"
-                >
-                    Abbrechen
-                </Button>
+                {
+                    !props.hideCancelButton &&
+                    <Button
+                        onClick={props.onCancel}
+                        variant="outlined"
+                    >
+                        Abbrechen
+                    </Button>
+                }
             </DialogActions>
         </Dialog>
     );

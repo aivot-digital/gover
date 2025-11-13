@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.core.operators.common;
 
 import de.aivot.GoverBackend.elements.models.ElementData;
-import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 
@@ -58,6 +57,6 @@ public class NoCodeIsInvisibleOperator extends NoCodeIsVisibleOperator {
 
     @Override
     public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
-        return new NoCodeResult(NoCodeDataType.Boolean, super.performEvaluation(data, args).getValueAsBoolean());
+        return new NoCodeResult(super.performEvaluation(data, args).getValueAsBoolean());
     }
 }

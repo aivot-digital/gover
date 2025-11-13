@@ -1,5 +1,5 @@
 import {type ElementEditorContentProps} from '../element-editor-content/element-editor-content-props';
-import {Alert, AlertTitle, Box, Button, Divider, Paper, Tooltip} from '@mui/material';
+import {Alert, AlertTitle, Box, Button, Divider, Paper, Skeleton, Tooltip} from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
 import {Form as Application} from '../../models/entities/form';
 import {type RootElement} from '../../models/elements/root-element';
@@ -16,20 +16,22 @@ import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import {useApi} from '../../hooks/use-api';
 import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {FormPublishChecklistItem} from '../../modules/forms/dtos/form-publish-checklist-item';
-import {Loader} from '../loader/loader';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../slices/loading-overlay-slice';
 import {useConfirm} from '../../providers/confirm-provider';
 import {FormType} from '../../modules/forms/enums/form-type';
 import {SxProps} from '@mui/material/styles';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 import {FormStatus} from '../../modules/forms/enums/form-status';
+import {withDelay} from '../../utils/with-delay';
 
 export function ApplicationInternalPublishTab<T extends RootElement, E extends Application>(props: ElementEditorContentProps<T, E>) {
     const api = useApi();
     const dispatch = useAppDispatch();
     const showConfirm = useConfirm();
 
-    const [checklist, setChecklist] = useState<FormPublishChecklistItem[]>();
+    const [isLoading, setIsLoading] = useState(true);
+
+    const [checklist, setChecklist] = useState<FormPublishChecklistItem[] | null>(null);
     const memberships = useAppSelector(selectMemberships);
 
     const [isPublished, setIsPublished] = useState(props.entity.status === FormStatus.Published);
@@ -38,11 +40,11 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
     const [isInternal, setIsInternal] = useState(props.entity.type === FormType.Internal);
 
     useEffect(() => {
-        new FormsApiService(api)
+        withDelay(new FormsApiService(api)
             .checkPublish({
                 id: props.entity.id,
                 version: props.entity.version,
-            })
+            }), 600)
             .then(setChecklist)
             .catch((err) => {
                 console.error(err);
@@ -204,22 +206,33 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
                     my: 2,
                 }}
             >
-                {
-                    checklist == null &&
-                    <Loader message="Lade Veröffentlichungskriterien" />
-                }
-
-                {
-                    checklist != null &&
-                    <Paper variant={'outlined'}>
+                <Paper variant="outlined">
+                    {
+                        checklist == null &&
+                        <Box sx={{
+                            px: 2,
+                            py: 1,
+                        }}>
+                            {
+                                new Array(8).fill(null).map((_, idx) => (
+                                    <Skeleton
+                                        width="100%"
+                                        height={50}
+                                    />
+                                ))
+                            }
+                        </Box>
+                    }
+                    {
+                        checklist != null &&
                         <Checklist
                             items={checklist}
                             sx={{
                                 opacity: props.hasChanges ? 0.5 : 1,
                             }}
                         />
-                    </Paper>
-                }
+                    }
+                </Paper>
             </Box>
 
             {

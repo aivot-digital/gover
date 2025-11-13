@@ -3,18 +3,19 @@ package de.aivot.GoverBackend.nocode.models;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.elements.models.ElementData;
-import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -66,18 +67,24 @@ public abstract class NoCodeOperator {
     }
 
     /**
-     * Returns the list of parameters that the operator expects.
+     * Returns a human-readable template of the operator.
+     * This template will later be filled with the parameters of the operator to provide a better understanding of how the operator works.
+     * The template contains placeholders for the parameters of the operator.
+     * For example: "Add #0 to #1" where #0 and #1 are placeholders for the parameters.
      *
-     * @return the list of parameters that the operator expects
+     * @return a human-readable template of the operator
      */
-    public abstract NoCodeParameter[] getParameters();
+    @Nullable
+    public String getHumanReadableTemplate() {
+        return null;
+    }
 
     /**
-     * Returns the type of the return value of the operator.
+     * Returns the list of parameters that the operator expects.
      *
-     * @return the type of the return value of the operator
+     * @return the array of parameters that the operator expects
      */
-    public abstract NoCodeDataType getReturnType();
+    public abstract NoCodeSignatur[] getSignatures();
 
     @Nonnull
     public NoCodeResult evaluate(ElementData data, Object... args) throws NoCodeException {
@@ -89,11 +96,19 @@ public abstract class NoCodeOperator {
             throw new NullPointerException("Arguments are null. Needs to be at least an empty array");
         }
 
-        var expectedParametersLength = getParameters().length;
         var actualParametersLength = args.length;
+        var someMatch = false;
+        for (var signature : getSignatures()) {
+            var expectedParametersLength = signature.parameters().length;
+            if (actualParametersLength == expectedParametersLength) {
+                someMatch = true;
+                break;
+            }
+        }
 
-        if (actualParametersLength != expectedParametersLength) {
-            throw new NoCodeWrongArgumentCountException(expectedParametersLength, actualParametersLength);
+
+        if (!someMatch) {
+            throw new NoCodeWrongArgumentCountException(getSignatures()[0].parameters().length, actualParametersLength);
         }
 
         return performEvaluation(data, args);

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {Box, IconButton, InputAdornment, TextField, Typography} from '@mui/material';
 import {type TextFieldComponentProps} from './text-field-component-props';
 import Tooltip from '@mui/material/Tooltip';
@@ -51,6 +51,10 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
 
     // Handle input change
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (props.readonly) {
+            return; // Ignore changes if readonly
+        }
+
         const newValue = event.target.value;
         setInputValue(newValue); // update UI directly!
 
@@ -247,3 +251,19 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
         />
     );
 }
+
+export const renderIconButton = (action: { icon: React.ReactNode; onClick: () => void; tooltip?: string }, key?: number) => (
+    action.tooltip ? (
+        <Tooltip
+            key={key}
+            title={action.tooltip}
+        >
+            <IconButton onClick={action.onClick}>{action.icon}</IconButton>
+        </Tooltip>
+    ) : (
+        <IconButton
+            key={key}
+            onClick={action.onClick}
+        >{action.icon}</IconButton>
+    )
+);

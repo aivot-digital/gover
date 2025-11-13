@@ -34,12 +34,22 @@ public class AssetJavascriptFunctionProvider implements JavascriptFunctionProvid
 
     @Override
     public String getLabel() {
-        return "Dokumente & Medieninhalte";
+        return "Dateien & Medien";
     }
 
     @Override
     public String getDescription() {
-        return "Dieses Paket enthält Funktionen für Dokumente & Medieninhalte.";
+        return "Dieses Paket enthält Funktionen für Dateien & Medien.";
+    }
+
+    @Override
+    public String[] getMethodTypeDefinitions() {
+        return new String[]{
+                "getBytes(assetKey: string): ArrayBuffer;",
+                "getText(assetKey: string): string;",
+                "getBase64(assetKey: string): string;",
+                "getDownloadUrl(assetKey: string): string;"
+        };
     }
 
     @HostAccess.Export

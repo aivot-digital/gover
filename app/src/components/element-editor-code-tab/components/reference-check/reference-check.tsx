@@ -1,9 +1,7 @@
 import {Box, Paper, Typography} from '@mui/material';
 import {AnyElement} from '../../../../models/elements/any-element';
 import {ConditionSet} from '../../../../models/functions/conditions/condition-set';
-import {isNoCodeExpression, isNoCodeReference, NoCodeExpression} from '../../../../models/functions/no-code-expression';
-import {useAppSelector} from '../../../../hooks/use-app-selector';
-import {selectAllElements} from '../../../../slices/app-slice';
+import {isNoCodeExpression, isNoCodeReference, NoCodeExpression, NoCodeOperand} from '../../../../models/functions/no-code-expression';
 import {useMemo} from 'react';
 import {isStringNotNullOrEmpty} from '../../../../utils/string-utils';
 import {generateComponentTitle} from '../../../../utils/generate-component-title';
@@ -17,7 +15,7 @@ interface ReferenceCheckProps {
     lowCodeOld: (string | undefined)[];
     lowCode: (string | undefined)[];
     noCodeOld: (ConditionSet | undefined)[];
-    noCode: (NoCodeExpression | null | undefined)[];
+    noCode: (NoCodeOperand | null | undefined)[];
 }
 
 export function ReferenceCheck(props: ReferenceCheckProps) {
@@ -109,7 +107,8 @@ export function ReferenceCheck(props: ReferenceCheckProps) {
                                                             component="div"
                                                         >
                                                             Es darf nur auf Elemente verwiesen werden, die im Formular vor dem aktuellen Element positioniert sind.
-                                                            Grund dafür ist, dass spätere Elemente zum Zeitpunkt der Berechnung noch nicht bekannt sind. Verweise auf solche „zukünftigen“ Elemente – sogenannte Vorwärtsreferenzen – können zu unerwartetem Verhalten führen und die Nachvollziehbarkeit der Logik erschweren.
+                                                            Grund dafür ist, dass spätere Elemente zum Zeitpunkt der Berechnung noch nicht bekannt sind. Verweise auf solche „zukünftigen“ Elemente – sogenannte Vorwärtsreferenzen – können zu
+                                                            unerwartetem Verhalten führen und die Nachvollziehbarkeit der Logik erschweren.
                                                         </Typography>
                                                         <Typography
                                                             variant="body1"
@@ -156,7 +155,7 @@ function determineReferencedElements(
     lowCodeOld: (string | undefined)[], // TODO: Remove legacy low code
     lowCode: (string | undefined)[],
     noCodeOld: (ConditionSet | undefined)[],
-    noCode: (NoCodeExpression | null | undefined)[],
+    noCode: (NoCodeOperand | null | undefined)[],
 ): {
     element: AnyElement;
     isForwardReference: boolean;
@@ -183,8 +182,14 @@ function determineReferencedElements(
     if (noCode.some(c => c != null)) {
         for (const expression of noCode) {
             if (expression != null) {
-                const ids = getNoCodeReferencedIds(expression);
-                referencedIds.push(...ids);
+                if (isNoCodeExpression(expression)) {
+                    const ids = getNoCodeReferencedIds(expression);
+                    referencedIds.push(...ids);
+                } else if (isNoCodeReference(expression)) {
+                    if (expression.elementId != null) {
+                        referencedIds.push(expression.elementId);
+                    }
+                }
             }
         }
     }

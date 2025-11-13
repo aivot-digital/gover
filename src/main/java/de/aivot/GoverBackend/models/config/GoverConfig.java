@@ -8,6 +8,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Configuration
@@ -23,16 +24,26 @@ public class GoverConfig {
     private String goverHostname;
     private Integer maxSubmissionCopyRetryCount;
 
+    public String getDefaultLogoUrl() {
+        return createUrl("/assets/default-logo.png");
+    }
+
+    public String getDefaultFaviconUrl() {
+        return createUrl("/assets/default-favicon.ico");
+    }
+
     public String createUrl(String path) {
         var uri = URI.create(goverHostname);
         return uri.resolve(path).toString();
     }
 
-    public String createUrl(String base, String... parts) {
+    public String createUrl(String base, Object... parts) {
         var uri = URI.create(goverHostname);
 
         var resolvedParts = Arrays
                 .stream(parts)
+                .filter(Objects::nonNull)
+                .map(Object::toString)
                 .map(part -> URLEncoder.encode(part, StandardCharsets.UTF_8))
                 .collect(Collectors.joining("/"));
 

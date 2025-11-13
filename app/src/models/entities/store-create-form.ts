@@ -1,4 +1,4 @@
-import {RootElement} from "../elements/root-element";
+import {RootElement} from '../elements/root-element';
 
 export interface StoreCreateForm {
     version: string;

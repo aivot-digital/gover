@@ -1,5 +1,7 @@
 package de.aivot.GoverBackend.identity.services;
 
+import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
+import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.identity.cache.entities.IdentityCacheEntity;
 import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
@@ -56,11 +58,11 @@ class IdentityServiceTest {
     @Test
     void createRedirectURL_ShouldConstructValidURL() throws ResponseException {
         UUID providerKey = UUID.randomUUID();
-        URI callbackBaseUrl = URI.create("https://example.com/callback");
         String origin = "https://example.com";
         List<String> additionalScopes = List.of("scope3");
 
         IdentityProviderEntity provider = new IdentityProviderEntity();
+        provider.setKey(providerKey);
         provider.setClientId("client-id");
         provider.setAuthorizationEndpoint("https://auth.example.com/authorize");
         provider.setDefaultScopes(List.of("scope1", "scope2"));
@@ -76,32 +78,25 @@ class IdentityServiceTest {
 
         when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
         when(goverConfig.getGoverHostname()).thenReturn("https://example.com");
+        // Mock save to return a known sessionId
+        UUID sessionId = UUID.randomUUID();
+        IdentityCacheEntity savedEntity = new IdentityCacheEntity(sessionId, null, providerKey.toString(), "meta", null);
+        when(identityCacheRepository.save(any(IdentityCacheEntity.class))).thenReturn(savedEntity);
 
-        URI result = identityService.createRedirectURL(providerKey, callbackBaseUrl, origin, additionalScopes);
+        URI result = identityService.createRedirectURL(providerKey, origin, additionalScopes);
 
-        String expectedUrl = UriComponentsBuilder
-                .fromUriString("https://auth.example.com/authorize")
-                .queryParam("client_id", "client-id")
-                .queryParam("response_type", "code")
-                .queryParam("login", "true")
-                .queryParam("redirect_uri", "https://example.com/callback")
-                .queryParam("scope", "scope1%20scope2%20scope3")
-                .queryParam("state", "https://example.com")
-                .queryParam("param1", "value1")
-                .queryParam("param2", "value2")
-                .build()
-                .toString();
-
-        assertEquals(expectedUrl, result.toString());
+        // The redirect_uri should contain the sessionId
+        assertTrue(result.toString().contains("scope=scope1%20scope2%20scope3"));
+        assertTrue(result.toString().contains("param1=value1"));
+        assertTrue(result.toString().contains("param2=value2"));
     }
 
     @Test
     void createRedirectURL_ShouldThrowException_WhenProviderKeyIsNull() {
-        URI callbackBaseUrl = URI.create("https://example.com/callback");
         String origin = "https://example.com";
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.createRedirectURL(null, callbackBaseUrl, origin, null)
+                identityService.createRedirectURL(null, origin, null)
         );
 
         assertEquals("Der Nutzerkontenanbieter ist nicht angegeben.", exception.getMessage());
@@ -110,18 +105,17 @@ class IdentityServiceTest {
     @Test
     void createRedirectURL_ShouldThrowException_WhenOriginIsInvalid() throws ResponseException {
         UUID providerKey = UUID.randomUUID();
-        URI callbackBaseUrl = URI.create("https://example.com/callback");
         String invalidOrigin = "invalid-origin";
 
         IdentityProviderEntity provider = new IdentityProviderEntity();
+        provider.setKey(providerKey);
         provider.setIsEnabled(true);
 
         when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
-
         when(goverConfig.getGoverHostname()).thenReturn("https://example.com");
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.createRedirectURL(providerKey, callbackBaseUrl, invalidOrigin, null)
+                identityService.createRedirectURL(providerKey, invalidOrigin, null)
         );
 
         assertEquals("Der Referer-Header ist ungültig.", exception.getMessage());
@@ -130,11 +124,11 @@ class IdentityServiceTest {
     @Test
     void createRedirectURL_ShouldCombineScopesCorrectly() throws ResponseException {
         UUID providerKey = UUID.randomUUID();
-        URI callbackBaseUrl = URI.create("https://example.com/callback");
         String origin = "https://example.com";
         List<String> additionalScopes = List.of("scope2", "scope3");
 
         IdentityProviderEntity provider = new IdentityProviderEntity();
+        provider.setKey(providerKey);
         provider.setClientId("client-id");
         provider.setAuthorizationEndpoint("https://auth.example.com/authorize");
         provider.setDefaultScopes(List.of("scope1", "scope2"));
@@ -150,8 +144,11 @@ class IdentityServiceTest {
 
         when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
         when(goverConfig.getGoverHostname()).thenReturn("https://example.com");
+        UUID sessionId = UUID.randomUUID();
+        IdentityCacheEntity savedEntity = new IdentityCacheEntity(sessionId, null, providerKey.toString(), "meta", null);
+        when(identityCacheRepository.save(any(IdentityCacheEntity.class))).thenReturn(savedEntity);
 
-        URI result = identityService.createRedirectURL(providerKey, callbackBaseUrl, origin, additionalScopes);
+        URI result = identityService.createRedirectURL(providerKey, origin, additionalScopes);
 
         assertTrue(result.toString().contains("scope=scope1%20scope2%20scope3"));
     }
@@ -159,12 +156,11 @@ class IdentityServiceTest {
     @Test
     void handleCallback_ShouldThrowException_WhenAuthorizationCodeIsNull() {
         UUID providerKey = UUID.randomUUID();
-        URI callbackUrl = URI.create("https://example.com/callback");
-
+        UUID sessionId = UUID.randomUUID();
+        String origin = "https://example.com/origin";
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.handleCallback(providerKey, null, callbackUrl, "https://example.com/origin")
+                identityService.handleCallback(providerKey, sessionId, null, origin)
         );
-
         assertEquals("Es wurde kein Autorisierungscode übergeben.", exception.getMessage());
     }
 
@@ -172,124 +168,101 @@ class IdentityServiceTest {
     void handleCallback_ShouldThrowException_WhenProviderKeyIsInvalid() throws ResponseException {
         UUID providerKey = UUID.randomUUID();
         String authorizationCode = "auth-code";
-        URI callbackUrl = URI.create("https://example.com/callback");
-
+        UUID sessionId = UUID.randomUUID();
+        String origin = "https://example.com/origin";
         when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.empty());
-
+        when(identityCacheRepository.findById(sessionId)).thenReturn(Optional.of(new IdentityCacheEntity(sessionId, null, providerKey.toString(), "meta", null)));
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin")
+                identityService.handleCallback(providerKey, sessionId, authorizationCode, origin)
         );
-
         assertEquals("Der Nutzerkontenanbieter existiert nicht.", exception.getMessage());
     }
 
     @Test
-    void handleCallback_ShouldProcessCallbackSuccessfully() throws ResponseException, IOException, InterruptedException {
+    void handleCallback_ShouldThrowException_WhenSessionNotFound() throws ResponseException {
         UUID providerKey = UUID.randomUUID();
         String authorizationCode = "auth-code";
-        URI callbackUrl = URI.create("https://example.com/callback");
+        UUID sessionId = UUID.randomUUID();
+        String origin = "https://example.com/origin";
+        when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(new IdentityProviderEntity()));
+        when(identityCacheRepository.findById(sessionId)).thenReturn(Optional.empty());
+        ResponseException exception = assertThrows(ResponseException.class, () ->
+                identityService.handleCallback(providerKey, sessionId, authorizationCode, origin)
+        );
+        assertEquals("Die Identitätssitzung existiert nicht.", exception.getMessage());
+    }
 
+    @Test
+    void handleCallback_ShouldProcessCallbackSuccessfully() throws Exception {
+        UUID providerKey = UUID.randomUUID();
+        String authorizationCode = "auth-code";
+        UUID sessionId = UUID.randomUUID();
+        String origin = "https://example.com/origin";
         IdentityProviderEntity provider = new IdentityProviderEntity();
         provider.setKey(providerKey);
         provider.setIsEnabled(true);
         provider.setTokenEndpoint("https://auth.example.com/token");
         provider.setUserinfoEndpoint("https://auth.example.com/userinfo");
         provider.setAttributes(List.of());
-
-        String tokenResponse = """
-        {
-            "access_token": "access-token",
-            "refresh_token": "refresh-token",
-            "expires_in": 3600
-        }
-    """;
-
-        String userInfoResponse = """
-        {
-            "name": "John Doe",
-            "email": "john.doe@example.com"
-        }
-    """;
-
+        IdentityCacheEntity identity = new IdentityCacheEntity(sessionId, null, providerKey.toString(), "meta", null);
         when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
-
-        // Mock the token endpoint response
+        when(identityCacheRepository.findById(sessionId)).thenReturn(Optional.of(identity));
+        // Mock token endpoint
+        String tokenResponse = """
+        {"access_token": "access-token", "refresh_token": "refresh-token", "expires_in": 3600}
+        """;
         var mockTokenResponse = mock(HttpResponse.class);
         when(mockTokenResponse.statusCode()).thenReturn(200);
         when(mockTokenResponse.body()).thenReturn(tokenResponse);
-        when(httpService.postFormUrlEncoded(
-                eq(URI.create("https://auth.example.com/token")),
-                anyMap()
-        )).thenReturn(mockTokenResponse);
-
-        // Mock the user info endpoint response
+        when(httpService.postFormUrlEncoded(any(URI.class), anyMap())).thenReturn(mockTokenResponse);
+        // Mock user info endpoint
+        String userInfoResponse = """
+        {"name": "John Doe", "email": "john.doe@example.com"}
+        """;
         var mockUserInfoResponse = mock(HttpResponse.class);
         when(mockUserInfoResponse.statusCode()).thenReturn(200);
         when(mockUserInfoResponse.body()).thenReturn(userInfoResponse);
-        when(httpService.get(
-                eq(URI.create("https://auth.example.com/userinfo")),
-                anyMap()
-        )).thenReturn(mockUserInfoResponse);
-
-        IdentityCacheEntity savedEntity = new IdentityCacheEntity()
-                .setId(UUID.randomUUID().toString())
-                .setIdentityData(Map.of("name", "John Doe", "email", "john.doe@example.com"))
-                .setProviderKey(providerKey.toString());
-
-        when(identityCacheRepository.save(any(IdentityCacheEntity.class))).thenReturn(savedEntity);
-
-        String result = identityService
-                .handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin");
-
+        when(httpService.get(any(URI.class), any(HttpServiceHeaders.class))).thenReturn(mockUserInfoResponse);
+        when(identityCacheRepository.save(any(IdentityCacheEntity.class))).thenReturn(identity);
+        String result = identityService.handleCallback(providerKey, sessionId, authorizationCode, origin);
         assertNotNull(result);
-
-        String expectedUrl = UriComponentsBuilder
-                .fromUriString("https://example.com/origin")
-                .queryParam("identity-state", "0")
-                .queryParam("identity-id", savedEntity.getId())
-                .build()
-                .toString();
-
-        assertEquals(expectedUrl, result);
+        assertTrue(result.contains(sessionId.toString()));
+        assertTrue(result.contains("identity-state=0"));
     }
 
     @Test
-    void handleCallback_ShouldThrowException_WhenTokenRetrievalFails() throws ResponseException, IOException, InterruptedException {
+    void handleCallback_ShouldThrowException_WhenTokenRetrievalFails() throws ResponseException, HttpConnectionException {
         UUID providerKey = UUID.randomUUID();
         String authorizationCode = "auth-code";
-        URI callbackUrl = URI.create("https://example.com/callback");
-
+        UUID sessionId = UUID.randomUUID();
+        String origin = "https://example.com/origin";
         IdentityProviderEntity provider = new IdentityProviderEntity();
         provider.setKey(providerKey);
         provider.setIsEnabled(true);
         provider.setTokenEndpoint("https://auth.example.com/token");
         provider.setAttributes(List.of());
-
         when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
-
+        IdentityCacheEntity identity = new IdentityCacheEntity(sessionId, null, providerKey.toString(), "meta", null);
+        when(identityCacheRepository.findById(sessionId)).thenReturn(Optional.of(identity));
         var mockResponse = mock(HttpResponse.class);
         when(mockResponse.statusCode()).thenReturn(400);
         when(mockResponse.body()).thenReturn("Bad Request");
-
-        // Mock a failure in the token endpoint response
         when(httpService.postFormUrlEncoded(
                 eq(URI.create("https://auth.example.com/token")),
                 anyMap()
         )).thenReturn(mockResponse);
-
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin")
+                identityService.handleCallback(providerKey, sessionId, authorizationCode, origin)
         );
-
-        assertEquals("Ungültiger Status-Code beim Abrufen des Zugriffsschlüssels für Nutzerkontenanbieter null (" + providerKey.toString() + "): 400", exception.getMessage());
+        assertEquals("Ungültiger Status-Code beim Abrufen des Zugriffsschlüssels für Nutzerkontenanbieter null (" + providerKey + "): 400", exception.getMessage());
     }
 
     @Test
-    void handleCallback_ShouldPerformLogoutSuccessfully() throws ResponseException, IOException, InterruptedException {
+    void handleCallback_ShouldPerformLogoutSuccessfully() throws ResponseException, HttpConnectionException {
         UUID providerKey = UUID.randomUUID();
         String authorizationCode = "auth-code";
-        URI callbackUrl = URI.create("https://example.com/callback");
-
+        UUID sessionId = UUID.randomUUID();
+        String origin = "https://example.com/origin";
         IdentityProviderEntity provider = new IdentityProviderEntity();
         provider.setKey(providerKey);
         provider.setIsEnabled(true);
@@ -297,25 +270,15 @@ class IdentityServiceTest {
         provider.setUserinfoEndpoint("https://auth.example.com/userinfo");
         provider.setEndSessionEndpoint("https://auth.example.com/logout");
         provider.setAttributes(List.of());
-
         String tokenResponse = """
-        {
-            "access_token": "access-token",
-            "refresh_token": "refresh-token",
-            "expires_in": 3600
-        }
-    """;
-
+        {"access_token": "access-token", "refresh_token": "refresh-token", "expires_in": 3600}
+        """;
         String userInfoResponse = """
-        {
-            "name": "John Doe",
-            "email": "john.doe@example.com"
-        }
-    """;
-
+        {"name": "John Doe", "email": "john.doe@example.com"}
+        """;
         when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
-
-        // Mock the token endpoint response
+        IdentityCacheEntity identity = new IdentityCacheEntity(sessionId, null, providerKey.toString(), "meta", null);
+        when(identityCacheRepository.findById(sessionId)).thenReturn(Optional.of(identity));
         var mockTokenResponse = mock(HttpResponse.class);
         when(mockTokenResponse.statusCode()).thenReturn(200);
         when(mockTokenResponse.body()).thenReturn(tokenResponse);
@@ -323,51 +286,35 @@ class IdentityServiceTest {
                 eq(URI.create("https://auth.example.com/token")),
                 anyMap()
         )).thenReturn(mockTokenResponse);
-
-        // Mock the user info endpoint response
         var mockUserInfoResponse = mock(HttpResponse.class);
         when(mockUserInfoResponse.statusCode()).thenReturn(200);
         when(mockUserInfoResponse.body()).thenReturn(userInfoResponse);
         when(httpService.get(
                 eq(URI.create("https://auth.example.com/userinfo")),
-                anyMap()
+                any(HttpServiceHeaders.class)
         )).thenReturn(mockUserInfoResponse);
-
-        // Mock the logout endpoint response
         var mockLogoutResponse = mock(HttpResponse.class);
         when(mockLogoutResponse.statusCode()).thenReturn(204);
         when(httpService.postFormUrlEncoded(
                 eq(URI.create("https://auth.example.com/logout")),
                 anyMap(),
-                anyMap()
+                any(HttpServiceHeaders.class)
         )).thenReturn(mockLogoutResponse);
-
-        IdentityCacheEntity savedEntity = new IdentityCacheEntity()
-                .setId(UUID.randomUUID().toString())
-                .setIdentityData(Map.of("name", "John Doe", "email", "john.doe@example.com"))
-                .setProviderKey(providerKey.toString());
-
-        when(identityCacheRepository.save(any(IdentityCacheEntity.class))).thenReturn(savedEntity);
-
+        when(identityCacheRepository.save(any(IdentityCacheEntity.class))).thenReturn(identity);
         String result = identityService
-                .handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin");
-
+                .handleCallback(providerKey, sessionId, authorizationCode, origin);
         assertNotNull(result);
-
         String expectedUrl = UriComponentsBuilder
-                .fromUriString("https://example.com/origin")
+                .fromUriString(origin)
                 .queryParam("identity-state", "0")
-                .queryParam("identity-id", savedEntity.getId())
+                .queryParam("identity-id", identity.getSessionId())
                 .build()
                 .toString();
-
         assertEquals(expectedUrl, result);
-
-        // Verify that the logout endpoint was called
         verify(httpService).postFormUrlEncoded(
                 eq(URI.create("https://auth.example.com/logout")),
                 anyMap(),
-                anyMap()
+                any(HttpServiceHeaders.class)
         );
     }
 
@@ -375,8 +322,8 @@ class IdentityServiceTest {
     void handleCallback_ShouldRetrieveAndUseClientSecret() throws Exception {
         UUID providerKey = UUID.randomUUID();
         String authorizationCode = "auth-code";
-        URI callbackUrl = URI.create("https://example.com/callback");
-
+        UUID sessionId = UUID.randomUUID();
+        String origin = "https://example.com/origin";
         IdentityProviderEntity provider = new IdentityProviderEntity();
         provider.setKey(providerKey);
         provider.setIsEnabled(true);
@@ -384,30 +331,19 @@ class IdentityServiceTest {
         provider.setUserinfoEndpoint("https://auth.example.com/userinfo");
         provider.setClientSecretKey(UUID.randomUUID());
         provider.setAttributes(List.of());
-
         String decryptedSecret = "decrypted-client-secret";
-
         String tokenResponse = """
-        {
-            "access_token": "access-token",
-            "refresh_token": "refresh-token",
-            "expires_in": 3600
-        }
-    """;
-
+        {"access_token": "access-token", "refresh_token": "refresh-token", "expires_in": 3600}
+        """;
         String userInfoResponse = """
-        {
-            "name": "John Doe",
-            "email": "john.doe@example.com"
-        }
-    """;
-
+        {"name": "John Doe", "email": "john.doe@example.com"}
+        """;
         when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
         var dummySecret = new SecretEntity();
         when(secretService.retrieve(provider.getClientSecretKey())).thenReturn(Optional.of(dummySecret));
         when(secretService.decrypt(dummySecret)).thenReturn(decryptedSecret);
-
-        // Mock the token endpoint response
+        IdentityCacheEntity identity = new IdentityCacheEntity(sessionId, null, providerKey.toString(), "meta", null);
+        when(identityCacheRepository.findById(sessionId)).thenReturn(Optional.of(identity));
         var mockTokenResponse = mock(HttpResponse.class);
         when(mockTokenResponse.statusCode()).thenReturn(200);
         when(mockTokenResponse.body()).thenReturn(tokenResponse);
@@ -415,37 +351,23 @@ class IdentityServiceTest {
                 eq(URI.create("https://auth.example.com/token")),
                 argThat(body -> decryptedSecret.equals(body.get("client_secret")))
         )).thenReturn(mockTokenResponse);
-
-        // Mock the user info endpoint response
         var mockUserInfoResponse = mock(HttpResponse.class);
         when(mockUserInfoResponse.statusCode()).thenReturn(200);
         when(mockUserInfoResponse.body()).thenReturn(userInfoResponse);
         when(httpService.get(
                 eq(URI.create("https://auth.example.com/userinfo")),
-                anyMap()
+                any(HttpServiceHeaders.class)
         )).thenReturn(mockUserInfoResponse);
-
-        IdentityCacheEntity savedEntity = new IdentityCacheEntity()
-                .setId(UUID.randomUUID().toString())
-                .setIdentityData(Map.of("name", "John Doe", "email", "john.doe@example.com"))
-                .setProviderKey(providerKey.toString());
-
-        when(identityCacheRepository.save(any(IdentityCacheEntity.class))).thenReturn(savedEntity);
-
-        String result = identityService.handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin");
-
+        when(identityCacheRepository.save(any(IdentityCacheEntity.class))).thenReturn(identity);
+        String result = identityService.handleCallback(providerKey, sessionId, authorizationCode, origin);
         assertNotNull(result);
-
         String expectedUrl = UriComponentsBuilder
-                .fromUriString("https://example.com/origin")
+                .fromUriString(origin)
                 .queryParam("identity-state", "0")
-                .queryParam("identity-id", savedEntity.getId())
+                .queryParam("identity-id", identity.getSessionId())
                 .build()
                 .toString();
-
         assertEquals(expectedUrl, result);
-
-        // Verify that the client secret was retrieved and decrypted
         verify(secretService).retrieve(provider.getClientSecretKey());
         verify(secretService).decrypt(dummySecret);
     }

@@ -4,7 +4,7 @@ import {type BaseEditorProps} from '../../editors/base-editor';
 import {type Form as Application} from '../../models/entities/form';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {StringListInput} from '../string-list-input/string-list-input';
-import {RichTextEditorComponentView} from "../richt-text-editor/rich-text-editor.component.view";
+import {RichTextEditorComponentView} from '../richt-text-editor/rich-text-editor.component.view';
 
 export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement, Application>) {
     return (

@@ -13,6 +13,10 @@ export type ElementDataObject = {
     computedErrors: string[] | null | undefined;
 }
 
+export function isElementDataObject(obj: any): obj is ElementDataObject {
+    return obj != null && typeof obj === 'object' && '$type' in obj && Object.values(ElementType).includes(obj.$type);
+}
+
 export function newElementDataObject(type: ElementType): ElementDataObject {
     return {
         $type: type,
@@ -28,6 +32,33 @@ export function newElementDataObject(type: ElementType): ElementDataObject {
 }
 
 export type ElementData = Partial<Record<string, ElementDataObject>>;
+
+export function isElementData(obj: any): obj is ElementData {
+    if (obj == null || typeof obj !== 'object') {
+        return false;
+    }
+
+    for (const key of Object.keys(obj)) {
+        if (!isElementDataObject(obj[key])) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+export interface ElementDerivationLogItem {
+    timestamp: string;
+    level: 'Debug' | 'Error';
+    elementId: string;
+    message: string;
+    details: Record<string, any>;
+}
+
+export interface ElementDerivationResponse {
+    elementData: ElementData;
+    logItems: ElementDerivationLogItem[];
+}
 
 export function hasElementDataSomeInput(elementData: ElementData | null | undefined): boolean {
     if (elementData == null) {

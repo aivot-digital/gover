@@ -1,11 +1,11 @@
 import React, {useEffect, useState} from 'react';
 import {useApi} from '../../../../hooks/use-api';
 import {selectUser} from '../../../../slices/user-slice';
-import {Box, Divider, FormControlLabel, Grid, Skeleton, Switch, Typography} from "@mui/material";
-import {useAppDispatch} from "../../../../hooks/use-app-dispatch";
-import {useAppSelector} from "../../../../hooks/use-app-selector";
-import {UserConfigDefinition, UserConfigsApiService} from "../../../../services/user-configs-api-service";
-import {showErrorSnackbar, showSuccessSnackbar} from "../../../../slices/snackbar-slice";
+import {Box, Divider, FormControlLabel, Grid, Skeleton, Switch, Typography} from '@mui/material';
+import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {UserConfigDefinition, UserConfigsApiService} from '../../../../services/user-configs-api-service';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 
 export function AccountDetailsPageNotifications() {
     const dispatch = useAppDispatch();
@@ -117,8 +117,7 @@ export function AccountDetailsPageNotifications() {
                                         </Grid>
                                         <Grid sx={{ display: 'flex', justifyContent: 'flex-end' }} size={4}>
                                             {options.map(({ label: optionLabel, value }) => (
-                                                // Do not show "In-App" option until it's correctly implemented
-                                                (optionLabel != "In-App" && <FormControlLabel
+                                                <FormControlLabel
                                                     key={value}
                                                     control={
                                                         <Switch
@@ -128,7 +127,7 @@ export function AccountDetailsPageNotifications() {
                                                     }
                                                     label={optionLabel}
                                                     sx={{ml: 1}}
-                                                />)
+                                                />
                                             ))}
                                         </Grid>
                                     </Grid>

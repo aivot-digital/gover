@@ -16,7 +16,7 @@ import {FormPublishChecklistItem} from './dtos/form-publish-checklist-item';
 import {FormType} from './enums/form-type';
 import {IdentityProviderInfo} from '../identity/models/identity-provider-info';
 import {IdentityIdHeader} from '../identity/constants/identity-id-header';
-import {ElementData} from '../../models/element-data';
+import {ElementData, ElementDerivationResponse} from '../../models/element-data';
 import {FormListResponseDTO} from './dtos/form-list-response-dto';
 import {FormDetailsResponseDTO} from './dtos/form-details-response-dto';
 import {FormCitizenDetailsResponseDTO} from './dtos/form-citizen-details-response-dto';
@@ -67,6 +67,9 @@ export type FormIdentifier = {
     version: number;
 }
 
+/**
+ * @deprecated use FormsApiService from modules/forms/forms-api-service-v2.ts instead
+ */
 export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResponseDTO, FormCitizenListResponseDTO, FormDetailsResponseDTO, FormCitizenDetailsResponseDTO, FormIdentifier, FormFilters> {
     public constructor(api: Api) {
         super(api, 'forms/');
@@ -156,25 +159,6 @@ export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResp
         return await this.api.get<Form>(`forms/${formId.id}/${formId.version}/revisions/rollback/${revisionId}/`, options);
     }
 
-    public async determineFormState(slug: string, version: number, customerInput: CustomerInput, filter: {
-        skipErrorsFor: DerivationSkipIdentifier,
-        skipVisibilitiesFor: DerivationSkipIdentifier,
-        skipValuesFor: DerivationSkipIdentifier,
-        skipOverridesFor: DerivationSkipIdentifier,
-    }): Promise<ElementData> {
-        console.log(customerInput);
-        return await this.api.post<ElementData>(
-            `public/forms/${slug}/derive`,
-            customerInput,
-            {
-                queryParams: {
-                    ...filter,
-                    version: version,
-                },
-            },
-        );
-    }
-
     public async calculateCosts(slug: string, version: number, customerInput: CustomerInput): Promise<FormCostCalculationResponseDTO> {
         return await this.api.post<FormCostCalculationResponseDTO>(`public/forms/${slug}/costs/`, customerInput, {queryParams: {version: version}});
     }
@@ -255,21 +239,6 @@ export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResp
         return await this.api.getPublic(`forms/${slug}/identity-providers/?${version != null ? `version=${version}` : ''}`);
     }
 
-    public retrieveBySlugAndVersion(slug: string, version: string | undefined, identityId: string | undefined) {
-        const apiOptions: ApiOptions | undefined = identityId != null ? {
-            requestOptions: {
-                headers: {
-                    [IdentityIdHeader]: identityId,
-                },
-            },
-        } : undefined;
-
-        if (version == null) {
-            return this.api.getPublic<FormCitizenDetailsResponseDTO>(`forms/${slug}/`, apiOptions);
-        }
-        return this.api.getPublic<FormCitizenDetailsResponseDTO>(`forms/${slug}/?version=${version}`, apiOptions);
-    }
-
     public latestAsNewVersion(id: number): Promise<FormDetailsResponseDTO> {
         return this.api.put<FormDetailsResponseDTO>(`forms/${id}/latest/as-new-version/`, {});
     }
@@ -296,9 +265,5 @@ export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResp
 
     public xdfTransform(value: string | ArrayBuffer): Promise<FormDetailsResponseDTO> {
         return this.api.postXML<FormDetailsResponseDTO>('xdf/v2/transform/', value);
-    }
-
-    public retrieveLatest(formId: number): Promise<FormDetailsResponseDTO> {
-        return this.api.get<FormDetailsResponseDTO>(`forms/${formId}/latest/`);
     }
 }

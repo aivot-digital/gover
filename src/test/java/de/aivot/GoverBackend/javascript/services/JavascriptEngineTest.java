@@ -114,5 +114,10 @@ class JavascriptEngineTest {
         public String echoValue(String value) {
             return value;
         }
+
+        @Override
+        public String[] getMethodTypeDefinitions() {
+            return new String[0];
+        }
     }
 }

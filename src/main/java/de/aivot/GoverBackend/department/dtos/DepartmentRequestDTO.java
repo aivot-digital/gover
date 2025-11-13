@@ -54,19 +54,23 @@ public record DepartmentRequestDTO(
 
         @Nullable
         @ValidEmailList
-        String departmentMail
+        String departmentMail,
+
+        @Nullable
+        Integer themeId
 ) implements RequestDTO<DepartmentEntity> {
     @Override
     public DepartmentEntity toEntity() {
         var department = new DepartmentEntity();
-        department.setName(name());
-        department.setAddress(address());
-        department.setImprint(imprint());
-        department.setPrivacy(privacy());
-        department.setAccessibility(accessibility());
-        department.setTechnicalSupportAddress(technicalSupportAddress());
-        department.setSpecialSupportAddress(specialSupportAddress());
-        department.setDepartmentMail(departmentMail());
+        department.setName(name);
+        department.setAddress(address);
+        department.setImprint(imprint);
+        department.setPrivacy(privacy);
+        department.setAccessibility(accessibility);
+        department.setTechnicalSupportAddress(technicalSupportAddress);
+        department.setSpecialSupportAddress(specialSupportAddress);
+        department.setDepartmentMail(departmentMail);
+        department.setThemeId(themeId);
         return department;
     }
 }

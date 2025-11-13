@@ -1,6 +1,6 @@
 import Editor from '@monaco-editor/react';
-import {Box, Button, FormControlLabel, Switch, Typography} from '@mui/material';
-import React, { type ChangeEvent, useCallback, useRef, useState } from 'react';
+import {Box, Button, FormControlLabel, Switch} from '@mui/material';
+import React, {type ChangeEvent, useCallback, useRef, useState} from 'react';
 import {type StructureTabProps} from './structure-tab-props';
 import {type AnyElement} from '../../models/elements/any-element';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
@@ -11,8 +11,8 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import {downloadObjectFile, uploadObjectFile} from '../../utils/download-utils';
 import {generateComponentTitle} from '../../utils/generate-component-title';
 import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
-import {useConfirm} from "../../providers/confirm-provider";
-import {AlertComponent} from "../alert/alert-component";
+import {useConfirm} from '../../providers/confirm-provider';
+import {AlertComponent} from '../alert/alert-component';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 
 export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>) {

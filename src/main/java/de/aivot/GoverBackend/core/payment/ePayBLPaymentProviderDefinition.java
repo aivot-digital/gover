@@ -1,9 +1,9 @@
 package de.aivot.GoverBackend.core.payment;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.common.contenttype.ContentType;
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioFieldOption;
@@ -109,7 +109,7 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
         clientCertificateInput.setRequired(true);
         clientCertificateInput.setLabel("Zertifikat");
         clientCertificateInput.setPlaceholder("ePayBL Zertifikat");
-        clientCertificateInput.setHint("Das .p12-Zertifikat wird vom Zahlungsdienstleister bereitgestellt. Es muss zuvor unter \"Dokumente & Medieninhalte\" hochgeladen werden, um hier auswählbar zu sein.");
+        clientCertificateInput.setHint("Das .p12-Zertifikat wird vom Zahlungsdienstleister bereitgestellt. Es muss zuvor unter \"Dateien & Medien\" hochgeladen werden, um hier auswählbar zu sein.");
         var clientCertificateInputOptions = assetRepository
                 .findAll()
                 .stream()
@@ -172,7 +172,8 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
         var endpointID = getEndpointID(paymentProviderEntity, config);
         var normalizedPaymentTransactionUrl = getNormalizedPaymentTransactionUrl(paymentProviderEntity, config);
 
-        var objectMapper = new ObjectMapper();
+        var objectMapper = ObjectMapperFactory
+                .getInstance();
 
         String body;
         try {
@@ -192,6 +193,8 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build();
 
+        // We need to use a custom HttpClient to provide the client certificate for mutual TLS authentication and cannot use the common http service.
+        // We need to pay attention to close the client after the request to avoid resource leaks.
         var client = HttpClient
                 .newBuilder()
                 .sslContext(getSslContext(paymentProviderEntity, config))
@@ -202,6 +205,7 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
             response = client
                     .send(request, HttpResponse.BodyHandlers.ofString());
         } catch (IOException | InterruptedException e) {
+            client.close();
             throw new PaymentException(
                     e,
                     "Failed to initiate payment from payment provider %s (%s). Request body was %s",
@@ -212,6 +216,7 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
         }
 
         if (response.statusCode() != 200) {
+            client.close();
             throw new PaymentException(
                     "Failed to initiate payment from payment provider %s (%s). Status code was %d with body %s",
                     paymentProviderEntity.getName(),
@@ -221,13 +226,17 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
             );
         }
 
+        XBezahldienstePaymentTransaction tx;
         try {
-            return objectMapper.readValue(response.body(), XBezahldienstePaymentTransaction.class);
+            tx = objectMapper.readValue(response.body(), XBezahldienstePaymentTransaction.class);
         } catch (JsonProcessingException e) {
-            throw new PaymentException(e, "Failed to deserialize payment transaction for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
-        } finally {
             client.close();
+            throw new PaymentException(e, "Failed to deserialize payment transaction for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
+
+        client.close();
+
+        return tx;
     }
 
     @Nonnull
@@ -241,6 +250,8 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
         var endpointID = getEndpointID(paymentProviderEntity, config);
         var normalizedPaymentTransactionUrl = getNormalizedPaymentTransactionUrl(paymentProviderEntity, config);
 
+        // We need to use a custom HttpClient to provide the client certificate for mutual TLS authentication and cannot use the common http service.
+        // We need to pay attention to close the client after the request to avoid resource leaks.
         var client = HttpClient
                 .newBuilder()
                 .sslContext(getSslContext(paymentProviderEntity, config))
@@ -259,10 +270,12 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
             response = client
                     .send(request, HttpResponse.BodyHandlers.ofString());
         } catch (IOException | InterruptedException e) {
+            client.close();
             throw new PaymentException(e, "Failed to check payment status for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
         if (response.statusCode() != 200) {
+            client.close();
             throw new PaymentException(
                     "Failed to check payment status for payment provider %s (%s). Status code was %d with body %s",
                     paymentProviderEntity.getName(),
@@ -272,11 +285,13 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
             );
         }
 
-        XBezahldienstePaymentTransaction updatedTransaction = null;
+        XBezahldienstePaymentTransaction updatedTransaction;
         try {
-            updatedTransaction = new ObjectMapper()
+            updatedTransaction = ObjectMapperFactory
+                    .getInstance()
                     .readValue(response.body(), XBezahldienstePaymentTransaction.class);
         } catch (JsonProcessingException e) {
+            client.close();
             throw new PaymentException(e, "Failed to deserialize payment transaction for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 

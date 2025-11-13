@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Box, Tab, Tabs, Typography} from '@mui/material';
+import {Box, Paper, Container, Tab, Tabs, Typography} from '@mui/material';
 import {useParams} from 'react-router-dom';
 import {Form} from '../../../models/entities/form';
 import {parseISO} from 'date-fns';
@@ -31,6 +31,10 @@ import {ConfirmDialogV2} from '../../../dialogs/confirm-dialog/confirm-dialog-v2
 import {ConfirmDialogOptions} from '../../../hooks/use-confirm-dialog';
 import {isApiError} from '../../../models/api-error';
 import {clearLoadedForm} from '../../../slices/app-slice';
+import {addEntityHistoryItem} from '../../../slices/entity-history-slice';
+import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
+import {GenericPageHeader} from '../../../components/generic-page-header/generic-page-header';
+import {ModuleIcons} from '../../../shells/staff/data/module-icons';
 
 export function SubmissionEditPage() {
     const api = useApi();
@@ -74,6 +78,11 @@ export function SubmissionEditPage() {
                 .retrieve(id)
                 .then((res) => {
                     setSubmission(res);
+                    dispatch(addEntityHistoryItem({
+                        type: ServerEntityType.Submissions,
+                        title: `Antrag ${res.fileNumber != null ? res.fileNumber : res.id}`,
+                        link: `/submissions/${res.id}`,
+                    }));
                 })
                 .catch((err) => {
                     console.error(err);
@@ -353,100 +362,121 @@ export function SubmissionEditPage() {
             title={isLoading ? 'Wird geladen…' : (isNotFound ? 'Nicht gefunden' : title)}
             isLoading={isLoading}
             is404={isNotFound}
-            toolbarActions={actions}
         >
-            <Box
-                sx={{
-                    mt: -4,
-                    '&::after': {
-                        position: 'absolute',
-                        content: '""',
-                        display: 'block',
-                        width: '100%',
-                        left: 0,
-                        right: 0,
-                        height: '1px',
-                        backgroundColor: 'divider',
-                    },
-                }}
-            >
-                <Tabs
-                    value={currentTab}
-                    onChange={(_, newValue) => {
-                        setCurrentTab(newValue);
+            <Container>
+                <GenericPageHeader
+                    icon={ModuleIcons.submissions}
+                    title={isLoading ? 'Wird geladen…' : (isNotFound ? 'Nicht gefunden' : title)}
+                    isBusy={isLoading}
+                    actions={actions}
+                />
+
+                <Paper
+                    sx={{
+                        position: 'relative',
+                        mt: 3,
+                        mb: 3,
                     }}
-                    variant="scrollable"
-                    scrollButtons="auto"
                 >
-                    <Tab
-                        value={0}
-                        label="Allgemeine Informationen"
-                    />
-                    <Tab
-                        value={1}
-                        label="Antragsdaten"
-                    />
-                    {
-                        transaction != null &&
-                        <Tab
-                            value={2}
-                            label="Zahlungsinformationen"
-                        />
-                    }
-                    <Tab
-                        value={3}
-                        label="Anlagen"
-                    />
-                </Tabs>
-            </Box>
+                    <Box
+                        sx={{
+                            '&::after': {
+                                position: 'absolute',
+                                content: '""',
+                                display: 'block',
+                                width: '100%',
+                                left: 0,
+                                right: 0,
+                                height: '1px',
+                                backgroundColor: 'divider',
+                            },
+                        }}
+                    >
+                        <Tabs
+                            value={currentTab}
+                            onChange={(_, newValue) => {
+                                setCurrentTab(newValue);
+                            }}
+                            variant="scrollable"
+                            scrollButtons="auto"
+                        >
+                            <Tab
+                                value={0}
+                                label="Allgemeine Informationen"
+                            />
+                            <Tab
+                                value={1}
+                                label="Antragsdaten"
+                            />
+                            {
+                                transaction != null &&
+                                <Tab
+                                    value={2}
+                                    label="Zahlungsinformationen"
+                                />
+                            }
+                            <Tab
+                                value={3}
+                                label="Anlagen"
+                            />
+                        </Tabs>
+                    </Box>
 
-            {
-                currentTab === 0 &&
-                form != null &&
-                submission != null &&
-                <SubmissionEditPageGeneralTab
-                    api={api}
-                    form={form}
-                    submission={submission}
-                    onChangeSubmission={setSubmission}
-                />
-            }
+                    <Box
+                        sx={{
+                            p: 2,
+                        }}
+                    >
+                        {
+                            currentTab === 0 &&
+                            form != null &&
+                            submission != null &&
+                            <SubmissionEditPageGeneralTab
+                                api={api}
+                                form={form}
+                                submission={submission}
+                                onChangeSubmission={setSubmission}
+                            />
+                        }
 
-            {
-                currentTab === 1 &&
-                form != null &&
-                submission != null &&
-                <SubmissionEditPageSummaryTab
-                    form={form}
-                    submission={submission}
-                />
-            }
+                        {
+                            currentTab === 1 &&
+                            form != null &&
+                            submission != null &&
+                            <SubmissionEditPageSummaryTab
+                                form={form}
+                                submission={submission}
+                            />
+                        }
 
 
-            {
-                currentTab === 2 &&
-                form != null &&
-                submission != null &&
-                transaction != null &&
-                paymentProvider != null &&
-                <SubmissionEditPagePaymentTab
-                    form={form}
-                    submission={submission}
-                    transaction={transaction}
-                    paymentProvider={paymentProvider}
-                />
-            }
+                        {
+                            currentTab === 2 &&
+                            form != null &&
+                            submission != null &&
+                            transaction != null &&
+                            paymentProvider != null &&
+                            <SubmissionEditPagePaymentTab
+                                form={form}
+                                submission={submission}
+                                transaction={transaction}
+                                paymentProvider={paymentProvider}
+                            />
+                        }
 
-            {
-                currentTab === 3 &&
-                form != null &&
-                submission != null &&
-                <SubmissionEditPageAttachmentsTab
-                    api={api}
-                    form={form}
-                    submission={submission}
-                />
-            }
+                        {
+                            currentTab === 3 &&
+                            form != null &&
+                            submission != null &&
+                            <SubmissionEditPageAttachmentsTab
+                                api={api}
+                                form={form}
+                                submission={submission}
+                            />
+                        }
+                    </Box>
+                </Paper>
+            </Container>
 
             <ConfirmDialog
                 title="Vorgang abschließen"

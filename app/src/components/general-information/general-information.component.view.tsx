@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import Box from '@mui/material/Box';
 import ListItem from '@mui/material/ListItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
@@ -21,7 +21,6 @@ import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
-import {useApi} from '../../hooks/use-api';
 import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
 import {AccessibilityDialogId} from '../../dialogs/accessibility-dialog/accessibility-dialog';
 import {PrivacyDialogId} from '../../dialogs/privacy-dialog/privacy-dialog';
@@ -39,7 +38,6 @@ function cleanDocuments(documents: Array<string> | undefined | null) {
 }
 
 export function GeneralInformationComponentView(props: BaseViewProps<IntroductionStepElement, boolean>) {
-    const api = useApi();
     const dispatch = useAppDispatch();
     const theme = useTheme();
 
@@ -70,7 +68,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
         if (application != null) {
             if (application.responsibleDepartmentId != null) {
                 if (responsibleDepartment == null || responsibleDepartment.id !== application.responsibleDepartmentId) {
-                    new DepartmentsApiService(api)
+                    new DepartmentsApiService()
                         .retrievePublic(application.responsibleDepartmentId)
                         .then(setResponsibleDepartment)
                         .catch((err) => {
@@ -84,7 +82,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
 
             if (application.managingDepartmentId != null) {
                 if (managingDepartment == null || managingDepartment.id !== application.managingDepartmentId) {
-                    new DepartmentsApiService(api)
+                    new DepartmentsApiService()
                         .retrievePublic(application.managingDepartmentId)
                         .then(setManagingDepartment)
                         .catch((err) => {
@@ -142,7 +140,6 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 <Typography
                     component={'h3'}
                     variant="h5"
-                    color="primary"
                 >
                     Zuständige Stelle
                 </Typography>
@@ -167,7 +164,6 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 <Typography
                     component={'h3'}
                     variant="h5"
-                    color="primary"
                 >
                     Bewirtschaftende Stelle
                 </Typography>
@@ -238,7 +234,6 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 <Typography
                     component={'h3'}
                     variant="h5"
-                    color="primary"
                 >
                     Antragsfristen
                 </Typography>
@@ -260,7 +255,6 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 <Typography
                     component={'h3'}
                     variant="h5"
-                    color="primary"
                 >
                     Gebühren dieses Antrages
                 </Typography>
@@ -338,7 +332,6 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             <Typography
                 component="h4"
                 variant="h5"
-                color="primary"
                 sx={{
                     mt: 4,
                 }}

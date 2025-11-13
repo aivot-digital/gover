@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Button, Dialog, DialogActions, DialogContent, TextField, Typography } from "@mui/material";
-import { DialogTitleWithClose } from "../../components/dialog-title-with-close/dialog-title-with-close";
+import {useState} from 'react';
+import {Button, Dialog, DialogActions, DialogContent, TextField, Typography} from '@mui/material';
+import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 
 export interface PromptDialogProps {
     title: string;

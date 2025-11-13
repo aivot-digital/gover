@@ -1,12 +1,8 @@
 package de.aivot.GoverBackend.core.converters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.ElementData;
-import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
@@ -18,7 +14,8 @@ public class ElementDataConverter implements AttributeConverter<ElementData, Str
 
     @Override
     public String convertToDatabaseColumn(ElementData baseElement) {
-        var mapper = getObjectMapper();
+        var mapper = ObjectMapperFactory
+                .getInstance();
 
         try {
             return mapper.writeValueAsString(baseElement);
@@ -29,7 +26,8 @@ public class ElementDataConverter implements AttributeConverter<ElementData, Str
 
     @Override
     public ElementData convertToEntityAttribute(String s) {
-        var mapper = getObjectMapper();
+        var mapper =  ObjectMapperFactory
+                .getInstance();
 
         try {
             return mapper.readValue(s, ElementData.class);
@@ -39,7 +37,8 @@ public class ElementDataConverter implements AttributeConverter<ElementData, Str
     }
 
     public ElementData convertToEntityAttribute(Map<?, ?> map) {
-        var mapper = getObjectMapper();
+        var mapper = ObjectMapperFactory
+                .getInstance();
 
         try {
             return mapper.convertValue(map, ElementData.class);
@@ -56,16 +55,5 @@ public class ElementDataConverter implements AttributeConverter<ElementData, Str
         } else {
             throw new IllegalArgumentException("Unsupported type for conversion: " + o.getClass().getName());
         }
-    }
-
-    private static ObjectMapper getObjectMapper() {
-        var goverDeserializers = new SimpleModule();
-        goverDeserializers
-                .addDeserializer(ElementDataObject.class, new ElementDataObjectDeserializer(ElementDataObject.class));
-
-        return new ObjectMapper()
-                .registerModule(new JavaTimeModule())
-                .registerModule(goverDeserializers)
-                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 }

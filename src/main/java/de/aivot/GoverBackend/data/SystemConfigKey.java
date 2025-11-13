@@ -19,8 +19,6 @@ public enum SystemConfigKey implements Identifiable<String> {
     PROVIDER__LISTINGPAGE__DISABLE("ProviderListingPageDisablePublicListingPage", true),
 
     SYSTEM__THEME("SystemTheme", true),
-    SYSTEM__LOGO("SystemLogo", true),
-    SYSTEM__FAVICON("SystemFavicon", true),
 
     EXPERIMENTAL_FEATURES__COMPLEXITY("ExperimentalFeaturesComplexity", false), // TODO: Check usage and remove this
     EXPERIMENTAL_FEATURES__ADDITIONAL_DIALOGS("ExperimentalFeaturesAdditionalDialogs", false),  // TODO: Check usage and remove this

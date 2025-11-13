@@ -7,6 +7,7 @@ export interface TextFieldComponentProps {
     placeholder?: string;
     required?: boolean;
     disabled?: boolean;
+    readonly?: boolean;
     busy?: boolean;
     display?: boolean;
     multiline?: boolean;
@@ -34,7 +35,7 @@ export interface TextFieldComponentProps {
     muiPassTroughProps?: TextFieldProps;
 }
 
-type EndAction = {
+export type EndAction = {
     icon: ReactNode;
     tooltip?: string;
     onClick: () => void;

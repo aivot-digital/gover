@@ -4,7 +4,11 @@ import {type AnyElement} from '../models/elements/any-element';
 import {isStringNotNullOrEmpty, stringOrDefault} from './string-utils';
 
 
-export function generateComponentTitle(component: AnyElement): string {
+export function generateComponentTitle(component: AnyElement | null | undefined): string {
+    if (component == null) {
+        return '';
+    }
+
     if (component.name != null && isStringNotNullOrEmpty(component.name)) {
         return component.name;
     }
@@ -13,7 +17,7 @@ export function generateComponentTitle(component: AnyElement): string {
 
     switch (component.type) {
         case ElementType.Root:
-            return 'Formularstruktur';
+            return 'Formular';
         case ElementType.Step:
             return stringOrDefault(component.title, 'Unbenannter Abschnitt');
         case ElementType.Alert:
@@ -44,4 +48,10 @@ export function generateComponentTitle(component: AnyElement): string {
         default:
             return stringOrDefault(defaultElementDescriptor, 'Unbekanntes Element');
     }
+}
+
+export function generateComponentPath(components: AnyElement[]): string {
+    return components
+        .map((c) => generateComponentTitle(c))
+        .join(' › ');
 }

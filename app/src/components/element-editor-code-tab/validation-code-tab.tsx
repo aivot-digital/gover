@@ -1,11 +1,9 @@
 import React, {useMemo, useReducer, useRef} from 'react';
 import {ConditionSetOperator} from '../../data/condition-set-operator';
 import {BaseCodeTab} from './base-code-tab';
-import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 import {ConditionOperator} from '../../data/condition-operator';
 import {CodeEditor} from '../code-editor/code-editor';
 import {CodeTabNoCodeEditor} from '../code-tab-no-code-editor';
-import {ExpressionEditorWrapper} from './components/expression-editor-wrapper/expression-editor-wrapper';
 import {NoCodeDataType} from '../../data/no-code-data-type';
 import {ValidationCodeTabProps} from './validation-code-tab-props';
 import {Box, Button, Typography} from '@mui/material';
@@ -21,6 +19,7 @@ import {createLowCodeContextType} from '../../utils/create-low-code-context-type
 import {ReferenceCheck} from './components/reference-check/reference-check';
 import {editor} from 'monaco-editor';
 import {ElementValidationFunction} from '../../models/elements/element-validation-function';
+import {NoCodeEditorWrapper} from './components/no-code-editor-wrapper/no-code-editor-wrapper';
 
 const exampleValidationCode = `(function(){
     // Hier kann der Code eingefügt werden, der bestimmt, ob das Element valide ist.
@@ -43,20 +42,17 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
     } = element;
 
     const validation: ElementValidationFunction = useMemo(() => _validation ?? {
+        type: undefined,
         requirements: undefined,
         conditionSet: undefined,
-        expression: undefined,
+        noCodeList: undefined,
         javascriptCode: undefined,
         referencedIds: undefined,
     }, [_validation]);
 
     const hasValidationFunction = useMemo(() => {
-        return (
-            validation.javascriptCode?.code != null ||
-            validation.conditionSet != null ||
-            validation.expression != null
-        );
-    }, [element]);
+        return validation.type != null;
+    }, [validation]);
 
     const editorRef = useRef<editor.IStandaloneCodeEditor>(undefined);
     const [showElementSelectDialog, toggleShowElementSelectDialog] = useReducer((state) => !state, false);
@@ -84,9 +80,10 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                 onDeleteFunction={() => {
                     handleChange({
                         conditionSet: undefined,
-                        expression: undefined,
+                        noCodeList: undefined,
                         javascriptCode: undefined,
                         referencedIds: undefined,
+                        type: undefined,
                     });
                 }}
                 editable={props.editable}
@@ -96,6 +93,7 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                     switch (type) {
                         case 'legacy-condition':
                             handleChange({
+                                type: 'ConditionSet',
                                 conditionSet: {
                                     operator: ConditionSetOperator.Any,
                                     conditions: [
@@ -109,14 +107,15 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                                     conditionsSets: [],
                                     conditionSetUnmetMessage: '',
                                 },
-                                expression: undefined,
+                                noCodeList: undefined,
                                 javascriptCode: undefined,
                             });
                             break;
                         case 'code':
                             handleChange({
+                                type: 'Javascript',
                                 conditionSet: undefined,
-                                expression: undefined,
+                                noCodeList: undefined,
                                 javascriptCode: {
                                     code: exampleValidationCode,
                                 },
@@ -124,14 +123,11 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                             break;
                         case 'expression':
                             handleChange({
+                                type: 'NoCode',
                                 conditionSet: undefined,
-                                expression: [
+                                noCodeList: [
                                     {
-                                        expression: {
-                                            type: "NoCodeExpression",
-                                            operatorIdentifier: '',
-                                            operands: [],
-                                        },
+                                        noCode: undefined,
                                         message: '',
                                     },
                                 ],
@@ -143,9 +139,9 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                 hasFunction={hasValidationFunction}
             >
                 {
-                    validation.javascriptCode != null && (
+                    validation.type === 'Javascript' && (
                         <CodeEditor
-                            value={validation.javascriptCode.code ?? undefined}
+                            value={validation.javascriptCode?.code ?? undefined}
                             onChange={(code) => {
                                 handleChange({
                                     javascriptCode: {
@@ -172,13 +168,13 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                     )
                 }
                 {
-                    validation.conditionSet != null && (
+                    validation.type === 'ConditionSet' && (
                         <CodeTabNoCodeEditor
                             parents={props.parents}
                             element={props.element}
                             func={{
                                 requirements: '',
-                                conditionSet: validation.conditionSet,
+                                conditionSet: validation.conditionSet ?? undefined,
                             }}
                             onChange={(updatedFunc) => {
                                 handleChange({
@@ -191,12 +187,12 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                     )
                 }
                 {
-                    validation.expression != null && (
+                    validation.type === 'NoCode' && (
                         <>
                             <Box>
                                 {
-                                    validation.expression
-                                        .map(({message, expression}, index) => (
+                                    (validation.noCodeList ?? [])
+                                        .map(({message, noCode}, index) => (
                                             <Box
                                                 key={index}
                                                 sx={{
@@ -225,11 +221,11 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                                                                 tooltip: 'Delete Expression',
                                                                 onClick: () => {
                                                                     const updatedValidationExpressions = [
-                                                                        ...(validation.expression ?? []),
+                                                                        ...(validation.noCodeList ?? []),
                                                                     ];
                                                                     updatedValidationExpressions.splice(index, 1);
                                                                     handleChange({
-                                                                        expression: updatedValidationExpressions,
+                                                                        noCodeList: updatedValidationExpressions,
                                                                     });
                                                                 },
                                                             },
@@ -247,39 +243,35 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                                                         value={message ?? undefined}
                                                         onChange={errorMessage => {
                                                             const updatedValidationExpressions = [
-                                                                ...(validation.expression ?? []),
+                                                                ...(validation.noCodeList ?? []),
                                                             ];
                                                             updatedValidationExpressions[index] = {
                                                                 message: errorMessage ?? '',
-                                                                expression: updatedValidationExpressions[index].expression,
+                                                                noCode: updatedValidationExpressions[index].noCode,
                                                             };
                                                             handleChange({
-                                                                expression: updatedValidationExpressions,
+                                                                noCodeList: updatedValidationExpressions,
                                                             });
                                                         }}
                                                         hint="Diese Fehlermeldung wird angezeigt, sollte die Bedingung nicht zutreffen"
                                                         disabled={!props.editable}
                                                     />
 
-                                                    <ExpressionEditorWrapper
+                                                    <NoCodeEditorWrapper
                                                         label="Bedingung"
                                                         hint="Hier kann eine Bedingung definiert werden, die bestimmt, ob das Element valide ist."
                                                         parents={props.parents}
-                                                        expression={expression ?? {
-                                                            type: 'NoCodeExpression',
-                                                            operatorIdentifier: '',
-                                                            operands: [],
-                                                        }}
-                                                        onChange={(expression) => {
+                                                        noCode={noCode}
+                                                        onChange={(noCode) => {
                                                             const updatedValidationExpressions = [
-                                                                ...(validation.expression ?? []),
+                                                                ...(validation.noCodeList ?? []),
                                                             ];
                                                             updatedValidationExpressions[index] = {
                                                                 message: updatedValidationExpressions[index].message,
-                                                                expression: expression,
+                                                                noCode: noCode,
                                                             };
                                                             handleChange({
-                                                                expression: updatedValidationExpressions,
+                                                                noCodeList: updatedValidationExpressions,
                                                             });
                                                         }}
                                                         editable={props.editable}
@@ -296,14 +288,10 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                                 fullWidth
                                 onClick={() => {
                                     handleChange({
-                                        expression: [
-                                            ...(validation.expression ?? []),
+                                        noCodeList: [
+                                            ...(validation.noCodeList ?? []),
                                             {
-                                                expression: {
-                                                    type: 'NoCodeExpression',
-                                                    operatorIdentifier: '',
-                                                    operands: [],
-                                                },
+                                                noCode: null,
                                                 message: '',
                                             },
                                         ],
@@ -323,7 +311,7 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                     lowCodeOld={[]}
                     lowCode={validation.javascriptCode?.code != null ? [validation.javascriptCode.code] : []}
                     noCodeOld={validation.conditionSet != null ? [validation.conditionSet] : []}
-                    noCode={validation.expression?.map(value => value.expression) ?? []}
+                    noCode={validation.noCodeList?.map(value => value.noCode) ?? []}
                 />
             </BaseCodeTab>
             <SelectElementDialog

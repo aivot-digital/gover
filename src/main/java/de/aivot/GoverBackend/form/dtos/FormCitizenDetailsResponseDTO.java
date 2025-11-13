@@ -61,7 +61,7 @@ public record FormCitizenDetailsResponseDTO(
                 form.getId(),
                 form.getSlug(),
                 form.getVersion(),
-                form.getInternalTitle(),
+                form.getPublicTitle(),
                 form.getRootElement(),
                 form.getLegalSupportDepartmentId(),
                 form.getTechnicalSupportDepartmentId(),

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import {Grid, Typography} from '@mui/material';
+import React, {useEffect, useState} from 'react';
+import {Grid, Skeleton, Typography} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
 import {type Department} from '../../modules/departments/models/department';
@@ -9,20 +9,21 @@ import {SelectFieldComponent} from '../select-field/select-field-component';
 import {NumberFieldComponent} from '../number-field/number-field-component';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {Form as Application} from '../../models/entities/form';
-import {useApi} from "../../hooks/use-api";
 import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
+import {withDelay} from '../../utils/with-delay';
 
 export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, Application>) {
-    const api = useApi();
     const dispatch = useAppDispatch();
     const [departments, setDepartments] = useState<Department[]>([]);
 
     useEffect(() => {
-        new DepartmentsApiService(api)
-            .list(0, 999, undefined, undefined, {
+        withDelay(
+            new DepartmentsApiService().listAll({
                 ignoreMemberships: true,
-            })
+            }),
+            600,
+        )
             .then(deps => setDepartments(deps.content))
             .catch((err) => {
                 console.error(err);
@@ -34,6 +35,10 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, 
         value: department.id.toString(),
         label: department.name,
     }));
+
+    if (departmentOptions.length === 0) {
+        return EditorSkeleton;
+    }
 
     return (
         <>
@@ -50,8 +55,9 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, 
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 4
-                    }}>
+                        lg: 4,
+                    }}
+                >
                     <SelectFieldComponent
                         label="Text für das Impressum"
                         value={props.entity.imprintDepartmentId?.toString() ?? undefined}
@@ -67,8 +73,9 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, 
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 4
-                    }}>
+                        lg: 4,
+                    }}
+                >
                     <SelectFieldComponent
                         label="Text für die Datenschutzerklärung"
                         value={props.entity.privacyDepartmentId?.toString() ?? undefined}
@@ -84,8 +91,9 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, 
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 4
-                    }}>
+                        lg: 4,
+                    }}
+                >
                     <SelectFieldComponent
                         label="Text für die Erklärung der Barrierefreiheit"
                         value={props.entity.accessibilityDepartmentId?.toString() ?? undefined}
@@ -101,7 +109,7 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, 
             </Grid>
             <ElementEditorSectionHeader
                 title="Informationen zum Datenschutz"
-                variant={"h5"}
+                variant={'h5'}
             />
             <Grid
                 container
@@ -110,8 +118,9 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, 
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }}>
+                        lg: 6,
+                    }}
+                >
                     <TextFieldComponent
                         value={props.element.privacyText ?? ''}
                         label="Text für Datenschutz-Einwilligung in den Allgemeinen Informationen"
@@ -124,7 +133,10 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, 
                         disabled={!props.editable}
                     />
 
-                    <Typography variant={'caption'} color={'text.secondary'}>
+                    <Typography
+                        variant={'caption'}
+                        color={'text.secondary'}
+                    >
                         Wenn Sie innerhalb der Informationen zum Datenschutz auf die Datenschutzerklärung verlinken möchten,
                         umschließen Sie den entsprechenden Text für den Link mit {'{privacy}'} und {'{/privacy}'}. Zum
                         Beispiel wie im Standard-Text: <i>Hier finden Sie die {'{privacy}Hinweise zum Datenschutz{/privacy}'}.</i>
@@ -133,7 +145,7 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, 
             </Grid>
             <ElementEditorSectionHeader
                 title="Lösch- und Zugriffsfristen"
-                variant={"h5"}
+                variant={'h5'}
             />
             <Grid
                 container
@@ -142,8 +154,9 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, 
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }}>
+                        lg: 6,
+                    }}
+                >
                     <NumberFieldComponent
                         label="Löschfrist in Wochen"
                         hint="Die Zeit in Wochen, nach der abgeschlossene Anträge automatisiert gelöscht werden. Geben Sie 0 ein um Anträge nicht zu löschen."
@@ -163,8 +176,9 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, 
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }}>
+                        lg: 6,
+                    }}
+                >
                     <NumberFieldComponent
                         label="Zugriffsfrist in Stunden"
                         hint="Die Zeit in Stunden, in der Nutzer:innen noch auf die von Ihnen gestellten Anträge zugreifen und diese herunterladen können."
@@ -185,3 +199,102 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, 
         </>
     );
 }
+
+const EditorSkeleton = (
+    <>
+        <Skeleton
+            width={200}
+            height={30}
+        />
+
+        <Skeleton
+            width={900}
+            height={48}
+        />
+
+        <Grid
+            container
+            columnSpacing={4}
+        >
+            <Grid
+                size={{
+                    xs: 12,
+                    lg: 4,
+                }}
+            >
+                <Skeleton
+                    width="100%"
+                    height={80}
+                />
+            </Grid>
+
+            <Grid
+                size={{
+                    xs: 12,
+                    lg: 4,
+                }}
+            >
+                <Skeleton
+                    width="100%"
+                    height={80}
+                />
+            </Grid>
+
+            <Grid
+                size={{
+                    xs: 12,
+                    lg: 4,
+                }}
+            >
+                <Skeleton
+                    width="100%"
+                    height={80}
+                />
+            </Grid>
+        </Grid>
+
+        <Skeleton
+            width={200}
+            height={30}
+        />
+
+        <Skeleton
+            width={248}
+            height={200}
+        />
+
+        <Skeleton
+            width={200}
+            height={30}
+        />
+
+        <Grid
+            container
+            columnSpacing={4}
+        >
+            <Grid
+                size={{
+                    xs: 12,
+                    lg: 6,
+                }}
+            >
+                <Skeleton
+                    width="100%"
+                    height={80}
+                />
+            </Grid>
+
+            <Grid
+                size={{
+                    xs: 12,
+                    lg: 6,
+                }}
+            >
+                <Skeleton
+                    width="100%"
+                    height={80}
+                />
+            </Grid>
+        </Grid>
+    </>
+);

@@ -1,13 +1,15 @@
 package de.aivot.GoverBackend.core.payment;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.common.contenttype.ContentType;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
+import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
+import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
 import de.aivot.GoverBackend.core.payment.models.GiroPayCallbackResponse;
 import de.aivot.GoverBackend.core.payment.models.GiroPayPaymentRequest;
 import de.aivot.GoverBackend.core.payment.models.GiroPaymentStartResponse;
+import de.aivot.GoverBackend.core.services.HttpService;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioFieldOption;
@@ -30,10 +32,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Nonnull;
-import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -51,11 +50,13 @@ public class girocheckoutPaymentProviderDefinition implements PaymentProviderDef
 
     private final SecretService secretService;
     private final ScopedAuditService auditService;
+    private final HttpService httpService;
 
     @Autowired
-    public girocheckoutPaymentProviderDefinition(AuditService auditService, SecretService secretService) {
+    public girocheckoutPaymentProviderDefinition(AuditService auditService, SecretService secretService, HttpService httpService) {
         this.auditService = auditService.createScopedAuditService(girocheckoutPaymentProviderDefinition.class);
         this.secretService = secretService;
+        this.httpService = httpService;
     }
 
     @Nonnull
@@ -157,21 +158,17 @@ public class girocheckoutPaymentProviderDefinition implements PaymentProviderDef
 
         auditService.logMessage("Payment Request to GiroCheckout: " + xFormUrlEncoded, Map.of());
 
-        var client = HttpClient
-                .newBuilder()
-                .build();
-
-        var request = HttpRequest
-                .newBuilder(URI.create(PAYMENT_URL))
-                .headers("Content-Type", ContentType.APPLICATION_URLENCODED.getType())
-                .POST(HttpRequest.BodyPublishers.ofString(xFormUrlEncoded))
-                .build();
-
         HttpResponse<String> response;
         try {
-            response = client
-                    .send(request, HttpResponse.BodyHandlers.ofString());
-        } catch (IOException | InterruptedException e) {
+            response = httpService
+                    .post(
+                            URI.create(PAYMENT_URL),
+                            xFormUrlEncoded,
+                            HttpServiceHeaders
+                                    .create()
+                                    .withContentType(HttpServiceHeaders.APPLICATION_X_WWW_FORM_URLENCODED)
+                    );
+        } catch (HttpConnectionException e) {
             throw new PaymentHttpRequestException(e, paymentProviderEntity, xFormUrlEncoded);
         }
 
@@ -184,7 +181,8 @@ public class girocheckoutPaymentProviderDefinition implements PaymentProviderDef
             );
         }
 
-        var objectMapper = new ObjectMapper();
+        var objectMapper = ObjectMapperFactory
+                .getInstance();
 
         GiroPaymentStartResponse transaction;
         try {
@@ -193,8 +191,6 @@ public class girocheckoutPaymentProviderDefinition implements PaymentProviderDef
         } catch (JsonProcessingException e) {
             throw new PaymentSerializationException(e, "Failed to deserialize response body", response.body(), paymentProviderEntity);
         }
-
-        client.close();
 
         if (transaction.getRc() != 0) {
             throw new PaymentHttpRequestException(
@@ -227,7 +223,8 @@ public class girocheckoutPaymentProviderDefinition implements PaymentProviderDef
             @Nonnull XBezahldienstePaymentTransaction paymentTransaction,
             @Nonnull Map<String, Object> callbackData
     ) throws PaymentException {
-        ObjectMapper objectMapper = new ObjectMapper();
+        var objectMapper = ObjectMapperFactory
+                .getInstance();
         var callbackResponse = objectMapper
                 .convertValue(callbackData, GiroPayCallbackResponse.class);
 

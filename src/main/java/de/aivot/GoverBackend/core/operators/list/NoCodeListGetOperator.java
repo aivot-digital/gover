@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 
 public class NoCodeListGetOperator extends NoCodeOperator {
     @Override
@@ -58,22 +59,22 @@ public class NoCodeListGetOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{
-                new NoCodeParameter(
-                        NoCodeDataType.List,
-                        "Liste"
-                ),
-                new NoCodeParameter(
-                        NoCodeDataType.Number,
-                        "Index"
-                ),
-        };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Any;
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
+                        NoCodeDataType.Runtime,
+                        new NoCodeParameter(
+                                NoCodeDataType.List,
+                                "Liste",
+                                "Die Liste, aus der ein Element abgerufen werden soll"
+                        ),
+                        new NoCodeParameter(
+                                NoCodeDataType.Number,
+                                "Index",
+                                "Der Index des Elements, das abgerufen werden soll (0-basiert; negative Werte zählen von hinten)"
+                        )
+                )
+        );
     }
 
     @Override
@@ -86,9 +87,6 @@ public class NoCodeListGetOperator extends NoCodeOperator {
             index = Math.abs(index) - 1;
         }
 
-        return new NoCodeResult(
-                NoCodeDataType.Any,
-                list.stream().skip(index).findFirst().orElse(null)
-        );
+        return new NoCodeResult(list.stream().skip(index).findFirst().orElse(null));
     }
 }

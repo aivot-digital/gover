@@ -150,9 +150,19 @@ export function CustomerInputLoader(props: LoadUserInputDialogProps) {
         setLocalStorageData(null);
         setUrlPrefillData(null);
         setIdentityData(null);
+
+        // Store the current hash and restore it after clearing the search params
+        const currentHash = window.location.hash;
+        // Clear all search params
         setSearchParams({}, {
             replace: true,
         });
+        if (currentHash != null && currentHash.length > 1) {
+            // Restore the hash in the next tick to ensure it is set after the search params are cleared
+            setTimeout(() => {
+                window.location.hash = currentHash;
+            }, 0);
+        }
     };
 
     useEffect(() => {

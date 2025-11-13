@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 
 import java.time.ZonedDateTime;
 
@@ -52,22 +53,22 @@ public class NoCodeCreateTimeOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{
-                new NoCodeParameter(
-                        NoCodeDataType.Number,
-                        "Stunde"
-                ),
-                new NoCodeParameter(
-                        NoCodeDataType.Number,
-                        "Minute"
-                ),
-        };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Date;
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
+                        NoCodeDataType.Date,
+                        new NoCodeParameter(
+                                NoCodeDataType.Number,
+                                "Stunde",
+                                "Die Stunde der Zeit (0-23)."
+                        ),
+                        new NoCodeParameter(
+                                NoCodeDataType.Number,
+                                "Minute",
+                                "Die Minute der Zeit (0-59)."
+                        )
+                )
+        );
     }
 
     @Override
@@ -80,6 +81,6 @@ public class NoCodeCreateTimeOperator extends NoCodeOperator {
                 .withHour(hour)
                 .withMinute(minute);
 
-        return new NoCodeResult(NoCodeDataType.Date, time);
+        return new NoCodeResult(time);
     }
 }

@@ -25,17 +25,7 @@ public class FormEntity {
     private String internalTitle;
 
     @Nonnull
-    @Column(columnDefinition = "text")
-    private String publicTitle;
-
-    @Nonnull
     private Integer developingDepartmentId;
-
-    @Nullable
-    private Integer managingDepartmentId;
-
-    @Nullable
-    private Integer responsibleDepartmentId;
 
     @Nonnull
     private LocalDateTime created;
@@ -64,10 +54,7 @@ public class FormEntity {
     public FormEntity(@Nonnull Integer id,
                       @Nonnull String slug,
                       @Nonnull String internalTitle,
-                      @Nonnull String publicTitle,
                       @Nonnull Integer developingDepartmentId,
-                      @Nullable Integer managingDepartmentId,
-                      @Nullable Integer responsibleDepartmentId,
                       @Nonnull LocalDateTime created,
                       @Nonnull LocalDateTime updated,
                       @Nullable Integer publishedVersion,
@@ -76,10 +63,7 @@ public class FormEntity {
         this.id = id;
         this.slug = slug;
         this.internalTitle = internalTitle;
-        this.publicTitle = publicTitle;
         this.developingDepartmentId = developingDepartmentId;
-        this.managingDepartmentId = managingDepartmentId;
-        this.responsibleDepartmentId = responsibleDepartmentId;
         this.created = created;
         this.updated = updated;
         this.publishedVersion = publishedVersion;
@@ -92,10 +76,7 @@ public class FormEntity {
                 formVersionWithDetailsEntity.getId(),
                 formVersionWithDetailsEntity.getSlug(),
                 formVersionWithDetailsEntity.getInternalTitle(),
-                formVersionWithDetailsEntity.getPublicTitle(),
                 formVersionWithDetailsEntity.getDevelopingDepartmentId(),
-                formVersionWithDetailsEntity.getManagingDepartmentId(),
-                formVersionWithDetailsEntity.getResponsibleDepartmentId(),
                 formVersionWithDetailsEntity.getCreated(),
                 formVersionWithDetailsEntity.getUpdated(),
                 formVersionWithDetailsEntity.getPublishedVersion(),
@@ -124,11 +105,11 @@ public class FormEntity {
     // region Equals & HashCode
 
     @Override
-    public boolean equals(Object object) {
-        if (object == null || getClass() != object.getClass()) return false;
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
 
-        FormEntity that = (FormEntity) object;
-        return id.equals(that.id) && slug.equals(that.slug) && internalTitle.equals(that.internalTitle) && publicTitle.equals(that.publicTitle) && developingDepartmentId.equals(that.developingDepartmentId) && Objects.equals(managingDepartmentId, that.managingDepartmentId) && Objects.equals(responsibleDepartmentId, that.responsibleDepartmentId) && created.equals(that.created) && updated.equals(that.updated) && Objects.equals(publishedVersion, that.publishedVersion) && Objects.equals(draftedVersion, that.draftedVersion) && versionCount.equals(that.versionCount);
+        FormEntity that = (FormEntity) o;
+        return id.equals(that.id) && slug.equals(that.slug) && internalTitle.equals(that.internalTitle) && developingDepartmentId.equals(that.developingDepartmentId) && created.equals(that.created) && updated.equals(that.updated) && Objects.equals(publishedVersion, that.publishedVersion) && Objects.equals(draftedVersion, that.draftedVersion) && versionCount.equals(that.versionCount);
     }
 
     @Override
@@ -136,10 +117,7 @@ public class FormEntity {
         int result = id.hashCode();
         result = 31 * result + slug.hashCode();
         result = 31 * result + internalTitle.hashCode();
-        result = 31 * result + publicTitle.hashCode();
         result = 31 * result + developingDepartmentId.hashCode();
-        result = 31 * result + Objects.hashCode(managingDepartmentId);
-        result = 31 * result + Objects.hashCode(responsibleDepartmentId);
         result = 31 * result + created.hashCode();
         result = 31 * result + updated.hashCode();
         result = 31 * result + Objects.hashCode(publishedVersion);
@@ -147,7 +125,6 @@ public class FormEntity {
         result = 31 * result + versionCount.hashCode();
         return result;
     }
-
 
     // endregion
 
@@ -184,42 +161,12 @@ public class FormEntity {
     }
 
     @Nonnull
-    public String getPublicTitle() {
-        return publicTitle;
-    }
-
-    public FormEntity setPublicTitle(@Nonnull String publicTitle) {
-        this.publicTitle = publicTitle;
-        return this;
-    }
-
-    @Nonnull
     public Integer getDevelopingDepartmentId() {
         return developingDepartmentId;
     }
 
     public FormEntity setDevelopingDepartmentId(@Nonnull Integer developingDepartmentId) {
         this.developingDepartmentId = developingDepartmentId;
-        return this;
-    }
-
-    @Nullable
-    public Integer getManagingDepartmentId() {
-        return managingDepartmentId;
-    }
-
-    public FormEntity setManagingDepartmentId(@Nullable Integer managingDepartmentId) {
-        this.managingDepartmentId = managingDepartmentId;
-        return this;
-    }
-
-    @Nullable
-    public Integer getResponsibleDepartmentId() {
-        return responsibleDepartmentId;
-    }
-
-    public FormEntity setResponsibleDepartmentId(@Nullable Integer responsibleDepartmentId) {
-        this.responsibleDepartmentId = responsibleDepartmentId;
         return this;
     }
 
@@ -261,17 +208,6 @@ public class FormEntity {
     public FormEntity setDraftedVersion(@Nullable Integer draftedVersion) {
         this.draftedVersion = draftedVersion;
         return this;
-    }
-
-    @JsonIgnore
-    public Integer getRelevantDepartmentId() {
-        if (managingDepartmentId != null) {
-            return managingDepartmentId;
-        } else if (responsibleDepartmentId != null) {
-            return responsibleDepartmentId;
-        } else {
-            return developingDepartmentId;
-        }
     }
 
     @Nonnull

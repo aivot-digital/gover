@@ -5,6 +5,7 @@ import de.aivot.GoverBackend.asset.repositories.AssetRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
+import de.aivot.GoverBackend.models.config.GoverConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,10 +18,12 @@ import java.util.UUID;
 
 @Service
 public class AssetService implements EntityService<AssetEntity, UUID> {
+    private final GoverConfig goverConfig;
     private final AssetRepository repository;
 
     @Autowired
-    public AssetService(AssetRepository repository) {
+    public AssetService(GoverConfig goverConfig, AssetRepository repository) {
+        this.goverConfig = goverConfig;
         this.repository = repository;
     }
 
@@ -81,5 +84,17 @@ public class AssetService implements EntityService<AssetEntity, UUID> {
             @Nonnull Specification<AssetEntity> specification
     ) {
         return repository.exists(specification);
+    }
+
+    public String createUrl(String assetKey) {
+        return goverConfig.createUrl("/api/public/assets/" + assetKey);
+    }
+
+    public String createUrl(UUID assetKey) {
+        return createUrl(assetKey.toString());
+    }
+
+    public String createUrl(AssetEntity asset) {
+        return createUrl(asset.getKey());
     }
 }

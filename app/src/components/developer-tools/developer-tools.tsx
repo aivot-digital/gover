@@ -1,31 +1,21 @@
-import React, {PropsWithChildren, useState} from 'react';
+import React, {PropsWithChildren} from 'react';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Tab from '@mui/material/Tab';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableRow from '@mui/material/TableRow';
 import Tabs from '@mui/material/Tabs';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectDevToolsTab, setDevToolsTab} from '../../slices/admin-settings-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {Actions} from '../actions/actions';
 import {Action} from '../actions/actions-props';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import CloseIcon from '@mui/icons-material/Close';
-import {format} from 'date-fns';
-import {downloadObjectFile} from '../../utils/download-utils';
-import {LogLevel, selectLogLevel, selectLogs, setLogLevel} from '../../slices/logging-slice';
+import {LogLevel, selectLogLevel, setLogLevel} from '../../slices/logging-slice';
 import {LogLevelIcon} from '../log-level-icon/log-level-icon';
-import {DragHandleOutlined} from '@mui/icons-material';
 import {ElementData} from '../../models/element-data';
 import {AnyElement} from '../../models/elements/any-element';
-import {ElementDataDebugger} from './element-data-debugger/element-data-debugger';
+import {ElementDataDebugger} from './tabs/element-data-debugger';
 import {selectLoadedForm} from '../../slices/app-slice';
-import {cleanElementData} from '../../utils/element-data-utils';
+import {LogView} from './tabs/log-view';
 
 interface TabContentProps {
     selectedTab: number;
@@ -59,6 +49,7 @@ function TabContent(props: PropsWithChildren<TabContentProps>) {
 }
 
 interface DeveloperToolsProps {
+    dataLabel: string;
     rootElement: AnyElement;
     elementData: ElementData;
     onElementDataChange: (data: ElementData) => void;
@@ -66,6 +57,7 @@ interface DeveloperToolsProps {
 
 export function DeveloperTools(props: DeveloperToolsProps) {
     const {
+        dataLabel,
         rootElement,
         elementData,
         onElementDataChange,
@@ -76,40 +68,6 @@ export function DeveloperTools(props: DeveloperToolsProps) {
     const tab = useAppSelector(selectDevToolsTab);
 
     const currentLogLevel = useAppSelector(selectLogLevel);
-    const logs = useAppSelector(selectLogs(currentLogLevel));
-
-    const [isCollapsed, setIsCollapsed] = useState(false);
-    const [height, setHeight] = useState(300);
-    const [isResizing, setIsResizing] = useState(false);
-
-    const handleExport = (): void => {
-        const filename = `nutzereingaben-${form?.slug}_${format(new Date(), 'dd-MM-yyyy')}.json`;
-        const input = cleanElementData(rootElement, elementData);
-        downloadObjectFile(filename, input);
-    };
-
-    const startResize = (event: React.MouseEvent) => {
-        setIsResizing(true);
-
-        const startY = event.clientY;
-        const startHeight = height;
-
-        const handleMouseMove = (moveEvent: MouseEvent) => {
-            const newHeight = startHeight + (startY - moveEvent.clientY);
-            if (newHeight > 100 && newHeight < window.innerHeight * 0.8) {
-                setHeight(newHeight);
-            }
-        };
-
-        const handleMouseUp = () => {
-            setIsResizing(false);
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
-        };
-
-        document.addEventListener('mousemove', handleMouseMove);
-        document.addEventListener('mouseup', handleMouseUp);
-    };
 
     if (tab === undefined) {
         return null;
@@ -120,34 +78,15 @@ export function DeveloperTools(props: DeveloperToolsProps) {
             component={Paper}
             borderRadius={0}
             sx={{
-                position: 'absolute',
-                left: 0,
-                right: 0,
-                bottom: 0,
-                padding: 0,
                 borderTopWidth: 1,
                 borderTopStyle: 'solid',
                 borderTopColor: '#cfcfcf',
                 zIndex: 999,
                 backgroundColor: 'white',
                 boxShadow: '0 0 30px rgba(0, 0, 0, .15)',
+                height: '100%',
             }}
         >
-            <Box
-                sx={{
-                    height: '10px',
-                    backgroundColor: '#ededed',
-                    cursor: 'ns-resize',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    '&:hover': {backgroundColor: '#cfcfcf'},
-                }}
-                onMouseDown={startResize}
-                title={'Höhe der Entwicklerwerkzeuge anpassen'}
-            >
-                <DragHandleOutlined fontSize="small" />
-            </Box>
             <Box
                 sx={{
                     display: 'flex',
@@ -174,11 +113,6 @@ export function DeveloperTools(props: DeveloperToolsProps) {
                     }}
                     actions={[
                         {
-                            tooltip: 'Einklappen',
-                            icon: isCollapsed ? <ExpandMoreIcon /> : <ExpandLessIcon />,
-                            onClick: () => setIsCollapsed(!isCollapsed),
-                        },
-                        {
                             tooltip: 'Schließen',
                             icon: <CloseIcon color="error" />,
                             onClick: () => {
@@ -194,9 +128,8 @@ export function DeveloperTools(props: DeveloperToolsProps) {
                     overflowY: 'scroll',
                     overflowX: 'scroll',
                     width: '100%',
-                    height: isCollapsed ? 0 : `${height}px`,
-                    transition: isCollapsed ? 'height 0.3s ease-in-out' : 'none',
-                    padding: isCollapsed ? 0 : 2,
+                    height: `100%`,
+                    padding: 2,
                 }}
             >
 
@@ -205,11 +138,10 @@ export function DeveloperTools(props: DeveloperToolsProps) {
                     index={0}
                 >
                     <ElementDataDebugger
+                        dataLabel={dataLabel}
                         rootElement={rootElement}
                         elementData={elementData}
-                        onLoadElementData={loadedData => {
-                            onElementDataChange(loadedData);
-                        }}
+                        onLoadElementData={onElementDataChange}
                     />
                 </TabContent>
 
@@ -251,35 +183,7 @@ export function DeveloperTools(props: DeveloperToolsProps) {
                         },
                     ]}
                 >
-                    <TableContainer>
-                        <Table>
-                            <TableBody>
-                                {
-                                    logs.slice().reverse().map((log, index) => (
-                                        <TableRow
-                                            key={log.timestamp.toString() + index}
-                                        >
-                                            <TableCell>
-                                                <LogLevelIcon
-                                                    level={log.type}
-                                                    active={true}
-                                                />
-                                            </TableCell>
-                                            <TableCell>
-                                                {format(log.timestamp, 'HH:mm:ss')}
-                                            </TableCell>
-                                            <TableCell>
-                                                {log.source}
-                                            </TableCell>
-                                            <TableCell>
-                                                {log.message}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                }
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
+                    <LogView />
                 </TabContent>
             </Box>
         </Box>

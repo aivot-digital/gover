@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.core.javascript;
 
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
-import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.graalvm.polyglot.HostAccess;
 import org.springframework.stereotype.Service;
@@ -24,6 +23,28 @@ public class DateJavascriptFunctionProvider implements JavascriptFunctionProvide
     @Override
     public String getDescription() {
         return "Dieses Paket enthält Funktionen für Datumsoperationen.";
+    }
+
+    @Override
+    public String[] getMethodTypeDefinitions() {
+        return new String[]{
+                "createDate(): Date;",
+                "createDate(date: Date | string | number): Date | null;",
+                "isSameDay(dateA: Date | string | number, dateB: Date | string | number): boolean;",
+                "isBefore(dateA: Date | string | number, dateB: Date | string | number): boolean;",
+                "isBeforeOrSameDay(dateA: Date | string | number, dateB: Date | string | number): boolean;",
+                "isAfter(dateA: Date | string | number, dateB: Date | string | number): boolean;",
+                "isAfterOrSameDay(dateA: Date | string | number, dateB: Date | string | number): boolean;",
+                "addDays(date: Date | string | number, days: number): Date | null;",
+                "addWeeks(date: Date | string | number, weeks: number): Date | null;",
+                "addMonths(date: Date | string | number, months: number): Date | null;",
+                "addYears(date: Date | string | number, years: number): Date | null;",
+                "subtractDays(date: Date | string | number, days: number): Date | null;",
+                "subtractWeeks(date: Date | string | number, weeks: number): Date | null;",
+                "subtractMonths(date: Date | string | number, months: number): Date | null;",
+                "subtractYears(date: Date | string | number, years: number): Date | null;",
+                "diff(start: Date | string | number, end: Date | string | number, unit: 'days' | 'weeks' | 'months' | 'years'): number | null;"
+        };
     }
 
     private static final DateTimeFormatter isoDateDateFormatter = DateTimeFormatter

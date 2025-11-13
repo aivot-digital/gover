@@ -1,13 +1,32 @@
 package de.aivot.GoverBackend.theme.filters;
 
 import de.aivot.GoverBackend.lib.models.Filter;
-import de.aivot.GoverBackend.theme.entities.Theme;
+import de.aivot.GoverBackend.theme.entities.ThemeEntity;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
-import org.jetbrains.annotations.NotNull;
+import jakarta.annotation.Nonnull;
 import org.springframework.data.jpa.domain.Specification;
 
-public class ThemeFilter implements Filter<Theme> {
+import java.util.UUID;
+
+public class ThemeFilter implements Filter<ThemeEntity> {
     private String name;
+    private UUID logoKey;
+    private UUID faviconKey;
+
+    public static ThemeFilter create() {
+        return new ThemeFilter();
+    }
+
+    @Nonnull
+    @Override
+    public Specification<ThemeEntity> build() {
+        return SpecificationBuilder
+                .create(ThemeEntity.class)
+                .withContains("name", name)
+                .withEquals("logoKey", logoKey)
+                .withEquals("faviconKey", faviconKey)
+                .build();
+    }
 
     public String getName() {
         return name;
@@ -18,12 +37,21 @@ public class ThemeFilter implements Filter<Theme> {
         return this;
     }
 
-    @NotNull
-    @Override
-    public Specification<Theme> build() {
-        return SpecificationBuilder
-                .create(Theme.class)
-                .withContains("name", name)
-                .build();
+    public UUID getLogoKey() {
+        return logoKey;
+    }
+
+    public ThemeFilter setLogoKey(UUID logoKey) {
+        this.logoKey = logoKey;
+        return this;
+    }
+
+    public UUID getFaviconKey() {
+        return faviconKey;
+    }
+
+    public ThemeFilter setFaviconKey(UUID faviconKey) {
+        this.faviconKey = faviconKey;
+        return this;
     }
 }

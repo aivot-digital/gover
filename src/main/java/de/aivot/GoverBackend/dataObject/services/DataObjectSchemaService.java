@@ -93,7 +93,7 @@ public class DataObjectSchemaService implements EntityService<DataObjectSchemaEn
                         .getChildren();
 
                 if (children == null || children.isEmpty()) {
-                    throw ResponseException.badRequest("Der gewählte ID-Typ setzt ein Element mit der ID „" + DataObjectItemService.ID_FIELD_NAME + "“ voraus. Stellen Sie sicher, dass das Feld auf der obersten Ebene des Datenobjektschemas definiert ist.");
+                    throw ResponseException.badRequest("Der gewählte ID-Typ setzt ein Element mit der ID „" + DataObjectItemService.ID_FIELD_NAME + "“ voraus. Stellen Sie sicher, dass das Feld auf der obersten Ebene des Datenmodells definiert ist.");
                 }
 
                 var idChild = children
@@ -102,7 +102,7 @@ public class DataObjectSchemaService implements EntityService<DataObjectSchemaEn
                         .findFirst();
 
                 if (idChild.isEmpty()) {
-                    throw ResponseException.badRequest("Der gewählte ID-Typ setzt ein Element mit der ID „" + DataObjectItemService.ID_FIELD_NAME + "“ voraus. Stellen Sie sicher, dass das Feld auf der obersten Ebene des Datenobjektschemas definiert ist.");
+                    throw ResponseException.badRequest("Der gewählte ID-Typ setzt ein Element mit der ID „" + DataObjectItemService.ID_FIELD_NAME + "“ voraus. Stellen Sie sicher, dass das Feld auf der obersten Ebene des Datenmodells definiert ist.");
                 }
 
                 var idChildElement = idChild.get();

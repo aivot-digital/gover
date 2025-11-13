@@ -2,7 +2,7 @@ import {AnyElement} from '../models/elements/any-element';
 import {isStringNotNullOrEmpty} from './string-utils';
 import {AnyInputElement, isAnyInputElement} from '../models/elements/form/input/any-input-element';
 import {JavascriptCode} from '../models/functions/javascript-code';
-import {NoCodeExpression, ValidationExpressionWrapper} from '../models/functions/no-code-expression';
+import {NoCodeOperand, ValidationExpressionWrapper} from '../models/functions/no-code-expression';
 import {ConditionSet} from '../models/functions/conditions/condition-set';
 
 export function hasDerivableAspects(element: AnyElement, ignoreValidationCode: boolean = true): boolean {
@@ -27,7 +27,7 @@ export function hasDerivableAspects(element: AnyElement, ignoreValidationCode: b
     return false;
 }
 
-export function extractVisibility(element: AnyElement): ConditionSet | JavascriptCode | NoCodeExpression | undefined {
+export function extractVisibility(element: AnyElement): ConditionSet | JavascriptCode | NoCodeOperand | undefined {
     const vis = element.visibility;
 
     if (vis == null) {
@@ -42,14 +42,14 @@ export function extractVisibility(element: AnyElement): ConditionSet | Javascrip
         return vis.conditionSet;
     }
 
-    if (vis.expression != null) {
-        return vis.expression;
+    if (vis.noCode != null) {
+        return vis.noCode;
     }
 
     return undefined;
 }
 
-export function extractOverride(element: AnyElement): ConditionSet | JavascriptCode | NoCodeExpression | undefined {
+export function extractOverride(element: AnyElement): ConditionSet | JavascriptCode | Record<string, NoCodeOperand> | undefined {
     var override = element.override;
 
     if (override == null) {
@@ -60,8 +60,8 @@ export function extractOverride(element: AnyElement): ConditionSet | JavascriptC
         return override.javascriptCode;
     }
 
-    if (override.expression != null) {
-        return override.expression;
+    if (override.fieldNoCodeMap != null) {
+        return override.fieldNoCodeMap;
     }
 
     return undefined;
@@ -82,14 +82,14 @@ export function extractValidation(element: AnyInputElement): ConditionSet | Java
         return validation.conditionSet;
     }
 
-    if (validation.expression != null && validation.expression.length > 0) {
-        return validation.expression;
+    if (validation.noCodeList != null && validation.noCodeList.length > 0) {
+        return validation.noCodeList;
     }
 
     return undefined;
 }
 
-export function extractValue(element: AnyInputElement): ConditionSet | JavascriptCode | NoCodeExpression | undefined {
+export function extractValue(element: AnyInputElement): ConditionSet | JavascriptCode | NoCodeOperand | undefined {
     const value = element.value;
 
     if (value == null) {
@@ -100,8 +100,8 @@ export function extractValue(element: AnyInputElement): ConditionSet | Javascrip
         return value.javascriptCode;
     }
 
-    if (value.expression != null) {
-        return value.expression;
+    if (value.noCode != null) {
+        return value.noCode;
     }
 
     return undefined;

@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 
 import java.util.Objects;
 
@@ -56,24 +57,23 @@ public class NoCodeEqualsOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{
-                new NoCodeParameter(
-                        NoCodeDataType.Any,
-                        "Wert 1"
-                ),
-                new NoCodeParameter(
-                        NoCodeDataType.Any,
-                        "Wert 2"
-                ),
-        };
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
+                        NoCodeDataType.Boolean,
+                        new NoCodeParameter(
+                                NoCodeDataType.Runtime,
+                                "Wert 1",
+                                "Der erste Wert, der mit dem zweiten Wert verglichen werden soll."
+                        ),
+                        new NoCodeParameter(
+                                NoCodeDataType.Runtime,
+                                "Wert 2",
+                                "Der zweite Wert, der mit dem ersten Wert verglichen werden soll."
+                        )
+                )
+        );
     }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Boolean;
-    }
-
 
     @Override
     public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
@@ -81,14 +81,14 @@ public class NoCodeEqualsOperator extends NoCodeOperator {
         var arg1 = args[1];
 
         if (arg0 == null && arg1 == null) {
-            return new NoCodeResult(NoCodeDataType.Boolean, true);
+            return new NoCodeResult(true);
         }
 
         if (arg0 == null || arg1 == null) {
-            return new NoCodeResult(NoCodeDataType.Boolean, false);
+            return new NoCodeResult(false);
         }
 
         var castedArg1 = castToTypeOfReference(arg0, arg1);
-        return new NoCodeResult(NoCodeDataType.Boolean, Objects.equals(arg0, castedArg1));
+        return new NoCodeResult(Objects.equals(arg0, castedArg1));
     }
 }

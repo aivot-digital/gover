@@ -1,7 +1,9 @@
-import React, { useMemo } from 'react';
-import {MenuItem, TextField, Typography} from '@mui/material';
+import React, {useMemo} from 'react';
+import {IconButton, InputAdornment, MenuItem, TextField, Typography} from '@mui/material';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {type SelectFieldComponentProps} from './select-field-component-props';
+import Tooltip from '@mui/material/Tooltip';
+import {renderIconButton} from '../text-field/text-field-component';
 
 export function SelectFieldComponent({
                                          label,
@@ -16,7 +18,10 @@ export function SelectFieldComponent({
                                          onChange,
                                          options,
                                          emptyStatePlaceholder,
+                                         startIcon,
+                                         endAction,
                                          sx,
+                                         muiPassTroughProps,
                                      }: SelectFieldComponentProps) {
     const val = value ?? '';
 
@@ -44,11 +49,12 @@ export function SelectFieldComponent({
                         </Typography>
                     }
                 </MenuItem>
-            ))
+            ));
     }, [options]);
 
     return (
         <TextField
+            {...muiPassTroughProps}
             select
             fullWidth
             label={label + ((required ?? false) ? ' *' : '')}
@@ -71,6 +77,18 @@ export function SelectFieldComponent({
             InputProps={{
                 sx: sx,
                 readOnly: readOnly,
+                startAdornment: startIcon && (
+                    <InputAdornment position="start">{startIcon}</InputAdornment>
+                ),
+                endAdornment: endAction && (
+                    <InputAdornment position="end" sx={{
+                        mr: 2,
+                    }}>
+                        {Array.isArray(endAction)
+                            ? endAction.map(renderIconButton)
+                            : renderIconButton(endAction)}
+                    </InputAdornment>
+                ),
             }}
             SelectProps={{
                 renderValue: (value) => {
@@ -104,4 +122,3 @@ export function SelectFieldComponent({
         </TextField>
     );
 }
-

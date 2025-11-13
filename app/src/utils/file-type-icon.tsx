@@ -9,7 +9,7 @@ import CodeOutlinedIcon from '@mui/icons-material/CodeOutlined';
 import TextSnippetOutlinedIcon from '@mui/icons-material/TextSnippetOutlined';
 import StorageOutlinedIcon from '@mui/icons-material/StorageOutlined';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import { SvgIconProps } from '@mui/material';
+import {SvgIconProps} from '@mui/material';
 
 /**
  * Returns the appropriate icon for a given content type.

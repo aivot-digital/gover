@@ -1,49 +1,65 @@
 import {Alert, AlertTitle, Box, Button, Divider, Grid, Typography} from '@mui/material';
-import React, { useContext, useMemo, useState } from 'react';
+import React, {useContext, useEffect, useMemo, useState} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
 import {Link, useNavigate, useParams} from 'react-router-dom';
-import {useSelector} from 'react-redux';
-import {selectUser} from '../../../../slices/user-slice';
-import {isAdmin} from '../../../../utils/is-admin';
-import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
+import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
-import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
-import {useChangeBlocker} from "../../../../hooks/use-change-blocker";
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
+import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../../hooks/use-form-manager';
-import {FormsApiService} from "../../../forms/forms-api-service";
-import {ConfirmDialog} from "../../../../dialogs/confirm-dialog/confirm-dialog";
-import {ConstraintDialog} from "../../../../dialogs/constraint-dialog/constraint-dialog";
-import {ConstraintLinkProps} from "../../../../dialogs/constraint-dialog/constraint-link-props";
-import * as yup from "yup";
-import {AlertComponent} from "../../../../components/alert/alert-component";
-import AccessibilityNewIcon from "@mui/icons-material/AccessibilityNew";
-import {PresetColor} from "react-color/lib/components/sketch/Sketch";
-import {SketchPicker} from "react-color";
-import ContrastOutlinedIcon from "@mui/icons-material/ContrastOutlined";
-import {calculateContrastRatio} from "../../../../utils/calculate-contrast-ratio";
-import type {Theme} from "../../models/theme";
-import {ThemesApiService} from "../../themes-api-service";
-import {useAppSelector} from "../../../../hooks/use-app-selector";
-import {selectSystemConfigValue} from "../../../../slices/system-config-slice";
-import {SystemConfigKeys} from "../../../../data/system-config-keys";
-import {GenericDetailsSkeleton} from "../../../../components/generic-details-page/generic-details-skeleton";
+import {FormsApiService} from '../../../forms/forms-api-service';
+import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
+import {ConstraintDialog} from '../../../../dialogs/constraint-dialog/constraint-dialog';
+import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constraint-link-props';
+import * as yup from 'yup';
+import {AlertComponent} from '../../../../components/alert/alert-component';
+import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
+import {PresetColor} from 'react-color/lib/components/sketch/Sketch';
+import {SketchPicker} from 'react-color';
+import ContrastOutlinedIcon from '@mui/icons-material/ContrastOutlined';
+import {calculateContrastRatio} from '../../../../utils/calculate-contrast-ratio';
+import type {Theme} from '../../models/theme';
+import {ThemesApiService} from '../../themes-api-service';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../../../data/system-config-keys';
+import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
+import {ImageSelector} from '../../../assets/components/image-selector';
+import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
+import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 
 export const ThemeSchema = yup.object({
     name: yup.string()
         .trim()
-        .min(3, "Der Name des Farbschemas muss mindestens 3 Zeichen lang sein.")
-        .max(96, "Der Name des Farbschemas darf maximal 96 Zeichen lang sein.")
-        .required("Der Name des Farbschemas ist ein Pflichtfeld."),
+        .min(3, 'Der Name des Farbschemas muss mindestens 3 Zeichen lang sein.')
+        .max(96, 'Der Name des Farbschemas darf maximal 96 Zeichen lang sein.')
+        .required('Der Name des Farbschemas ist ein Pflichtfeld.'),
 });
 
 export function ThemeDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const user = useSelector(selectUser);
-    const userIsAdmin = useMemo(() => isAdmin(user), [user]);
+    const userIsAdmin = useUserIsAdmin();
+
+    useEffect(() => {
+        if (userIsAdmin) {
+            return;
+        }
+
+        dispatch(addSnackbarMessage({
+            key: 'access-denied-theme-details',
+            message: 'Dieses Farbschema kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
+            type: SnackbarType.Dismissable,
+            severity: SnackbarSeverity.Warning,
+        }));
+
+        return () => {
+            dispatch(removeSnackbarMessage('access-denied-theme-details'));
+        };
+    }, []);
 
     const api = useApi();
     const {
@@ -51,6 +67,7 @@ export function ThemeDetailsPageIndex() {
         setItem,
         isBusy,
         setIsBusy,
+        isEditable,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<Theme, undefined>;
 
     const {
@@ -87,7 +104,7 @@ export function ThemeDetailsPageIndex() {
             const validationResult = validate();
 
             if (!validationResult) {
-                dispatch(showErrorSnackbar("Bitte überprüfen Sie Ihre Eingaben."));
+                dispatch(showErrorSnackbar('Bitte überprüfen Sie Ihre Eingaben.'));
                 return;
             }
 
@@ -104,7 +121,7 @@ export function ThemeDetailsPageIndex() {
 
                         // use setTimeout instead of useEffect to prevent unnecessary rerender
                         setTimeout(() => {
-                            navigate(`/themes/${newTheme.id}`, { replace: true });
+                            navigate(`/themes/${newTheme.id}`, {replace: true});
                         }, 0);
                     })
                     .catch(err => {
@@ -121,7 +138,7 @@ export function ThemeDetailsPageIndex() {
                         setItem(updatedTheme);
                         reset();
 
-                        dispatch(showSuccessSnackbar('Änderungen an Farbschema erfolgreich gespeichert.'));
+                        dispatch(showSuccessSnackbar('Änderungen am Farbschema erfolgreich gespeichert.'));
                     })
                     .catch(err => {
                         console.error(err);
@@ -148,19 +165,19 @@ export function ThemeDetailsPageIndex() {
                 const maxVisibleLinks = 5;
                 let processedLinks = uniqueForms.content.slice(0, maxVisibleLinks).map(f => ({
                     label: f.internalTitle,
-                    to: `/forms/${f.id}`
+                    to: `/forms/${f.id}`,
                 }));
 
                 if (uniqueForms.content.length > maxVisibleLinks) {
                     processedLinks.push({
-                        label: "Weitere Formulare anzeigen…",
-                        to: `/themes/${theme.id}/forms`
+                        label: 'Weitere Formulare anzeigen…',
+                        to: `/themes/${theme.id}/forms`,
                     });
                 }
 
                 setRelatedApplications(processedLinks);
                 setShowConstraintDialog(true);
-            } else if(themeId === appThemeId) {
+            } else if (themeId === appThemeId) {
                 setConstraintDefaultThemeDialog(true);
             } else {
                 setConfirmDeleteAction(() => confirmDelete);
@@ -198,18 +215,59 @@ export function ThemeDetailsPageIndex() {
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }}>
+                        lg: 6,
+                    }}
+                >
                     <TextFieldComponent
                         label="Name des Farbschemas"
                         value={theme.name}
-                        onChange={handleInputChange("name")}
-                        onBlur={handleInputBlur("name")}
+                        onChange={handleInputChange('name')}
+                        onBlur={handleInputBlur('name')}
                         required
                         maxCharacters={96}
                         minCharacters={3}
                         error={errors.name}
-                        hint={"Eine interne Bezeichnung für Mitarbeiter:innen."}
+                        hint="Eine interne Bezeichnung für Mitarbeiter:innen."
+                        disabled={!isEditable}
+                    />
+                </Grid>
+
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
+                >
+                    <ImageSelector
+                        label="Logo des Farbschemas"
+                        hint="Dieses Logo wird in der Anwendung angezeigt, z.B. in der Kopfzeile."
+                        selectLabel="Logo für das Farbschema auswählen"
+                        value={theme.logoKey ?? null}
+                        onChange={handleInputChange('logoKey')}
+                        size={{
+                            aspectRatio: 2, // Default aspect ratio of a logo is 2:1. See logo.tsx
+                        }}
+                        disabled={!isEditable}
+                    />
+                </Grid>
+
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
+                >
+                    <ImageSelector
+                        label="Favicon des Farbschemas"
+                        hint="Dieses Favicon wird in der Anwendung im tab"
+                        selectLabel="Favicon für das Farbschema auswählen"
+                        value={theme.faviconKey ?? null}
+                        onChange={handleInputChange('faviconKey')}
+                        size={{
+                            width: '8rem',
+                            height: '8rem',
+                        }}
+                        disabled={!isEditable}
                     />
                 </Grid>
             </Grid>
@@ -223,9 +281,9 @@ export function ThemeDetailsPageIndex() {
                         Bitte beachten Sie, dass sich Änderungen an diesem Farbschema auf die ganze Gover-Instanz
                         auswirken.
                         Sie können die Zuweisung als Farbschema für die Gover-Instanz in den <Link
-                        to={'/settings'}
+                        to="/settings"
                         style={{color: 'inherit'}}
-                            >Systemeinstellungen</Link> ändern.
+                    >Systemeinstellungen</Link> ändern.
                     </Box>
                 </AlertComponent>
             }
@@ -255,13 +313,15 @@ export function ThemeDetailsPageIndex() {
                     value={theme?.main}
                     contrastColor={'#EEF2EE'}
                     contrastColorLabel={'hellgrau'}
-                    onChange={handleInputChange("main")}
+                    onChange={handleInputChange('main')}
+                    disabled={!isEditable}
                 />
 
                 <ColorPicker
                     label="Primärfarbe (Dunkel)"
                     value={theme?.mainDark}
-                    onChange={handleInputChange("mainDark")}
+                    onChange={handleInputChange('mainDark')}
+                    disabled={!isEditable}
                 />
 
                 <ColorPicker
@@ -269,7 +329,8 @@ export function ThemeDetailsPageIndex() {
                     value={theme?.accent}
                     contrastColor={theme?.mainDark}
                     contrastColorLabel={'Primär/dunkel'}
-                    onChange={handleInputChange("accent")}
+                    onChange={handleInputChange('accent')}
+                    disabled={!isEditable}
                 />
             </Grid>
             <Divider
@@ -285,25 +346,29 @@ export function ThemeDetailsPageIndex() {
                 <ColorPicker
                     label="Fehlerfarbe"
                     value={theme?.error}
-                    onChange={handleInputChange("error")}
+                    onChange={handleInputChange('error')}
+                    disabled={!isEditable}
                 />
 
                 <ColorPicker
                     label="Warnungsfarbe"
                     value={theme?.warning}
-                    onChange={handleInputChange("warning")}
+                    onChange={handleInputChange('warning')}
+                    disabled={!isEditable}
                 />
 
                 <ColorPicker
                     label="Informationsfarbe"
                     value={theme?.info}
-                    onChange={handleInputChange("info")}
+                    onChange={handleInputChange('info')}
+                    disabled={!isEditable}
                 />
 
                 <ColorPicker
                     label="Erfolgsfarbe"
                     value={theme?.success}
-                    onChange={handleInputChange("success")}
+                    onChange={handleInputChange('success')}
+                    disabled={!isEditable}
                 />
             </Grid>
             <Alert
@@ -318,56 +383,56 @@ export function ThemeDetailsPageIndex() {
                     Hierbei gilt der Kontrast von der gewählten Farbe zur Vorder- (i.d.R. Text) oder Hintergrundfarbe.
                 </Typography>
             </Alert>
-            {
-                userIsAdmin &&
-                <Box
-                    sx={{
-                        display: 'flex',
-                        marginTop: 4,
-                        gap: 2,
-                    }}
+
+            <Box
+                sx={{
+                    display: 'flex',
+                    marginTop: 4,
+                    gap: 2,
+                }}
+            >
+                <Button
+                    onClick={handleSave}
+                    disabled={isBusy || hasNotChanged || !isEditable}
+                    variant="contained"
+                    color="primary"
+                    startIcon={<SaveOutlinedIcon />}
                 >
+                    Speichern
+                </Button>
+
+                {
+                    theme.id !== 0 &&
                     <Button
-                        onClick={handleSave}
-                        disabled={isBusy || hasNotChanged}
-                        variant="contained"
-                        color="primary"
-                        startIcon={<SaveOutlinedIcon />}
+                        onClick={() => {
+                            reset();
+                        }}
+                        disabled={isBusy || hasNotChanged || !isEditable}
+                        color="error"
                     >
-                        Speichern
+                        Zurücksetzen
                     </Button>
+                }
 
-                    {
-                        theme.id !== 0 &&
-                        <Button
-                            onClick={() => {
-                                reset();
-                            }}
-                            disabled={isBusy || hasNotChanged}
-                            color="error"
-                        >
-                            Zurücksetzen
-                        </Button>
-                    }
+                {
+                    theme.id !== 0 &&
+                    <Button
+                        variant={'outlined'}
+                        onClick={checkAndHandleDelete}
+                        disabled={isBusy || !isEditable}
+                        color="error"
+                        sx={{
+                            marginLeft: 'auto',
+                        }}
+                        startIcon={<DeleteOutlinedIcon />}
+                    >
+                        Löschen
+                    </Button>
+                }
+            </Box>
 
-                    {
-                        theme.id !== 0 &&
-                        <Button
-                            variant={'outlined'}
-                            onClick={checkAndHandleDelete}
-                            disabled={isBusy}
-                            color="error"
-                            sx={{
-                                marginLeft: 'auto',
-                            }}
-                            startIcon={<DeleteOutlinedIcon />}
-                        >
-                            Löschen
-                        </Button>
-                    }
-                </Box>
-            }
             {changeBlocker.dialog}
+
             <ConfirmDialog
                 title="Fachbereich löschen"
                 onCancel={() => setConfirmDeleteAction(undefined)}
@@ -380,6 +445,7 @@ export function ThemeDetailsPageIndex() {
                     Möchten Sie diesen Fachbereich wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
                 </Typography>
             </ConfirmDialog>
+
             <ConstraintDialog
                 open={showConstraintDialog}
                 onClose={() => setShowConstraintDialog(false)}
@@ -393,7 +459,7 @@ export function ThemeDetailsPageIndex() {
                 message="Dieses Farbschema kann (noch) nicht gelöscht werden, da es das aktive Farbschema der Gover-Instanz ist."
                 solutionText="Um dieses Farbschema löschen zu können, müssen Sie zuerst in den Systemeinstellungen ein anderes Farbschema als Standard festlegen."
                 links={[{
-                    label: "Systemeinstellungen aufrufen",
+                    label: 'Systemeinstellungen aufrufen',
                     to: '/settings',
                 }]}
             />
@@ -609,20 +675,23 @@ function ColorPicker({
                          onChange,
                          contrastColor,
                          contrastColorLabel,
+                         disabled,
                      }: {
     label: string;
     value?: string;
     onChange: (val: string) => void;
     contrastColor?: string;
     contrastColorLabel?: string;
+    disabled?: boolean;
 }) {
     return (
         <Grid
             size={{
                 xs: 12,
                 md: 6,
-                lg: 4
-            }}>
+                lg: 4,
+            }}
+        >
             <Box
                 sx={{
                     mb: 1,
@@ -650,6 +719,9 @@ function ColorPicker({
             <SketchPicker
                 color={value}
                 onChange={(color) => {
+                    if (disabled) {
+                        return;
+                    }
                     onChange(color.hex);
                 }}
                 disableAlpha={true}

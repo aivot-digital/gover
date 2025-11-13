@@ -56,6 +56,17 @@ public class DataObjectJavascriptFunctionProvider implements JavascriptFunctionP
         return "Dieses Paket enthält Funktionen für Datenobjekte.";
     }
 
+    @Override
+    public String[] getMethodTypeDefinitions() {
+        return new String[]{
+                "getSchema(schemaKey: string | null): Record<string, any> | null;",
+                "list(schemaKey: string | null, fieldFilter: Array<{path: string; operator: string; value: string}> | null): Array<Record<string, any>>;",
+                "create(schemaKey: string | null, value: Record<string, any> | null): Record<string, any> | null;",
+                "retrieve(schemaKey: string | null, itemId: string | null): Record<string, any> | null;",
+                "update(schemaKey: string | null, itemId: string | null, value: Record<string, any> | null): Record<string, any> | null;"
+        };
+    }
+
     @HostAccess.Export
     public ProxyObject getSchema(@Nullable String schemaKey) {
         if (schemaKey == null) {

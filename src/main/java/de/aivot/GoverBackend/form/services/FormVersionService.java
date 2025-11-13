@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.destination.repositories.DestinationRepository;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.form.entities.FormVersionEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionEntityId;
+import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
 import de.aivot.GoverBackend.form.repositories.FormVersionRepository;
@@ -15,13 +16,11 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
 import de.aivot.GoverBackend.payment.repositories.PaymentProviderRepository;
-import de.aivot.GoverBackend.submission.entities.Submission;
-import de.aivot.GoverBackend.submission.filters.SubmissionFilter;
 import de.aivot.GoverBackend.submission.filters.SubmissionWithMembershipFilter;
-import de.aivot.GoverBackend.submission.repositories.SubmissionRepository;
 import de.aivot.GoverBackend.submission.repositories.SubmissionWithMembershipRepository;
+import de.aivot.GoverBackend.system.services.SystemService;
+import de.aivot.GoverBackend.theme.entities.ThemeEntity;
 import de.aivot.GoverBackend.theme.repositories.ThemeRepository;
-import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +31,7 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -48,6 +48,7 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
     private final IdentityProviderRepository identityProviderRepository;
     private final FormRepository formRepository;
     private final SubmissionWithMembershipRepository submissionWithMembershipRepository;
+    private final SystemService systemService;
 
     @Autowired
     public FormVersionService(FormVersionRepository repository,
@@ -58,7 +59,8 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
                               PaymentProviderRepository paymentProviderRepository,
                               IdentityProviderRepository identityProviderRepository,
                               FormRepository formRepository,
-                              SubmissionWithMembershipRepository submissionWithMembershipRepository) {
+                              SubmissionWithMembershipRepository submissionWithMembershipRepository,
+                              SystemService systemService) {
         this.repository = repository;
         this.destinationRepository = destinationRepository;
         this.departmentRepository = departmentRepository;
@@ -68,6 +70,7 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
         this.identityProviderRepository = identityProviderRepository;
         this.formRepository = formRepository;
         this.submissionWithMembershipRepository = submissionWithMembershipRepository;
+        this.systemService = systemService;
     }
 
     @Nonnull
@@ -163,7 +166,10 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
         var cleanedEntity = cleanRelatedData(existingEntity, entity);
 
         var updatedExistingEntity = existingEntity
+                .setPublicTitle(entity.getPublicTitle())
                 .setType(cleanedEntity.getType())
+                .setManagingDepartmentId(cleanedEntity.getManagingDepartmentId())
+                .setResponsibleDepartmentId(cleanedEntity.getResponsibleDepartmentId())
                 .setLegalSupportDepartmentId(cleanedEntity.getLegalSupportDepartmentId())
                 .setTechnicalSupportDepartmentId(cleanedEntity.getTechnicalSupportDepartmentId())
                 .setImprintDepartmentId(cleanedEntity.getImprintDepartmentId())
@@ -212,7 +218,11 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
     private FormVersionEntity cleanRelatedData(@Nullable FormVersionEntity prev, @Nonnull FormVersionEntity updated) throws ResponseException {
         checkAndReset(prev, updated, destinationRepository, FormVersionEntity::getDestinationId, updated::setDestinationId);
 
+        checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getManagingDepartmentId, updated::setManagingDepartmentId);
+        checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getResponsibleDepartmentId, updated::setResponsibleDepartmentId);
+
         checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getLegalSupportDepartmentId, updated::setLegalSupportDepartmentId);
+
         checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getTechnicalSupportDepartmentId, updated::setTechnicalSupportDepartmentId);
 
         checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getImprintDepartmentId, updated::setImprintDepartmentId);
@@ -281,5 +291,40 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
 
         // Otherwise reset the value to null
         setter.accept(null);
+    }
+
+    @Nonnull
+    public List<ThemeEntity> getFormThemesInOrderOfImportance(FormVersionWithDetailsEntity formVersion) {
+        var themes = new LinkedList<ThemeEntity>();
+
+        if (formVersion.getThemeId() != null) {
+            themeRepository
+                    .findById(formVersion.getThemeId())
+                    .ifPresent(themes::add);
+        }
+
+        Consumer<Integer> getDepartmentTheme = (departmentId) -> {
+            if (departmentId == null) {
+                return;
+            }
+            departmentRepository
+                    .findById(departmentId)
+                    .ifPresent(department -> {
+                        if (department.getThemeId() != null) {
+                            themeRepository
+                                    .findById(department.getThemeId())
+                                    .ifPresent(themes::add);
+                        }
+                    });
+        };
+
+        getDepartmentTheme.accept(formVersion.getResponsibleDepartmentId());
+        getDepartmentTheme.accept(formVersion.getManagingDepartmentId());
+        getDepartmentTheme.accept(formVersion.getDevelopingDepartmentId());
+
+        themes.add(systemService
+                .retrieveDefaultTheme());
+
+        return themes;
     }
 }

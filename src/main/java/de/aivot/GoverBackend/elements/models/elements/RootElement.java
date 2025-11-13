@@ -69,6 +69,9 @@ public class RootElement extends BaseElement implements ElementWithChildren<Step
 
     @JsonIgnore
     public String getCleanedPrivacyText() {
+        if (privacyText == null) {
+            return null;
+        }
         return privacyText.replaceAll("\\{[^}]+}", "");
     }
 

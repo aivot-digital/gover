@@ -1,5 +1,5 @@
-import { ReactNode } from "react";
-import { Box, SxProps, Theme } from "@mui/material";
+import {ReactNode} from 'react';
+import {Box, SxProps, Theme} from '@mui/material';
 
 interface CellContentWrapperProps extends React.ComponentPropsWithoutRef<typeof Box> {
     children: ReactNode;

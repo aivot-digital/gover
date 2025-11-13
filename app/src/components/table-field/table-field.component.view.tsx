@@ -1,6 +1,6 @@
 import {Box, Button, FormHelperText, FormLabel} from '@mui/material';
 import {TableFieldElement} from '../../models/elements/form/input/table-field-element';
-import {DataGrid, GridColDef, GridPaginationModel, GridRenderCellParams, GridRowId, GridRowModel, GridRowSelectionModel, GridValidRowModel} from '@mui/x-data-grid';
+import {DataGrid, GridColDef, GridPaginationModel, GridRenderCellParams, GridRowId, GridRowSelectionModel, GridValidRowModel} from '@mui/x-data-grid';
 import React, {useMemo, useState} from 'react';
 import {formatNumStringToGermanNum} from '../../utils/format-german-numbers';
 import {BaseViewProps} from '../../views/base-view';
@@ -173,25 +173,25 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
                     {element.label} {element.required && ' *'}
                 </FormLabel>
 
-                {
-                    !element.disabled &&
-                    <Box>
-                        <Button
-                            onClick={handleAddRow}
-                            disabled={isDisabled || isBusy || (element.maximumRows != null && rows.length >= element.maximumRows)}
-                        >
-                            Hinzufügen
-                        </Button>
-                        <Button
-                            color="error"
-                            onClick={() => setConfirmDelete(() => handleDelete)}
-                            disabled={isDisabled || isBusy || !hasSelectedRows}
-                            sx={{ml: 1}}
-                        >
-                            Löschen
-                        </Button>
-                    </Box>
-                }
+                <Box
+                    sx={{cursor: (isDisabled || isBusy) ? 'not-allowed' : undefined,}}
+                >
+                    <Button
+                        onClick={handleAddRow}
+                        disabled={isDisabled || isBusy || (element.maximumRows != null && rows.length >= element.maximumRows)}
+                    >
+                        Hinzufügen
+                    </Button>
+                    <Button
+                        color="error"
+                        onClick={() => setConfirmDelete(() => handleDelete)}
+                        disabled={isDisabled || isBusy || !hasSelectedRows}
+                        sx={{ml: 1,}}
+                    >
+                        Löschen
+                    </Button>
+                </Box>
+
             </Box>
 
             <div
@@ -220,9 +220,10 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
                     disableColumnSelector
                     disableColumnFilter
 
+
                     sx={{
                         backgroundColor: isBusy ? '#F8F8F8' : undefined,
-                        cursor: isBusy ? 'not-allowed' : undefined,
+                        cursor: (isBusy || element.disabled) ? 'not-allowed' : undefined,
                         pointerEvents: isBusy ? 'none' : 'auto',
                     }}
                 />

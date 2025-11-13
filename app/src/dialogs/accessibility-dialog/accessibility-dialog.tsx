@@ -1,20 +1,18 @@
-import {Alert, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import {Alert, Box, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
+import React, {useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {type Department} from '../../modules/departments/models/department';
 import {useSelector} from 'react-redux';
 import {type AccessibilityDialogProps} from './accessibility-dialog-props';
 import {selectLoadedForm} from '../../slices/app-slice';
-import {useApi} from "../../hooks/use-api";
-import {useAppSelector} from "../../hooks/use-app-selector";
-import {selectSystemConfigValue} from "../../slices/system-config-slice";
-import {SystemConfigKeys} from "../../data/system-config-keys";
+import {useAppSelector} from '../../hooks/use-app-selector';
+import {selectSystemConfigValue} from '../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../data/system-config-keys';
 import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
 
 export const AccessibilityDialogId = 'accessibility';
 
 export function AccessibilityDialog(props: AccessibilityDialogProps) {
-    const api = useApi();
     const application = useSelector(selectLoadedForm);
 
     const [department, setDepartment] = useState<Department>();
@@ -26,7 +24,7 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
             application?.accessibilityDepartmentId != null &&
             (department == null || department.id !== application.accessibilityDepartmentId)
         ) {
-            new DepartmentsApiService(api)
+            new DepartmentsApiService()
                 .retrievePublic(application.accessibilityDepartmentId)
                 .then(setDepartment);
         } else if (
@@ -34,8 +32,8 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
             accessibilityDepartmentId != null &&
             accessibilityDepartmentId != '' &&
             (department == null || department.id !== parseInt(accessibilityDepartmentId))
-        ){
-            new DepartmentsApiService(api)
+        ) {
+            new DepartmentsApiService()
                 .retrievePublic(parseInt(accessibilityDepartmentId))
                 .then(setDepartment);
         }
@@ -68,9 +66,9 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
                     </DialogContent>
             }
             <DialogActions>
+                <Box/>
                 <Button
                     onClick={props.onHide}
-                    variant="contained"
                 >
                     Informationen schließen
                 </Button>

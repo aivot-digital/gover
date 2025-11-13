@@ -14,12 +14,21 @@ public class NumberJavascriptFunctionProvider implements JavascriptFunctionProvi
 
     @Override
     public String getLabel() {
-        return "zahlenangaben";
+        return "Zahlenangaben";
     }
 
     @Override
     public String getDescription() {
         return "Dieses Paket enthält Funktionen für Zahlenangaben.";
+    }
+
+    @Override
+    public String[] getMethodTypeDefinitions() {
+        return new String[]{
+                "formatGermanNumber(number: number): string;",
+                "formatGermanNumber(number: number, decimalPlaces: number): string;",
+                "parseGermanNumber(numberStr: string): number;"
+        };
     }
 
     @HostAccess.Export

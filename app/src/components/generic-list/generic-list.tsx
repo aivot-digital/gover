@@ -37,6 +37,8 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
         rowActionsCount,
         rowActions,
         getRowIdentifier,
+        defaultFilter,
+        fetch: fetchFunc,
     } = props;
 
     const api = useApi();
@@ -174,7 +176,56 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
         setSearchParams(searchParams);
     };
 
+    const handleRefresh = useCallback(() => {
+        setIsBusy(true);
+
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
+        let sort: string | undefined = defaultSortField as string | undefined;
+        let direction: 'ASC' | 'DESC' | undefined = 'ASC';
+
+        if (sortModel != null && sortModel.length > 0) {
+            sort = sortModel[0].field;
+            direction = sortModel[0].sort === 'asc' ? 'ASC' : 'DESC';
+        }
+
+        withAsyncWrapper({
+            desiredMinRuntime: 800,
+            main: () => fetchFunc({
+                api: api,
+                search: isStringNotNullOrEmpty(search) ? search : undefined,
+                page: paginationModel.page < 0 ? 0 : paginationModel.page,
+                size: paginationModel.pageSize,
+                sort: isStringNotNullOrEmpty(sort) ? sort : undefined,
+                order: isStringNotNullOrEmpty(sort) ? direction : undefined,
+                filter: currentFilter ?? defaultFilter,
+            }),
+            signal: controller.signal,
+        })
+            .then(page => {
+                if (!controller.signal.aborted) {
+                    setItems(page);
+                }
+            })
+            .catch(error => {
+                if (error.name !== 'AbortError') {
+                    console.error(error);
+                }
+            })
+            .finally(() => {
+                if (!controller.signal.aborted) {
+                    setIsBusy(false);
+                }
+            });
+    }, [api, currentFilter, sortModel, defaultFilter, search, defaultSortField, fetchFunc, paginationModel.page]);
+
     // Fetch data on dependency changes
+    // This is a duplicate of handleRefresh to combat outdated data in the closure
     useEffect(() => {
         setIsBusy(true);
 
@@ -224,6 +275,18 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
     }, [api, currentFilter, sortModel, paginationModel, search]);
 
     useEffect(() => {
+        if (props.controlRef == null) {
+            return;
+        }
+
+        props.controlRef.current = {
+            refresh: () => {
+                handleRefresh();
+            },
+        };
+    }, [handleRefresh]);
+
+    useEffect(() => {
         return () => {
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort();
@@ -262,6 +325,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                             sx={{
                                 justifyContent: 'end',
                             }}
+                            dense
                         />
                     );
                 },
@@ -298,6 +362,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
         borderRadius: 0,
         borderLeft: 'none',
         borderRight: 'none',
+        backgroundColor: 'background.paper',
         '& .MuiDataGrid-columnHeader:first-of-type, & .MuiDataGrid-cell[data-colindex="0"]': {
             paddingLeft: '16px',
         },

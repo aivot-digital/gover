@@ -7,14 +7,12 @@ import {useSelector} from 'react-redux';
 import {type HelpDialogProps} from './help-dialog-props';
 import {selectLoadedForm} from '../../slices/app-slice';
 import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
-import {useApi} from '../../hooks/use-api';
 import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
 import {Accordion, AccordionDetails, AccordionGroup, AccordionSummary} from '../../components/accordion/accordion';
 
 export const HelpDialogId = 'help';
 
 export function HelpDialog(props: HelpDialogProps) {
-    const api = useApi();
     const application = useSelector(selectLoadedForm);
     const [technicalDepartment, setTechnicalDepartment] = useState<Department>();
     const [specialDepartment, setSpecialDepartment] = useState<Department>();
@@ -26,7 +24,7 @@ export function HelpDialog(props: HelpDialogProps) {
             application?.technicalSupportDepartmentId != null &&
             (technicalDepartment == null || technicalDepartment.id !== application.technicalSupportDepartmentId)
         ) {
-            new DepartmentsApiService(api)
+            new DepartmentsApiService()
                 .retrievePublic(application.technicalSupportDepartmentId)
                 .then(setTechnicalDepartment);
         }
@@ -35,7 +33,7 @@ export function HelpDialog(props: HelpDialogProps) {
             application?.legalSupportDepartmentId != null &&
             (specialDepartment == null || specialDepartment.id !== application.legalSupportDepartmentId)
         ) {
-            new DepartmentsApiService(api)
+            new DepartmentsApiService()
                 .retrievePublic(application.legalSupportDepartmentId)
                 .then(setSpecialDepartment);
         }
@@ -224,7 +222,6 @@ export function HelpDialog(props: HelpDialogProps) {
                         container
                         spacing={4}
                         sx={{
-                            mt: -3.6,
                             mb: 4,
                         }}
                     >
@@ -236,7 +233,7 @@ export function HelpDialog(props: HelpDialogProps) {
                         >
                             <BoxLink
                                 link={`mailto:${specialDepartment.specialSupportAddress}?subject=Fachlicher Support: ${application.publicTitle}`}
-                                text={'Fachlicher Support\nUnterstützung zum Inhalt\nund Ausfüllen des Antrages'}
+                                text={'Fachlicher Support:\nUnterstützung zum Inhalt\nund Ausfüllen des Antrages'}
                             />
                         </Grid>
                         <Grid
@@ -247,7 +244,7 @@ export function HelpDialog(props: HelpDialogProps) {
                         >
                             <BoxLink
                                 link={`mailto:${technicalDepartment.technicalSupportAddress}?subject=Technischer Support: ${application.publicTitle}`}
-                                text={'Technischer Support\nUnterstützung bei technischen Problemen und Fehlern'}
+                                text={'Technischer Support:\nUnterstützung bei technischen Problemen und Fehlern'}
                             />
                         </Grid>
                     </Grid>
@@ -280,9 +277,9 @@ export function HelpDialog(props: HelpDialogProps) {
                 </DialogContentText>
             </DialogContent>
             <DialogActions>
+                <Box/>
                 <Button
                     onClick={props.onHide}
-                    variant="contained"
                 >
                     Hilfe schließen
                 </Button>

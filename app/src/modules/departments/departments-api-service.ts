@@ -1,12 +1,12 @@
-import {CrudApiService} from '../../services/crud-api-service';
-import {Api} from '../../hooks/use-api';
 import {DepartmentRequestDTO} from './dtos/department-request-dto';
 import {DepartmentResponseDTO} from './dtos/department-response-dto';
+import {BaseCrudApiService} from '../../services/base-crud-api-service';
 
 interface DepartmentFilters {
     userId: string;
     departmentId: number;
     membershipId: number;
+    themeId: number;
     departmentName: string;
     userEmail: string;
     userName: string;
@@ -19,9 +19,9 @@ interface DepartmentFilters {
     disabledInIdp: boolean;
 }
 
-export class DepartmentsApiService extends CrudApiService<DepartmentRequestDTO, DepartmentResponseDTO, DepartmentResponseDTO, DepartmentResponseDTO, DepartmentResponseDTO, number, DepartmentFilters> {
-    public constructor(api: Api) {
-        super(api, 'departments/');
+export class DepartmentsApiService extends BaseCrudApiService<DepartmentRequestDTO, DepartmentResponseDTO, DepartmentResponseDTO, DepartmentRequestDTO, number, DepartmentFilters> {
+    public constructor() {
+        super('api/departments/');
     }
 
     public initialize(): DepartmentResponseDTO {
@@ -37,5 +37,11 @@ export class DepartmentsApiService extends CrudApiService<DepartmentRequestDTO, 
             specialSupportAddress: '',
             technicalSupportAddress: '',
         };
+    }
+
+    public retrievePublic(id: number): Promise<DepartmentResponseDTO> {
+        return this.get<DepartmentResponseDTO>(`api/public/departments/${id}/`, {
+            skipAuthCheck: true,
+        });
     }
 }

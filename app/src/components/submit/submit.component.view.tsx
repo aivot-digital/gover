@@ -61,7 +61,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
         if (form != null) {
             if (form.responsibleDepartmentId != null) {
                 if (responsibleDepartment == null || responsibleDepartment.id !== form.responsibleDepartmentId) {
-                    new DepartmentsApiService(api)
+                    new DepartmentsApiService()
                         .retrievePublic(form.responsibleDepartmentId)
                         .then(setResponsibleDepartment);
                 }
@@ -71,7 +71,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
 
             if (form.managingDepartmentId != null) {
                 if (managingDepartment == null || managingDepartment.id !== form.managingDepartmentId) {
-                    new DepartmentsApiService(api)
+                    new DepartmentsApiService()
                         .retrievePublic(form.managingDepartmentId)
                         .then(setManagingDepartment);
                 }
@@ -303,7 +303,6 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
                     id={element.id}
                     component={'h3'}
                     variant="h5"
-                    color="primary"
                 >
                     Schutz vor automatisierten Einreichungen
                 </Typography>

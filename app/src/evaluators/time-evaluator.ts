@@ -1,7 +1,7 @@
-import {ConditionOperator} from "../data/condition-operator";
-import {BaseEvaluator} from "./base-evaluator";
-import {isStringNotNullOrEmpty, isStringNullOrEmpty} from "../utils/string-utils";
-import {isValid, parseISO} from "date-fns";
+import {ConditionOperator} from '../data/condition-operator';
+import {BaseEvaluator} from './base-evaluator';
+import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../utils/string-utils';
+import {isValid, parseISO} from 'date-fns';
 
 const timeRegex = /^\d\d:\d\d$/;
 

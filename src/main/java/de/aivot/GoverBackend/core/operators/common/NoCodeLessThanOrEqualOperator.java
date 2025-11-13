@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 
 public class NoCodeLessThanOrEqualOperator extends NoCodeOperator {
     @Override
@@ -56,22 +57,22 @@ public class NoCodeLessThanOrEqualOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{
-                new NoCodeParameter(
-                        NoCodeDataType.Any,
-                        "Wert 1"
-                ),
-                new NoCodeParameter(
-                        NoCodeDataType.Any,
-                        "Wert 2"
-                ),
-        };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Boolean;
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
+                        NoCodeDataType.Boolean,
+                        new NoCodeParameter(
+                                NoCodeDataType.Number,
+                                "Wert 1",
+                                "Der erste zu vergleichende Wert."
+                        ),
+                        new NoCodeParameter(
+                                NoCodeDataType.Number,
+                                "Wert 2",
+                                "Der zweite zu vergleichende Wert."
+                        )
+                )
+        );
     }
 
     @Override
@@ -79,6 +80,6 @@ public class NoCodeLessThanOrEqualOperator extends NoCodeOperator {
         var arg0 = castToNumber(args[0]);
         var arg1 = castToNumber(args[1]);
 
-        return new NoCodeResult(NoCodeDataType.Boolean, arg0.compareTo(arg1) <= 0);
+        return new NoCodeResult(arg0.compareTo(arg1) <= 0);
     }
 }

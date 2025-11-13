@@ -102,14 +102,17 @@ public class IdentityProviderEntity {
     @Nonnull
     private Boolean isTestProvider;
 
+    @Nullable
+    private String pkceMethod;
+
     // Equals and HashCode
 
     @Override
-    public boolean equals(Object object) {
-        if (object == null || getClass() != object.getClass()) return false;
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
 
-        IdentityProviderEntity provider = (IdentityProviderEntity) object;
-        return key.equals(provider.key) && metadataIdentifier.equals(provider.metadataIdentifier) && type == provider.type && name.equals(provider.name) && description.equals(provider.description) && Objects.equals(iconAssetKey, provider.iconAssetKey) && authorizationEndpoint.equals(provider.authorizationEndpoint) && tokenEndpoint.equals(provider.tokenEndpoint) && Objects.equals(userinfoEndpoint, provider.userinfoEndpoint) && Objects.equals(endSessionEndpoint, provider.endSessionEndpoint) && clientId.equals(provider.clientId) && Objects.equals(clientSecretKey, provider.clientSecretKey) && Objects.equals(attributes, provider.attributes) && defaultScopes.equals(provider.defaultScopes) && additionalParams.equals(provider.additionalParams) && isEnabled.equals(provider.isEnabled) && isTestProvider.equals(provider.isTestProvider);
+        IdentityProviderEntity that = (IdentityProviderEntity) o;
+        return key.equals(that.key) && metadataIdentifier.equals(that.metadataIdentifier) && type == that.type && name.equals(that.name) && description.equals(that.description) && Objects.equals(iconAssetKey, that.iconAssetKey) && authorizationEndpoint.equals(that.authorizationEndpoint) && tokenEndpoint.equals(that.tokenEndpoint) && Objects.equals(userinfoEndpoint, that.userinfoEndpoint) && Objects.equals(endSessionEndpoint, that.endSessionEndpoint) && clientId.equals(that.clientId) && Objects.equals(clientSecretKey, that.clientSecretKey) && Objects.equals(attributes, that.attributes) && defaultScopes.equals(that.defaultScopes) && additionalParams.equals(that.additionalParams) && isEnabled.equals(that.isEnabled) && isTestProvider.equals(that.isTestProvider) && Objects.equals(pkceMethod, that.pkceMethod);
     }
 
     @Override
@@ -131,6 +134,7 @@ public class IdentityProviderEntity {
         result = 31 * result + additionalParams.hashCode();
         result = 31 * result + isEnabled.hashCode();
         result = 31 * result + isTestProvider.hashCode();
+        result = 31 * result + Objects.hashCode(pkceMethod);
         return result;
     }
 
@@ -304,6 +308,16 @@ public class IdentityProviderEntity {
 
     public IdentityProviderEntity setIsTestProvider(@Nonnull Boolean testProvider) {
         isTestProvider = testProvider;
+        return this;
+    }
+
+    @Nullable
+    public String getPkceMethod() {
+        return pkceMethod;
+    }
+
+    public IdentityProviderEntity setPkceMethod(@Nullable String pkceMethod) {
+        this.pkceMethod = pkceMethod;
         return this;
     }
 

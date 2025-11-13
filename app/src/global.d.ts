@@ -3,6 +3,7 @@ declare var AppConfig: {
         realm: string;
         client: string;
         hostname: string;
+        idp_hint: string;
     };
     api: {
         hostname: string;

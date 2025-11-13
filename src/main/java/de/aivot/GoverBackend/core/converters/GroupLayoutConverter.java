@@ -1,8 +1,7 @@
 package de.aivot.GoverBackend.core.converters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
@@ -11,7 +10,8 @@ import jakarta.persistence.Converter;
 public class GroupLayoutConverter implements AttributeConverter<GroupLayout, String> {
     @Override
     public String convertToDatabaseColumn(GroupLayout baseElement) {
-        var mapper = new ObjectMapper();
+        var mapper = ObjectMapperFactory
+                .getInstance();
 
         try {
             return mapper.writeValueAsString(baseElement);
@@ -22,8 +22,8 @@ public class GroupLayoutConverter implements AttributeConverter<GroupLayout, Str
 
     @Override
     public GroupLayout convertToEntityAttribute(String s) {
-        var mapper = new ObjectMapper();
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        var mapper = ObjectMapperFactory
+                .getInstance();
 
         try {
             return mapper.readValue(s, GroupLayout.class);

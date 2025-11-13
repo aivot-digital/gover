@@ -26,6 +26,8 @@ public record DepartmentResponseDTO(
         String specialSupportAddress,
         @Nullable
         String departmentMail,
+        @Nullable
+        Integer themeId,
         @Nonnull
         LocalDateTime created,
         @Nonnull
@@ -42,6 +44,7 @@ public record DepartmentResponseDTO(
                 department.getTechnicalSupportAddress(),
                 department.getSpecialSupportAddress(),
                 department.getDepartmentMail(),
+                department.getThemeId(),
                 department.getCreated(),
                 department.getUpdated()
         );
@@ -58,6 +61,7 @@ public record DepartmentResponseDTO(
                 department.getTechnicalSupportAddress(),
                 department.getSpecialSupportAddress(),
                 department.getDepartmentMail(),
+                department.getThemeId(),
                 department.getCreated(),
                 department.getUpdated()
         );

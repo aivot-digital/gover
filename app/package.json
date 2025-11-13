@@ -30,6 +30,7 @@
     "@tiptap/pm": "^2.25.0",
     "@tiptap/react": "^2.25.0",
     "@tiptap/starter-kit": "^2.25.0",
+    "allotment": "^1.20.4",
     "altcha": "^2.0.5",
     "date-fns": "^4.1.0",
     "fuse.js": "^7.1.0",
@@ -41,12 +42,14 @@
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "^19.1.0",
+    "react-hotkeys-hook": "^5.2.1",
     "react-markdown": "^10.1.0",
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.6.3",
     "react-virtuoso": "^4.13.0",
     "react-wrap-balancer": "^1.1.1",
     "short-unique-id": "^5.3.2",
+    "simplebar-react": "^3.3.2",
     "uuid": "^11.1.0",
     "yup": "^1.6.1"
   },
@@ -72,11 +75,19 @@
     "glob": "^11.0.3",
     "sass": "^1.89.2",
     "typescript": "^5.8.3",
-    "vite": "^7.0.3",
+    "vite": "7.1.11",
     "vite-plugin-checker": "^0.10.3",
     "vite-plugin-svgr": "^4.3.0",
     "web-vitals": "^5.0.3"
   },
+    "overrides": {
+        "allotment": {
+            "use-resize-observer": {
+                "react-dom": "^19.1.0",
+                "react": "^19.1.0"
+            }
+        }
+    },
   "eslintConfig": {
     "extends": [
       "react-app",

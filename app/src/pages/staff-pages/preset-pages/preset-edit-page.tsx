@@ -1,14 +1,11 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Container from '@mui/material/Container';
-import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {useNavigate, useParams} from 'react-router-dom';
 import {ViewDispatcherComponent} from '../../../components/view-dispatcher.component';
 import {NotFoundPage} from '../../../components/not-found-page/not-found-page';
-import {MetaElement} from '../../../components/meta-element/meta-element';
 import {AppToolbar} from '../../../components/app-toolbar/app-toolbar';
 import {type Preset} from '../../../models/entities/preset';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
@@ -16,11 +13,8 @@ import {removeLoadingSnackbar, showErrorSnackbar, showLoadingSnackbar, showSucce
 import {ElementTree} from '../../../components/element-tree/element-tree';
 import {flattenElements} from '../../../utils/flatten-elements';
 import {ConfirmDialog} from '../../../dialogs/confirm-dialog/confirm-dialog';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import DoneAllOutlinedIcon from '@mui/icons-material/DoneAllOutlined';
-import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
 import {type PresetVersion} from '../../../models/entities/preset-version';
-import DriveFolderUploadOutlinedIcon from '@mui/icons-material/DriveFolderUploadOutlined';
 import {VersionsPresetDialog} from '../../../dialogs/preset-dialogs/versions-preset-dialog/versions-preset-dialog';
 import {determinePresetVersionDescriptor} from '../../../utils/determine-preset-version-descriptor';
 import {useApi} from '../../../hooks/use-api';
@@ -33,14 +27,32 @@ import {hideLoadingOverlay, showLoadingOverlay} from '../../../slices/loading-ov
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
 import {IdentityProviderInfo} from '../../../modules/identity/models/identity-provider-info';
 import {IdentityProvidersApiService} from '../../../modules/identity/identity-providers-api-service';
-import {ElementData} from '../../../models/element-data';
+import {ElementData, ElementDerivationResponse} from '../../../models/element-data';
 import {FormStatus} from '../../../modules/forms/enums/form-status';
 import {useConfirm} from '../../../providers/confirm-provider';
+import {addDerivationLogItems} from '../../../slices/logging-slice';
+import {addEntityHistoryItem} from '../../../slices/entity-history-slice';
+import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
+import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
+import {useElementSize} from '../../../utils/element-size';
+import {Allotment} from 'allotment';
+import {Paper} from '@mui/material';
+import {GenericPageHeader} from '../../../components/generic-page-header/generic-page-header';
+import {ModuleIcons} from '../../../shells/staff/data/module-icons';
+import NewWindow from '@aivot/mui-material-symbols-400-outlined/dist/new-window/NewWindow';
+import HomeStorage from '@aivot/mui-material-symbols-400-outlined/dist/home-storage/HomeStorage';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export function PresetEditPage() {
     const api = useApi();
     const dispatch = useAppDispatch();
     const showConfirm = useConfirm();
+
+    const {
+        ref: containerRef,
+        size: containerSize,
+    } = useElementSize<HTMLDivElement>();
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     const [isBusy, setIsBusy] = useState(false);
     const [isDeriving, setIsDeriving] = useState(false);
@@ -106,7 +118,14 @@ export function PresetEditPage() {
 
         presetsApiService
             .retrieve(presetKey)
-            .then(setPreset)
+            .then((preset) => {
+                setPreset(preset);
+                dispatch(addEntityHistoryItem({
+                    type: ServerEntityType.Presets,
+                    link: `/presets/edit/${preset.key}/${versionNumber}`,
+                    title: preset.title,
+                }));
+            })
             .catch(() => {
                 setNetworkError({
                     title: 'Fehler beim Laden der Vorlage',
@@ -144,8 +163,9 @@ export function PresetEditPage() {
                 disableVisibilities: false,
                 disableValidation: true,
             })
-            .then((presetState) => {
-                setElementData(presetState);
+            .then(({elementData, logItems}) => {
+                setElementData(elementData);
+                dispatch(addDerivationLogItems(logItems));
             })
             .catch(err => {
                 console.error(err);
@@ -189,13 +209,13 @@ export function PresetEditPage() {
         }
 
         const conf = await showConfirm({
-            title: 'Neue Version anlegen',
+            title: 'Neuen Entwurf anlegen',
             children: (
                 <Typography>
-                    Möchten Sie wirklich eine neue Version der Vorlage {preset.title} anlegen?
+                    Möchten Sie wirklich eine neuen Entwurf (Arbeitsversion) der Vorlage {preset.title} anlegen?
                 </Typography>
             ),
-            confirmButtonText: 'Ja, neue Version anlegen',
+            confirmButtonText: 'Ja, Entwurf anlegen',
             isDestructive: false,
         });
 
@@ -226,7 +246,7 @@ export function PresetEditPage() {
                     setPresetVersion(createdVersion);
                     setNetworkError(undefined);
                 } else {
-                    dispatch(showSuccessSnackbar('Neue Vorlagen-Version (' + createdVersion.version + ') wurde erfolgreich angelegt.'));
+                    dispatch(showSuccessSnackbar('Neue Version (' + createdVersion.version + ') wurde erfolgreich angelegt.'));
                     navigate(`/presets/edit/${preset.key}/${createdVersion.version}`, {replace: true});
                 }
             })
@@ -264,8 +284,9 @@ export function PresetEditPage() {
                         disableValidation: true,
                     });
             })
-            .then((presetState) => {
-                setElementData(presetState);
+            .then(({elementData, logItems}) => {
+                setElementData(elementData);
+                dispatch(addDerivationLogItems(logItems));
             })
             .catch((err) => {
                 console.error(err);
@@ -293,11 +314,13 @@ export function PresetEditPage() {
                 disableValidation: false,
                 disableVisibilities: false,
             })
-            .then((presetState) => {
-                setElementData(presetState);
+            .then(({elementData, logItems}) => {
+                setElementData(elementData);
+
+                dispatch(addDerivationLogItems(logItems));
 
                 // errors always contains 3 base errors from the form (can change if form will extend in the future)
-                if (presetState.errors && Object.keys(presetState.errors).length <= 3) {
+                if (elementData.errors && Object.keys(elementData.errors).length <= 3) {
                     dispatch(showSuccessSnackbar('Bei der Validierung sind keine Fehler aufgetreten.'));
                 }
             })
@@ -324,7 +347,7 @@ export function PresetEditPage() {
         setIsDeriving(true);
         dispatch(showLoadingSnackbar('Berechnungen werden durchgeführt…'));
 
-        withAsyncWrapper<void, ElementData>({
+        withAsyncWrapper<void, ElementDerivationResponse>({
             desiredMinRuntime: 600,
             main: async () => {
                 return await presetsApiService.determinePresetState(
@@ -337,8 +360,9 @@ export function PresetEditPage() {
                     },
                 );
             },
-        }).then((presetState) => {
-            setElementData(presetState);
+        }).then(({elementData, logItems}) => {
+            setElementData(elementData);
+            dispatch(addDerivationLogItems(logItems));
         }).catch((err) => {
             console.error(err);
             dispatch(showErrorSnackbar('Fehler beim Berechnen des Formularzustands'));
@@ -386,93 +410,129 @@ export function PresetEditPage() {
     const allElements = flattenElements(presetVersion.rootElement);
 
     return (
-        <>
-            <MetaElement
-                title={`Vorlagen-Editor - ${preset.title} - ${versionNumber ?? ''} (${determinePresetVersionDescriptor(preset, presetVersion)})`}
-            />
-            <AppToolbar
-                title={`${preset.title} - ${versionNumber ?? ''} (${determinePresetVersionDescriptor(preset, presetVersion)})`}
-                updateToolbarHeight={updateToolbarHeight}
-                actions={[
-                    {
-                        icon: <DriveFolderUploadOutlinedIcon />,
-                        tooltip: 'Neue Version anlegen',
-                        onClick: handleAddNewVersion,
-                    },
-                    {
-                        icon: <HistoryOutlinedIcon />,
-                        tooltip: 'Versionen anzeigen',
-                        onClick: () => {
-                            setShowPresetVersions(true);
-                        },
-                    },
-                    {
-                        icon: <DoneAllOutlinedIcon />,
-                        tooltip: isBusy ? 'Validierung läuft bereits' : 'Validierung durchführen',
-                        onClick: handleValidate,
-                        disabled: isBusy,
-                    },
-                ].concat(presetVersion.status != FormStatus.Published ? [
-                    {
-                        icon: <DeleteForeverOutlinedIcon />,
-                        tooltip: 'Version der Vorlage löschen',
-                        onClick: () => {
-                            setConfirmDelete(() => handleDelete);
-                        },
-                    },
-                ] : [])}
-            />
-            <Grid
-                container
+        <PageWrapper
+            title={`Vorlage - ${preset.title} - ${versionNumber ?? ''} (${determinePresetVersionDescriptor(preset, presetVersion)})`}
+            fullWidth={true}
+            fullHeight={true}
+        >
+            <Box
+                ref={containerRef}
                 sx={{
-                    minHeight: 'calc(100vh - ' + toolbarHeight + 'px)',
+                    height: '100vh',
+                    '--focus-border': (theme) => theme.palette.secondary.main,
                 }}
             >
-                <Grid
-                    sx={{
-                        px: 2,
-                        boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
-                        height: 'calc(100vh - ' + toolbarHeight + 'px)',
-                        overflowY: 'scroll',
-                        borderRight: '1px solid #E0E7E0',
-                        position: 'relative',
-                    }}
-                    size={4}
-                >
-                    <ElementTree
-                        entity={presetVersion}
-                        onPatch={handlePatch}
-                        editable={presetVersion.status == FormStatus.Drafted}
-                        scope="preset"
-                        enabledIdentityProviderInfos={identityProviders}
-                    />
-                </Grid>
+                <Allotment vertical>
+                    <Allotment>
+                        <Allotment.Pane minSize={732}>
+                            {/* Working Area */}
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    height: '100%',
+                                    px: 2,
+                                    pt: 2,
+                                    overflow: 'hidden',
+                                }}
+                            >
+                                <GenericPageHeader
+                                    title={`Vorlage: ${preset.title} - ${versionNumber ?? ''} (${determinePresetVersionDescriptor(preset, presetVersion)})`}
+                                    badge={{
+                                        color: 'default',
+                                        label: `Version ${presetVersion.version}`,
+                                    }}
+                                    icon={ModuleIcons.presets}
+                                    actions={[
+                                        {
+                                            icon: <NewWindow />,
+                                            tooltip: 'Neuen Entwurf anlegen',
+                                            onClick: handleAddNewVersion,
+                                        },
+                                        {
+                                            icon: <HomeStorage />,
+                                            tooltip: 'Versionen anzeigen',
+                                            onClick: () => {
+                                                setShowPresetVersions(true);
+                                            },
+                                        },
+                                        {
+                                            icon: <DoneAllOutlinedIcon />,
+                                            tooltip: isBusy ? 'Validierung läuft bereits' : 'Validierung durchführen',
+                                            onClick: handleValidate,
+                                            disabled: isBusy,
+                                        },
+                                        {
+                                            icon: <Delete color={'error'}/>,
+                                            tooltip: 'Version der Vorlage löschen',
+                                            onClick: () => {
+                                                setConfirmDelete(() => handleDelete);
+                                            },
+                                            visible: presetVersion.status != FormStatus.Published,
+                                        },
+                                    ]}
+                                />
 
-                <Grid
-                    sx={{
-                        height: 'calc(100vh - ' + toolbarHeight + 'px)',
-                        overflowY: 'scroll',
-                    }}
-                    size={8}
-                >
-                    <Container>
-                        <ViewDispatcherComponent
-                            rootElement={presetVersion.rootElement}
-                            allElements={allElements}
-                            element={presetVersion.rootElement}
-                            isBusy={isBusy}
-                            isDeriving={isDeriving}
-                            elementData={elementData}
-                            onElementDataChange={handleValueChange}
-                            onElementBlur={undefined}
-                            mode="editor"
-                            disableVisibility={false}
-                            derivationTriggerIdQueue={[]}
-                            scrollContainerRef={undefined}
-                        />
-                    </Container>
-                </Grid>
-            </Grid>
+                                <Paper
+                                    sx={{
+                                        overflowY: 'auto',
+                                        flex: 1,
+                                        mt: 2,
+                                        p: 4,
+                                        minHeight: 0,
+                                        borderTopLeftRadius: 10,
+                                        borderTopRightRadius: 10,
+                                        borderBottomLeftRadius: 0,
+                                        borderBottomRightRadius: 0,
+                                    }}
+                                >
+                                    <ViewDispatcherComponent
+                                        rootElement={presetVersion.rootElement}
+                                        allElements={allElements}
+                                        element={presetVersion.rootElement}
+                                        scrollContainerRef={scrollContainerRef}
+                                        isBusy={false}
+                                        isDeriving={false}
+                                        mode="editor"
+                                        elementData={elementData}
+                                        onElementDataChange={setElementData}
+                                        onElementBlur={undefined}
+                                        derivationTriggerIdQueue={[] /* Not necessary because this is kept internally by the root component view */}
+                                        disableVisibility={false}
+                                    />
+                                </Paper>
+                            </Box>
+                        </Allotment.Pane>
+
+                        <Allotment.Pane
+                            minSize={480}
+                            preferredSize={480}
+                        >
+                            {/* Element Tree */}
+                            <Paper
+                                sx={{
+                                    px: 2,
+                                    boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
+                                    borderLeft: '1px solid #E0E7E0',
+                                    borderRadius: 0,
+                                    position: 'relative',
+                                    height: '100%',
+                                    overflow: 'hidden',
+                                }}
+                            >
+                                <ElementTree
+                                    entity={presetVersion}
+                                    onPatch={handlePatch}
+                                    editable={presetVersion.status == FormStatus.Drafted}
+                                    scope="preset"
+                                    enabledIdentityProviderInfos={identityProviders}
+                                />
+                            </Paper>
+                        </Allotment.Pane>
+                    </Allotment>
+                </Allotment>
+            </Box>
+
             <ConfirmDialog
                 title="Vorlage wirklich löschen"
                 onConfirm={confirmDelete}
@@ -484,6 +544,7 @@ export function PresetEditPage() {
                 Vorlage <strong>{preset.title}</strong> wirklich löschen wollen?
                 Diese Aktion kann nicht rückgängig gemacht werden.
             </ConfirmDialog>
+
             <VersionsPresetDialog
                 open={showPresetVersions}
                 onClose={() => {
@@ -491,7 +552,7 @@ export function PresetEditPage() {
                 }}
                 preset={preset}
             />
-        </>
+        </PageWrapper>
     );
 }
 

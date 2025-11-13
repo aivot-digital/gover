@@ -139,14 +139,6 @@ public class FormMailService {
             departmentService.retrieve(form.getDevelopingDepartmentId())
                     .ifPresent(dept -> context.put("developingDepartment", dept));
         }
-        if (form.getResponsibleDepartmentId() != null) {
-            departmentService.retrieve(form.getResponsibleDepartmentId())
-                    .ifPresent(dept -> context.put("responsibleDepartment", dept));
-        }
-        if (form.getManagingDepartmentId() != null) {
-            departmentService.retrieve(form.getManagingDepartmentId())
-                    .ifPresent(dept -> context.put("managingDepartment", dept));
-        }
     }
 
 }

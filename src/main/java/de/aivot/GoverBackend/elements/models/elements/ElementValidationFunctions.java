@@ -1,9 +1,9 @@
 package de.aivot.GoverBackend.elements.models.elements;
 
+import de.aivot.GoverBackend.elements.enums.ValidationFunctionType;
 import de.aivot.GoverBackend.elements.utils.ElementReferenceUtils;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.models.functions.conditions.ConditionSet;
-import de.aivot.GoverBackend.models.lib.ValidationExpressionWrapper;
 import jakarta.annotation.Nullable;
 
 import java.io.Serializable;
@@ -13,11 +13,13 @@ import java.util.Objects;
 
 public class ElementValidationFunctions implements Serializable {
     @Nullable
+    private ValidationFunctionType type;
+    @Nullable
     private String requirements;
     @Nullable
     private ConditionSet conditionSet;
     @Nullable
-    private List<ValidationExpressionWrapper> validationExpressions;
+    private List<ValidationNoCodeWrapper> noCodeList;
     @Nullable
     private JavascriptCode javascriptCode;
     @Nullable
@@ -31,16 +33,16 @@ public class ElementValidationFunctions implements Serializable {
                         conditionSet
                 );
 
-        if (validationExpressions != null) {
-            for (var validationExpression : validationExpressions) {
-                if (validationExpression.getExpression() == null) {
+        if (noCodeList != null) {
+            for (var validationExpression : noCodeList) {
+                if (validationExpression.getNoCode() == null) {
                     continue;
                 }
 
                 referencedIds.addAll(ElementReferenceUtils
                         .getReferencedIds(
                                 null,
-                                validationExpression.getExpression(),
+                                validationExpression.getNoCode(),
                                 null
                         ));
             }
@@ -54,22 +56,34 @@ public class ElementValidationFunctions implements Serializable {
         if (o == null || getClass() != o.getClass()) return false;
 
         ElementValidationFunctions that = (ElementValidationFunctions) o;
-        return Objects.equals(requirements, that.requirements) && Objects.equals(conditionSet, that.conditionSet) && Objects.equals(validationExpressions, that.validationExpressions) && Objects.equals(javascriptCode, that.javascriptCode) && Objects.equals(referencedIds, that.referencedIds);
+        return Objects.equals(type, that.type) && Objects.equals(requirements, that.requirements) && Objects.equals(conditionSet, that.conditionSet) && Objects.equals(noCodeList, that.noCodeList) && Objects.equals(javascriptCode, that.javascriptCode) && Objects.equals(referencedIds, that.referencedIds);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hashCode(requirements);
+        int result = Objects.hashCode(type);
+        result = 31 * result + Objects.hashCode(requirements);
         result = 31 * result + Objects.hashCode(conditionSet);
-        result = 31 * result + Objects.hashCode(validationExpressions);
+        result = 31 * result + Objects.hashCode(noCodeList);
         result = 31 * result + Objects.hashCode(javascriptCode);
         result = 31 * result + Objects.hashCode(referencedIds);
         return result;
     }
 
+
     // endregion
 
     // region Getters & Setters
+
+    @Nullable
+    public ValidationFunctionType getType() {
+        return type;
+    }
+
+    public ElementValidationFunctions setType(@Nullable ValidationFunctionType type) {
+        this.type = type;
+        return this;
+    }
 
     @Nullable
     public String getRequirements() {
@@ -92,12 +106,12 @@ public class ElementValidationFunctions implements Serializable {
     }
 
     @Nullable
-    public List<ValidationExpressionWrapper> getValidationExpressions() {
-        return validationExpressions;
+    public List<ValidationNoCodeWrapper> getNoCodeList() {
+        return noCodeList;
     }
 
-    public ElementValidationFunctions setValidationExpressions(@Nullable List<ValidationExpressionWrapper> validationExpressions) {
-        this.validationExpressions = validationExpressions;
+    public ElementValidationFunctions setNoCodeList(@Nullable List<ValidationNoCodeWrapper> noCodeList) {
+        this.noCodeList = noCodeList;
         return this;
     }
 

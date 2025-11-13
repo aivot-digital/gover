@@ -1,8 +1,8 @@
-import { removeChildElement } from './remove-child-element';
-import { generateElementWithDefaultValues } from '../../../utils/generate-element-with-default-values';
-import { ElementType } from '../../../data/element-type/element-type';
-import { GroupLayout } from '../../../models/elements/form/layout/group-layout';
-import { TextFieldElement } from '../../../models/elements/form/input/text-field-element';
+import {removeChildElement} from './remove-child-element';
+import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
+import {ElementType} from '../../../data/element-type/element-type';
+import {GroupLayout} from '../../../models/elements/form/layout/group-layout';
+import {TextFieldElement} from '../../../models/elements/form/input/text-field-element';
 import {AnyElementWithChildren} from '../../../models/elements/any-element-with-children';
 
 describe('removeChildElement', () => {

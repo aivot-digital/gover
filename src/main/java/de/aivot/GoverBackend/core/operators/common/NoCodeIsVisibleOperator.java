@@ -1,12 +1,12 @@
 package de.aivot.GoverBackend.core.operators.common;
 
 import de.aivot.GoverBackend.elements.models.ElementData;
-import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 
 public class NoCodeIsVisibleOperator extends NoCodeOperator {
     @Override
@@ -58,18 +58,17 @@ public class NoCodeIsVisibleOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{
-                new NoCodeParameter(
-                        NoCodeDataType.Any,
-                        "Wert"
-                ),
-        };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Boolean;
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
+                        NoCodeDataType.Boolean,
+                        new NoCodeParameter(
+                                NoCodeDataType.String,
+                                "Wert",
+                                "Die ID des zu überprüfenden Elements."
+                        )
+                )
+        );
     }
 
     @Override
@@ -77,6 +76,6 @@ public class NoCodeIsVisibleOperator extends NoCodeOperator {
         var arg = castToString(args[0]);
         var dataObject = data.get(arg);
         var isVisible = dataObject != null && dataObject.getIsVisible();
-        return new NoCodeResult(NoCodeDataType.Boolean, isVisible);
+        return new NoCodeResult(isVisible);
     }
 }

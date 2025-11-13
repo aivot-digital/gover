@@ -26,6 +26,13 @@ public class FormRevisionService {
     private final FormService formService;
     private final FormVersionService formVersionService;
 
+    private static final String[] IGNORED_FIELDS = new String[] {
+            "created",
+            "updated",
+            "internalTitle",
+            "relevantDepartmentId"
+    };
+
     public FormRevisionService(FormRevisionRepository formRevisionRepository, FormService formService, FormVersionService formVersionService) {
         this.formRevisionRepository = formRevisionRepository;
         this.formService = formService;
@@ -33,9 +40,9 @@ public class FormRevisionService {
     }
 
     @Nonnull
-    public Page<FormRevisionEntity> list(@Nonnull Integer formId, @Nonnull Pageable pageable) {
+    public Page<FormRevisionEntity> list(@Nonnull Integer formId, @Nonnull Integer formVersion, @Nonnull Pageable pageable) {
         return formRevisionRepository
-                .getAllByFormIdOrderByTimestampDesc(formId, pageable);
+                .getAllByFormIdAndFormVersionOrderByTimestampDesc(formId, formVersion, pageable);
     }
 
     public void create(
@@ -55,6 +62,11 @@ public class FormRevisionService {
             @Nonnull FormVersionWithDetailsEntity createdForm
     ) {
         var formJson = new JSONObject(createdForm);
+        for (String field : IGNORED_FIELDS) {
+            formJson.remove(field);
+            formJson.remove(field);
+        }
+
         var formMap = formJson.toMap();
 
         var diff = new DiffItem("/", null, formMap);
@@ -78,8 +90,10 @@ public class FormRevisionService {
         var existingFormJson = new JSONObject(existingForm);
 
         // Ignore the updated field
-        updatedFormJson.remove("updated");
-        existingFormJson.remove("updated");
+        for (String field : IGNORED_FIELDS) {
+            updatedFormJson.remove(field);
+            existingFormJson.remove(field);
+        }
 
         var changes = DiffService.createDiff(existingFormJson, updatedFormJson);
 
@@ -99,7 +113,7 @@ public class FormRevisionService {
 
     public FormVersionWithDetailsEntity rollback(FormVersionWithDetailsEntity form, BigInteger revisionId) throws ResponseException {
         var firstRevision = formRevisionRepository
-                .getFirstByFormIdOrderByTimestampAsc(form.getId())
+                .getFirstByFormIdAndFormVersionOrderByTimestampAsc(form.getId(), form.getVersion())
                 .orElseThrow(ResponseException::notFound);
 
         var targetRevisionToRollBackTo = formRevisionRepository
@@ -111,7 +125,7 @@ public class FormRevisionService {
         }
 
         var succeedingRevisionsToRollBack = formRevisionRepository
-                .getAllByFormIdAndTimestampIsAfterOrderByTimestampDesc(form.getId(), targetRevisionToRollBackTo.getTimestamp());
+                .getAllByFormIdAndFormVersionAndTimestampIsAfterOrderByTimestampDesc(form.getId(), form.getVersion(), targetRevisionToRollBackTo.getTimestamp());
 
         succeedingRevisionsToRollBack.add(targetRevisionToRollBackTo);
 

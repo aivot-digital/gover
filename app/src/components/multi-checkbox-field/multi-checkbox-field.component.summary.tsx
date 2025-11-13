@@ -2,7 +2,6 @@ import React from 'react';
 import {Grid, List, ListItem, Typography, useTheme} from '@mui/material';
 import {type MultiCheckboxFieldElement} from '../../models/elements/form/input/multi-checkbox-field-element';
 import {type BaseSummaryProps} from '../../summaries/base-summary';
-import {stringOrDefault} from "../../utils/string-utils";
 
 export function MultiCheckboxFieldComponentSummary(props: BaseSummaryProps<MultiCheckboxFieldElement, string[]>) {
     const options = (props.model.options ?? []).map((option) => {

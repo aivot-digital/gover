@@ -58,7 +58,7 @@ export function GenericPageHeader(props: GenericPageHeaderProps) {
 
                 {
                     props.badge &&
-                    <Badge {...props.badge} />
+                    <Badge {...props.badge} sx={{ml: 1}}/>
                 }
 
                 <Actions

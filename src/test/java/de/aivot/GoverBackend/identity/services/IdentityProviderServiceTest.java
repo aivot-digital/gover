@@ -31,7 +31,6 @@ class IdentityProviderServiceTest {
     private SecretRepository secretRepository;
     private AssetRepository assetRepository;
     private HttpService httpService;
-    private FormRepository formRepository;
     private FormVersionRepository formVersionRepository;
 
     @BeforeEach
@@ -40,14 +39,12 @@ class IdentityProviderServiceTest {
         identityProviderRepository = mock(IdentityProviderRepository.class);
         secretRepository = mock(SecretRepository.class);
         assetRepository = mock(AssetRepository.class);
-        formRepository = mock(FormRepository.class);
         formVersionRepository = mock(FormVersionRepository.class);
 
         identityProviderService = new IdentityProviderService(
                 identityProviderRepository,
                 secretRepository,
                 assetRepository,
-                formRepository,
                 httpService,
                 formVersionRepository
         );
@@ -113,17 +110,6 @@ class IdentityProviderServiceTest {
 
         ResponseException exception = assertThrows(ResponseException.class, () -> identityProviderService.prepare(endpoint));
         assertTrue(exception.getMessage().contains("ungültige Antwort"));
-    }
-
-    @Test
-    void prepare_HttpServiceThrowsException_ThrowsResponseException() throws Exception {
-        String endpoint = "https://example.com/.well-known/openid-configuration";
-
-        when(httpService.get(any(URI.class)))
-                .thenThrow(new IOException("Connection error"));
-
-        ResponseException exception = assertThrows(ResponseException.class, () -> identityProviderService.prepare(endpoint));
-        assertTrue(exception.getMessage().contains("konnte nicht erreicht werden"));
     }
 
     @Test

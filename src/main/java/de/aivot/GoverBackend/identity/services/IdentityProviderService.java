@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.asset.entities.AssetEntity;
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
+import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.form.entities.FormVersionEntity;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
@@ -35,26 +36,21 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Service class for managing identity providers in the Gover system.
+ * Service for managing identity providers in the Gover system.
  *
- * <p>This class provides methods for performing CRUD operations on {@link IdentityProviderEntity} objects,
- * including creating, updating, deleting, and retrieving identity providers. It also includes
- * validation logic to ensure the integrity of the data and compliance with business rules.</p>
+ * <p>
+ * Provides CRUD operations, validation, and business logic for {@link IdentityProviderEntity} objects.
+ * Handles OpenID Connect configuration retrieval, ensures data integrity, and enforces business rules
+ * such as only allowing deletion of custom providers without linked forms.
+ * </p>
  *
- * <p>Key functionalities:</p>
+ * <p>Key functionalities include:</p>
  * <ul>
- *     <li>Retrieves identity providers with support for filtering and pagination.</li>
- *     <li>Validates and updates identity provider details, ensuring fixed values like type and key are preserved.</li>
- *     <li>Deletes identity providers, ensuring no linked forms exist and the provider is of type {@link IdentityProviderType#Custom}.</li>
- *     <li>Checks for the existence of identity providers by ID or specification.</li>
+ *     <li>CRUD operations for identity providers with validation and filtering support.</li>
+ *     <li>Preparation of providers from OpenID Connect discovery endpoints.</li>
+ *     <li>Validation of linked secrets and assets.</li>
+ *     <li>Business rule enforcement for provider updates and deletions.</li>
  * </ul>
- *
- * <p>Example usage:</p>
- * <pre>
- *     IdentityProviderService service = new IdentityProviderService(...);
- *     Page&lt;IdentityProviderEntity&gt; providers = service.performList(pageable, specification, filter);
- *     Optional&lt;IdentityProviderEntity&gt; provider = service.retrieve("provider-id");
- * </pre>
  *
  * @see IdentityProviderEntity
  * @see IdentityProviderType
@@ -65,22 +61,18 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
     private final IdentityProviderRepository identityProviderRepository;
     private final SecretRepository secretRepository;
     private final AssetRepository assetRepository;
-    private final FormRepository formRepository;
     private final HttpService httpService;
     private final FormVersionRepository formVersionRepository;
 
     @Autowired
-    public IdentityProviderService(
-            IdentityProviderRepository identityProviderRepository,
-            SecretRepository secretRepository,
-            AssetRepository assetRepository,
-            FormRepository formRepository,
-            HttpService httpService,
-            FormVersionRepository formVersionRepository) {
+    public IdentityProviderService(IdentityProviderRepository identityProviderRepository,
+                                   SecretRepository secretRepository,
+                                   AssetRepository assetRepository,
+                                   HttpService httpService,
+                                   FormVersionRepository formVersionRepository) {
         this.identityProviderRepository = identityProviderRepository;
         this.secretRepository = secretRepository;
         this.assetRepository = assetRepository;
-        this.formRepository = formRepository;
         this.httpService = httpService;
         this.formVersionRepository = formVersionRepository;
     }
@@ -115,7 +107,7 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
         HttpResponse<String> response;
         try {
             response = httpService.get(uri);
-        } catch (IOException | InterruptedException e) {
+        } catch (HttpConnectionException e) {
             throw ResponseException.internalServerError(
                     e,
                     "Der Endpoint %s konnte nicht erreicht werden. Bitte überprüfen Sie den Endpoint.",
@@ -364,6 +356,13 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
 
     // region Helpers
 
+    /**
+     * Validates and cleans the client secret key of the given entity.
+     * <p>
+     * If the client secret key is set but does not exist in the secret repository, it is set to null.
+     * </p>
+     * @param updatedEntity The entity whose client secret key should be validated and cleaned.
+     */
     private void cleanClientSecretKey(@Nonnull IdentityProviderEntity updatedEntity) {
         if (updatedEntity.getClientSecretKey() == null) {
             updatedEntity.setClientSecretKey(null);
@@ -382,6 +381,13 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
         }
     }
 
+    /**
+     * Validates and cleans the icon asset key of the given entity.
+     * <p>
+     * If the icon asset key is set but does not exist in the asset repository, it is set to null.
+     * </p>
+     * @param updatedEntity The entity whose icon asset key should be validated and cleaned.
+     */
     private void cleanIconAssetKey(@Nonnull IdentityProviderEntity updatedEntity) {
         if (updatedEntity.getIconAssetKey() == null) {
             updatedEntity.setIconAssetKey(null);

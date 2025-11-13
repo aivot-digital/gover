@@ -11,6 +11,7 @@
 * **System:** Implemented a license compliance check in the build process to ensure all dependencies comply with licensing requirements.
 * **Backend:** Upgraded most backend maven dependencies to the latest versions
 * **Frontend:** Replace JSX.Element type with ReactNode in the frontend codebase.
+* **Frontend:** Introduce new app shells with an improved UI/UX for both the customer and staff applications.
 * **System:** Replaced Puppet PDF generator with a new generator based on Gotenberg, which supports more engines and is easier to maintain.
 * **System:** Reworked the data structure for holding and processing form data.
 * **System:** Reworked form versioning system for ease of use.
@@ -18,6 +19,10 @@
 * **Build-System:** Pre-Release builds are now published to a separate 'gover-next' package.
 
 ## [4.5.4](https://github.com/aivot-digital/gover/compare/v4.5.3...v4.5.4) (2025-09-XX)
+
+### Features
+* **Server:** Add uptime check for IDP and API to container entrypoint.
+* **Server:** Add support for ePay21 payment provider.
 
 ### Bug Fixes
 * **Server:** Disable NGINX server tokens to prevent version disclosure.

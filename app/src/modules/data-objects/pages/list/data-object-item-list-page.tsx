@@ -3,13 +3,9 @@ import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Typography} from '@mui/material';
 import {EditOutlined} from '@mui/icons-material';
-import {useSelector} from 'react-redux';
-import {selectUser} from '../../../../slices/user-slice';
 import {useEffect, useMemo, useState} from 'react';
-import {isAdmin} from '../../../../utils/is-admin';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service';
-import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import {DataObjectSchema} from '../../models/data-object-schema';
 import {useApi} from '../../../../hooks/use-api';
@@ -20,23 +16,25 @@ import {GridColDef} from '@mui/x-data-grid';
 import {isAnyInputElement} from '../../../../models/elements/form/input/any-input-element';
 import {ElementToMuiDataGridType} from '../../../../data/element-type/element-to-mui-data-grid-type';
 import {DataObjectItem} from '../../models/data-object-item';
-import DataArrayOutlinedIcon from '@mui/icons-material/DataArrayOutlined';
-import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
 import {flattenElements} from '../../../../utils/flatten-elements';
 import {generateComponentTitle} from '../../../../utils/generate-component-title';
 import {ElementType} from '../../../../data/element-type/element-type';
 import {format} from 'date-fns/format';
 import {parseISO} from 'date-fns/parseISO';
+import FolderData from '@aivot/mui-material-symbols-400-outlined/dist/folder-data/FolderData';
+import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
+import {useAccessGuard} from '../../../../hooks/use-admin-guard';
+import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
+import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 
 export function DataObjectItemListPage() {
-    useAdminGuard();
-
+    const api = useApi();
     const schemaKey = useParams().schemaKey;
 
-    const api = useApi();
-
-    const user = useSelector(selectUser);
-    const userIsAdmin = useMemo(() => isAdmin(user), [user]);
+    const hasAccess = useAccessGuard({
+        onlyGlobalAdmin: true,
+        messageType: 'snackbar',
+    });
 
     const [dataObjectSchema, setDataObjectSchema] = useState<DataObjectSchema>();
 
@@ -64,7 +62,7 @@ export function DataObjectItemListPage() {
             {
                 field: 'icon',
                 headerName: '',
-                renderCell: () => <CellContentWrapper><CategoryOutlinedIcon /></CellContentWrapper>,
+                renderCell: () => <CellContentWrapper><DataObject /></CellContentWrapper>,
                 disableColumnMenu: true,
                 width: 24,
                 sortable: false,
@@ -75,8 +73,8 @@ export function DataObjectItemListPage() {
                 flex: 1,
                 renderCell: (params) => (
                     <CellLink
-                        to={`/data-objects/${dataObjectSchema.key}/items/${params.id}`}
-                        title="Datenobjekt bearbeiten"
+                        to={`/data-objects/${dataObjectSchema.key}/${params.id}`}
+                        title={hasAccess ? 'Datenobjekt bearbeiten' : 'Datenobjekt anzeigen'}
                     >
                         {String(params.value)}
                     </CellLink>
@@ -94,29 +92,28 @@ export function DataObjectItemListPage() {
 
     return (
         <PageWrapper
-            title={dataObjectSchema.name}
+            title={`Datenobjekte: ${dataObjectSchema.name}`}
             fullWidth
             background
         >
             <GenericListPage<DataObjectItem>
                 header={{
-                    icon: <CategoryOutlinedIcon />,
-                    title: dataObjectSchema.name,
+                    icon: <DataObject />,
+                    title: `Datenobjekte: ${dataObjectSchema.name}`,
                     actions: [
                         {
-                            icon: <DataArrayOutlinedIcon />,
-                            tooltip: 'Datenobjektschema bearbeiten',
-                            to: `/data-objects/${dataObjectSchema.key}`,
-                            variant: 'outlined',
-                            label: 'Datenobjektschema bearbeiten',
+                            icon: <FolderData />,
+                            to: `/data-models/${dataObjectSchema.key}`,
+                            variant: 'text',
+                            label: hasAccess ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
                         },
                         {
                             label: 'Neues Datenobjekt',
                             icon: <AddOutlinedIcon />,
-                            disabled: !userIsAdmin,
-                            tooltip: userIsAdmin ? undefined : 'Sie müssen globale Administrator:in sein, um diese Aktion durchführen zu können.',
-                            to: `/data-objects/${dataObjectSchema.key}/items/new`,
+                            to: `/data-objects/${dataObjectSchema.key}/new`,
                             variant: 'contained',
+                            disabled: !hasAccess,
+                            tooltip: !hasAccess ? 'Sie haben keine Berechtigung zum Anlegen von Datenobjekten' : undefined,
                         },
                     ],
                     helpDialog: {
@@ -125,13 +122,17 @@ export function DataObjectItemListPage() {
                         content: (
                             <>
                                 <Typography>
-                                    Ein Datenobjekt ist eine konkrete Instanz eines Datenmodells in Gover: Es enthält die tatsächlichen Werte zu den im Schema definierten Feldern. Datenobjekte werden in Prozessen, Komponenten und
-                                    Schnittstellen weiterverarbeitet und stellen damit die „laufenden“ Fachinformationen dar. Sie sind stets an ein Schema gebunden, das Struktur, Datentypen und Prüfregeln vorgibt.
+                                    Ein Datenobjekt ist eine konkrete Instanz eines Datenmodells. Es enthält die tatsächlichen Werte zu den im Datenmodell definierten Feldern und bildet damit die „laufenden“ Fachinformationen im System ab.
+                                    Datenobjekte fließen durch Prozesse, Komponenten und Schnittstellen. Ihre Struktur, Datentypen und Prüfregeln ergeben sich immer aus dem verknüpften Datenmodell.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
-                                    Typischerweise umfasst ein Datenobjekt Werte für Text-, Zahlen-, Datums- oder Wahrheitsfelder sowie ggf. verschachtelte Strukturen. Neben Nutzdaten können Metadaten enthalten sein, etwa Erstell- und
-                                    Änderungszeitpunkte, Quelle/Ersteller:in, Status oder Referenzen auf verknüpfte Objekte. Standardwerte aus dem Schema werden beim Anlegen übernommen und Validierungen sorgen dafür, dass nur erlaubte,
-                                    vollständige und konsistente Inhalte gespeichert werden.
+                                    Typischerweise enthält ein Datenobjekt Werte für Text, Zahlen, Datums- oder Wahrheitsfelder sowie gegebenenfalls verschachtelte Strukturen. Neben den Nutzdaten können Metadaten wie Erstell- und
+                                    Änderungszeitpunkte, Quelle oder Status sowie Referenzen auf andere Objekte vorhanden sein. Beim Anlegen werden Standardwerte aus dem Datenmodell übernommen; Validierungen stellen sicher, dass nur
+                                    erlaubte, vollständige und konsistente Inhalte gespeichert werden. Änderungen an der Struktur erfolgen nicht am Datenobjekt selbst, sondern am zugrunde liegenden Datenmodell, das dann die Prüfung neuer
+                                    oder geänderter Objekte steuert.
+                                </Typography>
+                                <Typography sx={{mt: 2}}>
+                                    Ein einfaches Beispiel: Das Datenmodell „Bauvorhaben“ definiert Felder und Regeln, und das Datenobjekt „Erweiterungsbau Grundschule #2025-123“ füllt diese Felder mit konkreten Angaben.
                                 </Typography>
                             </>
                         ),
@@ -158,14 +159,14 @@ export function DataObjectItemListPage() {
                 rowActionsCount={2}
                 rowActions={(item: DataObjectItem) => [
                     {
-                        icon: <EditOutlined />,
-                        to: `/data-objects/${item.schemaKey}/items/${item.id}`,
-                        tooltip: 'Datenobjekte bearbeiten',
+                        icon: hasAccess ? <EditOutlined /> : <Visibility />,
+                        to: `/data-objects/${item.schemaKey}/${item.id}`,
+                        tooltip: hasAccess ? 'Datenobjekt bearbeiten' : 'Datenobjekte anzeigen',
                     },
                     {
-                        icon: <DataArrayOutlinedIcon />,
-                        to: `/data-objects/${item.schemaKey}`,
-                        tooltip: 'Datenobjektschema bearbeiten',
+                        icon: ModuleIcons.dataModels,
+                        to: `/data-models/${item.schemaKey}`,
+                        tooltip: hasAccess ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
                     },
                 ]}
                 defaultSortField="id"

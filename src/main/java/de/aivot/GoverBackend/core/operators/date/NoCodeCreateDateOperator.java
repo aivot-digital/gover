@@ -3,10 +3,7 @@ package de.aivot.GoverBackend.core.operators.date;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
-import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
-import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
-import de.aivot.GoverBackend.nocode.models.NoCodeParameterOption;
-import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.*;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -54,38 +51,39 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{
-                new NoCodeParameter(
-                        NoCodeDataType.Number,
-                        "Tag"
-                ),
-                new NoCodeParameter(
-                        NoCodeDataType.Number,
-                        "Monat"
-                ),
-                new NoCodeParameter(
-                        NoCodeDataType.Number,
-                        "Jahr",
-                        new NoCodeParameterOption("Januar", "1"),
-                        new NoCodeParameterOption("Februar", "2"),
-                        new NoCodeParameterOption("März", "3"),
-                        new NoCodeParameterOption("April", "4"),
-                        new NoCodeParameterOption("Mai", "5"),
-                        new NoCodeParameterOption("Juni", "6"),
-                        new NoCodeParameterOption("Juli", "7"),
-                        new NoCodeParameterOption("August", "8"),
-                        new NoCodeParameterOption("September", "9"),
-                        new NoCodeParameterOption("Oktober", "10"),
-                        new NoCodeParameterOption("November", "11"),
-                        new NoCodeParameterOption("Dezember", "12")
-                ),
-        };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Date;
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
+                        NoCodeDataType.Date,
+                        new NoCodeParameter(
+                                NoCodeDataType.Number,
+                                "Tag",
+                                "Der Tag des Monats (1-31)"
+                        ),
+                        new NoCodeParameter(
+                                NoCodeDataType.Number,
+                                "Monat",
+                                "Der Monat des Jahres (1-12)",
+                                new NoCodeParameterOption("Januar", "1"),
+                                new NoCodeParameterOption("Februar", "2"),
+                                new NoCodeParameterOption("März", "3"),
+                                new NoCodeParameterOption("April", "4"),
+                                new NoCodeParameterOption("Mai", "5"),
+                                new NoCodeParameterOption("Juni", "6"),
+                                new NoCodeParameterOption("Juli", "7"),
+                                new NoCodeParameterOption("August", "8"),
+                                new NoCodeParameterOption("September", "9"),
+                                new NoCodeParameterOption("Oktober", "10"),
+                                new NoCodeParameterOption("November", "11"),
+                                new NoCodeParameterOption("Dezember", "12")
+                        ),
+                        new NoCodeParameter(
+                                NoCodeDataType.Number,
+                                "Jahr",
+                                "Das Jahr (z.B. 2023)"
+                        )
+                )
+        );
     }
 
     @Override
@@ -100,6 +98,6 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
                 ZoneId.systemDefault()
         );
 
-        return new NoCodeResult(NoCodeDataType.Date, date);
+        return new NoCodeResult(date);
     }
 }

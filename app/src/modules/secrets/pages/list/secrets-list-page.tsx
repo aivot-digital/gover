@@ -11,12 +11,17 @@ import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {CellLink} from '../../../../components/cell-link/cell-link';
-import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
+import {useAccessGuard} from '../../../../hooks/use-admin-guard';
+import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 
 export function SecretsListPage() {
-    useAdminGuard();
     const dispatch = useAppDispatch();
+
+    const hasAccess = useAccessGuard({
+        onlyGlobalAdmin: true,
+        messageType: 'snackbar',
+    });
 
     return (
         <PageWrapper
@@ -34,6 +39,7 @@ export function SecretsListPage() {
                             icon: <AddOutlinedIcon />,
                             to: '/secrets/new',
                             variant: 'contained',
+                            disabled: !hasAccess,
                         },
                     ],
                     helpDialog: {
@@ -86,7 +92,7 @@ export function SecretsListPage() {
                         renderCell: (params) => (
                             <CellLink
                                 to={`/secrets/${params.id}`}
-                                title={`Geheimnis bearbeiten`}
+                                title={hasAccess ? 'Geheimnis bearbeiten' : 'Geheimnis anzeigen'}
                             >
                                 {String(params.value)}
                             </CellLink>
@@ -104,9 +110,9 @@ export function SecretsListPage() {
                 rowActionsCount={2}
                 rowActions={(item: SecretEntityResponseDTO) => [
                     {
-                        icon: <EditOutlined />,
+                        icon: hasAccess ? <EditOutlined /> : <Visibility/>,
                         to: `/secrets/${item.key}`,
-                        tooltip: 'Geheimnis bearbeiten',
+                        tooltip: hasAccess ? 'Geheimnis bearbeiten' : 'Geheimnis anzeigen',
                     },
                     {
                         icon: <ContentPasteOutlinedIcon />,

@@ -4,15 +4,19 @@ import {Link, Typography} from '@mui/material';
 import {EditOutlined, MailOutlined, PeopleOutlined, PersonOutlined} from '@mui/icons-material';
 import React from 'react';
 import {CellLink} from '../../../../../components/cell-link/cell-link';
-import {useAdminGuard} from '../../../../../hooks/use-admin-guard';
+import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
 import {UserFilter, UsersApiService} from '../../../users-api-service';
 import {type User} from '../../../../../models/entities/user';
 import Chip from '@mui/material/Chip';
 import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined';
 import {CellContentWrapper} from '../../../../../components/cell-content-wrapper/cell-content-wrapper';
+import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 
 export function UserListPage() {
-    useAdminGuard();
+    const hasAccess = useAccessGuard({
+        onlyGlobalAdmin: true,
+        messageType: 'snackbar',
+    });
 
     return (
         <PageWrapper
@@ -45,6 +49,7 @@ export function UserListPage() {
                             icon: <ManageAccountsOutlinedIcon />,
                             href: `${AppConfig.oidc.hostname}/admin/${AppConfig.oidc.realm}/console/#/${AppConfig.oidc.realm}/users`,
                             variant: 'contained',
+                            disabled: !hasAccess,
                         },
                     ],
                     helpDialog: {
@@ -86,7 +91,7 @@ export function UserListPage() {
                             break;
                     }
 
-                    return new UsersApiService(options.api)
+                    return new UsersApiService()
                         .list(
                             options.page,
                             options.size,
@@ -111,7 +116,7 @@ export function UserListPage() {
                         renderCell: (params) => (
                             <CellLink
                                 to={`/users/${params.id}`}
-                                title="Mitarbeiter:in bearbeiten"
+                                title={hasAccess ? 'Mitarbeiter:in bearbeiten' : 'Mitarbeiter:in anzeigen'}
                             >
                                 {String(params.value)}
                             </CellLink>
@@ -172,9 +177,9 @@ export function UserListPage() {
                 rowActionsCount={2}
                 rowActions={(item: User) => [
                     {
-                        icon: <EditOutlined />,
+                        icon: hasAccess ? <EditOutlined /> : <Visibility />,
                         to: `/users/${item.id}`,
-                        tooltip: 'Mitarbeiter:in bearbeiten',
+                        tooltip: hasAccess ? 'Mitarbeiter:in bearbeiten' : 'Mitarbeiter:in anzeigen',
                     },
                     {
                         icon: <MailOutlined />,

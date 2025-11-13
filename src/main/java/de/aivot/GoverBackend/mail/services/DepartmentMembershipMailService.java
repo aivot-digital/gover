@@ -82,6 +82,9 @@ public class DepartmentMembershipMailService {
             return;
         }
 
+        var departmentTheme = departmentService
+                .getDepartmentTheme(department);
+
         var title = switch (template) {
             case DepartmentMembershipAdded -> "Ihre Mitgliedschaft im Fachbereich \"" + department.getName() + "\"";
             case DepartmentMembershipRemoved -> "Ihre Mitgliedschaft im Fachbereich \"" + department.getName() + "\" wurde beendet";
@@ -102,6 +105,7 @@ public class DepartmentMembershipMailService {
         }
 
         mailService.sendMailToUser(
+                departmentTheme,
                 user,
                 "[Gover] " + title,
                 template,

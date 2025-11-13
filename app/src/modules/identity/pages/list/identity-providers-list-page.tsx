@@ -5,15 +5,19 @@ import {Typography} from '@mui/material';
 import {EditOutlined} from '@mui/icons-material';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import {CellLink} from '../../../../components/cell-link/cell-link';
-import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import {IdentityProvidersApiService} from '../../identity-providers-api-service';
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import {IdentityProviderListDTO} from '../../models/identity-provider-list-dto';
-import Chip from "@mui/material/Chip";
+import Chip from '@mui/material/Chip';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
+import {useAccessGuard} from '../../../../hooks/use-admin-guard';
+import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 
 export function IdentityProvidersListPage() {
-    useAdminGuard();
+    const hasAccess = useAccessGuard({
+        onlyGlobalAdmin: true,
+        messageType: 'snackbar',
+    });
 
     return (
         <>
@@ -32,6 +36,7 @@ export function IdentityProvidersListPage() {
                                 icon: <AddOutlinedIcon />,
                                 to: '/identity-providers/new',
                                 variant: 'contained',
+                                disabled: !hasAccess,
                             },
                         ],
                         helpDialog: {
@@ -39,39 +44,66 @@ export function IdentityProvidersListPage() {
                             tooltip: 'Hilfe anzeigen',
                             content: (
                                 <>
-                                    <Typography variant="body1" paragraph>
+                                    <Typography
+                                        variant="body1"
+                                        paragraph
+                                    >
                                         Konfigurieren Sie hier die Nutzerkontenanbieter, die in Ihrer Gover-Instanz global verfügbar sein sollen.
                                         Die angebundenen Nutzerkonten können in Formularen als Authentifizierungsoptionen verwendet werden.
                                         Unterstützt werden alle Anbieter, die eine OpenID Connect (OIDC) kompatible Schnittstelle bereitstellen.
                                     </Typography>
-                                    <Typography variant="body1" paragraph>
+                                    <Typography
+                                        variant="body1"
+                                        paragraph
+                                    >
                                         <strong>Mögliche Szenarien:</strong>
                                     </Typography>
                                     <ul>
                                         <li>
-                                            <Typography variant="body1" paragraph>
-                                                <strong>Direkt OpenID Connect kompatible IDPs</strong> (z.B. BundID, BayernID, Mein Unternehmenskonto, Servicekonto SH, Keycloak, Azure AD):<br />
+                                            <Typography
+                                                variant="body1"
+                                                paragraph
+                                            >
+                                                <strong>Direkt OpenID Connect kompatible IDPs</strong>
+                                                (z.B. BundID, BayernID, Mein Unternehmenskonto, Servicekonto SH, Keycloak, Azure AD):
+                                                <br />
                                                 → Sie können den Anbieter direkt anbinden, indem Sie die Verbindungsdaten hier hinterlegen.
                                             </Typography>
                                         </li>
                                         <li>
-                                            <Typography variant="body1" paragraph>
-                                                <strong>Systeme ohne OpenID Connect Unterstützung</strong> (z.B. LDAP/AD, andere IDPs):<br />
+                                            <Typography
+                                                variant="body1"
+                                                paragraph
+                                            >
+                                                <strong>Systeme ohne OpenID Connect Unterstützung</strong>
+                                                (z.B. LDAP/AD, andere IDPs):
+                                                <br />
                                                 → Die Anbindung erfolgt über den integrierten Keycloak von Gover. Tragen Sie anschließend die OpenID Connect-Daten des Keycloak-Realms hier ein.
                                             </Typography>
                                         </li>
                                         <li>
-                                            <Typography variant="body1" paragraph>
-                                                <strong>LDAP/AD für Gover-Mitarbeitende:</strong><br />
-                                                → Nutzung der User Federation im Staff Realm des Gover-Keycloaks.<br />
+                                            <Typography
+                                                variant="body1"
+                                                paragraph
+                                            >
+                                                <strong>LDAP/AD für Gover-Mitarbeitende:</strong>
+                                                <br />
+                                                → Nutzung der User Federation im Staff Realm des Gover-Keycloaks.
+                                                <br />
                                                 Diese Nutzerkonten werden nicht über die Funktion "Nutzerkontenanbieter" verwaltet.
                                             </Typography>
                                         </li>
                                     </ul>
-                                    <Typography variant="body1" paragraph>
+                                    <Typography
+                                        variant="body1"
+                                        paragraph
+                                    >
                                         Es wird empfohlen, für jeden Nutzerkontenanbieter sowohl eine produktive als auch eine vorproduktive Anbindung einzurichten, um Tests zu erleichtern.
                                     </Typography>
-                                    <Typography variant="body1" paragraph>
+                                    <Typography
+                                        variant="body1"
+                                        paragraph
+                                    >
                                         Die notwendigen Konfigurationsdaten erhalten Sie in der Dokumentation des Anbieters oder direkt vom Anbieter selbst.
                                     </Typography>
                                 </>
@@ -100,10 +132,16 @@ export function IdentityProvidersListPage() {
                             renderCell: (params) => (
                                 <CellLink
                                     to={`/identity-providers/${params.id}`}
-                                    title={`Konfiguration bearbeiten`}
+                                    title={hasAccess ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen'}
                                 >
                                     {String(params.value)}
-                                    {params.row.isTestProvider && <Chip label="Test" color="warning" variant="outlined" size={"small"} sx={{ml:1}}/>}
+                                    {params.row.isTestProvider && <Chip
+                                        label="Test"
+                                        color="warning"
+                                        variant="outlined"
+                                        size={'small'}
+                                        sx={{ml: 1}}
+                                    />}
                                 </CellLink>
                             ),
                         },
@@ -118,9 +156,19 @@ export function IdentityProvidersListPage() {
                             renderCell: (params) => (
                                 <>
                                     {params.row.isEnabled ?
-                                        <Chip label="Aktiv" color="success" variant="outlined" size={"small"}/>
+                                        <Chip
+                                            label="Aktiv"
+                                            color="success"
+                                            variant="outlined"
+                                            size={'small'}
+                                        />
                                         :
-                                        <Chip label="Inaktiv" color="default" variant="outlined" size={"small"}/>
+                                        <Chip
+                                            label="Inaktiv"
+                                            color="default"
+                                            variant="outlined"
+                                            size={'small'}
+                                        />
                                     }
                                 </>
                             ),
@@ -132,9 +180,9 @@ export function IdentityProvidersListPage() {
                     rowActionsCount={2}
                     rowActions={(item: IdentityProviderListDTO) => [
                         {
-                            icon: <EditOutlined />,
+                            icon: hasAccess ? <EditOutlined /> : <Visibility />,
                             to: `/identity-providers/${item.key}`,
-                            tooltip: 'Konfiguration bearbeiten',
+                            tooltip: hasAccess ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen',
                         },
                         {
                             icon: <ScienceOutlinedIcon />,

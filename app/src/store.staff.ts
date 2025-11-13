@@ -1,0 +1,30 @@
+import {configureStore} from '@reduxjs/toolkit';
+import {appReducer} from './slices/app-slice';
+import {adminSettingsReducer} from './slices/admin-settings-slice';
+import {userReducer} from './slices/user-slice';
+import {systemConfigReducer} from './slices/system-config-slice';
+import {stepperReducer} from './slices/stepper-slice';
+import {authReducer} from './slices/auth-slice';
+import {loggingReducer} from './slices/logging-slice';
+import {identityReducer} from './slices/identity-slice';
+import {shellReducer} from './slices/shell-slice';
+import {entityHistoryReducer} from './slices/entity-history-slice';
+
+export const store = configureStore({
+    reducer: {
+        auth: authReducer,
+        entityHistory: entityHistoryReducer,
+        identity: identityReducer,
+        adminSettings: adminSettingsReducer,
+        app: appReducer,
+        user: userReducer,
+        systemConfig: systemConfigReducer,
+        stepper: stepperReducer,
+        shell: shellReducer,
+        logging: loggingReducer,
+    },
+    devTools: process.env.NODE_ENV !== 'production',
+});
+
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;

@@ -1,7 +1,7 @@
-import React, {useEffect, useReducer, useState} from 'react';
+import React, {useEffect, useReducer, useRef, useState} from 'react';
 import {useDrag} from 'react-dnd';
 import {Box} from '@mui/material';
-import {setDraggingTreeElement, setExpandElementTree} from '../../slices/admin-settings-slice';
+import {selectUseTestMode, setDraggingTreeElement, setExpandElementTree} from '../../slices/admin-settings-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {ElementTreeItemTitle} from '../element-tree-item-title/element-tree-item-title';
 import {ElementTreeItemList} from '../element-tree-item-list/element-tree-item-list';
@@ -16,17 +16,29 @@ import {generateComponentTitle} from '../../utils/generate-component-title';
 import {isChildOf} from '../../utils/is-child-of';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {ElementTreeEntity} from '../element-tree/element-tree-entity';
+import {useElementEditorNavigation} from '../../hooks/use-element-editor-navigation';
+import {DefaultTabs} from '../element-editor/default-tabs';
 
 export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntity>(props: ElementTreeItemProps<T, E>) {
     const {
         element,
+        lockMessage,
     } = props;
+
+    const {
+        currentEditedElementId,
+        currentEditorTab,
+        navigateToElementEditor,
+        closeElementEditor,
+    } = useElementEditorNavigation();
+
+    const nodeRef = useRef<HTMLDivElement>(null);
 
     const dispatch = useAppDispatch();
     const expandStatus = useAppSelector((state) => state.adminSettings.expandElementTree);
+    const testMode = useAppSelector(selectUseTestMode);
 
     const [expanded, setExpanded] = useState(false);
-    const [showEditor, toggleShowEditor] = useReducer((p) => !p, false);
     const [showAddDialog, toggleShowAddDialog] = useReducer((p) => !p, false);
 
     const isLayoutElement = isAnyElementWithChildren(props.element);
@@ -41,6 +53,49 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
             }
         }
     }, [expandStatus]);
+
+    /**
+     * Scroll to the element when it is opened in the editor
+     */
+    useEffect(() => {
+        if (currentEditedElementId == null) {
+            return;
+        }
+
+        if (nodeRef.current == null) {
+            return;
+        }
+
+        if (currentEditedElementId !== props.element.id) {
+            return;
+        }
+
+        nodeRef
+            .current
+            .scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+            });
+    }, [currentEditedElementId]);
+
+    useEffect(() => {
+        // Check if the current edited element is a child of this element
+        function checkChildRecursively(element: AnyElement): boolean {
+            if (isAnyElementWithChildren(element)) {
+                if (element.children?.some((child) => child.id === currentEditedElementId)) {
+                    return true;
+                }
+                return element.children?.some((child) => checkChildRecursively(child)) ?? false;
+            }
+            return false;
+        }
+
+        if (currentEditedElementId && isLayoutElement && !expanded) {
+            if (checkChildRecursively(props.element)) {
+                setExpanded(true);
+            }
+        }
+    }, [currentEditedElementId]);
 
     const [{isDragging}, drag] = useDrag(() => ({
         item: element,
@@ -95,7 +150,6 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
         }
 
         props.onDelete();
-        toggleShowEditor();
     };
 
     if (isDragging) {
@@ -104,15 +158,22 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
 
     return (
         <Box
-            ref={props.editable && props.disableDrag !== true ? (drag as any) : undefined}
+            ref={(el: HTMLDivElement) => {
+                nodeRef.current = el;
+                if (props.editable && props.disableDrag !== true) {
+                    drag(el);
+                }
+            }}
             sx={{
                 opacity: isDragging ? 0 : 1,
+                backgroundColor: currentEditedElementId === props.element.id ? 'action.selected' : 'inherit',
             }}
+            component="div"
         >
             <ElementTreeItemTitle
                 isExpanded={expanded}
                 onToggleExpanded={
-                    isLayoutElement && isNotStoreModule ?
+                    isLayoutElement ?
                         () => {
                             dispatch(setExpandElementTree(undefined));
                             setExpanded(!expanded);
@@ -121,7 +182,9 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
                 }
                 element={props.element}
                 onShowAddDialog={isLayoutElement && isNotStoreModule ? toggleShowAddDialog : undefined}
-                onSelect={toggleShowEditor}
+                onSelect={() => {
+                    navigateToElementEditor(props.element.id, testMode ? DefaultTabs.test : DefaultTabs.properties);
+                }}
                 editable={props.editable}
                 enabledIdentityProviderInfos={props.enabledIdentityProviderInfos}
             />
@@ -129,17 +192,17 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
             {
                 expanded &&
                 isAnyElementWithChildren(props.element) &&
-                isNotStoreModule &&
                 <ElementTreeItemList
                     parents={props.parents}
                     entity={props.entity}
                     element={props.element}
                     onPatch={props.onPatch}
                     onMove={props.onMove}
-                    editable={props.editable}
+                    editable={props.editable && isNotStoreModule}
                     scope={props.scope}
                     enabledIdentityProviderInfos={props.enabledIdentityProviderInfos}
                     limitElementTypes={props.limitElementTypes}
+                    lockMessage={isNotStoreModule ? undefined : 'Kind-Element von Store-Modulen können nicht bearbeitet werden.'}
                 />
             }
 
@@ -154,16 +217,20 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
             />
 
             {
-                showEditor &&
+                currentEditedElementId === props.element.id &&
+                currentEditorTab != null &&
                 <ElementEditor
+                    open={true}
                     parents={props.parents}
                     element={props.element}
                     entity={props.entity}
                     onSave={(updatedElement, updatedApplication) => {
                         props.onPatch(updatedElement, updatedApplication);
-                        toggleShowEditor();
+                        closeElementEditor();
                     }}
-                    onCancel={toggleShowEditor}
+                    onCancel={() => {
+                        closeElementEditor();
+                    }}
                     onDelete={(
                         props.element.type === ElementType.IntroductionStep ||
                         props.element.type === ElementType.SummaryStep ||
@@ -179,11 +246,12 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
                         undefined :
                         () => {
                             props.onClone();
-                            toggleShowEditor();
+                            closeElementEditor();
                         }}
                     editable={props.editable}
                     scope={props.scope}
                     rootEditor={false}
+                    lockMessage={lockMessage}
                 />
             }
         </Box>

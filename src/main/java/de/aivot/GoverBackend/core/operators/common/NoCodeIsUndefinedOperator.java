@@ -53,9 +53,6 @@ public class NoCodeIsUndefinedOperator extends NoCodeIsDefinedOperator {
     @Override
     public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
         var res = super.performEvaluation(data, args);
-        return new NoCodeResult(
-                res.getDataType(),
-                !res.getValueAsBoolean()
-        );
+        return new NoCodeResult(!res.getValueAsBoolean());
     }
 }

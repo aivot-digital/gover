@@ -1,5 +1,5 @@
 import {InputAdornment, TextField} from '@mui/material';
-import {ChangeEvent, useEffect, useMemo, useRef, useState} from 'react';
+import {ChangeEvent, useMemo, useRef, useState} from 'react';
 import {formatNumToGermanNum} from '../../utils/format-german-numbers';
 import {type NumberFieldComponentProps} from './number-field-component-props';
 import {parseGermanNumber} from '../../utils/parse-german-numbers';

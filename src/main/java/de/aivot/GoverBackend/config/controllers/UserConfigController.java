@@ -6,7 +6,6 @@ import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.config.dtos.UserConfigRequestDto;
 import de.aivot.GoverBackend.config.dtos.UserConfigResponseDto;
 import de.aivot.GoverBackend.config.entities.UserConfigEntity;
-import de.aivot.GoverBackend.config.entities.UserConfigEntityId;
 import de.aivot.GoverBackend.config.filters.UserConfigFilter;
 import de.aivot.GoverBackend.config.models.UserConfigDefinition;
 import de.aivot.GoverBackend.config.services.UserConfigService;

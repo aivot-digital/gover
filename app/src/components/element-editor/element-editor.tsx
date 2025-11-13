@@ -1,14 +1,10 @@
-import {Box, Drawer} from '@mui/material';
-import React, { useMemo, useState } from 'react';
-import {DefaultTabs} from './default-tabs';
+import {Box, Breadcrumbs, Drawer, Typography} from '@mui/material';
+import React, {useEffect, useMemo, useState} from 'react';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {useAppSelector} from '../../hooks/use-app-selector';
-import {selectUseTestMode} from '../../slices/admin-settings-slice';
 import {ElementEditorTabs} from '../element-editor-tabs/element-editor-tabs';
 import {ElementEditorContent} from '../element-editor-content/element-editor-content';
 import {ElementEditorActions} from '../element-editor-actions/element-editor-actions';
 import {type ElementEditorProps} from './element-editor-props';
-
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {type AnyElement} from '../../models/elements/any-element';
 import {editors as Editors} from '../../editors';
@@ -18,22 +14,62 @@ import {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {useChangeBlocker} from '../../hooks/use-change-blocker';
 import {useConfirm} from '../../providers/confirm-provider';
 import {AppInfo} from '../../app-info';
+import {createElementEditorNavigationLink, useElementEditorNavigation} from '../../hooks/use-element-editor-navigation';
+import {generateComponentTitle} from '../../utils/generate-component-title';
+import {getElementNameForType} from '../../data/element-type/element-names';
+import {Link} from 'react-router-dom';
+import {addSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../slices/shell-slice';
 
 export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorProps<T, E>): React.ReactNode | null {
     const dispatch = useAppDispatch();
     const showConfirm = useConfirm();
 
-    const testMode = useAppSelector(selectUseTestMode);
+    const {
+        currentEditorTab,
+        navigateToEditorTab,
+    } = useElementEditorNavigation();
+
+    const {
+        open,
+        lockMessage,
+        element,
+        entity,
+    } = props;
 
     const [updatedElement, setUpdatedElement] = useState<T>();
     const [updatedEntity, setUpdatedEntity] = useState<E>();
-    const [currentTab, setCurrentTab] = useState(testMode ? DefaultTabs.test : DefaultTabs.properties);
     const [showCreatePresetDialog, setShowCreatePresetDialog] = useState(false);
 
-    const initialState = useMemo(() => ({element: props.element, entity: props.entity}), [props.element, props.entity]);
-    const currentState = useMemo(() => ({element: updatedElement ?? props.element, entity: updatedEntity ?? props.entity}), [updatedElement, updatedEntity, props.element, props.entity]);
+    // Reset the updated states when opening the editor
+    useEffect(() => {
+        if (open) {
+            setUpdatedElement(undefined);
+            setUpdatedEntity(undefined);
+        }
+    }, [open]);
+
+    const initialState = useMemo(() => ({
+        element: element,
+        entity: entity,
+    }), [element, entity]);
+
+    const currentState = useMemo(() => ({
+        element: updatedElement ?? element,
+        entity: updatedEntity ?? entity,
+    }), [updatedElement, updatedEntity, element, entity]);
 
     const changeBlocker = useChangeBlocker(initialState, currentState);
+
+    useEffect(() => {
+        if (open && lockMessage != null) {
+            dispatch(addSnackbarMessage({
+                key: 'element-editor-lock-message',
+                type: SnackbarType.Dismissable,
+                severity: SnackbarSeverity.Warning,
+                message: lockMessage,
+            }));
+        }
+    }, [open, lockMessage]);
 
     const handleSave = (): void => {
         let elementToSave: Partial<T> = {};
@@ -59,7 +95,7 @@ export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>
     };
 
     const handleSetCurrentTab = (newTab: string): void => {
-        setCurrentTab(newTab);
+        navigateToEditorTab(newTab);
     };
 
     const handleShowPresetDialog = (): void => {
@@ -112,7 +148,7 @@ export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>
     return (
         <Drawer
             anchor="right"
-            open={true}
+            open={props.open}
             PaperProps={{
                 sx: {
                     width: {
@@ -134,11 +170,59 @@ export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>
                     flexDirection: 'column',
                 }}
             >
+                <Box
+                    sx={{
+                        display: 'flex',
+                        px: 2,
+                        py: 1,
+                    }}
+                >
+                    <Typography
+                        variant="h6"
+                        component="div"
+                        sx={{
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            mr: 2,
+                        }}
+                    >
+                        {generateComponentTitle(props.element)} ({getElementNameForType(props.element.type)})
+                    </Typography>
+
+                    <Breadcrumbs
+                        sx={{
+                            ml: 'auto',
+                            color: 'text.secondary',
+                            '& a': {
+                                color: 'text.secondary',
+                                textDecoration: 'none',
+                                '&:hover': {
+                                    textDecoration: 'underline',
+                                },
+                            },
+                        }}
+                        maxItems={3}
+                    >
+                        {
+                            props
+                                .parents
+                                .map((element) => (
+                                    <Link
+                                        to={createElementEditorNavigationLink(element.id)}
+                                        replace={true}
+                                    >
+                                        {generateComponentTitle(element)}
+                                    </Link>
+                                ))
+                        }
+                    </Breadcrumbs>
+                </Box>
 
                 <ElementEditorTabs
                     component={updatedElement ?? props.element}
                     additionalTabs={additionalTabs}
-                    currentTab={currentTab}
+                    currentTab={currentEditorTab}
                     onTabChange={handleSetCurrentTab}
                     scope={props.scope}
                     rootEditor={props.rootEditor}
@@ -156,7 +240,7 @@ export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>
                         parents={props.parents}
                         element={updatedElement ?? props.element}
                         entity={updatedEntity ?? props.entity}
-                        currentTab={currentTab}
+                        currentTab={currentEditorTab}
                         additionalTabs={additionalTabs}
                         onChange={handleChange}
                         onChangeEntity={handleEntityChange}

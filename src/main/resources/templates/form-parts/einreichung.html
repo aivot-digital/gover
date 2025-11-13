@@ -1,0 +1,31 @@
+<!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
+<!--/*@thymesVar id="form" type="de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity"*/-->
+
+<section class="avoid-break-inside">
+    <th:block
+            th:if="${ base.isCitizenPrint && !#strings.isEmpty(form.rootElement?.offlineSubmissionText) }"
+    >
+        <h2>Hinweise zur Einreichung des ausgefüllten Antrages</h2>
+        <p>
+            Bitte reichen Sie das ausgefüllte Formular auf nachstehendem Weg ein:
+        </p>
+        <div
+                th:utext="${ form.rootElement.offlineSubmissionText }"
+                class="content-without-margin-on-childs"
+        ></div>
+    </th:block>
+
+    <th:block
+            th:if="${ form.rootElement.offlineSignatureNeeded != null && form.rootElement.offlineSignatureNeeded }"
+    >
+        <h2>Unterschrift</h2>
+        <div class="signature-container">
+            <div>
+                Ort, Datum
+            </div>
+            <div>
+                Unterschrift
+            </div>
+        </div>
+    </th:block>
+</section>

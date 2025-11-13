@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -59,22 +60,22 @@ public class NoCodeDivideOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{
-                new NoCodeParameter(
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
                         NoCodeDataType.Number,
-                        "Dividend"
-                ),
-                new NoCodeParameter(
-                        NoCodeDataType.Number,
-                        "Divisor"
-                ),
-        };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Number;
+                        new NoCodeParameter(
+                                NoCodeDataType.Number,
+                                "Dividend",
+                                "Der zu teilende Wert."
+                        ),
+                        new NoCodeParameter(
+                                NoCodeDataType.Number,
+                                "Divisor",
+                                "Der Wert, durch den geteilt wird."
+                        )
+                )
+        );
     }
 
     @Override
@@ -94,6 +95,6 @@ public class NoCodeDivideOperator extends NoCodeOperator {
             dividend = dividend.divide(divisor, RoundingMode.HALF_UP);
         }
 
-        return new NoCodeResult(NoCodeDataType.Number, dividend);
+        return new NoCodeResult(dividend);
     }
 }

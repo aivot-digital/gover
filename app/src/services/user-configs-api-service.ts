@@ -1,4 +1,4 @@
-import { Api } from '../hooks/use-api';
+import {Api} from '../hooks/use-api';
 
 export interface PaginationResponse<T> {
     content: T[];

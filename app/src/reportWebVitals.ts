@@ -1,4 +1,4 @@
-import type { Metric } from 'web-vitals';
+import type {Metric} from 'web-vitals';
 
 type ReportHandler = (metric: Metric) => void;
 

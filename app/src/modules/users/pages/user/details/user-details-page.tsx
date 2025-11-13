@@ -1,7 +1,6 @@
 import {PageWrapper} from '../../../../../components/page-wrapper/page-wrapper';
 import {Typography} from '@mui/material';
 import {GenericDetailsPage} from '../../../../../components/generic-details-page/generic-details-page';
-import {useAdminGuard} from '../../../../../hooks/use-admin-guard';
 import {type User} from '../../../../../models/entities/user';
 import {UsersApiService} from '../../../users-api-service';
 import {stringOrDefault} from '../../../../../utils/string-utils';
@@ -10,8 +9,6 @@ import {PersonOutlined} from '@mui/icons-material';
 import {resolveUserName} from '../../../utils/resolve-user-name';
 
 export function UserDetailsPage() {
-    useAdminGuard();
-
     return (
         <PageWrapper
             title="Mitarbeiter:in bearbeiten"
@@ -50,21 +47,21 @@ export function UserDetailsPage() {
                         isDisabled: (item) => !item?.id,
                     },
                 ]}
-                initializeItem={(api) => new UsersApiService(api).initialize()}
-                fetchData={(api, id: number) => new UsersApiService(api).retrieve(String(id))}
+                initializeItem={(api) => new UsersApiService().initialize()}
+                fetchData={(api, id: number) => new UsersApiService().retrieve(String(id))}
                 getTabTitle={(item: User) => {
                     return stringOrDefault(item.fullName, 'Kein Name hinterlegt');
                 }}
                 getHeaderTitle={(item, isNewItem, notFound) => {
                     if (notFound || item == null) {
-                        return "Mitarbeiter:in nicht gefunden";
+                        return 'Mitarbeiter:in nicht gefunden';
                     }
 
                     return `Mitarbeiter:in: ${resolveUserName(item)}`;
                 }}
                 parentLink={{
-                    label: "Liste der Mitarbeiter:innen",
-                    to: "/users",
+                    label: 'Liste der Mitarbeiter:innen',
+                    to: '/users',
                 }}
             />
         </PageWrapper>

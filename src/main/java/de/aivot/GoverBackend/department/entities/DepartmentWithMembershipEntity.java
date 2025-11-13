@@ -21,6 +21,7 @@ public class DepartmentWithMembershipEntity {
     private LocalDateTime created;
     private LocalDateTime updated;
     private String departmentMail;
+    private Integer themeId;
     @Id
     private Integer membershipId;
     private UserRole membershipRole;
@@ -232,6 +233,15 @@ public class DepartmentWithMembershipEntity {
 
     public DepartmentWithMembershipEntity setUserDeletedInIdp(Boolean userDeletedInIdp) {
         this.userDeletedInIdp = userDeletedInIdp;
+        return this;
+    }
+
+    public Integer getThemeId() {
+        return themeId;
+    }
+
+    public DepartmentWithMembershipEntity setThemeId(Integer themeId) {
+        this.themeId = themeId;
         return this;
     }
 

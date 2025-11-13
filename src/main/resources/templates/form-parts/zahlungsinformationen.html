@@ -1,0 +1,176 @@
+<!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
+<!--/*@thymesVar id="paymentProviderDefinition" type="de.aivot.GoverBackend.payment.models.PaymentProviderDefinition"*/-->
+<!--/*@thymesVar id="#numberformat" type="de.aivot.GoverBackend.services.pdf.NumberFormatDialect"*/-->
+<!--/*@thymesVar id="paymentTransaction" type="de.aivot.GoverBackend.payment.entities.PaymentTransactionEntity"*/-->
+<!--/*@thymesVar id="paymentProvider" type="de.aivot.GoverBackend.payment.entities.PaymentProviderEntity"*/-->
+<!--/*@thymesVar id="submission" type="de.aivot.GoverBackend.submission.entities.Submission"*/-->
+<!--/*@thymesVar id="#qrcode" type="de.aivot.GoverBackend.services.pdf.QrCodeDialect"*/-->
+
+<section
+        th:fragment="payment-information"
+        th:class="${ base.isCitizenPrint ? 'page-break-before' : '' }"
+        th:if="${ base.isNotBlankPrint && paymentTransaction != null }"
+>
+    <h2>Zahlungsinformationen</h2>
+
+    <div
+            class="d-flex"
+            th:if="${ paymentTransaction.paymentInformation?.status?.name == 'INITIAL' }"
+    >
+        <div style="flex: 1">
+            <p th:if="${ base.isCitizenPrint }">
+                Um Ihren Antrag bearbeiten zu können, ist die Bezahlung der Gebühren erforderlich.
+                <br />
+                Bitte achten Sie darauf, dass Sie die Zahlungsinformationen korrekt eingeben und den Bezahlvorgang vollständig abschließen.
+                <br />
+                <strong>Wichtig:</strong>
+                Ihr Antrag wird erst nach erfolgter Zahlung bearbeitet. Sollten Sie die Gebühren bereits entrichtet haben, sind keine weiteren Schritte Ihrerseits erforderlich.
+            </p>
+            <p th:unless="${ base.isCitizenPrint }">
+                Die Gebühr wurde noch nicht bezahlt.
+            </p>
+
+            <ul>
+                <li th:each="item : ${ paymentTransaction.paymentRequest.items }">
+                    <span th:text="${ item.description }"></span>
+                    <span th:text="${ #numberformat.format(item.getBruttoAmount(), 2) } + ' Euro'"></span>
+                    <span
+                            th:if="${item.getTaxRate() != null && item.getTaxRate() > 0}"
+                            th:text="'inkl. ' + ${ #numberformat.format(item.getTaxRate(), 0) } + '% Steuern'"
+                    ></span>
+                </li>
+            </ul>
+
+            <hr />
+
+            <p>
+                Gesamtbetrag:
+                <strong th:text="${ #numberformat.format(paymentTransaction.paymentRequest.getGrosAmount(), 2) } + ' Euro inkl. Steuern'"></strong>
+            </p>
+
+            <p>
+                <a
+                        class="do-not-print-link"
+                        th:href="${paymentTransaction.paymentInformation.transactionRedirectUrl}"
+                        th:text="${paymentTransaction.paymentInformation.transactionRedirectUrl}"
+                >
+                    Link zur Bezahlung
+                </a>
+            </p>
+        </div>
+
+        <div style="margin-left: auto">
+            <img
+                    th:src="${ #qrcode.create(paymentTransaction.paymentInformation.getTransactionRedirectUrl()) }"
+                    width="160px"
+                    height="160px"
+                    alt="QR-Code mit Link zur Zahlung"
+            />
+        </div>
+    </div>
+
+    <div th:if="${ paymentTransaction.paymentInformation.getStatus().name() == 'PAYED' }">
+        <p>
+            Die Gebühr wurde bereits bezahlt.
+        </p>
+
+        <table>
+            <tbody>
+                <tr style="vertical-align: top">
+                    <td>
+                        <strong>Zahlungsdienstleister:</strong>
+                    </td>
+                    <td>
+                        <span th:text="${ paymentProviderDefinition.getProviderName() }"></span>
+                    </td>
+                </tr>
+                <tr style="vertical-align: top">
+                    <td>
+                        <strong>Zahlungsdatum:</strong>
+                    </td>
+                    <td>
+                        <span th:text="${ #numberformat.formatISOTimestamp(paymentTransaction.paymentInformation.getTransactionTimestamp(), 'dd.MM.yyyy HH:mm') }"></span>
+                        Uhr
+                    </td>
+                </tr>
+                <tr style="vertical-align: top">
+                    <td>
+                        <strong>Zahlungsstatus:</strong>
+                    </td>
+                    <td>
+                        Bezahlt
+                    </td>
+                </tr>
+                <tr style="vertical-align: top">
+                    <td>
+                        <strong>Transaktions-ID:</strong>
+                    </td>
+                    <td>
+                        <span th:text="${ paymentTransaction.paymentInformation.transactionId }"></span>
+                    </td>
+                </tr>
+                <tr style="vertical-align: top">
+                    <td>
+                        <strong>Gebühr:</strong>
+                    </td>
+                    <td>
+                        Insgesamt entrichtete Gebühr:
+                        <span th:text="${ #numberformat.format(paymentTransaction.paymentRequest.getGrosAmount(), 2) }"></span>
+                        Euro inkl. Steuern
+
+                        <ul>
+                            <li th:each="item : ${paymentTransaction.paymentRequest.items}">
+                                <span th:text="${item.description}"></span>
+                                <span th:text="${ #numberformat.format(item.getBruttoAmount(), 2) } + ' Euro'"></span>
+                                <span
+                                        th:if="${item.getTaxRate() != null && item.getTaxRate() > 0}"
+                                        th:text="'inkl. ' + ${ #numberformat.format(item.getTaxRate(), 0) } + '% Steuern'"
+                                ></span>
+                            </li>
+                        </ul>
+                    </td>
+                </tr>
+                <tr style="vertical-align: top">
+                    <td>
+                        <strong>Zahlungsmittel:</strong>
+                    </td>
+                    <td>
+                        <span th:text="${ paymentTransaction.paymentInformation.paymentMethod.getLabel() }"></span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div th:if="${ paymentTransaction.paymentInformation.getStatus().name() == 'FAILED' or  paymentTransaction.paymentInformation.getStatus().name() == 'CANCELED' }">
+        <p th:if="${ base.isCitizenPrint() }">
+            Die Bezahlung der Gebühren ist fehlgeschlagen.
+            Bitte wenden Sie sich an die zuständige Dienststelle.
+            Zur eindeutigen Identifizierung Ihrer Einreichung geben Sie bitte folgende Kennung an:
+            <span th:text="${ submission.getId() }"></span>
+            .
+        </p>
+
+        <p th:if="${ base.isStaffPrint() }">
+            Die Bezahlung der Gebühren ist fehlgeschlagen.
+        </p>
+
+        <ul>
+            <li th:each="item : ${paymentTransaction.paymentRequest.items}">
+                <span th:text="${item.description}"></span>
+                <span th:text="${ #numberformat.format(item.getBruttoAmount(), 2) } + ' Euro'"></span>
+                <span
+                        th:if="${item.getTaxRate() != null && item.getTaxRate() > 0}"
+                        th:text="'inkl. ' + ${ #numberformat.format(item.getTaxRate(), 0) } + '% Steuern'"
+                ></span>
+            </li>
+        </ul>
+
+        <hr />
+
+        <p>
+            Gesamtbetrag:
+            <strong th:text="${ #numberformat.format(paymentTransaction.paymentRequest.getGrosAmount(), 2) } + ' Euro inkl. Steuern'"></strong>
+        </p>
+    </div>
+</section>

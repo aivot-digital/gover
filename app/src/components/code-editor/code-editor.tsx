@@ -1,4 +1,5 @@
 import Editor, {loader, Monaco} from '@monaco-editor/react';
+import * as monaco from 'monaco-editor';
 import {editor} from 'monaco-editor';
 import {Box, Typography} from '@mui/material';
 import React, {useCallback, useEffect, useRef} from 'react';
@@ -6,10 +7,9 @@ import {CodeEditorProps} from './code-editor-props';
 import {ActionsProps} from '../actions/actions-props';
 import {Actions} from '../actions/actions';
 import {AlertComponent} from '../alert/alert-component';
-
-import * as monaco from 'monaco-editor';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
+import {JavascriptApiService} from '../../modules/javascript/javascript-api-service';
 
 self.MonacoEnvironment = {
     getWorker(_, label) {
@@ -21,9 +21,7 @@ self.MonacoEnvironment = {
 };
 
 loader.config({monaco});
-loader.init().then((rs) => {
-    console.log('Monaco Editor loaded', rs);
-});
+loader.init();
 
 export function CodeEditor(props: CodeEditorProps & ActionsProps) {
     const {
@@ -35,6 +33,23 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
 
     const monacoRef = useRef<Monaco>(undefined);
     const editorRef = useRef<editor.IStandaloneCodeEditor>(undefined);
+
+    useEffect(() => {
+        new JavascriptApiService()
+            .getTypes()
+            .then((globalTypeHints) => {
+                if (monacoRef.current == null) {
+                    return;
+                }
+
+                monacoRef
+                    .current
+                    .languages
+                    .typescript
+                    .javascriptDefaults
+                    .addExtraLib(globalTypeHints, `@types/global.d.ts`,)
+            });
+    }, []);
 
     const hasTopContent = props.label != null || props.actions.length > 0;
 

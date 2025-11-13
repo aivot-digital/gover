@@ -12,7 +12,6 @@ import {Department} from '../../departments/models/department';
 import {useFormManager} from '../../../hooks/use-form-manager';
 import {FormDetailsResponseDTO} from '../dtos/form-details-response-dto';
 import * as yup from 'yup';
-import type {DialogProps} from '@mui/material/esm/Dialog';
 import {FormsApiService} from '../forms-api-service';
 import {FormRequestDTO} from '../dtos/form-request-dto';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
@@ -48,10 +47,11 @@ const FormSchema = yup.object({
         .required('Bitte geben Sie ein URL-Element an'),
 });
 
-export interface AddFormDialogProps extends DialogProps {
+export interface AddFormDialogProps {
     basis: FormDetailsResponseDTO;
     onClose: () => void;
     onSave: (form: FormDetailsResponseDTO) => void;
+    open: boolean;
 }
 
 export function AddFormDialog(props: AddFormDialogProps) {
@@ -59,7 +59,7 @@ export function AddFormDialog(props: AddFormDialogProps) {
         basis,
         onClose,
         onSave,
-        ...passTroughProps
+        open,
     } = props;
 
     const api = useApi();
@@ -99,8 +99,8 @@ export function AddFormDialog(props: AddFormDialogProps) {
 
     useEffect(() => {
         if (user != null) {
-            new DepartmentsApiService(api)
-                .list(0, 999, undefined, undefined, {userId: user.id})
+            new DepartmentsApiService()
+                .listAll({userId: user.id})
                 .then(departments => setAvailableDepartments(departments.content));
         }
     }, [user]);
@@ -189,10 +189,10 @@ export function AddFormDialog(props: AddFormDialogProps) {
     const handleClose = async (_: any, reason: string): Promise<void> => {
         if (hasChangedSinceOpen && reason !== 'saveSuccess') {
             const confirmed = await showConfirm({
-                title: 'Anlage abbrechen?',
+                title: 'Möchten Sie die eingegebenen Antragsdaten wirklich löschen?',
                 children: (
                     <Typography>
-                        Möchten Sie die Anlage eines neuen Formulars wirklich abbrechen? Bisher eingegebene Daten werden dabei verworfen.
+                        Dieser Vorgang kann nicht rückgängig gemacht werden. Wenn Sie die Daten löschen, müssen Sie diese bei Bedarf erneut eingeben.
                     </Typography>
                 ),
                 confirmButtonText: 'Ja, Eingaben verwerfen',
@@ -210,7 +210,7 @@ export function AddFormDialog(props: AddFormDialogProps) {
 
     return (
         <Dialog
-            {...passTroughProps}
+            open={open}
             fullWidth
             onClose={handleClose}
             maxWidth="lg"

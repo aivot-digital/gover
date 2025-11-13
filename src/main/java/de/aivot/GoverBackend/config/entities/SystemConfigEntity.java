@@ -2,11 +2,13 @@ package de.aivot.GoverBackend.config.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.utils.StringUtils;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.ColumnDefault;
 
-import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Optional;
 

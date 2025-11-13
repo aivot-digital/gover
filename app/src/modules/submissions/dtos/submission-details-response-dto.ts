@@ -1,5 +1,4 @@
 import {SubmissionStatus} from '../enums/submission-status';
-import {CustomerInput} from '../../../models/customer-input';
 import {ElementData} from '../../../models/element-data';
 
 export interface SubmissionDetailsResponseDTO {

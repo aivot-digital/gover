@@ -9,6 +9,7 @@ import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
+import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 import de.aivot.GoverBackend.enums.ElementType;
@@ -148,7 +149,7 @@ public class SubmitController {
             @PathVariable Integer formVersion,
             @RequestParam(value = "inputs", required = true) String inputs,
             @RequestParam(value = "files", required = false) MultipartFile[] files,
-            @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId
+            @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) UUID identityId
     ) throws ResponseException {
         // Fetch form
         var form = formVersionWithDetailsRepository
@@ -223,12 +224,13 @@ public class SubmitController {
         destinationSubmitService.testDestinationAttachmentSize(destination, files);
 
         // Validate customer input
-        var verifiedElementData = elementDerivationService
-                .derive(new ElementDerivationRequest()
-                        .setElement(form.getRootElement())
-                        .setElementData(elementData)
-                        .setOptions(new ElementDerivationOptions())
-                );
+        var options = new ElementDerivationOptions();
+        var request = new ElementDerivationRequest()
+                .setElement(form.getRootElement())
+                .setElementData(elementData)
+                .setOptions(options);
+        var dummyLogger = new ElementDerivationLogger();
+        var verifiedElementData = elementDerivationService.derive(request, dummyLogger);
 
         if (verifiedElementData.hasAnyError()) {
             throw ResponseException.badRequest(verifiedElementData);
@@ -409,7 +411,7 @@ public class SubmitController {
 
         // Create the identity value
         var identityValue = new IdentityData(
-                identityCacheEntity.getId(),
+                identityCacheEntity.getSessionId(),
                 UUID.fromString(identityCacheEntity.getProviderKey()),
                 identityCacheEntity.getMetadataIdentifier(),
                 identityCacheEntity.getIdentityData()
@@ -554,8 +556,8 @@ public class SubmitController {
         return form.map(submission::hasExternalAccessExpired).orElse(true);
     }
 
-    private Optional<IdentityCacheEntity> extractIdp(String identityId) {
-        if (StringUtils.isNullOrEmpty(identityId)) {
+    private Optional<IdentityCacheEntity> extractIdp(@Nullable UUID identityId) {
+        if (identityId == null) {
             return Optional.empty();
         }
         return identityCacheRepository.findById(identityId);

@@ -1,7 +1,7 @@
-import {useState, useEffect, useCallback, useMemo} from 'react';
-import { useBlocker, Blocker } from 'react-router-dom';
+import {useCallback, useEffect, useMemo, useState} from 'react';
+import {Blocker, useBlocker} from 'react-router-dom';
 import {deepEquals, shallowEquals} from '../utils/equality-utils';
-import {ConfirmDialog} from "../dialogs/confirm-dialog/confirm-dialog";
+import {ConfirmDialog} from '../dialogs/confirm-dialog/confirm-dialog';
 
 export function useChangeBlocker(
     original: any,
@@ -21,7 +21,14 @@ export function useChangeBlocker(
 
     const [showDialog, setShowDialog] = useState(false);
 
-    const blocker = useBlocker(hasChanged);
+    const blocker = useBlocker(({currentLocation, nextLocation}) => {
+        // Check if only the hash is changing
+        if (currentLocation.pathname === nextLocation.pathname &&
+            currentLocation.search === nextLocation.search) {
+            return false; // Allow navigation
+        }
+        return hasChanged;
+    });
 
     useEffect(() => {
         if (blocker.state === 'blocked') {

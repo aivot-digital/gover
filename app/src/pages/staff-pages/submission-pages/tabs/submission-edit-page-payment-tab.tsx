@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {Form} from '../../../../models/entities/form';
 import {Box, IconButton, Typography} from '@mui/material';
 import {StatusTable} from '../../../../components/status-table/status-table';
@@ -23,11 +23,9 @@ import {Link} from 'react-router-dom';
 import {PaymentTransactionResponseDTO} from '../../../../modules/payment/dtos/payment-transaction-response-dto';
 import {PaymentProviderResponseDTO} from '../../../../modules/payment/dtos/payment-provider-response-dto';
 import {SubmissionDetailsResponseDTO} from '../../../../modules/submissions/dtos/submission-details-response-dto';
-import {useApi} from "../../../../hooks/use-api";
-import {PaymentProvidersApiService} from "../../../../modules/payment/payment-providers-api-service";
-import {
-    PaymentProviderDefinitionResponseDTO
-} from "../../../../modules/payment/dtos/payment-provider-definition-response-dto";
+import {useApi} from '../../../../hooks/use-api';
+import {PaymentProvidersApiService} from '../../../../modules/payment/payment-providers-api-service';
+import {PaymentProviderDefinitionResponseDTO} from '../../../../modules/payment/dtos/payment-provider-definition-response-dto';
 import {isStringNotNullOrEmpty} from '../../../../utils/string-utils';
 
 interface SubmissionEditPageSummaryTabProps {

@@ -37,13 +37,8 @@ class NoCodeOperatorTest {
         }
 
         @Override
-        public NoCodeParameter[] getParameters() {
-            return new NoCodeParameter[0];
-        }
-
-        @Override
-        public NoCodeDataType getReturnType() {
-            return NoCodeDataType.String;
+        public NoCodeSignatur[] getSignatures() {
+            return NoCodeSignatur.of();
         }
 
         @Override

@@ -6,6 +6,6 @@ export interface PageWrapperProps extends LoadingWrapperProps {
     error?: string;
     title: string;
     fullWidth?: boolean;
+    fullHeight?: boolean;
     background?: boolean;
-    toolbarActions?: AppToolbarAction[];
 }

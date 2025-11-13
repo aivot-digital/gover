@@ -344,6 +344,7 @@ export function SubmissionEditPageGeneralTab(props: SubmissionEditPageGeneralTab
             <StatusTable
                 label="Antragsinformationen"
                 items={createGeneralRows(props.form, props.submission)}
+                cardVariant="outlined"
             />
 
             <IdentitySummary

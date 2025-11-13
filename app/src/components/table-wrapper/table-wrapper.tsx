@@ -1,4 +1,4 @@
-import React, { type PropsWithChildren, useState } from 'react';
+import React, {type PropsWithChildren, useState} from 'react';
 import {type TableWrapperProps} from './table-wrapper-props';
 import {DataGrid, type GridValidRowModel} from '@mui/x-data-grid';
 import {ListHeader} from '../list-header/list-header';

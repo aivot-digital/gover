@@ -1,35 +1,18 @@
 import React from 'react';
 import reportWebVitals from './reportWebVitals';
-import {Provider as StoreProvide} from 'react-redux';
-import {store} from './store';
 import * as Sentry from '@sentry/react';
 
 import './index.scss';
-import {CssBaseline, ThemeProvider} from '@mui/material';
-import {BaseTheme} from './theming/base-theme';
-import {
-    useLocation,
-    useNavigationType,
-    createRoutesFromChildren,
-    matchRoutes,
-} from 'react-router';
+import 'simplebar-react/dist/simplebar.min.css';
+import 'allotment/dist/style.css';
+import {createRoutesFromChildren, matchRoutes, useLocation, useNavigationType} from 'react-router';
 import {createRoot} from 'react-dom/client';
-import {StaffApp} from './apps/staff-app';
 import {isStringNotNullOrEmpty} from './utils/string-utils';
-//import {StaffShellRouter} from './shells/staff/staff-shell-router';
+import {StaffShellRouter} from './shells/staff/staff-shell-router';
 
 const rootElement = document.getElementById('root')!;
 const root = createRoot(rootElement);
-root.render(
-    localStorage.getItem('new-shell') != null ?
-        /*<StaffShellRouter /> */ <div/> :
-        <ThemeProvider theme={BaseTheme}>
-            <CssBaseline />
-            <StoreProvide store={store}>
-                <StaffApp />
-            </StoreProvide>
-        </ThemeProvider>,
-);
+root.render(<StaffShellRouter />);
 
 if (isStringNotNullOrEmpty(AppConfig.sentry.dsn)) {
     Sentry.init({

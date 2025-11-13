@@ -1,5 +1,5 @@
-import {ConditionOperator} from "../data/condition-operator";
-import {BaseEvaluator} from "./base-evaluator";
+import {ConditionOperator} from '../data/condition-operator';
+import {BaseEvaluator} from './base-evaluator';
 
 function resolveValueA(valueA: string[] | undefined) {
     return valueA != null ? valueA.length : 0;

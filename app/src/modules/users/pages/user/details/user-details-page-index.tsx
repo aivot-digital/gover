@@ -19,6 +19,7 @@ import {ConstraintLinkProps} from '../../../../../dialogs/constraint-dialog/cons
 import {ConfirmDialog} from '../../../../../dialogs/confirm-dialog/confirm-dialog';
 import {ConstraintDialog} from '../../../../../dialogs/constraint-dialog/constraint-dialog';
 import {resolveUserName} from '../../../utils/resolve-user-name';
+import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
 
 export function UserDetailsPageIndex() {
     const dispatch = useAppDispatch();
@@ -28,6 +29,11 @@ export function UserDetailsPageIndex() {
     const {
         item: user,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<User, undefined>;
+
+    const hasAccess = useAccessGuard({
+        onlyGlobalAdmin: true,
+        messageType: 'snackbar',
+    });
 
     const [isBusy, setIsBusy] = useState(false);
 
@@ -175,7 +181,7 @@ export function UserDetailsPageIndex() {
         if (!user.id) return;
 
         setIsBusy(true);
-        new UsersApiService(api)
+        new UsersApiService()
             .destroy(user.id)
             .then(() => {
                 navigate('/users', {
@@ -227,6 +233,7 @@ export function UserDetailsPageIndex() {
                     }}
                 >
                     {
+                        hasAccess &&
                         !user.deletedInIdp &&
                         <Button
                             target="_blank"

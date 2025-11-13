@@ -23,6 +23,7 @@ public class DepartmentWithMembershipFilter implements Filter<DepartmentWithMemb
     private UserRole membershipRole;
     private Boolean ignoreMemberships;
     private Boolean deletedInIdp;
+    private Integer themeId;
 
     public static DepartmentWithMembershipFilter create() {
         return new DepartmentWithMembershipFilter();
@@ -45,6 +46,7 @@ public class DepartmentWithMembershipFilter implements Filter<DepartmentWithMemb
                 .withEquals("userGlobalAdmin", userGlobalAdmin)
                 .withEquals("membershipRole", membershipRole != null ? membershipRole.getKey() : null)
                 .withEquals("userDeletedInIdp", deletedInIdp)
+                .withEquals("themeId", themeId)
                 .build();
     }
 
@@ -171,6 +173,15 @@ public class DepartmentWithMembershipFilter implements Filter<DepartmentWithMemb
 
     public DepartmentWithMembershipFilter setDeletedInIdp(Boolean deletedInIdp) {
         this.deletedInIdp = deletedInIdp;
+        return this;
+    }
+
+    public Integer getThemeId() {
+        return themeId;
+    }
+
+    public DepartmentWithMembershipFilter setThemeId(Integer themeId) {
+        this.themeId = themeId;
         return this;
     }
 }

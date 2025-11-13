@@ -62,7 +62,8 @@ public class FormRevisionController {
     public Page<FormRevisionResponseDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PageableDefault Pageable pageable,
-            @Nonnull @PathVariable Integer formId
+            @Nonnull @PathVariable Integer formId,
+            @Nonnull @PathVariable Integer formVersion
     ) throws ResponseException {
         var user = UserService
                 .fromJWT(jwt)
@@ -77,7 +78,7 @@ public class FormRevisionController {
         }
 
         return formRevisionService
-                .list(formId, pageable)
+                .list(formId, formVersion, pageable)
                 .map(FormRevisionResponseDTO::fromEntity);
     }
 

@@ -8,6 +8,7 @@ export interface DepartmentResponseDTO {
     technicalSupportAddress: string;
     specialSupportAddress: string;
     departmentMail?: string | null;
+    themeId?: number | null;
     created: string;
     updated: string;
 }

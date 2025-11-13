@@ -207,6 +207,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
                     },
                     boxShadow: (isDraggedOver && !isDisabled) ? `0 0 0.5em ${theme.palette.primary.main}` : undefined,
                     pointerEvents: isBusy ? 'none' : 'auto',
+                    cursor: (isBusy || isDisabled) ? 'not-allowed' : undefined,
                 }}
                 onDragOver={(event) => {
                     event.preventDefault();

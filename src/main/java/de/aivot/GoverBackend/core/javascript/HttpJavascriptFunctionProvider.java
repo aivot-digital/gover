@@ -1,15 +1,15 @@
 package de.aivot.GoverBackend.core.javascript;
 
+import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
+import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
+import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
 import org.graalvm.polyglot.HostAccess;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.Map;
 
 /**
@@ -17,6 +17,12 @@ import java.util.Map;
  */
 @Service
 public class HttpJavascriptFunctionProvider implements JavascriptFunctionProvider {
+    private final HttpService httpService;
+
+    public HttpJavascriptFunctionProvider(HttpService httpService) {
+        this.httpService = httpService;
+    }
+
     @Override
     public String getPackageName() {
         return "_http";
@@ -32,6 +38,14 @@ public class HttpJavascriptFunctionProvider implements JavascriptFunctionProvide
         return "Dieses Paket enthält Funktionen für HTTP-Anfragen.";
     }
 
+    @Override
+    public String[] getMethodTypeDefinitions() {
+        return new String[]{
+                "get(url: string, headers: Record<string, string>): {statusCode: number; body: string};",
+                "post(url: string, body: string, headers: Record<string, string>): {statusCode: number; body: string};"
+        };
+    }
+
     /**
      * Sends a GET request to the given URL with the given headers.
      *
@@ -45,24 +59,13 @@ public class HttpJavascriptFunctionProvider implements JavascriptFunctionProvide
     public HttpResult get(String url, Map<String, String> headers) throws IOException, InterruptedException {
         var uri = URI.create(url);
 
-        var client = HttpClient
-                .newBuilder()
-                .build();
-
-        var requestBuilder = HttpRequest
-                .newBuilder(uri);
-        for (var entry : headers.entrySet()) {
-            requestBuilder.header(entry.getKey(), entry.getValue());
+        HttpResponse<String> response;
+        try {
+            response = httpService
+                    .get(uri, HttpServiceHeaders.of(headers));
+        } catch (HttpConnectionException e) {
+            return new HttpResult(500, e.getMessage());
         }
-        var request = requestBuilder
-                .GET()
-                .timeout(Duration.ofSeconds(30))
-                .build();
-
-        var response = client
-                .send(request, HttpResponse.BodyHandlers.ofString());
-
-        client.close();
 
         return new HttpResult(response.statusCode(), response.body());
     }
@@ -81,24 +84,13 @@ public class HttpJavascriptFunctionProvider implements JavascriptFunctionProvide
     public HttpResult post(String url, String body, Map<String, String> headers) throws IOException, InterruptedException {
         var uri = URI.create(url);
 
-        var client = HttpClient
-                .newBuilder()
-                .build();
-
-        var requestBuilder = HttpRequest
-                .newBuilder(uri);
-        for (var entry : headers.entrySet()) {
-            requestBuilder.header(entry.getKey(), entry.getValue());
+        HttpResponse<String> response;
+        try {
+            response = httpService
+                    .post(uri, body, HttpServiceHeaders.of(headers));
+        } catch (HttpConnectionException e) {
+            return new HttpResult(500, e.getMessage());
         }
-        var request = requestBuilder
-                .POST(HttpRequest.BodyPublishers.ofString(body))
-                .timeout(Duration.ofSeconds(30))
-                .build();
-
-        var response = client
-                .send(request, HttpResponse.BodyHandlers.ofString());
-
-        client.close();
 
         return new HttpResult(response.statusCode(), response.body());
     }

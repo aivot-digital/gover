@@ -5,7 +5,7 @@ import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
 import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import ReportOutlinedIcon from '@mui/icons-material/ReportOutlined';
-import React from "react";
+import React from 'react';
 
 interface InfoDialogProps {
     title: string;
@@ -91,9 +91,9 @@ export function InfoDialog(props: InfoDialogProps & DialogProps) {
             </DialogContent>
 
             <DialogActions>
+                <Box/>
                 <Button
                     onClick={props.onClose}
-                    variant="contained"
                 >
                     Hinweis schließen
                 </Button>

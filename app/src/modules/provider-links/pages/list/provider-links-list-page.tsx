@@ -1,5 +1,4 @@
 import React from 'react';
-import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
 import {Typography} from '@mui/material';
@@ -11,9 +10,14 @@ import {ProviderLink} from '../../models/provider-link';
 import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
+import {useAccessGuard} from '../../../../hooks/use-admin-guard';
+import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 
 export function ProviderLinksListPage() {
-    useAdminGuard();
+    const hasAccess = useAccessGuard({
+        onlyGlobalAdmin: true,
+        messageType: 'snackbar',
+    });
 
     return (
         <PageWrapper
@@ -31,6 +35,7 @@ export function ProviderLinksListPage() {
                             icon: <AddOutlinedIcon />,
                             to: '/provider-links/new',
                             variant: 'contained',
+                            disabled: !hasAccess,
                         },
                     ],
                     helpDialog: {
@@ -77,7 +82,7 @@ export function ProviderLinksListPage() {
                         renderCell: (params) => (
                             <CellLink
                                 to={`/provider-links/${params.id}`}
-                                title={`Link bearbeiten`}
+                                title={hasAccess ? 'Link bearbeiten' : 'Link anzeigen'}
                             >
                                 {String(params.value)}
                             </CellLink>
@@ -95,9 +100,9 @@ export function ProviderLinksListPage() {
                 rowActionsCount={2}
                 rowActions={(item: ProviderLink) => [
                     {
-                        icon: <EditOutlined />,
+                        icon: hasAccess ? <EditOutlined /> : <Visibility/>,
                         to: `/provider-links/${item.id}`,
-                        tooltip: 'Link bearbeiten',
+                        tooltip: hasAccess ? 'Link bearbeiten' : 'Link anzeigen',
                     },
                     {
                         icon: <OpenInNewOutlinedIcon />,

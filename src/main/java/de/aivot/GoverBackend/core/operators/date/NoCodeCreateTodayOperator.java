@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 
 import java.time.ZonedDateTime;
 
@@ -51,13 +52,12 @@ public class NoCodeCreateTodayOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{};
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Date;
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
+                        NoCodeDataType.Date
+                )
+        );
     }
 
     @Override
@@ -68,6 +68,6 @@ public class NoCodeCreateTodayOperator extends NoCodeOperator {
                 .withMinute(0)
                 .withSecond(0)
                 .withNano(0);
-        return new NoCodeResult(NoCodeDataType.Date, today);
+        return new NoCodeResult(today);
     }
 }

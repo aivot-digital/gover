@@ -1,5 +1,5 @@
 import {Box, Button, Divider, Grid, Link, Typography} from '@mui/material';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Preamble} from '../preamble/preamble';
 import {useSelector} from 'react-redux';
 import {selectLoadedForm, showDialog} from '../../slices/app-slice';
@@ -345,7 +345,6 @@ export function Submitted(props: SubmittedProps) {
                         <Typography
                             component="h3"
                             variant="h5"
-                            color="primary"
                         >
                             Antrag als PDF herunterladen
                         </Typography>
@@ -381,7 +380,6 @@ export function Submitted(props: SubmittedProps) {
                         <Typography
                             component="h3"
                             variant="h5"
-                            color="primary"
                         >
                             Antrag per E-Mail erhalten
                         </Typography>
@@ -461,7 +459,6 @@ export function Submitted(props: SubmittedProps) {
                 component="h3"
                 variant="h5"
                 sx={{textAlign: 'center'}}
-                color="primary"
             >
                 Wie hat Ihnen dieser Prozess gefallen?
             </Typography>

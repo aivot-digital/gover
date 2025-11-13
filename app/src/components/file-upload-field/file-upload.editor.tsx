@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {Checkbox, FormControl, FormControlLabel, FormHelperText, Grid} from '@mui/material';
 import {type FileUploadElement} from '../../models/elements/form/input/file-upload-element';
 import {type BaseEditorProps} from '../../editors/base-editor';
@@ -7,16 +7,14 @@ import {MultiCheckboxComponent} from '../multi-checkbox-field/multi-checkbox-com
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {ElementTreeEntity} from '../element-tree/element-tree-entity';
-import {useApi} from "../../hooks/use-api";
-import {useSystemApi} from "../../hooks/use-system-api";
+import {SystemApiService} from '../../modules/system/system-api-service';
 
 export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, ElementTreeEntity>) {
-    const api = useApi();
     const dispatch = useAppDispatch();
     const [allowedExtensions, setAllowedExtensions] = useState<string[]>();
 
     useEffect(() => {
-        useSystemApi(api)
+        new SystemApiService()
             .getFileExtensions()
             .then(setAllowedExtensions)
             .catch((err) => {
@@ -38,8 +36,9 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
             <Grid
                 size={{
                     xs: 12,
-                    lg: 4
-                }}>
+                    lg: 4,
+                }}
+            >
                 <FormControl>
                     <FormControlLabel
                         control={
@@ -57,7 +56,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
                         }
                         label="Mehrere Anlagen zulässig"
                     />
-                    <FormHelperText sx={{ ml: 4 }}>
+                    <FormHelperText sx={{ml: 4}}>
                         Lässt das Hochladen von mehr als nur einer Anlage zu.
                     </FormHelperText>
                 </FormControl>
@@ -68,8 +67,9 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
                     <Grid
                         size={{
                             xs: 12,
-                            lg: 4
-                        }}>
+                            lg: 4,
+                        }}
+                    >
                         <NumberFieldComponent
                             value={props.element.required === true && props.element.minFiles == null ? 1 : props.element.minFiles ?? undefined}
                             label="Mindestanzahl an Anlagen"
@@ -86,20 +86,21 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
                     <Grid
                         size={{
                             xs: 12,
-                            lg: 4
-                        }}>
-                    <NumberFieldComponent
-                        value={props.element.maxFiles ?? undefined}
-                        label="Maximalanzahl an Anlagen"
-                        hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
-                        onChange={(val) => {
-                            props.onPatch({
-                                maxFiles: val,
-                            });
+                            lg: 4,
                         }}
-                        error={invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : undefined}
-                        disabled={!props.editable}
-                    />
+                    >
+                        <NumberFieldComponent
+                            value={props.element.maxFiles ?? undefined}
+                            label="Maximalanzahl an Anlagen"
+                            hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
+                            onChange={(val) => {
+                                props.onPatch({
+                                    maxFiles: val,
+                                });
+                            }}
+                            error={invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : undefined}
+                            disabled={!props.editable}
+                        />
                     </Grid>
                 </>
             }

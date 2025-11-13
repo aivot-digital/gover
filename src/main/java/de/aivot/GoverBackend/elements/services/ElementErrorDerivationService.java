@@ -25,7 +25,8 @@ public class ElementErrorDerivationService {
             @Nonnull ElementDataObject dataObject,
             @Nonnull BaseInputElement<?> currentElement,
             @Nonnull JavascriptEngine javascriptEngine,
-            @Nonnull NoCodeEvaluationService noCodeEvaluationService
+            @Nonnull NoCodeEvaluationService noCodeEvaluationService,
+            @Nonnull ElementDerivationLogger derivationLogger
     ) throws DerivationException {
         try {
             return deriveInputElement(rootElement,
@@ -33,7 +34,8 @@ public class ElementErrorDerivationService {
                     dataObject,
                     currentElement,
                     javascriptEngine,
-                    noCodeEvaluationService);
+                    noCodeEvaluationService,
+                    derivationLogger);
         } catch (Exception e) {
             logger
                     .atError()
@@ -50,7 +52,8 @@ public class ElementErrorDerivationService {
                                       @Nonnull ElementDataObject dataObject,
                                       @Nonnull BaseInputElement<?> currentInputElement,
                                       @Nonnull JavascriptEngine javascriptEngine,
-                                      @Nonnull NoCodeEvaluationService noCodeEvaluationService) throws JavascriptException {
+                                      @Nonnull NoCodeEvaluationService noCodeEvaluationService,
+                                      @Nonnull ElementDerivationLogger derivationLogger) throws JavascriptException {
         var value = dataObject
                 .getValue();
 
@@ -72,17 +75,20 @@ public class ElementErrorDerivationService {
                 .getValidation();
 
         if (validation.getJavascriptCode() != null && validation.getJavascriptCode().isNotEmpty()) {
-            return javascriptEngine
+            var res = javascriptEngine
                     .registerGlobalContextObject(accumulator)
                     .registerElementObject(currentInputElement)
-                    .evaluateCode(validation.getJavascriptCode())
-                    .asString();
+                    .evaluateCode(validation.getJavascriptCode());
+
+            derivationLogger.log(currentInputElement, res);
+
+            return res.asString();
         }
 
-        if (validation.getValidationExpressions() != null && !validation.getValidationExpressions().isEmpty()) {
-            for (var validationExpression : validation.getValidationExpressions()) {
+        if (validation.getNoCodeList() != null && !validation.getNoCodeList().isEmpty()) {
+            for (var validationExpression : validation.getNoCodeList()) {
                 var res = noCodeEvaluationService
-                        .evaluate(validationExpression.getExpression(), accumulator);
+                        .evaluate(validationExpression.getNoCode(), accumulator);
                 if (!res.getValueAsBoolean()) {
                     return validationExpression.getMessage();
                 }

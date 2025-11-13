@@ -5,7 +5,6 @@ import {BaseEditorProps} from '../../editors/base-editor';
 import {NumberFieldComponent} from '../number-field/number-field-component';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {ElementTreeEntity} from '../element-tree/element-tree-entity';
-import {generateUniqueID} from 'web-vitals/dist/modules/lib/generateUniqueID';
 import {generateId} from '../../utils/id-utils';
 
 export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldElement, ElementTreeEntity>) {

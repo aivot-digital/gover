@@ -1,5 +1,5 @@
 import React from 'react';
-import {Box, Button, Grid, Typography, useTheme} from '@mui/material';
+import {Grid, Typography, useTheme} from '@mui/material';
 import {type BaseSummaryProps} from './base-summary';
 import {type SelectFieldElement} from '../models/elements/form/input/select-field-element';
 import {stringOrDefault} from '../utils/string-utils';

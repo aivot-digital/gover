@@ -1,4 +1,4 @@
-import {DestinationType} from "../../../data/destination-type";
+import {DestinationType} from '../../../data/destination-type';
 
 
 export interface Destination {

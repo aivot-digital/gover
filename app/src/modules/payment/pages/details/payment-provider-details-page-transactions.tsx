@@ -1,7 +1,7 @@
 import React, {useContext} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {GenericList} from '../../../../components/generic-list/generic-list';
-import {GridColDef, GridValueGetter} from '@mui/x-data-grid';
+import {GridColDef} from '@mui/x-data-grid';
 import {Box, Typography} from '@mui/material';
 import {PaymentProviderResponseDTO} from '../../dtos/payment-provider-response-dto';
 import {TransactionsApiService} from '../../transaction-api-service';

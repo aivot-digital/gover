@@ -8,6 +8,10 @@ import de.aivot.GoverBackend.form.repositories.FormRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
+import de.aivot.GoverBackend.system.services.SystemService;
+import de.aivot.GoverBackend.theme.entities.ThemeEntity;
+import de.aivot.GoverBackend.theme.repositories.ThemeRepository;
+import de.aivot.GoverBackend.theme.services.ThemeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,14 +28,17 @@ import java.util.Optional;
 public class DepartmentService implements EntityService<DepartmentEntity, Integer> {
     private final DepartmentRepository departmentRepository;
     private final FormRepository formRepository;
+    private final ThemeRepository themeRepository;
+    private final SystemService systemService;
 
     @Autowired
-    public DepartmentService(
-            DepartmentRepository departmentRepository,
-            FormRepository formRepository
-    ) {
+    public DepartmentService(DepartmentRepository departmentRepository,
+                             FormRepository formRepository,
+                             ThemeRepository themeRepository, SystemService systemService) {
         this.departmentRepository = departmentRepository;
         this.formRepository = formRepository;
+        this.themeRepository = themeRepository;
+        this.systemService = systemService;
     }
 
     @Nonnull
@@ -89,6 +96,15 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
         entity.setId(existingDepartment.getId());
         entity.setCreated(existingDepartment.getCreated());
         entity.setUpdated(LocalDateTime.now());
+
+        var themeId = entity.getThemeId();
+        if (themeId != null) {
+            var themeExists = themeRepository.existsById(themeId);
+            if (!themeExists) {
+                entity.setThemeId(null);
+            }
+        }
+
         return departmentRepository
                 .save(entity);
     }
@@ -120,5 +136,18 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
 
         departmentRepository
                 .delete(department);
+    }
+
+    public ThemeEntity getDepartmentTheme(DepartmentEntity department) {
+        if (department.getThemeId() != null) {
+            var departmentTheme =  themeRepository
+                    .findById(department.getThemeId())
+                    .orElse(null);
+            if (departmentTheme != null) {
+                return departmentTheme;
+            }
+        }
+        return systemService
+                .retrieveDefaultTheme();
     }
 }

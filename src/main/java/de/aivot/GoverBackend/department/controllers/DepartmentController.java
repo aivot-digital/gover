@@ -78,7 +78,8 @@ public class DepartmentController {
             var depFilter = DepartmentFilter
                     .create()
                     .setId(filter.getDepartmentId())
-                    .setName(filter.getDepartmentName());
+                    .setName(filter.getDepartmentName())
+                    .setThemeId(filter.getThemeId());
 
             return departmentService
                     .list(pageable, depFilter)

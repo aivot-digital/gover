@@ -10,7 +10,7 @@ import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component
 import {EditorDispatcher} from '../editor-dispatcher';
 import React from 'react';
 import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
-import {showSuccessSnackbar} from '../../slices/snackbar-slice';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import ContentPasteIcon from '@mui/icons-material/ContentPaste';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
@@ -361,11 +361,11 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                             onClick: () => {
                                 navigator.clipboard.writeText(props.element.id ?? '')
                                     .then(() => {
-                                        dispatch(showSuccessSnackbar('ID des Elements kopiert'));
+                                        dispatch(showSuccessSnackbar('Element-ID in Zwischenablage kopiert'));
                                     })
                                     .catch((error) => {
                                         console.error('Failed to copy ID', error);
-                                        dispatch(showSuccessSnackbar('ID konnte nicht kopiert werden'));
+                                        dispatch(showErrorSnackbar('Element-ID konnte nicht in Zwischenablage kopiert werden'));
                                     });
                             },
                         }}

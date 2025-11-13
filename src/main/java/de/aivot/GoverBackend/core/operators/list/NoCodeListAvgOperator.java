@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -66,18 +67,17 @@ public class NoCodeListAvgOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{
-                new NoCodeParameter(
-                        NoCodeDataType.List,
-                        "Liste"
-                ),
-        };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Number;
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
+                        NoCodeDataType.Number,
+                        new NoCodeParameter(
+                                NoCodeDataType.List,
+                                "Liste",
+                                "Die Liste der numerischen Werte, deren Durchschnitt berechnet werden soll."
+                        )
+                )
+        );
     }
 
     @Override
@@ -85,7 +85,7 @@ public class NoCodeListAvgOperator extends NoCodeOperator {
         var list = castToList(args[0]);
 
         if (list.isEmpty()) {
-            return new NoCodeResult(NoCodeDataType.Number, BigDecimal.ZERO);
+            return new NoCodeResult(BigDecimal.ZERO);
         }
 
         var sum = BigDecimal.ZERO;
@@ -95,6 +95,6 @@ public class NoCodeListAvgOperator extends NoCodeOperator {
 
         var avg = sum.divide(BigDecimal.valueOf(list.size()), RoundingMode.HALF_UP);
 
-        return new NoCodeResult(NoCodeDataType.Any, avg);
+        return new NoCodeResult(avg);
     }
 }
