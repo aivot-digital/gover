@@ -3,7 +3,7 @@ import {Box, Button, Card, Dialog, DialogContent, DialogContentText, Grid, Skele
 import {User} from '../../users/models/user';
 import {DiffItem} from '../../../models/entities/form-revision';
 import {Form, isForm} from '../../../models/entities/form';
-import {AnyElement} from '../../../models/elements/any-element';
+import {AnyElement, AnyElementType} from '../../../models/elements/any-element';
 import {DeletedElementReference, isDeletedElementReference, resolveElementPath} from '../../../utils/resolve-element-path';
 import {Api, useApi} from '../../../hooks/use-api';
 import {Page} from '../../../models/dtos/page';
@@ -25,6 +25,8 @@ import {ConfirmDialog} from '../../../dialogs/confirm-dialog/confirm-dialog';
 import {RestoreOutlined} from '@mui/icons-material';
 import {ExpandableCodeBlock} from '../../../components/expandable-code-block/expandable-code-block';
 import {FormStatus} from '../enums/form-status';
+import {ElementType} from '../../../data/element-type/element-type';
+import {RootElement} from '../../../models/elements/root-element';
 
 
 export interface FormRevisionsDialogProps {
@@ -294,7 +296,7 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps) {
                                         </Box>
 
                                         {
-                                            rev.diffs.map((diff, i) => (
+                                            rev.diffs.map((diff: RevisionDiff, i: number) => (
                                                 <Box
                                                     key={diff.path + diff.field}
                                                     sx={{
@@ -305,7 +307,7 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps) {
                                                     {diff.field &&
                                                         <Typography>
                                                             Geändertes Attribut: {diff.path}{diff.path && ' → '}
-                                                            <b>{diff.field}</b>
+                                                            <strong>{getFieldLabel(diff)}</strong>
                                                         </Typography>
                                                     }
 
@@ -436,4 +438,55 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps) {
             </ConfirmDialog>
         </>
     );
+}
+
+function getFieldLabel(diff: RevisionDiff): string {
+    const elem = diff.element;
+
+    if (isForm(elem)) {
+        return formFieldLabelMap[diff.field as keyof Form] ?? diff.field;
+    }
+
+    if (isDeletedElementReference(diff)) {
+        return 'Gelöschtes Element';
+    }
+
+    const elementType = (elem as AnyElement).type as ElementType;
+    const fieldLabelMap = et[elementType];
+
+    if (fieldLabelMap != null) {
+        const label = fieldLabelMap[diff.field as keyof AnyElementType<ElementType>];
+        if (label != null) {
+            return label;
+        }
+    }
+
+    return diff.field;
+}
+
+const formFieldLabelMap: Partial<Record<keyof Form, string>> = {
+    internalTitle: 'Interner Titel',
+    publicTitle: 'Öffentlicher Titel',
+    type: 'Formular-Typ',
+    developingDepartmentId: 'Entwickelnder Fachbereich',
+    responsibleDepartmentId: 'Verantwortlicher Fachbereich',
+    managingDepartmentId: 'Bewirtschaftender Fachbereich',
+    accessibilityDepartmentId: 'Text für die Erklärung der Barrierefreiheit',
+    privacyDepartmentId: 'Text für die Datenschutzerklärung',
+    imprintDepartmentId: 'Text für das Impressum',
+    customerAccessHours: 'Zugriffsfrist in Stunden',
+    submissionRetentionWeeks: 'Löschfrist in Wochen',
+}
+
+// Map element types to records of
+type ElementFieldLabelMap = {
+    [T in ElementType]?: Partial<Record<keyof AnyElementType<T>, string>>;
+};
+
+const et: ElementFieldLabelMap = {
+    [ElementType.Root]: {
+        headline: 'Überschrift',
+        tabTitle: 'Tab-Titel',
+        expiring: 'Ablaufdatum',
+    }
 }
