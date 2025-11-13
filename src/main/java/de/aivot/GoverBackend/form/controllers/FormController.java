@@ -450,7 +450,7 @@ public class FormController {
         return formVersionWithDetailsService
                 .retrieve(formId, createdVersion.getVersion())
                 .map(FormDetailsResponseDTO::fromEntity)
-                .orElseThrow(() -> ResponseException.internalServerError("Fehler beim Laden der neuen Formular-Version."));
+                .orElseThrow(() -> ResponseException.internalServerError("Fehler beim Laden der neuen Formularversion."));
     }
 
     @PutMapping("{formId}/{formVersion}/as-new-version/")
@@ -514,7 +514,7 @@ public class FormController {
         return formVersionWithDetailsService
                 .retrieve(formId, createdVersion.getVersion())
                 .map(FormDetailsResponseDTO::fromEntity)
-                .orElseThrow(() -> ResponseException.internalServerError("Fehler beim Laden der neuen Formular-Version."));
+                .orElseThrow(() -> ResponseException.internalServerError("Fehler beim Laden der neuen Formularversion."));
     }
 
     @GetMapping("{formId}/{formVersion}/check-publish/")

@@ -28,6 +28,9 @@ import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 import {FormsApiService} from '../forms-api-service-v2';
 import {LoadingOverlay} from '../../../components/loading-overlay/loading-overlay';
+import NewWindow from '@aivot/mui-material-symbols-400-outlined/dist/new-window/NewWindow';
+import {FormListResponseDTO} from '../dtos/form-list-response-dto';
+import {hideLoadingOverlay, showLoadingOverlay} from '../../../slices/loading-overlay-slice';
 
 interface FormVersionsDialogProps {
     formId: number;
@@ -58,6 +61,18 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
     const [isBusy, setIsBusy] = useState(false);
 
     const [versions, setVersions] = useState<FormVersionWithEditor[]>([]);
+
+    const hasDraft = useMemo(() => {
+        return versions.some(v => v.status === FormStatus.Drafted);
+    }, [versions]);
+
+    const publishedVersion = useMemo(() => {
+        return versions.find(v => v.status === FormStatus.Published)?.version ?? null;
+    }, [versions]);
+
+    const latestVersion = useMemo(() => {
+        return versions.length > 0 ? versions[0].version : null;
+    }, [versions]);
 
     const [moreMenuAnchorEl, setMoreMenuAnchorEl] = useState<HTMLElement | null>(null);
     const [moreMenuForm, setMoreMenuForm] = useState<FormDetailsResponseDTO | null>(null);
@@ -96,7 +111,7 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
                 dispatch(showErrorSnackbar(error.message));
             } else {
                 console.error(error);
-                dispatch(showErrorSnackbar('Fehler beim Laden der Formular-Versionen'));
+                dispatch(showErrorSnackbar('Fehler beim Laden der Formularversionen'));
             }
         }
     }
@@ -112,7 +127,7 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
         if (!item) {
             const error: ApiError = {
                 status: 404,
-                message: 'Die ausgewählte Formular-Version wurde nicht gefunden.',
+                message: 'Die ausgewählte Formularversion wurde nicht gefunden.',
                 details: null,
                 displayableToUser: true,
             };
@@ -139,7 +154,7 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
                 dispatch(showErrorSnackbar(error.message));
             } else {
                 console.error(error);
-                dispatch(showErrorSnackbar('Fehler beim Laden der Formular-Version'));
+                dispatch(showErrorSnackbar('Fehler beim Laden der Formularversion'));
             }
             return;
         }
@@ -166,6 +181,23 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
         }
     }
 
+    const handleNewDraft = (version: number) => {
+        showConfirm({
+            title: 'Neuen Entwurf anlegen?',
+            confirmButtonText: 'Ja, Entwurf anlegen',
+            children: (
+                <Box>
+                    Für dieses Formular existiert derzeit kein aktiver Entwurf.
+                    Möchten Sie einen neuen Entwurf (Arbeitsversion) für dieses Formular anlegen um diesen zu bearbeiten?
+                </Box>
+            ),
+        }).then((confirmed) => {
+            if (confirmed) {
+                handleUseAsNewDraft(version);
+            }
+        });
+    };
+
     async function handleUseAsNewForm(version: number): Promise<void> {
         let item: FormVersionWithEditor;
         try {
@@ -175,7 +207,7 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
                 dispatch(showErrorSnackbar(error.message));
             } else {
                 console.error(error);
-                dispatch(showErrorSnackbar('Fehler beim Laden der Formular-Version'));
+                dispatch(showErrorSnackbar('Fehler beim Laden der Formularversion'));
             }
             return;
         }
@@ -194,7 +226,7 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
                 dispatch(showErrorSnackbar(error.message));
             } else {
                 console.error(error);
-                dispatch(showErrorSnackbar('Fehler beim Laden der Formular-Version'));
+                dispatch(showErrorSnackbar('Fehler beim Laden der Formularversion'));
             }
             return;
         }
@@ -213,7 +245,7 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
                 dispatch(showErrorSnackbar(error.message));
             } else {
                 console.error(error);
-                dispatch(showErrorSnackbar('Fehler beim Laden der Formular-Version'));
+                dispatch(showErrorSnackbar('Fehler beim Laden der Formularversion'));
             }
             return;
         }
@@ -225,7 +257,7 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
 
         if (item.status === FormStatus.Drafted && item.versionCount < 2) {
             showConfirm({
-                title: 'Formular-Version löschen',
+                title: 'Formularversion löschen',
                 hideCancelButton: true,
                 children: (
                     <Typography>
@@ -239,10 +271,10 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
         }
 
         showConfirm({
-            title: 'Formular-Version löschen',
+            title: 'Formularversion löschen',
             children: (
                 <Typography>
-                    Soll die Formular-Version {item.version} wirklich gelöscht werden?
+                    Soll die Formularversion {item.version} wirklich gelöscht werden?
                 </Typography>
             ),
             isDestructive: true,
@@ -267,7 +299,7 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
                         if (isApiError(error) && error.displayableToUser) {
                             dispatch(showErrorSnackbar(error.message));
                         } else {
-                            dispatch(showErrorSnackbar('Fehler beim Löschen der Formular-Version'));
+                            dispatch(showErrorSnackbar('Fehler beim Löschen der Formularversion'));
                         }
                         console.error(error);
                     });
@@ -281,7 +313,18 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
                 onClose={onClose}
                 fullWidth={true}
             >
-                <DialogTitleWithClose onClose={onClose}>
+                <DialogTitleWithClose
+                    onClose={onClose}
+                    actions={[
+                        {
+                            label: 'Entwurf anlegen',
+                            icon: <NewWindow />,
+                            onClick: () => latestVersion != null && handleNewDraft(publishedVersion ?? latestVersion),
+                            variant: 'text',
+                            visible: !hasDraft && !isLoading,
+                        },
+                    ]}
+                >
                     Versionen dieses Formulars
                 </DialogTitleWithClose>
                 <DialogContent>
