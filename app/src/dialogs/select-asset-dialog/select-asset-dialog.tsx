@@ -72,7 +72,7 @@ export function SelectAssetDialog(props: PropsWithChildren<SelectAssetDialogProp
                         color="info"
                     >
                         Es sind noch keine Dateien vorhanden.
-                        Gehen Sie zu <Link to="/assets" style={{color: 'inherit'}}>Dateien & Medien</Link> und fügen Sie neue Datei hinzu.
+                        Gehen Sie zu <Link to="/assets" style={{color: 'inherit'}}>Dateien & Medien</Link> und fügen Sie eine neue Datei hinzu.
                     </AlertComponent>
                 }
 
@@ -84,7 +84,7 @@ export function SelectAssetDialog(props: PropsWithChildren<SelectAssetDialogProp
                         color="info"
                     >
                         Es sind noch keine Dateien vorhanden die zu Ihrer Suche passen.
-                        Gehen Sie zu <Link to="/assets" style={{color: 'inherit'}}>Dateien & Medien</Link> und fügen Sie neue Datei hinzu.
+                        Gehen Sie zu <Link to="/assets" style={{color: 'inherit'}}>Dateien & Medien</Link> und fügen Sie eine neue Datei hinzu.
                     </AlertComponent>
                 }
 
