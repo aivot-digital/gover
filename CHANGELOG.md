@@ -4,6 +4,7 @@
 
 ### Features
 * **Server:** Add uptime check for IDP and API to container entrypoint.
+* **Server:** Add support for ePay21 payment provider.
 
 ### Bug Fixes
 * **Server:** Disable NGINX server tokens to prevent version disclosure.
