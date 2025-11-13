@@ -1,6 +1,6 @@
 # Changelog
 
-## [4.5.4](https://github.com/aivot-digital/gover/compare/v4.5.3...v4.5.4) (2025-09-XX)
+## [4.5.4](https://github.com/aivot-digital/gover/compare/v4.5.3...v4.5.4) (2025-11-13)
 
 ### Features
 * **Server:** Add uptime check for IDP and API to container entrypoint.
