@@ -34,12 +34,12 @@ public class AssetJavascriptFunctionProvider implements JavascriptFunctionProvid
 
     @Override
     public String getLabel() {
-        return "Dokumente & Medieninhalte";
+        return "Dateien & Medien";
     }
 
     @Override
     public String getDescription() {
-        return "Dieses Paket enthält Funktionen für Dokumente & Medieninhalte.";
+        return "Dieses Paket enthält Funktionen für Dateien & Medien.";
     }
 
     @Override

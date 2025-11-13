@@ -109,7 +109,7 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
         clientCertificateInput.setRequired(true);
         clientCertificateInput.setLabel("Zertifikat");
         clientCertificateInput.setPlaceholder("ePayBL Zertifikat");
-        clientCertificateInput.setHint("Das .p12-Zertifikat wird vom Zahlungsdienstleister bereitgestellt. Es muss zuvor unter \"Dokumente & Medieninhalte\" hochgeladen werden, um hier auswählbar zu sein.");
+        clientCertificateInput.setHint("Das .p12-Zertifikat wird vom Zahlungsdienstleister bereitgestellt. Es muss zuvor unter \"Dateien & Medien\" hochgeladen werden, um hier auswählbar zu sein.");
         var clientCertificateInputOptions = assetRepository
                 .findAll()
                 .stream()

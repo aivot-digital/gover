@@ -21,14 +21,14 @@ export function AssetListPage() {
 
     return (
         <PageWrapper
-            title="Dokumente & Medieninhalte"
+            title="Dateien & Medien"
             fullWidth
             background
         >
             <GenericListPage<Asset>
                 header={{
                     icon: <DriveFolderUploadOutlinedIcon />,
-                    title: 'Dokumente & Medieninhalte',
+                    title: 'Dateien & Medien',
                     actions: [
                         {
                             label: 'Datei hochladen',

@@ -151,7 +151,7 @@ export function AppHeaderMenu(props: AppHeaderMenuProps) {
                 {
                     props.mode === AppMode.Staff &&
                     <LinkMenuItem
-                        label="Dokumente & Medieninhalte"
+                        label="Dateien & Medien"
                         icon={DriveFolderUploadOutlinedIcon}
                         to="/assets"
                     />

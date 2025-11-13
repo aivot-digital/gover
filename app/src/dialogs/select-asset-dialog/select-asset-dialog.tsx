@@ -68,11 +68,11 @@ export function SelectAssetDialog(props: PropsWithChildren<SelectAssetDialogProp
                 {
                     assets?.length === 0 &&
                     <AlertComponent
-                        title="Keine Anlagen vorhanden"
+                        title="Keine Dateien vorhanden"
                         color="info"
                     >
-                        Es sind noch keine Anlagen vorhanden.
-                        Gehen Sie in die <Link to="/assets">Liste der Anlagen</Link> und fügen Sie neue Anlagen hinzu.
+                        Es sind noch keine Dateien vorhanden.
+                        Gehen Sie zu <Link to="/assets" style={{color: 'inherit'}}>Dateien & Medien</Link> und fügen Sie neue Datei hinzu.
                     </AlertComponent>
                 }
 
@@ -80,11 +80,11 @@ export function SelectAssetDialog(props: PropsWithChildren<SelectAssetDialogProp
                     assets?.length !== 0 &&
                     filteredAssets?.length === 0 &&
                     <AlertComponent
-                        title="Keine Anlagen vorhanden"
+                        title="Keine Dateien gefunden"
                         color="info"
                     >
-                        Es sind noch keine Anlagen vorhanden die zu Ihrer Suche passen.
-                        Gehen Sie in die <Link to="/assets">Liste der Anlagen</Link> und fügen Sie neue Anlagen hinzu.
+                        Es sind noch keine Dateien vorhanden die zu Ihrer Suche passen.
+                        Gehen Sie zu <Link to="/assets" style={{color: 'inherit'}}>Dateien & Medien</Link> und fügen Sie neue Datei hinzu.
                     </AlertComponent>
                 }
 
