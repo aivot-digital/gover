@@ -1,4 +1,4 @@
-import React, {useEffect, useReducer, useState} from 'react';
+import React, {useEffect, useReducer, useRef, useState} from 'react';
 import {useDrag} from 'react-dnd';
 import {Box} from '@mui/material';
 import {selectUseTestMode, setDraggingTreeElement, setExpandElementTree} from '../../slices/admin-settings-slice';
@@ -27,9 +27,12 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
 
     const {
         currentEditedElementId,
+        currentEditorTab,
         navigateToElementEditor,
         closeElementEditor,
     } = useElementEditorNavigation();
+
+    const nodeRef = useRef<HTMLDivElement>(null);
 
     const dispatch = useAppDispatch();
     const expandStatus = useAppSelector((state) => state.adminSettings.expandElementTree);
@@ -50,6 +53,30 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
             }
         }
     }, [expandStatus]);
+
+    /**
+     * Scroll to the element when it is opened in the editor
+     */
+    useEffect(() => {
+        if (currentEditedElementId == null) {
+            return;
+        }
+
+        if (nodeRef.current == null) {
+            return;
+        }
+
+        if (currentEditedElementId !== props.element.id) {
+            return;
+        }
+
+        nodeRef
+            .current
+            .scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+            });
+    }, [currentEditedElementId]);
 
     useEffect(() => {
         // Check if the current edited element is a child of this element
@@ -131,10 +158,17 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
 
     return (
         <Box
-            ref={props.editable && props.disableDrag !== true ? (drag as any) : undefined}
+            ref={(el: HTMLDivElement) => {
+                nodeRef.current = el;
+                if (props.editable && props.disableDrag !== true) {
+                    drag(el);
+                }
+            }}
             sx={{
                 opacity: isDragging ? 0 : 1,
+                backgroundColor: currentEditedElementId === props.element.id ? 'action.selected' : 'inherit',
             }}
+            component="div"
         >
             <ElementTreeItemTitle
                 isExpanded={expanded}
@@ -184,6 +218,7 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
 
             {
                 currentEditedElementId === props.element.id &&
+                currentEditorTab != null &&
                 <ElementEditor
                     open={true}
                     parents={props.parents}

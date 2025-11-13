@@ -29,7 +29,7 @@ export function useElementEditorNavigation() {
 
     const currentEditorTab: string = useMemo(() => {
         const tabInHash = locationHash.split('/')[1]
-        return tabInHash ?? DefaultTabs.properties;
+        return tabInHash ?? null;
     }, [locationHash]);
 
     const navigateToEditorTab = useCallback((tab: string): void => {
@@ -38,7 +38,7 @@ export function useElementEditorNavigation() {
         });
     }, [currentEditedElementId]);
 
-    const navigateToElementEditor = useCallback((elementId: string, tab?: string): void => {
+    const navigateToElementEditor = useCallback((elementId: string, tab?: string | null): void => {
         navigate(createElementEditorNavigationLink(elementId, tab), {
             replace: true,
         });
@@ -59,6 +59,9 @@ export function useElementEditorNavigation() {
     };
 }
 
-export function createElementEditorNavigationLink(elementId: string, tab?: string): string {
+export function createElementEditorNavigationLink(elementId: string, tab?: string | null): string {
+    if (tab === null) {
+        return `#${elementId}`;
+    }
     return `#${elementId}/${tab ?? DefaultTabs.properties}`;
 }

@@ -18,6 +18,7 @@ import {useAppDispatch} from '../hooks/use-app-dispatch';
 import {useAppSelector} from '../hooks/use-app-selector';
 import {selectDisableElementContextMenu, setComponentTree} from '../slices/admin-settings-slice';
 import {generateComponentTitle} from '../utils/generate-component-title';
+import JumpToElement from '@aivot/mui-material-symbols-400-outlined/dist/jump-to-element/JumpToElement';
 
 interface DispatcherComponentProps<T extends AnyElement> {
     rootElement: AnyElement;
@@ -252,6 +253,13 @@ function ContextMenuButton(props: ContextMenuButtonProps) {
     const handleEdit = () => {
         dispatch(setComponentTree(true));
         navigateToElementEditor(element.id);
+        handleMenuClose();
+    };
+
+    const handleJumpTo = () => {
+        dispatch(setComponentTree(true));
+        navigateToElementEditor(element.id, null);
+        handleMenuClose()
     };
 
     const handleCopyId = async () => {
@@ -361,15 +369,19 @@ function ContextMenuButton(props: ContextMenuButtonProps) {
                 <Divider sx={{my: 1}} />
 
                 <MenuItem
-                    onClick={() => {
-                        handleEdit();
-                        handleMenuClose();
-                    }}
+                    onClick={handleEdit}
                 >
                     <ListItemIcon>
                         <Edit fontSize="small" />
                     </ListItemIcon>
                     <ListItemText primary="Bearbeiten" />
+                </MenuItem>
+
+                <MenuItem onClick={handleJumpTo}>
+                    <ListItemIcon>
+                        <JumpToElement fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText primary="Zum Element springen" />
                 </MenuItem>
 
                 <MenuItem onClick={handleCopyId}>
