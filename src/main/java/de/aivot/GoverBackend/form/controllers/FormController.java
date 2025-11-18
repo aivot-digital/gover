@@ -151,7 +151,7 @@ public class FormController {
                 "id", createdFormEntity.getId(),
                 "slug", createdFormEntity.getSlug(),
                 "title", createdFormEntity.getInternalTitle(),
-                "developingDepartmentId", createdFormEntity.getDevelopingDepartmentId()
+                "developingDepartmentId", createdFormEntity.getDevelopingOrganizationalUnitId()
         ));
 
         // create the initial version
@@ -337,7 +337,7 @@ public class FormController {
         auditService.logAction(user, AuditAction.Update, FormEntity.class, Map.of(
                 "formId", updatedForm.getId(),
                 "formSlug", updatedForm.getSlug(),
-                "developingDepartmentId", updatedForm.getDevelopingDepartmentId()
+                "developingDepartmentId", updatedForm.getDevelopingOrganizationalUnitId()
         ));
         auditService.logAction(user, AuditAction.Update, FormEntity.class, Map.of(
                 "formId", updatedVersion.getFormId(),
@@ -368,7 +368,7 @@ public class FormController {
                 .orElseThrow(ResponseException::notFound);
 
         // Check if the user has access to the department the form resides in
-        checkUserHasAccessToForm(user, form.getDevelopingDepartmentId(), departmentMembershipService);
+        checkUserHasAccessToForm(user, form.getDevelopingOrganizationalUnitId(), departmentMembershipService);
 
         var latestVersion = formVersionService
                 .getLatestVersion(formId)
@@ -419,13 +419,13 @@ public class FormController {
                 FormStatus.Drafted,
                 latestVersion.getPublicTitle(),
                 latestVersion.getType(),
-                latestVersion.getManagingDepartmentId(),
-                latestVersion.getResponsibleDepartmentId(),
-                latestVersion.getLegalSupportDepartmentId(),
-                latestVersion.getTechnicalSupportDepartmentId(),
-                latestVersion.getImprintDepartmentId(),
-                latestVersion.getPrivacyDepartmentId(),
-                latestVersion.getAccessibilityDepartmentId(),
+                latestVersion.getManagingOrganizationalUnitId(),
+                latestVersion.getResponsibleOrganizationalUnitId(),
+                latestVersion.getLegalSupportOrganizationalUnitId(),
+                latestVersion.getTechnicalSupportOrganizationalUnitId(),
+                latestVersion.getImprintOrganizationalUnitId(),
+                latestVersion.getPrivacyOrganizationalUnitId(),
+                latestVersion.getAccessibilityOrganizationalUnitId(),
                 latestVersion.getDestinationId(),
                 latestVersion.getCustomerAccessHours(),
                 latestVersion.getSubmissionRetentionWeeks(),
@@ -732,16 +732,16 @@ public class FormController {
                 .orElseThrow(ResponseException::notFound);
 
         // Check if the user has access to the department the form resides in
-        checkUserHasAccessToForm(user, form.getDevelopingDepartmentId(), departmentMembershipService);
+        checkUserHasAccessToForm(user, form.getDevelopingOrganizationalUnitId(), departmentMembershipService);
 
         // Check if the form is locked by another user
         checkFormLock(formId, user, formLockService);
 
         // Store the previous department id
-        var previousDepartmentId = form.getDevelopingDepartmentId();
+        var previousDepartmentId = form.getDevelopingOrganizationalUnitId();
 
         // Move the form to the target department
-        form.setDevelopingDepartmentId(targetDepartmentId);
+        form.setDevelopingOrganizationalUnitId(targetDepartmentId);
 
         // Create a revision for the form
         formService.update(formId, form);
@@ -778,7 +778,7 @@ public class FormController {
                 .orElseThrow(ResponseException::notFound);
 
         // Check if the user has access to the department the form resides in
-        checkUserHasAccessToForm(user, form.getDevelopingDepartmentId(), departmentMembershipService);
+        checkUserHasAccessToForm(user, form.getDevelopingOrganizationalUnitId(), departmentMembershipService);
 
         // Check if the form is locked by another user
         checkFormLock(formId, user, formLockService);
@@ -793,7 +793,7 @@ public class FormController {
                 Map.of(
                         "formId", deletedForm.getId(),
                         "formSlug", deletedForm.getSlug(),
-                        "developingDepartmentId", deletedForm.getDevelopingDepartmentId()
+                        "developingDepartmentId", deletedForm.getDevelopingOrganizationalUnitId()
                 )
         );
 

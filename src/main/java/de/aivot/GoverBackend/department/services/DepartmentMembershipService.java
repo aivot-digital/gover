@@ -54,7 +54,7 @@ public class DepartmentMembershipService implements EntityService<DepartmentMemb
                 .orElseThrow(() -> new ResponseException(HttpStatus.NOT_FOUND, "Die Mitarbeiter:in wurde nicht gefunden."));
 
         var targetDepartment = departmentRepository
-                .findById(entity.getDepartmentId())
+                .findById(entity.getOrganizationalUnitId())
                 .orElseThrow(() -> new ResponseException(HttpStatus.NOT_FOUND, "Der Fachbereich wurde nicht gefunden."));
 
         var spec = DepartmentMembershipFilter

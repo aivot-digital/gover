@@ -8,6 +8,11 @@ import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectMemberships, selectUser} from '../../../../slices/user-slice';
 import {isAdmin, isDepartmentAdmin} from '../../../../utils/is-admin';
+import {ShadowedOrganizationalUnitsApiService} from '../../shadowed-organizational-units-api-service';
+
+export interface DepartmentsDetailsPageAdditionalData {
+    shadowedDepartment: Department;
+}
 
 export function DepartmentsDetailsPage() {
     const user = useAppSelector(selectUser);
@@ -19,7 +24,7 @@ export function DepartmentsDetailsPage() {
             fullWidth
             background
         >
-            <GenericDetailsPage<Department, number, undefined>
+            <GenericDetailsPage<Department, number, DepartmentsDetailsPageAdditionalData>
                 isEditable={(item) => (
                     isAdmin(user) || isDepartmentAdmin(memberships, item?.id)
                 )}
@@ -60,6 +65,9 @@ export function DepartmentsDetailsPage() {
                 ]}
                 initializeItem={(api) => new DepartmentsApiService().initialize()}
                 fetchData={(api, id: number) => new DepartmentsApiService().retrieve(id)}
+                fetchAdditionalData={{
+                    shadowedDepartment: (api, id: number) => new ShadowedOrganizationalUnitsApiService().retrieve(id),
+                }}
                 getTabTitle={(item: Department) => {
                     if (item.id === 0) {
                         return 'Neuer Fachbereich';

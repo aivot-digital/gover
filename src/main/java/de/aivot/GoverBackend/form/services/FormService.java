@@ -86,7 +86,7 @@ public class FormService implements EntityService<FormEntity, Integer> {
         existingForm.setSlug(updatedForm.getSlug());
         existingForm.setInternalTitle(cleanedForm.getInternalTitle().strip());
 
-        existingForm.setDevelopingDepartmentId(cleanedForm.getDevelopingDepartmentId());
+        existingForm.setDevelopingOrganizationalUnitId(cleanedForm.getDevelopingOrganizationalUnitId());
 
         if (formSlugHistoryRepository.existsById(existingForm.getSlug())) {
             formSlugHistoryRepository.deleteById(existingForm.getSlug());
@@ -146,7 +146,7 @@ public class FormService implements EntityService<FormEntity, Integer> {
             }
         };
 
-        var notNull = checkDepartment.apply(FormEntity::getDevelopingDepartmentId, updated::setDevelopingDepartmentId);
+        var notNull = checkDepartment.apply(FormEntity::getDevelopingOrganizationalUnitId, updated::setDevelopingOrganizationalUnitId);
         if (!notNull) {
             throw ResponseException.badRequest("Der entwickelnde Fachbereich ist erforderlich");
         }

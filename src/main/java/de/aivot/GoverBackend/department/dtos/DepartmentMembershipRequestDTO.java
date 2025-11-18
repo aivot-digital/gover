@@ -27,7 +27,7 @@ public record DepartmentMembershipRequestDTO(
     @Override
     public DepartmentMembershipEntity toEntity() {
         var membership = new DepartmentMembershipEntity();
-        membership.setDepartmentId(departmentId());
+        membership.setOrganizationalUnitId(departmentId());
         membership.setUserId(userId());
         membership.setRole(role());
         return membership;

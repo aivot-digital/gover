@@ -115,7 +115,7 @@ public class DepartmentMembershipController {
 
         auditService.logAction(user, AuditAction.Create, DepartmentMembershipEntity.class, Map.of(
                 "id", departmentMembership.getId(),
-                "departmentId", departmentMembership.getDepartmentId(),
+                "departmentId", departmentMembership.getOrganizationalUnitId(),
                 "userId", departmentMembership.getUserId()
         ));
 
@@ -131,7 +131,7 @@ public class DepartmentMembershipController {
 
         return new DepartmentMembershipResponseDTO(
                 departmentMembership.getId(),
-                departmentMembership.getDepartmentId(),
+                departmentMembership.getOrganizationalUnitId(),
                 department.getName(),
                 departmentMembership.getUserId(),
                 departmentMembership.getRole(),
@@ -160,7 +160,7 @@ public class DepartmentMembershipController {
                 .orElseThrow(ResponseException::notFound);
 
         var department = departmentService
-                .retrieve(mem.getDepartmentId())
+                .retrieve(mem.getOrganizationalUnitId())
                 .orElseThrow(ResponseException::notFound);
 
         var user = userService
@@ -222,7 +222,7 @@ public class DepartmentMembershipController {
 
         return new DepartmentMembershipResponseDTO(
                 updatedMembership.getId(),
-                updatedMembership.getDepartmentId(),
+                updatedMembership.getOrganizationalUnitId(),
                 department.getName(),
                 updatedMembership.getUserId(),
                 updatedMembership.getRole(),
@@ -253,7 +253,7 @@ public class DepartmentMembershipController {
 
             var spec = DepartmentMembershipFilter
                     .create()
-                    .setDepartmentId(membershipToDelete.getDepartmentId())
+                    .setDepartmentId(membershipToDelete.getOrganizationalUnitId())
                     .setUserId(user.getId())
                     .setRole(UserRole.Admin)
                     .build();
@@ -267,7 +267,7 @@ public class DepartmentMembershipController {
 
         auditService.logAction(user, AuditAction.Delete, DepartmentMembershipEntity.class, Map.of(
                 "id", deletedMembership.getId(),
-                "departmentId", deletedMembership.getDepartmentId(),
+                "departmentId", deletedMembership.getOrganizationalUnitId(),
                 "userId", deletedMembership.getUserId()
         ));
 

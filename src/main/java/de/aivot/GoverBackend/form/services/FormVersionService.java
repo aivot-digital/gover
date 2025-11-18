@@ -168,13 +168,13 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
         var updatedExistingEntity = existingEntity
                 .setPublicTitle(entity.getPublicTitle())
                 .setType(cleanedEntity.getType())
-                .setManagingDepartmentId(cleanedEntity.getManagingDepartmentId())
-                .setResponsibleDepartmentId(cleanedEntity.getResponsibleDepartmentId())
-                .setLegalSupportDepartmentId(cleanedEntity.getLegalSupportDepartmentId())
-                .setTechnicalSupportDepartmentId(cleanedEntity.getTechnicalSupportDepartmentId())
-                .setImprintDepartmentId(cleanedEntity.getImprintDepartmentId())
-                .setPrivacyDepartmentId(cleanedEntity.getPrivacyDepartmentId())
-                .setAccessibilityDepartmentId(cleanedEntity.getAccessibilityDepartmentId())
+                .setManagingOrganizationalUnitId(cleanedEntity.getManagingOrganizationalUnitId())
+                .setResponsibleOrganizationalUnitId(cleanedEntity.getResponsibleOrganizationalUnitId())
+                .setLegalSupportOrganizationalUnitId(cleanedEntity.getLegalSupportOrganizationalUnitId())
+                .setTechnicalSupportOrganizationalUnitId(cleanedEntity.getTechnicalSupportOrganizationalUnitId())
+                .setImprintOrganizationalUnitId(cleanedEntity.getImprintOrganizationalUnitId())
+                .setPrivacyOrganizationalUnitId(cleanedEntity.getPrivacyOrganizationalUnitId())
+                .setAccessibilityOrganizationalUnitId(cleanedEntity.getAccessibilityOrganizationalUnitId())
                 .setCustomerAccessHours(cleanedEntity.getCustomerAccessHours())
                 .setSubmissionRetentionWeeks(cleanedEntity.getSubmissionRetentionWeeks())
                 .setThemeId(cleanedEntity.getThemeId())
@@ -218,16 +218,16 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
     private FormVersionEntity cleanRelatedData(@Nullable FormVersionEntity prev, @Nonnull FormVersionEntity updated) throws ResponseException {
         checkAndReset(prev, updated, destinationRepository, FormVersionEntity::getDestinationId, updated::setDestinationId);
 
-        checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getManagingDepartmentId, updated::setManagingDepartmentId);
-        checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getResponsibleDepartmentId, updated::setResponsibleDepartmentId);
+        checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getManagingOrganizationalUnitId, updated::setManagingOrganizationalUnitId);
+        checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getResponsibleOrganizationalUnitId, updated::setResponsibleOrganizationalUnitId);
 
-        checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getLegalSupportDepartmentId, updated::setLegalSupportDepartmentId);
+        checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getLegalSupportOrganizationalUnitId, updated::setLegalSupportOrganizationalUnitId);
 
-        checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getTechnicalSupportDepartmentId, updated::setTechnicalSupportDepartmentId);
+        checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getTechnicalSupportOrganizationalUnitId, updated::setTechnicalSupportOrganizationalUnitId);
 
-        checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getImprintDepartmentId, updated::setImprintDepartmentId);
-        checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getPrivacyDepartmentId, updated::setPrivacyDepartmentId);
-        checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getAccessibilityDepartmentId, updated::setAccessibilityDepartmentId);
+        checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getImprintOrganizationalUnitId, updated::setImprintOrganizationalUnitId);
+        checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getPrivacyOrganizationalUnitId, updated::setPrivacyOrganizationalUnitId);
+        checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getAccessibilityOrganizationalUnitId, updated::setAccessibilityOrganizationalUnitId);
 
         checkAndReset(prev, updated, themeRepository, FormVersionEntity::getThemeId, updated::setThemeId);
 

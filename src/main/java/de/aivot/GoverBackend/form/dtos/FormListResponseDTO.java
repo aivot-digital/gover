@@ -34,7 +34,7 @@ public record FormListResponseDTO(
                 form.getId(),
                 form.getSlug(),
                 form.getInternalTitle(),
-                form.getDevelopingDepartmentId(),
+                form.getDevelopingOrganizationalUnitId(),
                 form.getCreated(),
                 form.getUpdated(),
                 form.getPublishedVersion(),

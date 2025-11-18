@@ -78,7 +78,7 @@ public class FormVersionController {
                 .retrieve(formId)
                 .orElseThrow(ResponseException::notFound);
         FormController
-                .checkUserHasAccessToForm(user, form.getDevelopingDepartmentId(), departmentMembershipService);
+                .checkUserHasAccessToForm(user, form.getDevelopingOrganizationalUnitId(), departmentMembershipService);
 
         // Set the user ID to prevent duplicate records
         filter.setUserId(user.getId());
@@ -107,7 +107,7 @@ public class FormVersionController {
                 .retrieve(formId)
                 .orElseThrow(ResponseException::notFound);
         FormController
-                .checkUserHasAccessToForm(user, form.getDevelopingDepartmentId(), departmentMembershipService);
+                .checkUserHasAccessToForm(user, form.getDevelopingOrganizationalUnitId(), departmentMembershipService);
         // Check if the form is currently locked by another user
         FormController
                 .checkFormLock(formId, user, formLockService);

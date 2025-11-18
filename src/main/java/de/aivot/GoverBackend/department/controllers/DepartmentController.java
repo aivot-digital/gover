@@ -130,7 +130,7 @@ public class DepartmentController {
 
         // Create an admin membership for the user who created the department.
         var newMembership = new DepartmentMembershipEntity();
-        newMembership.setDepartmentId(createdDepartment.getId());
+        newMembership.setOrganizationalUnitId(createdDepartment.getId());
         newMembership.setUserId(user.getId());
         newMembership.setRole(UserRole.Admin);
         departmentMembershipService.create(newMembership);

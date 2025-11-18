@@ -1,11 +1,15 @@
 export interface DepartmentRequestDTO {
     name: string;
-    address: string;
-    imprint: string;
-    privacy: string;
-    accessibility: string;
-    technicalSupportAddress: string;
-    specialSupportAddress: string;
-    departmentMail?: string | null;
-    themeId?: number | null;
+    address: string | null | undefined;
+    imprint: string | null | undefined;
+    privacy: string | null | undefined;
+    accessibility: string | null | undefined;
+    technicalSupportAddress: string | null | undefined;
+    specialSupportAddress: string | null | undefined;
+    departmentMail: string | null | undefined;
+    themeId: number | null | undefined;
+    contactLegal: string | null | undefined;
+    contactTechnical: string | null | undefined;
+    additionalInfo: string | null | undefined;
+    parentOrgUnitId: number | null | undefined;
 }

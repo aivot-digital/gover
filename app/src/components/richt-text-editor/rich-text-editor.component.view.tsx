@@ -16,7 +16,7 @@ import './rich-text-editor.component.scss';
 
 interface RichTextEditorComponentViewProps {
     label?: string;
-    value: string;
+    value: string | null | undefined;
     onChange: (text: string | undefined) => void;
     required?: boolean;
     error?: string;

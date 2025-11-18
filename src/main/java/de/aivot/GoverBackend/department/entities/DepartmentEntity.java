@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "departments")
+@Table(name = "organizational_units")
 public class DepartmentEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "departments_id_seq")

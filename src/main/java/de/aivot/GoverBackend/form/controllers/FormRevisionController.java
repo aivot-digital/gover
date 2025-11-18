@@ -73,7 +73,7 @@ public class FormRevisionController {
                 .retrieve(formId)
                 .orElseThrow(ResponseException::notFound);
 
-        if (!user.getGlobalAdmin() && departmentMembershipService.checkUserNotInDepartment(user, form.getDevelopingDepartmentId())) {
+        if (!user.getGlobalAdmin() && departmentMembershipService.checkUserNotInDepartment(user, form.getDevelopingOrganizationalUnitId())) {
             throw ResponseException.forbidden("Nur globale Administrator:innen oder Mitarbeiter:innen des Fachbereich können die Formular-Historie ansehen.");
         }
 

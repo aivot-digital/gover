@@ -12,6 +12,7 @@ import {CellContentWrapper} from '../../../../components/cell-content-wrapper/ce
 import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {ShadowedOrganizationalUnitsApiService} from '../../shadowed-organizational-units-api-service';
 
 export function DepartmentsListPage() {
     const user = useAppSelector(selectUser);
@@ -58,7 +59,7 @@ export function DepartmentsListPage() {
                 searchLabel="Fachbereich suchen"
                 searchPlaceholder="Name des Fachbereichs eingeben…"
                 fetch={(options) => {
-                    return new DepartmentsApiService()
+                    return new ShadowedOrganizationalUnitsApiService()
                         .list(
                             options.page,
                             options.size,

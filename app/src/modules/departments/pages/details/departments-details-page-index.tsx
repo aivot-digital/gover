@@ -23,6 +23,7 @@ import {ThemeResponseDTO} from '../../../themes/models/theme';
 import {ThemesApiService} from '../../../themes/themes-api-service';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
+import {DepartmentsDetailsPageAdditionalData} from './departments-details-page';
 
 export const DepartmentSchema = yup.object({
     name: yup.string()
@@ -77,7 +78,8 @@ export function DepartmentsDetailsPageIndex() {
         isBusy,
         setIsBusy,
         isEditable,
-    } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<Department, undefined>;
+        additionalData,
+    } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<Department, DepartmentsDetailsPageAdditionalData>;
 
     useEffect(() => {
         if (isEditable) {
@@ -301,6 +303,7 @@ export function DepartmentsDetailsPageIndex() {
                 >
                     <TextFieldComponent
                         label="Adresse des Fachbereichs"
+                        placeholder={additionalData?.shadowedDepartment.address ?? undefined}
                         value={department.address}
                         onChange={handleInputChange('address')}
                         onBlur={handleInputBlur('address')}
@@ -390,6 +393,7 @@ export function DepartmentsDetailsPageIndex() {
                 >
                     <TextFieldComponent
                         label="Kontakt-E-Mail-Adresse fachliche Unterstützung"
+                        placeholder={additionalData?.shadowedDepartment.specialSupportAddress ?? undefined}
                         type="email"
                         value={department.specialSupportAddress}
                         onChange={handleInputChange('specialSupportAddress')}
@@ -408,6 +412,7 @@ export function DepartmentsDetailsPageIndex() {
                 >
                     <TextFieldComponent
                         label="Kontakt-E-Mail-Adresse technische Unterstützung"
+                        placeholder={additionalData?.shadowedDepartment.technicalSupportAddress ?? undefined}
                         type="email"
                         value={department.technicalSupportAddress}
                         onChange={handleInputChange('technicalSupportAddress')}

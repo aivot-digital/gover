@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "departments_with_memberships")
+@Table(name = "org_units_with_memberships")
 @IdClass(DepartmentWithMembershipEntityId.class)
 public class DepartmentWithMembershipEntity {
     @Id

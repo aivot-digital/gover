@@ -7,8 +7,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 
 @Entity
-@Table(name = "department_memberships", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"departmentId", "userId"})
+@Table(name = "organizational_unit_memberships", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"organizationalUnitId", "userId"})
 })
 public class DepartmentMembershipEntity {
     @Id
@@ -17,7 +17,7 @@ public class DepartmentMembershipEntity {
     private Integer id;
 
     @NotNull
-    private Integer departmentId;
+    private Integer organizationalUnitId;
 
     @NotNull
     private String userId;
@@ -36,12 +36,12 @@ public class DepartmentMembershipEntity {
         this.id = id;
     }
 
-    public Integer getDepartmentId() {
-        return departmentId;
+    public Integer getOrganizationalUnitId() {
+        return organizationalUnitId;
     }
 
-    public void setDepartmentId(Integer departmentId) {
-        this.departmentId = departmentId;
+    public void setOrganizationalUnitId(Integer departmentId) {
+        this.organizationalUnitId = departmentId;
     }
 
     public String getUserId() {

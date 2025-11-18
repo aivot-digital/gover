@@ -74,7 +74,7 @@ public class DepartmentMembershipMailService {
         }
 
         var department = departmentService
-                .retrieve(membership.getDepartmentId())
+                .retrieve(membership.getOrganizationalUnitId())
                 .orElse(null);
 
         if (department == null) {

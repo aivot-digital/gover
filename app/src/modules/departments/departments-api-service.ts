@@ -26,16 +26,23 @@ export class DepartmentsApiService extends BaseCrudApiService<DepartmentRequestD
 
     public initialize(): DepartmentResponseDTO {
         return {
+            additionalInfo: null,
+            contactLegal: null,
+            contactTechnical: null,
+            departmentMail: null,
+            depth: 0,
+            parentOrgUnitId: null,
+            themeId: null,
             id: 0,
             name: '',
-            address: '',
-            accessibility: '',
+            address: null,
+            accessibility: null,
             created: new Date().toISOString(),
             updated: new Date().toISOString(),
-            imprint: '',
-            privacy: '',
-            specialSupportAddress: '',
-            technicalSupportAddress: '',
+            imprint: null,
+            privacy: null,
+            specialSupportAddress: null,
+            technicalSupportAddress: null,
         };
     }
 
