@@ -41,7 +41,6 @@ public class UserRolesStartupService implements ApplicationListener<ApplicationR
                 var newRole = new UserRoleEntity()
                         .setName(role.getName())
                         .setDescription(role.getDescription())
-                        .setDepartmentPermission(role.getDepartmentPermission())
                         .setFormPermission(role.getFormPermission());
 
                 userRoleRepository
@@ -53,7 +52,6 @@ public class UserRolesStartupService implements ApplicationListener<ApplicationR
 
                 existingRole
                         .setDescription(role.getDescription())
-                        .setDepartmentPermission(role.getDepartmentPermission())
                         .setFormPermission(role.getFormPermission());
 
                 userRoleRepository

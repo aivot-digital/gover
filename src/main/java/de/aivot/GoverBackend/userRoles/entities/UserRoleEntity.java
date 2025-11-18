@@ -33,9 +33,6 @@ public class UserRoleEntity {
     private LocalDateTime updated;
 
     @Nonnull
-    private DepartmentPermission departmentPermission;
-
-    @Nonnull
     private FormRolePermission formPermission;
 
     // region Signales
@@ -102,16 +99,6 @@ public class UserRoleEntity {
 
     public UserRoleEntity setUpdated(@Nonnull LocalDateTime updated) {
         this.updated = updated;
-        return this;
-    }
-
-    @Nonnull
-    public DepartmentPermission getDepartmentPermission() {
-        return departmentPermission;
-    }
-
-    public UserRoleEntity setDepartmentPermission(@Nonnull DepartmentPermission departmentPermission) {
-        this.departmentPermission = departmentPermission;
         return this;
     }
 

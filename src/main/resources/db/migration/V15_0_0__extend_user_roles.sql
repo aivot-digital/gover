@@ -1,12 +1,13 @@
 create table user_roles
 (
-    id                    serial primary key,
-    name                  varchar(64) not null unique,
-    description           text,
-    created               timestamp   not null default current_timestamp,
-    updated               timestamp   not null default current_timestamp,
-    department_permission int         not null,
-    form_permission       int         not null
+    id                          serial primary key,
+    name                        varchar(64) not null unique,
+    description                 text,
+    form_permission             integer     not null,
+    process_permission          integer     not null default 0,
+    process_instance_permission integer     not null default 0,
+    created                     timestamp   not null default current_timestamp,
+    updated                     timestamp   not null default current_timestamp
 );
 
 create table user_role_assignments
