@@ -1,0 +1,199 @@
+# Build information
+# These properties are replaced by the build process of the image
+build:
+  buildVersion: "@buildVersion"
+  buildNumber: "@buildNumber"
+  buildTimestamp: "@buildTimestamp"
+
+spring:
+  autoconfigure:
+    # Remove the default UserDetailsService auto-configuration
+    exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+
+  # Allow to load properties from /run/secrets/ directory
+  # This is useful when using Docker secrets
+  config:
+    import: "optional:configtree:/run/secrets/"
+
+  # Set the config for the database connection
+  datasource:
+    url: "jdbc:postgresql://${GOVER_DB_HOST}:${GOVER_DB_PORT}/${GOVER_DB_DATABASE}?stringtype=unspecified"
+    username: "${GOVER_DB_USERNAME}"
+    password: "${GOVER_DB_PASSWORD}"
+
+    # Define the database connection pool properties
+    hikari:
+      minimum-idle: ${GOVER_DB_MIN_IDLE:5}
+      maximum-pool-size: ${GOVER_DB_MAX_POOL_SIZE:10}
+
+  jpa:
+    hibernate:
+      # Prevent hibernate from modifying the database schema
+      # This is handled by Flyway instead
+      ddl-auto: validate
+    # Close the hibernate session at the end of a transaction to prevent lazy loading issues
+    open-in-view: true
+
+  data:
+    rest:
+      # Set the default base path for the backend application
+      basePath: /api
+      # Disable the exposure of jpa repositories by default
+      detection-strategy: annotated
+
+    redis:
+      host: "${GOVER_REDIS_HOST}"
+      port: "${GOVER_REDIS_PORT}"
+      database: "${GOVER_REDIS_DATABASE}"
+
+  # Set the default upload size limits
+  servlet:
+    multipart:
+      max-file-size: "${GOVER_MAX_UPLOAD_FILE:10MB}"
+      max-request-size: "${GOVER_MAX_UPLOAD_TOTAL:100MB}"
+
+  flyway:
+    # Enable flyway for database migrations
+    enabled: true
+    # Add the option to allow flyway to operate on databases with some preexisting schema
+    # This is useful when working with managed Azure PostgreSQL databases
+    baselineVersion: ${GOVER_DB_BASELINE_VERSION:0}
+    baselineOnMigrate: ${GOVER_DB_BASELINE_ON_MIGRATE:false}
+    # Add the option to allow flyway to repair the migration checksums
+    repairOnMigrate: ${GOVER_DB_REPAIR_ON_MIGRATE:true}
+
+  # Set the properties for the mail server
+  mail:
+    host: ${GOVER_SMTP_HOST}
+    port: ${GOVER_SMTP_PORT}
+    username: ${GOVER_SMTP_USERNAME}
+    password: ${GOVER_SMTP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: ${GOVER_SMTP_AUTH:true}
+          starttls:
+            enable: ${GOVER_SMTP_TLS:true}
+
+  security:
+    # Configure oidc authentication details
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            client-id: "${GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID}"
+            authorization-grant-type: authorization_code
+            scope: profile,email,roles,groups
+        provider:
+          keycloak:
+            issuer-uri: "${GOVER_KEYCLOAK_OIDC_HOSTNAME}/realms/${GOVER_KEYCLOAK_OIDC_REALM}"
+            user-name-attribute: preferred_username
+      resourceserver:
+        jwt:
+          issuer-uri: "${GOVER_KEYCLOAK_OIDC_HOSTNAME}/realms/${GOVER_KEYCLOAK_OIDC_REALM}"
+
+# Set cors configuration
+cors:
+  allowed-origins: "${GOVER_FRONTEND_ORIGINS:}"
+
+management:
+  endpoints:
+    access:
+      default: read_only
+    web:
+      base-path: /api/public/actuator
+      exposure:
+        include: "*"
+
+  endpoint:
+    health:
+      access: read_only
+      show-details: when-authorized
+    httpexchanges:
+      access: read_only
+
+  health:
+    diskspace:
+      enabled: true
+    db:
+      enabled: true
+    mail:
+      enabled: true
+    redis:
+      enabled: true
+    rabbit:
+      enabled: true
+
+server:
+  error:
+    whitelabel:
+      enabled: false
+    #include-message=always
+    #include-binding-errors=always
+    #include-stacktrace=ON_PARAM
+    #include-exception=true
+
+# Set the properties for the logging
+logging:
+  level:
+    root: "${GOVER_LOG_LEVEL:INFO}"
+  structured:
+    format:
+      console: "${GOVER_LOG_FORMAT:}"
+
+# Set the properties for the ClamAV server
+clam:
+  host: "${GOVER_CLAM_HOST}"
+  port: "${GOVER_CLAM_PORT}"
+  timeout: 20000
+  
+# Set the properties for the Gotenberg server
+gotenberg:
+  host: "${GOVER_GOTENBERG_HOST}"
+  port: "${GOVER_GOTENBERG_PORT}"
+  
+# Set the encryption key for the secrets
+secrets:
+  key: "${GOVER_SECRETS_KEY}"
+  
+# Set the encryption key for captcha challenges
+captcha:
+  key: "${GOVER_CAPTCHA_KEY}"
+
+# Set basic properties for the gover business case
+gover:
+  goverHostname: "${GOVER_HOSTNAME}"
+  fromMail: "${GOVER_FROM_MAIL}"
+  reportMail: "${GOVER_REPORT_MAIL}"
+  sentryServer: "${GOVER_SENTRY_SERVER:}"
+  sentryWebApp: "${GOVER_SENTRY_WEB_APP:}"
+  environment: "${GOVER_ENVIRONMENT:}"
+  fileExtensions: "${GOVER_FILE_EXTENSIONS}"
+  contentTypes: "${GOVER_CONTENT_TYPES}"
+  maxSubmissionCopyRetryCount: 3
+
+# Configure the details for fetching, managing and updating the gover user data from keycloak
+keycloak:
+  oidc:
+    hostname: "${GOVER_KEYCLOAK_OIDC_HOSTNAME}"
+    realm: "${GOVER_KEYCLOAK_OIDC_REALM}"
+    frontendClientId: "${GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID}"
+    backendClientId: "${GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_ID}"
+    backendClientSecret: "${GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET}"
+
+storage:
+  # Set the path for locally stored files
+  localStoragePath: "${GOVER_STORAGE_LOCAL_PATH:./data}"
+
+  # Set the properties for the remote s3 storage
+  remoteEndpoint: "${GOVER_STORAGE_REMOTE_ENDPOINT:}"
+  remoteBucket: "${GOVER_STORAGE_REMOTE_BUCKET:}"
+  remoteAccessKey: "${GOVER_STORAGE_REMOTE_ACCESS_KEY:}"
+  remoteSecretKey: "${GOVER_STORAGE_REMOTE_SECRET_KEY:}"
+
+role:
+  roles:
+    - name: "Formularersteller:in"
+      description: "Rolle für Benutzer:innen, die Formulare erstellen und verwalten können."
+      department-permission: read
+      form-permission: write
