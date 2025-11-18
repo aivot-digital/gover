@@ -20,8 +20,10 @@ import org.springframework.data.redis.repository.configuration.EnableRedisReposi
         "de.aivot.GoverBackend.search.repositories",
         "de.aivot.GoverBackend.secrets.repositories",
         "de.aivot.GoverBackend.submission.repositories",
+        "de.aivot.GoverBackend.teams.repositories",
         "de.aivot.GoverBackend.theme.repositories",
         "de.aivot.GoverBackend.user.repositories",
+        "de.aivot.GoverBackend.userRoles.repositories",
 })
 @EnableRedisRepositories(basePackages = {
         "de.aivot.GoverBackend.form.cache.repositories",
