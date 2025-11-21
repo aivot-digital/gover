@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.department.dtos;
 
-import de.aivot.GoverBackend.department.entities.DepartmentMembershipEntity;
-import de.aivot.GoverBackend.enums.UserRole;
+import de.aivot.GoverBackend.department.entities.OrganizationalUnitMembershipEntity;
 import de.aivot.GoverBackend.lib.RequestDTO;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -11,25 +10,19 @@ import javax.annotation.Nonnull;
 
 public record DepartmentMembershipRequestDTO(
         @Nonnull
-        @NotNull(message = "Department id cannot be null")
-        Integer departmentId,
+        @NotNull(message = "Organizational unit id cannot be null")
+        Integer organizationalUnitId,
 
         @Nonnull
-        @NotNull(message = "UserId cannot be null")
-        @NotBlank(message = "UserId cannot be blank")
+        @NotNull(message = "User id cannot be null")
+        @NotBlank(message = "User id cannot be blank")
         @Length(min = 36, max = 36)
-        String userId,
-
-        @Nonnull
-        @NotNull(message = "Role cannot be null")
-        UserRole role
-) implements RequestDTO<DepartmentMembershipEntity> {
+        String userId
+) implements RequestDTO<OrganizationalUnitMembershipEntity> {
     @Override
-    public DepartmentMembershipEntity toEntity() {
-        var membership = new DepartmentMembershipEntity();
-        membership.setOrganizationalUnitId(departmentId());
-        membership.setUserId(userId());
-        membership.setRole(role());
-        return membership;
+    public OrganizationalUnitMembershipEntity toEntity() {
+        return new OrganizationalUnitMembershipEntity()
+                .setOrganizationalUnitId(organizationalUnitId)
+                .setUserId(userId);
     }
 }

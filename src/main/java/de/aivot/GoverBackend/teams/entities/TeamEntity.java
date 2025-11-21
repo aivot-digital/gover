@@ -5,7 +5,6 @@ import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
-import java.util.Set;
 
 @Entity
 @Table(name = "teams")

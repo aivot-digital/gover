@@ -1,7 +1,5 @@
 package de.aivot.GoverBackend.userRoles.entities;
 
-import de.aivot.GoverBackend.userRoles.enums.DepartmentPermission;
-import de.aivot.GoverBackend.userRoles.enums.FormRolePermission;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
@@ -25,15 +23,69 @@ public class UserRoleEntity {
     private String description;
 
     @Nonnull
+    private Boolean orgUnitMemberPermissionEdit;
+
+    @Nonnull
+    private Boolean teamMemberPermissionEdit;
+
+    @Nonnull
+    private Boolean formPermissionCreate;
+
+    @Nonnull
+    private Boolean formPermissionRead;
+
+    @Nonnull
+    private Boolean formPermissionEdit;
+
+    @Nonnull
+    private Boolean formPermissionDelete;
+
+    @Nonnull
+    private Boolean formPermissionAnnotate;
+
+    @Nonnull
+    private Boolean formPermissionPublish;
+
+    @Nonnull
+    private Boolean processPermissionCreate;
+
+    @Nonnull
+    private Boolean processPermissionRead;
+
+    @Nonnull
+    private Boolean processPermissionEdit;
+
+    @Nonnull
+    private Boolean processPermissionDelete;
+
+    @Nonnull
+    private Boolean processPermissionAnnotate;
+
+    @Nonnull
+    private Boolean processPermissionPublish;
+
+    @Nonnull
+    private Boolean processInstancePermissionCreate;
+
+    @Nonnull
+    private Boolean processInstancePermissionRead;
+
+    @Nonnull
+    private Boolean processInstancePermissionEdit;
+
+    @Nonnull
+    private Boolean processInstancePermissionDelete;
+
+    @Nonnull
+    private Boolean processInstancePermissionAnnotate;
+
+    @Nonnull
     @Column(nullable = false)
     private LocalDateTime created;
 
     @Nonnull
     @Column(nullable = false)
     private LocalDateTime updated;
-
-    @Nonnull
-    private FormRolePermission formPermission;
 
     // region Signales
 
@@ -83,6 +135,186 @@ public class UserRoleEntity {
     }
 
     @Nonnull
+    public Boolean getOrgUnitMemberPermissionEdit() {
+        return orgUnitMemberPermissionEdit;
+    }
+
+    public UserRoleEntity setOrgUnitMemberPermissionEdit(@Nonnull Boolean permissionEditMemberOfEntity) {
+        this.orgUnitMemberPermissionEdit = permissionEditMemberOfEntity;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getFormPermissionCreate() {
+        return formPermissionCreate;
+    }
+
+    public UserRoleEntity setFormPermissionCreate(@Nonnull Boolean formPermissionCreate) {
+        this.formPermissionCreate = formPermissionCreate;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getFormPermissionRead() {
+        return formPermissionRead;
+    }
+
+    public UserRoleEntity setFormPermissionRead(@Nonnull Boolean formPermissionRead) {
+        this.formPermissionRead = formPermissionRead;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getFormPermissionEdit() {
+        return formPermissionEdit;
+    }
+
+    public UserRoleEntity setFormPermissionEdit(@Nonnull Boolean formPermissionEdit) {
+        this.formPermissionEdit = formPermissionEdit;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getFormPermissionDelete() {
+        return formPermissionDelete;
+    }
+
+    public UserRoleEntity setFormPermissionDelete(@Nonnull Boolean formPermissionDelete) {
+        this.formPermissionDelete = formPermissionDelete;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getFormPermissionAnnotate() {
+        return formPermissionAnnotate;
+    }
+
+    public UserRoleEntity setFormPermissionAnnotate(@Nonnull Boolean formPermissionAnnotate) {
+        this.formPermissionAnnotate = formPermissionAnnotate;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getFormPermissionPublish() {
+        return formPermissionPublish;
+    }
+
+    public UserRoleEntity setFormPermissionPublish(@Nonnull Boolean formPermissionPublish) {
+        this.formPermissionPublish = formPermissionPublish;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getProcessPermissionCreate() {
+        return processPermissionCreate;
+    }
+
+    public UserRoleEntity setProcessPermissionCreate(@Nonnull Boolean processPermissionCreate) {
+        this.processPermissionCreate = processPermissionCreate;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getProcessPermissionRead() {
+        return processPermissionRead;
+    }
+
+    public UserRoleEntity setProcessPermissionRead(@Nonnull Boolean processPermissionRead) {
+        this.processPermissionRead = processPermissionRead;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getProcessPermissionEdit() {
+        return processPermissionEdit;
+    }
+
+    public UserRoleEntity setProcessPermissionEdit(@Nonnull Boolean processPermissionEdit) {
+        this.processPermissionEdit = processPermissionEdit;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getProcessPermissionDelete() {
+        return processPermissionDelete;
+    }
+
+    public UserRoleEntity setProcessPermissionDelete(@Nonnull Boolean processPermissionDelete) {
+        this.processPermissionDelete = processPermissionDelete;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getProcessPermissionAnnotate() {
+        return processPermissionAnnotate;
+    }
+
+    public UserRoleEntity setProcessPermissionAnnotate(@Nonnull Boolean processPermissionAnnotate) {
+        this.processPermissionAnnotate = processPermissionAnnotate;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getProcessPermissionPublish() {
+        return processPermissionPublish;
+    }
+
+    public UserRoleEntity setProcessPermissionPublish(@Nonnull Boolean processPermissionPublish) {
+        this.processPermissionPublish = processPermissionPublish;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getProcessInstancePermissionCreate() {
+        return processInstancePermissionCreate;
+    }
+
+    public UserRoleEntity setProcessInstancePermissionCreate(@Nonnull Boolean processInstancePermissionCreate) {
+        this.processInstancePermissionCreate = processInstancePermissionCreate;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getProcessInstancePermissionRead() {
+        return processInstancePermissionRead;
+    }
+
+    public UserRoleEntity setProcessInstancePermissionRead(@Nonnull Boolean processInstancePermissionRead) {
+        this.processInstancePermissionRead = processInstancePermissionRead;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getProcessInstancePermissionEdit() {
+        return processInstancePermissionEdit;
+    }
+
+    public UserRoleEntity setProcessInstancePermissionEdit(@Nonnull Boolean processInstancePermissionEdit) {
+        this.processInstancePermissionEdit = processInstancePermissionEdit;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getProcessInstancePermissionDelete() {
+        return processInstancePermissionDelete;
+    }
+
+    public UserRoleEntity setProcessInstancePermissionDelete(@Nonnull Boolean processInstancePermissionDelete) {
+        this.processInstancePermissionDelete = processInstancePermissionDelete;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getProcessInstancePermissionAnnotate() {
+        return processInstancePermissionAnnotate;
+    }
+
+    public UserRoleEntity setProcessInstancePermissionAnnotate(@Nonnull Boolean processInstancePermissionAnnotate) {
+        this.processInstancePermissionAnnotate = processInstancePermissionAnnotate;
+        return this;
+    }
+
+    @Nonnull
     public LocalDateTime getCreated() {
         return created;
     }
@@ -103,14 +335,15 @@ public class UserRoleEntity {
     }
 
     @Nonnull
-    public FormRolePermission getFormPermission() {
-        return formPermission;
+    public Boolean getTeamMemberPermissionEdit() {
+        return teamMemberPermissionEdit;
     }
 
-    public UserRoleEntity setFormPermission(@Nonnull FormRolePermission formPermission) {
-        this.formPermission = formPermission;
+    public UserRoleEntity setTeamMemberPermissionEdit(@Nonnull Boolean teamMemberPermissionEdit) {
+        this.teamMemberPermissionEdit = teamMemberPermissionEdit;
         return this;
     }
+
 
     // endregion
 }

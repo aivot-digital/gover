@@ -1,74 +1,45 @@
 package de.aivot.GoverBackend.department.dtos;
 
-import de.aivot.GoverBackend.department.entities.DepartmentEntity;
-import de.aivot.GoverBackend.department.entities.DepartmentMembershipEntity;
-import de.aivot.GoverBackend.department.entities.DepartmentWithMembershipEntity;
-import de.aivot.GoverBackend.enums.UserRole;
+import de.aivot.GoverBackend.department.entities.OrganizationalUnitEntity;
+import de.aivot.GoverBackend.department.entities.OrganizationalUnitMembershipEntity;
+import de.aivot.GoverBackend.department.entities.VOrganizationalUnitMembershipWithDetailsEntity;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 
 import javax.annotation.Nonnull;
 
 public record DepartmentMembershipResponseDTO(
         @Nonnull
-        Integer id,
+        Integer membershipId,
         @Nonnull
-        Integer departmentId,
+        Integer orgUnitId,
         @Nonnull
-        String departmentName,
+        String orgUnitName,
         @Nonnull
         String userId,
         @Nonnull
-        UserRole role,
-        @Nonnull
-        String userFirstName,
-        @Nonnull
-        String userLastName,
-        @Nonnull
         String userFullName,
         @Nonnull
-        String userEmail,
-        @Nonnull
-        Boolean userEnabled,
-        @Nonnull
-        Boolean userVerified,
-        @Nonnull
-        Boolean userDeletedInIdp,
-        @Nonnull
-        Boolean userGlobalAdmin
+        String userEmail
 ) {
-    public static DepartmentMembershipResponseDTO fromEntity(DepartmentWithMembershipEntity membership) {
+    public static DepartmentMembershipResponseDTO fromEntity(VOrganizationalUnitMembershipWithDetailsEntity membership) {
         return new DepartmentMembershipResponseDTO(
                 membership.getMembershipId(),
-                membership.getId(),
-                membership.getName(),
+                membership.getOrganizationalUnitId(),
+                membership.getOrganizationalUnitName(),
                 membership.getUserId(),
-                membership.getMembershipRole(),
-                membership.getUserFirstName(),
-                membership.getUserLastName(),
                 membership.getUserFullName(),
-                membership.getUserEmail(),
-                membership.getUserEnabled(),
-                membership.getUserVerified(),
-                membership.getUserDeletedInIdp(),
-                membership.getUserGlobalAdmin()
+                membership.getUserEmail()
         );
     }
 
-    public static DepartmentMembershipResponseDTO fromEntity(DepartmentMembershipEntity membership, DepartmentEntity department, UserEntity user) {
+    public static DepartmentMembershipResponseDTO fromEntity(OrganizationalUnitMembershipEntity membership, OrganizationalUnitEntity department, UserEntity user) {
         return new DepartmentMembershipResponseDTO(
                 membership.getId(),
                 department.getId(),
                 department.getName(),
-                membership.getUserId(),
-                membership.getRole(),
-                user.getFirstName(),
-                user.getLastName(),
+                user.getId(),
                 user.getFullName(),
-                user.getEmail(),
-                user.getEnabled(),
-                user.getVerified(),
-                user.getDeletedInIdp(),
-                user.getGlobalAdmin()
+                user.getEmail()
         );
     }
 }

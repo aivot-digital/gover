@@ -1,13 +1,34 @@
 create table user_roles
 (
-    id                          serial primary key,
-    name                        varchar(64) not null unique,
-    description                 text,
-    form_permission             integer     not null,
-    process_permission          integer     not null default 0,
-    process_instance_permission integer     not null default 0,
-    created                     timestamp   not null default current_timestamp,
-    updated                     timestamp   not null default current_timestamp
+    id                                   serial primary key,
+    name                                 varchar(64) not null unique,
+    description                          text,
+
+    org_unit_member_permission_edit      bool        not null default false,
+    team_member_permission_edit          bool        not null default false,
+
+    form_permission_create               bool        not null default false,
+    form_permission_read                 bool        not null default false,
+    form_permission_edit                 bool        not null default false,
+    form_permission_delete               bool        not null default false,
+    form_permission_annotate             bool        not null default false,
+    form_permission_publish              bool        not null default false,
+
+    process_permission_create            bool        not null default false,
+    process_permission_read              bool        not null default false,
+    process_permission_edit              bool        not null default false,
+    process_permission_delete            bool        not null default false,
+    process_permission_annotate          bool        not null default false,
+    process_permission_publish           bool        not null default false,
+
+    process_instance_permission_create   bool        not null default false,
+    process_instance_permission_read     bool        not null default false,
+    process_instance_permission_edit     bool        not null default false,
+    process_instance_permission_delete   bool        not null default false,
+    process_instance_permission_annotate bool        not null default false,
+
+    created                              timestamp   not null default current_timestamp,
+    updated                              timestamp   not null default current_timestamp
 );
 
 create table user_role_assignments

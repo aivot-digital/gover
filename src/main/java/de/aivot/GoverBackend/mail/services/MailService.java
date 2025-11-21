@@ -5,10 +5,10 @@ import de.aivot.GoverBackend.asset.repositories.AssetRepository;
 import de.aivot.GoverBackend.config.services.SystemConfigService;
 import de.aivot.GoverBackend.config.services.UserConfigService;
 import de.aivot.GoverBackend.core.configs.ProviderNameSystemConfigDefinition;
-import de.aivot.GoverBackend.department.entities.DepartmentEntity;
-import de.aivot.GoverBackend.department.filters.DepartmentMembershipFilter;
-import de.aivot.GoverBackend.department.services.DepartmentMembershipService;
-import de.aivot.GoverBackend.department.services.DepartmentService;
+import de.aivot.GoverBackend.department.entities.OrganizationalUnitEntity;
+import de.aivot.GoverBackend.department.filters.OrganizationalUnitMembershipFilter;
+import de.aivot.GoverBackend.department.services.OrganizationalUnitMembershipService;
+import de.aivot.GoverBackend.department.services.OrganizationalUnitService;
 import de.aivot.GoverBackend.exceptions.NoValidUserEMailsInDepartmentException;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.enums.MailTemplate;
@@ -53,8 +53,8 @@ public class MailService {
     private final JavaMailSender mailSender;
 
     private final SystemConfigService systemConfigService;
-    private final DepartmentService departmentService;
-    private final DepartmentMembershipService departmetMembershipService;
+    private final OrganizationalUnitService organizationalUnitService;
+    private final OrganizationalUnitMembershipService departmetMembershipService;
 
     private final AssetRepository assetRepository;
     private final UserService userService;
@@ -68,16 +68,16 @@ public class MailService {
             GoverConfig goverConfig,
             JavaMailSender mailSender,
             SystemConfigService systemConfigService,
-            DepartmentService departmentService,
-            DepartmentMembershipService departmentMembershipService,
+            OrganizationalUnitService organizationalUnitService,
+            OrganizationalUnitMembershipService organizationalUnitMembershipService,
             AssetRepository assetRepository,
             UserService userService,
             UserConfigService userConfigService) {
         this.goverConfig = goverConfig;
         this.mailSender = mailSender;
         this.systemConfigService = systemConfigService;
-        this.departmentService = departmentService;
-        this.departmetMembershipService = departmentMembershipService;
+        this.organizationalUnitService = organizationalUnitService;
+        this.departmetMembershipService = organizationalUnitMembershipService;
         this.assetRepository = assetRepository;
         this.userService = userService;
         this.userConfigService = userConfigService;
@@ -90,7 +90,7 @@ public class MailService {
             Map<String, Object> context,
             Set<String> userIdsToIgnore
     ) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
-        var department = departmentService
+        var department = organizationalUnitService
                 .retrieve(departmentId)
                 .orElseThrow(() -> new MessagingException("Department with ID " + departmentId + " not found"));
 
@@ -98,7 +98,7 @@ public class MailService {
     }
 
     public void sendMailToDepartment(
-            DepartmentEntity department,
+            OrganizationalUnitEntity department,
             String subject,
             MailTemplate template,
             Map<String, Object> context,
@@ -106,7 +106,7 @@ public class MailService {
     ) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
         context.put("department", department);
 
-        var departmentTheme = departmentService
+        var departmentTheme = organizationalUnitService
                 .getDepartmentTheme(department);
 
         if (StringUtils.isNotNullOrEmpty(department.getDepartmentMail())) {
@@ -126,8 +126,8 @@ public class MailService {
                 }
             }
         } else {
-            var membershipSpec = new DepartmentMembershipFilter()
-                    .setDepartmentId(department.getId());
+            var membershipSpec = new OrganizationalUnitMembershipFilter()
+                    .setOrganizationalUnitId(department.getId());
 
             var memberships = departmetMembershipService
                     .list(Pageable.unpaged(), membershipSpec);
@@ -168,10 +168,10 @@ public class MailService {
             Map<String, Object> context,
             Set<String> userIdsToIgnore
     ) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
-        Set<DepartmentEntity> departments = new HashSet<>();
+        Set<OrganizationalUnitEntity> departments = new HashSet<>();
 
         for (Integer departmentId : departmentIds) {
-            DepartmentEntity department = departmentService
+            OrganizationalUnitEntity department = organizationalUnitService
                     .retrieve(departmentId)
                     .orElseThrow(() -> new MessagingException("Department with ID " + departmentId + " not found"));
             departments.add(department);
@@ -181,7 +181,7 @@ public class MailService {
     }
 
     public void sendMailToDepartments(
-            Collection<DepartmentEntity> departments,
+            Collection<OrganizationalUnitEntity> departments,
             String subject,
             MailTemplate template,
             Map<String, Object> context,
@@ -190,10 +190,10 @@ public class MailService {
         Set<String> alreadyNotifiedUserIds = new HashSet<>();
         boolean hasSentAtLeastOnce = false;
 
-        for (DepartmentEntity department : departments) {
+        for (OrganizationalUnitEntity department : departments) {
             context.put("department", department);
 
-           var theme = departmentService
+           var theme = organizationalUnitService
                    .getDepartmentTheme(department);
 
             if (StringUtils.isNotNullOrEmpty(department.getDepartmentMail())) {
@@ -214,8 +214,8 @@ public class MailService {
                     }
                 }
             } else {
-                var membershipSpec = new DepartmentMembershipFilter()
-                        .setDepartmentId(department.getId());
+                var membershipSpec = new OrganizationalUnitMembershipFilter()
+                        .setOrganizationalUnitId(department.getId());
 
                 var memberships = departmetMembershipService
                         .list(Pageable.unpaged(), membershipSpec);

@@ -6,12 +6,20 @@ ALTER TABLE organizational_units
     ALTER COLUMN privacy DROP NOT NULL,
     ALTER COLUMN accessibility DROP NOT NULL,
     ALTER COLUMN technical_support_address DROP NOT NULL,
+    ADD COLUMN technical_support_phone VARCHAR(96) NULL,
+    ADD COLUMN technical_support_info  TEXT        NULL,
     ALTER COLUMN special_support_address DROP NOT NULL,
-    ADD COLUMN contact_legal      TEXT    NULL,
-    ADD COLUMN contact_technical  TEXT    NULL,
-    ADD COLUMN additional_info    TEXT    NULL,
-    ADD COLUMN depth              INTEGER NOT NULL DEFAULT 0, -- 0: Organization (Organisation), 1: Uni1t (Bereiche), 2: Department (Abteilungen) 3...N: Sub-Department (Unterabteilungen)
-    ADD COLUMN parent_org_unit_id INTEGER NULL REFERENCES organizational_units (id) ON DELETE SET NULL;
+    ADD COLUMN special_support_phone   VARCHAR(96) NULL,
+    ADD COLUMN special_support_info    TEXT        NULL,
+    ADD COLUMN additional_info         TEXT        NULL,
+    ADD COLUMN depth                   INTEGER     NOT NULL DEFAULT 0, -- 0: Organization (Organisation), 1: Uni1t (Bereiche), 2: Department (Abteilungen) 3...N: Sub-Department (Unterabteilungen)
+    ADD COLUMN parent_org_unit_id      INTEGER     NULL REFERENCES organizational_units (id) ON DELETE SET NULL;
+
+ALTER TABLE organizational_units
+    RENAME COLUMN privacy TO common_privacy;
+
+ALTER TABLE organizational_units
+    RENAME COLUMN accessibility TO common_accessibility;
 
 -- Create a function to check for cycles and calculate depth
 CREATE FUNCTION count_depth_on_org_unit_insert_or_update()

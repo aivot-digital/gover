@@ -1,0 +1,10 @@
+package de.aivot.GoverBackend.department.repositories;
+
+import de.aivot.GoverBackend.core.repositories.ReadOnlyRepository;
+import de.aivot.GoverBackend.department.entities.VOrganizationalUnitMembershipWithPermissionsEntity;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+
+
+public interface VOrganizationalUnitMembershipWithPermissionsRepository extends ReadOnlyRepository<VOrganizationalUnitMembershipWithPermissionsEntity, Integer>, JpaSpecificationExecutor<VOrganizationalUnitMembershipWithPermissionsEntity> {
+    boolean existsByUserIdAndOrganizationalUnitIdAndOrgUnitMemberPermissionEditIsTrue(String userId, Integer organizationalUnitId);
+}

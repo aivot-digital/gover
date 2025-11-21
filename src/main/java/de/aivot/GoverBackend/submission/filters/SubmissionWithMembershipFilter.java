@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.submission.filters;
 
 import de.aivot.GoverBackend.enums.SubmissionStatus;
-import de.aivot.GoverBackend.enums.UserRole;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.submission.entities.SubmissionWithMembership;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
@@ -27,7 +26,6 @@ public class SubmissionWithMembershipFilter implements Filter<SubmissionWithMemb
     private Integer managingDepartmentId;
 
     private String userId;
-    private UserRole userRole;
 
     public static SubmissionWithMembershipFilter create() {
         return new SubmissionWithMembershipFilter();
@@ -150,15 +148,6 @@ public class SubmissionWithMembershipFilter implements Filter<SubmissionWithMemb
         return this;
     }
 
-    public UserRole getUserRole() {
-        return userRole;
-    }
-
-    public SubmissionWithMembershipFilter setUserRole(UserRole userRole) {
-        this.userRole = userRole;
-        return this;
-    }
-
     @Nonnull
     @Override
     public Specification<SubmissionWithMembership> build() {
@@ -190,7 +179,6 @@ public class SubmissionWithMembershipFilter implements Filter<SubmissionWithMemb
                 .withEquals("responsibleDepartmentId", responsibleDepartmentId)
                 .withEquals("managingDepartmentId", managingDepartmentId)
                 .withEquals("userId", userId)
-                .withEquals("userRole", userRole)
 
                 .build();
     }

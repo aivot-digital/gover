@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.form.services;
 
-import de.aivot.GoverBackend.department.services.DepartmentService;
+import de.aivot.GoverBackend.department.services.OrganizationalUnitService;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.form.entities.FormEntity;
 import de.aivot.GoverBackend.form.entities.FormSlugHistoryEntity;
@@ -34,7 +34,7 @@ import java.util.function.Function;
 public class FormService implements EntityService<FormEntity, Integer> {
     private final FormRepository repository;
 
-    private final DepartmentService departmentService;
+    private final OrganizationalUnitService organizationalUnitService;
     private final SubmissionService submissionService;
     private final SubmissionRepository submissionRepository;
     private final FormVersionRepository formVersionRepository;
@@ -43,13 +43,13 @@ public class FormService implements EntityService<FormEntity, Integer> {
     @Autowired
     public FormService(
             FormRepository repository,
-            DepartmentService departmentService,
+            OrganizationalUnitService organizationalUnitService,
             SubmissionService submissionService,
             SubmissionRepository submissionRepository,
             FormVersionRepository formVersionRepository,
             FormSlugHistoryRepository formSlugHistoryRepository) {
         this.repository = repository;
-        this.departmentService = departmentService;
+        this.organizationalUnitService = organizationalUnitService;
         this.submissionService = submissionService;
         this.submissionRepository = submissionRepository;
         this.formVersionRepository = formVersionRepository;
@@ -136,7 +136,7 @@ public class FormService implements EntityService<FormEntity, Integer> {
                     setter.accept(updatedDepartmentId);
                     return true;
                 } else {
-                    if (departmentService.exists(updatedDepartmentId)) {
+                    if (organizationalUnitService.exists(updatedDepartmentId)) {
                         setter.accept(updatedDepartmentId);
                         return true;
                     } else {

@@ -190,18 +190,3 @@ storage:
   remoteBucket: "${GOVER_STORAGE_REMOTE_BUCKET:}"
   remoteAccessKey: "${GOVER_STORAGE_REMOTE_ACCESS_KEY:}"
   remoteSecretKey: "${GOVER_STORAGE_REMOTE_SECRET_KEY:}"
-
-role:
-  roles:
-    - name: "Fachbereichsadministrator:in"
-      description: "Rolle für Benutzer:innen mit administrativen Rechten im Fachbereich."
-      department-permission: write
-      form-permission: admin
-    - name: "Formularveröffentlicher:in"
-      description: "Rolle für Benutzer:innen, die Formulare veröffentlichen können."
-      department-permission: read
-      form-permission: publish
-    - name: "Formularersteller:in"
-      description: "Rolle für Benutzer:innen, die Formulare erstellen und verwalten können."
-      department-permission: read
-      form-permission: write

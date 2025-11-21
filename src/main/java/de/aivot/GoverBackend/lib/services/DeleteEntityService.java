@@ -17,6 +17,13 @@ public interface DeleteEntityService<T, I> extends RetrieveEntityService<T, I> {
         return entity.get();
     }
 
+    default T deleteEntity(
+            @Nonnull T entity
+    ) throws ResponseException {
+        performDelete(entity);
+        return entity;
+    }
+
     void performDelete(
             @Nonnull T entity
     ) throws ResponseException;

@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.form.controllers;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
-import de.aivot.GoverBackend.department.services.DepartmentMembershipService;
+import de.aivot.GoverBackend.department.services.OrganizationalUnitMembershipService;
 import de.aivot.GoverBackend.form.cache.entities.FormLockCacheEntity;
 import de.aivot.GoverBackend.form.dtos.FormDetailsResponseDTO;
 import de.aivot.GoverBackend.form.dtos.FormRevisionResponseDTO;
@@ -38,7 +38,7 @@ public class FormRevisionController {
 
     private final FormService formService;
     private final FormLockService formLockService;
-    private final DepartmentMembershipService departmentMembershipService;
+    private final OrganizationalUnitMembershipService organizationalUnitMembershipService;
     private final FormRevisionService formRevisionService;
     private final FormVersionWithDetailsService formVersionWithDetailsService;
 
@@ -46,14 +46,14 @@ public class FormRevisionController {
     public FormRevisionController(
             AuditService auditService,
             FormService formService,
-            DepartmentMembershipService departmentMembershipService,
+            OrganizationalUnitMembershipService organizationalUnitMembershipService,
             FormLockService formLockService,
             FormRevisionService formRevisionService,
             FormVersionWithDetailsService formVersionWithDetailsService) {
         this.auditService = auditService.createScopedAuditService(FormRevisionController.class);
         this.formService = formService;
         this.formLockService = formLockService;
-        this.departmentMembershipService = departmentMembershipService;
+        this.organizationalUnitMembershipService = organizationalUnitMembershipService;
         this.formRevisionService = formRevisionService;
         this.formVersionWithDetailsService = formVersionWithDetailsService;
     }
@@ -73,7 +73,7 @@ public class FormRevisionController {
                 .retrieve(formId)
                 .orElseThrow(ResponseException::notFound);
 
-        if (!user.getGlobalAdmin() && departmentMembershipService.checkUserNotInDepartment(user, form.getDevelopingOrganizationalUnitId())) {
+        if (!user.getGlobalAdmin() && organizationalUnitMembershipService.checkUserNotInDepartment(user, form.getDevelopingOrganizationalUnitId())) {
             throw ResponseException.forbidden("Nur globale Administrator:innen oder Mitarbeiter:innen des Fachbereich können die Formular-Historie ansehen.");
         }
 
@@ -97,7 +97,7 @@ public class FormRevisionController {
                 .retrieve(formId, formVersion)
                 .orElseThrow(ResponseException::notFound);
 
-        if (!user.getGlobalAdmin() && departmentMembershipService.checkUserNotInDepartment(user, form.getDevelopingDepartmentId())) {
+        if (!user.getGlobalAdmin() && organizationalUnitMembershipService.checkUserNotInDepartment(user, form.getDevelopingDepartmentId())) {
             throw ResponseException.forbidden("Nur globale Administrator:innen oder Mitarbeiter:innen des Fachbereich können Formulare zurücksetzen.");
         }
 

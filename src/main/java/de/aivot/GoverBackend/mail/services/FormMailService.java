@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.mail.services;
 
-import de.aivot.GoverBackend.department.services.DepartmentService;
+import de.aivot.GoverBackend.department.services.OrganizationalUnitService;
 import de.aivot.GoverBackend.exceptions.NoValidUserEMailsInDepartmentException;
 import de.aivot.GoverBackend.form.entities.FormEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
@@ -22,12 +22,12 @@ import java.util.Set;
 @Component
 public class FormMailService {
     private final MailService mailService;
-    private final DepartmentService departmentService;
+    private final OrganizationalUnitService organizationalUnitService;
 
     @Autowired
-    public FormMailService(MailService mailService, DepartmentService departmentService) {
+    public FormMailService(MailService mailService, OrganizationalUnitService organizationalUnitService) {
         this.mailService = mailService;
-        this.departmentService = departmentService;
+        this.organizationalUnitService = organizationalUnitService;
     }
 
     public void sendAdded(UserEntity triggeringUser, FormVersionWithDetailsEntity form) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
@@ -121,22 +121,22 @@ public class FormMailService {
 
     private void addDepartmentsToContext(FormVersionWithDetailsEntity form, Map<String, Object> context) {
         if (form.getDevelopingDepartmentId() != null) {
-            departmentService.retrieve(form.getDevelopingDepartmentId())
+            organizationalUnitService.retrieve(form.getDevelopingDepartmentId())
                     .ifPresent(dept -> context.put("developingDepartment", dept));
         }
         if (form.getResponsibleDepartmentId() != null) {
-            departmentService.retrieve(form.getResponsibleDepartmentId())
+            organizationalUnitService.retrieve(form.getResponsibleDepartmentId())
                     .ifPresent(dept -> context.put("responsibleDepartment", dept));
         }
         if (form.getManagingDepartmentId() != null) {
-            departmentService.retrieve(form.getManagingDepartmentId())
+            organizationalUnitService.retrieve(form.getManagingDepartmentId())
                     .ifPresent(dept -> context.put("managingDepartment", dept));
         }
     }
 
     private void addDepartmentsToContext(FormEntity form, Map<String, Object> context) {
         if (form.getDevelopingOrganizationalUnitId() != null) {
-            departmentService.retrieve(form.getDevelopingOrganizationalUnitId())
+            organizationalUnitService.retrieve(form.getDevelopingOrganizationalUnitId())
                     .ifPresent(dept -> context.put("developingDepartment", dept));
         }
     }

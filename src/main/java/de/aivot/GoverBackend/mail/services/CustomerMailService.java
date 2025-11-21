@@ -1,8 +1,8 @@
 package de.aivot.GoverBackend.mail.services;
 
-import de.aivot.GoverBackend.department.entities.DepartmentEntity;
-import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
-import de.aivot.GoverBackend.department.services.DepartmentService;
+import de.aivot.GoverBackend.department.entities.OrganizationalUnitEntity;
+import de.aivot.GoverBackend.department.repositories.OrganizationalUnitRepository;
+import de.aivot.GoverBackend.department.services.OrganizationalUnitService;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntityId;
 import de.aivot.GoverBackend.form.repositories.FormVersionWithDetailsRepository;
@@ -27,21 +27,21 @@ import java.util.Optional;
 @Component
 public class CustomerMailService {
     private final MailService mailService;
-    private final DepartmentRepository departmentRepository;
+    private final OrganizationalUnitRepository organizationalUnitRepository;
     private final PdfService pdfService;
     private final FormVersionWithDetailsRepository formVersionWithDetailsRepository;
-    private final DepartmentService departmentService;
+    private final OrganizationalUnitService organizationalUnitService;
 
     @Autowired
     public CustomerMailService(MailService mailService,
-                               DepartmentRepository departmentRepository,
+                               OrganizationalUnitRepository organizationalUnitRepository,
                                PdfService pdfService,
-                               FormVersionWithDetailsRepository formVersionWithDetailsRepository, DepartmentService departmentService) {
+                               FormVersionWithDetailsRepository formVersionWithDetailsRepository, OrganizationalUnitService organizationalUnitService) {
         this.mailService = mailService;
-        this.departmentRepository = departmentRepository;
+        this.organizationalUnitRepository = organizationalUnitRepository;
         this.pdfService = pdfService;
         this.formVersionWithDetailsRepository = formVersionWithDetailsRepository;
-        this.departmentService = departmentService;
+        this.organizationalUnitService = organizationalUnitService;
     }
 
     public void sendSubmissionCopy(String to, Submission submission) throws MessagingException, IOException, ResponseException {
@@ -52,22 +52,22 @@ public class CustomerMailService {
                 .findById(id)
                 .orElseThrow(() -> new RuntimeException("No form " + submission.getFormId() + " found for submission " + submission.getId()));
 
-        DepartmentEntity department;
+        OrganizationalUnitEntity department;
         if (form.getManagingDepartmentId() != null) {
-            department = departmentRepository
+            department = organizationalUnitRepository
                     .findById(form.getManagingDepartmentId())
                     .orElseThrow(() -> new RuntimeException("No managing department " + form.getManagingDepartmentId() + " found for form " + form.getId()));
         } else if (form.getResponsibleDepartmentId() != null) {
-            department = departmentRepository
+            department = organizationalUnitRepository
                     .findById(form.getResponsibleDepartmentId())
                     .orElseThrow(() -> new RuntimeException("No responsible department " + form.getResponsibleDepartmentId() + " found for form " + form.getId()));
         } else {
-            department = departmentRepository
+            department = organizationalUnitRepository
                     .findById(form.getDevelopingDepartmentId())
                     .orElseThrow(() -> new RuntimeException("No developing department " + form.getDevelopingDepartmentId() + " found for form " + form.getId()));
         }
 
-        var departmentTheme = departmentService
+        var departmentTheme = organizationalUnitService
                 .getDepartmentTheme(department);
 
         String title = "Ihre eingereichten Daten für das Formular \"" + form.getPublicTitle() + "\"";
