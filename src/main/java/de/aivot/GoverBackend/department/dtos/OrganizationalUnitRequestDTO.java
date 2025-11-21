@@ -60,26 +60,29 @@ public record OrganizationalUnitRequestDTO(
         String departmentMail,
 
         @Nullable
-        Integer themeId
+        Integer themeId,
+
+        @Nullable
+        Integer parentOrgId
 ) implements RequestDTO<OrganizationalUnitEntity> {
     @Override
     public OrganizationalUnitEntity toEntity() {
-        var entity = new OrganizationalUnitEntity();
-        entity.setId(id);
-        entity.setName(name);
-        entity.setAddress(address);
-        entity.setImprint(imprint);
-        entity.setCommonPrivacy(commonPrivacy);
-        entity.setCommonAccessibility(commonAccessibility);
-        entity.setTechnicalSupportAddress(technicalSupportAddress);
-        entity.setTechnicalSupportPhone(technicalSupportPhone);
-        entity.setTechnicalSupportInfo(technicalSupportInfo);
-        entity.setSpecialSupportAddress(specialSupportAddress);
-        entity.setSpecialSupportPhone(specialSupportPhone);
-        entity.setSpecialSupportInfo(specialSupportInfo);
-        entity.setAdditionalInfo(additionalInfo);
-        entity.setDepartmentMail(departmentMail);
-        entity.setThemeId(themeId);
-        return entity;
+        return new OrganizationalUnitEntity()
+                .setId(id)
+                .setName(name)
+                .setAddress(address)
+                .setImprint(imprint)
+                .setCommonPrivacy(commonPrivacy)
+                .setCommonAccessibility(commonAccessibility)
+                .setTechnicalSupportAddress(technicalSupportAddress)
+                .setTechnicalSupportPhone(technicalSupportPhone)
+                .setTechnicalSupportInfo(technicalSupportInfo)
+                .setSpecialSupportAddress(specialSupportAddress)
+                .setSpecialSupportPhone(specialSupportPhone)
+                .setSpecialSupportInfo(specialSupportInfo)
+                .setAdditionalInfo(additionalInfo)
+                .setDepartmentMail(departmentMail)
+                .setThemeId(themeId)
+                .setParentOrgUnitId(parentOrgId);
     }
 }

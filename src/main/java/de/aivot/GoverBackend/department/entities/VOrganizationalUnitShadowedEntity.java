@@ -13,6 +13,10 @@ import java.time.LocalDateTime;
 public class VOrganizationalUnitShadowedEntity {
     @Id
     private Integer id;
+    @Nullable
+    private Integer parentOrgUnitId;
+    @Nonnull
+    private Integer depth;
     @Nonnull
     private String name;
     @Nullable
@@ -214,6 +218,26 @@ public class VOrganizationalUnitShadowedEntity {
 
     public VOrganizationalUnitShadowedEntity setUpdated(@Nonnull LocalDateTime updated) {
         this.updated = updated;
+        return this;
+    }
+
+    @Nullable
+    public Integer getParentOrgUnitId() {
+        return parentOrgUnitId;
+    }
+
+    public VOrganizationalUnitShadowedEntity setParentOrgUnitId(@Nullable Integer parentOrgUnitId) {
+        this.parentOrgUnitId = parentOrgUnitId;
+        return this;
+    }
+
+    @Nonnull
+    public Integer getDepth() {
+        return depth;
+    }
+
+    public VOrganizationalUnitShadowedEntity setDepth(@Nonnull Integer depth) {
+        this.depth = depth;
         return this;
     }
 

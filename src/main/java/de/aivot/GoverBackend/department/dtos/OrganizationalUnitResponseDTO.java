@@ -9,6 +9,8 @@ import java.time.LocalDateTime;
 
 public record OrganizationalUnitResponseDTO(
         @Nonnull Integer id,
+        @Nullable Integer parentOrgUnitId,
+        @Nonnull Integer depth,
         @Nonnull String name,
         @Nullable String address,
         @Nullable String imprint,
@@ -29,6 +31,8 @@ public record OrganizationalUnitResponseDTO(
     public static OrganizationalUnitResponseDTO fromEntity(OrganizationalUnitEntity entity) {
         return new OrganizationalUnitResponseDTO(
                 entity.getId(),
+                entity.getParentOrgUnitId(),
+                entity.getDepth(),
                 entity.getName(),
                 entity.getAddress(),
                 entity.getImprint(),
@@ -51,6 +55,8 @@ public record OrganizationalUnitResponseDTO(
     public static OrganizationalUnitResponseDTO fromEntity(VOrganizationalUnitShadowedEntity entity) {
         return new OrganizationalUnitResponseDTO(
                 entity.getId(),
+                entity.getParentOrgUnitId(),
+                entity.getDepth(),
                 entity.getName(),
                 entity.getAddress(),
                 entity.getImprint(),

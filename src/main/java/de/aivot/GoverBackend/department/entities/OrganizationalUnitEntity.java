@@ -3,7 +3,6 @@ package de.aivot.GoverBackend.department.entities;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
 
@@ -13,6 +12,12 @@ public class OrganizationalUnitEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+
+    @Nullable
+    private Integer parentOrgUnitId;
+
+    @Nonnull
+    private Integer depth;
 
     @Nonnull
     @Column(length = 96)
@@ -258,6 +263,26 @@ public class OrganizationalUnitEntity {
 
     public OrganizationalUnitEntity setUpdated(@Nonnull LocalDateTime updated) {
         this.updated = updated;
+        return this;
+    }
+
+    @Nullable
+    public Integer getParentOrgUnitId() {
+        return parentOrgUnitId;
+    }
+
+    public OrganizationalUnitEntity setParentOrgUnitId(@Nullable Integer parentOrgUnitId) {
+        this.parentOrgUnitId = parentOrgUnitId;
+        return this;
+    }
+
+    @Nonnull
+    public Integer getDepth() {
+        return depth;
+    }
+
+    public OrganizationalUnitEntity setDepth(@Nonnull Integer depth) {
+        this.depth = depth;
         return this;
     }
 
