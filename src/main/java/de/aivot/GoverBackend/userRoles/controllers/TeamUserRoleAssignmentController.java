@@ -89,8 +89,8 @@ public class TeamUserRoleAssignmentController {
                 .orElseThrow(() -> ResponseException.internalServerError("User role not found for created assignment"));
 
         var mem = vTeamMembershipWithDetailsService
-                .retrieve(created.getOrganizationalUnitMembershipId())
-                .orElseThrow(() -> ResponseException.internalServerError("Organizational unit membership not found for created assignment"));
+                .retrieve(created.getTeamMembershipId())
+                .orElseThrow(() -> ResponseException.internalServerError("Team unit membership not found for created assignment"));
 
         return TeamUserRoleAssignmentResponseDTO
                 .fromEntity(created, userRole, mem);
@@ -137,8 +137,8 @@ public class TeamUserRoleAssignmentController {
                 .orElseThrow(() -> ResponseException.internalServerError("User role not found for updated assignment"));
 
         var mem = vTeamMembershipWithDetailsService
-                .retrieve(result.getOrganizationalUnitMembershipId())
-                .orElseThrow(() -> ResponseException.internalServerError("Organizational unit membership not found for updated assignment"));
+                .retrieve(result.getTeamMembershipId())
+                .orElseThrow(() -> ResponseException.internalServerError("Team unit membership not found for updated assignment"));
 
         return TeamUserRoleAssignmentResponseDTO
                 .fromEntity(result, userRole, mem);

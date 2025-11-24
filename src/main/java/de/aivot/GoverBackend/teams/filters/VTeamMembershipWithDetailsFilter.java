@@ -1,14 +1,14 @@
 package de.aivot.GoverBackend.teams.filters;
 
-import de.aivot.GoverBackend.department.entities.VOrganizationalUnitMembershipWithDetailsEntity;
 import de.aivot.GoverBackend.lib.models.Filter;
+import de.aivot.GoverBackend.teams.entities.VTeamMembershipWithDetailsEntity;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 
 
-public class VTeamMembershipWithDetailsFilter implements Filter<VOrganizationalUnitMembershipWithDetailsEntity> {
+public class VTeamMembershipWithDetailsFilter implements Filter<VTeamMembershipWithDetailsEntity> {
     private List<Integer> teamIds;
     private Integer teamId;
     private String teamName;
@@ -27,9 +27,9 @@ public class VTeamMembershipWithDetailsFilter implements Filter<VOrganizationalU
     }
 
     @Override
-    public Specification<VOrganizationalUnitMembershipWithDetailsEntity> build() {
+    public Specification<VTeamMembershipWithDetailsEntity> build() {
         var builder = SpecificationBuilder
-                .create(VOrganizationalUnitMembershipWithDetailsEntity.class)
+                .create(VTeamMembershipWithDetailsEntity.class)
                 .withEquals("teamId", teamId)
                 .withInList("teamId", teamIds)
                 .withContains("teamName", teamName)

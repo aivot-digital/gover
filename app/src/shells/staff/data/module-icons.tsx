@@ -43,5 +43,6 @@ export const ModuleIcons = {
     marketplace: <Storefront />,
     processes: <Route />,
     tasks: <TaskAlt />,
+    teams: <Group />,
     extensions: <Extension />
 };

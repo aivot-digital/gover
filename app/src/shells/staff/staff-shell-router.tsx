@@ -24,6 +24,7 @@ import {configsRoutes} from '../../modules/configs/configs-routes';
 import {UnderConstructionPage} from '../../pages/shared/under-construction-page';
 import {Testinghall} from '../../modules/testinghall/testinghall';
 import {userRolesRoutes} from '../../modules/user-roles/user-roles-routes';
+import {teamsRoutes} from '../../modules/teams/teams-routes';
 
 const sentryCreateBrowserRouter = Sentry.wrapCreateBrowserRouterV7(
     createBrowserRouter,
@@ -52,6 +53,7 @@ const router = sentryCreateBrowserRouter(
                 ...providerLinksRoutes,
                 ...secretsRoutes,
                 ...submissionsRoutes,
+                ...teamsRoutes,
                 ...themesRoutes,
                 ...userRolesRoutes,
                 ...usersRoutes,

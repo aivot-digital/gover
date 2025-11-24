@@ -7,11 +7,16 @@ interface TeamFilter {
 }
 
 export class TeamsApiService extends BaseCrudApiService<TeamRequestDTO, TeamResponseDTO, TeamResponseDTO, TeamRequestDTO, number, TeamFilter> {
+
     constructor() {
         super('/api/teams/');
     }
 
     public initialize(): TeamResponseDTO {
+        return TeamsApiService.initialize();
+    }
+
+    public static initialize(): TeamResponseDTO {
         return {
             id: 0,
             name: '',

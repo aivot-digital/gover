@@ -2,13 +2,14 @@ import {UserRoleResponseDTO} from '../dtos/user-role-response-dto';
 import {OrgUserRoleAssignmentResponseDTO} from '../dtos/org-user-role-assignment-response-dto';
 import {Box, Chip, Typography} from '@mui/material';
 import {HintTooltip} from '../../../components/hint-tooltip/hint-tooltip';
+import {TeamUserRoleAssignmentResponseDTO} from '../dtos/team-user-role-assignment-response-dto';
 
 interface UserRoleChipsProps {
-    roles: UserRoleResponseDTO[] | OrgUserRoleAssignmentResponseDTO[];
+    roles: UserRoleResponseDTO[] | OrgUserRoleAssignmentResponseDTO[] | TeamUserRoleAssignmentResponseDTO[];
     maxVisibleChips?: number;
 }
 
-function isUserRoleResponseDTO(role: UserRoleResponseDTO | OrgUserRoleAssignmentResponseDTO): role is UserRoleResponseDTO {
+function isUserRoleResponseDTO(role: UserRoleResponseDTO | OrgUserRoleAssignmentResponseDTO | TeamUserRoleAssignmentResponseDTO): role is UserRoleResponseDTO {
     return (role as UserRoleResponseDTO).name !== undefined;
 }
 

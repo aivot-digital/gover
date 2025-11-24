@@ -8,7 +8,10 @@ import de.aivot.GoverBackend.teams.dtos.TeamMembershipRequestDTO;
 import de.aivot.GoverBackend.teams.dtos.TeamMembershipResponseDTO;
 import de.aivot.GoverBackend.teams.entities.TeamMembershipEntity;
 import de.aivot.GoverBackend.teams.filters.TeamMembershipFilter;
+import de.aivot.GoverBackend.teams.filters.VTeamMembershipWithDetailsFilter;
 import de.aivot.GoverBackend.teams.repositories.TeamMembershipRepository;
+import de.aivot.GoverBackend.teams.repositories.TeamRepository;
+import de.aivot.GoverBackend.teams.services.VTeamMembershipWithDetailsService;
 import de.aivot.GoverBackend.user.services.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,28 +32,34 @@ import java.util.Map;
 public class TeamMembershipController {
     private final ScopedAuditService auditService;
     private final TeamMembershipRepository repository;
+    private final VTeamMembershipWithDetailsService vTeamMembershipWithDetailsService;
+    private final TeamRepository teamRepository;
+    private final UserService userService;
 
     @Autowired
     public TeamMembershipController(
             AuditService auditService,
-            TeamMembershipRepository repository
-    ) {
+            TeamMembershipRepository repository,
+            VTeamMembershipWithDetailsService vTeamMembershipWithDetailsService, TeamRepository teamRepository, UserService userService) {
         this.auditService = auditService.createScopedAuditService(TeamMembershipController.class);
         this.repository = repository;
+        this.vTeamMembershipWithDetailsService = vTeamMembershipWithDetailsService;
+        this.teamRepository = teamRepository;
+        this.userService = userService;
     }
 
     @GetMapping("")
     public Page<TeamMembershipResponseDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PageableDefault Pageable pageable,
-            @Nonnull @Valid TeamMembershipFilter filter
+            @Nonnull @Valid VTeamMembershipWithDetailsFilter filter
     ) throws ResponseException {
         UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        return repository
-                .findAll(filter.build(), pageable)
+        return vTeamMembershipWithDetailsService
+                .list(pageable, filter)
                 .map(TeamMembershipResponseDTO::fromEntity);
     }
 
@@ -64,6 +73,14 @@ public class TeamMembershipController {
                 .orElseThrow(ResponseException::unauthorized)
                 .asAdmin()
                 .orElseThrow(ResponseException::forbidden);
+
+        var team = teamRepository
+                .findById(createDTO.teamId())
+                .orElseThrow(ResponseException::notFound);
+
+        var targetUser = userService
+                .retrieve(createDTO.userId())
+                .orElseThrow(ResponseException::notFound);
 
         TeamMembershipEntity result;
         try {
@@ -79,7 +96,8 @@ public class TeamMembershipController {
                 "userId", result.getUserId()
         ));
 
-        return TeamMembershipResponseDTO.fromEntity(result);
+        return TeamMembershipResponseDTO
+                .fromEntity(result, team, targetUser);
     }
 
     @GetMapping("{id}/")
@@ -91,10 +109,12 @@ public class TeamMembershipController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        TeamMembershipEntity entity = repository
-                .findById(id)
+        var entity = vTeamMembershipWithDetailsService
+                .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
-        return TeamMembershipResponseDTO.fromEntity(entity);
+
+        return TeamMembershipResponseDTO
+                .fromEntity(entity);
     }
 
     @PutMapping("{id}/")
@@ -109,7 +129,15 @@ public class TeamMembershipController {
                 .asAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
-        TeamMembershipEntity entityToUpdate = updateDTO.toEntity();
+        var team = teamRepository
+                .findById(updateDTO.teamId())
+                .orElseThrow(ResponseException::notFound);
+
+        var targetUser = userService
+                .retrieve(updateDTO.userId())
+                .orElseThrow(ResponseException::notFound);
+
+        var entityToUpdate = updateDTO.toEntity();
         entityToUpdate.setId(id);
 
         TeamMembershipEntity result;
@@ -126,7 +154,8 @@ public class TeamMembershipController {
                 "userId", result.getUserId()
         ));
 
-        return TeamMembershipResponseDTO.fromEntity(result);
+        return TeamMembershipResponseDTO
+                .fromEntity(result, team, targetUser);
     }
 
     @DeleteMapping("{id}/")
