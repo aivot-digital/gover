@@ -133,6 +133,7 @@ export const selectMinimizeDrawer = (state: RootState) => state.shell.minimizeDr
 export const selectShowSearchDialog = (state: RootState) => state.shell.showSearchDialog;
 export const selectShowAboutGoverDialog = (state: RootState) => state.shell.showAboutGoverDialog;
 export const selectLoadingMessage = (state: RootState) => state.shell.loading;
+export const selectIsLoading = (state: RootState) => state.shell.loading != null;
 export const selectErrorMessage = (state: RootState) => state.shell.error;
 export const selectSnackbarMessages = (state: RootState) => state.shell.snackbars;
 

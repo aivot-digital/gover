@@ -10,12 +10,14 @@ import MoveItem from '@aivot/mui-material-symbols-400-outlined/dist/move-item/Mo
 import QrCode from '@aivot/mui-material-symbols-400-outlined/dist/qr-code/QrCode';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import OpenInNew from '@aivot/mui-material-symbols-400-outlined/dist/open-in-new/OpenInNew';
+import ApprovalDelegation from '@aivot/mui-material-symbols-400-outlined/dist/approval-delegation/ApprovalDelegation';
 
 interface FormsListRowMenuProps {
     anchorEl: HTMLElement | null;
     onClose: () => void;
     form: FormListResponseDTO;
 
+    onManageAccess: (form: FormListResponseDTO) => void;
     onMoveFormToDepartment: (form: FormListResponseDTO) => void;
     onDeleteForm: (form: FormListResponseDTO) => void;
 }
@@ -26,6 +28,7 @@ export function FormsListRowMenu(props: FormsListRowMenuProps) {
         onClose,
         form,
 
+        onManageAccess,
         onMoveFormToDepartment,
         onDeleteForm,
     } = props;
@@ -110,7 +113,7 @@ export function FormsListRowMenu(props: FormsListRowMenuProps) {
                 </ListItemText>
             </MenuItem>
 
-            <Divider/>
+            <Divider />
 
             <MenuItem
                 onClick={() => {
@@ -126,7 +129,21 @@ export function FormsListRowMenu(props: FormsListRowMenuProps) {
                 </ListItemText>
             </MenuItem>
 
-            <Divider/>
+            <MenuItem
+                onClick={() => {
+                    onManageAccess(form);
+                    onClose();
+                }}
+            >
+                <ListItemIcon>
+                    <ApprovalDelegation />
+                </ListItemIcon>
+                <ListItemText>
+                    Zugriffsberechtigungen verwalten
+                </ListItemText>
+            </MenuItem>
+
+            <Divider />
 
             <MenuItem
                 onClick={() => {
@@ -137,9 +154,11 @@ export function FormsListRowMenu(props: FormsListRowMenuProps) {
                 <ListItemIcon>
                     <Delete color="error" />
                 </ListItemIcon>
-                <ListItemText sx={{
-                    color: "error.main"
-                }}>
+                <ListItemText
+                    sx={{
+                        color: 'error.main',
+                    }}
+                >
                     Formular löschen
                 </ListItemText>
             </MenuItem>

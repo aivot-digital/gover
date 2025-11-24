@@ -41,6 +41,7 @@ import {ListControlRef} from '../../../../components/generic-list/generic-list-p
 import {Page} from '../../../../models/dtos/page';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
+import {FormResourceAccessControlDialog} from '../../../resource-access-controls/dialogs/form-resource-access-control-dialog';
 
 const availableFilter = [
     {
@@ -197,6 +198,7 @@ export function FormsListPage() {
     const [showExportFormDialog, setShowExportFormDialog] = useState(false);
     const [showFormVersionsDialogFor, setShowFormVersionsDialogFor] = useState<FormListResponseDTO | undefined>();
 
+    const [formToManageAccess, setFormToManageAccess] = useState<FormListResponseDTO>();
     const [formToMove, setFormToMove] = useState<FormListResponseDTO>();
     const [formToDelete, setFormToDelete] = useState<FormListResponseDTO>();
 
@@ -451,6 +453,7 @@ export function FormsListPage() {
                         setRowMenu(undefined);
                     }}
                     form={rowMenu.form}
+                    onManageAccess={setFormToManageAccess}
                     onMoveFormToDepartment={setFormToMove}
                     onDeleteForm={setFormToDelete}
                 />
@@ -539,6 +542,14 @@ export function FormsListPage() {
                 }}
                 onCancel={() => {
                     setFormToDelete(undefined);
+                }}
+            />
+
+            <FormResourceAccessControlDialog
+                open={formToManageAccess != null}
+                formId={formToManageAccess?.id}
+                onClose={() => {
+                    setFormToManageAccess(undefined);
                 }}
             />
         </>
