@@ -17,7 +17,9 @@ public record UserRoleRequestDTO(
     String description,
 
     @NotNull
-    Boolean permissionEditMemberOfEntity,
+    Boolean orgUnitMemberPermissionEdit,
+    @NotNull
+    Boolean teamMemberPermissionEdit,
     @NotNull
     Boolean formPermissionCreate,
     @NotNull
@@ -58,7 +60,8 @@ public record UserRoleRequestDTO(
         UserRoleEntity entity = new UserRoleEntity();
         entity.setName(name);
         entity.setDescription(description);
-        entity.setOrgUnitMemberPermissionEdit(permissionEditMemberOfEntity);
+        entity.setOrgUnitMemberPermissionEdit(orgUnitMemberPermissionEdit);
+        entity.setTeamMemberPermissionEdit(teamMemberPermissionEdit);
         entity.setFormPermissionCreate(formPermissionCreate);
         entity.setFormPermissionRead(formPermissionRead);
         entity.setFormPermissionEdit(formPermissionEdit);

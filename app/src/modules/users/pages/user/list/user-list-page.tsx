@@ -11,6 +11,8 @@ import Chip from '@mui/material/Chip';
 import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined';
 import {CellContentWrapper} from '../../../../../components/cell-content-wrapper/cell-content-wrapper';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
+import {UserStatusChip} from '../../../components/user-status-chip';
+import {setUser} from '../../../../../slices/user-slice';
 
 export function UserListPage() {
     const hasAccess = useAccessGuard({
@@ -146,28 +148,7 @@ export function UserListPage() {
                         headerName: 'Status',
                         type: 'boolean',
                         renderCell: (params) => (
-                            params.row.deletedInIdp ?
-                                <Chip
-                                    label="Gelöscht"
-                                    color="error"
-                                    variant="outlined"
-                                    size={'small'}
-                                    title="Diese Mitarbeiter:in wurde im Identity Provider gelöscht und kann sich nicht anmelden."
-                                /> : (
-                                    params.value ?
-                                        <Chip
-                                            label="Aktiv"
-                                            variant="outlined"
-                                            size={'small'}
-                                        /> :
-                                        <Chip
-                                            label="Inaktiv"
-                                            color="warning"
-                                            variant="outlined"
-                                            size={'small'}
-                                            title="Diese Mitarbeiter:in ist inaktiv und kann sich nicht anmelden."
-                                        />
-                                )
+                            <UserStatusChip userDeletedInIdp={params.row.deletedInIdp} userEnabled={params.row.enabled} />
                         ),
                     },
                 ]}

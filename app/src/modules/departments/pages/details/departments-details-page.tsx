@@ -1,51 +1,29 @@
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {Typography} from '@mui/material';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
-import {Department} from '../../models/department';
 import {DepartmentsApiService} from '../../departments-api-service';
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
-import {useAppSelector} from '../../../../hooks/use-app-selector';
-import {selectMemberships, selectUser} from '../../../../slices/user-slice';
-import {isAdmin, isDepartmentAdmin} from '../../../../utils/is-admin';
+import {DepartmentResponseDTO} from '../../dtos/department-response-dto';
+import {GenericPageHeaderPropsHelpDialog} from '../../../../components/generic-page-header/generic-page-header-props';
 import {ShadowedOrganizationalUnitsApiService} from '../../shadowed-organizational-units-api-service';
 
 export interface DepartmentsDetailsPageAdditionalData {
-    shadowedDepartment: Department;
+    shadowedDepartment: DepartmentResponseDTO;
 }
 
 export function DepartmentsDetailsPage() {
-    const user = useAppSelector(selectUser);
-    const memberships = useAppSelector(selectMemberships);
-
     return (
         <PageWrapper
             title="Fachbereich bearbeiten"
             fullWidth
             background
         >
-            <GenericDetailsPage<Department, number, DepartmentsDetailsPageAdditionalData>
-                isEditable={(item) => (
-                    isAdmin(user) || isDepartmentAdmin(memberships, item?.id)
-                )}
+            <GenericDetailsPage<DepartmentResponseDTO, number, DepartmentsDetailsPageAdditionalData>
                 header={{
                     icon: <BusinessOutlinedIcon />,
                     title: 'Fachbereich bearbeiten',
-                    helpDialog: {
-                        title: 'Hilfe zu Fachbereichen',
-                        tooltip: 'Hilfe anzeigen',
-                        content: (
-                            <>
-                                <Typography>
-                                    Ein Fachbereich ist eine zentrale Verwaltungseinheit in Gover und essenziell für den Betrieb der Anwendung. Er speichert wichtige Stammdaten wie Adress- und Kontaktdaten sowie rechtliche Informationen (z.
-                                    B. Impressum, Datenschutzerklärung), die in Formularen wiederverwendet werden können.
-                                </Typography>
-                                <Typography sx={{mt: 2}}>
-                                    Jedem Fachbereich sind Mitarbeiter:innen mit einer spezifischen Rolle zugeordnet, die deren Berechtigungen innerhalb des Fachbereichs definiert.
-                                </Typography>
-                            </>
-                        ),
-                    },
+                    helpDialog: HelpDialogContent,
                 }}
                 tabs={[
                     {
@@ -68,7 +46,7 @@ export function DepartmentsDetailsPage() {
                 fetchAdditionalData={{
                     shadowedDepartment: (api, id: number) => new ShadowedOrganizationalUnitsApiService().retrieve(id),
                 }}
-                getTabTitle={(item: Department) => {
+                getTabTitle={(item: DepartmentResponseDTO) => {
                     if (item.id === 0) {
                         return 'Neuer Fachbereich';
                     } else {
@@ -76,13 +54,13 @@ export function DepartmentsDetailsPage() {
                     }
                 }}
                 getHeaderTitle={(item, isNewItem, notFound) => {
-                    if (notFound) {
+                    if (notFound || item == null) {
                         return 'Fachbereich nicht gefunden';
                     }
                     if (isNewItem) {
                         return 'Neuen Fachbereich anlegen';
                     }
-                    return `Fachbereich: ${item?.name ?? 'Unbenannt'}`;
+                    return `Fachbereich: ${item.name ?? 'Unbenannt'}`;
                 }}
                 parentLink={{
                     label: 'Liste der Fachbereiche',
@@ -93,3 +71,19 @@ export function DepartmentsDetailsPage() {
         </PageWrapper>
     );
 }
+
+const HelpDialogContent: GenericPageHeaderPropsHelpDialog = {
+    title: 'Hilfe zu Fachbereichen',
+    tooltip: 'Hilfe anzeigen',
+    content: (
+        <>
+            <Typography>
+                Ein Fachbereich ist eine zentrale Verwaltungseinheit in Gover und essenziell für den Betrieb der Anwendung. Er speichert wichtige Stammdaten wie Adress- und Kontaktdaten sowie rechtliche Informationen (z.
+                B. Impressum, Datenschutzerklärung), die in Formularen wiederverwendet werden können.
+            </Typography>
+            <Typography sx={{mt: 2}}>
+                Jedem Fachbereich sind Mitarbeiter:innen mit einer spezifischen Rolle zugeordnet, die deren Berechtigungen innerhalb des Fachbereichs definiert.
+            </Typography>
+        </>
+    ),
+};

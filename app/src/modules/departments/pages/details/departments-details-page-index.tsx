@@ -4,7 +4,6 @@ import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../..
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
 import {useNavigate} from 'react-router-dom';
-import {Department} from '../../models/department';
 import {DepartmentsApiService} from '../../departments-api-service';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
@@ -24,6 +23,7 @@ import {ThemesApiService} from '../../../themes/themes-api-service';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import {DepartmentsDetailsPageAdditionalData} from './departments-details-page';
+import {DepartmentResponseDTO as Department} from '../../dtos/department-response-dto';
 
 export const DepartmentSchema = yup.object({
     name: yup.string()
@@ -446,20 +446,20 @@ export function DepartmentsDetailsPageIndex() {
             <Box sx={{mb: 3}}>
                 <RichTextEditorComponentView
                     label="Datenschutzerklärung"
-                    value={department.privacy}
-                    onChange={handleInputChange('privacy')}
+                    value={department.commonPrivacy}
+                    onChange={handleInputChange('commonPrivacy')}
                     required
-                    error={errors.privacy}
+                    error={errors.commonPrivacy}
                     disabled={!isEditable}
                 />
             </Box>
             <Box sx={{mb: 3}}>
                 <RichTextEditorComponentView
                     label="Barrierefreiheitserklärung"
-                    value={department.accessibility}
-                    onChange={handleInputChange('accessibility')}
+                    value={department.commonAccessibility}
+                    onChange={handleInputChange('commonAccessibility')}
                     required
-                    error={errors.accessibility}
+                    error={errors.commonAccessibility}
                     disabled={!isEditable}
                 />
             </Box>

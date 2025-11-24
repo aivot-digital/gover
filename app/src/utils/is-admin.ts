@@ -1,18 +1,18 @@
 import {User} from '../modules/users/models/user';
-import {DepartmentMembership} from '../modules/departments/models/department-membership';
-import {UserRole} from '../data/user-role';
+import {DepartmentMembershipWithRoles} from '../modules/departments/dtos/department-membership-response-dto';
 
 export function isAdmin(user: User | undefined | null): boolean {
     return user != null && user.globalAdmin;
 }
 
-export function isDepartmentAdmin(departmentMemberships: DepartmentMembership[] | undefined | null, departmentId: number | undefined | null): boolean {
+export function isDepartmentAdmin(departmentMemberships: DepartmentMembershipWithRoles[] | undefined | null, departmentId: number | undefined | null): boolean {
     if (departmentMemberships == null || departmentId == null) {
         return false;
     }
 
     const membership = departmentMemberships
-        .find(membership => membership.departmentId === departmentId);
+        .find(membership => membership.orgUnitId === departmentId);
 
-    return membership != null && membership.role === UserRole.Admin;
+    return membership != null &&
+        membership.roles.some(role => role.userRoleOrgUnitMemberPermissionEdit);
 }

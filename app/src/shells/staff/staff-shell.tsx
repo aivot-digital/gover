@@ -1,6 +1,5 @@
 import {useEffect, useMemo} from 'react';
 import {User} from '../../modules/users/models/user';
-import {DepartmentMembership} from '../../modules/departments/models/department-membership';
 import {Page} from '../../models/dtos/page';
 import {setMemberships, setUser} from '../../slices/user-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
@@ -26,6 +25,8 @@ import {ShellOffline} from './components/shell-offline';
 import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 import {ShellResolutionOverlay} from './components/shell-resolution-overlay';
 import {StaffShellError} from './staff-shell-error';
+import {DepartmentMembershipsApiService} from '../../modules/departments/department-memberships-api-service';
+import {DepartmentMembershipWithRoles} from '../../modules/departments/dtos/department-membership-response-dto';
 
 export function StaffShell() {
     const routerError = useRouteError();
@@ -198,7 +199,7 @@ async function fetchSetup(): Promise<SystemSetupDTO> {
 
 async function authenticateWithOidcCode(searchParams: URLSearchParams): Promise<{
     user: User;
-    memberships: DepartmentMembership[];
+    memberships: DepartmentMembershipWithRoles[];
     configs: SystemConfigResponseDto[];
 } | undefined> {
     const authService = new AuthService();
@@ -221,11 +222,9 @@ async function authenticateWithOidcCode(searchParams: URLSearchParams): Promise<
     const user = await apiService
         .get<User>('/api/users/self/');
 
-    const membershipsPage = await apiService
-        .get<Page<DepartmentMembership>>('/api/department-memberships/', {
-            query: new URLSearchParams({
-                userId: user.id,
-            }),
+    const membershipsPage = await new DepartmentMembershipsApiService()
+        .listDepartmentMembershipsWithRoles(0, 999, undefined, undefined, {
+            userId: user.id,
         });
     const memberships = membershipsPage.content;
 

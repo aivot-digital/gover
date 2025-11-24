@@ -3,7 +3,7 @@ import {type SubmitStepElement} from '../../models/elements/steps/submit-step-el
 import {Preamble} from '../preamble/preamble';
 import {Box, FormHelperText, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
 import {FadingPaper} from '../fading-paper/fading-paper';
-import {type Department} from '../../modules/departments/models/department';
+import {type DepartmentResponseDTO as Department} from '../../modules/departments/dtos/department-response-dto';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectLoadedForm} from '../../slices/app-slice';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';

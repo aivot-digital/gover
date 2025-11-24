@@ -20,11 +20,6 @@ export function useMemberships() {
     return useAppSelector(selectMemberships);
 }
 
-export function useUserIsMemberOfDepartment(departmentId: number): boolean {
-    const memberships = useMemberships();
-    return memberships?.some(dept => dept.id === departmentId) ?? false;
-}
-
 interface Options {
     onlyGlobalAdmin?: true;
     onlyAdminOfDepartmentId?: number;
@@ -59,8 +54,8 @@ export function useAccessGuard(options: Options): boolean {
 
             return memberships
                 .some(dept => (
-                    dept.id === onlyAdminOfDepartmentId &&
-                    dept.role === UserRole.Admin
+                    dept.orgUnitId === onlyAdminOfDepartmentId &&
+                    dept.roles.some(role => role.userRoleOrgUnitMemberPermissionEdit)
                 )) ?? false;
         }
 

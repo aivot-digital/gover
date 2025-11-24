@@ -420,10 +420,10 @@ export function FormDetailsPage() {
 
         const isEditable = (
             loadedForm.status == FormStatus.Drafted &&
-            (memberships ?? []).some((mem) => mem.departmentId === loadedForm.developingDepartmentId) &&
+            (memberships ?? []).some((mem) => mem.orgUnitId === loadedForm.developingDepartmentId) &&
             (lockState == null || lockState.state === EntityLockState.Free || lockState.state === EntityLockState.LockedSelf)
         );
-        const canViewHistory = isAdmin(user) || (memberships ?? []).some((mem) => mem.departmentId === loadedForm.developingDepartmentId);
+        const canViewHistory = isAdmin(user) || (memberships ?? []).some((mem) => mem.orgUnitId === loadedForm.developingDepartmentId);
 
         const handlePatch = async (patch: Partial<ElementTreeEntity>) => {
             if (loadedForm == null) {

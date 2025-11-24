@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {Grid, Skeleton, Typography} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
-import {type Department} from '../../modules/departments/models/department';
+import {type DepartmentResponseDTO as Department} from '../../modules/departments/dtos/department-response-dto';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {SelectFieldComponent} from '../select-field/select-field-component';

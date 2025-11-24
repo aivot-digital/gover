@@ -1,7 +1,7 @@
 import {Alert, Box, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
 import React, {useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
-import {type Department} from '../../modules/departments/models/department';
+import {type DepartmentResponseDTO as Department} from '../../modules/departments/dtos/department-response-dto';
 import {useSelector} from 'react-redux';
 import {type AccessibilityDialogProps} from './accessibility-dialog-props';
 import {selectLoadedForm} from '../../slices/app-slice';
@@ -54,9 +54,9 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
                 Informationen zur Barrierefreiheit
             </DialogTitleWithClose>
             {
-                department?.accessibility ?
+                department?.commonAccessibility ?
                     <DialogContent
-                        dangerouslySetInnerHTML={{__html: department?.accessibility}}
+                        dangerouslySetInnerHTML={{__html: department?.commonAccessibility}}
                     />
                     :
                     <DialogContent tabIndex={0}>

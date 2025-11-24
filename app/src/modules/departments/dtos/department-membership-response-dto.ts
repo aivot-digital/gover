@@ -1,12 +1,13 @@
-import {UserRole} from '../../../data/user-role';
 import {User} from '../../users/models/user';
+import {OrgUserRoleAssignmentResponseDTO} from '../../user-roles/dtos/org-user-role-assignment-response-dto';
 
 export interface DepartmentMembershipResponseDTO {
-    id: number;
-    departmentId: number;
-    departmentName: string;
+    membershipId: number;
+    orgUnitId: number;
+    orgUnitName: string;
+    organizationalUnitParentOrgUnitId: number | null | undefined;
+    organizationalUnitDepth: number;
     userId: string;
-    role: UserRole;
     userFirstName: string;
     userLastName: string;
     userFullName: string;
@@ -28,7 +29,11 @@ export function departmentMembershipResponseDTOasUser(membership: DepartmentMemb
         globalAdmin: membership.userGlobalAdmin,
         verified: membership.userVerified,
         email: membership.userEmail,
-    }
+    };
+}
+
+export interface DepartmentMembershipWithRoles extends DepartmentMembershipResponseDTO {
+    roles: OrgUserRoleAssignmentResponseDTO[];
 }
 
 

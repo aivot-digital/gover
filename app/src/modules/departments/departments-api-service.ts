@@ -21,33 +21,35 @@ interface DepartmentFilters {
 
 export class DepartmentsApiService extends BaseCrudApiService<DepartmentRequestDTO, DepartmentResponseDTO, DepartmentResponseDTO, DepartmentRequestDTO, number, DepartmentFilters> {
     public constructor() {
-        super('api/departments/');
+        super('api/organizational-units/');
     }
 
     public initialize(): DepartmentResponseDTO {
         return {
-            additionalInfo: null,
-            contactLegal: null,
-            contactTechnical: null,
-            departmentMail: null,
+            additionalInfo: undefined,
+            address: undefined,
+            commonAccessibility: undefined,
+            commonPrivacy: undefined,
+            created: '',
+            departmentMail: undefined,
             depth: 0,
-            parentOrgUnitId: null,
-            themeId: null,
             id: 0,
-            name: '',
-            address: null,
-            accessibility: null,
-            created: new Date().toISOString(),
+            imprint: undefined,
+            name: new Date().toISOString(),
+            parentOrgUnitId: undefined,
+            specialSupportAddress: undefined,
+            specialSupportInfo: undefined,
+            specialSupportPhone: undefined,
+            technicalSupportAddress: undefined,
+            technicalSupportInfo: undefined,
+            technicalSupportPhone: undefined,
+            themeId: undefined,
             updated: new Date().toISOString(),
-            imprint: null,
-            privacy: null,
-            specialSupportAddress: null,
-            technicalSupportAddress: null,
         };
     }
 
     public retrievePublic(id: number): Promise<DepartmentResponseDTO> {
-        return this.get<DepartmentResponseDTO>(`api/public/departments/${id}/`, {
+        return this.get<DepartmentResponseDTO>(`api/public/organizational-units/${id}/`, {
             skipAuthCheck: true,
         });
     }

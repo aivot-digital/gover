@@ -456,13 +456,13 @@ async function fetchAssigneeOptions(props: SubmissionEditPageGeneralTabProps): P
         departmentIds.push(props.form.developingDepartmentId);
     }
 
-    const apiService = new DepartmentMembershipsApiService(props.api);
+    const apiService = new DepartmentMembershipsApiService();
 
     const allOptions: SelectFieldComponentOption[] = (await apiService
         .listAll({
             userEnabled: true,
             userDeletedInIdp: false,
-            departmentIds: departmentIds,
+            organizationalUnitIds: departmentIds,
         }))
         .content
         .map(option => ({

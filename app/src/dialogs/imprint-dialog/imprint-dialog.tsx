@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {Alert, Box, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
-import {type Department} from '../../modules/departments/models/department';
+import {type DepartmentResponseDTO as Department} from '../../modules/departments/dtos/department-response-dto';
 import {useSelector} from 'react-redux';
 import {selectLoadedForm} from '../../slices/app-slice';
 import {type ImprintDialogProps} from './imprint-dialog-props';

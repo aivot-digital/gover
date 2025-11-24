@@ -14,7 +14,6 @@ import {useApi} from '../../../hooks/use-api';
 import {SubmissionEditPageAttachmentsTab} from './tabs/submission-edit-page-attachments-tab';
 import {SubmissionEditPageSummaryTab} from './tabs/submission-edit-page-summary-tab';
 import {SubmissionEditPageGeneralTab} from './tabs/submission-edit-page-general-tab';
-import {AppToolbarAction} from '../../../components/app-toolbar/app-toolbar-props';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import {SubmissionEditPagePaymentTab} from './tabs/submission-edit-page-payment-tab';
 import {SubmissionStatus} from '../../../modules/submissions/enums/submission-status';
@@ -35,6 +34,7 @@ import {addEntityHistoryItem} from '../../../slices/entity-history-slice';
 import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
 import {GenericPageHeader} from '../../../components/generic-page-header/generic-page-header';
 import {ModuleIcons} from '../../../shells/staff/data/module-icons';
+import {Action} from '../../../components/actions/actions-props';
 
 export function SubmissionEditPage() {
     const api = useApi();
@@ -314,7 +314,7 @@ export function SubmissionEditPage() {
         }
     }
 
-    const actions: AppToolbarAction[] = [];
+    const actions: Action[] = [];
 
     if (archived == null) {
         if (

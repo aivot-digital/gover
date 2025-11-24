@@ -7,6 +7,8 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.teams.entities.TeamEntity;
 import de.aivot.GoverBackend.teams.filters.TeamFilter;
 import de.aivot.GoverBackend.teams.repositories.TeamRepository;
+import de.aivot.GoverBackend.teams.dtos.TeamRequestDTO;
+import de.aivot.GoverBackend.teams.dtos.TeamResponseDTO;
 import de.aivot.GoverBackend.user.services.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +40,7 @@ public class TeamController {
     }
 
     @GetMapping("")
-    public Page<TeamEntity> list(
+    public Page<TeamResponseDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PageableDefault Pageable pageable,
             @Nonnull @Valid TeamFilter filter
@@ -48,13 +50,14 @@ public class TeamController {
                 .orElseThrow(ResponseException::unauthorized);
 
         return teamRepository
-                .findAll(filter.build(), pageable);
+                .findAll(filter.build(), pageable)
+                .map(TeamResponseDTO::fromEntity);
     }
 
     @PostMapping("")
-    public TeamEntity create(
+    public TeamResponseDTO create(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestBody @Valid TeamEntity createDTO
+            @RequestBody @Valid TeamRequestDTO createDTO
     ) throws ResponseException {
         var user = UserService
                 .fromJWT(jwt)
@@ -65,7 +68,7 @@ public class TeamController {
         TeamEntity result;
         try {
             result = teamRepository
-                    .save(createDTO);
+                    .save(createDTO.toEntity());
         } catch (Exception e) {
             throw ResponseException.badRequest("Fehler beim Speichern des Teams", e);
         }
@@ -75,11 +78,11 @@ public class TeamController {
                 "name", result.getName()
         ));
 
-        return result;
+        return TeamResponseDTO.fromEntity(result);
     }
 
     @GetMapping("{id}/")
-    public TeamEntity retrieve(
+    public TeamResponseDTO retrieve(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer id
     ) throws ResponseException {
@@ -87,16 +90,17 @@ public class TeamController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        return teamRepository
+        TeamEntity entity = teamRepository
                 .findById(id)
                 .orElseThrow(ResponseException::notFound);
+        return TeamResponseDTO.fromEntity(entity);
     }
 
     @PutMapping("{id}/")
-    public TeamEntity update(
+    public TeamResponseDTO update(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer id,
-            @RequestBody @Valid TeamEntity updateDTO
+            @RequestBody @Valid TeamRequestDTO updateDTO
     ) throws ResponseException {
         var user = UserService
                 .fromJWT(jwt)
@@ -104,13 +108,12 @@ public class TeamController {
                 .asAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
-        // Ensure the entity exists
-        updateDTO.setId(id);
+        TeamEntity entityToUpdate = updateDTO.toEntity().setId(id);
 
         TeamEntity result;
         try {
             result = teamRepository
-                    .save(updateDTO);
+                    .save(entityToUpdate);
         } catch (Exception e) {
             throw ResponseException.badRequest("Fehler beim Speichern des Teams", e);
         }
@@ -120,7 +123,7 @@ public class TeamController {
                 "name", result.getName()
         ));
 
-        return result;
+        return TeamResponseDTO.fromEntity(result);
     }
 
     @DeleteMapping("{id}/")
@@ -145,6 +148,5 @@ public class TeamController {
                 "id", entity.getId(),
                 "name", entity.getName()
         ));
-
     }
 }

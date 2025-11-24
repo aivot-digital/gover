@@ -9,9 +9,6 @@ import org.hibernate.validator.constraints.Length;
 import jakarta.annotation.Nullable;
 
 public record OrganizationalUnitRequestDTO(
-        @NotNull(message = "Id cannot be null")
-        Integer id,
-
         @NotNull(message = "Name cannot be null")
         @NotBlank(message = "Name cannot be blank")
         @Length(min = 3, max = 96)
@@ -68,7 +65,7 @@ public record OrganizationalUnitRequestDTO(
     @Override
     public OrganizationalUnitEntity toEntity() {
         return new OrganizationalUnitEntity()
-                .setId(id)
+                .setId(null)
                 .setName(name)
                 .setAddress(address)
                 .setImprint(imprint)

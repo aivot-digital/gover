@@ -134,9 +134,17 @@ public class OrganizationalUnitMembershipController {
                 departmentMembership.getId(),
                 departmentMembership.getOrganizationalUnitId(),
                 department.getName(),
+                department.getParentOrgUnitId(),
+                department.getDepth(),
                 departmentMembership.getUserId(),
+                targetUser.getFirstName(),
+                targetUser.getLastName(),
                 targetUser.getFullName(),
-                targetUser.getEmail()
+                targetUser.getEmail(),
+                targetUser.getEnabled(),
+                targetUser.getVerified(),
+                targetUser.getGlobalAdmin(),
+                targetUser.getDeletedInIdp()
         );
     }
 
@@ -203,9 +211,17 @@ public class OrganizationalUnitMembershipController {
                 updatedMembership.getId(),
                 updatedMembership.getOrganizationalUnitId(),
                 department.getName(),
+                department.getParentOrgUnitId(),
+                department.getDepth(),
                 updatedMembership.getUserId(),
+                targetUser.getFirstName(),
+                targetUser.getLastName(),
                 targetUser.getFullName(),
-                targetUser.getEmail()
+                targetUser.getEmail(),
+                targetUser.getEnabled(),
+                targetUser.getVerified(),
+                targetUser.getGlobalAdmin(),
+                targetUser.getDeletedInIdp()
         );
     }
 
@@ -231,7 +247,7 @@ public class OrganizationalUnitMembershipController {
 
             if (!hasAccess) {
                 throw ResponseException
-                        .forbidden("Sie benötigen die globale Rolle „Superadmin“ order „Systemadministrator:in“ order benötigen eine Organisationsrolle mit der Berechtigung „Organisationseinheit bearbeiten“.");
+                        .forbidden("Sie benötigen die Systemrolle „Superadmin“ oder „Systemadministrator:in“ oder benötigen eine Nutzerrolle mit der Berechtigung „Organisationseinheit bearbeiten“.");
             }
         }
 

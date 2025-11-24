@@ -26,23 +26,25 @@ export class ShadowedOrganizationalUnitsApiService extends BaseCrudApiService<De
 
     public initialize(): DepartmentResponseDTO {
         return {
-            id: 0,
-            name: '',
-            address: null,
-            accessibility: null,
-            imprint: null,
-            privacy: null,
-            specialSupportAddress: null,
-            technicalSupportAddress: null,
-            themeId: null,
-            contactTechnical: null,
-            additionalInfo: null,
-            contactLegal: null,
+            additionalInfo: undefined,
+            address: undefined,
+            commonAccessibility: undefined,
+            commonPrivacy: undefined,
+            departmentMail: undefined,
             depth: 0,
-            parentOrgUnitId: null,
-            departmentMail: null,
+            id: 0,
+            imprint: undefined,
+            name: '',
+            parentOrgUnitId: undefined,
+            specialSupportAddress: undefined,
+            specialSupportInfo: undefined,
+            specialSupportPhone: undefined,
+            technicalSupportAddress: undefined,
+            technicalSupportInfo: undefined,
+            technicalSupportPhone: undefined,
+            themeId: undefined,
             created: new Date().toISOString(),
-            updated: new Date().toISOString(),
+            updated: new Date().toISOString()
         };
     }
 

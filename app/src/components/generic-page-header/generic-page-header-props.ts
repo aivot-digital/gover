@@ -7,10 +7,12 @@ export interface GenericPageHeaderProps {
     badge?: BadgeProps;
     title: string;
     actions?: Action[];
-    helpDialog?: {
-        tooltip: string;
-        title: string;
-        content: ReactNode;
-    };
+    helpDialog?: GenericPageHeaderPropsHelpDialog;
     isBusy?: boolean;
+}
+
+export interface GenericPageHeaderPropsHelpDialog {
+    tooltip: string;
+    title: string;
+    content: ReactNode;
 }

@@ -17,13 +17,18 @@ public class VOrganizationalUnitMembershipWithDetailsFilter implements Filter<VO
     private String userFullName;
     private String userEmail;
 
+    private Boolean userEnabled;
+    private Boolean userVerified;
+    private Boolean userGlobalAdmin;
+    private Boolean userDeletedInIdp;
+
     public static VOrganizationalUnitMembershipWithDetailsFilter create() {
         return new VOrganizationalUnitMembershipWithDetailsFilter();
     }
 
     @Override
     public Specification<VOrganizationalUnitMembershipWithDetailsEntity> build() {
-        return SpecificationBuilder
+        var builder = SpecificationBuilder
                 .create(VOrganizationalUnitMembershipWithDetailsEntity.class)
                 .withEquals("organizationalUnitId", organizationalUnitId)
                 .withInList("organizationalUnitId", organizationalUnitIds)
@@ -31,7 +36,29 @@ public class VOrganizationalUnitMembershipWithDetailsFilter implements Filter<VO
                 .withEquals("userId", userId)
                 .withInList("userId", userIds)
                 .withContains("userFullName", userFullName)
-                .withContains("userEmail", userEmail)
+                .withContains("userEmail", userEmail);
+
+        if (userEnabled != null) {
+            builder = builder
+                    .withEquals("userEnabled", userEnabled);
+        }
+
+        if (userVerified != null) {
+            builder = builder
+                    .withEquals("userVerified", userVerified);
+        }
+
+        if (userGlobalAdmin != null) {
+            builder = builder
+                    .withEquals("userGlobalAdmin", userGlobalAdmin);
+        }
+
+        if (userDeletedInIdp != null) {
+            builder = builder
+                    .withEquals("userDeletedInIdp", userDeletedInIdp);
+        }
+
+        return builder
                 .build();
     }
 
@@ -95,6 +122,42 @@ public class VOrganizationalUnitMembershipWithDetailsFilter implements Filter<VO
 
     public VOrganizationalUnitMembershipWithDetailsFilter setUserEmail(String userEmail) {
         this.userEmail = userEmail;
+        return this;
+    }
+
+    public Boolean getUserEnabled() {
+        return userEnabled;
+    }
+
+    public VOrganizationalUnitMembershipWithDetailsFilter setUserEnabled(Boolean userEnabled) {
+        this.userEnabled = userEnabled;
+        return this;
+    }
+
+    public Boolean getUserVerified() {
+        return userVerified;
+    }
+
+    public VOrganizationalUnitMembershipWithDetailsFilter setUserVerified(Boolean userVerified) {
+        this.userVerified = userVerified;
+        return this;
+    }
+
+    public Boolean getUserGlobalAdmin() {
+        return userGlobalAdmin;
+    }
+
+    public VOrganizationalUnitMembershipWithDetailsFilter setUserGlobalAdmin(Boolean userGlobalAdmin) {
+        this.userGlobalAdmin = userGlobalAdmin;
+        return this;
+    }
+
+    public Boolean getUserDeletedInIdp() {
+        return userDeletedInIdp;
+    }
+
+    public VOrganizationalUnitMembershipWithDetailsFilter setUserDeletedInIdp(Boolean userDeletedInIdp) {
+        this.userDeletedInIdp = userDeletedInIdp;
         return this;
     }
 }

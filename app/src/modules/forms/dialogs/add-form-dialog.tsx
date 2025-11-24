@@ -8,7 +8,7 @@ import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectUser} from '../../../slices/user-slice';
 import {useApi} from '../../../hooks/use-api';
 import {DepartmentsApiService} from '../../departments/departments-api-service';
-import {Department} from '../../departments/models/department';
+import {type DepartmentResponseDTO as Department} from '../../departments/dtos/department-response-dto';
 import {useFormManager} from '../../../hooks/use-form-manager';
 import {FormDetailsResponseDTO} from '../dtos/form-details-response-dto';
 import * as yup from 'yup';

@@ -5,12 +5,15 @@ import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.payment.controllers.staff.PaymentProviderController;
+import de.aivot.GoverBackend.teams.services.VTeamMembershipWithDetailsService;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.userRoles.dtos.TeamUserRoleAssignmentResponseDTO;
 import de.aivot.GoverBackend.userRoles.dtos.UserRoleAssignmentRequestDTO;
-import de.aivot.GoverBackend.userRoles.dtos.UserRoleAssignmentResponseDTO;
 import de.aivot.GoverBackend.userRoles.entities.UserRoleAssignmentEntity;
-import de.aivot.GoverBackend.userRoles.filters.UserRoleAssignmentFilter;
+import de.aivot.GoverBackend.userRoles.filters.VTeamUserRoleAssignmentsWithDetailsFilter;
 import de.aivot.GoverBackend.userRoles.services.UserRoleAssignmentService;
+import de.aivot.GoverBackend.userRoles.services.UserRoleService;
+import de.aivot.GoverBackend.userRoles.services.VTeamUserRoleAssignmentsWithDetailsService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -25,34 +28,44 @@ import javax.annotation.Nullable;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/user-role-assignments/")
-public class UserRoleAssignmentController {
+@RequestMapping("/api/team-user-role-assignments/")
+public class TeamUserRoleAssignmentController {
     private final ScopedAuditService auditService;
     private final UserRoleAssignmentService userRoleAssignmentService;
+    private final VTeamUserRoleAssignmentsWithDetailsService vTeamUserRoleAssignmentsWithDetailsService;
+    private final UserRoleService userRoleService;
+    private final VTeamMembershipWithDetailsService vTeamMembershipWithDetailsService;
 
     @Autowired
-    public UserRoleAssignmentController(AuditService auditService, UserRoleAssignmentService userRoleAssignmentService) {
+    public TeamUserRoleAssignmentController(AuditService auditService,
+                                            UserRoleAssignmentService userRoleAssignmentService,
+                                            VTeamUserRoleAssignmentsWithDetailsService vTeamUserRoleAssignmentsWithDetailsService,
+                                            UserRoleService userRoleService,
+                                            VTeamMembershipWithDetailsService vTeamMembershipWithDetailsService) {
         this.auditService = auditService.createScopedAuditService(PaymentProviderController.class);
         this.userRoleAssignmentService = userRoleAssignmentService;
+        this.vTeamUserRoleAssignmentsWithDetailsService = vTeamUserRoleAssignmentsWithDetailsService;
+        this.userRoleService = userRoleService;
+        this.vTeamMembershipWithDetailsService = vTeamMembershipWithDetailsService;
     }
 
     @GetMapping("")
-    public Page<UserRoleAssignmentResponseDTO> list(
+    public Page<TeamUserRoleAssignmentResponseDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PageableDefault Pageable pageable,
-            @Nonnull @Valid UserRoleAssignmentFilter filter
+            @Nonnull @Valid VTeamUserRoleAssignmentsWithDetailsFilter filter
     ) throws ResponseException {
         UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        return userRoleAssignmentService
+        return vTeamUserRoleAssignmentsWithDetailsService
                 .list(pageable, filter)
-                .map(UserRoleAssignmentResponseDTO::fromEntity);
+                .map(TeamUserRoleAssignmentResponseDTO::fromEntity);
     }
 
     @PostMapping("")
-    public UserRoleAssignmentResponseDTO create(
+    public TeamUserRoleAssignmentResponseDTO create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @RequestBody @Valid UserRoleAssignmentRequestDTO requestDTO
     ) throws ResponseException {
@@ -71,12 +84,20 @@ public class UserRoleAssignmentController {
                         "userRoleId", created.getUserRoleId()
                 ));
 
-        return UserRoleAssignmentResponseDTO
-                .fromEntity(created);
+        var userRole = userRoleService
+                .retrieve(created.getUserRoleId())
+                .orElseThrow(() -> ResponseException.internalServerError("User role not found for created assignment"));
+
+        var mem = vTeamMembershipWithDetailsService
+                .retrieve(created.getOrganizationalUnitMembershipId())
+                .orElseThrow(() -> ResponseException.internalServerError("Organizational unit membership not found for created assignment"));
+
+        return TeamUserRoleAssignmentResponseDTO
+                .fromEntity(created, userRole, mem);
     }
 
     @GetMapping("{id}/")
-    public UserRoleAssignmentResponseDTO retrieve(
+    public TeamUserRoleAssignmentResponseDTO retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
@@ -84,14 +105,14 @@ public class UserRoleAssignmentController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        return userRoleAssignmentService
+        return vTeamUserRoleAssignmentsWithDetailsService
                 .retrieve(id)
-                .map(UserRoleAssignmentResponseDTO::fromEntity)
+                .map(TeamUserRoleAssignmentResponseDTO::fromEntity)
                 .orElseThrow(ResponseException::notFound);
     }
 
     @PutMapping("{id}/")
-    public UserRoleAssignmentResponseDTO update(
+    public TeamUserRoleAssignmentResponseDTO update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id,
             @Nonnull @RequestBody @Valid UserRoleAssignmentRequestDTO requestDTO
@@ -111,8 +132,16 @@ public class UserRoleAssignmentController {
                         "userRoleId", result.getUserRoleId()
                 ));
 
-        return UserRoleAssignmentResponseDTO
-                .fromEntity(result);
+        var userRole = userRoleService
+                .retrieve(result.getUserRoleId())
+                .orElseThrow(() -> ResponseException.internalServerError("User role not found for updated assignment"));
+
+        var mem = vTeamMembershipWithDetailsService
+                .retrieve(result.getOrganizationalUnitMembershipId())
+                .orElseThrow(() -> ResponseException.internalServerError("Organizational unit membership not found for updated assignment"));
+
+        return TeamUserRoleAssignmentResponseDTO
+                .fromEntity(result, userRole, mem);
     }
 
     @DeleteMapping("{id}/")

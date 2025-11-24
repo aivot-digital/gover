@@ -8,7 +8,7 @@ import {useTheme} from '@mui/material/styles';
 import {type IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {FadingPaper} from '../fading-paper/fading-paper';
 import {Preamble} from '../preamble/preamble';
-import {type Department} from '../../modules/departments/models/department';
+import {type DepartmentResponseDTO as Department} from '../../modules/departments/dtos/department-response-dto';
 import {selectLoadedForm, showDialog} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';

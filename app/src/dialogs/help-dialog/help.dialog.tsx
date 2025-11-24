@@ -2,7 +2,7 @@ import {Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, Gr
 import {BoxLink} from '../../components/box-link/box-link';
 import React, {useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
-import {type Department} from '../../modules/departments/models/department';
+import {type DepartmentResponseDTO as Department} from '../../modules/departments/dtos/department-response-dto';
 import {useSelector} from 'react-redux';
 import {type HelpDialogProps} from './help-dialog-props';
 import {selectLoadedForm} from '../../slices/app-slice';

@@ -32,7 +32,9 @@ public class UserRoleController {
 
     @Autowired
     public UserRoleController(AuditService auditService, UserRoleService userRoleService) {
-        this.auditService = auditService.createScopedAuditService(PaymentProviderController.class);
+        this.auditService = auditService
+                .createScopedAuditService(UserRoleController.class);
+
         this.userRoleService = userRoleService;
     }
 

@@ -9,7 +9,6 @@ import {showErrorSnackbar, showSuccessSnackbar} from '../../../../../slices/snac
 import {SelectFieldComponent} from '../../../../../components/select-field/select-field-component';
 import {type SelectFieldComponentOption} from '../../../../../components/select-field/select-field-component-option';
 import {useApi} from '../../../../../hooks/use-api';
-import type {Department} from '../../../../../modules/departments/models/department';
 import {CheckboxFieldComponent} from '../../../../../components/checkbox-field/checkbox-field-component';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {DepartmentsApiService} from '../../../../../modules/departments/departments-api-service';
@@ -20,6 +19,7 @@ import {addSnackbarMessage, removeSnackbarMessage, setSetup, setStatus, ShellSta
 import {isApiError} from '../../../../../models/api-error';
 import {SystemSetupDTO} from '../../../../../modules/system/dtos/system-setup-dto';
 import {SystemApiService} from '../../../../../modules/system/system-api-service';
+import {DepartmentResponseDTO} from '../../../../../modules/departments/dtos/department-response-dto';
 
 async function fetchSetup(): Promise<SystemSetupDTO> {
     return new SystemApiService()
@@ -54,7 +54,7 @@ export function ApplicationSettings() {
     const config = useAppSelector(selectSystemConfig);
     const [editedConfig, setEditedConfig] = useState<SystemConfigMap>({});
 
-    const [departments, setDepartments] = useState<Department[]>([]);
+    const [departments, setDepartments] = useState<DepartmentResponseDTO[]>([]);
     const [themes, setThemes] = useState<SelectFieldComponentOption[]>([]);
 
     const hasNotChanged = Object.keys(editedConfig).length === 0;

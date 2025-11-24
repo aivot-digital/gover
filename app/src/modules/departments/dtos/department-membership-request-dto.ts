@@ -1,7 +1,4 @@
-import {UserRole} from '../../../data/user-role';
-
 export interface DepartmentMembershipRequestDTO {
-    departmentId: number;
+    organizationalUnitId: number;
     userId: string;
-    role: UserRole;
 }

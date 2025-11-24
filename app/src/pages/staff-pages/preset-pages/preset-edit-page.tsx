@@ -6,7 +6,6 @@ import {LoadingPlaceholder} from '../../../components/loading-placeholder/loadin
 import {useNavigate, useParams} from 'react-router-dom';
 import {ViewDispatcherComponent} from '../../../components/view-dispatcher.component';
 import {NotFoundPage} from '../../../components/not-found-page/not-found-page';
-import {AppToolbar} from '../../../components/app-toolbar/app-toolbar';
 import {type Preset} from '../../../models/entities/preset';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {removeLoadingSnackbar, showErrorSnackbar, showLoadingSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
@@ -375,10 +374,6 @@ export function PresetEditPage() {
     if (networkError != null) {
         return (
             <>
-                <AppToolbar
-                    title="Nicht gefunden"
-                />
-
                 <NotFoundPage
                     title={networkError.title}
                     msg={networkError.message}
@@ -463,7 +458,7 @@ export function PresetEditPage() {
                                             disabled: isBusy,
                                         },
                                         {
-                                            icon: <Delete color={'error'}/>,
+                                            icon: <Delete color={'error'} />,
                                             tooltip: 'Version der Vorlage löschen',
                                             onClick: () => {
                                                 setConfirmDelete(() => handleDelete);

@@ -97,8 +97,8 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
 
         return memberships
             .some((mem) => (
-                    mem.departmentId === props.entity.developingDepartmentId &&
-                    (mem.role === UserRole.Admin || mem.role === UserRole.Publisher)
+                    mem.orgUnitId === props.entity.developingDepartmentId &&
+                    mem.roles.some(r => r.userRoleFormPermissionPublish)
                 ),
             );
     }, [memberships]);
@@ -209,10 +209,12 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
                 <Paper variant="outlined">
                     {
                         checklist == null &&
-                        <Box sx={{
-                            px: 2,
-                            py: 1,
-                        }}>
+                        <Box
+                            sx={{
+                                px: 2,
+                                py: 1,
+                            }}
+                        >
                             {
                                 new Array(8).fill(null).map((_, idx) => (
                                     <Skeleton

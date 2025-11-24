@@ -3,12 +3,12 @@ import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../..
 import {GenericList} from '../../../../components/generic-list/generic-list';
 import {FormsApiService} from '../../../forms/forms-api-service';
 import {GridColDef} from '@mui/x-data-grid';
-import {Department} from '../../models/department';
 import {EditOutlined} from '@mui/icons-material';
 import {Box, Typography} from '@mui/material';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {FormDetailsResponseDTO} from '../../../forms/dtos/form-details-response-dto';
 import {FormStatusChip} from '../../../forms/components/form-status-chip';
+import {DepartmentResponseDTO} from '../../dtos/department-response-dto';
 
 const filters = [
     {
@@ -61,7 +61,7 @@ const columns: GridColDef<FormDetailsResponseDTO>[] = [
 export function DepartmentsDetailsPageForms() {
     const {
         item,
-    } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<Department, undefined>;
+    } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<DepartmentResponseDTO, undefined>;
 
     if (item == null) {
         return null;

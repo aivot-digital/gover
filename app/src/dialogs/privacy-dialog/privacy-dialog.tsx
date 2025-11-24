@@ -1,7 +1,7 @@
 import {Alert, Box, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
 import React, {useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
-import {type Department} from '../../modules/departments/models/department';
+import {type DepartmentResponseDTO as Department} from '../../modules/departments/dtos/department-response-dto';
 import {useSelector} from 'react-redux';
 import {selectLoadedForm} from '../../slices/app-slice';
 import {type PrivacyDialogProps} from './privacy-dialog-props';
@@ -53,9 +53,9 @@ export function PrivacyDialog(props: PrivacyDialogProps) {
                 Datenschutzerklärung
             </DialogTitleWithClose>
             {
-                department?.privacy ?
+                department?.commonPrivacy?
                 <DialogContent
-                    dangerouslySetInnerHTML={{__html: department?.privacy}}
+                    dangerouslySetInnerHTML={{__html: department?.commonPrivacy}}
                 />
                 :
                 <DialogContent tabIndex={0}>
