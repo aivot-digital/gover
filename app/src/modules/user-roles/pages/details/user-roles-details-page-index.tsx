@@ -37,13 +37,15 @@ const permissions: {
     permissions: {
         label: string;
         field: keyof UserRoleResponseDTO;
+        forcesOthersActive: Array<keyof UserRoleResponseDTO>;
     }[];
 }[] = [
     {
-        groupLabel: 'Fachbereiche',
+        groupLabel: 'Organisationseinheiten',
         permissions: [{
             label: 'Administrieren',
             field: 'orgUnitMemberPermissionEdit',
+            forcesOthersActive: [],
         }],
     },
     {
@@ -51,6 +53,7 @@ const permissions: {
         permissions: [{
             label: 'Administrieren',
             field: 'teamMemberPermissionEdit',
+            forcesOthersActive: [],
         }],
     },
     {
@@ -59,26 +62,38 @@ const permissions: {
             {
                 label: 'Erstellen',
                 field: 'formPermissionCreate',
+                forcesOthersActive: [],
             },
             {
                 label: 'Abrufen',
                 field: 'formPermissionRead',
+                forcesOthersActive: [],
             },
             {
                 label: 'Prüfen',
                 field: 'formPermissionAnnotate',
+                forcesOthersActive: [
+                    'formPermissionRead',
+                ],
             },
             {
                 label: 'Bearbeiten',
                 field: 'formPermissionEdit',
+                forcesOthersActive: [
+                    'formPermissionRead',
+                ],
             },
             {
                 label: 'Veröffentlichen und Zurückziehen',
                 field: 'formPermissionPublish',
+                forcesOthersActive: [
+                    'formPermissionRead',
+                ],
             },
             {
                 label: 'Löschen',
                 field: 'formPermissionDelete',
+                forcesOthersActive: [],
             },
         ],
     },
@@ -88,26 +103,38 @@ const permissions: {
             {
                 label: 'Erstellen',
                 field: 'processPermissionCreate',
+                forcesOthersActive: [],
             },
             {
                 label: 'Abrufen',
                 field: 'processPermissionRead',
+                forcesOthersActive: [],
             },
             {
                 label: 'Prüfen',
                 field: 'processPermissionAnnotate',
+                forcesOthersActive: [
+                    'processPermissionRead',
+                ],
             },
             {
                 label: 'Bearbeiten',
                 field: 'processPermissionEdit',
+                forcesOthersActive: [
+                    'processPermissionRead',
+                ],
             },
             {
                 label: 'Veröffentlichen und Zurückziehen',
                 field: 'processPermissionPublish',
+                forcesOthersActive: [
+                    'processPermissionRead',
+                ],
             },
             {
                 label: 'Löschen',
                 field: 'processPermissionDelete',
+                forcesOthersActive: [],
             },
         ],
     },
@@ -117,22 +144,31 @@ const permissions: {
             {
                 label: 'Starten',
                 field: 'processInstancePermissionCreate',
+                forcesOthersActive: [],
             },
             {
                 label: 'Abrufen',
                 field: 'processInstancePermissionRead',
+                forcesOthersActive: [],
             },
             {
                 label: 'Kommentieren',
                 field: 'processInstancePermissionAnnotate',
+                forcesOthersActive: [
+                    'processInstancePermissionRead',
+                ],
             },
             {
                 label: 'Bearbeiten',
                 field: 'processInstancePermissionEdit',
+                forcesOthersActive: [
+                    'processInstancePermissionRead',
+                ],
             },
             {
                 label: 'Löschen',
                 field: 'processInstancePermissionDelete',
+                forcesOthersActive: [],
             },
         ],
     },
@@ -174,6 +210,7 @@ export function UserRolesDetailsPageIndex() {
         hasNotChanged,
         handleInputBlur,
         handleInputChange,
+        handleInputPatch,
         validate,
         reset,
     } = useFormManager<UserRoleResponseDTO>(item, SecretSchema as any);
@@ -310,8 +347,32 @@ export function UserRolesDetailsPageIndex() {
                                                     label={permission.label}
                                                     value={entity[permission.field] as boolean ?? false}
                                                     onChange={(val) => {
-                                                        handleInputChange(permission.field)(val);
+                                                        const patch: Record<string, boolean> = {
+                                                            [permission.field]: val,
+                                                        };
+
+                                                        if (val) {
+                                                            permission.forcesOthersActive.forEach((otherField) => {
+                                                                patch[otherField] = true;
+                                                            });
+                                                        }
+
+                                                        handleInputPatch(patch);
                                                     }}
+                                                    sx={{
+                                                        m: 0,
+                                                        p: 0,
+                                                    }}
+                                                    disabled={
+                                                        group
+                                                            .permissions
+                                                            .some((perm) => perm
+                                                                    .forcesOthersActive
+                                                                    .includes(permission.field) && (entity[perm.field] as boolean ?? false),
+                                                            ) ||
+                                                        isBusy ||
+                                                        !isEditable
+                                                    }
                                                 />
                                             ))
                                         }

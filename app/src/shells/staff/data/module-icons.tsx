@@ -21,6 +21,7 @@ import TaskAlt from '@aivot/mui-material-symbols-400-outlined/dist/task-alt/Task
 import FolderData from '@aivot/mui-material-symbols-400-outlined/dist/folder-data/FolderData';
 import Storefront from '@aivot/mui-material-symbols-400-outlined/dist/storefront/Storefront';
 import Groups3 from '@aivot/mui-material-symbols-400-outlined/dist/groups-3/Groups3';
+import Rule from '@aivot/mui-material-symbols-400-outlined/dist/rule/Rule';
 
 export const ModuleIcons = {
     dashboard: <Dashboard />,
@@ -45,5 +46,6 @@ export const ModuleIcons = {
     processes: <Route />,
     tasks: <TaskAlt />,
     teams: <Groups3 />,
-    extensions: <Extension />
+    roles: <Rule />,
+    extensions: <Extension />,
 };
