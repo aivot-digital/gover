@@ -25,17 +25,21 @@ export class DepartmentsApiService extends BaseCrudApiService<DepartmentRequestD
     }
 
     public initialize(): DepartmentResponseDTO {
+        return DepartmentsApiService.initialize();
+    }
+
+    public static initialize(): DepartmentResponseDTO {
         return {
             additionalInfo: undefined,
             address: undefined,
             commonAccessibility: undefined,
             commonPrivacy: undefined,
-            created: '',
+            created: new Date().toISOString(),
             departmentMail: undefined,
             depth: 0,
             id: 0,
             imprint: undefined,
-            name: new Date().toISOString(),
+            name: '',
             parentOrgUnitId: undefined,
             specialSupportAddress: undefined,
             specialSupportInfo: undefined,

@@ -60,7 +60,7 @@ public record OrganizationalUnitRequestDTO(
         Integer themeId,
 
         @Nullable
-        Integer parentOrgId
+        Integer parentOrgUnitId
 ) implements RequestDTO<OrganizationalUnitEntity> {
     @Override
     public OrganizationalUnitEntity toEntity() {
@@ -80,6 +80,6 @@ public record OrganizationalUnitRequestDTO(
                 .setAdditionalInfo(additionalInfo)
                 .setDepartmentMail(departmentMail)
                 .setThemeId(themeId)
-                .setParentOrgUnitId(parentOrgId);
+                .setParentOrgUnitId(parentOrgUnitId);
     }
 }

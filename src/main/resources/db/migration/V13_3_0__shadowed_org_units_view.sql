@@ -1,78 +1,57 @@
 create view v_organizational_units_shadowed as
-with recursive org_unit_shadow as (select id,
-                                          name,
-                                          address,
-                                          imprint,
-                                          common_privacy,
-                                          common_accessibility,
-                                          technical_support_address,
-                                          special_support_address,
-                                          created,
-                                          updated,
-                                          department_mail,
-                                          theme_id,
-                                          technical_support_phone,
-                                          technical_support_info,
-                                          special_support_phone,
-                                          special_support_info,
-                                          additional_info,
-                                          depth,
-                                          parent_org_unit_id
-                                   from organizational_units
+with recursive org_units_cte as (
+    -- Anchor member: Select all organizational units of type 'organization' with depth 0
+    select aou.id,
+           aou.name,
+           aou.address,
+           aou.imprint,
+           aou.common_privacy,
+           aou.common_accessibility,
+           aou.technical_support_address,
+           aou.special_support_address,
+           aou.created,
+           aou.updated,
+           aou.department_mail,
+           aou.theme_id,
+           aou.technical_support_phone,
+           aou.technical_support_info,
+           aou.special_support_phone,
+           aou.special_support_info,
+           aou.additional_info,
+           aou.depth,
+           aou.parent_org_unit_id,
+           '{}'::varchar[] as parent_names,
+           '{}'::int[]     as parent_ids
+    from organizational_units aou
+    where parent_org_unit_id is null
 
-                                   union all
+    union all
 
-                                   select child.id,
-                                          child.name,
-                                          coalesce(child.address, parent.address),
-                                          coalesce(child.imprint, parent.imprint),
-                                          coalesce(child.common_privacy, parent.common_privacy),
-                                          coalesce(child.common_accessibility, parent.common_accessibility),
-                                          coalesce(child.technical_support_address, parent.technical_support_address),
-                                          coalesce(child.special_support_address, parent.special_support_address),
-                                          child.created,
-                                          child.updated,
-                                          coalesce(child.department_mail, parent.department_mail),
-                                          coalesce(child.theme_id, parent.theme_id),
-                                          coalesce(child.technical_support_phone, parent.technical_support_phone),
-                                          coalesce(child.technical_support_info, parent.technical_support_info),
-                                          coalesce(child.special_support_phone, parent.special_support_phone),
-                                          coalesce(child.special_support_info, parent.special_support_info),
-                                          coalesce(child.additional_info, parent.additional_info),
-                                          child.depth,
-                                          child.parent_org_unit_id
-                                   from org_unit_shadow parent
-                                            join organizational_units child on child.parent_org_unit_id = parent.id
-                                   where child.address is null
-                                      or child.imprint is null
-                                      or child.common_privacy is null
-                                      or child.common_accessibility is null
-                                      or child.technical_support_address is null
-                                      or child.special_support_address is null
-                                      or child.technical_support_phone is null
-                                      or child.technical_support_info is null
-                                      or child.special_support_phone is null
-                                      or child.special_support_info is null
-                                      or child.additional_info is null
-                                      or child.department_mail is null)
-select distinct on (id) id,
-                        name,
-                        address,
-                        imprint,
-                        common_privacy,
-                        common_accessibility,
-                        technical_support_address,
-                        special_support_address,
-                        created,
-                        updated,
-                        department_mail,
-                        theme_id,
-                        technical_support_phone,
-                        technical_support_info,
-                        special_support_phone,
-                        special_support_info,
-                        additional_info,
-                        depth,
-                        parent_org_unit_id
-from org_unit_shadow
-order by id, parent_org_unit_id nulls first;
+    -- Recursive member: Join organizational units to find children and increment depth
+    select rou.id,
+           rou.name,
+           coalesce(rou.address, p.address)                                     as address,
+           coalesce(rou.imprint, p.imprint)                                     as imprint,
+           coalesce(rou.common_privacy, p.common_privacy)                       as common_privacy,
+           coalesce(rou.common_accessibility, p.common_accessibility)           as common_accessibility,
+           coalesce(rou.technical_support_address, p.technical_support_address) as technical_support_address,
+           coalesce(rou.special_support_address, p.special_support_address)     as special_support_address,
+           rou.created,
+           rou.updated,
+           coalesce(rou.department_mail, p.department_mail)                     as department_mail,
+           coalesce(rou.theme_id, p.theme_id)                                   as theme_id,
+           coalesce(rou.technical_support_phone, p.technical_support_phone)     as technical_support_phone,
+           coalesce(rou.technical_support_info, p.technical_support_info)       as technical_support_info,
+           coalesce(rou.special_support_phone, p.special_support_phone)         as special_support_phone,
+           coalesce(rou.special_support_info, p.special_support_info)           as special_support_info,
+           coalesce(rou.additional_info, p.additional_info)                     as additional_info,
+           rou.depth,
+           rou.parent_org_unit_id,
+           p.parent_names || p.name                                             as parent_names,
+           p.parent_ids || p.id                                                 as parent_ids
+    from organizational_units rou
+             join org_units_cte p on p.id = rou.parent_org_unit_id)
+select distinct on (id) *
+from org_units_cte
+-- where id = 5
+order by id, depth DESC;

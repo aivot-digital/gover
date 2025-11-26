@@ -94,6 +94,7 @@ public class OrganizationalUnitService implements EntityService<OrganizationalUn
         entity.setId(existingDepartment.getId());
         entity.setCreated(existingDepartment.getCreated());
         entity.setUpdated(LocalDateTime.now());
+        entity.setParentOrgUnitId(existingDepartment.getParentOrgUnitId());
 
         var themeId = entity.getThemeId();
         if (themeId != null) {
@@ -114,21 +115,7 @@ public class OrganizationalUnitService implements EntityService<OrganizationalUn
                 .setDevelopingDepartmentId(department.getId())
                 .build();
 
-        var specManDepartment = FormFilter
-                .create()
-                .setManagingDepartmentId(department.getId())
-                .build();
-
-        var specRespDepartment = FormFilter
-                .create()
-                .setResponsibleDepartmentId(department.getId())
-                .build();
-
-        var spec = specDevDepartment
-                .or(specManDepartment)
-                .or(specRespDepartment);
-
-        if (formRepository.exists(spec)) {
+        if (formRepository.exists(specDevDepartment)) {
             throw new ResponseException(HttpStatus.CONFLICT, "Der Fachbereich kann nicht gelöscht werden, da noch Formulare zugewiesen sind.");
         }
 

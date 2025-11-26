@@ -19,3 +19,8 @@ export interface DepartmentResponseDTO {
     created: string;
     updated: string;
 }
+
+export interface VOrganizationalUnitShadowedResponseDTO extends DepartmentResponseDTO {
+    parentNames: string[] | null | undefined;
+    parentIds: number[] | null | undefined;
+}

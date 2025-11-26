@@ -7,6 +7,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "v_organizational_units_shadowed")
@@ -45,6 +46,10 @@ public class VOrganizationalUnitShadowedEntity {
     private String departmentMail;
     @Nullable
     private Integer themeId;
+    @Nonnull
+    private List<String> parentNames;
+    @Nonnull
+    private List<Integer> parentIds;
     @Nonnull
     private LocalDateTime created;
     @Nonnull
@@ -238,6 +243,26 @@ public class VOrganizationalUnitShadowedEntity {
 
     public VOrganizationalUnitShadowedEntity setDepth(@Nonnull Integer depth) {
         this.depth = depth;
+        return this;
+    }
+
+    @Nonnull
+    public List<String> getParentNames() {
+        return parentNames;
+    }
+
+    public VOrganizationalUnitShadowedEntity setParentNames(@Nonnull List<String> parentNames) {
+        this.parentNames = parentNames;
+        return this;
+    }
+
+    @Nonnull
+    public List<Integer> getParentIds() {
+        return parentIds;
+    }
+
+    public VOrganizationalUnitShadowedEntity setParentIds(@Nonnull List<Integer> parentIds) {
+        this.parentIds = parentIds;
         return this;
     }
 

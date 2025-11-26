@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.form.controllers;
 
-import de.aivot.GoverBackend.form.entities.FormEditorEntity;
+import de.aivot.GoverBackend.form.entities.projections.FormEditorProjection;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -23,7 +23,7 @@ public class FormEditorController {
     }
 
     @GetMapping("")
-    public List<FormEditorEntity> listFormEditorsForForms(
+    public List<FormEditorProjection> listFormEditorsForForms(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @RequestParam List<Integer> formIds
     ) {
@@ -32,7 +32,7 @@ public class FormEditorController {
     }
 
     @GetMapping("{formId}/")
-    public List<FormEditorEntity> listFormEditorsForVersions(
+    public List<FormEditorProjection> listFormEditorsForVersions(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer formId
     ) {

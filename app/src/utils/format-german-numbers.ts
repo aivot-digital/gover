@@ -1,3 +1,4 @@
+// TODO: Move to number-utils.ts
 export function formatNumToGermanNum(num: number, decimal?: number | null | undefined): string {
     return num.toLocaleString('de', {
         minimumFractionDigits: decimal ?? 0,
@@ -5,6 +6,7 @@ export function formatNumToGermanNum(num: number, decimal?: number | null | unde
     });
 }
 
+// TODO: Move to number-utils.ts
 export function formatNumStringToGermanNum(num?: string | number, decimal?: number | null | undefined): string {
     if (num == null) {
         return '';

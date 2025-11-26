@@ -1,5 +1,5 @@
 import {DepartmentRequestDTO} from './dtos/department-request-dto';
-import {DepartmentResponseDTO} from './dtos/department-response-dto';
+import {DepartmentResponseDTO, VOrganizationalUnitShadowedResponseDTO} from './dtos/department-response-dto';
 import {BaseCrudApiService} from '../../services/base-crud-api-service';
 
 interface DepartmentFilters {
@@ -19,12 +19,12 @@ interface DepartmentFilters {
     disabledInIdp: boolean;
 }
 
-export class ShadowedOrganizationalUnitsApiService extends BaseCrudApiService<DepartmentRequestDTO, DepartmentResponseDTO, DepartmentResponseDTO, DepartmentRequestDTO, number, DepartmentFilters> {
+export class ShadowedOrganizationalUnitsApiService extends BaseCrudApiService<DepartmentRequestDTO, VOrganizationalUnitShadowedResponseDTO, VOrganizationalUnitShadowedResponseDTO, DepartmentRequestDTO, number, DepartmentFilters> {
     public constructor() {
         super('api/organizational-units-shadowed/');
     }
 
-    public initialize(): DepartmentResponseDTO {
+    public initialize(): VOrganizationalUnitShadowedResponseDTO {
         return {
             additionalInfo: undefined,
             address: undefined,
@@ -43,8 +43,10 @@ export class ShadowedOrganizationalUnitsApiService extends BaseCrudApiService<De
             technicalSupportInfo: undefined,
             technicalSupportPhone: undefined,
             themeId: undefined,
+            parentNames: undefined,
+            parentIds: undefined,
             created: new Date().toISOString(),
-            updated: new Date().toISOString()
+            updated: new Date().toISOString(),
         };
     }
 
@@ -65,7 +67,18 @@ export class ShadowedOrganizationalUnitsApiService extends BaseCrudApiService<De
             }
         }
 
-        return rootOrgUnits;
+        // Helper function to sort children recursively
+        function sortTree(nodes: OrganizationalUnitWithChildren[]): OrganizationalUnitWithChildren[] {
+            nodes.sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
+            for (const node of nodes) {
+                if (node.children && node.children.length > 0) {
+                    node.children = sortTree(node.children);
+                }
+            }
+            return nodes;
+        }
+
+        return sortTree(rootOrgUnits);
     }
 }
 

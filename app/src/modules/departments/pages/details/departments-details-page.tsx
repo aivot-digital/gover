@@ -7,22 +7,27 @@ import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type
 import {DepartmentResponseDTO} from '../../dtos/department-response-dto';
 import {GenericPageHeaderPropsHelpDialog} from '../../../../components/generic-page-header/generic-page-header-props';
 import {ShadowedOrganizationalUnitsApiService} from '../../shadowed-organizational-units-api-service';
+import { useSearchParams } from 'react-router-dom';
+
+export const NewParentIdQueryParam = 'parentId';
 
 export interface DepartmentsDetailsPageAdditionalData {
     shadowedDepartment: DepartmentResponseDTO;
 }
 
 export function DepartmentsDetailsPage() {
+    const [searchParams, _] = useSearchParams();
+
     return (
         <PageWrapper
-            title="Fachbereich bearbeiten"
+            title="Organisationseinheit bearbeiten"
             fullWidth
             background
         >
             <GenericDetailsPage<DepartmentResponseDTO, number, DepartmentsDetailsPageAdditionalData>
                 header={{
                     icon: <BusinessOutlinedIcon />,
-                    title: 'Fachbereich bearbeiten',
+                    title: 'Organisationseinheit bearbeiten',
                     helpDialog: HelpDialogContent,
                 }}
                 tabs={[
@@ -41,29 +46,46 @@ export function DepartmentsDetailsPage() {
                         isDisabled: (item) => !item?.id,
                     },
                 ]}
-                initializeItem={(api) => new DepartmentsApiService().initialize()}
+                initializeItem={(api) => DepartmentsApiService.initialize()}
                 fetchData={(api, id: number) => new DepartmentsApiService().retrieve(id)}
                 fetchAdditionalData={{
-                    shadowedDepartment: (api, id: number) => new ShadowedOrganizationalUnitsApiService().retrieve(id),
+                    shadowedDepartment: (api, id) => {
+                        const service = new ShadowedOrganizationalUnitsApiService();
+
+                        if (id === 0 || id  === 'new') {
+                            const parentId = searchParams.get(NewParentIdQueryParam);
+
+                            if (parentId != null && !isNaN(Number(parentId))) {
+                                return service
+                                    .retrieve(Number(parentId));
+                            } else {
+                                return Promise
+                                    .resolve(DepartmentsApiService.initialize());
+                            }
+                        }
+
+                        return service
+                            .retrieve(id as any)
+                    }
                 }}
                 getTabTitle={(item: DepartmentResponseDTO) => {
                     if (item.id === 0) {
-                        return 'Neuer Fachbereich';
+                        return 'Neue Organisationseinheit';
                     } else {
                         return item.name;
                     }
                 }}
                 getHeaderTitle={(item, isNewItem, notFound) => {
                     if (notFound || item == null) {
-                        return 'Fachbereich nicht gefunden';
+                        return 'Organisationseinheit nicht gefunden';
                     }
                     if (isNewItem) {
-                        return 'Neuen Fachbereich anlegen';
+                        return 'Neue Organisationseinheit anlegen';
                     }
-                    return `Fachbereich: ${item.name ?? 'Unbenannt'}`;
+                    return `Organisationseinheit: ${item.name ?? 'Unbenannt'}`;
                 }}
                 parentLink={{
-                    label: 'Liste der Fachbereiche',
+                    label: 'Liste der Organisationseinheiten',
                     to: '/departments',
                 }}
                 entityType={ServerEntityType.Departments}
@@ -73,7 +95,7 @@ export function DepartmentsDetailsPage() {
 }
 
 const HelpDialogContent: GenericPageHeaderPropsHelpDialog = {
-    title: 'Hilfe zu Fachbereichen',
+    title: 'Hilfe zu Organisationseinheiten',
     tooltip: 'Hilfe anzeigen',
     content: (
         <>

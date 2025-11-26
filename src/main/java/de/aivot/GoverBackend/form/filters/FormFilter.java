@@ -13,8 +13,6 @@ public class FormFilter implements Filter<FormEntity> {
     private String internalTitle;
     private String publicTitle;
     private Integer developingDepartmentId;
-    private Integer managingDepartmentId;
-    private Integer responsibleDepartmentId;
     private Integer publishedVersion;
     private Integer draftedVersion;
     private Boolean isDrafted;
@@ -34,9 +32,7 @@ public class FormFilter implements Filter<FormEntity> {
                 .withContains("slug", slug)
                 .withContains("internalTitle", internalTitle)
                 .withContains("publicTitle", publicTitle)
-                .withEquals("developingDepartmentId", developingDepartmentId)
-                .withEquals("managingDepartmentId", managingDepartmentId)
-                .withEquals("responsibleDepartmentId", responsibleDepartmentId)
+                .withEquals("developingOrganizationalUnitId", developingDepartmentId)
                 .withEquals("publishedVersion", publishedVersion)
                 .withEquals("draftedVersion", draftedVersion);
 
@@ -98,24 +94,6 @@ public class FormFilter implements Filter<FormEntity> {
 
     public FormFilter setDevelopingDepartmentId(Integer developingDepartmentId) {
         this.developingDepartmentId = developingDepartmentId;
-        return this;
-    }
-
-    public Integer getManagingDepartmentId() {
-        return managingDepartmentId;
-    }
-
-    public FormFilter setManagingDepartmentId(Integer managingDepartmentId) {
-        this.managingDepartmentId = managingDepartmentId;
-        return this;
-    }
-
-    public Integer getResponsibleDepartmentId() {
-        return responsibleDepartmentId;
-    }
-
-    public FormFilter setResponsibleDepartmentId(Integer responsibleDepartmentId) {
-        this.responsibleDepartmentId = responsibleDepartmentId;
         return this;
     }
 

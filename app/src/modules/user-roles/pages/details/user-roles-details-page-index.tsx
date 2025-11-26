@@ -60,14 +60,16 @@ const permissions: {
         groupLabel: 'Formulare',
         permissions: [
             {
-                label: 'Erstellen',
-                field: 'formPermissionCreate',
-                forcesOthersActive: [],
-            },
-            {
                 label: 'Abrufen',
                 field: 'formPermissionRead',
                 forcesOthersActive: [],
+            },
+            {
+                label: 'Erstellen',
+                field: 'formPermissionCreate',
+                forcesOthersActive: [
+                    'formPermissionRead',
+                ],
             },
             {
                 label: 'Prüfen',
@@ -93,7 +95,9 @@ const permissions: {
             {
                 label: 'Löschen',
                 field: 'formPermissionDelete',
-                forcesOthersActive: [],
+                forcesOthersActive: [
+                    'formPermissionRead',
+                ],
             },
         ],
     },
@@ -101,14 +105,16 @@ const permissions: {
         groupLabel: 'Prozesse',
         permissions: [
             {
-                label: 'Erstellen',
-                field: 'processPermissionCreate',
-                forcesOthersActive: [],
-            },
-            {
                 label: 'Abrufen',
                 field: 'processPermissionRead',
                 forcesOthersActive: [],
+            },
+            {
+                label: 'Erstellen',
+                field: 'processPermissionCreate',
+                forcesOthersActive: [
+                    'processPermissionRead',
+                ],
             },
             {
                 label: 'Prüfen',
@@ -134,7 +140,9 @@ const permissions: {
             {
                 label: 'Löschen',
                 field: 'processPermissionDelete',
-                forcesOthersActive: [],
+                forcesOthersActive: [
+                    'processPermissionRead',
+                ],
             },
         ],
     },
@@ -142,14 +150,16 @@ const permissions: {
         groupLabel: 'Vorgänge',
         permissions: [
             {
-                label: 'Starten',
-                field: 'processInstancePermissionCreate',
-                forcesOthersActive: [],
-            },
-            {
                 label: 'Abrufen',
                 field: 'processInstancePermissionRead',
                 forcesOthersActive: [],
+            },
+            {
+                label: 'Starten',
+                field: 'processInstancePermissionCreate',
+                forcesOthersActive: [
+                    'processInstancePermissionRead',
+                ],
             },
             {
                 label: 'Kommentieren',
@@ -168,7 +178,9 @@ const permissions: {
             {
                 label: 'Löschen',
                 field: 'processInstancePermissionDelete',
-                forcesOthersActive: [],
+                forcesOthersActive: [
+                    'processInstancePermissionRead',
+                ],
             },
         ],
     },
@@ -367,8 +379,8 @@ export function UserRolesDetailsPageIndex() {
                                                         group
                                                             .permissions
                                                             .some((perm) => perm
-                                                                    .forcesOthersActive
-                                                                    .includes(permission.field) && (entity[perm.field] as boolean ?? false),
+                                                                .forcesOthersActive
+                                                                .includes(permission.field) && (entity[perm.field] as boolean ?? false),
                                                             ) ||
                                                         isBusy ||
                                                         !isEditable

@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.department.controllers;
 
-import de.aivot.GoverBackend.department.dtos.OrganizationalUnitResponseDTO;
+import de.aivot.GoverBackend.department.dtos.OrganizationalUnitShadowedResponseDTO;
 import de.aivot.GoverBackend.department.filters.VOrganizationalUnitShadowedFilter;
 import de.aivot.GoverBackend.department.services.VOrganizationalUnitShadowedService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -48,14 +48,14 @@ public class VOrganizationalUnitShadowedController {
     /**
      * Lists all shadowed organizational units with optional filtering and pagination.
      *
-     * @param jwt     the authenticated user's JWT (may be null)
+     * @param jwt      the authenticated user's JWT (may be null)
      * @param pageable pagination information
      * @param filter   filter criteria for shadowed organizational units
      * @return a page of OrganizationalUnitResponseDTOs
      * @throws ResponseException if authentication fails or another error occurs
      */
     @GetMapping("")
-    public Page<OrganizationalUnitResponseDTO> list(
+    public Page<OrganizationalUnitShadowedResponseDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PageableDefault Pageable pageable,
             @Nonnull @Valid VOrganizationalUnitShadowedFilter filter
@@ -66,7 +66,7 @@ public class VOrganizationalUnitShadowedController {
 
         return vOrganizationalUnitShadowedService
                 .list(pageable, filter)
-                .map(OrganizationalUnitResponseDTO::fromEntity);
+                .map(OrganizationalUnitShadowedResponseDTO::fromEntity);
     }
 
     /**
@@ -78,7 +78,7 @@ public class VOrganizationalUnitShadowedController {
      * @throws ResponseException if authentication fails or the unit is not found
      */
     @GetMapping("{id}/")
-    public OrganizationalUnitResponseDTO retrieve(
+    public OrganizationalUnitShadowedResponseDTO retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
@@ -90,7 +90,7 @@ public class VOrganizationalUnitShadowedController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        return OrganizationalUnitResponseDTO
+        return OrganizationalUnitShadowedResponseDTO
                 .fromEntity(department);
     }
 }

@@ -435,6 +435,13 @@ export function FormResourceAccessControlDialog(props: FormResourceAccessControl
                                             .filter(isSourceSelectionOptionWithOrgUnit)
                                             .find(o => o.orgUnit.id === form.developingDepartmentId)!
                                             .orgUnit,
+                                        formPermissionAnnotate: true,
+                                        formPermissionCreate: true,
+                                        formPermissionDelete: true,
+                                        formPermissionEdit: true,
+                                        formPermissionPublish: true,
+                                        formPermissionRead: true,
+                                        id: -1,
                                     }}
                                 />
                             }
@@ -571,6 +578,10 @@ function AccessRow(props: AccessRowProps) {
                                         [field]: val,
                                     };
 
+                                    if (val) {
+                                        updatedAccess.formPermissionRead = true;
+                                    }
+
                                     onUpdateAccess(updatedAccess);
                                 }}
                                 value={Boolean(access[field]) || false}
@@ -581,7 +592,7 @@ function AccessRow(props: AccessRowProps) {
                                     width: 'unset',
                                 }}
                                 invisibleLabel={true}
-                                disabled={onUpdateAccess == null}
+                                disabled={onUpdateAccess == null || (field === 'formPermissionRead' && PermissionFields.some(f => f !== 'formPermissionRead' && Boolean(access[f])))}
                             />
                         </TableCell>
                     ))
@@ -607,8 +618,8 @@ function AccessRow(props: AccessRowProps) {
 
 
 const PermissionFields: Array<keyof ResourceAccessControlRequestDto> = [
-    'formPermissionCreate',
     'formPermissionRead',
+    'formPermissionCreate',
     'formPermissionEdit',
     'formPermissionDelete',
     'formPermissionAnnotate',
