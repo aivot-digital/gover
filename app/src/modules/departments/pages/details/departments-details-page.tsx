@@ -1,18 +1,19 @@
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {Typography} from '@mui/material';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
-import {DepartmentsApiService} from '../../departments-api-service';
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
-import {DepartmentResponseDTO} from '../../dtos/department-response-dto';
 import {GenericPageHeaderPropsHelpDialog} from '../../../../components/generic-page-header/generic-page-header-props';
-import {ShadowedOrganizationalUnitsApiService} from '../../shadowed-organizational-units-api-service';
-import { useSearchParams } from 'react-router-dom';
+import {useSearchParams} from 'react-router-dom';
+import {DepartmentEntity} from '../../entities/department-entity';
+import {VDepartmentShadowedEntity} from '../../entities/v-department-shadowed-entity';
+import {DepartmentApiService} from '../../services/department-api-service';
+import {VDepartmentShadowedApiService} from '../../services/v-department-shadowed-api-service';
 
 export const NewParentIdQueryParam = 'parentId';
 
 export interface DepartmentsDetailsPageAdditionalData {
-    shadowedDepartment: DepartmentResponseDTO;
+    shadowedDepartment: VDepartmentShadowedEntity;
 }
 
 export function DepartmentsDetailsPage() {
@@ -24,7 +25,7 @@ export function DepartmentsDetailsPage() {
             fullWidth
             background
         >
-            <GenericDetailsPage<DepartmentResponseDTO, number, DepartmentsDetailsPageAdditionalData>
+            <GenericDetailsPage<DepartmentEntity, number, DepartmentsDetailsPageAdditionalData>
                 header={{
                     icon: <BusinessOutlinedIcon />,
                     title: 'Organisationseinheit bearbeiten',
@@ -46,13 +47,13 @@ export function DepartmentsDetailsPage() {
                         isDisabled: (item) => !item?.id,
                     },
                 ]}
-                initializeItem={(api) => DepartmentsApiService.initialize()}
-                fetchData={(api, id: number) => new DepartmentsApiService().retrieve(id)}
+                initializeItem={(api) => DepartmentApiService.initialize()}
+                fetchData={(api, id: number) => new DepartmentApiService().retrieve(id)}
                 fetchAdditionalData={{
                     shadowedDepartment: (api, id) => {
-                        const service = new ShadowedOrganizationalUnitsApiService();
+                        const service = new VDepartmentShadowedApiService();
 
-                        if (id === 0 || id  === 'new') {
+                        if (id === 0 || id === 'new') {
                             const parentId = searchParams.get(NewParentIdQueryParam);
 
                             if (parentId != null && !isNaN(Number(parentId))) {
@@ -60,15 +61,15 @@ export function DepartmentsDetailsPage() {
                                     .retrieve(Number(parentId));
                             } else {
                                 return Promise
-                                    .resolve(DepartmentsApiService.initialize());
+                                    .resolve(DepartmentApiService.initialize());
                             }
                         }
 
                         return service
-                            .retrieve(id as any)
-                    }
+                            .retrieve(id as any);
+                    },
                 }}
-                getTabTitle={(item: DepartmentResponseDTO) => {
+                getTabTitle={(item) => {
                     if (item.id === 0) {
                         return 'Neue Organisationseinheit';
                     } else {

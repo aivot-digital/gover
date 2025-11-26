@@ -2,20 +2,20 @@ import {Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, Gr
 import {BoxLink} from '../../components/box-link/box-link';
 import React, {useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
-import {type DepartmentResponseDTO as Department} from '../../modules/departments/dtos/department-response-dto';
 import {useSelector} from 'react-redux';
 import {type HelpDialogProps} from './help-dialog-props';
 import {selectLoadedForm} from '../../slices/app-slice';
 import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
-import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
 import {Accordion, AccordionDetails, AccordionGroup, AccordionSummary} from '../../components/accordion/accordion';
+import {VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
+import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
 
 export const HelpDialogId = 'help';
 
 export function HelpDialog(props: HelpDialogProps) {
     const application = useSelector(selectLoadedForm);
-    const [technicalDepartment, setTechnicalDepartment] = useState<Department>();
-    const [specialDepartment, setSpecialDepartment] = useState<Department>();
+    const [technicalDepartment, setTechnicalDepartment] = useState<VDepartmentShadowedEntity>();
+    const [specialDepartment, setSpecialDepartment] = useState<VDepartmentShadowedEntity>();
 
     useEffect(() => {
         const ac = new AbortController();
@@ -24,7 +24,7 @@ export function HelpDialog(props: HelpDialogProps) {
             application?.technicalSupportDepartmentId != null &&
             (technicalDepartment == null || technicalDepartment.id !== application.technicalSupportDepartmentId)
         ) {
-            new DepartmentsApiService()
+            new DepartmentApiService()
                 .retrievePublic(application.technicalSupportDepartmentId)
                 .then(setTechnicalDepartment);
         }
@@ -33,7 +33,7 @@ export function HelpDialog(props: HelpDialogProps) {
             application?.legalSupportDepartmentId != null &&
             (specialDepartment == null || specialDepartment.id !== application.legalSupportDepartmentId)
         ) {
-            new DepartmentsApiService()
+            new DepartmentApiService()
                 .retrievePublic(application.legalSupportDepartmentId)
                 .then(setSpecialDepartment);
         }
@@ -277,7 +277,7 @@ export function HelpDialog(props: HelpDialogProps) {
                 </DialogContentText>
             </DialogContent>
             <DialogActions>
-                <Box/>
+                <Box />
                 <Button
                     onClick={props.onHide}
                 >

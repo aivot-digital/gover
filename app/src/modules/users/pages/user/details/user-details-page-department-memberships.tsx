@@ -1,5 +1,4 @@
 import React, {useContext} from 'react';
-import {DepartmentMembershipsApiService} from '../../../../departments/department-memberships-api-service';
 import {type GridColDef} from '@mui/x-data-grid';
 import EditOutlined from '@mui/icons-material/EditOutlined';
 import {GenericList} from '../../../../../components/generic-list/generic-list';
@@ -12,20 +11,21 @@ import {GenericDetailsSkeleton} from '../../../../../components/generic-details-
 import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 import {UserRoleChips} from '../../../../user-roles/components/user-role-chips';
-import {DepartmentMembershipWithRoles} from '../../../../departments/dtos/department-membership-response-dto';
+import {VDepartmentMembershipWithDetailsEntityWithRoles} from '../../../../departments/entities/v-department-membership-with-details-entity';
+import {VDepartmentMembershipWithDetailsService} from '../../../../departments/services/v-department-membership-with-details-service';
 
 
-const columns: Array<GridColDef<DepartmentMembershipWithRoles>> = [
+const columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntityWithRoles>> = [
     {
-        field: 'orgUnitName',
+        field: 'name',
         headerName: 'Fachbereich',
         flex: 1,
         renderCell: (params) => (
             <CellLink
-                to={`/departments/${params.row.orgUnitId}`}
+                to={`/departments/${params.row.departmentId}`}
                 title={`Fachbereich bearbeiten`}
             >
-                {String(params.row.orgUnitName)}
+                {String(params.row.name)}
             </CellLink>
         ),
     },
@@ -69,7 +69,7 @@ export function UserDetailsPageDepartmentMemberships() {
                 Eine Übersicht der Fachbereiche, in denen diese Mitarbeiter:in Mitglied ist, und die dazugehörigen Rollen.
             </Typography>
 
-            <GenericList<DepartmentMembershipWithRoles>
+            <GenericList<VDepartmentMembershipWithDetailsEntityWithRoles>
                 disableFullWidthToggle={true}
                 sx={{
                     mx: '-16px',
@@ -77,23 +77,23 @@ export function UserDetailsPageDepartmentMemberships() {
                 }}
                 columnDefinitions={columns}
                 fetch={(options) => {
-                    return new DepartmentMembershipsApiService()
+                    return new VDepartmentMembershipWithDetailsService()
                         .listDepartmentMembershipsWithRoles(0, 999, 'organizationalUnitName', options.order, {
                             userId: user?.id,
-                            organizationalUnitSearch: options.search,
+                            departmentSearch: options.search,
                         });
                 }}
-                getRowIdentifier={(item) => item.membershipId.toString()}
+                getRowIdentifier={(item) => item.id.toString()}
                 searchLabel="Fachbereich suchen"
                 searchPlaceholder="Titel des Fachbereichs eingeben…"
-                defaultSortField="orgUnitName"
+                defaultSortField="name"
                 rowMenuItems={[]}
                 noDataPlaceholder="Keine Fachbereiche vorhanden"
                 loadingPlaceholder="Lade Fachbereiche…"
                 noSearchResultsPlaceholder="Keine Fachbereiche gefunden"
-                rowActions={(item: DepartmentMembershipWithRoles) => [{
+                rowActions={(item) => [{
                     icon: hasAccess ? <EditOutlined /> : <Visibility />,
-                    to: `/departments/${item.orgUnitId}`,
+                    to: `/departments/${item.departmentId}`,
                     tooltip: hasAccess ? 'Fachbereich bearbeiten' : 'Fachbereich anzeigen',
                 }]}
                 preSearchElements={[]}

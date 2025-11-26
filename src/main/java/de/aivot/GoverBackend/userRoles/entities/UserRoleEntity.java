@@ -23,10 +23,10 @@ public class UserRoleEntity {
     private String description;
 
     @Nonnull
-    private Boolean orgUnitMemberPermissionEdit;
+    private Boolean departmentPermissionEdit;
 
     @Nonnull
-    private Boolean teamMemberPermissionEdit;
+    private Boolean teamPermissionEdit;
 
     @Nonnull
     private Boolean formPermissionCreate;
@@ -135,12 +135,12 @@ public class UserRoleEntity {
     }
 
     @Nonnull
-    public Boolean getOrgUnitMemberPermissionEdit() {
-        return orgUnitMemberPermissionEdit;
+    public Boolean getDepartmentPermissionEdit() {
+        return departmentPermissionEdit;
     }
 
-    public UserRoleEntity setOrgUnitMemberPermissionEdit(@Nonnull Boolean permissionEditMemberOfEntity) {
-        this.orgUnitMemberPermissionEdit = permissionEditMemberOfEntity;
+    public UserRoleEntity setDepartmentPermissionEdit(@Nonnull Boolean permissionEditMemberOfEntity) {
+        this.departmentPermissionEdit = permissionEditMemberOfEntity;
         return this;
     }
 
@@ -335,12 +335,12 @@ public class UserRoleEntity {
     }
 
     @Nonnull
-    public Boolean getTeamMemberPermissionEdit() {
-        return teamMemberPermissionEdit;
+    public Boolean getTeamPermissionEdit() {
+        return teamPermissionEdit;
     }
 
-    public UserRoleEntity setTeamMemberPermissionEdit(@Nonnull Boolean teamMemberPermissionEdit) {
-        this.teamMemberPermissionEdit = teamMemberPermissionEdit;
+    public UserRoleEntity setTeamPermissionEdit(@Nonnull Boolean teamMemberPermissionEdit) {
+        this.teamPermissionEdit = teamMemberPermissionEdit;
         return this;
     }
 

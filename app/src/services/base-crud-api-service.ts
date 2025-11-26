@@ -2,7 +2,7 @@ import {Page} from '../models/dtos/page';
 import {SortOrder} from '../components/generic-list/generic-list-props';
 import {BaseApiService} from './base-api-service';
 
-export abstract class BaseCrudApiService<CreateRequest, ListRes, DetailsRes, UpdateRequest, Id, Filter> extends BaseApiService {
+export abstract class BaseCrudApiService<CreateRequest, ListRes, DetailsRes, UpdateRequest, Id, Filter, SortFields = keyof DetailsRes extends string ? keyof DetailsRes : never> extends BaseApiService {
     protected readonly path: string;
 
     protected constructor(path: string) {
@@ -23,7 +23,7 @@ export abstract class BaseCrudApiService<CreateRequest, ListRes, DetailsRes, Upd
     }
 
     public async listAllOrdered(
-        sort?: keyof DetailsRes extends string ? keyof DetailsRes : never,
+        sort?: SortFields | SortFields[],
         order?: SortOrder,
         filters?: Partial<Filter>,
     ) {
@@ -33,7 +33,7 @@ export abstract class BaseCrudApiService<CreateRequest, ListRes, DetailsRes, Upd
     public async list(
         page: number,
         limit: number,
-        sort?: keyof DetailsRes extends string ? keyof DetailsRes : never,
+        sort?: SortFields | SortFields[],
         order?: SortOrder,
         filters?: Partial<Filter>,
     ): Promise<Page<ListRes>> {
@@ -41,7 +41,7 @@ export abstract class BaseCrudApiService<CreateRequest, ListRes, DetailsRes, Upd
             query: {
                 page: page,
                 size: limit,
-                sort: sort != null && order != null ? `${sort},${order}` : undefined,
+                sort: sort != null && order != null ? (Array.isArray(sort) ? sort.map(s => `${s},${order}`) : `${sort},${order}`) : undefined,
                 ...filters,
             },
         });

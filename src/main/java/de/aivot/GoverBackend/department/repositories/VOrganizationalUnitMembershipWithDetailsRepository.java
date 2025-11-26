@@ -1,9 +1,0 @@
-package de.aivot.GoverBackend.department.repositories;
-
-import de.aivot.GoverBackend.core.repositories.ReadOnlyRepository;
-import de.aivot.GoverBackend.department.entities.VOrganizationalUnitMembershipWithDetailsEntity;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-
-
-public interface VOrganizationalUnitMembershipWithDetailsRepository extends ReadOnlyRepository<VOrganizationalUnitMembershipWithDetailsEntity, Integer>, JpaSpecificationExecutor<VOrganizationalUnitMembershipWithDetailsEntity> {
-}

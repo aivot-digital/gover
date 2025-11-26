@@ -52,8 +52,8 @@ public class UserRoleService implements EntityService<UserRoleEntity, Integer> {
         existingEntity.setDescription(entity.getDescription());
 
         // Update permissions the parent entity
-        existingEntity.setOrgUnitMemberPermissionEdit(entity.getOrgUnitMemberPermissionEdit());
-        existingEntity.setTeamMemberPermissionEdit(entity.getTeamMemberPermissionEdit());
+        existingEntity.setDepartmentPermissionEdit(entity.getDepartmentPermissionEdit());
+        existingEntity.setTeamPermissionEdit(entity.getTeamPermissionEdit());
 
         // Update permissions for forms
         existingEntity.setFormPermissionCreate(entity.getFormPermissionCreate());

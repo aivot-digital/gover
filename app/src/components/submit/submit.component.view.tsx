@@ -3,7 +3,6 @@ import {type SubmitStepElement} from '../../models/elements/steps/submit-step-el
 import {Preamble} from '../preamble/preamble';
 import {Box, FormHelperText, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
 import {FadingPaper} from '../fading-paper/fading-paper';
-import {type DepartmentResponseDTO as Department} from '../../modules/departments/dtos/department-response-dto';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectLoadedForm} from '../../slices/app-slice';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
@@ -15,10 +14,11 @@ import {useApi} from '../../hooks/use-api';
 import {AlertComponent} from '../alert/alert-component';
 import {formatNumToGermanNum} from '../../utils/format-german-numbers';
 import {FormCostCalculationResponseDTO} from '../../modules/forms/dtos/form-cost-calculation-response-dto';
-import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
 import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {ExpandableList} from '../expandable-list/expandable-list';
 import {AltchaWidget} from '../altcha/altcha-widget';
+import {VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
+import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
 
 export const SubmitPaymentDataKey = '__payment_data__';
 
@@ -40,8 +40,8 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
 
     const form = useAppSelector(selectLoadedForm);
 
-    const [responsibleDepartment, setResponsibleDepartment] = useState<Department>();
-    const [managingDepartment, setManagingDepartment] = useState<Department>();
+    const [responsibleDepartment, setResponsibleDepartment] = useState<VDepartmentShadowedEntity>();
+    const [managingDepartment, setManagingDepartment] = useState<VDepartmentShadowedEntity>();
 
     const [costs, setCosts] = useState<FormCostCalculationResponseDTO>();
 
@@ -61,7 +61,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
         if (form != null) {
             if (form.responsibleDepartmentId != null) {
                 if (responsibleDepartment == null || responsibleDepartment.id !== form.responsibleDepartmentId) {
-                    new DepartmentsApiService()
+                    new DepartmentApiService()
                         .retrievePublic(form.responsibleDepartmentId)
                         .then(setResponsibleDepartment);
                 }
@@ -71,7 +71,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
 
             if (form.managingDepartmentId != null) {
                 if (managingDepartment == null || managingDepartment.id !== form.managingDepartmentId) {
-                    new DepartmentsApiService()
+                    new DepartmentApiService()
                         .retrievePublic(form.managingDepartmentId)
                         .then(setManagingDepartment);
                 }

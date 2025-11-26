@@ -33,7 +33,7 @@ public record ResourceAccessControlRequestDTO(
     public ResourceAccessControlEntity toEntity() {
         ResourceAccessControlEntity entity = new ResourceAccessControlEntity();
         entity.setSourceTeamId(sourceTeamId);
-        entity.setSourceOrgUnitId(sourceOrgUnitId);
+        entity.setSourceDepartmentId(sourceOrgUnitId);
         entity.setTargetFormId(targetFormId);
         entity.setTargetProcessId(targetProcessId);
         entity.setTargetProcessInstanceId(targetProcessInstanceId);

@@ -1,8 +1,8 @@
 import Chip from '@mui/material/Chip';
 
 interface UserStatusChipProps {
-    userDeletedInIdp: boolean;
-    userEnabled: boolean;
+    userDeletedInIdp: boolean | null | undefined;
+    userEnabled: boolean | null | undefined;
 }
 
 export function UserStatusChip(props: UserStatusChipProps) {

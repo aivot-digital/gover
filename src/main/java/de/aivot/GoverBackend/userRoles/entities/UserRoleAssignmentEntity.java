@@ -15,7 +15,7 @@ public class UserRoleAssignmentEntity {
     private Integer id;
 
     @Nullable
-    private Integer organizationalUnitMembershipId;
+    private Integer departmentMembershipId;
 
     @Nullable
     private Integer teamMembershipId;
@@ -48,12 +48,12 @@ public class UserRoleAssignmentEntity {
     }
 
     @Nullable
-    public Integer getOrganizationalUnitMembershipId() {
-        return organizationalUnitMembershipId;
+    public Integer getDepartmentMembershipId() {
+        return departmentMembershipId;
     }
 
-    public UserRoleAssignmentEntity setOrganizationalUnitMembershipId(@Nullable Integer organizationalUnitMembershipId) {
-        this.organizationalUnitMembershipId = organizationalUnitMembershipId;
+    public UserRoleAssignmentEntity setDepartmentMembershipId(@Nullable Integer organizationalUnitMembershipId) {
+        this.departmentMembershipId = organizationalUnitMembershipId;
         return this;
     }
 

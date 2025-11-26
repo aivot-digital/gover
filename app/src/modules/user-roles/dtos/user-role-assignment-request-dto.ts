@@ -1,5 +1,5 @@
 export interface UserRoleAssignmentRequestDTO {
-    organizationalUnitMembershipId?: number | null;
+    departmentMembershipId?: number | null;
     teamMembershipId?: number | null;
     userRoleId: number;
 }

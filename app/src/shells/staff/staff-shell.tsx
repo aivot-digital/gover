@@ -25,8 +25,8 @@ import {ShellOffline} from './components/shell-offline';
 import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 import {ShellResolutionOverlay} from './components/shell-resolution-overlay';
 import {StaffShellError} from './staff-shell-error';
-import {DepartmentMembershipsApiService} from '../../modules/departments/department-memberships-api-service';
-import {DepartmentMembershipWithRoles} from '../../modules/departments/dtos/department-membership-response-dto';
+import {VDepartmentMembershipWithDetailsService} from '../../modules/departments/services/v-department-membership-with-details-service';
+import {VDepartmentMembershipWithDetailsEntityWithRoles} from '../../modules/departments/entities/v-department-membership-with-details-entity';
 
 export function StaffShell() {
     const routerError = useRouteError();
@@ -199,7 +199,7 @@ async function fetchSetup(): Promise<SystemSetupDTO> {
 
 async function authenticateWithOidcCode(searchParams: URLSearchParams): Promise<{
     user: User;
-    memberships: DepartmentMembershipWithRoles[];
+    memberships: VDepartmentMembershipWithDetailsEntityWithRoles[];
     configs: SystemConfigResponseDto[];
 } | undefined> {
     const authService = new AuthService();
@@ -222,7 +222,7 @@ async function authenticateWithOidcCode(searchParams: URLSearchParams): Promise<
     const user = await apiService
         .get<User>('/api/users/self/');
 
-    const membershipsPage = await new DepartmentMembershipsApiService()
+    const membershipsPage = await new VDepartmentMembershipWithDetailsService()
         .listDepartmentMembershipsWithRoles(0, 999, undefined, undefined, {
             userId: user.id,
         });

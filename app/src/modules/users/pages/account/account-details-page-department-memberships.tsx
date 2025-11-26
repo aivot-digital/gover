@@ -1,15 +1,15 @@
 import React from 'react';
 import {useSelector} from 'react-redux';
 import {selectUser} from '../../../../slices/user-slice';
-import {DepartmentMembershipsApiService} from '../../../departments/department-memberships-api-service';
 import EditOutlined from '@mui/icons-material/EditOutlined';
 import {GenericList} from '../../../../components/generic-list/generic-list';
-import {DepartmentMembershipWithRoles} from '../../../departments/dtos/department-membership-response-dto';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import {isAdmin} from '../../../../utils/is-admin';
 import {UserRoleChips} from '../../../user-roles/components/user-role-chips';
+import {VDepartmentMembershipWithDetailsEntityWithRoles} from '../../../departments/entities/v-department-membership-with-details-entity';
+import {VDepartmentMembershipWithDetailsService} from '../../../departments/services/v-department-membership-with-details-service';
 
 export function AccountDetailsPageDepartmentMemberships() {
     const user = useSelector(selectUser);
@@ -28,7 +28,7 @@ export function AccountDetailsPageDepartmentMemberships() {
                 Wenn Sie noch keinem Fachbereich zugeordnet sind, bitten Sie eine Administrator:in, Sie zu einem Fachbereich hinzuzufügen.
             </Typography>
 
-            <GenericList<DepartmentMembershipWithRoles>
+            <GenericList<VDepartmentMembershipWithDetailsEntityWithRoles>
                 disableFullWidthToggle={true}
                 sx={{
                     mx: '-16px',
@@ -40,13 +40,13 @@ export function AccountDetailsPageDepartmentMemberships() {
                         headerName: 'Fachbereich',
                         flex: 1,
                         renderCell: (params) => {
-                            const isMembershipAdmin = isAdmin(user) || params.row.roles.some(role => role.userRoleOrgUnitMemberPermissionEdit);
+                            const isMembershipAdmin = isAdmin(user) || params.row.roles.some(role => role.departmentPermissionEdit);
                             return (isMembershipAdmin ? <CellLink
-                                to={`/departments/${params.row.orgUnitId}`}
+                                to={`/departments/${params.row.departmentId}`}
                                 title={`Fachbereich bearbeiten`}
                             >
-                                {String(params.row.orgUnitName)}
-                            </CellLink> : params.row.orgUnitName);
+                                {String(params.row.name)}
+                            </CellLink> : params.row.name);
                         },
                     },
                     {
@@ -55,30 +55,30 @@ export function AccountDetailsPageDepartmentMemberships() {
                         flex: 1,
                         sortable: false,
                         renderCell: (params) => (
-                            <UserRoleChips roles={params.row.roles}/>
+                            <UserRoleChips roles={params.row.roles} />
                         ),
                     },
                 ]}
                 fetch={(options) => {
-                    return new DepartmentMembershipsApiService()
+                    return new VDepartmentMembershipWithDetailsService()
                         .listDepartmentMembershipsWithRoles(0, 999, 'organizationalUnitName', options.order, {
                             userId: user?.id,
-                            organizationalUnitSearch: options.search,
+                            departmentSearch: options.search,
                         });
                 }}
-                getRowIdentifier={(item) => item.membershipId.toString()}
+                getRowIdentifier={(item) => item.id.toString()}
                 searchLabel="Fachbereich suchen"
                 searchPlaceholder="Titel des Fachbereichs eingeben…"
-                defaultSortField="orgUnitName"
+                defaultSortField="name"
                 rowMenuItems={[]}
                 noDataPlaceholder="Keine Fachbereiche vorhanden"
                 loadingPlaceholder="Lade Fachbereiche…"
                 noSearchResultsPlaceholder="Keine Fachbereiche gefunden"
                 rowActions={(item) => {
-                    const isMembershipAdmin = isAdmin(user) || item.roles.some(role => role.userRoleOrgUnitMemberPermissionEdit);
+                    const isMembershipAdmin = isAdmin(user) || item.roles.some(role => role.departmentPermissionEdit);
                     return isMembershipAdmin ? [{
                         icon: <EditOutlined />,
-                        to: `/departments/${item.orgUnitId}`,
+                        to: `/departments/${item.departmentId}`,
                         tooltip: 'Fachbereich bearbeiten',
                     }] : [];
                 }}

@@ -2,8 +2,6 @@ import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-s
 import React, {useEffect, useState} from 'react';
 import {Button, Dialog, DialogActions, DialogContent, Skeleton, Typography} from '@mui/material';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {DepartmentResponseDTO} from '../../departments/dtos/department-response-dto';
-import {DepartmentsApiService} from '../../departments/departments-api-service';
 import {FormDetailsResponseDTO} from '../dtos/form-details-response-dto';
 import {FormsApiService} from '../forms-api-service-v2';
 import {isApiError} from '../../../models/api-error';
@@ -12,6 +10,9 @@ import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/
 import {SelectFieldComponent} from '../../../components/select-field/select-field-component';
 import {setLoadingMessage} from '../../../slices/shell-slice';
 import {withDelay} from '../../../utils/with-delay';
+import {VDepartmentShadowedEntity} from '../../departments/entities/v-department-shadowed-entity';
+import {VDepartmentShadowedApiService} from '../../departments/services/v-department-shadowed-api-service';
+import {getDepartmentPath} from '../../departments/utils/department-utils';
 
 interface MoveFormToDepartmentDialogProps {
     formId: number;
@@ -45,13 +46,12 @@ export function MoveFormToDepartmentDialog(props: MoveFormToDepartmentDialogProp
             });
     }, [formId]);
 
-    const [departments, setDepartments] = useState<DepartmentResponseDTO[]>();
+    const [departments, setDepartments] = useState<VDepartmentShadowedEntity[]>();
+
     useEffect(() => {
         withDelay(
-            new DepartmentsApiService()
-                .listAll({
-                    ignoreMemberships: true,
-                }),
+            new VDepartmentShadowedApiService()
+                .listAll(),
             600,
         )
             .then(({content}) => {
@@ -176,7 +176,7 @@ export function MoveFormToDepartmentDialog(props: MoveFormToDepartmentDialogProp
                             departments
                                 .filter(dep => dep.id !== form.developingDepartmentId)
                                 .map(dep => ({
-                                    label: dep.name,
+                                    label: getDepartmentPath(dep),
                                     value: dep.id.toString(),
                                 }))
                         }

@@ -1,47 +1,53 @@
 package de.aivot.GoverBackend.teams.entities;
 
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "v_team_memberships_with_details")
 public class VTeamMembershipWithDetailsEntity {
     @Id
-    private Integer membershipId;
+    private Integer id;
 
     @Nonnull
     private Integer teamId;
     @Nonnull
-    private String teamName;
+    private String name;
+
+    @Nonnull
+    private LocalDateTime created;
+    @Nonnull
+    private LocalDateTime updated;
 
     @Nonnull
     private String userId;
     @Nonnull
-    private String userFirstName;
+    private String firstName;
     @Nonnull
-    private String userLastName;
+    private String lastName;
     @Nonnull
-    private String userFullName;
+    private String fullName;
     @Nonnull
-    private String userEmail;
+    private String email;
     @Nonnull
-    private Boolean userEnabled;
+    private Boolean enabled;
     @Nonnull
-    private Boolean userVerified;
+    private Boolean verified;
     @Nonnull
-    private Boolean userGlobalAdmin;
+    private Boolean globalAdmin;
     @Nonnull
-    private Boolean userDeletedInIdp;
+    private Boolean deletedInIdp;
 
-    public Integer getMembershipId() {
-        return membershipId;
+    public Integer getId() {
+        return id;
     }
 
-    public VTeamMembershipWithDetailsEntity setMembershipId(Integer membershipId) {
-        this.membershipId = membershipId;
+    public VTeamMembershipWithDetailsEntity setId(Integer membershipId) {
+        this.id = membershipId;
         return this;
     }
 
@@ -56,12 +62,12 @@ public class VTeamMembershipWithDetailsEntity {
     }
 
     @Nonnull
-    public String getTeamName() {
-        return teamName;
+    public String getName() {
+        return name;
     }
 
-    public VTeamMembershipWithDetailsEntity setTeamName(@Nonnull String teamName) {
-        this.teamName = teamName;
+    public VTeamMembershipWithDetailsEntity setName(@Nonnull String teamName) {
+        this.name = teamName;
         return this;
     }
 
@@ -76,82 +82,102 @@ public class VTeamMembershipWithDetailsEntity {
     }
 
     @Nonnull
-    public String getUserFirstName() {
-        return userFirstName;
+    public String getFirstName() {
+        return firstName;
     }
 
-    public VTeamMembershipWithDetailsEntity setUserFirstName(@Nonnull String userFirstName) {
-        this.userFirstName = userFirstName;
+    public VTeamMembershipWithDetailsEntity setFirstName(@Nonnull String userFirstName) {
+        this.firstName = userFirstName;
         return this;
     }
 
     @Nonnull
-    public String getUserLastName() {
-        return userLastName;
+    public String getLastName() {
+        return lastName;
     }
 
-    public VTeamMembershipWithDetailsEntity setUserLastName(@Nonnull String userLastName) {
-        this.userLastName = userLastName;
+    public VTeamMembershipWithDetailsEntity setLastName(@Nonnull String userLastName) {
+        this.lastName = userLastName;
         return this;
     }
 
     @Nonnull
-    public String getUserFullName() {
-        return userFullName;
+    public String getFullName() {
+        return fullName;
     }
 
-    public VTeamMembershipWithDetailsEntity setUserFullName(@Nonnull String userFullName) {
-        this.userFullName = userFullName;
+    public VTeamMembershipWithDetailsEntity setFullName(@Nonnull String userFullName) {
+        this.fullName = userFullName;
         return this;
     }
 
     @Nonnull
-    public String getUserEmail() {
-        return userEmail;
+    public String getEmail() {
+        return email;
     }
 
-    public VTeamMembershipWithDetailsEntity setUserEmail(@Nonnull String userEmail) {
-        this.userEmail = userEmail;
+    public VTeamMembershipWithDetailsEntity setEmail(@Nonnull String userEmail) {
+        this.email = userEmail;
         return this;
     }
 
     @Nonnull
-    public Boolean getUserEnabled() {
-        return userEnabled;
+    public Boolean getEnabled() {
+        return enabled;
     }
 
-    public VTeamMembershipWithDetailsEntity setUserEnabled(@Nonnull Boolean userEnabled) {
-        this.userEnabled = userEnabled;
+    public VTeamMembershipWithDetailsEntity setEnabled(@Nonnull Boolean userEnabled) {
+        this.enabled = userEnabled;
         return this;
     }
 
     @Nonnull
-    public Boolean getUserVerified() {
-        return userVerified;
+    public Boolean getVerified() {
+        return verified;
     }
 
-    public VTeamMembershipWithDetailsEntity setUserVerified(@Nonnull Boolean userVerified) {
-        this.userVerified = userVerified;
+    public VTeamMembershipWithDetailsEntity setVerified(@Nonnull Boolean userVerified) {
+        this.verified = userVerified;
         return this;
     }
 
     @Nonnull
-    public Boolean getUserGlobalAdmin() {
-        return userGlobalAdmin;
+    public Boolean getGlobalAdmin() {
+        return globalAdmin;
     }
 
-    public VTeamMembershipWithDetailsEntity setUserGlobalAdmin(@Nonnull Boolean userGlobalAdmin) {
-        this.userGlobalAdmin = userGlobalAdmin;
+    public VTeamMembershipWithDetailsEntity setGlobalAdmin(@Nonnull Boolean userGlobalAdmin) {
+        this.globalAdmin = userGlobalAdmin;
         return this;
     }
 
     @Nonnull
-    public Boolean getUserDeletedInIdp() {
-        return userDeletedInIdp;
+    public Boolean getDeletedInIdp() {
+        return deletedInIdp;
     }
 
-    public VTeamMembershipWithDetailsEntity setUserDeletedInIdp(@Nonnull Boolean userDeletedInIdp) {
-        this.userDeletedInIdp = userDeletedInIdp;
+    public VTeamMembershipWithDetailsEntity setDeletedInIdp(@Nonnull Boolean userDeletedInIdp) {
+        this.deletedInIdp = userDeletedInIdp;
+        return this;
+    }
+
+    @Nonnull
+    public LocalDateTime getUpdated() {
+        return updated;
+    }
+
+    public VTeamMembershipWithDetailsEntity setUpdated(@Nonnull LocalDateTime updated) {
+        this.updated = updated;
+        return this;
+    }
+
+    @Nonnull
+    public LocalDateTime getCreated() {
+        return created;
+    }
+
+    public VTeamMembershipWithDetailsEntity setCreated(@Nonnull LocalDateTime created) {
+        this.created = created;
         return this;
     }
 }

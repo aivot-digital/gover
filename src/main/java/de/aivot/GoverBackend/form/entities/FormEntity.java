@@ -24,7 +24,7 @@ public class FormEntity {
     private String internalTitle;
 
     @Nonnull
-    private Integer developingOrganizationalUnitId;
+    private Integer developingDepartmentId;
 
     @Nonnull
     private LocalDateTime created;
@@ -53,7 +53,7 @@ public class FormEntity {
     public FormEntity(@Nonnull Integer id,
                       @Nonnull String slug,
                       @Nonnull String internalTitle,
-                      @Nonnull Integer developingOrganizationalUnitId,
+                      @Nonnull Integer developingDepartmentId,
                       @Nonnull LocalDateTime created,
                       @Nonnull LocalDateTime updated,
                       @Nullable Integer publishedVersion,
@@ -62,7 +62,7 @@ public class FormEntity {
         this.id = id;
         this.slug = slug;
         this.internalTitle = internalTitle;
-        this.developingOrganizationalUnitId = developingOrganizationalUnitId;
+        this.developingDepartmentId = developingDepartmentId;
         this.created = created;
         this.updated = updated;
         this.publishedVersion = publishedVersion;
@@ -108,7 +108,7 @@ public class FormEntity {
         if (o == null || getClass() != o.getClass()) return false;
 
         FormEntity that = (FormEntity) o;
-        return id.equals(that.id) && slug.equals(that.slug) && internalTitle.equals(that.internalTitle) && developingOrganizationalUnitId.equals(that.developingOrganizationalUnitId) && created.equals(that.created) && updated.equals(that.updated) && Objects.equals(publishedVersion, that.publishedVersion) && Objects.equals(draftedVersion, that.draftedVersion) && versionCount.equals(that.versionCount);
+        return id.equals(that.id) && slug.equals(that.slug) && internalTitle.equals(that.internalTitle) && developingDepartmentId.equals(that.developingDepartmentId) && created.equals(that.created) && updated.equals(that.updated) && Objects.equals(publishedVersion, that.publishedVersion) && Objects.equals(draftedVersion, that.draftedVersion) && versionCount.equals(that.versionCount);
     }
 
     @Override
@@ -116,7 +116,7 @@ public class FormEntity {
         int result = id.hashCode();
         result = 31 * result + slug.hashCode();
         result = 31 * result + internalTitle.hashCode();
-        result = 31 * result + developingOrganizationalUnitId.hashCode();
+        result = 31 * result + developingDepartmentId.hashCode();
         result = 31 * result + created.hashCode();
         result = 31 * result + updated.hashCode();
         result = 31 * result + Objects.hashCode(publishedVersion);
@@ -160,12 +160,12 @@ public class FormEntity {
     }
 
     @Nonnull
-    public Integer getDevelopingOrganizationalUnitId() {
-        return developingOrganizationalUnitId;
+    public Integer getDevelopingDepartmentId() {
+        return developingDepartmentId;
     }
 
-    public FormEntity setDevelopingOrganizationalUnitId(@Nonnull Integer developingDepartmentId) {
-        this.developingOrganizationalUnitId = developingDepartmentId;
+    public FormEntity setDevelopingDepartmentId(@Nonnull Integer developingDepartmentId) {
+        this.developingDepartmentId = developingDepartmentId;
         return this;
     }
 

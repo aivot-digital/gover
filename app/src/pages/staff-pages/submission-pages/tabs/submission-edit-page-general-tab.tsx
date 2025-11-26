@@ -32,7 +32,6 @@ import SentimentDissatisfiedOutlinedIcon from '@mui/icons-material/SentimentDiss
 import SentimentSatisfiedAltOutlinedIcon from '@mui/icons-material/SentimentSatisfiedAltOutlined';
 import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
 import {PaymentTransactionResponseDTO} from '../../../../modules/payment/dtos/payment-transaction-response-dto';
-import {DepartmentMembershipsApiService} from '../../../../modules/departments/department-memberships-api-service';
 import {DestinationsApiService} from '../../../../modules/destination/destinations-api-service';
 import {SubmissionDetailsResponseDTO} from '../../../../modules/submissions/dtos/submission-details-response-dto';
 import {SubmissionsApiService} from '../../../../modules/submissions/submissions-api-service';
@@ -40,9 +39,11 @@ import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {FlagOutlined} from '@mui/icons-material';
 import {determineLabel} from '../../../../utils/submission-state';
 import {resolveUserName} from '../../../../modules/users/utils/resolve-user-name';
-import {departmentMembershipResponseDTOasUser} from '../../../../modules/departments/dtos/department-membership-response-dto';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {IdentitySummary} from '../../../../modules/identity/components/identity-summary/identity-summary';
+import {DepartmentMembershipApiService} from '../../../../modules/departments/services/department-membership-api-service';
+import {VDepartmentMembershipWithDetailsService} from '../../../../modules/departments/services/v-department-membership-with-details-service';
+import {vDepartmentMembershipWithDetailsEntityAsUser} from '../../../../modules/departments/entities/v-department-membership-with-details-entity';
 
 interface SubmissionEditPageGeneralTabProps {
     api: Api;
@@ -456,19 +457,19 @@ async function fetchAssigneeOptions(props: SubmissionEditPageGeneralTabProps): P
         departmentIds.push(props.form.developingDepartmentId);
     }
 
-    const apiService = new DepartmentMembershipsApiService();
+    const apiService = new VDepartmentMembershipWithDetailsService();
 
     const allOptions: SelectFieldComponentOption[] = (await apiService
         .listAll({
-            userEnabled: true,
-            userDeletedInIdp: false,
-            organizationalUnitIds: departmentIds,
+            enabled: true,
+            deletedInIdp: false,
+            departmentIds: departmentIds,
         }))
         .content
         .map(option => ({
             value: option.userId,
-            label: resolveUserName(departmentMembershipResponseDTOasUser(option)),
-            subLabel: option.userEmail,
+            label: resolveUserName(vDepartmentMembershipWithDetailsEntityAsUser(option)),
+            subLabel: option.email ?? undefined,
         }));
 
     const hasSeparateAssignee = (
@@ -484,8 +485,8 @@ async function fetchAssigneeOptions(props: SubmissionEditPageGeneralTabProps): P
         if (assigneeOption.content.length > 0) {
             allOptions.push({
                 value: assigneeOption.content[0].userId,
-                label: resolveUserName(departmentMembershipResponseDTOasUser(assigneeOption.content[0])),
-                subLabel: assigneeOption.content[0].userEmail,
+                label: resolveUserName(vDepartmentMembershipWithDetailsEntityAsUser(assigneeOption.content[0])),
+                subLabel: assigneeOption.content[0].email ?? undefined,
             });
         }
     }

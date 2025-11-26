@@ -1,21 +1,21 @@
 import {Alert, Box, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
 import React, {useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
-import {type DepartmentResponseDTO as Department} from '../../modules/departments/dtos/department-response-dto';
 import {useSelector} from 'react-redux';
 import {type AccessibilityDialogProps} from './accessibility-dialog-props';
 import {selectLoadedForm} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
-import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
+import {VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
+import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
 
 export const AccessibilityDialogId = 'accessibility';
 
 export function AccessibilityDialog(props: AccessibilityDialogProps) {
     const application = useSelector(selectLoadedForm);
 
-    const [department, setDepartment] = useState<Department>();
+    const [department, setDepartment] = useState<VDepartmentShadowedEntity>();
     const accessibilityDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.accessibilityDepartmentId));
 
     useEffect(() => {
@@ -24,7 +24,7 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
             application?.accessibilityDepartmentId != null &&
             (department == null || department.id !== application.accessibilityDepartmentId)
         ) {
-            new DepartmentsApiService()
+            new DepartmentApiService()
                 .retrievePublic(application.accessibilityDepartmentId)
                 .then(setDepartment);
         } else if (
@@ -33,7 +33,7 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
             accessibilityDepartmentId != '' &&
             (department == null || department.id !== parseInt(accessibilityDepartmentId))
         ) {
-            new DepartmentsApiService()
+            new DepartmentApiService()
                 .retrievePublic(parseInt(accessibilityDepartmentId))
                 .then(setDepartment);
         }

@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.form.services;
 
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
-import de.aivot.GoverBackend.department.repositories.OrganizationalUnitRepository;
+import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
 import de.aivot.GoverBackend.destination.repositories.DestinationRepository;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.form.entities.FormVersionEntity;
@@ -41,7 +41,7 @@ import java.util.function.Function;
 public class FormVersionService implements EntityService<FormVersionEntity, FormVersionEntityId> {
     private final FormVersionRepository repository;
     private final DestinationRepository destinationRepository;
-    private final OrganizationalUnitRepository organizationalUnitRepository;
+    private final DepartmentRepository departmentRepository;
     private final ThemeRepository themeRepository;
     private final AssetRepository assetRepository;
     private final PaymentProviderRepository paymentProviderRepository;
@@ -53,7 +53,7 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
     @Autowired
     public FormVersionService(FormVersionRepository repository,
                               DestinationRepository destinationRepository,
-                              OrganizationalUnitRepository organizationalUnitRepository,
+                              DepartmentRepository departmentRepository,
                               ThemeRepository themeRepository,
                               AssetRepository assetRepository,
                               PaymentProviderRepository paymentProviderRepository,
@@ -63,7 +63,7 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
                               SystemService systemService) {
         this.repository = repository;
         this.destinationRepository = destinationRepository;
-        this.organizationalUnitRepository = organizationalUnitRepository;
+        this.departmentRepository = departmentRepository;
         this.themeRepository = themeRepository;
         this.assetRepository = assetRepository;
         this.paymentProviderRepository = paymentProviderRepository;
@@ -168,13 +168,13 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
         var updatedExistingEntity = existingEntity
                 .setPublicTitle(entity.getPublicTitle())
                 .setType(cleanedEntity.getType())
-                .setManagingOrganizationalUnitId(cleanedEntity.getManagingOrganizationalUnitId())
-                .setResponsibleOrganizationalUnitId(cleanedEntity.getResponsibleOrganizationalUnitId())
-                .setLegalSupportOrganizationalUnitId(cleanedEntity.getLegalSupportOrganizationalUnitId())
-                .setTechnicalSupportOrganizationalUnitId(cleanedEntity.getTechnicalSupportOrganizationalUnitId())
-                .setImprintOrganizationalUnitId(cleanedEntity.getImprintOrganizationalUnitId())
-                .setPrivacyOrganizationalUnitId(cleanedEntity.getPrivacyOrganizationalUnitId())
-                .setAccessibilityOrganizationalUnitId(cleanedEntity.getAccessibilityOrganizationalUnitId())
+                .setManagingDepartmentId(cleanedEntity.getManagingDepartmentId())
+                .setResponsibleDepartmentId(cleanedEntity.getResponsibleDepartmentId())
+                .setLegalSupportDepartmentId(cleanedEntity.getLegalSupportDepartmentId())
+                .setTechnicalSupportDepartmentId(cleanedEntity.getTechnicalSupportDepartmentId())
+                .setImprintDepartmentId(cleanedEntity.getImprintDepartmentId())
+                .setPrivacyDepartmentId(cleanedEntity.getPrivacyDepartmentId())
+                .setAccessibilityDepartmentId(cleanedEntity.getAccessibilityDepartmentId())
                 .setCustomerAccessHours(cleanedEntity.getCustomerAccessHours())
                 .setSubmissionRetentionWeeks(cleanedEntity.getSubmissionRetentionWeeks())
                 .setThemeId(cleanedEntity.getThemeId())
@@ -218,16 +218,16 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
     private FormVersionEntity cleanRelatedData(@Nullable FormVersionEntity prev, @Nonnull FormVersionEntity updated) throws ResponseException {
         checkAndReset(prev, updated, destinationRepository, FormVersionEntity::getDestinationId, updated::setDestinationId);
 
-        checkAndReset(prev, updated, organizationalUnitRepository, FormVersionEntity::getManagingOrganizationalUnitId, updated::setManagingOrganizationalUnitId);
-        checkAndReset(prev, updated, organizationalUnitRepository, FormVersionEntity::getResponsibleOrganizationalUnitId, updated::setResponsibleOrganizationalUnitId);
+        checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getManagingDepartmentId, updated::setManagingDepartmentId);
+        checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getResponsibleDepartmentId, updated::setResponsibleDepartmentId);
 
-        checkAndReset(prev, updated, organizationalUnitRepository, FormVersionEntity::getLegalSupportOrganizationalUnitId, updated::setLegalSupportOrganizationalUnitId);
+        checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getLegalSupportDepartmentId, updated::setLegalSupportDepartmentId);
 
-        checkAndReset(prev, updated, organizationalUnitRepository, FormVersionEntity::getTechnicalSupportOrganizationalUnitId, updated::setTechnicalSupportOrganizationalUnitId);
+        checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getTechnicalSupportDepartmentId, updated::setTechnicalSupportDepartmentId);
 
-        checkAndReset(prev, updated, organizationalUnitRepository, FormVersionEntity::getImprintOrganizationalUnitId, updated::setImprintOrganizationalUnitId);
-        checkAndReset(prev, updated, organizationalUnitRepository, FormVersionEntity::getPrivacyOrganizationalUnitId, updated::setPrivacyOrganizationalUnitId);
-        checkAndReset(prev, updated, organizationalUnitRepository, FormVersionEntity::getAccessibilityOrganizationalUnitId, updated::setAccessibilityOrganizationalUnitId);
+        checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getImprintDepartmentId, updated::setImprintDepartmentId);
+        checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getPrivacyDepartmentId, updated::setPrivacyDepartmentId);
+        checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getAccessibilityDepartmentId, updated::setAccessibilityDepartmentId);
 
         checkAndReset(prev, updated, themeRepository, FormVersionEntity::getThemeId, updated::setThemeId);
 
@@ -307,7 +307,7 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
             if (departmentId == null) {
                 return;
             }
-            organizationalUnitRepository
+            departmentRepository
                     .findById(departmentId)
                     .ifPresent(department -> {
                         if (department.getThemeId() != null) {

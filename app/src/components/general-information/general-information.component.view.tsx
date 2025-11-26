@@ -8,7 +8,6 @@ import {useTheme} from '@mui/material/styles';
 import {type IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {FadingPaper} from '../fading-paper/fading-paper';
 import {Preamble} from '../preamble/preamble';
-import {type DepartmentResponseDTO as Department} from '../../modules/departments/dtos/department-response-dto';
 import {selectLoadedForm, showDialog} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
@@ -21,13 +20,14 @@ import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
-import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
 import {AccessibilityDialogId} from '../../dialogs/accessibility-dialog/accessibility-dialog';
 import {PrivacyDialogId} from '../../dialogs/privacy-dialog/privacy-dialog';
 import {ImprintDialogId} from '../../dialogs/imprint-dialog/imprint-dialog';
 import {HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
 import {ExpandableList} from '../expandable-list/expandable-list';
 import {IdentityButtonGroup} from '../../modules/identity/components/identity-button-group/identity-button-group';
+import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
+import {VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
 
 function cleanDocuments(documents: Array<string> | undefined | null) {
     if (documents) {
@@ -56,8 +56,8 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
     const application = useAppSelector(selectLoadedForm);
     const providerName = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
 
-    const [responsibleDepartment, setResponsibleDepartment] = useState<Department>();
-    const [managingDepartment, setManagingDepartment] = useState<Department>();
+    const [responsibleDepartment, setResponsibleDepartment] = useState<VDepartmentShadowedEntity>();
+    const [managingDepartment, setManagingDepartment] = useState<VDepartmentShadowedEntity>();
 
     const initialDisplayCount = 4;
 
@@ -68,7 +68,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
         if (application != null) {
             if (application.responsibleDepartmentId != null) {
                 if (responsibleDepartment == null || responsibleDepartment.id !== application.responsibleDepartmentId) {
-                    new DepartmentsApiService()
+                    new DepartmentApiService()
                         .retrievePublic(application.responsibleDepartmentId)
                         .then(setResponsibleDepartment)
                         .catch((err) => {
@@ -82,7 +82,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
 
             if (application.managingDepartmentId != null) {
                 if (managingDepartment == null || managingDepartment.id !== application.managingDepartmentId) {
-                    new DepartmentsApiService()
+                    new DepartmentApiService()
                         .retrievePublic(application.managingDepartmentId)
                         .then(setManagingDepartment)
                         .catch((err) => {

@@ -13,7 +13,7 @@ interface OrgUserRoleAssignmentFilter {
 
 export class OrgUserRoleAssignmentsApiService extends BaseCrudApiService<UserRoleAssignmentRequestDTO, OrgUserRoleAssignmentResponseDTO, OrgUserRoleAssignmentResponseDTO, UserRoleAssignmentRequestDTO, number, OrgUserRoleAssignmentFilter> {
     constructor() {
-        super('/api/org-user-role-assignments/');
+        super('/api/department-user-role-assignments-with-details/');
     }
 
     public initialize(): OrgUserRoleAssignmentResponseDTO {

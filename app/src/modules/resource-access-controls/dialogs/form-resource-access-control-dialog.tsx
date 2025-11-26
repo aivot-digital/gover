@@ -6,9 +6,7 @@ import {ResourceAccessControlResponseDto} from '../dtos/resource-access-control-
 import AddIcon from '@mui/icons-material/Add';
 import {ResourceAccessControlRequestDto} from '../dtos/resource-access-control-request-dto';
 import {TeamResponseDTO} from '../../teams/dtos/team-response-dto';
-import {DepartmentResponseDTO} from '../../departments/dtos/department-response-dto';
 import {TeamsApiService} from '../../teams/teams-api-service';
-import {DepartmentsApiService} from '../../departments/departments-api-service';
 import {SelectFieldComponentOption} from '../../../components/select-field/select-field-component-option';
 import {FormDetailsResponseDTO} from '../../forms/dtos/form-details-response-dto';
 import {SelectFieldComponent} from '../../../components/select-field/select-field-component';
@@ -24,6 +22,9 @@ import {selectIsLoading, setLoadingMessage} from '../../../slices/shell-slice';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {withDelay} from '../../../utils/with-delay';
 import ApprovalDelegation from '@aivot/mui-material-symbols-400-outlined/dist/approval-delegation/ApprovalDelegation';
+import {VDepartmentShadowedEntity} from '../../departments/entities/v-department-shadowed-entity';
+import {getDepartmentPath, getDepartmentTypeLabel} from '../../departments/utils/department-utils';
+import {VDepartmentShadowedApiService} from '../../departments/services/v-department-shadowed-api-service';
 
 interface FormResourceAccessControlDialogProps {
     open: boolean;
@@ -97,7 +98,7 @@ export function FormResourceAccessControlDialog(props: FormResourceAccessControl
             .all([
                 new TeamsApiService()
                     .listAll(),
-                new DepartmentsApiService()
+                new VDepartmentShadowedApiService()
                     .listAll(),
             ])
             .then(([teams, orgs]) => {
@@ -109,10 +110,10 @@ export function FormResourceAccessControlDialog(props: FormResourceAccessControl
                     team: t,
                 }));
 
-                const orgOptions: SourceSelectionOption[] = orgs.content.map((o: DepartmentResponseDTO) => ({
+                const orgOptions: SourceSelectionOption[] = orgs.content.map((o: VDepartmentShadowedEntity) => ({
                     value: createOrgUnitOptionValue(o.id),
-                    label: o.name ?? 'Unbenannte Organisationseinheit',
-                    subLabel: 'Organisationseinheit',
+                    label: getDepartmentPath(o),
+                    subLabel: getDepartmentTypeLabel(o.depth),
                     icon: ModuleIcons.departments,
                     orgUnit: o,
                 }));
@@ -646,7 +647,7 @@ function isResourceAccessControlWithTeam(access: ResourceAccessControlResponseDt
 }
 
 type ResourceAccessControlWithOrgUnit = ResourceAccessControlResponseDto & {
-    sourceOrgUnit: DepartmentResponseDTO;
+    sourceOrgUnit: VDepartmentShadowedEntity;
 };
 
 type ResourceAccessControlWithSource = ResourceAccessControlWithTeam | ResourceAccessControlWithOrgUnit;
@@ -660,7 +661,7 @@ function isSourceSelectionOptionWithTeam(option: SourceSelectionOption): option 
 }
 
 type SourceSelectionOptionWithOrgUnit = SelectFieldComponentOption & {
-    orgUnit: DepartmentResponseDTO;
+    orgUnit: VDepartmentShadowedEntity;
 };
 
 function isSourceSelectionOptionWithOrgUnit(option: SourceSelectionOption): option is SourceSelectionOptionWithOrgUnit {

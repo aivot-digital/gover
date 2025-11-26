@@ -20,8 +20,6 @@ import {downloadConfigFile} from '../../../../utils/download-utils';
 import {useApi} from '../../../../hooks/use-api';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {FormVersionsDialog} from '../../dialogs/form-versions-dialog';
-import {DepartmentResponseDTO} from '../../../departments/dtos/department-response-dto';
-import {DepartmentsApiService} from '../../../departments/departments-api-service';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import Typography from '@mui/material/Typography';
 import {format} from 'date-fns/format';
@@ -42,6 +40,7 @@ import {Page} from '../../../../models/dtos/page';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 import {FormResourceAccessControlDialog} from '../../../resource-access-controls/dialogs/form-resource-access-control-dialog';
+import {DepartmentApiService} from '../../../departments/services/department-api-service';
 
 const availableFilter = [
     {
@@ -336,10 +335,10 @@ export function FormsListPage() {
                     searchLabel="Formular suchen"
                     searchPlaceholder="Titel des Formulars eingeben…"
                     fetch={async (options) => {
-                        const deps = (await new DepartmentsApiService().listAll()).content;
+                        const deps = (await new DepartmentApiService().listAll()).content;
 
                         const formsPage = await new FormsApiServiceV2()
-                            .list(options.page, options.size, options.sort as any, options.order, {
+                            .list(options.page, options.size, options.sort === 'internalTitle' ? 'formInternalTitle' : 'formUpdated', options.order, {
                                 internalTitle: options.search,
                                 isDeveloper: true,
                                 userId: user?.id,

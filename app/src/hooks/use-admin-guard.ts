@@ -54,8 +54,8 @@ export function useAccessGuard(options: Options): boolean {
 
             return memberships
                 .some(dept => (
-                    dept.orgUnitId === onlyAdminOfDepartmentId &&
-                    dept.roles.some(role => role.userRoleOrgUnitMemberPermissionEdit)
+                    dept.departmentId === onlyAdminOfDepartmentId &&
+                    dept.roles.some(role => role.departmentPermissionEdit)
                 )) ?? false;
         }
 

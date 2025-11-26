@@ -3,18 +3,15 @@ import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Typography} from '@mui/material';
 import {DescriptionOutlined, EditOutlined, GroupOutlined} from '@mui/icons-material';
-import {type DepartmentResponseDTO as Department} from '../../dtos/department-response-dto';
-import {selectUser} from '../../../../slices/user-slice';
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
-import {useAppSelector} from '../../../../hooks/use-app-selector';
-import {ShadowedOrganizationalUnitsApiService} from '../../shadowed-organizational-units-api-service';
+import {VDepartmentShadowedApiService} from '../../services/v-department-shadowed-api-service';
+import {VDepartmentShadowedEntity} from '../../entities/v-department-shadowed-entity';
 
 export function DepartmentsListPage() {
-    const user = useAppSelector(selectUser);
     const hasAccess = useAccessGuard({
         onlyGlobalAdmin: true,
         messageType: 'snackbar',
@@ -26,7 +23,7 @@ export function DepartmentsListPage() {
             fullWidth
             background
         >
-            <GenericListPage<Department>
+            <GenericListPage<VDepartmentShadowedEntity>
                 header={{
                     icon: <BusinessOutlinedIcon />,
                     title: 'Fachbereiche',
@@ -58,15 +55,14 @@ export function DepartmentsListPage() {
                 searchLabel="Fachbereich suchen"
                 searchPlaceholder="Name des Fachbereichs eingeben…"
                 fetch={(options) => {
-                    return new ShadowedOrganizationalUnitsApiService()
+                    return new VDepartmentShadowedApiService()
                         .list(
                             options.page,
                             options.size,
                             options.sort,
                             options.order,
                             {
-                                departmentName: options.search,
-                                userId: hasAccess ? undefined : user?.id,
+                                name: options.search,
                             },
                         );
                 }}
@@ -102,7 +98,7 @@ export function DepartmentsListPage() {
                 noDataPlaceholder="Keine Fachbereiche angelegt"
                 noSearchResultsPlaceholder="Keine Fachbereiche gefunden"
                 rowActionsCount={3}
-                rowActions={(item: Department) => [
+                rowActions={(item) => [
                     {
                         icon: hasAccess ? <EditOutlined /> : <Visibility />,
                         to: `/departments/${item.id}`,

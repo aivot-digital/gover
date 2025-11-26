@@ -3,13 +3,14 @@ import {OrgUserRoleAssignmentResponseDTO} from '../dtos/org-user-role-assignment
 import {Box, Chip, Typography} from '@mui/material';
 import {HintTooltip} from '../../../components/hint-tooltip/hint-tooltip';
 import {TeamUserRoleAssignmentResponseDTO} from '../dtos/team-user-role-assignment-response-dto';
+import {VDepartmentUserRoleAssignmentWithDetailsEntity} from '../../departments/entities/v-department-user-role-assignment-with-details-entity';
 
 interface UserRoleChipsProps {
-    roles: UserRoleResponseDTO[] | OrgUserRoleAssignmentResponseDTO[] | TeamUserRoleAssignmentResponseDTO[];
+    roles: UserRoleResponseDTO[] | OrgUserRoleAssignmentResponseDTO[] | TeamUserRoleAssignmentResponseDTO[] | VDepartmentUserRoleAssignmentWithDetailsEntity[];
     maxVisibleChips?: number;
 }
 
-function isUserRoleResponseDTO(role: UserRoleResponseDTO | OrgUserRoleAssignmentResponseDTO | TeamUserRoleAssignmentResponseDTO): role is UserRoleResponseDTO {
+function isUserRoleResponseDTO(role: UserRoleResponseDTO | OrgUserRoleAssignmentResponseDTO | TeamUserRoleAssignmentResponseDTO | VDepartmentUserRoleAssignmentWithDetailsEntity): role is UserRoleResponseDTO {
     return (role as UserRoleResponseDTO).name !== undefined;
 }
 
@@ -37,7 +38,7 @@ export function UserRoleChips(props: UserRoleChipsProps) {
                 visibleRoles.length > 0 &&
                 visibleRoles.map((role, index) => (
                     <Chip
-                        key={(isUserRoleResponseDTO(role) ? role.id : role.userRoleId)}
+                        key={(isUserRoleResponseDTO(role) ? role.id : role.userRoleName)}
                         label={(isUserRoleResponseDTO(role) ? role.name : role.userRoleName) ?? 'Unbenannt'}
                         variant="outlined"
                         size="small"

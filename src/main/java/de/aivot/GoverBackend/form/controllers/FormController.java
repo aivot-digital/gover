@@ -3,8 +3,8 @@ package de.aivot.GoverBackend.form.controllers;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
-import de.aivot.GoverBackend.department.filters.OrganizationalUnitMembershipFilter;
-import de.aivot.GoverBackend.department.services.OrganizationalUnitMembershipService;
+import de.aivot.GoverBackend.department.filters.DepartmentMembershipFilter;
+import de.aivot.GoverBackend.department.services.DepartmentMembershipService;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.RootElement;
 import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
@@ -21,7 +21,9 @@ import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.form.filters.FormVersionWithDetailsFilter;
 import de.aivot.GoverBackend.form.filters.FormVersionWithMembershipFilter;
+import de.aivot.GoverBackend.form.filters.VFormWithPermissionFilter;
 import de.aivot.GoverBackend.form.models.FormPublishChecklistItem;
+import de.aivot.GoverBackend.form.repositories.VFormWithPermissionRepository;
 import de.aivot.GoverBackend.form.services.*;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.services.ExceptionMailService;
@@ -54,12 +56,13 @@ public class FormController {
     private final ExceptionMailService exceptionMailService;
     private final FormService formService;
     private final FormVersionWithMembershipService formVersionWithMembershipService;
-    private final OrganizationalUnitMembershipService organizationalUnitMembershipService;
+    private final DepartmentMembershipService departmentMembershipService;
     private final FormLockService formLockService;
     private final FormRevisionService formRevisionService;
     private final FormVersionWithDetailsService formVersionWithDetailsService;
     private final FormVersionService formVersionService;
     private final FormWithMembershipService formWithMembershipService;
+    private final VFormWithPermissionRepository vFormWithPermissionRepository;
 
     @Autowired
     public FormController(AuditService auditService,
@@ -67,59 +70,44 @@ public class FormController {
                           ExceptionMailService exceptionMailService,
                           FormService formService,
                           FormVersionWithMembershipService formVersionWithMembershipService,
-                          OrganizationalUnitMembershipService organizationalUnitMembershipService,
+                          DepartmentMembershipService departmentMembershipService,
                           FormLockService formLockService,
                           FormRevisionService formRevisionService,
                           FormVersionWithDetailsService formVersionWithDetailsService,
                           FormVersionService formVersionService,
-                          FormWithMembershipService formWithMembershipService) {
+                          FormWithMembershipService formWithMembershipService, VFormWithPermissionRepository vFormWithPermissionRepository) {
         this.auditService = auditService.createScopedAuditService(FormController.class);
 
         this.formMailService = formMailService;
         this.exceptionMailService = exceptionMailService;
         this.formService = formService;
         this.formVersionWithMembershipService = formVersionWithMembershipService;
-        this.organizationalUnitMembershipService = organizationalUnitMembershipService;
+        this.departmentMembershipService = departmentMembershipService;
         this.formLockService = formLockService;
         this.formRevisionService = formRevisionService;
         this.formVersionWithDetailsService = formVersionWithDetailsService;
         this.formVersionService = formVersionService;
         this.formWithMembershipService = formWithMembershipService;
+        this.vFormWithPermissionRepository = vFormWithPermissionRepository;
     }
 
     @GetMapping("")
     public Page<FormListResponseDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PageableDefault Pageable pageable,
-            @Nonnull @Valid FormVersionWithMembershipFilter filter
+            @Nonnull @Valid VFormWithPermissionFilter filter
     ) throws ResponseException {
         // Check if the user is a staff user
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        // Check if the user is a global admin
-        if (user.getGlobalAdmin()) {
-            // Check if a user id is provided in the filter to show only forms the given user has access to
-            if (filter.getUserId() != null) {
-                return formWithMembershipService
-                        .list(pageable, filter.asFormWithMembershipFilter())
-                        .map(FormListResponseDTO::fromEntity);
-            }
-            // If not, show all forms. Use the form service to prevent duplicates
-            else {
-                return formService
-                        .list(pageable, filter.asFormFilter())
-                        .map(FormListResponseDTO::fromEntity);
-            }
-        }
-        // If the user is not a global admin, limit the forms to those in departments the user is a member of
-        else {
-            filter.setUserId(user.getId());
-            return formWithMembershipService
-                    .list(pageable, filter.asFormWithMembershipFilter())
-                    .map(FormListResponseDTO::fromEntity);
-        }
+        filter.setUserId(user.getId());
+        filter.setFormPermissionRead(true);
+
+        return vFormWithPermissionRepository
+                .findAll(filter.build(), pageable)
+                .map(FormListResponseDTO::fromEntity);
     }
 
     /**
@@ -141,7 +129,7 @@ public class FormController {
                 .orElseThrow(ResponseException::unauthorized);
 
         // Check if the user has access to the department the form is being created in
-        checkUserHasAccessToForm(user, requestDTO.developingDepartmentId(), organizationalUnitMembershipService);
+        checkUserHasAccessToForm(user, requestDTO.developingDepartmentId(), departmentMembershipService);
 
         // create the form
         var createdFormEntity = formService
@@ -150,7 +138,7 @@ public class FormController {
                 "id", createdFormEntity.getId(),
                 "slug", createdFormEntity.getSlug(),
                 "title", createdFormEntity.getInternalTitle(),
-                "developingDepartmentId", createdFormEntity.getDevelopingOrganizationalUnitId()
+                "developingDepartmentId", createdFormEntity.getDevelopingDepartmentId()
         ));
 
         // create the initial version
@@ -255,9 +243,9 @@ public class FormController {
 
         if (
                 user.getGlobalAdmin() ||
-                organizationalUnitMembershipService.checkUserInDepartment(user, form.getDevelopingDepartmentId()) ||
-                organizationalUnitMembershipService.checkUserInDepartment(user, form.getManagingDepartmentId()) ||
-                organizationalUnitMembershipService.checkUserInDepartment(user, form.getResponsibleDepartmentId())
+                departmentMembershipService.checkUserInDepartment(user, form.getDevelopingDepartmentId()) ||
+                departmentMembershipService.checkUserInDepartment(user, form.getManagingDepartmentId()) ||
+                departmentMembershipService.checkUserInDepartment(user, form.getResponsibleDepartmentId())
         ) {
             return FormDetailsResponseDTO.fromEntity(form);
         } else {
@@ -289,7 +277,7 @@ public class FormController {
                 .orElseThrow(ResponseException::unauthorized);
 
         // Check if the user has access to the department the form resides in
-        checkUserHasAccessToForm(user, requestDTO.developingDepartmentId(), organizationalUnitMembershipService);
+        checkUserHasAccessToForm(user, requestDTO.developingDepartmentId(), departmentMembershipService);
 
         // Check if the form is locked by another user
         checkFormLock(formId, user, formLockService);
@@ -336,7 +324,7 @@ public class FormController {
         auditService.logAction(user, AuditAction.Update, FormEntity.class, Map.of(
                 "formId", updatedForm.getId(),
                 "formSlug", updatedForm.getSlug(),
-                "developingDepartmentId", updatedForm.getDevelopingOrganizationalUnitId()
+                "developingDepartmentId", updatedForm.getDevelopingDepartmentId()
         ));
         auditService.logAction(user, AuditAction.Update, FormEntity.class, Map.of(
                 "formId", updatedVersion.getFormId(),
@@ -367,7 +355,7 @@ public class FormController {
                 .orElseThrow(ResponseException::notFound);
 
         // Check if the user has access to the department the form resides in
-        checkUserHasAccessToForm(user, form.getDevelopingOrganizationalUnitId(), organizationalUnitMembershipService);
+        checkUserHasAccessToForm(user, form.getDevelopingDepartmentId(), departmentMembershipService);
 
         var latestVersion = formVersionService
                 .getLatestVersion(formId)
@@ -418,13 +406,13 @@ public class FormController {
                 FormStatus.Drafted,
                 latestVersion.getPublicTitle(),
                 latestVersion.getType(),
-                latestVersion.getManagingOrganizationalUnitId(),
-                latestVersion.getResponsibleOrganizationalUnitId(),
-                latestVersion.getLegalSupportOrganizationalUnitId(),
-                latestVersion.getTechnicalSupportOrganizationalUnitId(),
-                latestVersion.getImprintOrganizationalUnitId(),
-                latestVersion.getPrivacyOrganizationalUnitId(),
-                latestVersion.getAccessibilityOrganizationalUnitId(),
+                latestVersion.getManagingDepartmentId(),
+                latestVersion.getResponsibleDepartmentId(),
+                latestVersion.getLegalSupportDepartmentId(),
+                latestVersion.getTechnicalSupportDepartmentId(),
+                latestVersion.getImprintDepartmentId(),
+                latestVersion.getPrivacyDepartmentId(),
+                latestVersion.getAccessibilityDepartmentId(),
                 latestVersion.getDestinationId(),
                 latestVersion.getCustomerAccessHours(),
                 latestVersion.getSubmissionRetentionWeeks(),
@@ -468,7 +456,7 @@ public class FormController {
                 .orElseThrow(ResponseException::notFound);
 
         // Check if the user has access to the department the form resides in
-        checkUserHasAccessToForm(user, form.getDevelopingDepartmentId(), organizationalUnitMembershipService);
+        checkUserHasAccessToForm(user, form.getDevelopingDepartmentId(), departmentMembershipService);
 
         if (form.getDraftedVersion() != null) {
             var currentDraftedVersionId = FormVersionEntityId
@@ -561,13 +549,13 @@ public class FormController {
 
         // Check if the user has access to the department the form resides in and is allowed to publish the form
         if (!user.getGlobalAdmin()) {
-            var spec = OrganizationalUnitMembershipFilter
+            var spec = DepartmentMembershipFilter
                     .create()
-                    .setOrganizationalUnitId(form.getDevelopingDepartmentId())
+                    .setDepartmentId(form.getDevelopingDepartmentId())
                     .setUserId(user.getId())
                     .build();
 
-            var membership = organizationalUnitMembershipService
+            var membership = departmentMembershipService
                     .retrieve(spec)
                     .orElseThrow(() -> ResponseException.forbidden("Die Mitarbeiter:in ist nicht Mitglied des Fachbereichs."));
 
@@ -652,13 +640,13 @@ public class FormController {
 
         // Check if the user has access to the department the form resides in
         if (!user.getGlobalAdmin()) {
-            var spec = OrganizationalUnitMembershipFilter
+            var spec = DepartmentMembershipFilter
                     .create()
-                    .setOrganizationalUnitId(form.getDevelopingDepartmentId())
+                    .setDepartmentId(form.getDevelopingDepartmentId())
                     .setUserId(user.getId())
                     .build();
 
-            var membership = organizationalUnitMembershipService
+            var membership = departmentMembershipService
                     .retrieve(spec)
                     .orElseThrow(() -> ResponseException.forbidden("Die Mitarbeiter:in ist nicht Mitglied des Fachbereichs."));
 
@@ -737,16 +725,16 @@ public class FormController {
                 .orElseThrow(ResponseException::notFound);
 
         // Check if the user has access to the department the form resides in
-        checkUserHasAccessToForm(user, form.getDevelopingOrganizationalUnitId(), organizationalUnitMembershipService);
+        checkUserHasAccessToForm(user, form.getDevelopingDepartmentId(), departmentMembershipService);
 
         // Check if the form is locked by another user
         checkFormLock(formId, user, formLockService);
 
         // Store the previous department id
-        var previousDepartmentId = form.getDevelopingOrganizationalUnitId();
+        var previousDepartmentId = form.getDevelopingDepartmentId();
 
         // Move the form to the target department
-        form.setDevelopingOrganizationalUnitId(targetDepartmentId);
+        form.setDevelopingDepartmentId(targetDepartmentId);
 
         // Create a revision for the form
         formService.update(formId, form);
@@ -783,7 +771,7 @@ public class FormController {
                 .orElseThrow(ResponseException::notFound);
 
         // Check if the user has access to the department the form resides in
-        checkUserHasAccessToForm(user, form.getDevelopingOrganizationalUnitId(), organizationalUnitMembershipService);
+        checkUserHasAccessToForm(user, form.getDevelopingDepartmentId(), departmentMembershipService);
 
         // Check if the form is locked by another user
         checkFormLock(formId, user, formLockService);
@@ -798,7 +786,7 @@ public class FormController {
                 Map.of(
                         "formId", deletedForm.getId(),
                         "formSlug", deletedForm.getSlug(),
-                        "developingDepartmentId", deletedForm.getDevelopingOrganizationalUnitId()
+                        "developingDepartmentId", deletedForm.getDevelopingDepartmentId()
                 )
         );
 
@@ -812,14 +800,14 @@ public class FormController {
 
     public static void checkUserHasAccessToForm(@Nonnull UserEntity user,
                                                 @Nonnull Integer developingDepartmentId,
-                                                @Nonnull OrganizationalUnitMembershipService organizationalUnitMembershipService) throws ResponseException {
+                                                @Nonnull DepartmentMembershipService departmentMembershipService) throws ResponseException {
         // The user has access if they are a global admin
         if (user.getGlobalAdmin()) {
             return;
         }
 
         // The user has access if they are a member of the developing department
-        if (organizationalUnitMembershipService.checkUserInDepartment(user, developingDepartmentId)) {
+        if (departmentMembershipService.checkUserInDepartment(user, developingDepartmentId)) {
             return;
         }
 

@@ -5,7 +5,7 @@ import {Form as Application} from '../../models/entities/form';
 import {type RootElement} from '../../models/elements/root-element';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {selectMemberships} from '../../slices/user-slice';
+import {selectHasMemberships, selectMemberships} from '../../slices/user-slice';
 import {UserRole} from '../../data/user-role';
 import {Checklist} from '../checklist/checklist';
 import PauseCircleOutlineOutlinedIcon from '@mui/icons-material/PauseCircleOutlineOutlined';
@@ -29,10 +29,8 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
     const dispatch = useAppDispatch();
     const showConfirm = useConfirm();
 
-    const [isLoading, setIsLoading] = useState(true);
-
     const [checklist, setChecklist] = useState<FormPublishChecklistItem[] | null>(null);
-    const memberships = useAppSelector(selectMemberships);
+    const canPublish = useAppSelector(selectHasMemberships(props.entity.developingDepartmentId, 'formPermissionPublish'));
 
     const [isPublished, setIsPublished] = useState(props.entity.status === FormStatus.Published);
     const [isRevoked, setIsRevoked] = useState(props.entity.status === FormStatus.Revoked);
@@ -89,19 +87,6 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
 
         return null;
     };
-
-    const canPublish = useMemo(() => {
-        if (memberships == null) {
-            return false;
-        }
-
-        return memberships
-            .some((mem) => (
-                    mem.orgUnitId === props.entity.developingDepartmentId &&
-                    mem.roles.some(r => r.userRoleFormPermissionPublish)
-                ),
-            );
-    }, [memberships]);
 
     const handlePublish = async (): Promise<void> => {
         const confirmed = await showConfirm({

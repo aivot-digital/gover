@@ -60,8 +60,8 @@ public record UserRoleRequestDTO(
         UserRoleEntity entity = new UserRoleEntity();
         entity.setName(name);
         entity.setDescription(description);
-        entity.setOrgUnitMemberPermissionEdit(orgUnitMemberPermissionEdit);
-        entity.setTeamMemberPermissionEdit(teamMemberPermissionEdit);
+        entity.setDepartmentPermissionEdit(orgUnitMemberPermissionEdit);
+        entity.setTeamPermissionEdit(teamMemberPermissionEdit);
         entity.setFormPermissionCreate(formPermissionCreate);
         entity.setFormPermissionRead(formPermissionRead);
         entity.setFormPermissionEdit(formPermissionEdit);

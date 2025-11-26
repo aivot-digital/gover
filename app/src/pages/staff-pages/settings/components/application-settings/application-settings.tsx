@@ -1,6 +1,6 @@
 import {Box, Button, Grid, Typography} from '@mui/material';
 import React, {type FormEvent, useEffect, useState} from 'react';
-import {selectSystemConfig, setSystemConfigs, setSystemConfigsFromMap, type SystemConfigMap} from '../../../../../slices/system-config-slice';
+import {selectSystemConfig, setSystemConfigs, type SystemConfigMap} from '../../../../../slices/system-config-slice';
 import {useAppSelector} from '../../../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {TextFieldComponent} from '../../../../../components/text-field/text-field-component';
@@ -11,7 +11,6 @@ import {type SelectFieldComponentOption} from '../../../../../components/select-
 import {useApi} from '../../../../../hooks/use-api';
 import {CheckboxFieldComponent} from '../../../../../components/checkbox-field/checkbox-field-component';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
-import {DepartmentsApiService} from '../../../../../modules/departments/departments-api-service';
 import {ThemesApiService} from '../../../../../modules/themes/themes-api-service';
 import {SystemConfigsApiService} from '../../../../../modules/configs/system-configs-api-service';
 import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
@@ -19,7 +18,8 @@ import {addSnackbarMessage, removeSnackbarMessage, setSetup, setStatus, ShellSta
 import {isApiError} from '../../../../../models/api-error';
 import {SystemSetupDTO} from '../../../../../modules/system/dtos/system-setup-dto';
 import {SystemApiService} from '../../../../../modules/system/system-api-service';
-import {DepartmentResponseDTO} from '../../../../../modules/departments/dtos/department-response-dto';
+import {DepartmentApiService} from '../../../../../modules/departments/services/department-api-service';
+import {DepartmentEntity} from '../../../../../modules/departments/entities/department-entity';
 
 async function fetchSetup(): Promise<SystemSetupDTO> {
     return new SystemApiService()
@@ -54,7 +54,7 @@ export function ApplicationSettings() {
     const config = useAppSelector(selectSystemConfig);
     const [editedConfig, setEditedConfig] = useState<SystemConfigMap>({});
 
-    const [departments, setDepartments] = useState<DepartmentResponseDTO[]>([]);
+    const [departments, setDepartments] = useState<DepartmentEntity[]>([]);
     const [themes, setThemes] = useState<SelectFieldComponentOption[]>([]);
 
     const hasNotChanged = Object.keys(editedConfig).length === 0;
@@ -102,7 +102,7 @@ export function ApplicationSettings() {
 
                     const oldThemeId = config[SystemConfigKeys.system.theme];
 
-                    console.log("theme", {newThemeId, oldThemeId});
+                    console.log('theme', {newThemeId, oldThemeId});
 
                     if (newThemeId != null && newThemeId !== oldThemeId) {
                         // refetch system setup including theme information
@@ -131,7 +131,7 @@ export function ApplicationSettings() {
     };
 
     useEffect(() => {
-        new DepartmentsApiService()
+        new DepartmentApiService()
             .listAll()
             .then(deps => setDepartments(deps.content))
             .catch((err) => {

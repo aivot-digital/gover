@@ -4,8 +4,8 @@ create table user_roles
     name                                 varchar(64) not null unique,
     description                          text,
 
-    org_unit_member_permission_edit      bool        not null default false,
-    team_member_permission_edit          bool        not null default false,
+    department_permission_edit           bool        not null default false,
+    team_permission_edit                 bool        not null default false,
 
     form_permission_create               bool        not null default false,
     form_permission_read                 bool        not null default false,
@@ -33,11 +33,11 @@ create table user_roles
 
 create table user_role_assignments
 (
-    id                                serial primary key,
-    organizational_unit_membership_id integer   null references organizational_unit_memberships (id) on delete cascade,
-    team_membership_id                integer   null references team_memberships (id) on delete cascade,
-    user_role_id                      integer   not null references user_roles (id) on delete cascade,
-    created                           timestamp not null default current_timestamp,
-    unique nulls not distinct (organizational_unit_membership_id, team_membership_id, user_role_id),
-    check ( (organizational_unit_membership_id is null) <> (team_membership_id is null) )
+    id                       serial primary key,
+    department_membership_id integer   null references department_memberships (id) on delete cascade,
+    team_membership_id       integer   null references team_memberships (id) on delete cascade,
+    user_role_id             integer   not null references user_roles (id) on delete cascade,
+    created                  timestamp not null default current_timestamp,
+    unique nulls not distinct (department_membership_id, team_membership_id, user_role_id),
+    check ( (department_membership_id is null) <> (team_membership_id is null) )
 );

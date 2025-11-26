@@ -1,8 +1,8 @@
 package de.aivot.GoverBackend.theme.services;
 
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
-import de.aivot.GoverBackend.department.filters.OrganizationalUnitFilter;
-import de.aivot.GoverBackend.department.repositories.OrganizationalUnitRepository;
+import de.aivot.GoverBackend.department.filters.DepartmentFilter;
+import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
 import de.aivot.GoverBackend.form.filters.FormVersionFilter;
 import de.aivot.GoverBackend.form.repositories.FormVersionRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -24,16 +24,16 @@ import java.util.Optional;
 public class ThemeService implements EntityService<ThemeEntity, Integer> {
     private final ThemeRepository themeRepository;
     private final FormVersionRepository formVersionRepository;
-    private final OrganizationalUnitRepository organizationalUnitRepository;
+    private final DepartmentRepository departmentRepository;
     private final AssetRepository assetRepository;
 
     @Autowired
     public ThemeService(ThemeRepository themeRepository,
                         FormVersionRepository formVersionRepository,
-                        OrganizationalUnitRepository organizationalUnitRepository, AssetRepository assetRepository) {
+                        DepartmentRepository departmentRepository, AssetRepository assetRepository) {
         this.themeRepository = themeRepository;
         this.formVersionRepository = formVersionRepository;
-        this.organizationalUnitRepository = organizationalUnitRepository;
+        this.departmentRepository = departmentRepository;
         this.assetRepository = assetRepository;
     }
 
@@ -55,12 +55,12 @@ public class ThemeService implements EntityService<ThemeEntity, Integer> {
             throw ResponseException.conflict("Das Farbschema wird noch von einem oder mehreren Formularen verwendet.");
         }
 
-        var depSpec = OrganizationalUnitFilter
+        var depSpec = DepartmentFilter
                 .create()
                 .setThemeId(entity.getId())
                 .build();
 
-        if (organizationalUnitRepository.exists(depSpec)) {
+        if (departmentRepository.exists(depSpec)) {
             throw ResponseException.conflict("Das Farbschema wird noch von einer oder mehreren Fachbereichen verwendet.");
         }
 

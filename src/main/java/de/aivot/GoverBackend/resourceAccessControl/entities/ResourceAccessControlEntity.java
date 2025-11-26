@@ -18,7 +18,7 @@ public class ResourceAccessControlEntity {
     private Integer sourceTeamId;
 
     @Nullable
-    private Integer sourceOrgUnitId;
+    private Integer sourceDepartmentId;
 
     @Nullable
     private Integer targetFormId;
@@ -124,12 +124,12 @@ public class ResourceAccessControlEntity {
     }
 
     @Nullable
-    public Integer getSourceOrgUnitId() {
-        return sourceOrgUnitId;
+    public Integer getSourceDepartmentId() {
+        return sourceDepartmentId;
     }
 
-    public ResourceAccessControlEntity setSourceOrgUnitId(@Nullable Integer sourceOrgUnitId) {
-        this.sourceOrgUnitId = sourceOrgUnitId;
+    public ResourceAccessControlEntity setSourceDepartmentId(@Nullable Integer sourceOrgUnitId) {
+        this.sourceDepartmentId = sourceOrgUnitId;
         return this;
     }
 

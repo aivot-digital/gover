@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.mail.services;
 
-import de.aivot.GoverBackend.department.entities.OrganizationalUnitMembershipEntity;
-import de.aivot.GoverBackend.department.services.OrganizationalUnitService;
+import de.aivot.GoverBackend.department.entities.DepartmentMembershipEntity;
+import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.exceptions.InvalidUserEMailException;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.enums.MailTemplate;
@@ -19,32 +19,32 @@ import java.util.HashMap;
 public class DepartmentMembershipMailService {
     private final MailService mailService;
     private final UserService userService;
-    private final OrganizationalUnitService organizationalUnitService;
+    private final DepartmentService departmentService;
 
     @Autowired
-    public DepartmentMembershipMailService(MailService mailService, UserService userService, OrganizationalUnitService organizationalUnitService) {
+    public DepartmentMembershipMailService(MailService mailService, UserService userService, DepartmentService departmentService) {
         this.mailService = mailService;
         this.userService = userService;
-        this.organizationalUnitService = organizationalUnitService;
+        this.departmentService = departmentService;
     }
 
     public void sendAdded(
             @Nonnull UserEntity inviter,
-            @Nonnull OrganizationalUnitMembershipEntity membership
+            @Nonnull DepartmentMembershipEntity membership
     ) throws MessagingException, IOException, InvalidUserEMailException, ResponseException {
         send(inviter, membership, MailTemplate.DepartmentMembershipAdded);
     }
 
     public void sendRemoved(
             @Nonnull UserEntity remover,
-            @Nonnull OrganizationalUnitMembershipEntity membership
+            @Nonnull DepartmentMembershipEntity membership
     ) throws MessagingException, IOException, InvalidUserEMailException, ResponseException {
         send(remover, membership, MailTemplate.DepartmentMembershipRemoved);
     }
 
     public void sendRoleChanged(
             @Nonnull UserEntity updater,
-            @Nonnull OrganizationalUnitMembershipEntity membership
+            @Nonnull DepartmentMembershipEntity membership
     ) throws MessagingException, IOException, InvalidUserEMailException, ResponseException {
         if (updater.getId().equals(membership.getUserId())) {
             return;
@@ -55,7 +55,7 @@ public class DepartmentMembershipMailService {
 
     private void send(
             @Nonnull UserEntity admin,
-            @Nonnull OrganizationalUnitMembershipEntity membership,
+            @Nonnull DepartmentMembershipEntity membership,
             @Nonnull MailTemplate template // TODO: Add user role parameters
     ) throws MessagingException, IOException, InvalidUserEMailException, ResponseException {
         var user = userService
@@ -67,8 +67,8 @@ public class DepartmentMembershipMailService {
             return;
         }
 
-        var department = organizationalUnitService
-                .retrieve(membership.getOrganizationalUnitId())
+        var department = departmentService
+                .retrieve(membership.getDepartmentId())
                 .orElse(null);
 
         if (department == null) {
@@ -76,7 +76,7 @@ public class DepartmentMembershipMailService {
             return;
         }
 
-        var departmentTheme = organizationalUnitService
+        var departmentTheme = departmentService
                 .getDepartmentTheme(department);
 
         var title = switch (template) {

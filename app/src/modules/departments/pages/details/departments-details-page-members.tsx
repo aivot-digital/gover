@@ -1,6 +1,5 @@
 import React, {useCallback, useContext, useMemo, useRef, useState} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
-import {DepartmentMembershipsApiService, ListDepartmentMembershipsWithRolesFilter} from '../../department-memberships-api-service';
 import {GenericList} from '../../../../components/generic-list/generic-list';
 import {Box, Button, Typography} from '@mui/material';
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
@@ -9,10 +8,8 @@ import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {SelectUserDialog} from '../../../users/dialogs/select-user-dialog';
 import {User} from '../../../users/models/user';
-import {DepartmentMembershipWithRoles} from '../../dtos/department-membership-response-dto';
 import {GenericListPropsFetchOptions, ListControlRef} from '../../../../components/generic-list/generic-list-props';
 import {type GridColDef} from '@mui/x-data-grid';
-import {DepartmentResponseDTO} from '../../dtos/department-response-dto';
 import {UserRoleChips} from '../../../user-roles/components/user-role-chips';
 import {UserStatusChip} from '../../../users/components/user-status-chip';
 import {UserRolesAssignmentDialog} from '../../../user-roles/components/user-roles-assignment-dialog';
@@ -21,6 +18,11 @@ import {OrgUserRoleAssignmentsApiService} from '../../../user-roles/org-user-rol
 import {isApiError} from '../../../../models/api-error';
 import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {useConfirm} from '../../../../providers/confirm-provider';
+import {DepartmentEntity} from '../../entities/department-entity';
+import {vDepartmentMembershipWithDetailsEntityAsUser, VDepartmentMembershipWithDetailsEntityWithRoles} from '../../entities/v-department-membership-with-details-entity';
+import {ListDepartmentMembershipsWithRolesFilter, VDepartmentMembershipWithDetailsService} from '../../services/v-department-membership-with-details-service';
+import {DepartmentMembershipApiService} from '../../services/department-membership-api-service';
+import {resolveUserName} from '../../../users/utils/resolve-user-name';
 
 export function DepartmentsDetailsPageMembers() {
     const dispatch = useAppDispatch();
@@ -28,18 +30,18 @@ export function DepartmentsDetailsPageMembers() {
     const {
         item,
         isEditable,
-    } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<DepartmentResponseDTO, undefined>;
+    } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<DepartmentEntity, undefined>;
 
     const showConfirm = useConfirm();
 
     const listControlRef = useRef<ListControlRef | null>(null);
     const [showSelectNewMemberDialog, setShowSelectNewMemberDialog] = useState(false);
     const [showSelectRolesDialogForUser, setShowSelectRolesDialogForUser] = useState<User | null>(null);
-    const [showSelectRolesDialogForMembership, setShowSelectRolesDialogForMembership] = useState<DepartmentMembershipWithRoles | null>(null);
+    const [showSelectRolesDialogForMembership, setShowSelectRolesDialogForMembership] = useState<VDepartmentMembershipWithDetailsEntityWithRoles | null>(null);
 
-    const fetchMembers = useCallback((options: GenericListPropsFetchOptions<DepartmentMembershipWithRoles>) => {
-        const filters: ListDepartmentMembershipsWithRolesFilter = {
-            organizationalUnitId: item!.id,
+    const fetchMembers = useCallback((options: GenericListPropsFetchOptions<VDepartmentMembershipWithDetailsEntityWithRoles>) => {
+        const filters: Partial<ListDepartmentMembershipsWithRolesFilter> = {
+            departmentId: item!.id,
             userSearch: options.search,
         };
 
@@ -58,19 +60,19 @@ export function DepartmentsDetailsPageMembers() {
                 break;
         }
 
-        return new DepartmentMembershipsApiService()
+        return new VDepartmentMembershipWithDetailsService()
             .listDepartmentMembershipsWithRoles(0, 999, options.sort as any, options.order, filters);
     }, [item]);
 
-    const buildRowActions = useCallback((membershipItem: DepartmentMembershipWithRoles) => {
+    const buildRowActions = useCallback((membershipItem: VDepartmentMembershipWithDetailsEntityWithRoles) => {
         return [
             {
                 icon: <EditOutlinedIcon />,
                 onClick: () => {
                     setShowSelectRolesDialogForMembership(membershipItem);
                 },
-                tooltip: membershipItem.userDeletedInIdp ? `Kann für gelöschte Mitarbeiter:innen nicht geändert werden` : 'Rolle der Mitarbeiter:in bearbeiten',
-                disabled: membershipItem.userDeletedInIdp ?? undefined,
+                tooltip: membershipItem.deletedInIdp ? `Kann für gelöschte Mitarbeiter:innen nicht geändert werden` : 'Rolle der Mitarbeiter:in bearbeiten',
+                disabled: membershipItem.deletedInIdp ?? undefined,
             },
             {
                 icon: <DeleteOutlineOutlinedIcon />,
@@ -80,7 +82,7 @@ export function DepartmentsDetailsPageMembers() {
                         children: (
                             <>
                                 <Typography>
-                                    Durch das Entfernen der Mitarbeiter:in <strong>{membershipItem.userFullName}</strong> aus dem Fachbereich <strong>{item?.name}</strong> verliert diese alle zugewiesenen Rollen und Berechtigungen in diesem
+                                    Durch das Entfernen der Mitarbeiter:in <strong>{membershipItem.fullName}</strong> aus dem Fachbereich <strong>{item?.name}</strong> verliert diese alle zugewiesenen Rollen und Berechtigungen in diesem
                                     Fachbereich.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
@@ -96,13 +98,13 @@ export function DepartmentsDetailsPageMembers() {
                             }
 
                             dispatch(setLoadingMessage({
-                                message: `Entferne Mitarbeiter:in ${membershipItem.userFullName} aus dem Fachbereich`,
+                                message: `Entferne Mitarbeiter:in ${membershipItem.fullName} aus dem Fachbereich`,
                                 blocking: true,
                                 estimatedTime: 5000,
                             }));
 
-                            new DepartmentMembershipsApiService()
-                                .destroy(membershipItem.membershipId)
+                            new DepartmentMembershipApiService()
+                                .destroy(membershipItem.id)
                                 .then(() => {
                                     // Refresh list
                                     listControlRef.current?.refresh();
@@ -152,15 +154,18 @@ export function DepartmentsDetailsPageMembers() {
             estimatedTime: 5000,
         }));
 
-        new DepartmentMembershipsApiService()
+        new DepartmentMembershipApiService()
             .create({
+                id: 0,
                 userId: user.id,
-                organizationalUnitId: item.id,
+                departmentId: item.id,
+                created: new Date().toISOString(),
+                updated: new Date().toISOString(),
             })
             .then((membership) => {
                 const apiService = new OrgUserRoleAssignmentsApiService();
                 return Promise.all(roleIdsToAdd.map((roleId) => apiService.create({
-                    organizationalUnitMembershipId: membership.membershipId,
+                    departmentMembershipId: membership.id,
                     userRoleId: roleId,
                 })));
             })
@@ -181,13 +186,13 @@ export function DepartmentsDetailsPageMembers() {
             });
     }, [dispatch, item, listControlRef]);
 
-    const handleUpdateMembership = useCallback((membership: DepartmentMembershipWithRoles | null, roleIdsToAdd: number[], userRoleAssignmentIdsToRemove: number[]) => {
+    const handleUpdateMembership = useCallback((membership: VDepartmentMembershipWithDetailsEntityWithRoles | null, roleIdsToAdd: number[], userRoleAssignmentIdsToRemove: number[]) => {
         if (membership == null) {
             return;
         }
 
         dispatch(setLoadingMessage({
-            message: `Aktualisiere Rollen der Mitarbeiter:in ${membership.userFullName}`,
+            message: `Aktualisiere Rollen der Mitarbeiter:in ${membership.fullName}`,
             blocking: true,
             estimatedTime: 5000,
         }));
@@ -196,7 +201,7 @@ export function DepartmentsDetailsPageMembers() {
 
         const addPromises = roleIdsToAdd
             .map((roleId) => apiService.create({
-                organizationalUnitMembershipId: membership.membershipId,
+                departmentMembershipId: membership.id,
                 userRoleId: roleId,
             }));
 
@@ -250,7 +255,7 @@ export function DepartmentsDetailsPageMembers() {
                 Eine Liste der Mitarbeiter:innen, die diesem Fachbereich zugeordnet sind. Mitarbeiter:innen können unterschiedliche Rollen besitzen, die ihre Berechtigungen innerhalb des Fachbereichs definieren.
             </Typography>
 
-            <GenericList<DepartmentMembershipWithRoles>
+            <GenericList<VDepartmentMembershipWithDetailsEntityWithRoles>
                 controlRef={listControlRef}
                 filters={Filters}
                 defaultFilter="active"
@@ -330,13 +335,13 @@ const Filters = [
     },
 ];
 
-const Columns: Array<GridColDef<DepartmentMembershipWithRoles>> = [
+const Columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntityWithRoles>> = [
     {
-        field: 'userFullName',
+        field: 'fullName',
         headerName: 'Mitarbeiter:in',
         flex: 1,
         renderCell: (params) => {
-            return `${params.row.userFirstName} ${params.row.userLastName}`;
+            return resolveUserName(vDepartmentMembershipWithDetailsEntityAsUser(params.row));
         },
     },
     {
@@ -363,13 +368,13 @@ const Columns: Array<GridColDef<DepartmentMembershipWithRoles>> = [
         sortable: false,
         renderCell: (params) => (
             <UserStatusChip
-                userDeletedInIdp={params.row.userDeletedInIdp}
-                userEnabled={params.row.userEnabled}
+                userDeletedInIdp={params.row.deletedInIdp}
+                userEnabled={params.row.enabled}
             />
         ),
     },
 ];
 
-function getRowIdentifier(item: DepartmentMembershipWithRoles): string {
+function getRowIdentifier(item: VDepartmentMembershipWithDetailsEntityWithRoles): string {
     return item.userId;
 }

@@ -7,8 +7,6 @@ import {SelectFieldComponent} from '../../../components/select-field/select-fiel
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectUser} from '../../../slices/user-slice';
 import {useApi} from '../../../hooks/use-api';
-import {DepartmentsApiService} from '../../departments/departments-api-service';
-import {type DepartmentResponseDTO as Department} from '../../departments/dtos/department-response-dto';
 import {useFormManager} from '../../../hooks/use-form-manager';
 import {FormDetailsResponseDTO} from '../dtos/form-details-response-dto';
 import * as yup from 'yup';
@@ -16,9 +14,12 @@ import {FormsApiService} from '../forms-api-service';
 import {FormRequestDTO} from '../dtos/form-request-dto';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../slices/loading-overlay-slice';
-import {showErrorSnackbar} from '../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {useConfirm} from '../../../providers/confirm-provider';
 import {shallowEquals} from '../../../utils/equality-utils';
+import {VDepartmentShadowedEntity} from '../../departments/entities/v-department-shadowed-entity';
+import {VDepartmentShadowedApiService} from '../../departments/services/v-department-shadowed-api-service';
+import {getDepartmentPath} from '../../departments/utils/department-utils';
 
 const FormSchema = yup.object({
     developingDepartmentId: yup
@@ -68,7 +69,7 @@ export function AddFormDialog(props: AddFormDialogProps) {
 
     const user = useAppSelector(selectUser);
 
-    const [availableDepartments, setAvailableDepartments] = useState<Department[]>([]);
+    const [availableDepartments, setAvailableDepartments] = useState<VDepartmentShadowedEntity[]>([]);
 
     const {
         errors,
@@ -98,12 +99,13 @@ export function AddFormDialog(props: AddFormDialogProps) {
     const [slugStatus, setSlugStatus] = useState<'available' | 'blocked' | 'unknown'>('unknown');
 
     useEffect(() => {
-        if (user != null) {
-            new DepartmentsApiService()
-                .listAll({userId: user.id})
-                .then(departments => setAvailableDepartments(departments.content));
-        }
-    }, [user]);
+        new VDepartmentShadowedApiService()
+            .listAllOrdered(['parentNames', 'name'], 'ASC')
+            .then(departments => setAvailableDepartments(departments.content))
+            .catch(err => {
+                dispatch(showApiErrorSnackbar(err, 'Die Fachbereiche konnten nicht geladen werden. Bitte versuchen Sie es erneut.'));
+            });
+    }, []);
 
     useEffect(() => {
         if (currentItemSlug == null || currentItemSlug.length === 0) {
@@ -170,7 +172,7 @@ export function AddFormDialog(props: AddFormDialogProps) {
             rootElement: currentItem.rootElement,
         };
 
-        dispatch(showLoadingOverlay('Neues Formular wird erstellt…'));
+        dispatch(showLoadingOverlay('Neues Formular wird erstellt'));
 
         try {
             const createdForm = await formsApi
@@ -254,7 +256,7 @@ export function AddFormDialog(props: AddFormDialogProps) {
                     }}
                     options={availableDepartments.map((department) => ({
                         value: department.id.toString(),
-                        label: department.name,
+                        label: getDepartmentPath(department),
                     }))}
                     disabled={isCreating}
                     error={errors.developingDepartmentId}

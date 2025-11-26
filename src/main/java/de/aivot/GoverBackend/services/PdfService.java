@@ -7,7 +7,7 @@ import de.aivot.GoverBackend.config.services.SystemConfigService;
 import de.aivot.GoverBackend.core.configs.ProviderNameSystemConfigDefinition;
 import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.services.HttpService;
-import de.aivot.GoverBackend.department.repositories.OrganizationalUnitRepository;
+import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
 import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 import de.aivot.GoverBackend.enums.ElementType;
@@ -48,7 +48,7 @@ public class PdfService {
 
     private final GotenbergConfig gotenbergConfig;
     private final SystemConfigService systemConfigService;
-    private final OrganizationalUnitRepository organizationalUnitRepository;
+    private final DepartmentRepository departmentRepository;
     private final AssetRepository assetRepository;
     private final GoverConfig goverConfig;
     private final PaymentTransactionRepository paymentTransactionRepository;
@@ -61,7 +61,7 @@ public class PdfService {
     @Autowired
     public PdfService(GotenbergConfig gotenbergConfig,
                       SystemConfigService systemConfigService,
-                      OrganizationalUnitRepository organizationalUnitRepository,
+                      DepartmentRepository departmentRepository,
                       AssetRepository assetRepository,
                       GoverConfig goverConfig,
                       PaymentTransactionRepository paymentTransactionRepository,
@@ -72,7 +72,7 @@ public class PdfService {
                       HttpService httpService) {
         this.gotenbergConfig = gotenbergConfig;
         this.systemConfigService = systemConfigService;
-        this.organizationalUnitRepository = organizationalUnitRepository;
+        this.departmentRepository = departmentRepository;
         this.assetRepository = assetRepository;
         this.goverConfig = goverConfig;
         this.paymentTransactionRepository = paymentTransactionRepository;
@@ -177,7 +177,7 @@ public class PdfService {
 
         dto.put("base", createBaseContext(formTheme, scope));
         dto.put("department",
-                organizationalUnitRepository
+                departmentRepository
                         .findById(form.getRelevantDepartmentId())
                         .orElseThrow(() -> new RuntimeException("Department not found"))
         );

@@ -1,18 +1,18 @@
 import {createSlice, type PayloadAction} from '@reduxjs/toolkit';
 import {type RootState} from '../store.staff';
 import {User} from '../modules/users/models/user';
-import {DepartmentMembershipWithRoles} from '../modules/departments/dtos/department-membership-response-dto';
+import {VDepartmentMembershipWithDetailsEntityWithRoles} from '../modules/departments/entities/v-department-membership-with-details-entity';
+import {VDepartmentUserRoleAssignmentWithDetailsEntity} from '../modules/departments/entities/v-department-user-role-assignment-with-details-entity';
 
 interface UserState {
     user: User | undefined;
-    memberships: DepartmentMembershipWithRoles[] | undefined;
+    memberships: VDepartmentMembershipWithDetailsEntityWithRoles[] | undefined;
 }
 
 const initialState: UserState = {
     user: undefined,
     memberships: undefined,
 };
-
 
 const userSlice = createSlice({
     name: 'user',
@@ -24,7 +24,7 @@ const userSlice = createSlice({
                 state.memberships = [];
             }
         },
-        setMemberships: (state, action: PayloadAction<DepartmentMembershipWithRoles[]>) => {
+        setMemberships: (state, action: PayloadAction<VDepartmentMembershipWithDetailsEntityWithRoles[]>) => {
             state.memberships = action.payload;
         },
     },
@@ -36,6 +36,7 @@ export const {
 } = userSlice.actions;
 
 export const selectUser = (state: RootState): User | undefined => state.user.user;
-export const selectMemberships = (state: RootState): DepartmentMembershipWithRoles[] | undefined => state.user.memberships;
+export const selectMemberships = (state: RootState): VDepartmentMembershipWithDetailsEntityWithRoles[] | undefined => state.user.memberships;
+export const selectHasMemberships = (departmentId: number, permission: keyof VDepartmentUserRoleAssignmentWithDetailsEntity) => (state: RootState): boolean => state.user.memberships != null && state.user.memberships.some(mem => mem.departmentId === departmentId && mem.roles.some(role => role[permission] === true));
 
 export const userReducer = userSlice.reducer;

@@ -1,8 +1,8 @@
 package de.aivot.GoverBackend.department.controllers;
 
-import de.aivot.GoverBackend.department.dtos.OrganizationalUnitShadowedResponseDTO;
-import de.aivot.GoverBackend.department.filters.VOrganizationalUnitShadowedFilter;
-import de.aivot.GoverBackend.department.services.VOrganizationalUnitShadowedService;
+import de.aivot.GoverBackend.department.entities.VDepartmentShadowedEntity;
+import de.aivot.GoverBackend.department.filters.VDepartmentShadowedFilter;
+import de.aivot.GoverBackend.department.services.VDepartmentShadowedService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.user.services.UserService;
 import jakarta.validation.Valid;
@@ -28,21 +28,21 @@ import javax.annotation.Nullable;
  * </p>
  */
 @RestController
-@RequestMapping("/api/organizational-units-shadowed/")
+@RequestMapping("/api/departments-shadowed/")
 public class VOrganizationalUnitShadowedController {
     /**
      * Service for handling shadowed organizational unit operations.
      */
-    private final VOrganizationalUnitShadowedService vOrganizationalUnitShadowedService;
+    private final VDepartmentShadowedService vDepartmentShadowedService;
 
     /**
      * Constructs the controller with the required service.
      *
-     * @param vOrganizationalUnitShadowedService the service for shadowed organizational units
+     * @param vDepartmentShadowedService the service for shadowed organizational units
      */
     @Autowired
-    public VOrganizationalUnitShadowedController(VOrganizationalUnitShadowedService vOrganizationalUnitShadowedService) {
-        this.vOrganizationalUnitShadowedService = vOrganizationalUnitShadowedService;
+    public VOrganizationalUnitShadowedController(VDepartmentShadowedService vDepartmentShadowedService) {
+        this.vDepartmentShadowedService = vDepartmentShadowedService;
     }
 
     /**
@@ -55,18 +55,17 @@ public class VOrganizationalUnitShadowedController {
      * @throws ResponseException if authentication fails or another error occurs
      */
     @GetMapping("")
-    public Page<OrganizationalUnitShadowedResponseDTO> list(
+    public Page<VDepartmentShadowedEntity> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PageableDefault Pageable pageable,
-            @Nonnull @Valid VOrganizationalUnitShadowedFilter filter
+            @Nonnull @Valid VDepartmentShadowedFilter filter
     ) throws ResponseException {
         UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        return vOrganizationalUnitShadowedService
-                .list(pageable, filter)
-                .map(OrganizationalUnitShadowedResponseDTO::fromEntity);
+        return vDepartmentShadowedService
+                .list(pageable, filter);
     }
 
     /**
@@ -78,7 +77,7 @@ public class VOrganizationalUnitShadowedController {
      * @throws ResponseException if authentication fails or the unit is not found
      */
     @GetMapping("{id}/")
-    public OrganizationalUnitShadowedResponseDTO retrieve(
+    public VDepartmentShadowedEntity retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
@@ -86,11 +85,8 @@ public class VOrganizationalUnitShadowedController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var department = vOrganizationalUnitShadowedService
+        return vDepartmentShadowedService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
-
-        return OrganizationalUnitShadowedResponseDTO
-                .fromEntity(department);
     }
 }

@@ -23,18 +23,18 @@ public record TeamMembershipResponseDTO(
 ) {
     public static TeamMembershipResponseDTO fromEntity(VTeamMembershipWithDetailsEntity entity) {
         return new TeamMembershipResponseDTO(
-                entity.getMembershipId(),
+                entity.getId(),
                 entity.getTeamId(),
-                entity.getTeamName(),
+                entity.getName(),
                 entity.getUserId(),
-                entity.getUserFirstName(),
-                entity.getUserLastName(),
-                entity.getUserFullName(),
-                entity.getUserEmail(),
-                entity.getUserEnabled(),
-                entity.getUserVerified(),
-                entity.getUserGlobalAdmin(),
-                entity.getUserDeletedInIdp()
+                entity.getFirstName(),
+                entity.getLastName(),
+                entity.getFullName(),
+                entity.getEmail(),
+                entity.getEnabled(),
+                entity.getVerified(),
+                entity.getGlobalAdmin(),
+                entity.getDeletedInIdp()
         );
     }
 

@@ -1,9 +1,6 @@
 package de.aivot.GoverBackend.form.dtos;
 
-import de.aivot.GoverBackend.form.entities.FormEntity;
-import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
-import de.aivot.GoverBackend.form.entities.FormVersionWithMembershipEntity;
-import de.aivot.GoverBackend.form.entities.FormWithMembershipEntity;
+import de.aivot.GoverBackend.form.entities.*;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -34,7 +31,21 @@ public record FormListResponseDTO(
                 form.getId(),
                 form.getSlug(),
                 form.getInternalTitle(),
-                form.getDevelopingOrganizationalUnitId(),
+                form.getDevelopingDepartmentId(),
+                form.getCreated(),
+                form.getUpdated(),
+                form.getPublishedVersion(),
+                form.getDraftedVersion(),
+                form.getVersionCount()
+        );
+    }
+
+    public static FormListResponseDTO fromEntity(VFormWithPermissionEntity form) {
+        return new FormListResponseDTO(
+                form.getId(),
+                form.getSlug(),
+                form.getInternalTitle(),
+                form.getDevelopingDepartmentId(),
                 form.getCreated(),
                 form.getUpdated(),
                 form.getPublishedVersion(),

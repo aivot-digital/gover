@@ -35,7 +35,7 @@ public record ResourceAccessControlResponseDTO(
         return new ResourceAccessControlResponseDTO(
             entity.getId(),
             entity.getSourceTeamId(),
-            entity.getSourceOrgUnitId(),
+            entity.getSourceDepartmentId(),
             entity.getTargetFormId(),
             entity.getTargetProcessId(),
             entity.getTargetProcessInstanceId(),

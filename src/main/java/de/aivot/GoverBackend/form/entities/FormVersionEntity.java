@@ -47,25 +47,25 @@ public class FormVersionEntity {
     private FormType type = FormType.Public;
 
     @Nullable
-    private Integer managingOrganizationalUnitId;
+    private Integer managingDepartmentId;
 
     @Nullable
-    private Integer responsibleOrganizationalUnitId;
+    private Integer responsibleDepartmentId;
 
     @Nullable
-    private Integer legalSupportOrganizationalUnitId;
+    private Integer legalSupportDepartmentId;
 
     @Nullable
-    private Integer technicalSupportOrganizationalUnitId;
+    private Integer technicalSupportDepartmentId;
 
     @Nullable
-    private Integer imprintOrganizationalUnitId;
+    private Integer imprintDepartmentId;
 
     @Nullable
-    private Integer privacyOrganizationalUnitId;
+    private Integer privacyDepartmentId;
 
     @Nullable
-    private Integer accessibilityOrganizationalUnitId;
+    private Integer accessibilityDepartmentId;
 
     @Nullable
     private Integer destinationId;
@@ -140,13 +140,13 @@ public class FormVersionEntity {
                              @Nonnull FormStatus status,
                              @Nonnull String publicTitle,
                              @Nonnull FormType type,
-                             @Nullable Integer managingOrganizationalUnitId,
-                             @Nullable Integer responsibleOrganizationalUnitId,
-                             @Nullable Integer legalSupportOrganizationalUnitId,
-                             @Nullable Integer technicalSupportOrganizationalUnitId,
-                             @Nullable Integer imprintOrganizationalUnitId,
-                             @Nullable Integer privacyOrganizationalUnitId,
-                             @Nullable Integer accessibilityOrganizationalUnitId,
+                             @Nullable Integer managingDepartmentId,
+                             @Nullable Integer responsibleDepartmentId,
+                             @Nullable Integer legalSupportDepartmentId,
+                             @Nullable Integer technicalSupportDepartmentId,
+                             @Nullable Integer imprintDepartmentId,
+                             @Nullable Integer privacyDepartmentId,
+                             @Nullable Integer accessibilityDepartmentId,
                              @Nullable Integer destinationId,
                              @Nullable Integer customerAccessHours,
                              @Nullable Integer submissionRetentionWeeks,
@@ -168,13 +168,13 @@ public class FormVersionEntity {
         this.status = status;
         this.publicTitle = publicTitle;
         this.type = type;
-        this.managingOrganizationalUnitId = managingOrganizationalUnitId;
-        this.responsibleOrganizationalUnitId = responsibleOrganizationalUnitId;
-        this.legalSupportOrganizationalUnitId = legalSupportOrganizationalUnitId;
-        this.technicalSupportOrganizationalUnitId = technicalSupportOrganizationalUnitId;
-        this.imprintOrganizationalUnitId = imprintOrganizationalUnitId;
-        this.privacyOrganizationalUnitId = privacyOrganizationalUnitId;
-        this.accessibilityOrganizationalUnitId = accessibilityOrganizationalUnitId;
+        this.managingDepartmentId = managingDepartmentId;
+        this.responsibleDepartmentId = responsibleDepartmentId;
+        this.legalSupportDepartmentId = legalSupportDepartmentId;
+        this.technicalSupportDepartmentId = technicalSupportDepartmentId;
+        this.imprintDepartmentId = imprintDepartmentId;
+        this.privacyDepartmentId = privacyDepartmentId;
+        this.accessibilityDepartmentId = accessibilityDepartmentId;
         this.destinationId = destinationId;
         this.customerAccessHours = customerAccessHours;
         this.submissionRetentionWeeks = submissionRetentionWeeks;
@@ -250,7 +250,7 @@ public class FormVersionEntity {
         if (o == null || getClass() != o.getClass()) return false;
 
         FormVersionEntity that = (FormVersionEntity) o;
-        return formId.equals(that.formId) && publicTitle.equals(that.publicTitle) && version.equals(that.version) && status == that.status && type == that.type && Objects.equals(managingOrganizationalUnitId, that.managingOrganizationalUnitId) && Objects.equals(responsibleOrganizationalUnitId, that.responsibleOrganizationalUnitId) && Objects.equals(legalSupportOrganizationalUnitId, that.legalSupportOrganizationalUnitId) && Objects.equals(technicalSupportOrganizationalUnitId, that.technicalSupportOrganizationalUnitId) && Objects.equals(imprintOrganizationalUnitId, that.imprintOrganizationalUnitId) && Objects.equals(privacyOrganizationalUnitId, that.privacyOrganizationalUnitId) && Objects.equals(accessibilityOrganizationalUnitId, that.accessibilityOrganizationalUnitId) && Objects.equals(destinationId, that.destinationId) && Objects.equals(customerAccessHours, that.customerAccessHours) && Objects.equals(submissionRetentionWeeks, that.submissionRetentionWeeks) && Objects.equals(themeId, that.themeId) && Objects.equals(pdfTemplateKey, that.pdfTemplateKey) && Objects.equals(paymentProviderKey, that.paymentProviderKey) && Objects.equals(paymentPurpose, that.paymentPurpose) && Objects.equals(paymentDescription, that.paymentDescription) && Objects.equals(paymentProducts, that.paymentProducts) && Objects.equals(identityProviders, that.identityProviders) && Objects.equals(identityVerificationRequired, that.identityVerificationRequired) && rootElement.equals(that.rootElement) && created.equals(that.created) && updated.equals(that.updated) && Objects.equals(published, that.published) && Objects.equals(revoked, that.revoked);
+        return formId.equals(that.formId) && publicTitle.equals(that.publicTitle) && version.equals(that.version) && status == that.status && type == that.type && Objects.equals(managingDepartmentId, that.managingDepartmentId) && Objects.equals(responsibleDepartmentId, that.responsibleDepartmentId) && Objects.equals(legalSupportDepartmentId, that.legalSupportDepartmentId) && Objects.equals(technicalSupportDepartmentId, that.technicalSupportDepartmentId) && Objects.equals(imprintDepartmentId, that.imprintDepartmentId) && Objects.equals(privacyDepartmentId, that.privacyDepartmentId) && Objects.equals(accessibilityDepartmentId, that.accessibilityDepartmentId) && Objects.equals(destinationId, that.destinationId) && Objects.equals(customerAccessHours, that.customerAccessHours) && Objects.equals(submissionRetentionWeeks, that.submissionRetentionWeeks) && Objects.equals(themeId, that.themeId) && Objects.equals(pdfTemplateKey, that.pdfTemplateKey) && Objects.equals(paymentProviderKey, that.paymentProviderKey) && Objects.equals(paymentPurpose, that.paymentPurpose) && Objects.equals(paymentDescription, that.paymentDescription) && Objects.equals(paymentProducts, that.paymentProducts) && Objects.equals(identityProviders, that.identityProviders) && Objects.equals(identityVerificationRequired, that.identityVerificationRequired) && rootElement.equals(that.rootElement) && created.equals(that.created) && updated.equals(that.updated) && Objects.equals(published, that.published) && Objects.equals(revoked, that.revoked);
     }
 
     @Override
@@ -260,13 +260,13 @@ public class FormVersionEntity {
         result = 31 * result + version.hashCode();
         result = 31 * result + status.hashCode();
         result = 31 * result + type.hashCode();
-        result = 31 * result + Objects.hashCode(managingOrganizationalUnitId);
-        result = 31 * result + Objects.hashCode(responsibleOrganizationalUnitId);
-        result = 31 * result + Objects.hashCode(legalSupportOrganizationalUnitId);
-        result = 31 * result + Objects.hashCode(technicalSupportOrganizationalUnitId);
-        result = 31 * result + Objects.hashCode(imprintOrganizationalUnitId);
-        result = 31 * result + Objects.hashCode(privacyOrganizationalUnitId);
-        result = 31 * result + Objects.hashCode(accessibilityOrganizationalUnitId);
+        result = 31 * result + Objects.hashCode(managingDepartmentId);
+        result = 31 * result + Objects.hashCode(responsibleDepartmentId);
+        result = 31 * result + Objects.hashCode(legalSupportDepartmentId);
+        result = 31 * result + Objects.hashCode(technicalSupportDepartmentId);
+        result = 31 * result + Objects.hashCode(imprintDepartmentId);
+        result = 31 * result + Objects.hashCode(privacyDepartmentId);
+        result = 31 * result + Objects.hashCode(accessibilityDepartmentId);
         result = 31 * result + Objects.hashCode(destinationId);
         result = 31 * result + Objects.hashCode(customerAccessHours);
         result = 31 * result + Objects.hashCode(submissionRetentionWeeks);
@@ -342,72 +342,72 @@ public class FormVersionEntity {
     }
 
     @Nullable
-    public Integer getManagingOrganizationalUnitId() {
-        return managingOrganizationalUnitId;
+    public Integer getManagingDepartmentId() {
+        return managingDepartmentId;
     }
 
-    public FormVersionEntity setManagingOrganizationalUnitId(@Nullable Integer managingDepartmentId) {
-        this.managingOrganizationalUnitId = managingDepartmentId;
+    public FormVersionEntity setManagingDepartmentId(@Nullable Integer managingDepartmentId) {
+        this.managingDepartmentId = managingDepartmentId;
         return this;
     }
 
     @Nullable
-    public Integer getResponsibleOrganizationalUnitId() {
-        return responsibleOrganizationalUnitId;
+    public Integer getResponsibleDepartmentId() {
+        return responsibleDepartmentId;
     }
 
-    public FormVersionEntity setResponsibleOrganizationalUnitId(@Nullable Integer responsibleDepartmentId) {
-        this.responsibleOrganizationalUnitId = responsibleDepartmentId;
+    public FormVersionEntity setResponsibleDepartmentId(@Nullable Integer responsibleDepartmentId) {
+        this.responsibleDepartmentId = responsibleDepartmentId;
         return this;
     }
 
     @Nullable
-    public Integer getLegalSupportOrganizationalUnitId() {
-        return legalSupportOrganizationalUnitId;
+    public Integer getLegalSupportDepartmentId() {
+        return legalSupportDepartmentId;
     }
 
-    public FormVersionEntity setLegalSupportOrganizationalUnitId(@Nullable Integer legalSupportDepartmentId) {
-        this.legalSupportOrganizationalUnitId = legalSupportDepartmentId;
+    public FormVersionEntity setLegalSupportDepartmentId(@Nullable Integer legalSupportDepartmentId) {
+        this.legalSupportDepartmentId = legalSupportDepartmentId;
         return this;
     }
 
     @Nullable
-    public Integer getTechnicalSupportOrganizationalUnitId() {
-        return technicalSupportOrganizationalUnitId;
+    public Integer getTechnicalSupportDepartmentId() {
+        return technicalSupportDepartmentId;
     }
 
-    public FormVersionEntity setTechnicalSupportOrganizationalUnitId(@Nullable Integer technicalSupportDepartmentId) {
-        this.technicalSupportOrganizationalUnitId = technicalSupportDepartmentId;
+    public FormVersionEntity setTechnicalSupportDepartmentId(@Nullable Integer technicalSupportDepartmentId) {
+        this.technicalSupportDepartmentId = technicalSupportDepartmentId;
         return this;
     }
 
     @Nullable
-    public Integer getImprintOrganizationalUnitId() {
-        return imprintOrganizationalUnitId;
+    public Integer getImprintDepartmentId() {
+        return imprintDepartmentId;
     }
 
-    public FormVersionEntity setImprintOrganizationalUnitId(@Nullable Integer imprintDepartmentId) {
-        this.imprintOrganizationalUnitId = imprintDepartmentId;
+    public FormVersionEntity setImprintDepartmentId(@Nullable Integer imprintDepartmentId) {
+        this.imprintDepartmentId = imprintDepartmentId;
         return this;
     }
 
     @Nullable
-    public Integer getPrivacyOrganizationalUnitId() {
-        return privacyOrganizationalUnitId;
+    public Integer getPrivacyDepartmentId() {
+        return privacyDepartmentId;
     }
 
-    public FormVersionEntity setPrivacyOrganizationalUnitId(@Nullable Integer privacyDepartmentId) {
-        this.privacyOrganizationalUnitId = privacyDepartmentId;
+    public FormVersionEntity setPrivacyDepartmentId(@Nullable Integer privacyDepartmentId) {
+        this.privacyDepartmentId = privacyDepartmentId;
         return this;
     }
 
     @Nullable
-    public Integer getAccessibilityOrganizationalUnitId() {
-        return accessibilityOrganizationalUnitId;
+    public Integer getAccessibilityDepartmentId() {
+        return accessibilityDepartmentId;
     }
 
-    public FormVersionEntity setAccessibilityOrganizationalUnitId(@Nullable Integer accessibilityDepartmentId) {
-        this.accessibilityOrganizationalUnitId = accessibilityDepartmentId;
+    public FormVersionEntity setAccessibilityDepartmentId(@Nullable Integer accessibilityDepartmentId) {
+        this.accessibilityDepartmentId = accessibilityDepartmentId;
         return this;
     }
 

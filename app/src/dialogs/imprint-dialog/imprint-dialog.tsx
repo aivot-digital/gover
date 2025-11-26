@@ -1,21 +1,21 @@
 import React, {useEffect, useState} from 'react';
 import {Alert, Box, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
-import {type DepartmentResponseDTO as Department} from '../../modules/departments/dtos/department-response-dto';
 import {useSelector} from 'react-redux';
 import {selectLoadedForm} from '../../slices/app-slice';
 import {type ImprintDialogProps} from './imprint-dialog-props';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
-import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
+import {VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
+import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
 
 export const ImprintDialogId = 'imprint';
 
 export function ImprintDialog(props: ImprintDialogProps) {
     const application = useSelector(selectLoadedForm);
 
-    const [department, setDepartment] = useState<Department>();
+    const [department, setDepartment] = useState<VDepartmentShadowedEntity>();
     const imprintDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.imprintDepartmentId));
 
     useEffect(() => {
@@ -24,7 +24,7 @@ export function ImprintDialog(props: ImprintDialogProps) {
             application?.imprintDepartmentId != null &&
             (department == null || department.id !== application.imprintDepartmentId)
         ) {
-            new DepartmentsApiService()
+            new DepartmentApiService()
                 .retrievePublic(application.imprintDepartmentId)
                 .then(setDepartment);
         } else if (
@@ -33,7 +33,7 @@ export function ImprintDialog(props: ImprintDialogProps) {
             imprintDepartmentId != '' &&
             (department == null || department.id !== parseInt(imprintDepartmentId))
         ) {
-            new DepartmentsApiService()
+            new DepartmentApiService()
                 .retrievePublic(parseInt(imprintDepartmentId))
                 .then(setDepartment);
         }

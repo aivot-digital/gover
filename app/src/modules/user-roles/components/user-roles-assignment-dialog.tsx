@@ -3,8 +3,6 @@ import {useCallback, useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {UsersApiService} from '../../users/users-api-service';
 import {User} from '../../users/models/user';
-import {DepartmentResponseDTO} from '../../departments/dtos/department-response-dto';
-import {DepartmentsApiService} from '../../departments/departments-api-service';
 import {TeamResponseDTO} from '../../teams/dtos/team-response-dto';
 import {TeamsApiService} from '../../teams/teams-api-service';
 import {UserRolesApiService} from '../user-roles-api-service';
@@ -14,6 +12,8 @@ import {OrgUserRoleAssignmentResponseDTO} from '../dtos/org-user-role-assignment
 import {TeamUserRoleAssignmentResponseDTO} from '../dtos/team-user-role-assignment-response-dto';
 import {TeamUserRoleAssignmentsApiService} from '../team-user-role-assignments-api-service';
 import {CheckboxFieldComponent} from '../../../components/checkbox-field/checkbox-field-component';
+import {DepartmentEntity} from '../../departments/entities/department-entity';
+import {DepartmentApiService} from '../../departments/services/department-api-service';
 
 interface UserRolesAssignmentDialogProps {
     open: boolean;
@@ -26,7 +26,7 @@ interface UserRolesAssignmentDialogProps {
 
 type ParentType<T extends 'orgUnit' | 'team'> =
     T extends 'orgUnit' ?
-        DepartmentResponseDTO :
+        DepartmentEntity :
         TeamResponseDTO;
 
 type MembershipType<T extends 'orgUnit' | 'team'> =
@@ -113,7 +113,7 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
 
     useEffect(() => {
         if (parentType === 'orgUnit') {
-            new DepartmentsApiService()
+            new DepartmentApiService()
                 .retrieve(parentId)
                 .then(setParent)
                 .catch(console.error); // TODO: Dispatch Error Snackbar

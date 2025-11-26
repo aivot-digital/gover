@@ -2,26 +2,24 @@ import React, {useEffect, useState} from 'react';
 import {Grid, Skeleton, Typography} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
-import {type DepartmentResponseDTO as Department} from '../../modules/departments/dtos/department-response-dto';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {SelectFieldComponent} from '../select-field/select-field-component';
 import {NumberFieldComponent} from '../number-field/number-field-component';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {Form as Application} from '../../models/entities/form';
-import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 import {withDelay} from '../../utils/with-delay';
+import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
+import {DepartmentEntity} from '../../modules/departments/entities/department-entity';
 
 export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, Application>) {
     const dispatch = useAppDispatch();
-    const [departments, setDepartments] = useState<Department[]>([]);
+    const [departments, setDepartments] = useState<DepartmentEntity[]>([]);
 
     useEffect(() => {
         withDelay(
-            new DepartmentsApiService().listAll({
-                ignoreMemberships: true,
-            }),
+            new DepartmentApiService().listAll(),
             600,
         )
             .then(deps => setDepartments(deps.content))

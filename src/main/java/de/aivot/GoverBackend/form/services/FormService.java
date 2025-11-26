@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.form.services;
 
-import de.aivot.GoverBackend.department.services.OrganizationalUnitService;
+import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.form.entities.FormEntity;
 import de.aivot.GoverBackend.form.entities.FormSlugHistoryEntity;
@@ -34,7 +34,7 @@ import java.util.function.Function;
 public class FormService implements EntityService<FormEntity, Integer> {
     private final FormRepository repository;
 
-    private final OrganizationalUnitService organizationalUnitService;
+    private final DepartmentService departmentService;
     private final SubmissionService submissionService;
     private final SubmissionRepository submissionRepository;
     private final FormVersionRepository formVersionRepository;
@@ -43,13 +43,13 @@ public class FormService implements EntityService<FormEntity, Integer> {
     @Autowired
     public FormService(
             FormRepository repository,
-            OrganizationalUnitService organizationalUnitService,
+            DepartmentService departmentService,
             SubmissionService submissionService,
             SubmissionRepository submissionRepository,
             FormVersionRepository formVersionRepository,
             FormSlugHistoryRepository formSlugHistoryRepository) {
         this.repository = repository;
-        this.organizationalUnitService = organizationalUnitService;
+        this.departmentService = departmentService;
         this.submissionService = submissionService;
         this.submissionRepository = submissionRepository;
         this.formVersionRepository = formVersionRepository;
@@ -86,7 +86,7 @@ public class FormService implements EntityService<FormEntity, Integer> {
         existingForm.setSlug(updatedForm.getSlug());
         existingForm.setInternalTitle(cleanedForm.getInternalTitle().strip());
 
-        existingForm.setDevelopingOrganizationalUnitId(cleanedForm.getDevelopingOrganizationalUnitId());
+        existingForm.setDevelopingDepartmentId(cleanedForm.getDevelopingDepartmentId());
 
         if (formSlugHistoryRepository.existsById(existingForm.getSlug())) {
             formSlugHistoryRepository.deleteById(existingForm.getSlug());
@@ -136,7 +136,7 @@ public class FormService implements EntityService<FormEntity, Integer> {
                     setter.accept(updatedDepartmentId);
                     return true;
                 } else {
-                    if (organizationalUnitService.exists(updatedDepartmentId)) {
+                    if (departmentService.exists(updatedDepartmentId)) {
                         setter.accept(updatedDepartmentId);
                         return true;
                     } else {
@@ -146,7 +146,7 @@ public class FormService implements EntityService<FormEntity, Integer> {
             }
         };
 
-        var notNull = checkDepartment.apply(FormEntity::getDevelopingOrganizationalUnitId, updated::setDevelopingOrganizationalUnitId);
+        var notNull = checkDepartment.apply(FormEntity::getDevelopingDepartmentId, updated::setDevelopingDepartmentId);
         if (!notNull) {
             throw ResponseException.badRequest("Der entwickelnde Fachbereich ist erforderlich");
         }

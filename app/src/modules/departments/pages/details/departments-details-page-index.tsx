@@ -1,10 +1,9 @@
 import {Box, Button, Grid, Typography} from '@mui/material';
-import React, {ComponentType, FC, PropsWithChildren, useContext, useEffect, useMemo, useState} from 'react';
+import React, {ComponentType, useContext, useEffect, useMemo, useState} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
 import {useNavigate, useSearchParams} from 'react-router-dom';
-import {DepartmentsApiService} from '../../departments-api-service';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
@@ -23,11 +22,12 @@ import {ThemesApiService} from '../../../themes/themes-api-service';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import {DepartmentsDetailsPageAdditionalData, NewParentIdQueryParam} from './departments-details-page';
-import {DepartmentResponseDTO as Department} from '../../dtos/department-response-dto';
 import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
 import {TextFieldComponentProps} from '../../../../components/text-field/text-field-component-props';
 import {SelectFieldComponentProps} from '../../../../components/select-field/select-field-component-props';
-import {getOrgUnitTypeLabelGenitiv} from '../../utils/org-unit-type-utils';
+import {DepartmentEntity} from '../../entities/department-entity';
+import { DepartmentApiService } from '../../services/department-api-service';
+import { getDepartmentTypeLabelGenitiv } from '../../utils/department-utils';
 
 
 export const DepartmentSchema = yup.object({
@@ -105,7 +105,7 @@ export function DepartmentsDetailsPageIndex() {
         setIsBusy,
         isEditable,
         additionalData,
-    } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<Department, DepartmentsDetailsPageAdditionalData>;
+    } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<DepartmentEntity, DepartmentsDetailsPageAdditionalData>;
 
     useEffect(() => {
         if (isEditable) {
@@ -132,9 +132,9 @@ export function DepartmentsDetailsPageIndex() {
         handleInputChange,
         validate,
         reset,
-    } = useFormManager<Department>(item, DepartmentSchema as any);
+    } = useFormManager<DepartmentEntity>(item, DepartmentSchema as any);
 
-    const apiService = useMemo(() => new DepartmentsApiService(), []);
+    const apiService = useMemo(() => new DepartmentApiService(), []);
     const department = currentItem;
     const changeBlocker = useChangeBlocker(item, currentItem);
 
@@ -184,7 +184,7 @@ export function DepartmentsDetailsPageIndex() {
             apiService
                 .create({
                     ...department,
-                    parentOrgUnitId: isNaN(parentId) ? undefined : parentId,
+                    parentDepartmentId: isNaN(parentId) ? undefined : parentId,
                 })
                 .then((newDepartment) => {
                     setItem(newDepartment);
@@ -298,7 +298,7 @@ export function DepartmentsDetailsPageIndex() {
                     mb: 1,
                 }}
             >
-                Öffentliche Informationen {getOrgUnitTypeLabelGenitiv(department.depth)}
+                Öffentliche Informationen {getDepartmentTypeLabelGenitiv(department.depth)}
             </Typography>
             <Typography
                 sx={{

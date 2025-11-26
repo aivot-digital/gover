@@ -26,6 +26,7 @@ interface FormFilters {
     internalTitle: string;
     publicTitle: string;
     developingDepartmentId: number;
+    developingDepartmentIdNot: number;
     managingDepartmentId: number;
     responsibleDepartmentId: number;
     publishedVersion: number;
@@ -60,7 +61,7 @@ export type FormIdentifier = {
     version: number;
 }
 
-export class FormsApiService extends BaseCrudApiService<FormRequestDTO, FormListResponseDTO, FormDetailsResponseDTO, FormRequestDTO, FormIdentifier, FormFilters> {
+export class FormsApiService extends BaseCrudApiService<FormRequestDTO, FormListResponseDTO, FormDetailsResponseDTO, FormRequestDTO, FormIdentifier, FormFilters, 'formInternalTitle' | 'formUpdated'> {
     constructor() {
         super('/api/forms/');
     }

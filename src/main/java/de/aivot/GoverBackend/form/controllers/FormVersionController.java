@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.form.controllers;
 
-import de.aivot.GoverBackend.department.services.OrganizationalUnitMembershipService;
+import de.aivot.GoverBackend.department.services.DepartmentMembershipService;
 import de.aivot.GoverBackend.form.dtos.FormDetailsResponseDTO;
 import de.aivot.GoverBackend.form.entities.FormVersionEntityId;
 import de.aivot.GoverBackend.form.enums.FormStatus;
@@ -28,15 +28,15 @@ public class FormVersionController {
     private final FormVersionWithMembershipService formVersionWithMembershipService;
     private final FormVersionService formVersionService;
     private final FormService formService;
-    private final OrganizationalUnitMembershipService organizationalUnitMembershipService;
+    private final DepartmentMembershipService departmentMembershipService;
     private final FormLockService formLockService;
 
     @Autowired
-    public FormVersionController(FormVersionWithMembershipService formVersionWithMembershipService, FormVersionService formVersionService, FormService formService, OrganizationalUnitMembershipService organizationalUnitMembershipService, FormLockService formLockService) {
+    public FormVersionController(FormVersionWithMembershipService formVersionWithMembershipService, FormVersionService formVersionService, FormService formService, DepartmentMembershipService departmentMembershipService, FormLockService formLockService) {
         this.formVersionWithMembershipService = formVersionWithMembershipService;
         this.formVersionService = formVersionService;
         this.formService = formService;
-        this.organizationalUnitMembershipService = organizationalUnitMembershipService;
+        this.departmentMembershipService = departmentMembershipService;
         this.formLockService = formLockService;
     }
 
@@ -78,7 +78,7 @@ public class FormVersionController {
                 .retrieve(formId)
                 .orElseThrow(ResponseException::notFound);
         FormController
-                .checkUserHasAccessToForm(user, form.getDevelopingOrganizationalUnitId(), organizationalUnitMembershipService);
+                .checkUserHasAccessToForm(user, form.getDevelopingDepartmentId(), departmentMembershipService);
 
         // Set the user ID to prevent duplicate records
         filter.setUserId(user.getId());
@@ -107,7 +107,7 @@ public class FormVersionController {
                 .retrieve(formId)
                 .orElseThrow(ResponseException::notFound);
         FormController
-                .checkUserHasAccessToForm(user, form.getDevelopingOrganizationalUnitId(), organizationalUnitMembershipService);
+                .checkUserHasAccessToForm(user, form.getDevelopingDepartmentId(), departmentMembershipService);
         // Check if the form is currently locked by another user
         FormController
                 .checkFormLock(formId, user, formLockService);

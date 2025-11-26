@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.mail.services;
 
-import de.aivot.GoverBackend.department.services.OrganizationalUnitService;
+import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.exceptions.NoValidUserEMailsInDepartmentException;
 import de.aivot.GoverBackend.form.entities.FormEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
@@ -22,12 +22,12 @@ import java.util.Set;
 @Component
 public class FormMailService {
     private final MailService mailService;
-    private final OrganizationalUnitService organizationalUnitService;
+    private final DepartmentService departmentService;
 
     @Autowired
-    public FormMailService(MailService mailService, OrganizationalUnitService organizationalUnitService) {
+    public FormMailService(MailService mailService, DepartmentService departmentService) {
         this.mailService = mailService;
-        this.organizationalUnitService = organizationalUnitService;
+        this.departmentService = departmentService;
     }
 
     public void sendAdded(UserEntity triggeringUser, FormVersionWithDetailsEntity form) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
@@ -67,7 +67,7 @@ public class FormMailService {
 
     public void sendDeleted(UserEntity triggeringUser, FormEntity form) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
         Set<Integer> departmentsToNotify = new HashSet<>();
-        departmentsToNotify.add(form.getDevelopingOrganizationalUnitId());
+        departmentsToNotify.add(form.getDevelopingDepartmentId());
         var title = "Ein bestehendes Formular wurde gelöscht";
         send(triggeringUser, title, departmentsToNotify, form, MailTemplate.FormDeletedAll);
     }
@@ -121,22 +121,22 @@ public class FormMailService {
 
     private void addDepartmentsToContext(FormVersionWithDetailsEntity form, Map<String, Object> context) {
         if (form.getDevelopingDepartmentId() != null) {
-            organizationalUnitService.retrieve(form.getDevelopingDepartmentId())
+            departmentService.retrieve(form.getDevelopingDepartmentId())
                     .ifPresent(dept -> context.put("developingDepartment", dept));
         }
         if (form.getResponsibleDepartmentId() != null) {
-            organizationalUnitService.retrieve(form.getResponsibleDepartmentId())
+            departmentService.retrieve(form.getResponsibleDepartmentId())
                     .ifPresent(dept -> context.put("responsibleDepartment", dept));
         }
         if (form.getManagingDepartmentId() != null) {
-            organizationalUnitService.retrieve(form.getManagingDepartmentId())
+            departmentService.retrieve(form.getManagingDepartmentId())
                     .ifPresent(dept -> context.put("managingDepartment", dept));
         }
     }
 
     private void addDepartmentsToContext(FormEntity form, Map<String, Object> context) {
-        if (form.getDevelopingOrganizationalUnitId() != null) {
-            organizationalUnitService.retrieve(form.getDevelopingOrganizationalUnitId())
+        if (form.getDevelopingDepartmentId() != null) {
+            departmentService.retrieve(form.getDevelopingDepartmentId())
                     .ifPresent(dept -> context.put("developingDepartment", dept));
         }
     }

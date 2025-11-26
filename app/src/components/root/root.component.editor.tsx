@@ -15,7 +15,6 @@ import {Hint} from '../hint/hint';
 import {RichTextEditorComponentView} from '../richt-text-editor/rich-text-editor.component.view';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 import {AssetsApiService} from '../../modules/assets/assets-api-service';
-import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
 import {ThemesApiService} from '../../modules/themes/themes-api-service';
 import QrCode2OutlinedIcon from '@mui/icons-material/QrCode2Outlined';
 import {downloadQrCode} from '../../utils/download-qrcode';
@@ -23,6 +22,7 @@ import {FormType, FormTypeDescriptions, FormTypeLabels, FormTypes} from '../../m
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 import {createCustomerPath} from '../../utils/url-path-utils';
 import {withDelay} from '../../utils/with-delay';
+import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
 
 export function RootComponentEditor(props: BaseEditorProps<RootElement, Application>) {
     const dispatch = useAppDispatch();
@@ -42,10 +42,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
     };
 
     useEffect(() => {
-        withDelay(new DepartmentsApiService()
-            .listAll({
-                ignoreMemberships: true,
-            }), 600)
+        withDelay(
+            new DepartmentApiService().listAll(),
+            600,
+        )
             .then((deps) => deps.content.map((department) => ({
                 value: department.id.toString(),
                 label: department.name,

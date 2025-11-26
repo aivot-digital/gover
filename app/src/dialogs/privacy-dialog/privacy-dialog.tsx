@@ -1,21 +1,21 @@
 import {Alert, Box, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
 import React, {useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
-import {type DepartmentResponseDTO as Department} from '../../modules/departments/dtos/department-response-dto';
 import {useSelector} from 'react-redux';
 import {selectLoadedForm} from '../../slices/app-slice';
 import {type PrivacyDialogProps} from './privacy-dialog-props';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
-import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
+import {VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
+import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
 
 export const PrivacyDialogId = 'privacy';
 
 export function PrivacyDialog(props: PrivacyDialogProps) {
     const application = useSelector(selectLoadedForm);
 
-    const [department, setDepartment] = useState<Department>();
+    const [department, setDepartment] = useState<VDepartmentShadowedEntity>();
     const privacyDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.privacyDepartmentId));
 
     useEffect(() => {
@@ -24,7 +24,7 @@ export function PrivacyDialog(props: PrivacyDialogProps) {
             application?.privacyDepartmentId != null &&
             (department == null || department.id !== application.privacyDepartmentId)
         ) {
-            new DepartmentsApiService()
+            new DepartmentApiService()
                 .retrievePublic(application.privacyDepartmentId)
                 .then(setDepartment);
         } else if (
@@ -33,7 +33,7 @@ export function PrivacyDialog(props: PrivacyDialogProps) {
             privacyDepartmentId != '' &&
             (department == null || department.id !== parseInt(privacyDepartmentId))
         ){
-            new DepartmentsApiService()
+            new DepartmentApiService()
                 .retrievePublic(parseInt(privacyDepartmentId))
                 .then(setDepartment);
         }
