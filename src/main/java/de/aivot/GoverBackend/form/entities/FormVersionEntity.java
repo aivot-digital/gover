@@ -11,7 +11,9 @@ import de.aivot.GoverBackend.payment.converters.PaymentProductsConverter;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.validator.constraints.Length;
 
 import java.time.LocalDateTime;
 import java.util.LinkedList;
@@ -29,21 +31,26 @@ public class FormVersionEntity {
 
     @Nonnull
     @Column(columnDefinition = "text")
+    @NotNull(message = "Der öffentliche Titel darf nicht null sein.")
+    @Length(max = 255, message = "Der öffentliche Titel darf maximal 255 Zeichen lang sein.")
     private String publicTitle;
 
     @Id
     @Nonnull
     @Column(columnDefinition = "int2")
+    @NotNull(message = "Die Versionsnummer darf nicht null sein.")
     private Integer version;
 
     @Nonnull
     @ColumnDefault("0")
     @Column(columnDefinition = "int2")
+    @NotNull(message = "Der Status darf nicht null sein.")
     private FormStatus status = FormStatus.Drafted;
 
     @Nonnull
     @ColumnDefault("0")
     @Column(columnDefinition = "int2")
+    @NotNull(message = "Der Typ darf nicht null sein.")
     private FormType type = FormType.Public;
 
     @Nullable
@@ -73,11 +80,13 @@ public class FormVersionEntity {
     @Nullable
     @ColumnDefault("4")
     @Column(columnDefinition = "int2")
+    @NotNull(message = "Die Zugriffszeit für Kunden darf nicht null sein.")
     private Integer customerAccessHours = 4;
 
     @Nullable
     @ColumnDefault("4")
     @Column(columnDefinition = "int2")
+    @NotNull(message = "Die Aufbewahrungsdauer für Übermittlungen darf nicht null sein.")
     private Integer submissionRetentionWeeks = 4;
 
     @Nullable
@@ -113,6 +122,7 @@ public class FormVersionEntity {
     @Nonnull
     @Convert(converter = RootElementConverter.class)
     @Column(columnDefinition = "jsonb")
+    @NotNull(message = "Das Wurzelelement darf nicht null sein.")
     private RootElement rootElement;
 
     @Nonnull

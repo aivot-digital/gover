@@ -1,14 +1,12 @@
 package de.aivot.GoverBackend.form.entities;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "v_forms_with_permissions")
+@IdClass(VFormWithPermissionEntityId.class)
 public class VFormWithPermissionEntity {
     @Id
     private Integer id;
@@ -22,6 +20,7 @@ public class VFormWithPermissionEntity {
     @Column(columnDefinition = "int2")
     private Integer draftedVersion;
     private Integer versionCount;
+    @Id
     private String userId;
     private Boolean formPermissionCreate;
     private Boolean formPermissionRead;

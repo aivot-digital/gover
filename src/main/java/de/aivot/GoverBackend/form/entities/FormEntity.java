@@ -3,6 +3,8 @@ package de.aivot.GoverBackend.form.entities;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import org.hibernate.validator.constraints.Length;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -17,20 +19,19 @@ public class FormEntity {
 
     @Nonnull
     @Column(length = 255)
+    @NotNull(message = "Die Slug darf nicht null sein.")
+    @Length(min = 3, max = 255, message = "Die Slug muss zwischen 3 und 255 Zeichen lang sein.")
     private String slug;
 
     @Nonnull
     @Column(length = 96)
+    @NotNull(message = "Der interne Titel darf nicht null sein.")
+    @Length(min = 3, max = 96, message = "Der interne Titel muss zwischen 3 und 96 Zeichen lang sein.")
     private String internalTitle;
 
     @Nonnull
+    @NotNull(message = "Die ID der entwickelnden Abteilung darf nicht null sein.")
     private Integer developingDepartmentId;
-
-    @Nonnull
-    private LocalDateTime created;
-
-    @Nonnull
-    private LocalDateTime updated;
 
     @Nullable
     @Column(columnDefinition = "int2")
@@ -42,6 +43,12 @@ public class FormEntity {
 
     @Nonnull
     private Integer versionCount;
+
+    @Nonnull
+    private LocalDateTime created;
+
+    @Nonnull
+    private LocalDateTime updated;
 
     // region constructors
 

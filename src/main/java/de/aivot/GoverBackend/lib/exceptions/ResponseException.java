@@ -122,6 +122,11 @@ public class ResponseException extends Exception {
         return new ResponseException(HttpStatus.FORBIDDEN, message);
     }
 
+    public static ResponseException noPermission(String permissionName) {
+        return ResponseException.forbidden(String.format(
+                "Sie müssen die Systemrolle \"Superadministrator:in\" besitzen, oder benötigen eine Domänenrolle mit der Berechtigung \"%s\", um diese Aktion durchzuführen.", permissionName));
+    }
+
     public static ResponseException notFound() {
         return ResponseException.notFound("Die angeforderte Ressource wurde nicht gefunden.");
     }
