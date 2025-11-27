@@ -99,9 +99,9 @@ cors:
 management:
   endpoints:
     access:
-      default: read_only
+      default: none
     web:
-      base-path: /api/public/actuator
+      base-path: /api/actuator
       exposure:
         include: "*"
 
@@ -109,8 +109,6 @@ management:
     health:
       access: read_only
       show-details: when-authorized
-    httpexchanges:
-      access: read_only
 
   health:
     diskspace:
@@ -146,16 +144,16 @@ clam:
   host: "${GOVER_CLAM_HOST}"
   port: "${GOVER_CLAM_PORT}"
   timeout: 20000
-  
+
 # Set the properties for the Gotenberg server
 gotenberg:
   host: "${GOVER_GOTENBERG_HOST}"
   port: "${GOVER_GOTENBERG_PORT}"
-  
+
 # Set the encryption key for the secrets
 secrets:
   key: "${GOVER_SECRETS_KEY}"
-  
+
 # Set the encryption key for captcha challenges
 captcha:
   key: "${GOVER_CAPTCHA_KEY}"
@@ -190,3 +188,10 @@ storage:
   remoteBucket: "${GOVER_STORAGE_REMOTE_BUCKET:}"
   remoteAccessKey: "${GOVER_STORAGE_REMOTE_ACCESS_KEY:}"
   remoteSecretKey: "${GOVER_STORAGE_REMOTE_SECRET_KEY:}"
+
+springdoc:
+  apiDocs:
+    path: "/api/public/docs/openapi.yml"
+  swaggerUi:
+    path: "/api/public/docs/swagger.html"
+  showActuator: true

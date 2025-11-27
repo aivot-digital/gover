@@ -190,6 +190,11 @@
             <artifactId>jackson-dataformat-xml</artifactId>
             <version>2.19.1</version> <!-- The same version as the one in spring boot -->
         </dependency>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.8.14</version>
+        </dependency>
     </dependencies>
 
     <build>
