@@ -19,11 +19,11 @@ import de.aivot.GoverBackend.exceptions.BadRequestException;
 import de.aivot.GoverBackend.exceptions.ConflictException;
 import de.aivot.GoverBackend.exceptions.NotAcceptableException;
 import de.aivot.GoverBackend.exceptions.UserFriendlyResponseStatusException;
-import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
-import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntityId;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntityId;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
-import de.aivot.GoverBackend.form.repositories.FormVersionWithDetailsRepository;
+import de.aivot.GoverBackend.form.repositories.VFormVersionWithDetailsRepository;
 import de.aivot.GoverBackend.form.services.FormPaymentService;
 import de.aivot.GoverBackend.identity.cache.entities.IdentityCacheEntity;
 import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
@@ -79,7 +79,6 @@ import java.util.UUID;
 
 @RestController
 public class SubmitController {
-    private final FormRepository formRepository;
     private final SubmissionRepository submissionRepository;
     private final SubmissionAttachmentRepository submissionAttachmentRepository;
     private final AVService avService;
@@ -98,29 +97,28 @@ public class SubmitController {
     private final IdentityCacheRepository identityCacheRepository;
     private final AltchaService altchaService;
     private final ElementDerivationService elementDerivationService;
-    private final FormVersionWithDetailsRepository formVersionWithDetailsRepository;
+    private final VFormVersionWithDetailsRepository formVersionWithDetailsRepository;
 
     @Autowired
-    public SubmitController(
-            FormRepository formRepository,
-            SubmissionRepository submissionRepository,
-            SubmissionAttachmentRepository submissionAttachmentRepository,
-            AVService avService,
-            PdfService pdfService,
-            DestinationSubmitService destinationSubmitService,
-            SubmissionStorageService submissionStorageService,
-            GoverConfig goverConfig,
-            DestinationRepository destinationRepository,
-            CustomerMailService customerMailService,
-            SubmissionMailService submissionMailService,
-            ExceptionMailService exceptionMailService,
-            FormPaymentService paymentService,
-            PaymentProviderService paymentProviderService,
-            PaymentTransactionRepository paymentTransactionRepository,
-            PaymentProviderRepository paymentProviderRepository,
-            IdentityCacheRepository identityCacheRepository,
-            AltchaService altchaService, ElementDerivationService elementDerivationService, FormVersionWithDetailsRepository formVersionWithDetailsRepository) {
-        this.formRepository = formRepository;
+    public SubmitController(SubmissionRepository submissionRepository,
+                            SubmissionAttachmentRepository submissionAttachmentRepository,
+                            AVService avService,
+                            PdfService pdfService,
+                            DestinationSubmitService destinationSubmitService,
+                            SubmissionStorageService submissionStorageService,
+                            GoverConfig goverConfig,
+                            DestinationRepository destinationRepository,
+                            CustomerMailService customerMailService,
+                            SubmissionMailService submissionMailService,
+                            ExceptionMailService exceptionMailService,
+                            FormPaymentService paymentService,
+                            PaymentProviderService paymentProviderService,
+                            PaymentTransactionRepository paymentTransactionRepository,
+                            PaymentProviderRepository paymentProviderRepository,
+                            IdentityCacheRepository identityCacheRepository,
+                            AltchaService altchaService,
+                            ElementDerivationService elementDerivationService,
+                            VFormVersionWithDetailsRepository formVersionWithDetailsRepository) {
         this.submissionRepository = submissionRepository;
         this.submissionAttachmentRepository = submissionAttachmentRepository;
         this.avService = avService;
@@ -153,7 +151,7 @@ public class SubmitController {
     ) throws ResponseException {
         // Fetch form
         var form = formVersionWithDetailsRepository
-                .findById(FormVersionWithDetailsEntityId.of(formId, formVersion))
+                .findById(new VFormVersionWithDetailsEntityId(formId, formVersion))
                 .orElseThrow(ResponseException::notFound);
 
         Destination destination = null;
@@ -360,7 +358,7 @@ public class SubmitController {
         return submissionCopy;
     }
 
-    private void hydrateCustomerInputWithIdpData(FormVersionWithDetailsEntity form, Optional<IdentityCacheEntity> optionalIdp, ElementData customerInput) throws ResponseException {
+    private void hydrateCustomerInputWithIdpData(VFormVersionWithDetailsEntity form, Optional<IdentityCacheEntity> optionalIdp, ElementData customerInput) throws ResponseException {
         if (form.getIdentityVerificationRequired() && optionalIdp.isEmpty()) {
             throw ResponseException.badRequest("Ein Identitätsnachweis ist erforderlich, um den Antrag einzureichen.");
         }
@@ -517,7 +515,7 @@ public class SubmitController {
         }
 
         var form = formVersionWithDetailsRepository
-                .findById(FormVersionWithDetailsEntityId.of(submission.getFormId(), submission.getFormVersion()))
+                .findById(new VFormVersionWithDetailsEntityId(submission.getFormId(), submission.getFormVersion()))
                 .orElseThrow(() -> new UserFriendlyResponseStatusException(HttpStatus.NOT_FOUND, "Das Formular mit der ID " + submission.getFormId() + " konnte nicht gefunden werden."));
 
         // Get the path to the generated pdf
@@ -551,7 +549,7 @@ public class SubmitController {
 
     private boolean testSubmissionExpired(Submission submission) {
         var form = formVersionWithDetailsRepository
-                .findById(FormVersionWithDetailsEntityId.of(submission.getFormId(), submission.getFormVersion()));
+                .findById(new VFormVersionWithDetailsEntityId(submission.getFormId(), submission.getFormVersion()));
 
         return form.map(submission::hasExternalAccessExpired).orElse(true);
     }

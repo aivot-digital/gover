@@ -27,6 +27,7 @@ import {ShellResolutionOverlay} from './components/shell-resolution-overlay';
 import {StaffShellError} from './staff-shell-error';
 import {VDepartmentMembershipWithDetailsService} from '../../modules/departments/services/v-department-membership-with-details-service';
 import {VDepartmentMembershipWithDetailsEntityWithRoles} from '../../modules/departments/entities/v-department-membership-with-details-entity';
+import {UsersApiService} from '../../modules/users/users-api-service';
 
 export function StaffShell() {
     const routerError = useRouteError();
@@ -219,8 +220,8 @@ async function authenticateWithOidcCode(searchParams: URLSearchParams): Promise<
         window.location.search = '';
     }
 
-    const user = await apiService
-        .get<User>('/api/users/self/');
+    const user = await new UsersApiService()
+        .retrieveSelf();
 
     const membershipsPage = await new VDepartmentMembershipWithDetailsService()
         .listDepartmentMembershipsWithRoles(0, 999, undefined, undefined, {

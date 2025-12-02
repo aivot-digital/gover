@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.destination.entities.Destination;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.exceptions.ConflictException;
-import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.javascript.models.JavascriptResult;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
@@ -87,7 +87,7 @@ public class DestinationSubmitService {
         }
     }
 
-    public void handleSubmit(Destination destination, FormVersionWithDetailsEntity form, Submission submission, Collection<SubmissionAttachment> attachments) throws ResponseException {
+    public void handleSubmit(Destination destination, VFormVersionWithDetailsEntity form, Submission submission, Collection<SubmissionAttachment> attachments) throws ResponseException {
         // Send to destination
         DestinationResponse response;
         try {
@@ -143,7 +143,7 @@ public class DestinationSubmitService {
         }
     }
 
-    private DestinationResponse sendHttp(Destination destination, FormVersionWithDetailsEntity form, Submission submission, Collection<SubmissionAttachment> attachments) throws ResponseException {
+    private DestinationResponse sendHttp(Destination destination, VFormVersionWithDetailsEntity form, Submission submission, Collection<SubmissionAttachment> attachments) throws ResponseException {
         URL url;
         try {
             url = new URL(destination.getApiAddress());

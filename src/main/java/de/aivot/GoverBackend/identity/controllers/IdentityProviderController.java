@@ -4,11 +4,10 @@ import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.form.enums.FormStatus;
-import de.aivot.GoverBackend.form.filters.FormFilter;
-import de.aivot.GoverBackend.form.filters.FormVersionWithDetailsFilter;
+import de.aivot.GoverBackend.form.filters.VFormVersionWithDetailsFilter;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
 import de.aivot.GoverBackend.form.repositories.FormVersionRepository;
-import de.aivot.GoverBackend.form.repositories.FormVersionWithDetailsRepository;
+import de.aivot.GoverBackend.form.repositories.VFormVersionWithDetailsRepository;
 import de.aivot.GoverBackend.form.services.FormRevisionService;
 import de.aivot.GoverBackend.identity.dtos.IdentityProviderDetailsDTO;
 import de.aivot.GoverBackend.identity.dtos.IdentityProviderListDTO;
@@ -40,23 +39,21 @@ public class IdentityProviderController {
 
     private final IdentityProviderService identityProviderService;
     private final FormRevisionService formRevisionService;
-    private final FormRepository formRepository;
-    private final FormVersionWithDetailsRepository formVersionWithDetailsRepository;
+    private final VFormVersionWithDetailsRepository formVersionWithDetailsRepository;
     private final FormVersionRepository formVersionRepository;
 
     @Autowired
-    public IdentityProviderController(
-            AuditService auditService,
-            IdentityProviderService identityProviderService,
-            FormRevisionService formRevisionService,
-            FormRepository formRepository,
-            FormVersionWithDetailsRepository formVersionWithDetailsRepository, FormVersionRepository formVersionRepository) {
+    public IdentityProviderController(AuditService auditService,
+                                      IdentityProviderService identityProviderService,
+                                      FormRevisionService formRevisionService,
+                                      FormRepository formRepository,
+                                      VFormVersionWithDetailsRepository formVersionWithDetailsRepository,
+                                      FormVersionRepository formVersionRepository) {
         this.auditService = auditService
                 .createScopedAuditService(IdentityProviderController.class);
 
         this.identityProviderService = identityProviderService;
         this.formRevisionService = formRevisionService;
-        this.formRepository = formRepository;
         this.formVersionWithDetailsRepository = formVersionWithDetailsRepository;
         this.formVersionRepository = formVersionRepository;
     }
@@ -84,7 +81,7 @@ public class IdentityProviderController {
         UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var preparedEntity = identityProviderService
@@ -102,7 +99,7 @@ public class IdentityProviderController {
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var created = identityProviderService
@@ -147,10 +144,10 @@ public class IdentityProviderController {
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
-        var formFilter = FormVersionWithDetailsFilter
+        var formFilter = VFormVersionWithDetailsFilter
                 .create()
                 .setIdentityProviderKey(key)
                 .setStatus(FormStatus.Published);
@@ -166,7 +163,7 @@ public class IdentityProviderController {
                 .update(key, requestDTO.toEntity());
 
         if (!updatedEntity.getIsEnabled()) {
-            var linkedFormFilter = FormVersionWithDetailsFilter
+            var linkedFormFilter = VFormVersionWithDetailsFilter
                     .create()
                     .setIdentityProviderKey(key);
 
@@ -183,7 +180,7 @@ public class IdentityProviderController {
                         .toList();
 
                 form.setIdentityProviders(identityProvidersWithoutThisIdentityProvider);
-                formVersionRepository.save(form.toVersionEntity());
+                formVersionRepository.save(form.toFormVersionEntity());
 
                 formRevisionService
                         .create(user, form, formClone);
@@ -207,7 +204,7 @@ public class IdentityProviderController {
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var entity = identityProviderService
@@ -221,7 +218,7 @@ public class IdentityProviderController {
             );
         }
 
-        var formFilter = new FormVersionWithDetailsFilter()
+        var formFilter = new VFormVersionWithDetailsFilter()
                 .setIdentityProviderKey(key)
                 .setStatus(FormStatus.Published);
 
@@ -232,7 +229,7 @@ public class IdentityProviderController {
             );
         }
 
-        var linkedFormFilter = new FormVersionWithDetailsFilter()
+        var linkedFormFilter = new VFormVersionWithDetailsFilter()
                 .setIdentityProviderKey(key);
 
         var linkedForms = formVersionWithDetailsRepository
@@ -248,7 +245,7 @@ public class IdentityProviderController {
                     .toList();
 
             form.setIdentityProviders(identityProvidersWithoutThisIdentityProvider);
-            formVersionRepository.save(form.toVersionEntity());
+            formVersionRepository.save(form.toFormVersionEntity());
 
             formRevisionService
                     .create(user, form, formClone);

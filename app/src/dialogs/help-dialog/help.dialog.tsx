@@ -21,20 +21,20 @@ export function HelpDialog(props: HelpDialogProps) {
         const ac = new AbortController();
 
         if (
-            application?.technicalSupportDepartmentId != null &&
-            (technicalDepartment == null || technicalDepartment.id !== application.technicalSupportDepartmentId)
+            application?.version.technicalSupportDepartmentId != null &&
+            (technicalDepartment == null || technicalDepartment.id !== application.version.technicalSupportDepartmentId)
         ) {
             new DepartmentApiService()
-                .retrievePublic(application.technicalSupportDepartmentId)
+                .retrievePublic(application.version.technicalSupportDepartmentId)
                 .then(setTechnicalDepartment);
         }
 
         if (
-            application?.legalSupportDepartmentId != null &&
-            (specialDepartment == null || specialDepartment.id !== application.legalSupportDepartmentId)
+            application?.version.legalSupportDepartmentId != null &&
+            (specialDepartment == null || specialDepartment.id !== application.version.legalSupportDepartmentId)
         ) {
             new DepartmentApiService()
-                .retrievePublic(application.legalSupportDepartmentId)
+                .retrievePublic(application.version.legalSupportDepartmentId)
                 .then(setSpecialDepartment);
         }
 
@@ -232,7 +232,7 @@ export function HelpDialog(props: HelpDialogProps) {
                             }}
                         >
                             <BoxLink
-                                link={`mailto:${specialDepartment.specialSupportAddress}?subject=Fachlicher Support: ${application.publicTitle}`}
+                                link={`mailto:${specialDepartment.specialSupportAddress}?subject=Fachlicher Support: ${application.version.publicTitle}`}
                                 text={'Fachlicher Support:\nUnterstützung zum Inhalt\nund Ausfüllen des Antrages'}
                             />
                         </Grid>
@@ -243,7 +243,7 @@ export function HelpDialog(props: HelpDialogProps) {
                             }}
                         >
                             <BoxLink
-                                link={`mailto:${technicalDepartment.technicalSupportAddress}?subject=Technischer Support: ${application.publicTitle}`}
+                                link={`mailto:${technicalDepartment.technicalSupportAddress}?subject=Technischer Support: ${application.version.publicTitle}`}
                                 text={'Technischer Support:\nUnterstützung bei technischen Problemen und Fehlern'}
                             />
                         </Grid>

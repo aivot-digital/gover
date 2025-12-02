@@ -77,20 +77,6 @@ public class FormEntity {
         this.versionCount = versionCount;
     }
 
-    public static FormEntity from(FormVersionWithDetailsEntity formVersionWithDetailsEntity) {
-        return new FormEntity(
-                formVersionWithDetailsEntity.getId(),
-                formVersionWithDetailsEntity.getSlug(),
-                formVersionWithDetailsEntity.getInternalTitle(),
-                formVersionWithDetailsEntity.getDevelopingDepartmentId(),
-                formVersionWithDetailsEntity.getCreated(),
-                formVersionWithDetailsEntity.getUpdated(),
-                formVersionWithDetailsEntity.getPublishedVersion(),
-                formVersionWithDetailsEntity.getDraftedVersion(),
-                formVersionWithDetailsEntity.getVersionCount()
-        );
-    }
-
     // endregion
 
     // region Signales

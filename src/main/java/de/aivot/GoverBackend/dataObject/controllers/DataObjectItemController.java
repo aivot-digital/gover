@@ -2,7 +2,6 @@ package de.aivot.GoverBackend.dataObject.controllers;
 
 import de.aivot.GoverBackend.dataObject.dtos.DataObjectItemRequestDTO;
 import de.aivot.GoverBackend.dataObject.dtos.DataObjectItemResponseDTO;
-import de.aivot.GoverBackend.dataObject.entities.DataObjectItemEntity;
 import de.aivot.GoverBackend.dataObject.entities.DataObjectItemEntityId;
 import de.aivot.GoverBackend.dataObject.filters.DataObjectItemFilter;
 import de.aivot.GoverBackend.dataObject.services.DataObjectItemService;
@@ -20,9 +19,6 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/data-objects/{schemaKey}/items/")
@@ -70,7 +66,7 @@ public class DataObjectItemController {
         UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var schema = schemaService
@@ -120,7 +116,7 @@ public class DataObjectItemController {
         UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var schema = schemaService
@@ -148,7 +144,7 @@ public class DataObjectItemController {
         UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var id = new DataObjectItemEntityId(schemaKey, itemId);

@@ -59,7 +59,7 @@ public class ThemeController {
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var newTheme = newThemeRequest
@@ -102,7 +102,7 @@ public class ThemeController {
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var changedTheme = changeThemeRequest
@@ -128,7 +128,7 @@ public class ThemeController {
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var deletedTheme = service

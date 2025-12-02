@@ -20,7 +20,6 @@ import {useFormManager} from '../../../../hooks/use-form-manager';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {ConstraintDialog} from '../../../../dialogs/constraint-dialog/constraint-dialog';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
-import {FormsApiService} from '../../../forms/forms-api-service';
 import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constraint-link-props';
 import HelpIconOutlined from '@mui/icons-material/HelpOutline';
 import Tooltip from '@mui/material/Tooltip';
@@ -30,6 +29,7 @@ import {PaymentProviderDefinitionResponseDTO} from '../../dtos/payment-provider-
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
+import {VFormVersionWithDetailsService} from '../../../forms/services/v-form-version-with-details-api-service';
 
 export const _PaymentProviderSchema = {
     name: yup.string()
@@ -86,7 +86,7 @@ export function PaymentProviderDetailsPageIndex() {
 
         return () => {
             dispatch(removeSnackbarMessage('payment-provider-no-access'));
-        }
+        };
     }, [isEditable]);
 
     const {
@@ -212,8 +212,8 @@ export function PaymentProviderDetailsPageIndex() {
 
         setIsBusy(true);
         try {
-            const formsApi = new FormsApiService(api);
-            const relatedForms = await formsApi.listAllVersions({
+            const formsApi = new VFormVersionWithDetailsService();
+            const relatedForms = await formsApi.listAll({
                 paymentProviderKey: paymentProvider.key,
             });
 

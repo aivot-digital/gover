@@ -2,7 +2,7 @@ import {ElementType} from '../data/element-type/element-type';
 import {type IntroductionStepElement} from '../models/elements/steps/introduction-step-element';
 import {type SummaryStepElement} from '../models/elements/steps/summary-step-element';
 import {type SubmitStepElement} from '../models/elements/steps/submit-step-element';
-import {type AnyElement} from '../models/elements/any-element';
+import {type AnyElement, AnyElementType} from '../models/elements/any-element';
 import {generateElementIdForType} from './id-utils';
 import {DateFieldComponentModelMode, DateFieldElement} from '../models/elements/form/input/date-field-element';
 import {RootElement} from '../models/elements/root-element';
@@ -301,7 +301,7 @@ const elementConstructors: {
     }),
 };
 
-export function generateElementWithDefaultValues<T extends ElementType>(type: T): AnyElement | undefined {
+export function generateElementWithDefaultValues<T extends ElementType>(type: T): AnyElementType<T> {
     const id = generateElementIdForType(type);
-    return elementConstructors[type](id);
+    return elementConstructors[type](id) as AnyElementType<T>;
 }

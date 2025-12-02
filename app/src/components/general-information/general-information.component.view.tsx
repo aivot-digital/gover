@@ -66,10 +66,10 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
 
     useEffect(() => {
         if (application != null) {
-            if (application.responsibleDepartmentId != null) {
-                if (responsibleDepartment == null || responsibleDepartment.id !== application.responsibleDepartmentId) {
+            if (application.version.responsibleDepartmentId != null) {
+                if (responsibleDepartment == null || responsibleDepartment.id !== application.version.responsibleDepartmentId) {
                     new DepartmentApiService()
-                        .retrievePublic(application.responsibleDepartmentId)
+                        .retrievePublic(application.version.responsibleDepartmentId)
                         .then(setResponsibleDepartment)
                         .catch((err) => {
                             console.error(err);
@@ -80,10 +80,10 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 setResponsibleDepartment(undefined);
             }
 
-            if (application.managingDepartmentId != null) {
-                if (managingDepartment == null || managingDepartment.id !== application.managingDepartmentId) {
+            if (application.version.managingDepartmentId != null) {
+                if (managingDepartment == null || managingDepartment.id !== application.version.managingDepartmentId) {
                     new DepartmentApiService()
-                        .retrievePublic(application.managingDepartmentId)
+                        .retrievePublic(application.version.managingDepartmentId)
                         .then(setManagingDepartment)
                         .catch((err) => {
                             console.error(err);
@@ -94,7 +94,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 setManagingDepartment(undefined);
             }
         }
-    }, [props.element, application?.responsibleDepartmentId, application?.managingDepartmentId]);
+    }, [props.element, application?.version.responsibleDepartmentId, application?.version.managingDepartmentId]);
 
     const renderEligiblePerson = (person: string, index: number) => (
         <ListItem
@@ -228,7 +228,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
     }
 
     if (application != null &&
-        !isStringNullOrEmpty(application?.rootElement.expiring)) {
+        !isStringNullOrEmpty(application?.version.rootElement.expiring)) {
         sections.push(
             <Box key="deadline">
                 <Typography
@@ -242,7 +242,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                     variant="body2"
                     sx={{mt: 1}}
                 >
-                    {application.rootElement.expiring}
+                    {application.version.rootElement.expiring}
                 </Typography>
             </Box>,
         );
@@ -293,7 +293,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                     (props.element.eligiblePersons ?? []).length > 0 ||
                     (props.element.supportingDocuments ?? []).length > 0 ||
                     (props.element.documentsToAttach ?? []).length > 0 ||
-                    !isStringNullOrEmpty(application?.rootElement.expiring) ||
+                    !isStringNullOrEmpty(application?.version.rootElement.expiring) ||
                     !isStringNullOrEmpty(props.element.expectedCosts)
                 ) &&
                 <FadingPaper>
@@ -326,7 +326,8 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 isDeriving={props.isDeriving}
                 elementData={elementData}
                 onElementDataChange={ed => onElementDataChange(ed, [])}
-                form={application!}
+                form={application?.form!}
+                version={application?.version!}
             />
 
             <Typography
@@ -340,7 +341,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             </Typography>
 
             {
-                application?.rootElement.privacyText != null &&
+                application?.version.rootElement.privacyText != null &&
                 <Box
                     sx={{
                         maxWidth: '600px',
@@ -348,7 +349,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                     }}
                 >
                     <FormattedTextWithDialogTags
-                        text={application.rootElement.privacyText}
+                        text={application.version.rootElement.privacyText}
                     />
                 </Box>
             }

@@ -1,0 +1,12 @@
+package de.aivot.GoverBackend.form.repositories;
+
+import de.aivot.GoverBackend.core.repositories.ReadOnlyRepository;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsAndPermissionsEntity;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsAndPermissionsEntityId;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntityId;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+
+public interface VFormVersionWithDetailsAndPermissionsRepository extends ReadOnlyRepository<VFormVersionWithDetailsAndPermissionsEntity, VFormVersionWithDetailsAndPermissionsEntityId>, JpaSpecificationExecutor<VFormVersionWithDetailsAndPermissionsEntity> {
+
+}

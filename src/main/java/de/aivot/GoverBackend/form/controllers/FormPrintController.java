@@ -1,8 +1,10 @@
 package de.aivot.GoverBackend.form.controllers;
 
-import de.aivot.GoverBackend.form.services.FormVersionWithDetailsService;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntityId;
+import de.aivot.GoverBackend.form.services.VFormVersionWithDetailsService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.services.PdfService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -21,17 +23,13 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 
-/**
- * Controller for generating and serving printable PDF versions of forms.
- * <p>
- * This controller provides an endpoint to retrieve a PDF representation of a form version.
- * It uses {@link PdfService} to generate the PDF and {@link FormVersionWithDetailsService} to retrieve form details.
- */
+
 @RestController
 @RequestMapping("/api/forms/{formId}/{formVersion}/print/")
+@Tag(name = "Form", description = "Interact with forms")
 public class FormPrintController {
     private final PdfService pdfService;
-    private final FormVersionWithDetailsService formVersionWithDetailsService;
+    private final VFormVersionWithDetailsService formVersionWithDetailsService;
 
     /**
      * Constructs a new FormPrintController with required services.
@@ -41,7 +39,7 @@ public class FormPrintController {
      */
     @Autowired
     public FormPrintController(PdfService pdfService,
-                               FormVersionWithDetailsService formVersionWithDetailsService) {
+                               VFormVersionWithDetailsService formVersionWithDetailsService) {
         this.pdfService = pdfService;
         this.formVersionWithDetailsService = formVersionWithDetailsService;
     }
@@ -60,7 +58,7 @@ public class FormPrintController {
             @Nonnull @PathVariable Integer formVersion
     ) throws ResponseException {
         var form = formVersionWithDetailsService
-                .retrieve(formId, formVersion)
+                .retrieve(new VFormVersionWithDetailsEntityId(formId, formVersion))
                 .orElseThrow(ResponseException::notFound);
 
         byte[] bytes;

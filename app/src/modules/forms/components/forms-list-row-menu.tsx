@@ -1,6 +1,5 @@
 import React from 'react';
 import {Divider, Link, ListItemIcon, ListItemText, Menu, MenuItem} from '@mui/material';
-import {FormListResponseDTO} from '../dtos/form-list-response-dto';
 import {createCustomerPath} from '../../../utils/url-path-utils';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import {downloadQrCode} from '../../../utils/download-qrcode';
@@ -11,15 +10,16 @@ import QrCode from '@aivot/mui-material-symbols-400-outlined/dist/qr-code/QrCode
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import OpenInNew from '@aivot/mui-material-symbols-400-outlined/dist/open-in-new/OpenInNew';
 import ApprovalDelegation from '@aivot/mui-material-symbols-400-outlined/dist/approval-delegation/ApprovalDelegation';
+import {FormEntity} from '../entities/form-entity';
 
 interface FormsListRowMenuProps {
     anchorEl: HTMLElement | null;
     onClose: () => void;
-    form: FormListResponseDTO;
+    form: FormEntity;
 
-    onManageAccess: (form: FormListResponseDTO) => void;
-    onMoveFormToDepartment: (form: FormListResponseDTO) => void;
-    onDeleteForm: (form: FormListResponseDTO) => void;
+    onManageAccess: (form: FormEntity) => void;
+    onMoveFormToDepartment: (form: FormEntity) => void;
+    onDeleteForm: (form: FormEntity) => void;
 }
 
 export function FormsListRowMenu(props: FormsListRowMenuProps) {

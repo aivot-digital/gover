@@ -60,7 +60,7 @@ public class ResourceAccessControlController {
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var created = resourceAccessControlService
@@ -99,7 +99,7 @@ public class ResourceAccessControlController {
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var result = resourceAccessControlService
@@ -122,7 +122,7 @@ public class ResourceAccessControlController {
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var entity = resourceAccessControlService

@@ -10,7 +10,7 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.FileUploadField
 import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
 import de.aivot.GoverBackend.elements.models.elements.form.layout.ReplicatingContainerLayout;
 import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
-import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
 import de.aivot.GoverBackend.identity.models.IdentityData;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
@@ -35,7 +35,7 @@ public class DestinationDataFormatter {
     private final Map<String, Object> data;
     private static final String destinationSkipKey = "#";
 
-    private final FormVersionWithDetailsEntity form;
+    private final VFormVersionWithDetailsEntity form;
     private final Submission submission;
     private final PaymentTransactionEntity paymentTransaction;
     private final PaymentProviderEntity paymentProvider;
@@ -44,7 +44,7 @@ public class DestinationDataFormatter {
 
     private DestinationDataFormatter(
             @Nonnull
-            FormVersionWithDetailsEntity form,
+            VFormVersionWithDetailsEntity form,
             @Nonnull
             Submission submission,
             @Nullable
@@ -67,7 +67,7 @@ public class DestinationDataFormatter {
 
     public static DestinationDataFormatter createDataWithoutFiles(
             @Nonnull
-            FormVersionWithDetailsEntity form,
+            VFormVersionWithDetailsEntity form,
             @Nonnull
             Submission submission,
             @Nullable
@@ -86,7 +86,7 @@ public class DestinationDataFormatter {
 
     public static DestinationDataFormatter create(
             @Nonnull
-            FormVersionWithDetailsEntity form,
+            VFormVersionWithDetailsEntity form,
             @Nonnull
             Submission submission,
             @Nullable

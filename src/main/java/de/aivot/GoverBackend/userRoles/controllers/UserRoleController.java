@@ -4,7 +4,6 @@ import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.payment.controllers.staff.PaymentProviderController;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.dtos.UserRoleRequestDTO;
 import de.aivot.GoverBackend.userRoles.dtos.UserRoleResponseDTO;
@@ -61,7 +60,7 @@ public class UserRoleController {
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var created = userRoleService
@@ -101,7 +100,7 @@ public class UserRoleController {
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var result = userRoleService
@@ -125,7 +124,7 @@ public class UserRoleController {
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var entity = userRoleService

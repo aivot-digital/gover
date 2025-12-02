@@ -1,17 +1,26 @@
 package de.aivot.GoverBackend.form.controllers;
 
-import de.aivot.GoverBackend.form.entities.FormVersionEntity;
-import de.aivot.GoverBackend.form.entities.FormVersionEntityId;
-import de.aivot.GoverBackend.form.entities.VFormWithPermissionEntity;
+import de.aivot.GoverBackend.audit.enums.AuditAction;
+import de.aivot.GoverBackend.audit.services.AuditService;
+import de.aivot.GoverBackend.audit.services.ScopedAuditService;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
+import de.aivot.GoverBackend.form.cache.entities.FormLockCacheEntity;
+import de.aivot.GoverBackend.form.entities.*;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.filters.FormVersionFilter;
-import de.aivot.GoverBackend.form.services.FormLockService;
-import de.aivot.GoverBackend.form.services.FormService;
-import de.aivot.GoverBackend.form.services.FormVersionService;
-import de.aivot.GoverBackend.form.services.VFormWithPermissionService;
+import de.aivot.GoverBackend.form.filters.VFormVersionWithDetailsAndPermissionFilter;
+import de.aivot.GoverBackend.form.models.FormPublishChecklistItem;
+import de.aivot.GoverBackend.form.services.*;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.security.OpenAPISecurityConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,71 +31,126 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/form-versions/")
+@Tag(name = "FormVersion", description = "Interact with form versions")
 public class FormVersionController {
+    private final ScopedAuditService auditService;
+
     private final FormVersionService formVersionService;
     private final FormService formService;
     private final FormLockService formLockService;
-    private final VFormWithPermissionService vFormWithPermissionService;
+    private final VFormWithPermissionsService vFormWithPermissionsService;
+    private final VFormVersionWithDetailsAndPermissionsService vFormVersionWithDetailsAndPermissionsService;
+    private final FormRevisionService formRevisionService;
+    private final VFormVersionWithDetailsService vFormVersionWithDetailsService;
 
     @Autowired
-    public FormVersionController(FormVersionService formVersionService,
+    public FormVersionController(AuditService auditService,
+                                 FormVersionService formVersionService,
                                  FormService formService,
                                  FormLockService formLockService,
-                                 VFormWithPermissionService vFormWithPermissionService) {
+                                 VFormWithPermissionsService vFormWithPermissionsService,
+                                 VFormVersionWithDetailsAndPermissionsService vFormVersionWithDetailsAndPermissionsService,
+                                 FormRevisionService formRevisionService, VFormVersionWithDetailsService vFormVersionWithDetailsService) {
+        this.auditService = auditService.createScopedAuditService(FormVersionController.class);
         this.formVersionService = formVersionService;
         this.formService = formService;
         this.formLockService = formLockService;
-        this.vFormWithPermissionService = vFormWithPermissionService;
+        this.vFormWithPermissionsService = vFormWithPermissionsService;
+        this.vFormVersionWithDetailsAndPermissionsService = vFormVersionWithDetailsAndPermissionsService;
+        this.formRevisionService = formRevisionService;
+        this.vFormVersionWithDetailsService = vFormVersionWithDetailsService;
     }
 
     @GetMapping("")
+    @Operation(summary = "List Form Versions", description = "List all form versions.")
+    @SecurityRequirement(name = OpenAPISecurityConfiguration.SecurityName)
     public Page<FormVersionEntity> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PageableDefault Pageable pageable,
-            @Nonnull @Valid FormVersionFilter filter
+            @Nonnull @ParameterObject @PageableDefault Pageable pageable,
+            @Nonnull @ParameterObject @Valid FormVersionFilter filter
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
-        return formVersionService
-                .list(pageable, filter);
-    }
-
-    @PostMapping("")
-    public FormVersionEntity create(
-            @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @Valid @RequestBody FormVersionEntity newFormVersion
-    ) throws ResponseException {
+        // Determine the user for permission checks
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
+        // If the user is a global admin, return all form versions
+        if (user.getSuperAdmin()) {
+            return formVersionService
+                    .list(pageable, filter);
+        }
+
+        // Otherwise, filter form versions based on user permissions
+        var vFilter = VFormVersionWithDetailsAndPermissionFilter
+                .from(filter)
+                .setUserId(user.getId())
+                .setFormPermissionRead(true);
+
+        // List all forms the user has read access to
+        return vFormVersionWithDetailsAndPermissionsService
+                .list(pageable, vFilter)
+                .map(VFormVersionWithDetailsAndPermissionsEntity::toFormVersionEntity);
+    }
+
+    @PostMapping("")
+    @Operation(summary = "Create Form Version", description = "Create a new form version.")
+    @SecurityRequirement(name = OpenAPISecurityConfiguration.SecurityName)
+    public FormVersionEntity create(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @Valid @RequestBody FormVersionEntity newFormVersion
+    ) throws ResponseException {
+        // Determine the user to check permissions
+        var user = UserService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        // Get the version of the parent form to check permissions for
         var formId = newFormVersion
                 .getFormId();
 
-        var canEditForm = user.getGlobalAdmin() || vFormWithPermissionService
-                .checkUserPermission(formId, user.getId(), VFormWithPermissionEntity::getFormPermissionEdit);
-        if (!canEditForm) {
-            throw ResponseException.noPermission("Formulare Bearbeiten");
+        // Check if user is global admin or has edit permission for the parent form
+        if (!user.getSuperAdmin()) {
+            vFormWithPermissionsService.checkUserPermission(
+                    formId,
+                    user.getId(),
+                    VFormWithPermissionsEntity::getFormPermissionEdit,
+                    PermissionLabels.FormPermissionEdit);
         }
 
-        return formVersionService
+        // Create the form version
+        var createdFormVersion = formVersionService
                 .create(newFormVersion);
+
+        // Create the first revision for the form version
+        var id = new VFormVersionWithDetailsEntityId(formId, createdFormVersion.getVersion());
+        var createdFormVersionDetails = vFormVersionWithDetailsService
+                .retrieve(id)
+                .orElseThrow(ResponseException::internalServerError);
+        formRevisionService
+                .create(user, createdFormVersionDetails);
+
+        // Log the form version creation
+        auditService.logAction(user, AuditAction.Create, FormVersionEntity.class, Map.of(
+                "formId", createdFormVersion.getFormId(),
+                "formVersion", createdFormVersion.getVersion()
+        ));
+
+        return createdFormVersion;
     }
 
     @GetMapping("{formId}/latest/")
+    @Operation(summary = "Retrieve Latest Form Version", description = "Retrieve the latest version of a form.")
+    @SecurityRequirement(name = OpenAPISecurityConfiguration.SecurityName)
     public FormVersionEntity retrieveLatest(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer formId
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
+        // Get the latest version number for the form
         var latestVersion = formVersionService
                 .getLatestVersion(formId)
                 .orElseThrow(ResponseException::notFound)
@@ -96,44 +160,124 @@ public class FormVersionController {
     }
 
     @GetMapping("{formId}/{version}/")
+    @Operation(summary = "Retrieve Specific Form Version", description = "Retrieve a specific version of a form.")
+    @SecurityRequirement(name = OpenAPISecurityConfiguration.SecurityName)
     public FormVersionEntity retrieveVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer formId,
             @Nonnull @PathVariable Integer version
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
-        var id = FormVersionEntityId
-                .of(formId, version);
-
-        return formVersionService
-                .retrieve(id)
-                .orElseThrow(ResponseException::notFound);
-    }
-
-    @DeleteMapping("{formId}/{version}/")
-    public void delete(
-            @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable Integer formId,
-            @Nonnull @PathVariable Integer version
-    ) throws ResponseException {
-        // Check if the user is a staff user
+        // Determine the user for permission checks
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
         // Check if the user has access to the form by retrieving the form first and checking permissions
-        var canEditForm = user.getGlobalAdmin() || vFormWithPermissionService
-                .checkUserPermission(formId, user.getId(), VFormWithPermissionEntity::getFormPermissionEdit);
-        if (!canEditForm) {
-            throw ResponseException.noPermission("Formulare Bearbeiten");
+        if (!user.getSuperAdmin()) {
+            vFormWithPermissionsService.checkUserPermission(
+                    formId,
+                    user.getId(),
+                    VFormWithPermissionsEntity::getFormPermissionRead,
+                    PermissionLabels.FormPermissionRead);
+        }
+
+        // Fetch the form version by its id
+        var id = FormVersionEntityId
+                .of(formId, version);
+        return formVersionService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+    }
+
+    @PutMapping("{formId}/{version}/")
+    @Operation(summary = "Update Form Version", description = "Update a specific version of a form.")
+    @SecurityRequirement(name = OpenAPISecurityConfiguration.SecurityName)
+    public FormVersionEntity update(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer formId,
+            @Nonnull @PathVariable Integer version,
+            @Nonnull @Valid @RequestBody FormVersionEntity patchedFormVersion
+    ) throws ResponseException {
+        // Determine the user to check permissions
+        var user = UserService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        // Check if user is global admin or has edit permission for the parent form
+        if (!user.getSuperAdmin()) {
+            vFormWithPermissionsService.checkUserPermission(
+                    formId,
+                    user.getId(),
+                    VFormWithPermissionsEntity::getFormPermissionEdit,
+                    PermissionLabels.FormPermissionEdit);
+        }
+
+        // Check if the form is locked by another user
+        formLockService
+                .checkFormLock(formId, user);
+
+        // Fetch the existing form
+        var formVersionEntityId = new VFormVersionWithDetailsEntityId(formId, version);
+        var existingFormVersionWithDetails = vFormVersionWithDetailsService
+                .retrieve(formVersionEntityId)
+                .orElseThrow(ResponseException::notFound);
+
+        // Create a lock for the form
+        formLockService
+                .create(new FormLockCacheEntity()
+                        .setFormId(formId)
+                        .setUserId(user.getId()));
+
+        // Recalculate referenced IDs for all elements in the form
+        ElementStreamUtils
+                .applyAction(patchedFormVersion.getRootElement(), BaseElement::recalculateReferencedIds);
+
+        // Update the form version
+        var updatedFormVersion = formVersionService
+                .update(FormVersionEntityId.of(formId, version), patchedFormVersion);
+
+        // Log the form version update
+        auditService.logAction(user, AuditAction.Update, FormEntity.class, Map.of(
+                "formId", updatedFormVersion.getFormId(),
+                "formVersion", updatedFormVersion.getVersion()
+        ));
+
+        // Create a revision for the form
+        var updatedFormVersionWithDetails = vFormVersionWithDetailsService
+                .retrieve(formVersionEntityId)
+                .orElseThrow(ResponseException::notFound);
+        formRevisionService
+                .create(user, updatedFormVersionWithDetails, existingFormVersionWithDetails);
+
+        // Return the form as a DTO
+        return updatedFormVersion;
+    }
+
+    @DeleteMapping("{formId}/{version}/")
+    @Operation(summary = "Delete Form Version", description = "Delete a specific version of a form.")
+    @SecurityRequirement(name = OpenAPISecurityConfiguration.SecurityName)
+    public void delete(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer formId,
+            @Nonnull @PathVariable Integer version
+    ) throws ResponseException {
+        // Determine the user to check permissions
+        var user = UserService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        // Check if the user has access to the form by retrieving the form first and checking permissions
+        if (!user.getSuperAdmin()) {
+            vFormWithPermissionsService.checkUserPermission(
+                    formId,
+                    user.getId(),
+                    VFormWithPermissionsEntity::getFormPermissionEdit,
+                    PermissionLabels.FormPermissionEdit);
         }
 
         // Check if the form is currently locked by another user
-        FormController
-                .checkFormLock(formId, user, formLockService);
+        formLockService
+                .checkFormLock(formId, user);
 
         var id = FormVersionEntityId
                 .of(formId, version);
@@ -156,5 +300,198 @@ public class FormVersionController {
 
         formVersionService
                 .delete(id);
+    }
+
+    @GetMapping("{formId}/{version}/publish-checklist-items/")
+    @Operation(summary = "Get Form Publish Checklist", description = "Get the checklist items for publishing a form version.")
+    @SecurityRequirement(name = OpenAPISecurityConfiguration.SecurityName)
+    public List<FormPublishChecklistItem> checkPublish(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer formId,
+            @Nonnull @PathVariable Integer version
+    ) throws ResponseException {
+        // Determine the user for permission checks
+        var user = UserService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        // Check if the user has access to the form by retrieving the form first and checking permissions
+        if (!user.getSuperAdmin()) {
+            vFormWithPermissionsService.checkUserPermission(
+                    formId,
+                    user.getId(),
+                    VFormWithPermissionsEntity::getFormPermissionRead,
+                    PermissionLabels.FormPermissionRead);
+        }
+
+        var id = new FormVersionEntityId(formId, version);
+
+        var form = formVersionService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        return formVersionService
+                .getFormPublishChecklist(form);
+    }
+
+    @PutMapping("{formId}/{version}/publish-status/")
+    @Operation(summary = "Publish Form Version", description = "Publish a specific version of a form.")
+    @SecurityRequirement(name = OpenAPISecurityConfiguration.SecurityName)
+    public FormVersionEntity publish(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer formId,
+            @Nonnull @PathVariable Integer version
+    ) throws ResponseException {
+        // Extract staff user
+        var user = UserService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        // Check if the user has the permission to revoke the form
+        if (!user.getSuperAdmin()) {
+            vFormWithPermissionsService.checkUserPermission(
+                    formId,
+                    user.getId(),
+                    VFormWithPermissionsEntity::getFormPermissionPublish,
+                    PermissionLabels.ProcessPermissionPublish);
+        }
+
+        // Check if the form is locked by another user
+        formLockService
+                .checkFormLock(formId, user);
+
+        var id = new FormVersionEntityId(formId, version);
+
+        // Fetch the existing form
+        var formVersionEntityId = new VFormVersionWithDetailsEntityId(formId, version);
+        var existingFormVersionWithDetails = vFormVersionWithDetailsService
+                .retrieve(formVersionEntityId)
+                .orElseThrow(ResponseException::notFound);
+
+        // Publish the form
+        var publishedFormVersion = formVersionService
+                .publish(id);
+
+        // Log the form publication
+        auditService.logAction(
+                user,
+                AuditAction.Update,
+                FormVersionEntity.class,
+                Map.of(
+                        "formId", publishedFormVersion.getFormId(),
+                        "formVersion", publishedFormVersion.getVersion(),
+                        "published", true
+                )
+        );
+
+        /*
+        // Send a message about the form publication
+        try {
+            formMailService.sendPublished(user, form);
+        } catch (MessagingException | IOException | NoValidUserEMailsInDepartmentException e) {
+            auditService.logException("Failed to send message about form publication", e, Map.of(
+                    "formId", form.getId(),
+                    "formSlug", form.getSlug(),
+                    "formVersion", form.getVersion(),
+                    "developingDepartmentId", form.getDevelopingDepartmentId()
+            ));
+            exceptionMailService.send(e);
+        }
+         */
+
+        // Create a revision for the form
+        var updatedFormVersionWithDetails = vFormVersionWithDetailsService
+                .retrieve(formVersionEntityId)
+                .orElseThrow(ResponseException::notFound);
+        formRevisionService
+                .create(user, updatedFormVersionWithDetails, existingFormVersionWithDetails);
+
+        // Return the form as a DTO
+        return publishedFormVersion;
+    }
+
+    /**
+     * Revoke a form by its id.
+     * Forms can only be revoked by users who are members of the department the form resides in.
+     * If the form is locked by another user, an exception is thrown.
+     *
+     * @param jwt    The authentication object.
+     * @param formId The id of the form.
+     * @return The form as a DTO.
+     */
+    @PutMapping("{formId}/{version}/revoke-status/")
+    @Operation(summary = "Revoke Form Version", description = "Revoke a specific version of a form.")
+    @SecurityRequirement(name = OpenAPISecurityConfiguration.SecurityName)
+    public FormVersionEntity revoke(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer formId,
+            @Nonnull @PathVariable Integer version
+    ) throws ResponseException {
+        // Extract staff user
+        var user = UserService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        // Check if the user has the permission to revoke the form
+        if (!user.getSuperAdmin()) {
+            vFormWithPermissionsService.checkUserPermission(
+                    formId,
+                    user.getId(),
+                    VFormWithPermissionsEntity::getFormPermissionPublish,
+                    PermissionLabels.FormPermissionPublish);
+        }
+
+        // Check if the form is locked by another user
+        formLockService
+                .checkFormLock(formId, user);
+
+        var id = new FormVersionEntityId(formId, version);
+
+        // Fetch the existing form
+        var formVersionEntityId = new VFormVersionWithDetailsEntityId(formId, version);
+        var existingFormVersionWithDetails = vFormVersionWithDetailsService
+                .retrieve(formVersionEntityId)
+                .orElseThrow(ResponseException::notFound);
+
+        // Publish the form
+        var revokedFormVersion = formVersionService
+                .revoke(id);
+
+        // Log the form publication
+        auditService.logAction(
+                user,
+                AuditAction.Update,
+                FormVersionEntity.class,
+                Map.of(
+                        "formId", revokedFormVersion.getFormId(),
+                        "formVersion", revokedFormVersion.getVersion(),
+                        "published", false
+                )
+        );
+
+        /*
+        // Send a message about the form publication
+        try {
+            formMailService.sendPublished(user, form);
+        } catch (MessagingException | IOException | NoValidUserEMailsInDepartmentException e) {
+            auditService.logException("Failed to send message about form publication", e, Map.of(
+                    "formId", form.getId(),
+                    "formSlug", form.getSlug(),
+                    "formVersion", form.getVersion(),
+                    "developingDepartmentId", form.getDevelopingDepartmentId()
+            ));
+            exceptionMailService.send(e);
+        }
+         */
+
+        // Create a revision for the form
+        var updatedFormVersionWithDetails = vFormVersionWithDetailsService
+                .retrieve(formVersionEntityId)
+                .orElseThrow(ResponseException::notFound);
+        formRevisionService
+                .create(user, updatedFormVersionWithDetails, existingFormVersionWithDetails);
+
+        // Return the form as a DTO
+        return revokedFormVersion;
     }
 }

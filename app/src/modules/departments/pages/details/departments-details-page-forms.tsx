@@ -1,27 +1,27 @@
 import React, {useContext} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {GenericList} from '../../../../components/generic-list/generic-list';
-import {FormsApiService} from '../../../forms/forms-api-service-v2';
 import {GridColDef} from '@mui/x-data-grid';
 import {EditOutlined} from '@mui/icons-material';
 import {Box, Typography} from '@mui/material';
 import {CellLink} from '../../../../components/cell-link/cell-link';
-import {FormListResponseDTO} from '../../../forms/dtos/form-list-response-dto';
 import {FormStatusChipGroup} from '../../../forms/components/form-status-chip-group';
 import {DepartmentEntity} from '../../entities/department-entity';
+import {FormApiService} from '../../../forms/services/form-api-service';
+import {FormEntity} from '../../../forms/entities/form-entity';
 
 const filters = [
     {
-        label: 'Entwickelt',
+        label: 'Im Eigentum',
         value: 'developed',
     },
     {
-        label: 'Freigegeben',
+        label: 'Für diese Organisationseinheit freigegeben',
         value: 'accessible',
     },
 ];
 
-const columns: GridColDef<FormListResponseDTO>[] = [
+const columns: GridColDef<FormEntity>[] = [
     {
         field: 'internalTitle',
         headerName: 'Titel des Formulars',
@@ -74,7 +74,7 @@ export function DepartmentsDetailsPageForms() {
                 Eine Liste aller Formulare, die von diesem Fachbereich entwickelt, bewirtschaftet oder verwaltet werden.
             </Typography>
 
-            <GenericList<FormListResponseDTO>
+            <GenericList<FormEntity>
                 disableFullWidthToggle={true}
                 sx={{
                     mx: '-16px',
@@ -84,11 +84,11 @@ export function DepartmentsDetailsPageForms() {
                 filters={filters}
                 defaultFilter="developed"
                 fetch={(options) => {
-                    return new FormsApiService()
+                    return new FormApiService()
                         .list(
                             options.page,
                             options.size,
-                            'formInternalTitle',
+                            'internalTitle',
                             options.order,
                             {
                                 internalTitle: options.search,

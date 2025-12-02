@@ -1,9 +1,7 @@
-import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import React, {useEffect, useState} from 'react';
 import {Button, Dialog, DialogActions, DialogContent, Skeleton, Typography} from '@mui/material';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {FormDetailsResponseDTO} from '../dtos/form-details-response-dto';
-import {FormsApiService} from '../forms-api-service-v2';
 import {isApiError} from '../../../models/api-error';
 import MoveGroup from '@aivot/mui-material-symbols-400-outlined/dist/move-group/MoveGroup';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
@@ -13,6 +11,8 @@ import {withDelay} from '../../../utils/with-delay';
 import {VDepartmentShadowedEntity} from '../../departments/entities/v-department-shadowed-entity';
 import {VDepartmentShadowedApiService} from '../../departments/services/v-department-shadowed-api-service';
 import {getDepartmentPath} from '../../departments/utils/department-utils';
+import {FormApiService} from '../services/form-api-service';
+import {FormEntity} from '../entities/form-entity';
 
 interface MoveFormToDepartmentDialogProps {
     formId: number;
@@ -31,18 +31,13 @@ export function MoveFormToDepartmentDialog(props: MoveFormToDepartmentDialogProp
 
     const [targetDepartmentId, setTargetDepartmentId] = useState<number | null>(null);
 
-    const [form, setForm] = useState<FormDetailsResponseDTO>();
+    const [form, setForm] = useState<FormEntity>();
     useEffect(() => {
-        new FormsApiService()
-            .retrieveLatest(formId)
+        new FormApiService()
+            .retrieve(formId)
             .then(setForm)
             .catch((err) => {
-                if (isApiError(err) && err.displayableToUser) {
-                    dispatch(showErrorSnackbar(err.message));
-                } else {
-                    dispatch(showErrorSnackbar('Das Formular konnte nicht geladen werden.'));
-                }
-                console.error(err);
+                dispatch(showApiErrorSnackbar(err, 'Das Formular konnte nicht geladen werden.'));
             });
     }, [formId]);
 
@@ -51,19 +46,14 @@ export function MoveFormToDepartmentDialog(props: MoveFormToDepartmentDialogProp
     useEffect(() => {
         withDelay(
             new VDepartmentShadowedApiService()
-                .listAll(),
+                .listAllOrdered(['parentNames', 'name'], 'ASC'),
             600,
         )
             .then(({content}) => {
                 setDepartments(content);
             })
             .catch((err) => {
-                if (isApiError(err) && err.displayableToUser) {
-                    dispatch(showErrorSnackbar(err.message));
-                } else {
-                    dispatch(showErrorSnackbar('Die Liste der Fachbereiche konnte nicht geladen werden.'));
-                }
-                console.error(err);
+                dispatch(showApiErrorSnackbar(err, 'Die Liste der Fachbereiche konnte nicht geladen werden.'));
             });
     }, []);
 
@@ -83,8 +73,11 @@ export function MoveFormToDepartmentDialog(props: MoveFormToDepartmentDialogProp
             blocking: true,
         }));
 
-        new FormsApiService()
-            .moveFormToDepartment(form.id, targetDepartmentId)
+        new FormApiService()
+            .update(form.id, {
+                ...form,
+                developingDepartmentId: targetDepartmentId,
+            })
             .then(() => {
                 dispatch(showSuccessSnackbar('Das Formular wurde erfolgreich übertragen.'));
                 onMoved();

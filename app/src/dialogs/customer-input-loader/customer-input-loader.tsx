@@ -9,7 +9,6 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Typography from '@mui/material/Typography';
 import {CustomerInputService} from '../../services/customer-input-service';
 import {format} from 'date-fns';
-import {type Form} from '../../models/entities/form';
 import SettingsBackupRestoreOutlinedIcon from '@mui/icons-material/SettingsBackupRestoreOutlined';
 import {useSearchParams} from 'react-router-dom';
 import RestorePageIcon from '@mui/icons-material/RestorePage';
@@ -26,15 +25,18 @@ import {IdentityData} from '../../modules/identity/models/identity-data';
 import {IdentityProvidersApiService} from '../../modules/identity/identity-providers-api-service';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {IdentityProviderInfo} from '../../modules/identity/models/identity-provider-info';
-import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {Page} from '../../models/dtos/page';
 import {prefillIdentityData} from '../../utils/prefill-elements';
 import {IdentityCustomerInputKey} from '../../modules/identity/constants/identity-customer-input-key';
 import {ElementType} from '../../data/element-type/element-type';
 import {Api, useApi} from '../../hooks/use-api';
+import {FormEntity} from '../../modules/forms/entities/form-entity';
+import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
+import {FormApiService} from '../../modules/forms/services/form-api-service';
 
 interface LoadUserInputDialogProps {
-    form: Form;
+    form: FormEntity;
+    version: FormVersionEntity;
     onElementDataLoad: (elementData: ElementData) => void;
     isBusy: boolean;
 }
@@ -52,6 +54,7 @@ interface IdentityPreloadedData {
 export function CustomerInputLoader(props: LoadUserInputDialogProps) {
     const {
         form,
+        version,
         onElementDataLoad,
         isBusy,
     } = props;
@@ -65,9 +68,9 @@ export function CustomerInputLoader(props: LoadUserInputDialogProps) {
     const [identityData, setIdentityData] = useState<IdentityPreloadedData | string | null | undefined>(null);
 
     useEffect(() => {
-        initializeLocalStorageData(form, setLocalStorageData);
-        initializeUrlPrefillData(form, setUrlPrefillData, searchParams);
-        initializeIdentityData(api, form, setIdentityData, searchParams)
+        initializeLocalStorageData(form, version, setLocalStorageData);
+        initializeUrlPrefillData(form, version, setUrlPrefillData, searchParams);
+        initializeIdentityData(api, form, version, setIdentityData, searchParams)
             .catch((err) => {
                 console.error('Error initializing identity data:', err);
                 setIdentityData('Fehler beim Laden der Authentifizierungsdaten. Bitte versuchen Sie es erneut.');
@@ -97,13 +100,13 @@ export function CustomerInputLoader(props: LoadUserInputDialogProps) {
 
     const handleRestart = () => {
         handleInsertUrlPrefillData();
-        CustomerInputService.cleanCustomerInput(form);
+        CustomerInputService.cleanCustomerInput(form.slug, version.version);
         handleCleanup();
     };
 
     const handleInsertUrlPrefillData = () => {
         if (urlPrefillData != null) {
-            const allElements = flattenElements(form.rootElement, true);
+            const allElements = flattenElements(version.rootElement, true);
 
             const cleanedPrefillData: ElementData = {};
 
@@ -130,9 +133,9 @@ export function CustomerInputLoader(props: LoadUserInputDialogProps) {
         if (identityData != null && typeof identityData !== 'string') {
             let prefilledData: ElementData;
             if (localStorageData != null) {
-                prefilledData = prefillIdentityData(form.rootElement, localStorageData.data, identityData.identity);
+                prefilledData = prefillIdentityData(version.rootElement, localStorageData.data, identityData.identity);
             } else {
-                prefilledData = prefillIdentityData(form.rootElement, {}, identityData.identity);
+                prefilledData = prefillIdentityData(version.rootElement, {}, identityData.identity);
             }
 
             prefilledData[IdentityCustomerInputKey] = {
@@ -325,9 +328,9 @@ export function CustomerInputLoader(props: LoadUserInputDialogProps) {
     );
 }
 
-function initializeLocalStorageData(form: Form, setLocalStorageData: (data: LocalStorageData | null) => void) {
-    const date = CustomerInputService.loadCustomerInputDate(form);
-    const data = CustomerInputService.loadCustomerInputState(form);
+function initializeLocalStorageData(form: FormEntity, version: FormVersionEntity, setLocalStorageData: (data: LocalStorageData | null) => void) {
+    const date = CustomerInputService.loadCustomerInputDate(form.slug, version.version);
+    const data = CustomerInputService.loadCustomerInputState(form.slug, version.version);
 
     if (date != null && data != null && hasElementDataSomeInput(data)) {
         setLocalStorageData({
@@ -340,7 +343,8 @@ function initializeLocalStorageData(form: Form, setLocalStorageData: (data: Loca
 }
 
 function initializeUrlPrefillData(
-    form: Form,
+    form: FormEntity,
+    version: FormVersionEntity,
     setUrlPrefillData: (data: Record<string, any> | null) => void,
     searchParams: URLSearchParams,
 ): void {
@@ -359,7 +363,7 @@ function initializeUrlPrefillData(
         return;
     }
 
-    const allElements = flattenElements(form.rootElement, true);
+    const allElements = flattenElements(version.rootElement, true);
 
     const cleanedPrefillData: Record<string, any> = {};
 
@@ -379,7 +383,8 @@ function initializeUrlPrefillData(
 
 async function initializeIdentityData(
     api: Api,
-    form: Form,
+    form: FormEntity,
+    version: FormVersionEntity,
     setIdentityData: (data: IdentityPreloadedData | string | null) => void,
     searchParams: URLSearchParams,
 ): Promise<void> {
@@ -413,8 +418,8 @@ async function initializeIdentityData(
 
     let providerResults: Page<IdentityProviderInfo>;
     try {
-        providerResults = await new FormsApiService(api)
-            .getIdentityProviders(form.slug, form.version);
+        providerResults = await new FormApiService()
+            .getIdentityProviders(form.slug, version.version);
     } catch (err) {
         console.error('Error fetching identity providers:', err);
         setIdentityData('Beim Abruf der Authentifizierungsanbieter ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.');

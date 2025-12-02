@@ -9,7 +9,6 @@ import {StructureTab} from '../element-editor-structure-tab/structure-tab';
 import {TestTab} from '../element-editor-test-tab/test-tab';
 import {Box} from '@mui/material';
 import {isRootElement} from '../../models/elements/root-element';
-import {isForm} from '../../models/entities/form';
 import {ApplicationPublishTab} from '../element-editor-application-publish-tab/application-publish-tab';
 import {isGroupLayout} from '../../models/elements/form/layout/group-layout';
 import {PresetPublishTab} from '../element-editor-preset-publish-tab/preset-publish-tab';
@@ -21,6 +20,7 @@ import {ValueCodeTab} from '../element-editor-code-tab/value-code-tab';
 import {ValidationCodeTab} from '../element-editor-code-tab/validation-code-tab';
 import {ReferencesTab} from '../element-editor-references-tab/references-tab';
 import {flattenElementsWithParents} from '../../utils/flatten-elements';
+import {isLoadedForm} from '../../slices/app-slice';
 
 export function ElementEditorContent<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorContentProps<T, E>): React.ReactNode | null {
     const {
@@ -148,7 +148,7 @@ export function ElementEditorContent<T extends AnyElement, E extends ElementTree
         case DefaultTabs.references:
             return (
                 <ReferencesTab
-                    rootElement={props.entity.rootElement}
+                    rootElement={isLoadedForm(props.entity) ? props.entity.version.rootElement : props.entity.rootElement}
                     element={props.element}
                 />
             );
@@ -172,7 +172,7 @@ export function ElementEditorContent<T extends AnyElement, E extends ElementTree
                     {
                         props.scope === 'application' &&
                         isRootElement(props.element) &&
-                        isForm(props.entity) &&
+                        isLoadedForm(props.entity) &&
                         /* @ts-expect-error */
                         <ApplicationPublishTab
                             {...props}
@@ -182,7 +182,7 @@ export function ElementEditorContent<T extends AnyElement, E extends ElementTree
                     {
                         props.scope === 'preset' &&
                         isGroupLayout(props.element) &&
-                        !isForm(props.entity) &&
+                        !isLoadedForm(props.entity) &&
                         /* @ts-expect-error */
                         <PresetPublishTab
                             {...props}

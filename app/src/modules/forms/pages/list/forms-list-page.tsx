@@ -2,21 +2,15 @@ import {GenericListPage} from '../../../../components/generic-list-page/generic-
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Box} from '@mui/material';
-import {FormListResponseDTO} from '../../dtos/form-list-response-dto';
-import {FormsApiService} from '../../forms-api-service';
-import {FormsApiService as FormsApiServiceV2} from '../../forms-api-service-v2';
 import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
 import React, {useRef, useState} from 'react';
-import {ImportApplicationDialog} from '../../../../dialogs/application-dialogs/import-application-dialog/import-application-dialog';
-import {FormDetailsResponseDTO} from '../../dtos/form-details-response-dto';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectMemberships, selectUser} from '../../../../slices/user-slice';
 import {AddFormDialog} from '../../dialogs/add-form-dialog';
-import {ExportApplicationDialog} from '../../../../dialogs/application-dialogs/export-application-dialog/export-application-dialog';
-import {downloadConfigFile} from '../../../../utils/download-utils';
+import {downloadFormExportFile} from '../../../../utils/download-utils';
 import {useApi} from '../../../../hooks/use-api';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {FormVersionsDialog} from '../../dialogs/form-versions-dialog';
@@ -26,7 +20,6 @@ import {format} from 'date-fns/format';
 import {GridColDef} from '@mui/x-data-grid';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../../slices/loading-overlay-slice';
 import {Link, useNavigate} from 'react-router-dom';
-import {DeleteApplicationDialog} from '../../../../dialogs/application-dialogs/delete-application-dialog/delete-application-dialog';
 import {FormsListPageHelp} from '../../components/forms-list-page-help';
 import {FormStatusChipGroup, getFormStatus} from '../../components/form-status-chip-group';
 import HomeStorage from '@aivot/mui-material-symbols-400-outlined/dist/home-storage/HomeStorage';
@@ -41,6 +34,13 @@ import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 import {FormResourceAccessControlDialog} from '../../../resource-access-controls/dialogs/form-resource-access-control-dialog';
 import {DepartmentApiService} from '../../../departments/services/department-api-service';
+import {FormEntity} from '../../entities/form-entity';
+import {FormApiService} from '../../services/form-api-service';
+import {FormVersionEntity} from '../../entities/form-version-entity';
+import {FormVersionApiService} from '../../services/form-version-api-service';
+import {ExportFormDialog} from '../../dialogs/export-form-dialog';
+import {ImportFormDialog} from '../../dialogs/import-form-dialog';
+import {DeleteFormDialog} from '../../dialogs/delete-form-dialog';
 
 const availableFilter = [
     {
@@ -61,7 +61,7 @@ const availableFilter = [
     },
 ];
 
-interface FormListEntry extends FormListResponseDTO {
+interface FormListEntry extends FormEntity {
     developingDepartmentName?: string;
     lastEditorName?: string;
 }
@@ -192,38 +192,43 @@ export function FormsListPage() {
 
     const listControlRef = useRef<ListControlRef>(null);
 
-    const [newForm, setNewForm] = useState<FormDetailsResponseDTO | undefined>(undefined);
+    const [newForm, setNewForm] = useState<{
+        form: FormEntity;
+        version: FormVersionEntity;
+    } | undefined>(undefined);
+
     const [showImportFormDialog, setShowImportFormDialog] = useState(false);
     const [showExportFormDialog, setShowExportFormDialog] = useState(false);
-    const [showFormVersionsDialogFor, setShowFormVersionsDialogFor] = useState<FormListResponseDTO | undefined>();
 
-    const [formToManageAccess, setFormToManageAccess] = useState<FormListResponseDTO>();
-    const [formToMove, setFormToMove] = useState<FormListResponseDTO>();
-    const [formToDelete, setFormToDelete] = useState<FormListResponseDTO>();
+    const [showFormVersionsDialogFor, setShowFormVersionsDialogFor] = useState<FormEntity | undefined>();
+
+    const [formToManageAccess, setFormToManageAccess] = useState<FormEntity>();
+    const [formToMove, setFormToMove] = useState<FormEntity>();
+    const [formToDelete, setFormToDelete] = useState<FormEntity>();
 
     const [rowMenu, setRowMenu] = useState<{
         target: HTMLElement;
-        form: FormListResponseDTO;
+        form: FormEntity;
     } | undefined>(undefined);
 
     const handleNewFormDraft = (formId: number, formVersion: number | undefined | null) => {
         dispatch(showLoadingOverlay('Neuer Entwurf wird erstellt…'));
 
-        let prom: Promise<FormDetailsResponseDTO>;
+        let prom: Promise<FormVersionEntity>;
         if (formVersion == null) {
-            prom = new FormsApiService(api)
+            prom = new FormVersionApiService()
                 .latestAsNewVersion(formId);
         } else {
-            prom = new FormsApiService(api)
+            prom = new FormVersionApiService()
                 .versionAsNewVersion({
-                    id: formId,
+                    formId: formId,
                     version: formVersion,
                 });
         }
 
         prom
             .then((createdDraft) => {
-                navigate(`/forms/${formId}/${createdDraft.draftedVersion}`);
+                navigate(`/forms/${createdDraft.formId}/${createdDraft.version}`);
             })
             .catch((err) => {
                 console.error(err);
@@ -234,23 +239,33 @@ export function FormsListPage() {
             });
     };
 
-    const handleFormClone = async (form: FormDetailsResponseDTO) => {
-        const formToClone: FormDetailsResponseDTO = JSON.parse(JSON.stringify(form));
-        formToClone.slug = '';
-        formToClone.version = 0;
-        setNewForm(formToClone);
+    const handleFormClone = async (form: FormEntity, _version?: FormVersionEntity) => {
+        const version = _version ?? await new FormVersionApiService()
+            .retrieve({
+                formId: form.id,
+                version: 'latest',
+            });
+
+        setNewForm({
+            form: {
+                ...form,
+                slug: '',
+            },
+            version: version,
+        });
+
         setRowMenu(undefined);
     };
 
-    const handleDeleteForm = async (form: FormListResponseDTO) => {
+    const handleDeleteForm = async (form: FormEntity) => {
         dispatch(setLoadingMessage({
             message: 'Formular wird gelöscht',
             blocking: true,
             estimatedTime: 500,
         }));
 
-        new FormsApiServiceV2()
-            .destroyAll(form.id)
+        new FormApiService()
+            .destroy(form.id)
             .then(() => {
                 if (listControlRef.current != null) {
                     listControlRef.current.refresh();
@@ -265,18 +280,13 @@ export function FormsListPage() {
             });
     };
 
-    const handleExportForm = (form: FormListResponseDTO) => {
-        new FormsApiService(api)
-            .retrieve({
-                id: form.id,
-                version: form.draftedVersion ?? form.publishedVersion!,
-            })
-            .then((fullForm) => {
-                downloadConfigFile(fullForm);
-            });
+    const handleExportForm = (formId: number, version?: number) => {
+        new FormApiService()
+            .export(formId, version)
+            .then(downloadFormExportFile);
     };
 
-    const handleNewDraft = (item: FormListResponseDTO) => {
+    const handleNewDraft = (item: FormEntity) => {
         showConfirm({
             title: 'Neuen Entwurf anlegen?',
             confirmButtonText: 'Ja, Entwurf anlegen',
@@ -321,7 +331,10 @@ export function FormsListPage() {
                                 label: 'Neues Formular',
                                 icon: <AddOutlinedIcon />,
                                 onClick: () => {
-                                    setNewForm(FormsApiService.initialize());
+                                    setNewForm({
+                                        form: FormApiService.initialize(),
+                                        version: FormVersionApiService.initialize(),
+                                    });
                                 },
                                 variant: 'contained',
                             },
@@ -337,11 +350,9 @@ export function FormsListPage() {
                     fetch={async (options) => {
                         const deps = (await new DepartmentApiService().listAll()).content;
 
-                        const formsPage = await new FormsApiServiceV2()
-                            .list(options.page, options.size, options.sort === 'internalTitle' ? 'formInternalTitle' : 'formUpdated', options.order, {
+                        const formsPage = await new FormApiService()
+                            .list(options.page, options.size, options.sort as any, options.order, {
                                 internalTitle: options.search,
-                                isDeveloper: true,
-                                userId: user?.id,
                                 isPublished: options.filter === 'published',
                                 isDrafted: options.filter === 'drafted',
                                 isRevoked: options.filter === 'revoked',
@@ -349,7 +360,7 @@ export function FormsListPage() {
 
                         const formIds = formsPage.content.map(form => form.id);
 
-                        const editorsList = await new FormsApiServiceV2()
+                        const editorsList = await new FormApiService()
                             .listEditorsForForms(formIds);
 
                         const extendedFormsPage: Page<FormListEntry> = {
@@ -472,7 +483,7 @@ export function FormsListPage() {
                 />
             }
 
-            <ExportApplicationDialog
+            <ExportFormDialog
                 open={showExportFormDialog}
                 onCancel={() => {
                     setShowExportFormDialog(false);
@@ -480,20 +491,23 @@ export function FormsListPage() {
                 }}
                 onExport={() => {
                     if (rowMenu?.form != null) {
-                        handleExportForm(rowMenu.form);
+                        handleExportForm(rowMenu.form.id, undefined);
                     }
                     setShowExportFormDialog(false);
                     setRowMenu(undefined);
                 }}
             />
 
-            <ImportApplicationDialog
+            <ImportFormDialog
                 open={showImportFormDialog}
                 onClose={() => {
                     setShowImportFormDialog(false);
                 }}
-                onImport={(formToImport) => {
-                    setNewForm(formToImport);
+                onImport={(form, version) => {
+                    setNewForm({
+                        form,
+                        version,
+                    });
                     setShowImportFormDialog(false);
                 }}
             />
@@ -501,15 +515,20 @@ export function FormsListPage() {
             {
                 showFormVersionsDialogFor != null &&
                 <FormVersionsDialog
-                    formId={showFormVersionsDialogFor.id}
+                    form={showFormVersionsDialogFor}
                     onClose={() => {
                         setShowFormVersionsDialogFor(undefined);
                     }}
-                    onNewDraft={(basis) => {
-                        handleNewFormDraft(basis.id, basis.version);
+                    onNewDraft={({form, version}) => {
+                        // TODO
                     }}
-                    onNewForm={handleFormClone}
-                    onChange={() => {
+                    onNewForm={({form, version}) => {
+                        setNewForm({
+                            form,
+                            version,
+                        });
+                    }}
+                    onShouldReload={() => {
                         if (listControlRef.current?.refresh != null) {
                             listControlRef.current.refresh();
                         }
@@ -533,7 +552,7 @@ export function FormsListPage() {
                 />
             }
 
-            <DeleteApplicationDialog
+            <DeleteFormDialog
                 form={formToDelete}
                 onDelete={(form) => {
                     handleDeleteForm(form);

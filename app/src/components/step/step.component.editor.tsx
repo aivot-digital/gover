@@ -4,12 +4,12 @@ import {Box, Button, FormControl, FormLabel, Grid, Tooltip, Typography} from '@m
 import {StepIconsMap} from '../../data/step-icons';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
-import {type Form as Application} from '../../models/entities/form';
 import {IconPickerDialog} from '../../dialogs/icon-picker-dialog/icon-picker-dialog';
 import {SvgIconComponent} from '@mui/icons-material';
 import ArrowCircleRightOutlinedIcon from '@mui/icons-material/ArrowCircleRightOutlined';
+import {LoadedForm} from '../../slices/app-slice';
 
-export function StepComponentEditor(props: BaseEditorProps<StepElement, Application>) {
+export function StepComponentEditor(props: BaseEditorProps<StepElement, LoadedForm>) {
     const [pickerOpen, setPickerOpen] = useState(false);
 
     const IconComponent: SvgIconComponent =

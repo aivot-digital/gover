@@ -25,7 +25,9 @@ export class UsersApiService extends BaseCrudApiService<User, User, User, User, 
                     fullName: '',
                     enabled: false,
                     verified: false,
-                    globalAdmin: false,
+                    superAdmin: false,
+                    systemAdmin: false,
+                    globalRole: 0,
                     deletedInIdp: false,
                 };
             }
@@ -46,7 +48,9 @@ export class UsersApiService extends BaseCrudApiService<User, User, User, User, 
             fullName: '',
             enabled: false,
             verified: false,
-            globalAdmin: false,
+            superAdmin: false,
+            systemAdmin: false,
+            globalRole: 0,
             deletedInIdp: false,
         };
     }

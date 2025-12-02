@@ -1,15 +1,17 @@
 import React from 'react';
 import {Divider, ListItemIcon, ListItemText, Menu, MenuItem} from '@mui/material';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
-import {FormDetailsResponseDTO} from '../dtos/form-details-response-dto';
 import SwapVert from '@aivot/mui-material-symbols-400-outlined/dist/swap-vert/SwapVert';
 import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
+import {FormVersionEntity} from '../entities/form-version-entity';
+import {FormEntity} from '../entities/form-entity';
 
 interface FormVersionsDialogRowMenuProps {
     anchorEl: HTMLElement | null;
     onClose: () => void;
-    form: FormDetailsResponseDTO;
+    form: FormEntity;
+    version: FormVersionEntity;
 
     onReuseFormVersionAsDraft: (version: number) => void;
     onReuseFormVersionAsNewForm: (version: number) => void;
@@ -22,6 +24,7 @@ export function FormVersionsDialogRowMenu(props: FormVersionsDialogRowMenuProps)
         anchorEl,
         onClose,
         form,
+        version,
 
         onReuseFormVersionAsDraft,
         onReuseFormVersionAsNewForm,
@@ -36,10 +39,10 @@ export function FormVersionsDialogRowMenu(props: FormVersionsDialogRowMenuProps)
             onClose={onClose}
         >
             {
-                form.draftedVersion !== form.version &&
+                form.draftedVersion !== version.version &&
                 <MenuItem
                     onClick={() => {
-                        onReuseFormVersionAsDraft(form.version);
+                        onReuseFormVersionAsDraft(version.version);
                         onClose();
                     }}
                 >
@@ -54,7 +57,7 @@ export function FormVersionsDialogRowMenu(props: FormVersionsDialogRowMenuProps)
 
             <MenuItem
                 onClick={() => {
-                    onReuseFormVersionAsNewForm(form.version);
+                    onReuseFormVersionAsNewForm(version.version);
                     onClose();
                 }}
             >
@@ -68,7 +71,7 @@ export function FormVersionsDialogRowMenu(props: FormVersionsDialogRowMenuProps)
 
             <MenuItem
                 onClick={() => {
-                    onExportFormVersion(form.version);
+                    onExportFormVersion(version.version);
                     onClose();
                 }}
             >
@@ -81,15 +84,15 @@ export function FormVersionsDialogRowMenu(props: FormVersionsDialogRowMenuProps)
             </MenuItem>
 
             {
-                form.draftedVersion === form.version &&
+                form.draftedVersion === version.version &&
                 <Divider />
             }
 
             {
-                form.draftedVersion === form.version &&
+                form.draftedVersion === version.version &&
                 <MenuItem
                     onClick={() => {
-                        onDeleteFormVersion(form.version);
+                        onDeleteFormVersion(version.version);
                         onClose();
                     }}
                 >

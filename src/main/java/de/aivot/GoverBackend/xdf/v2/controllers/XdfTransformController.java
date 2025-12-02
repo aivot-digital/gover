@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.xdf.v2.controllers;
 
-import de.aivot.GoverBackend.form.dtos.FormDetailsResponseDTO;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.xdf.v2.models.XdfStammdatenschema0102;
@@ -28,8 +28,8 @@ public class XdfTransformController {
         this.xdfTransformService = xdfTransformService;
     }
 
-    @PostMapping(value = "transform/", consumes = MediaType.APPLICATION_XML_VALUE, produces =  MediaType.APPLICATION_JSON_VALUE)
-    public FormDetailsResponseDTO transform(
+    @PostMapping(value = "transform/", consumes = MediaType.APPLICATION_XML_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public VFormVersionWithDetailsEntity transform(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @RequestBody @Valid XdfStammdatenschema0102 request
     ) throws ResponseException {
@@ -37,10 +37,7 @@ public class XdfTransformController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var formVersion = xdfTransformService
+        return xdfTransformService
                 .transformToGover(request);
-
-        return FormDetailsResponseDTO
-                .fromEntity(formVersion);
     }
 }

@@ -33,7 +33,7 @@ public record TeamMembershipResponseDTO(
                 entity.getEmail(),
                 entity.getEnabled(),
                 entity.getVerified(),
-                entity.getGlobalAdmin(),
+                UserEntity.SUPER_ADMIN_ROLE_VALUE.equals(entity.getGlobalRole()),
                 entity.getDeletedInIdp()
         );
     }
@@ -52,7 +52,7 @@ public record TeamMembershipResponseDTO(
                 user.getEmail(),
                 user.getEnabled(),
                 user.getVerified(),
-                user.getGlobalAdmin(),
+                user.getSuperAdmin(),
                 user.getDeletedInIdp()
         );
     }

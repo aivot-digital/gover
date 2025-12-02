@@ -11,8 +11,9 @@ import {HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
 import {PrivacyDialogId} from '../../dialogs/privacy-dialog/privacy-dialog';
 import {ImprintDialogId} from '../../dialogs/imprint-dialog/imprint-dialog';
 import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
-import {FormDetailsResponseDTO} from '../../modules/forms/dtos/form-details-response-dto';
-import {FormsApiService} from '../../modules/forms/forms-api-service-v2';
+import {FormEntity} from '../../modules/forms/entities/form-entity';
+import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
+import {FormApiService} from '../../modules/forms/services/form-api-service';
 
 const buttonStyle: SxProps = {
     color: '#16191F',
@@ -22,12 +23,14 @@ const buttonStyle: SxProps = {
 };
 
 interface RootComponentFooterProps {
-    form: FormDetailsResponseDTO;
+    form: FormEntity;
+    version: FormVersionEntity;
 }
 
 export function RootComponentFooter(props: RootComponentFooterProps) {
     const {
         form,
+        version,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -62,7 +65,7 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
                 >
                     <Logo
                         updated={form.updated}
-                        src={new FormsApiService().getFormLogoLink(form.slug, form.version)}
+                        src={new FormApiService().getFormLogoLink(form.slug, version.version)}
                         width={200}
                         height={100}
                     />

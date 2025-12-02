@@ -21,11 +21,11 @@ export function ImprintDialog(props: ImprintDialogProps) {
     useEffect(() => {
         if (
             !props.isListingPage &&
-            application?.imprintDepartmentId != null &&
-            (department == null || department.id !== application.imprintDepartmentId)
+            application?.version.imprintDepartmentId != null &&
+            (department == null || department.id !== application.version.imprintDepartmentId)
         ) {
             new DepartmentApiService()
-                .retrievePublic(application.imprintDepartmentId)
+                .retrievePublic(application.version.imprintDepartmentId)
                 .then(setDepartment);
         } else if (
             props.isListingPage &&

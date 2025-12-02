@@ -11,10 +11,11 @@ public class FormFilter implements Filter<FormEntity> {
     private Integer id;
     private String slug;
     private String internalTitle;
-    private String publicTitle;
     private Integer developingDepartmentId;
+    private Integer developingDepartmentIdNot;
     private Integer publishedVersion;
     private Integer draftedVersion;
+
     private Boolean isDrafted;
     private Boolean isPublished;
     private Boolean isRevoked;
@@ -31,8 +32,8 @@ public class FormFilter implements Filter<FormEntity> {
                 .withEquals("id", id)
                 .withContains("slug", slug)
                 .withContains("internalTitle", internalTitle)
-                .withContains("publicTitle", publicTitle)
-                .withEquals("developingOrganizationalUnitId", developingDepartmentId)
+                .withEquals("developingDepartmentId", developingDepartmentId)
+                .withNotEquals("developingDepartmentId", developingDepartmentIdNot)
                 .withEquals("publishedVersion", publishedVersion)
                 .withEquals("draftedVersion", draftedVersion);
 
@@ -76,15 +77,6 @@ public class FormFilter implements Filter<FormEntity> {
 
     public FormFilter setInternalTitle(String internalTitle) {
         this.internalTitle = internalTitle;
-        return this;
-    }
-
-    public String getPublicTitle() {
-        return publicTitle;
-    }
-
-    public FormFilter setPublicTitle(String publicTitle) {
-        this.publicTitle = publicTitle;
         return this;
     }
 
@@ -138,6 +130,42 @@ public class FormFilter implements Filter<FormEntity> {
     }
 
     public FormFilter setIsRevoked(Boolean revoked) {
+        isRevoked = revoked;
+        return this;
+    }
+
+    public Integer getDevelopingDepartmentIdNot() {
+        return developingDepartmentIdNot;
+    }
+
+    public FormFilter setDevelopingDepartmentIdNot(Integer developingDepartmentIdNot) {
+        this.developingDepartmentIdNot = developingDepartmentIdNot;
+        return this;
+    }
+
+    public Boolean getDrafted() {
+        return isDrafted;
+    }
+
+    public FormFilter setDrafted(Boolean drafted) {
+        isDrafted = drafted;
+        return this;
+    }
+
+    public Boolean getPublished() {
+        return isPublished;
+    }
+
+    public FormFilter setPublished(Boolean published) {
+        isPublished = published;
+        return this;
+    }
+
+    public Boolean getRevoked() {
+        return isRevoked;
+    }
+
+    public FormFilter setRevoked(Boolean revoked) {
         isRevoked = revoked;
         return this;
     }

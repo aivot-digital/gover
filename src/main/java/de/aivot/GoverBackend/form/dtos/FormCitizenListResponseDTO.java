@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.form.dtos;
 
-import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 
 import javax.annotation.Nonnull;
 import java.time.LocalDateTime;
@@ -15,10 +15,10 @@ public record FormCitizenListResponseDTO(
         @Nonnull
         LocalDateTime updated
 ) {
-    public static FormCitizenListResponseDTO fromEntity(FormVersionWithDetailsEntity form) {
+    public static FormCitizenListResponseDTO fromEntity(VFormVersionWithDetailsEntity form) {
         return new FormCitizenListResponseDTO(
                 form.getSlug(),
-                form.getVersion(),
+                form.getPublishedVersion(),
                 form.getPublicTitle(),
                 form.getUpdated()
         );

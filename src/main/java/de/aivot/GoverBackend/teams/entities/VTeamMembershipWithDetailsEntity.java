@@ -38,7 +38,7 @@ public class VTeamMembershipWithDetailsEntity {
     @Nonnull
     private Boolean verified;
     @Nonnull
-    private Boolean globalAdmin;
+    private Integer globalRole;
     @Nonnull
     private Boolean deletedInIdp;
 
@@ -142,12 +142,12 @@ public class VTeamMembershipWithDetailsEntity {
     }
 
     @Nonnull
-    public Boolean getGlobalAdmin() {
-        return globalAdmin;
+    public Integer getGlobalRole() {
+        return globalRole;
     }
 
-    public VTeamMembershipWithDetailsEntity setGlobalAdmin(@Nonnull Boolean userGlobalAdmin) {
-        this.globalAdmin = userGlobalAdmin;
+    public VTeamMembershipWithDetailsEntity setGlobalRole(@Nonnull Integer userGlobalAdmin) {
+        this.globalRole = userGlobalAdmin;
         return this;
     }
 

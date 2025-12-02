@@ -21,11 +21,11 @@ export function PrivacyDialog(props: PrivacyDialogProps) {
     useEffect(() => {
         if (
             !props.isListingPage &&
-            application?.privacyDepartmentId != null &&
-            (department == null || department.id !== application.privacyDepartmentId)
+            application?.version.privacyDepartmentId != null &&
+            (department == null || department.id !== application.version.privacyDepartmentId)
         ) {
             new DepartmentApiService()
-                .retrievePublic(application.privacyDepartmentId)
+                .retrievePublic(application.version.privacyDepartmentId)
                 .then(setDepartment);
         } else if (
             props.isListingPage &&

@@ -11,7 +11,6 @@ import {RichTextEditorComponentView, RichTextEditorComponentViewProps} from '../
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../../hooks/use-form-manager';
-import {FormsApiService} from '../../../forms/forms-api-service';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {ConstraintDialog} from '../../../../dialogs/constraint-dialog/constraint-dialog';
 import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constraint-link-props';
@@ -26,8 +25,9 @@ import {CheckboxFieldComponent} from '../../../../components/checkbox-field/chec
 import {TextFieldComponentProps} from '../../../../components/text-field/text-field-component-props';
 import {SelectFieldComponentProps} from '../../../../components/select-field/select-field-component-props';
 import {DepartmentEntity} from '../../entities/department-entity';
-import { DepartmentApiService } from '../../services/department-api-service';
-import { getDepartmentTypeLabelGenitiv } from '../../utils/department-utils';
+import {DepartmentApiService} from '../../services/department-api-service';
+import {getDepartmentTypeLabelGenitiv} from '../../utils/department-utils';
+import {FormApiService} from '../../../forms/services/form-api-service';
 
 
 export const DepartmentSchema = yup.object({
@@ -232,17 +232,12 @@ export function DepartmentsDetailsPageIndex() {
 
         setIsBusy(true);
         try {
-            const formsApi = new FormsApiService(api);
-            const developingForms = await formsApi.list(0, 999, undefined, undefined, {developingDepartmentId: department.id});
-            const managingForms = await formsApi.list(0, 999, undefined, undefined, {managingDepartmentId: department.id});
-            const responsibleForms = await formsApi.list(0, 999, undefined, undefined, {responsibleDepartmentId: department.id});
+            const formsApi = new FormApiService();
+            const developingForms = await formsApi.listAll({
+                developingDepartmentId: department.id,
+            });
 
-            const uniqueForms = Array.from(
-                new Map(
-                    [...developingForms.content, ...managingForms.content, ...responsibleForms.content]
-                        .map(form => [form.id, form]),
-                ).values(),
-            );
+            const uniqueForms = developingForms.content;
 
             if (uniqueForms.length > 0) {
                 const maxVisibleLinks = 5;

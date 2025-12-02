@@ -14,7 +14,6 @@ import {UsersApiService} from '../../../users-api-service';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../../slices/snackbar-slice';
 import {isApiError} from '../../../../../models/api-error';
 import {GenericDetailsSkeleton} from '../../../../../components/generic-details-page/generic-details-skeleton';
-import {SubmissionsApiService} from '../../../../submissions/submissions-api-service';
 import {ConstraintLinkProps} from '../../../../../dialogs/constraint-dialog/constraint-link-props';
 import {ConfirmDialog} from '../../../../../dialogs/confirm-dialog/confirm-dialog';
 import {ConstraintDialog} from '../../../../../dialogs/constraint-dialog/constraint-dialog';
@@ -142,41 +141,6 @@ export function UserDetailsPageIndex() {
         );
     }
 
-    const checkAndHandleDelete = async () => {
-        if (!user.id) return;
-
-        setIsBusy(true);
-        try {
-            const submissionsApi = new SubmissionsApiService(api);
-            const submissions = await submissionsApi.list(0, 999, undefined, undefined, {assigneeId: user.id, notArchived: true});
-
-            if (submissions.content.length > 0) {
-                const maxVisibleLinks = 5;
-                let processedLinks = submissions.content.slice(0, maxVisibleLinks).map(f => ({
-                    label: f.fileNumber ? `Antrag mit Aktenzeichen ${f.fileNumber}` : `Antrag ohne Aktenzeichen (${f.id})`,
-                    to: `/submissions/${f.id}`,
-                }));
-
-                if (submissions.content.length > maxVisibleLinks) {
-                    processedLinks.push({
-                        label: 'Weitere Anträge anzeigen…',
-                        to: `/submissions`,
-                    });
-                }
-
-                setRelatedSubmissions(processedLinks);
-                setShowConstraintDialog(true);
-            } else {
-                setConfirmDeleteAction(() => confirmDelete);
-            }
-        } catch (error) {
-            console.error(error);
-            dispatch(showErrorSnackbar('Fehler beim Prüfen der Löschbarkeit.'));
-        } finally {
-            setIsBusy(false);
-        }
-    };
-
     const confirmDelete = () => {
         if (!user.id) return;
 
@@ -250,7 +214,7 @@ export function UserDetailsPageIndex() {
                     {/* TODO: Remove code for user deletion in the future
                         user.deletedInIdp &&
                         <Button
-                            onClick={checkAndHandleDelete}
+                            onClick={() => setConfirmDeleteAction(() => confirmDelete);}
                             variant="outlined"
                             color="error"
                             startIcon={<DeleteOutlinedIcon />}

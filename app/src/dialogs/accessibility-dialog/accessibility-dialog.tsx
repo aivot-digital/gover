@@ -21,11 +21,11 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
     useEffect(() => {
         if (
             !props.isListingPage &&
-            application?.accessibilityDepartmentId != null &&
-            (department == null || department.id !== application.accessibilityDepartmentId)
+            application?.version.accessibilityDepartmentId != null &&
+            (department == null || department.id !== application.version.accessibilityDepartmentId)
         ) {
             new DepartmentApiService()
-                .retrievePublic(application.accessibilityDepartmentId)
+                .retrievePublic(application.version.accessibilityDepartmentId)
                 .then(setDepartment);
         } else if (
             props.isListingPage &&

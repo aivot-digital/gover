@@ -7,7 +7,6 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.teams.dtos.TeamMembershipRequestDTO;
 import de.aivot.GoverBackend.teams.dtos.TeamMembershipResponseDTO;
 import de.aivot.GoverBackend.teams.entities.TeamMembershipEntity;
-import de.aivot.GoverBackend.teams.filters.TeamMembershipFilter;
 import de.aivot.GoverBackend.teams.filters.VTeamMembershipWithDetailsFilter;
 import de.aivot.GoverBackend.teams.repositories.TeamMembershipRepository;
 import de.aivot.GoverBackend.teams.repositories.TeamRepository;
@@ -71,7 +70,7 @@ public class TeamMembershipController {
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var team = teamRepository
@@ -126,7 +125,7 @@ public class TeamMembershipController {
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var team = teamRepository
@@ -166,7 +165,7 @@ public class TeamMembershipController {
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var entity = repository

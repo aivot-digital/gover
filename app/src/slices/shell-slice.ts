@@ -96,6 +96,10 @@ const shellSlice = createSlice({
                 state.lastLoadingStartedAt = undefined;
             }
         },
+        clearLoadingMessage(state) {
+            state.loading = undefined;
+            state.lastLoadingStartedAt = undefined;
+        },
         setErrorMessage(state, action: PayloadAction<ErrorMessage | undefined>) {
             state.error = action.payload;
         },
@@ -121,6 +125,7 @@ export const {
     setShowSearchDialog,
     setShowAboutGoverDialog,
     setLoadingMessage,
+    clearLoadingMessage,
     setErrorMessage,
     addSnackbarMessage,
     removeSnackbarMessage,

@@ -10,7 +10,6 @@ import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackba
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../../hooks/use-form-manager';
-import {FormsApiService} from '../../../forms/forms-api-service';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {ConstraintDialog} from '../../../../dialogs/constraint-dialog/constraint-dialog';
 import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constraint-link-props';
@@ -153,50 +152,6 @@ export function TeamsDetailsPageIndex() {
         }
     };
 
-    const checkAndHandleDelete = async () => {
-        if (team.id === 0) return;
-
-        setIsBusy(true);
-        try {
-            const formsApi = new FormsApiService(api);
-            const developingForms = await formsApi.list(0, 999, undefined, undefined, {developingDepartmentId: team.id});
-            const managingForms = await formsApi.list(0, 999, undefined, undefined, {managingDepartmentId: team.id});
-            const responsibleForms = await formsApi.list(0, 999, undefined, undefined, {responsibleDepartmentId: team.id});
-
-            const uniqueForms = Array.from(
-                new Map(
-                    [...developingForms.content, ...managingForms.content, ...responsibleForms.content]
-                        .map(form => [form.id, form]),
-                ).values(),
-            );
-
-            if (uniqueForms.length > 0) {
-                const maxVisibleLinks = 5;
-                let processedLinks = uniqueForms.slice(0, maxVisibleLinks).map(f => ({
-                    label: f.internalTitle,
-                    to: `/forms/${f.id}`,
-                }));
-
-                if (uniqueForms.length > maxVisibleLinks) {
-                    processedLinks.push({
-                        label: 'Weitere Formulare anzeigen…',
-                        to: `/teams/${team.id}/forms`,
-                    });
-                }
-
-                setRelatedApplications(processedLinks);
-                setShowConstraintDialog(true);
-            } else {
-                setConfirmDeleteAction(() => confirmDelete);
-            }
-        } catch (error) {
-            console.error(error);
-            dispatch(showErrorSnackbar('Fehler beim Prüfen der Löschbarkeit.'));
-        } finally {
-            setIsBusy(false);
-        }
-    };
-
     const confirmDelete = () => {
         if (team.id === 0) return;
 
@@ -290,7 +245,9 @@ export function TeamsDetailsPageIndex() {
                     team.id !== 0 &&
                     <Button
                         variant="outlined"
-                        onClick={checkAndHandleDelete}
+                        onClick={() => {
+                            setConfirmDeleteAction(() => confirmDelete);
+                        }}
                         disabled={isBusy || !isEditable}
                         color="error"
                         sx={{

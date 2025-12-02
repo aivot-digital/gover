@@ -7,8 +7,8 @@ export interface ResourceAccessControlFilter {
     ids?: number[];
     sourceTeamId?: number;
     sourceTeamIds?: number[];
-    sourceOrgUnitId?: number;
-    sourceOrgUnitIds?: number[];
+    sourceDepartmentId?: number;
+    sourceDepartmentIds?: number[];
     targetFormId?: number;
     targetFormIds?: number[];
     targetProcessId?: number;

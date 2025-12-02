@@ -11,6 +11,7 @@ import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.department.services.VDepartmentMembershipWithPermissionsService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.user.services.UserService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -26,6 +27,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/departments/")
+@Tag(name = "Department", description = "Interact with departments")
 public class DepartmentController {
     private final ScopedAuditService auditService;
 
@@ -75,7 +77,7 @@ public class DepartmentController {
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var createdDepartment = departmentService
@@ -128,7 +130,7 @@ public class DepartmentController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!user.getGlobalAdmin()) {
+        if (!user.getSuperAdmin()) {
             var filter = VDepartmentMembershipWithPermissionsFilter
                     .create()
                     .setUserId(user.getId())
@@ -170,7 +172,7 @@ public class DepartmentController {
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var dep = departmentRepository

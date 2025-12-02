@@ -1,6 +1,6 @@
 import {Box, Paper, ThemeProvider, useTheme} from '@mui/material';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {clearLoadedForm, redoLoadedForm, selectFutureLoadedForm, selectLoadedForm, selectPastLoadedForm, showDialog, undoLoadedForm, updateLoadedForm} from '../../../../slices/app-slice';
+import {clearLoadedForm, LoadedForm, redoLoadedForm, selectFutureLoadedForm, selectLoadedForm, selectPastLoadedForm, showDialog, undoLoadedForm, updateLoadedForm} from '../../../../slices/app-slice';
 import {LoadingPlaceholder} from '../../../../components/loading-placeholder/loading-placeholder';
 import {useParams, useSearchParams} from 'react-router-dom';
 import {ViewDispatcherComponent} from '../../../../components/view-dispatcher.component';
@@ -26,7 +26,7 @@ import DesktopWindowsOutlinedIcon from '@mui/icons-material/DesktopWindowsOutlin
 import LaunchOutlinedIcon from '@mui/icons-material/LaunchOutlined';
 import {type Theme} from '../../../themes/models/theme';
 import {selectMemberships, selectUser} from '../../../../slices/user-slice';
-import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {useApi} from '../../../../hooks/use-api';
 import {EntityLockDto} from '../../../../models/dtos/entity-lock-dto';
 import {EntityLockState} from '../../../../data/entity-lock-state';
@@ -38,18 +38,14 @@ import {isAdmin} from '../../../../utils/is-admin';
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
 import {DeveloperTools} from '../../../../components/developer-tools/developer-tools';
-import {FormsApiService} from '../../forms-api-service';
-import {FormsApiService as FormsApiServiceV2} from '../../forms-api-service-v2';
 import {enqueueSnackbar} from 'notistack';
 import {FormRevisionsDialog} from '../../dialogs/form-revisions-dialog';
-import {ElementTreeEntity} from '../../../../components/element-tree/element-tree-entity';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../../slices/loading-overlay-slice';
 import {withAsyncWrapper} from '../../../../utils/with-async-wrapper';
 import {useDidUpdateEffect} from '../../../../hooks/use-did-update-effect';
 import {IdentityProviderInfo} from '../../../identity/models/identity-provider-info';
 import {setIdentityId} from '../../../../slices/identity-slice';
 import {ElementData, ElementDerivationResponse} from '../../../../models/element-data';
-import {asFormRequestDTO, FormDetailsResponseDTO} from '../../dtos/form-details-response-dto';
 import {FormStatus} from '../../enums/form-status';
 import {addDerivationLogItems} from '../../../../slices/logging-slice';
 import {RootState} from '../../../../store.staff';
@@ -61,10 +57,18 @@ import {useElementSize} from '../../../../utils/element-size';
 import {addEntityHistoryItem} from '../../../../slices/entity-history-slice';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 import {isApiError} from '../../../../models/api-error';
-import {setErrorMessage, setLoadingMessage} from '../../../../slices/shell-slice';
+import {clearLoadingMessage, setErrorMessage, setLoadingMessage} from '../../../../slices/shell-slice';
 import {withDelay} from '../../../../utils/with-delay';
+import {FormApiService} from '../../services/form-api-service';
+import {FormVersionApiService} from '../../services/form-version-api-service';
+import {VFormWithPermissionsApiService} from '../../services/v-form-with-permissions-api-service';
+import {FormEntity} from '../../entities/form-entity';
+import {FormVersionEntity} from '../../entities/form-version-entity';
 
 export const DialogSearchParam = 'dialog';
+
+const formService = new FormApiService();
+const versionService = new FormVersionApiService();
 
 export function FormDetailsPage() {
     const baseTheme = useTheme();
@@ -133,11 +137,12 @@ export function FormDetailsPage() {
     const metaDialog = useAppSelector((state) => state.app.showDialog);
     const [identityProviderInfos, setIdentityProviderInfos] = useState<IdentityProviderInfo[]>([]);
 
-    const formApiService = useMemo(() => new FormsApiServiceV2(), []);
-
     const [theme, setTheme] = useState<Theme>();
 
-    const {ref: containerRef, size: containerSize} = useElementSize<HTMLDivElement>();
+    const {
+        ref: containerRef,
+        size: containerSize,
+    } = useElementSize<HTMLDivElement>();
     const developerToolsMinHeight = 280;
     const developerToolsMaxHeight = containerSize.height > 0 ? Math.max(developerToolsMinHeight, Math.floor(containerSize.height * 0.5)) : undefined;
 
@@ -148,7 +153,7 @@ export function FormDetailsPage() {
                 return;
             }
 
-            new FormsApiService(api)
+            formService
                 .deleteLockState(formId)
                 .catch((err) => {
                     console.error(err);
@@ -183,17 +188,30 @@ export function FormDetailsPage() {
             estimatedTime: 2000,
         }));
 
-        new FormsApiService(api)
-            .retrieve({
-                id: formId,
-                version: formVersion,
-            })
-            .then((app) => {
-                CustomerInputService.cleanCustomerInput(app);
-                dispatch(updateLoadedForm(app));
+        Promise.all([
+            formService
+                .retrieve(formId),
+            versionService
+                .retrieve({
+                    formId: formId,
+                    version: formVersion,
+                }),
+            new VFormWithPermissionsApiService()
+                .retrieve({
+                    formId: formId,
+                    userId: user?.id ?? '',
+                }),
+        ])
+            .then(([form, version, permissions]) => {
+                CustomerInputService.cleanCustomerInput(form.slug, version.version);
+                dispatch(updateLoadedForm({
+                    form: form,
+                    version: version,
+                    permissions: permissions,
+                }));
                 dispatch(addEntityHistoryItem({
-                    title: app.internalTitle,
-                    link: `/forms/${app.id}/${app.version}`,
+                    title: form.internalTitle,
+                    link: `/forms/${form.id}/${version.version}`,
                     type: ServerEntityType.Forms,
                 }));
             })
@@ -230,18 +248,15 @@ export function FormDetailsPage() {
             return;
         }
 
-        if (loadedForm.themeId === theme?.id) {
+        if (loadedForm.version.themeId === theme?.id) {
             return;
         }
 
-        formApiService
-            .getFormTheme(loadedForm.slug, loadedForm.version)
-            .then((theme) => {
-                setTheme(theme);
-            })
+        formService
+            .getFormTheme(loadedForm.form.slug, loadedForm.version.version)
+            .then(setTheme)
             .catch((err) => {
-                console.error(err);
-                dispatch(showErrorSnackbar('Das Farbschema des Formulars konnte nicht geladen werden.'));
+                dispatch(showApiErrorSnackbar(err, 'Das Farbschema des Formulars konnte nicht geladen werden.'));
             });
     }, [loadedForm]);
 
@@ -254,8 +269,8 @@ export function FormDetailsPage() {
             return;
         }
 
-        new FormsApiService(api)
-            .getIdentityProviders(loadedForm.slug, loadedForm.version)
+        formService
+            .getIdentityProviders(loadedForm.form.slug, loadedForm.version.version)
             .then(res => setIdentityProviderInfos(res.content));
     }, [loadedForm]);
 
@@ -270,10 +285,10 @@ export function FormDetailsPage() {
         withAsyncWrapper<any, ElementDerivationResponse>({
             desiredMinRuntime: 600,
             main: () => {
-                return formApiService
-                    .determineFormState(
-                        loadedForm.slug,
-                        loadedForm.version,
+                return formService
+                    .deriveForm(
+                        loadedForm.form.slug,
+                        loadedForm.version.version,
                         elementData,
                         {
                             skipErrorsFor: [],
@@ -298,7 +313,7 @@ export function FormDetailsPage() {
     }, [theme, baseTheme]);
 
     function fetchLockState(id: number) {
-        new FormsApiService(api)
+        formService
             .getLockState(id)
             .then((lockState) => {
                 if (lockState.state === EntityLockState.LockedOther && lockState.lockedBy != null) {
@@ -331,16 +346,20 @@ export function FormDetailsPage() {
 
         dispatch(undoLoadedForm());
         dispatch(showLoadingOverlay('Speichern…'));
-        new FormsApiService(api)
-            .update({
-                id: formId,
-                version: formVersion,
-            }, pastLoadedForm[pastLoadedForm.length - 1])
-            .then((loadedForm) => {
-                formApiService
-                    .determineFormState(
-                        loadedForm.slug,
-                        loadedForm.version,
+        Promise.all([
+            formService
+                .update(formId, pastLoadedForm[pastLoadedForm.length - 1].form),
+            versionService
+                .update({
+                    formId: formId,
+                    version: formVersion,
+                }, pastLoadedForm[pastLoadedForm.length - 1].version),
+        ])
+            .then(([form, version]) => {
+                formService
+                    .deriveForm(
+                        form.slug,
+                        version.version,
                         elementData,
                         {
                             skipErrorsFor: ['ALL'],
@@ -370,16 +389,20 @@ export function FormDetailsPage() {
 
         dispatch(redoLoadedForm());
         dispatch(showLoadingOverlay('Speichern…'));
-        new FormsApiService(api)
-            .update({
-                id: formId,
-                version: formVersion,
-            }, futureLoadedForm[futureLoadedForm.length - 1])
-            .then((loadedForm) => {
-                formApiService
-                    .determineFormState(
-                        loadedForm.slug,
-                        loadedForm.version,
+        Promise.all([
+            formService
+                .update(formId, futureLoadedForm[futureLoadedForm.length - 1].form),
+            versionService
+                .update({
+                    formId: formId,
+                    version: formVersion,
+                }, futureLoadedForm[futureLoadedForm.length - 1].version),
+        ])
+            .then(([form, version]) => {
+                formService
+                    .deriveForm(
+                        form.slug,
+                        version.version,
                         elementData,
                         {
                             skipErrorsFor: ['ALL'],
@@ -416,16 +439,16 @@ export function FormDetailsPage() {
     if (loadedForm == null) {
         return <LoadingPlaceholder />;
     } else {
-        const allElements = flattenElements(loadedForm.rootElement);
+        const allElements = flattenElements(loadedForm.version.rootElement);
 
         const isEditable = (
-            loadedForm.status == FormStatus.Drafted &&
-            (memberships ?? []).some((mem) => mem.departmentId === loadedForm.developingDepartmentId) &&
+            loadedForm.version.status == FormStatus.Drafted &&
+            (memberships ?? []).some((mem) => mem.departmentId === loadedForm.form.developingDepartmentId) &&
             (lockState == null || lockState.state === EntityLockState.Free || lockState.state === EntityLockState.LockedSelf)
         );
-        const canViewHistory = isAdmin(user) || (memberships ?? []).some((mem) => mem.departmentId === loadedForm.developingDepartmentId);
+        const canViewHistory = isAdmin(user) || (memberships ?? []).some((mem) => mem.departmentId === loadedForm.form.developingDepartmentId);
 
-        const handlePatch = async (patch: Partial<ElementTreeEntity>) => {
+        const handlePatch = async (patchedLoadedForm: Partial<LoadedForm>) => {
             if (loadedForm == null) {
                 return;
             }
@@ -435,76 +458,69 @@ export function FormDetailsPage() {
                 return;
             }
 
-            const updatedAppModel = {
+            const formToUpdate: FormEntity = {
+                ...loadedForm.form,
+                ...patchedLoadedForm.form,
+            };
+            const versionToUpdate: FormVersionEntity = {
+                ...loadedForm.version,
+                ...patchedLoadedForm.version,
+            };
+            const originalLoadedForm: LoadedForm = {
                 ...loadedForm,
-                ...patch,
             };
 
-            const originalApplication = {
-                ...loadedForm,
-            };
+            dispatch(setLoadingMessage({
+                message: 'Speichere',
+                blocking: false,
+                estimatedTime: 800,
+            }));
 
-            dispatch(showLoadingOverlay('Speichern…'));
 
-            const apiService = new FormsApiService(api);
+            try {
+                const [updatedForm, updatedVersion] = await withDelay(Promise.all([
+                    formService.update(loadedForm.form.id, formToUpdate),
+                    versionService.update({formId: loadedForm.form.id, version: loadedForm.version.version}, versionToUpdate),
+                ]), 600);
 
-            await withAsyncWrapper({
-                desiredMinRuntime: 600,
-                main: async () => {
-                    try {
-                        const updatedForm = await apiService
-                            .update(
-                                {
-                                    id: loadedForm.id,
-                                    version: loadedForm.version,
-                                },
-                                asFormRequestDTO(updatedAppModel as FormDetailsResponseDTO),
-                            );
-                        dispatch(updateLoadedForm(updatedForm));
-                    } catch (err: any) {
-                        if (err.status === 403) {
-                            dispatch(showErrorSnackbar('Sie verfügen nicht über die notwendigen Rechte zum Bearbeiten.'));
-                        } else if (err.status === 423) {
-                            dispatch(showErrorSnackbar('Das Formular wird aktuell durch eine andere Mitarbeiter:in bearbeitet.'));
-                            fetchLockState(loadedForm.id);
-                        } else {
-                            console.error(err);
-                            dispatch(showErrorSnackbar('Das Formular konnte nicht gespeichert werden.'));
-                        }
+                dispatch(updateLoadedForm({
+                    ...loadedForm,
+                    form: updatedForm,
+                    version: updatedVersion,
+                }));
+            } catch (err: any) {
+                if (err.status === 403) {
+                    dispatch(showErrorSnackbar('Sie verfügen nicht über die notwendigen Rechte zum Bearbeiten.'));
+                } else if (err.status === 423) {
+                    dispatch(showErrorSnackbar('Das Formular wird aktuell durch eine andere Mitarbeiter:in bearbeitet.'));
+                    fetchLockState(loadedForm.form.id);
+                } else {
+                    dispatch(showApiErrorSnackbar(err, 'Das Formular konnte nicht gespeichert werden.'));
+                }
+                dispatch(updateLoadedForm(originalLoadedForm));
+            }
 
-                        dispatch(updateLoadedForm(originalApplication));
-                    }
+            const newState = await formService
+                .deriveForm(
+                    loadedForm.form.slug,
+                    loadedForm.version.version,
+                    elementData,
+                    {
+                        skipErrorsFor: ['ALL'],
+                        skipVisibilitiesFor: disableVisibility ? ['ALL'] : [],
+                        skipValuesFor: [],
+                        skipOverridesFor: [],
+                    },
+                );
+            setElementData(newState.elementData);
+            dispatch(addDerivationLogItems(newState.logItems));
 
-                    try {
-                        console.log('Determening Form State');
-                        const newState = await formApiService
-                            .determineFormState(
-                                loadedForm.slug,
-                                loadedForm.version,
-                                elementData,
-                                {
-                                    skipErrorsFor: ['ALL'],
-                                    skipVisibilitiesFor: disableVisibility ? ['ALL'] : [],
-                                    skipValuesFor: [],
-                                    skipOverridesFor: [],
-                                },
-                            );
-                        setElementData(newState.elementData);
-                        dispatch(addDerivationLogItems(newState.logItems));
-                    } catch (err: any) {
-                        console.error(err);
-                        dispatch(showErrorSnackbar('Die Formularzustände konnten nicht berechnet werden.'));
-                    }
-                },
-                after: async () => {
-                    dispatch(hideLoadingOverlay());
-                },
-            });
+            dispatch(clearLoadingMessage());
         };
 
         return (
             <PageWrapper
-                title={`Editor - ${loadedForm.internalTitle} — Version ${loadedForm.version}`}
+                title={`Editor - ${loadedForm.form.internalTitle} — Version ${loadedForm.version.version}`}
                 fullWidth={true}
                 fullHeight={true}
             >
@@ -530,10 +546,10 @@ export function FormDetailsPage() {
                                     }}
                                 >
                                     <GenericPageHeader
-                                        title={'Formular: ' + loadedForm.internalTitle}
+                                        title={'Formular: ' + loadedForm.form.internalTitle}
                                         badge={{
                                             color: 'default',
-                                            label: `Version ${loadedForm.version}`,
+                                            label: `Version ${loadedForm.version.version}`,
                                         }}
                                         icon={ModuleIcons.forms}
                                         actions={[
@@ -542,14 +558,14 @@ export function FormDetailsPage() {
                                                 icon: <UndoIcon />,
                                                 onClick: handleUndo,
                                                 disabled: !hasPastLoadedForm,
-                                                visible: loadedForm.status === FormStatus.Drafted,
+                                                visible: loadedForm.version.status === FormStatus.Drafted,
                                             },
                                             {
                                                 tooltip: 'Änderung wiederherstellen',
                                                 icon: <RedoIcon />,
                                                 onClick: handleRedo,
                                                 disabled: !hasFutureLoadedForm,
-                                                visible: loadedForm.status === FormStatus.Drafted,
+                                                visible: loadedForm.version.status === FormStatus.Drafted,
                                             },
                                             'separator',
                                             {
@@ -595,7 +611,7 @@ export function FormDetailsPage() {
                                             {
                                                 tooltip: 'Formular als antragstellende Person öffnen (in neuem Tab)',
                                                 icon: <LaunchOutlinedIcon />,
-                                                href: `/${loadedForm.slug ?? ''}/${loadedForm.version ?? ''}`,
+                                                href: `/${loadedForm.form.slug ?? ''}/${loadedForm.version.version ?? ''}`,
                                             },
                                         ]}
                                     />
@@ -615,9 +631,9 @@ export function FormDetailsPage() {
                                     >
                                         <ThemeProvider theme={_theme}>
                                             <ViewDispatcherComponent
-                                                rootElement={loadedForm.rootElement}
+                                                rootElement={loadedForm.version.rootElement}
                                                 allElements={allElements}
-                                                element={loadedForm.rootElement}
+                                                element={loadedForm.version.rootElement}
                                                 scrollContainerRef={scrollContainerRef}
                                                 isBusy={false}
                                                 isDeriving={false}
@@ -697,8 +713,8 @@ export function FormDetailsPage() {
                                     }}
                                 >
                                     <DeveloperTools
-                                        dataLabel={loadedForm.internalTitle}
-                                        rootElement={loadedForm.rootElement}
+                                        dataLabel={loadedForm.form.internalTitle}
+                                        rootElement={loadedForm.version.rootElement}
                                         elementData={elementData}
                                         onElementDataChange={(elementData) => {
                                             dispatch(setLoadingMessage({
@@ -708,10 +724,10 @@ export function FormDetailsPage() {
                                             }));
 
                                             withDelay(
-                                                formApiService
-                                                    .determineFormState(
-                                                        loadedForm.slug,
-                                                        loadedForm.version,
+                                                formService
+                                                    .deriveForm(
+                                                        loadedForm.form.slug,
+                                                        loadedForm.version.version,
                                                         elementData,
                                                         {
                                                             skipErrorsFor: ['ALL'],

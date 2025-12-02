@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.form.dtos;
 
 import de.aivot.GoverBackend.elements.models.elements.RootElement;
 import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
-import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 
 import javax.annotation.Nonnull;
@@ -44,7 +44,7 @@ public record FormCitizenDetailsResponseDTO(
         List<IdentityProviderLink> identityProviders
 
 ) {
-    public static FormCitizenDetailsResponseDTO fromEntity(FormVersionWithDetailsEntity form, boolean obfuscateSteps) {
+    public static FormCitizenDetailsResponseDTO fromEntity(VFormVersionWithDetailsEntity form, boolean obfuscateSteps) {
         ElementStreamUtils
                 .applyAction(form.getRootElement(), element -> {
                     element.setName("");

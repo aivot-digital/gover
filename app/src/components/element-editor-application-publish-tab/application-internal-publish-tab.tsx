@@ -1,20 +1,17 @@
 import {type ElementEditorContentProps} from '../element-editor-content/element-editor-content-props';
 import {Alert, AlertTitle, Box, Button, Divider, Paper, Skeleton, Tooltip} from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
-import {Form as Application} from '../../models/entities/form';
 import {type RootElement} from '../../models/elements/root-element';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {selectHasMemberships, selectMemberships} from '../../slices/user-slice';
-import {UserRole} from '../../data/user-role';
+import {selectHasMemberships} from '../../slices/user-slice';
 import {Checklist} from '../checklist/checklist';
 import PauseCircleOutlineOutlinedIcon from '@mui/icons-material/PauseCircleOutlineOutlined';
-import {updateLoadedForm} from '../../slices/app-slice';
+import {LoadedForm, updateLoadedForm} from '../../slices/app-slice';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {AlertComponent} from '../alert/alert-component';
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import {useApi} from '../../hooks/use-api';
-import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {FormPublishChecklistItem} from '../../modules/forms/dtos/form-publish-checklist-item';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../slices/loading-overlay-slice';
 import {useConfirm} from '../../providers/confirm-provider';
@@ -23,32 +20,33 @@ import {SxProps} from '@mui/material/styles';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 import {FormStatus} from '../../modules/forms/enums/form-status';
 import {withDelay} from '../../utils/with-delay';
+import {FormApiService} from '../../modules/forms/services/form-api-service';
 
-export function ApplicationInternalPublishTab<T extends RootElement, E extends Application>(props: ElementEditorContentProps<T, E>) {
+export function ApplicationInternalPublishTab<T extends RootElement, E extends LoadedForm>(props: ElementEditorContentProps<T, E>) {
     const api = useApi();
     const dispatch = useAppDispatch();
     const showConfirm = useConfirm();
 
     const [checklist, setChecklist] = useState<FormPublishChecklistItem[] | null>(null);
-    const canPublish = useAppSelector(selectHasMemberships(props.entity.developingDepartmentId, 'formPermissionPublish'));
+    const canPublish = useAppSelector(selectHasMemberships(props.entity.form.developingDepartmentId, 'formPermissionPublish'));
 
-    const [isPublished, setIsPublished] = useState(props.entity.status === FormStatus.Published);
-    const [isRevoked, setIsRevoked] = useState(props.entity.status === FormStatus.Revoked);
-    const [isIdentityRequired, setIsIdentityRequired] = useState(props.entity.identityVerificationRequired);
-    const [isInternal, setIsInternal] = useState(props.entity.type === FormType.Internal);
+    const [isPublished, setIsPublished] = useState(props.entity.version.status === FormStatus.Published);
+    const [isRevoked, setIsRevoked] = useState(props.entity.version.status === FormStatus.Revoked);
+    const [isIdentityRequired, setIsIdentityRequired] = useState(props.entity.version.identityVerificationRequired);
+    const [isInternal, setIsInternal] = useState(props.entity.version.type === FormType.Internal);
 
     useEffect(() => {
-        withDelay(new FormsApiService(api)
+        withDelay(new FormApiService()
             .checkPublish({
-                id: props.entity.id,
-                version: props.entity.version,
+                formId: props.entity.form.id,
+                version: props.entity.version.version,
             }), 600)
             .then(setChecklist)
             .catch((err) => {
                 console.error(err);
                 dispatch(showErrorSnackbar('Die Veröffentlichungskriterien konnten nicht geladen werden.'));
             });
-    }, [props.entity.id, api]);
+    }, [props.entity, api]);
 
     const allChecksDone = useMemo(() => {
         return checklist != null && checklist.every((item) => item.done);
@@ -110,15 +108,22 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
         if (confirmed) {
             dispatch(showLoadingOverlay('Formular wird veröffentlicht'));
 
-            new FormsApiService(api)
+            new FormApiService()
                 .publish({
-                    id: props.entity.id,
-                    version: props.entity.version,
+                    formId: props.entity.form.id,
+                    version: props.entity.version.version,
                 })
                 .then((updatedForm) => {
                     setIsPublished(true);
                     setIsRevoked(false);
-                    dispatch(updateLoadedForm(updatedForm));
+                    dispatch(updateLoadedForm({
+                        ...props.entity,
+                        form: {
+                            ...props.entity.form,
+                            publishedVersion: updatedForm.version,
+                        },
+                        version: updatedForm,
+                    }));
                 })
                 .catch((err) => {
                     if (err.status === 403) {
@@ -152,15 +157,22 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
         if (confirmed) {
             dispatch(showLoadingOverlay('Formular wird zurückgezogen'));
 
-            new FormsApiService(api)
+            new FormApiService()
                 .revoke({
-                    id: props.entity.id,
-                    version: props.entity.version,
+                    formId: props.entity.form.id,
+                    version: props.entity.version.version,
                 })
                 .then((updatedForm) => {
                     setIsRevoked(true);
                     setIsPublished(false);
-                    dispatch(updateLoadedForm(updatedForm));
+                    dispatch(updateLoadedForm({
+                        ...props.entity,
+                        form: {
+                            ...props.entity.form,
+                            publishedVersion: null,
+                        },
+                        version: updatedForm,
+                    }));
                 })
                 .catch((err) => {
                     if (err.status === 403) {

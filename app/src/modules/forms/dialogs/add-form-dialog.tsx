@@ -3,25 +3,29 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {slugify} from '../../../utils/slugify';
-import {SelectFieldComponent} from '../../../components/select-field/select-field-component';
+import {useFormManager} from '../../../hooks/use-form-manager';
+import * as yup from 'yup';
+import {type ObjectSchema} from 'yup';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
+import {useConfirm} from '../../../providers/confirm-provider';
+import {getDepartmentTypeIcons, getDepartmentTypeLabel} from '../../departments/utils/department-utils';
+import {FormEntity} from '../entities/form-entity';
+import {FormVersionEntity} from '../entities/form-version-entity';
+import {FormApiService} from '../services/form-api-service';
+import {SelectFieldComponent, SelectFieldComponentOption} from '../../../components/select-field-2/select-field-component';
+import {FormVersionApiService} from '../services/form-version-api-service';
+import {setLoadingMessage} from '../../../slices/shell-slice';
+import {VDepartmentMembershipWithDetailsService} from '../../departments/services/v-department-membership-with-details-service';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectUser} from '../../../slices/user-slice';
-import {useApi} from '../../../hooks/use-api';
-import {useFormManager} from '../../../hooks/use-form-manager';
-import {FormDetailsResponseDTO} from '../dtos/form-details-response-dto';
-import * as yup from 'yup';
-import {FormsApiService} from '../forms-api-service';
-import {FormRequestDTO} from '../dtos/form-request-dto';
-import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {hideLoadingOverlay, showLoadingOverlay} from '../../../slices/loading-overlay-slice';
-import {showApiErrorSnackbar, showErrorSnackbar} from '../../../slices/snackbar-slice';
-import {useConfirm} from '../../../providers/confirm-provider';
-import {shallowEquals} from '../../../utils/equality-utils';
-import {VDepartmentShadowedEntity} from '../../departments/entities/v-department-shadowed-entity';
-import {VDepartmentShadowedApiService} from '../../departments/services/v-department-shadowed-api-service';
-import {getDepartmentPath} from '../../departments/utils/department-utils';
 
-const FormSchema = yup.object({
+type FormSchema = Partial<
+    Pick<FormEntity, 'slug' | 'developingDepartmentId' | 'internalTitle'> &
+    Pick<FormVersionEntity, 'publicTitle'>
+>;
+
+const formSchema: ObjectSchema<FormSchema> = yup.object({
     developingDepartmentId: yup
         .number()
         .integer()
@@ -49,9 +53,12 @@ const FormSchema = yup.object({
 });
 
 export interface AddFormDialogProps {
-    basis: FormDetailsResponseDTO;
+    basis: {
+        form: FormEntity,
+        version: FormVersionEntity,
+    } | undefined;
     onClose: () => void;
-    onSave: (form: FormDetailsResponseDTO) => void;
+    onSave: (form: FormEntity, version: FormVersionEntity) => void;
     open: boolean;
 }
 
@@ -63,13 +70,11 @@ export function AddFormDialog(props: AddFormDialogProps) {
         open,
     } = props;
 
-    const api = useApi();
     const dispatch = useAppDispatch();
     const showConfirm = useConfirm();
 
     const user = useAppSelector(selectUser);
-
-    const [availableDepartments, setAvailableDepartments] = useState<VDepartmentShadowedEntity[]>([]);
+    const [availableDepartments, setAvailableDepartments] = useState<SelectFieldComponentOption<number>[]>([]);
 
     const {
         errors,
@@ -79,15 +84,21 @@ export function AddFormDialog(props: AddFormDialogProps) {
         handleInputBlur,
         validate: validateForm,
         reset: resetForm,
-    } = useFormManager<FormDetailsResponseDTO>(basis, FormSchema as any);
+        hasNotChanged,
+    } = useFormManager<FormSchema>({
+        developingDepartmentId: basis?.form.developingDepartmentId,
+        internalTitle: basis?.form.internalTitle,
+        publicTitle: basis?.version.publicTitle,
+        slug: basis?.form.slug,
+    }, formSchema);
 
     const {
         slug: currentItemSlug,
-    } = currentItem as FormDetailsResponseDTO;
+    } = currentItem as FormEntity;
 
     const hasChangedSinceOpen = useMemo(() => {
-        return !shallowEquals(basis, currentItem);
-    }, [basis, currentItem]);
+        return !hasNotChanged;
+    }, [hasNotChanged]);
 
     const hasErrors = useMemo(() => {
         return Object.keys(errors).length > 0 &&
@@ -99,13 +110,29 @@ export function AddFormDialog(props: AddFormDialogProps) {
     const [slugStatus, setSlugStatus] = useState<'available' | 'blocked' | 'unknown'>('unknown');
 
     useEffect(() => {
-        new VDepartmentShadowedApiService()
-            .listAllOrdered(['parentNames', 'name'], 'ASC')
-            .then(departments => setAvailableDepartments(departments.content))
+        if (user == null) {
+            setAvailableDepartments([]);
+            return;
+        }
+
+        new VDepartmentMembershipWithDetailsService()
+            .listAll({
+                userId: user.id,
+            })
+            .then(({content}) => {
+                const options: SelectFieldComponentOption<number>[] = content
+                    .map((membership) => ({
+                        value: membership.departmentId,
+                        label: membership.name,
+                        icon: getDepartmentTypeIcons(membership.depth),
+                        subLabel: getDepartmentTypeLabel(membership.depth),
+                    }));
+                setAvailableDepartments(options);
+            })
             .catch(err => {
                 dispatch(showApiErrorSnackbar(err, 'Die Fachbereiche konnten nicht geladen werden. Bitte versuchen Sie es erneut.'));
             });
-    }, []);
+    }, [user]);
 
     useEffect(() => {
         if (currentItemSlug == null || currentItemSlug.length === 0) {
@@ -113,7 +140,7 @@ export function AddFormDialog(props: AddFormDialogProps) {
             return;
         }
 
-        new FormsApiService(api)
+        new FormApiService()
             .checkSlugExists(currentItemSlug)
             .then((exists) => {
                 setSlugStatus(exists ? 'blocked' : 'available');
@@ -133,9 +160,10 @@ export function AddFormDialog(props: AddFormDialogProps) {
             return;
         }
 
-        const formsApi = new FormsApiService(api);
+        const formApiService = new FormApiService();
+        const versionApiService = new FormVersionApiService();
 
-        const slugExists = await formsApi
+        const slugExists = await formApiService
             .checkSlugExists(currentItemSlug);
 
         if (slugExists) {
@@ -143,58 +171,60 @@ export function AddFormDialog(props: AddFormDialogProps) {
             return;
         }
 
+        dispatch(setLoadingMessage({
+            message: 'Neues Formular wird erstellt',
+            blocking: true,
+            estimatedTime: 5000,
+        }));
+
         setIsCreating(true);
 
-        const newForm: FormRequestDTO = {
-            slug: currentItem.slug,
-            internalTitle: currentItem.internalTitle,
-            publicTitle: currentItem.publicTitle,
-            developingDepartmentId: currentItem.developingDepartmentId,
-            managingDepartmentId: currentItem.managingDepartmentId,
-            responsibleDepartmentId: currentItem.responsibleDepartmentId,
-            type: currentItem.type,
-            legalSupportDepartmentId: currentItem.legalSupportDepartmentId,
-            technicalSupportDepartmentId: currentItem.technicalSupportDepartmentId,
-            imprintDepartmentId: currentItem.imprintDepartmentId,
-            privacyDepartmentId: currentItem.privacyDepartmentId,
-            accessibilityDepartmentId: currentItem.accessibilityDepartmentId,
-            destinationId: currentItem.destinationId,
-            themeId: currentItem.themeId,
-            pdfTemplateKey: currentItem.pdfTemplateKey,
-            paymentProviderKey: currentItem.paymentProviderKey,
-            paymentPurpose: currentItem.paymentPurpose,
-            paymentDescription: currentItem.paymentDescription,
-            paymentProducts: currentItem.paymentProducts,
-            identityVerificationRequired: currentItem.identityVerificationRequired,
-            identityProviders: currentItem.identityProviders,
-            customerAccessHours: currentItem.customerAccessHours,
-            submissionRetentionWeeks: currentItem.submissionRetentionWeeks,
-            rootElement: currentItem.rootElement,
+        const newForm: FormEntity = {
+            ...formApiService.initialize(),
+            ...basis?.form,
+            slug: currentItem.slug!,
+            internalTitle: currentItem.internalTitle!,
+            developingDepartmentId: currentItem.developingDepartmentId!,
         };
 
-        dispatch(showLoadingOverlay('Neues Formular wird erstellt'));
+        const newVersion: FormVersionEntity = {
+            ...versionApiService.initialize(),
+            ...basis?.version,
+            publicTitle: currentItem.publicTitle!,
+        };
 
+        let createdForm: FormEntity | null = null;
+        let createdVersion: FormVersionEntity | null = null;
         try {
-            const createdForm = await formsApi
+            createdForm = await formApiService
                 .create(newForm);
-            onSave(createdForm);
-            handleClose(null, 'saveSuccess' as any);
+
+            createdVersion = await versionApiService
+                .create({
+                    ...newVersion,
+                    formId: createdForm.id,
+                });
         } catch (err) {
-            console.error(err);
-            dispatch(showErrorSnackbar('Das Formular konnte nicht erstellt werden. Bitte versuchen Sie es erneut.'));
+            dispatch(showApiErrorSnackbar(err, 'Das Formular konnte nicht erstellt werden. Bitte versuchen Sie es erneut.'));
         } finally {
-            dispatch(hideLoadingOverlay());
+            dispatch(setLoadingMessage(undefined));
             setIsCreating(false);
+        }
+
+        if (createdForm != null && createdVersion != null) {
+            onSave(createdForm, createdVersion);
+            resetForm();
         }
     };
 
     const handleClose = async (_: any, reason: string): Promise<void> => {
         if (hasChangedSinceOpen && reason !== 'saveSuccess') {
             const confirmed = await showConfirm({
-                title: 'Möchten Sie die eingegebenen Antragsdaten wirklich löschen?',
+                title: 'Möchten Sie die eingegebenen Daten wirklich verwerfen?',
                 children: (
                     <Typography>
-                        Dieser Vorgang kann nicht rückgängig gemacht werden. Wenn Sie die Daten löschen, müssen Sie diese bei Bedarf erneut eingeben.
+                        Dieser Vorgang kann nicht rückgängig gemacht werden.
+                        Wenn Sie die Daten verwerfen, müssen Sie diese bei Bedarf erneut eingeben.
                     </Typography>
                 ),
                 confirmButtonText: 'Ja, Eingaben verwerfen',
@@ -250,14 +280,11 @@ export function AddFormDialog(props: AddFormDialogProps) {
 
                 <SelectFieldComponent
                     label="Entwickelnder Fachbereich"
-                    value={currentItem?.developingDepartmentId != null ? currentItem.developingDepartmentId.toString() : undefined}
+                    value={currentItem?.developingDepartmentId}
                     onChange={(val) => {
-                        handleInputChangeWithValidation('developingDepartmentId')(val != null ? parseInt(val, 10) : undefined);
+                        handleInputChangeWithValidation('developingDepartmentId')(val != null ? val : undefined);
                     }}
-                    options={availableDepartments.map((department) => ({
-                        value: department.id.toString(),
-                        label: getDepartmentPath(department),
-                    }))}
+                    options={availableDepartments}
                     disabled={isCreating}
                     error={errors.developingDepartmentId}
                     required
@@ -281,7 +308,7 @@ export function AddFormDialog(props: AddFormDialogProps) {
                     onChange={handleInputChange('internalTitle')}
                     onBlur={(val) => {
                         const title = val != null ? val.trim() : '';
-                        if (currentItem?.slug.length === 0) {
+                        if (currentItem?.slug != null && currentItem.slug.length === 0) {
                             handleInputChangeWithValidation('slug')(slugify(title, 96));
                         }
                         handleInputBlur('internalTitle')();

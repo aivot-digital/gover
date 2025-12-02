@@ -70,7 +70,7 @@ public class VDepartmentUserRoleAssignmentWithDetailsController {
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         if (Objects.isNull(newAssignment.getDepartmentMembershipId())) {
@@ -81,7 +81,7 @@ public class VDepartmentUserRoleAssignmentWithDetailsController {
                 .retrieve(newAssignment.getDepartmentMembershipId())
                 .orElseThrow(ResponseException::badRequest);
 
-        if (!user.getGlobalAdmin()) {
+        if (!user.getSuperAdmin()) {
             var filter = VDepartmentMembershipWithPermissionsFilter
                     .create()
                     .setUserId(user.getId())
@@ -133,7 +133,7 @@ public class VDepartmentUserRoleAssignmentWithDetailsController {
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var entity = userRoleAssignmentService
@@ -148,7 +148,7 @@ public class VDepartmentUserRoleAssignmentWithDetailsController {
                 .retrieve(entity.getDepartmentMembershipId())
                 .orElseThrow(ResponseException::badRequest);
 
-        if (!user.getGlobalAdmin()) {
+        if (!user.getSuperAdmin()) {
             var filter = VDepartmentMembershipWithPermissionsFilter
                     .create()
                     .setUserId(user.getId())

@@ -1,4 +1,4 @@
 import {type PresetVersion} from '../../models/entities/preset-version';
-import {type Form as Application} from '../../models/entities/form';
+import {LoadedForm} from '../../slices/app-slice';
 
-export type ElementTreeEntity = Application | PresetVersion;
+export type ElementTreeEntity = LoadedForm | PresetVersion;

@@ -11,6 +11,8 @@ public class VDepartmentMembershipWithPermissionsFilter implements Filter<VDepar
     private Integer departmentId;
     private String userId;
     private Boolean departmentPermissionEdit;
+    private Boolean formPermissionCreate;
+    private Boolean formPermissionEdit;
 
     public static VDepartmentMembershipWithPermissionsFilter create() {
         return new VDepartmentMembershipWithPermissionsFilter();
@@ -24,6 +26,8 @@ public class VDepartmentMembershipWithPermissionsFilter implements Filter<VDepar
                 .withEquals("departmentId", departmentId)
                 .withEquals("userId", userId)
                 .withEquals("departmentPermissionEdit", departmentPermissionEdit)
+                .withEquals("formPermissionCreate", formPermissionCreate)
+                .withEquals("formPermissionEdit", formPermissionEdit)
                 .build();
     }
 
@@ -60,6 +64,16 @@ public class VDepartmentMembershipWithPermissionsFilter implements Filter<VDepar
 
     public VDepartmentMembershipWithPermissionsFilter setDepartmentPermissionEdit(Boolean departmentPermissionEdit) {
         this.departmentPermissionEdit = departmentPermissionEdit;
+        return this;
+    }
+
+    public VDepartmentMembershipWithPermissionsFilter setFormPermissionCreate(Boolean formPermissionCreate) {
+        this.formPermissionCreate = formPermissionCreate;
+        return this;
+    }
+
+    public VDepartmentMembershipWithPermissionsFilter setFormPermissionEdit(Boolean formPermissionEdit) {
+        this.formPermissionEdit = formPermissionEdit;
         return this;
     }
 }

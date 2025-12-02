@@ -27,7 +27,7 @@ select mems.*,
        usrs.full_name,
        usrs.enabled,
        usrs.verified,
-       usrs.global_admin,
+       usrs.global_role,
        usrs.deleted_in_idp
 from department_memberships mems
          join v_departments_shadowed deps on deps.id = mems.department_id
@@ -45,7 +45,7 @@ select mems.*,
        usrs.full_name,
        usrs.enabled,
        usrs.verified,
-       usrs.global_admin,
+       usrs.global_role,
        usrs.deleted_in_idp
 from team_memberships mems
          join teams tms on tms.id = mems.team_id

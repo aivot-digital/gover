@@ -2,25 +2,31 @@ package de.aivot.GoverBackend.form.services;
 
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
 import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
+import de.aivot.GoverBackend.department.repositories.VDepartmentShadowedRepository;
 import de.aivot.GoverBackend.destination.repositories.DestinationRepository;
+import de.aivot.GoverBackend.elements.services.ElementApprovalService;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.form.entities.FormVersionEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionEntityId;
-import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.form.enums.FormStatus;
+import de.aivot.GoverBackend.form.models.FormPublishChecklistItem;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
 import de.aivot.GoverBackend.form.repositories.FormVersionRepository;
+import de.aivot.GoverBackend.identity.entities.IdentityProviderEntity;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 import de.aivot.GoverBackend.identity.repositories.IdentityProviderRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
+import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
 import de.aivot.GoverBackend.payment.repositories.PaymentProviderRepository;
-import de.aivot.GoverBackend.submission.filters.SubmissionWithMembershipFilter;
-import de.aivot.GoverBackend.submission.repositories.SubmissionWithMembershipRepository;
+import de.aivot.GoverBackend.submission.filters.SubmissionFilter;
+import de.aivot.GoverBackend.submission.repositories.SubmissionRepository;
 import de.aivot.GoverBackend.system.services.SystemService;
 import de.aivot.GoverBackend.theme.entities.ThemeEntity;
 import de.aivot.GoverBackend.theme.repositories.ThemeRepository;
+import de.aivot.GoverBackend.utils.StringUtils;
+import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,8 +53,9 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
     private final PaymentProviderRepository paymentProviderRepository;
     private final IdentityProviderRepository identityProviderRepository;
     private final FormRepository formRepository;
-    private final SubmissionWithMembershipRepository submissionWithMembershipRepository;
     private final SystemService systemService;
+    private final VDepartmentShadowedRepository vDepartmentShadowedRepository;
+    private final SubmissionRepository submissionRepository;
 
     @Autowired
     public FormVersionService(FormVersionRepository repository,
@@ -59,8 +66,8 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
                               PaymentProviderRepository paymentProviderRepository,
                               IdentityProviderRepository identityProviderRepository,
                               FormRepository formRepository,
-                              SubmissionWithMembershipRepository submissionWithMembershipRepository,
-                              SystemService systemService) {
+                              SystemService systemService,
+                              VDepartmentShadowedRepository vDepartmentShadowedRepository, SubmissionRepository submissionRepository) {
         this.repository = repository;
         this.destinationRepository = destinationRepository;
         this.departmentRepository = departmentRepository;
@@ -69,8 +76,9 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
         this.paymentProviderRepository = paymentProviderRepository;
         this.identityProviderRepository = identityProviderRepository;
         this.formRepository = formRepository;
-        this.submissionWithMembershipRepository = submissionWithMembershipRepository;
         this.systemService = systemService;
+        this.vDepartmentShadowedRepository = vDepartmentShadowedRepository;
+        this.submissionRepository = submissionRepository;
     }
 
     @Nonnull
@@ -197,7 +205,7 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
             throw ResponseException.conflict("Veröffentlichte Formularversionen können nicht gelöscht werden");
         }
 
-        var submissionSpec = SubmissionWithMembershipFilter
+        var submissionSpec = SubmissionFilter
                 .create()
                 .setFormId(entity.getFormId())
                 .setFormVersion(entity.getVersion())
@@ -205,7 +213,7 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
                 .setNotTestSubmission(true)
                 .build();
 
-        var hasOpenSubmissions = submissionWithMembershipRepository
+        var hasOpenSubmissions = submissionRepository
                 .exists(submissionSpec);
 
         if (hasOpenSubmissions) {
@@ -294,8 +302,19 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
     }
 
     @Nonnull
-    public List<ThemeEntity> getFormThemesInOrderOfImportance(FormVersionWithDetailsEntity formVersion) {
+    public List<ThemeEntity> getFormThemesInOrderOfImportance(Integer formId, Integer version) throws ResponseException {
         var themes = new LinkedList<ThemeEntity>();
+
+
+        var form = formRepository
+                .findById(formId)
+                .orElseThrow(ResponseException::notFound);
+
+        var id = new FormVersionEntityId(form.getId(), version);
+
+        var formVersion = this
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
 
         if (formVersion.getThemeId() != null) {
             themeRepository
@@ -307,7 +326,7 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
             if (departmentId == null) {
                 return;
             }
-            departmentRepository
+            vDepartmentShadowedRepository
                     .findById(departmentId)
                     .ifPresent(department -> {
                         if (department.getThemeId() != null) {
@@ -320,11 +339,166 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
 
         getDepartmentTheme.accept(formVersion.getResponsibleDepartmentId());
         getDepartmentTheme.accept(formVersion.getManagingDepartmentId());
-        getDepartmentTheme.accept(formVersion.getDevelopingDepartmentId());
+        getDepartmentTheme.accept(form.getDevelopingDepartmentId());
 
         themes.add(systemService
                 .retrieveDefaultTheme());
 
         return themes;
+    }
+
+    public List<FormPublishChecklistItem> getFormPublishChecklist(FormVersionEntity form) {
+        var checklist = new LinkedList<FormPublishChecklistItem>();
+
+        checklist.add(
+                FormPublishChecklistItem
+                        .create()
+                        .setLabel("Öffentlicher Titel & Überschrift hinterlegt")
+                        .setDone(StringUtils.isNotNullOrEmpty(form.getPublicTitle()))
+        );
+
+        checklist.add(
+                FormPublishChecklistItem
+                        .create()
+                        .setLabel("Fachlicher Support eingerichtet")
+                        .setDone(form.getLegalSupportDepartmentId() != null)
+        );
+
+        checklist.add(
+                FormPublishChecklistItem
+                        .create()
+                        .setLabel("Technischer Support eingerichtet")
+                        .setDone(form.getTechnicalSupportDepartmentId() != null)
+        );
+
+        checklist.add(
+                FormPublishChecklistItem
+                        .create()
+                        .setLabel("Impressum eingerichtet")
+                        .setDone(form.getImprintDepartmentId() != null)
+        );
+
+        checklist.add(
+                FormPublishChecklistItem
+                        .create()
+                        .setLabel("Datenschutzerklärung eingerichtet")
+                        .setDone(form.getPrivacyDepartmentId() != null)
+        );
+
+        checklist.add(
+                FormPublishChecklistItem
+                        .create()
+                        .setLabel("Barrierefreiheitserklärung eingerichtet")
+                        .setDone(form.getAccessibilityDepartmentId() != null)
+        );
+
+        checklist.add(
+                FormPublishChecklistItem
+                        .create()
+                        .setLabel("Löschfrist für Anträge festgelegt")
+                        .setDone(form.getSubmissionRetentionWeeks() != null && form.getSubmissionRetentionWeeks() >= 0)
+        );
+
+        checklist.add(
+                FormPublishChecklistItem
+                        .create()
+                        .setLabel("Zugriffszeit für Bürger:innen festgelegt")
+                        .setDone(form.getCustomerAccessHours() != null && form.getCustomerAccessHours() >= 0)
+        );
+
+        if (form.getPaymentProviderKey() != null) {
+            var paymentProviderSpec = SpecificationBuilder
+                    .create(PaymentProviderEntity.class)
+                    .withEquals("key", form.getPaymentProviderKey())
+                    .withEquals("isTestProvider", false)
+                    .build();
+
+            checklist.add(
+                    FormPublishChecklistItem
+                            .create()
+                            .setLabel("Nutzt ausschließlich einen produktiven Zahlungsdienstleister")
+                            .setDone(paymentProviderRepository.exists(paymentProviderSpec))
+            );
+        }
+
+        if (form.getIdentityProviders() != null && !form.getIdentityProviders().isEmpty()) {
+            var allLinkedIDPsProductive = form
+                    .getIdentityProviders()
+                    .stream()
+                    .allMatch(idp -> {
+                        if (idp.getIdentityProviderKey() == null) {
+                            return false;
+                        }
+
+                        var identityProviderSpec = SpecificationBuilder
+                                .create(IdentityProviderEntity.class)
+                                .withEquals("key", idp.getIdentityProviderKey())
+                                .withEquals("isTestProvider", false)
+                                .withEquals("isEnabled", true)
+                                .build();
+
+                        return identityProviderRepository.exists(identityProviderSpec);
+                    });
+
+            checklist.add(
+                    FormPublishChecklistItem
+                            .create()
+                            .setLabel("Beinhaltet ausschließlich produktive Nutzerkontenanbieter")
+                            .setDone(allLinkedIDPsProductive)
+            );
+        }
+
+        if (form.getIdentityVerificationRequired() && (form.getIdentityProviders() == null || form.getIdentityProviders().isEmpty())) {
+            checklist.add(
+                    FormPublishChecklistItem
+                            .create()
+                            .setLabel("Beinhaltet benötigte Nutzerkontenanbieter")
+                            .setDone(false)
+            );
+        }
+
+        checklist.add(
+                FormPublishChecklistItem
+                        .create()
+                        .setLabel("Alle Elemente des Formulars geprüft")
+                        .setDone(ElementApprovalService.isApproved(form.getRootElement()))
+        );
+
+        return checklist;
+    }
+
+    public FormVersionEntity publish(FormVersionEntityId id) throws ResponseException {
+        var formVersion = retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        var allChecklistItemsDone = getFormPublishChecklist(formVersion)
+                .stream()
+                .allMatch(FormPublishChecklistItem::getDone);
+
+        if (!allChecklistItemsDone) {
+            throw ResponseException
+                    .conflict("Das Formular kann nicht veröffentlicht werden, da nicht alle Voraussetzungen erfüllt sind");
+        }
+
+        var versionToPublish = formVersion
+                .setStatus(FormStatus.Published);
+
+        return repository
+                .save(versionToPublish);
+    }
+
+    public FormVersionEntity revoke(FormVersionEntityId id) throws ResponseException {
+        var formVersion = retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        if (formVersion.getPublished() == null) {
+            throw ResponseException.conflict("Das Formular ist nicht veröffentlicht und kann nicht zurückgezogen werden");
+        }
+
+        var versionToRevoke = formVersion
+                .setStatus(FormStatus.Revoked);
+
+        return repository
+                .save(versionToRevoke);
     }
 }

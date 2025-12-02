@@ -14,11 +14,11 @@ import {useApi} from '../../hooks/use-api';
 import {AlertComponent} from '../alert/alert-component';
 import {formatNumToGermanNum} from '../../utils/format-german-numbers';
 import {FormCostCalculationResponseDTO} from '../../modules/forms/dtos/form-cost-calculation-response-dto';
-import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {ExpandableList} from '../expandable-list/expandable-list';
 import {AltchaWidget} from '../altcha/altcha-widget';
 import {VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
 import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
+import {FormApiService} from '../../modules/forms/services/form-api-service';
 
 export const SubmitPaymentDataKey = '__payment_data__';
 
@@ -31,7 +31,6 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
         elementData,
     } = props;
 
-    const api = useApi();
     const theme = useTheme();
 
     const initialDisplayCount = 4;
@@ -50,8 +49,8 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
             return;
         }
 
-        new FormsApiService(api)
-            .calculateCosts(form.slug, form.version, elementData)
+        new FormApiService()
+            .calculateCosts(form.form.slug, form.version.version, elementData)
             .then((data) => {
                 setCosts(data);
             });
@@ -59,20 +58,20 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
 
     useEffect(() => {
         if (form != null) {
-            if (form.responsibleDepartmentId != null) {
-                if (responsibleDepartment == null || responsibleDepartment.id !== form.responsibleDepartmentId) {
+            if (form.version.responsibleDepartmentId != null) {
+                if (responsibleDepartment == null || responsibleDepartment.id !== form.version.responsibleDepartmentId) {
                     new DepartmentApiService()
-                        .retrievePublic(form.responsibleDepartmentId)
+                        .retrievePublic(form.version.responsibleDepartmentId)
                         .then(setResponsibleDepartment);
                 }
             } else {
                 setResponsibleDepartment(undefined);
             }
 
-            if (form.managingDepartmentId != null) {
-                if (managingDepartment == null || managingDepartment.id !== form.managingDepartmentId) {
+            if (form.version.managingDepartmentId != null) {
+                if (managingDepartment == null || managingDepartment.id !== form.version.managingDepartmentId) {
                     new DepartmentApiService()
-                        .retrievePublic(form.managingDepartmentId)
+                        .retrievePublic(form.version.managingDepartmentId)
                         .then(setManagingDepartment);
                 }
             } else {
@@ -193,8 +192,8 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
                 !isStringNullOrEmpty(props.element.textPreSubmit) &&
                 <Preamble
                     text={props.element.textPreSubmit}
-                    logoLink={form.rootElement.introductionStep?.initiativeLogoLink ?? undefined}
-                    logoAlt={form.rootElement.introductionStep?.initiativeName ?? undefined}
+                    logoLink={form.version.rootElement.introductionStep?.initiativeLogoLink ?? undefined}
+                    logoAlt={form.version.rootElement.introductionStep?.initiativeName ?? undefined}
                 />
             }
 

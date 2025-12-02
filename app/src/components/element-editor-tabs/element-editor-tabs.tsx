@@ -120,6 +120,7 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
             }
 
             {
+                /* TODO: Check permissions for formAnnotate */
                 (props.scope === 'application' || props.scope === 'preset') &&
                 <Tab
                     label="Prüfung"
@@ -128,6 +129,7 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
             }
 
             {
+                /* TODO: Check permissions for formPublish */
                 (props.scope === 'application' || props.scope === 'preset') &&
                 props.rootEditor &&
                 <Tab

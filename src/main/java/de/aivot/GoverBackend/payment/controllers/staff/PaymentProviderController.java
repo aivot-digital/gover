@@ -3,15 +3,13 @@ package de.aivot.GoverBackend.payment.controllers.staff;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
+import de.aivot.GoverBackend.form.entities.FormVersionEntity;
 import de.aivot.GoverBackend.form.enums.FormStatus;
-import de.aivot.GoverBackend.form.filters.FormFilter;
-import de.aivot.GoverBackend.form.filters.FormVersionFilter;
-import de.aivot.GoverBackend.form.filters.FormVersionWithDetailsFilter;
+import de.aivot.GoverBackend.form.filters.VFormVersionWithDetailsFilter;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
 import de.aivot.GoverBackend.form.repositories.FormVersionRepository;
-import de.aivot.GoverBackend.form.repositories.FormVersionWithDetailsRepository;
+import de.aivot.GoverBackend.form.repositories.VFormVersionWithDetailsRepository;
 import de.aivot.GoverBackend.form.services.FormRevisionService;
-import de.aivot.GoverBackend.form.services.FormService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.payment.dtos.PaymentProviderRequestDTO;
 import de.aivot.GoverBackend.payment.dtos.PaymentProviderResponseDTO;
@@ -43,25 +41,22 @@ public class PaymentProviderController {
 
     private final PaymentProviderService paymentProviderService;
     private final PaymentProviderTestService paymentProviderTestService;
-    private final FormRepository formRepository;
     private final FormRevisionService formRevisionService;
     private final FormVersionRepository formVersionRepository;
-    private final FormVersionWithDetailsRepository formVersionWithDetailsRepository;
+    private final VFormVersionWithDetailsRepository vFormVersionWithDetailsRepository;
 
     @Autowired
-    public PaymentProviderController(
-            AuditService auditService,
-            PaymentProviderService paymentProviderService,
-            PaymentProviderTestService paymentProviderTestService,
-            FormRepository formRepository,
-            FormRevisionService formRevisionService, FormVersionRepository formVersionRepository, FormVersionWithDetailsRepository formVersionWithDetailsRepository) {
+    public PaymentProviderController(AuditService auditService,
+                                     PaymentProviderService paymentProviderService,
+                                     PaymentProviderTestService paymentProviderTestService,
+                                     FormRevisionService formRevisionService,
+                                     FormVersionRepository formVersionRepository, VFormVersionWithDetailsRepository vFormVersionWithDetailsRepository) {
         this.auditService = auditService.createScopedAuditService(PaymentProviderController.class);
         this.paymentProviderService = paymentProviderService;
         this.paymentProviderTestService = paymentProviderTestService;
-        this.formRepository = formRepository;
         this.formRevisionService = formRevisionService;
         this.formVersionRepository = formVersionRepository;
-        this.formVersionWithDetailsRepository = formVersionWithDetailsRepository;
+        this.vFormVersionWithDetailsRepository = vFormVersionWithDetailsRepository;
     }
 
     @GetMapping("")
@@ -87,7 +82,7 @@ public class PaymentProviderController {
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var created = paymentProviderService
@@ -127,7 +122,7 @@ public class PaymentProviderController {
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var existing = paymentProviderService
@@ -135,27 +130,27 @@ public class PaymentProviderController {
                 .orElseThrow(ResponseException::notFound);
 
         if (existing.getIsEnabled() && !requestDTO.isEnabled()) {
-            var filterAllPublishedForms = FormVersionWithDetailsFilter
+            var filterAllPublishedForms = VFormVersionWithDetailsFilter
                     .create()
                     .setPaymentProviderKey(key)
                     .setStatus(FormStatus.Published)
                     .build();
 
-            if (formVersionWithDetailsRepository.exists(filterAllPublishedForms)) {
+            if (vFormVersionWithDetailsRepository.exists(filterAllPublishedForms)) {
                 throw ResponseException.conflict(
                         "Der Zahlungsanbieter kann nicht deaktiviert werden, da er noch in einem oder mehreren Formularen verwendet wird."
                 );
             } else {
-                var filterAllRelatedForms = FormVersionWithDetailsFilter
+                var filterAllRelatedForms = VFormVersionWithDetailsFilter
                         .create()
                         .setPaymentProviderKey(key)
                         .build();
 
-                for (var form : formVersionWithDetailsRepository.findAll(filterAllRelatedForms)) {
+                for (var form : vFormVersionWithDetailsRepository.findAll(filterAllRelatedForms)) {
                     var formClone = form.clone();
 
                     form.setPaymentProviderKey(null);
-                    formVersionRepository.save(form.toVersionEntity());
+                    formVersionRepository.save(form.toFormVersionEntity());
 
                     formRevisionService
                             .create(user, form, formClone);
@@ -184,7 +179,7 @@ public class PaymentProviderController {
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var deleted = paymentProviderService
@@ -206,7 +201,7 @@ public class PaymentProviderController {
         UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var result = paymentProviderTestService.test(

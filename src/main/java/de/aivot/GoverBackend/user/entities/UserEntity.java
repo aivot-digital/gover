@@ -2,6 +2,9 @@ package de.aivot.GoverBackend.user.entities;
 
 import de.aivot.GoverBackend.user.cache.entities.UserCacheEntity;
 import de.aivot.GoverBackend.user.models.KeycloakUser;
+import de.aivot.GoverBackend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -9,7 +12,6 @@ import jakarta.persistence.Table;
 import org.hibernate.annotations.ColumnDefault;
 import org.springframework.security.oauth2.jwt.Jwt;
 
-import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,39 +19,69 @@ import java.util.Optional;
 @Table(name = "users")
 public class UserEntity {
     private static final String ADMIN_ROLE_IDENTIFIER = "admin";
+    public static final Integer DEFAULT_USER_ROLE_VALUE = 0;
+    public static final Integer SYSTEM_ADMIN_ROLE_VALUE = 1;
+    public static final Integer SUPER_ADMIN_ROLE_VALUE = 2;
 
     @Id
+    @Nonnull
     @Column(length = 36)
     private String id;
 
+    @Nullable
     @Column(length = 255)
     private String email;
 
+    @Nullable
     @Column(length = 255)
     private String firstName;
 
+    @Nullable
     @Column(length = 255)
     private String lastName;
 
+    @Nullable
     @Column(length = 255)
     private String fullName;
 
+    @Nonnull
     @ColumnDefault("FALSE")
     private Boolean enabled;
 
+    @Nonnull
     @ColumnDefault("FALSE")
     private Boolean verified;
 
-    @ColumnDefault("FALSE")
-    private Boolean globalAdmin;
-
+    @Nonnull
     @ColumnDefault("FALSE")
     private Boolean deletedInIdp;
 
+    @Nonnull
+    @ColumnDefault("0")
+    private Integer globalRole;
+
+    // Properties
+
+    public Boolean getSuperAdmin() {
+        return globalRole >= SUPER_ADMIN_ROLE_VALUE;
+    }
+
+    public Boolean getSystemAdmin() {
+        return globalRole >= SYSTEM_ADMIN_ROLE_VALUE;
+    }
+
     // region Transformers
 
-    public Optional<UserEntity> asAdmin() {
-        if (globalAdmin) {
+    public Optional<UserEntity> asGlobalAdmin() {
+        if (getSuperAdmin()) {
+            return Optional.of(this);
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    public Optional<UserEntity> asSystemAdmin() {
+        if (getSystemAdmin() || getSuperAdmin()) {
             return Optional.of(this);
         } else {
             return Optional.empty();
@@ -59,13 +91,13 @@ public class UserEntity {
     public void clearPersonalData() {
         int maskLength = 6;
 
-        if (!firstName.isEmpty()) {
+        if (StringUtils.isNotNullOrEmpty(firstName)) {
             firstName = firstName.charAt(0) + "*".repeat(maskLength);
         } else {
             firstName = "?";
         }
 
-        if (!lastName.isEmpty()) {
+        if (StringUtils.isNotNullOrEmpty(lastName)) {
             lastName = lastName.charAt(0) + "*".repeat(maskLength);
         } else {
             lastName = "?";
@@ -73,7 +105,7 @@ public class UserEntity {
 
         fullName = firstName + " " + lastName;
 
-        if (!email.isEmpty() && email.contains("@")) {
+        if (StringUtils.isNotNullOrEmpty(email) && email.contains("@")) {
             String[] parts = email.split("@");
             if (!parts[0].isEmpty()) {
                 email = parts[0].charAt(0) + "*".repeat(maskLength) + "@" + parts[1];
@@ -106,7 +138,7 @@ public class UserEntity {
                 .setFullName(jwt.getClaimAsString("given_name") + " " + jwt.getClaimAsString("family_name"))
                 .setEnabled(true) // Users with a valid JWT are always enabled
                 .setVerified(jwt.getClaimAsBoolean("verified"))
-                .setGlobalAdmin(false) // Set default value for later check
+                .setGlobalRole(DEFAULT_USER_ROLE_VALUE) // Set default value for later check
                 .setDeletedInIdp(false); // Users with a valid JWT are never deleted in the IDP
 
         var realmAccessMap = jwt.getClaimAsMap("realm_access");
@@ -115,7 +147,7 @@ public class UserEntity {
             if (realmAccessRoles instanceof List<?> realmAccessRoleList) {
                 for (Object role : realmAccessRoleList) {
                     if (role.toString().equalsIgnoreCase(ADMIN_ROLE_IDENTIFIER)) {
-                        user.setGlobalAdmin(true);
+                        user.setGlobalRole(SUPER_ADMIN_ROLE_VALUE);
                         break;
                     }
                 }
@@ -134,7 +166,7 @@ public class UserEntity {
                 .setFullName(userCacheEntity.getFullName())
                 .setEnabled(userCacheEntity.getEnabled())
                 .setVerified(userCacheEntity.getVerified())
-                .setGlobalAdmin(userCacheEntity.getGlobalAdmin())
+                .setGlobalRole(userCacheEntity.getGlobalAdmin() ? SUPER_ADMIN_ROLE_VALUE : DEFAULT_USER_ROLE_VALUE)
                 .setDeletedInIdp(userCacheEntity.getDeletedInIdp());
     }
 
@@ -147,7 +179,7 @@ public class UserEntity {
                 .setFullName(keycloakUser.getFirstName() + " " + keycloakUser.getLastName())
                 .setEnabled(keycloakUser.getEnabled())
                 .setVerified(keycloakUser.getEmailVerified())
-                .setGlobalAdmin(roles.stream().anyMatch(role -> role.equalsIgnoreCase(ADMIN_ROLE_IDENTIFIER)))
+                .setGlobalRole(roles.stream().anyMatch(role -> role.equalsIgnoreCase(ADMIN_ROLE_IDENTIFIER)) ? SUPER_ADMIN_ROLE_VALUE : DEFAULT_USER_ROLE_VALUE)
                 .setDeletedInIdp(false);
     }
 
@@ -218,21 +250,21 @@ public class UserEntity {
         return this;
     }
 
-    public Boolean getGlobalAdmin() {
-        return globalAdmin;
-    }
-
-    public UserEntity setGlobalAdmin(Boolean globalAdmin) {
-        this.globalAdmin = globalAdmin;
-        return this;
-    }
-
     public Boolean getDeletedInIdp() {
         return deletedInIdp;
     }
 
     public UserEntity setDeletedInIdp(Boolean deletedInIdp) {
         this.deletedInIdp = deletedInIdp;
+        return this;
+    }
+
+    public Integer getGlobalRole() {
+        return globalRole;
+    }
+
+    public UserEntity setGlobalRole(Integer globalRole) {
+        this.globalRole = globalRole;
         return this;
     }
 

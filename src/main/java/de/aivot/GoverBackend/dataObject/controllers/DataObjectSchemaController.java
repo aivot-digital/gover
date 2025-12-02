@@ -51,7 +51,7 @@ public class DataObjectSchemaController {
         UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         return service.create(newDataObjectEntity);
@@ -80,7 +80,7 @@ public class DataObjectSchemaController {
         UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         return service
@@ -95,7 +95,7 @@ public class DataObjectSchemaController {
         UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
+                .asGlobalAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         service.delete(key);

@@ -8,6 +8,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 public class SubmissionFilter implements Filter<Submission> {
     private Integer formId;
+    private Integer formVersion;
     private String assigneeId;
     private SubmissionStatus status;
     private String fileNumber;
@@ -26,6 +27,7 @@ public class SubmissionFilter implements Filter<Submission> {
         var spec = SpecificationBuilder
                 .create(Submission.class)
                 .withEquals("formId", formId)
+                .withEquals("formVersion", formVersion)
                 .withEquals("assigneeId", assigneeId)
                 .withEquals("status", status)
                 .withEquals("fileNumber", fileNumber)
@@ -94,5 +96,46 @@ public class SubmissionFilter implements Filter<Submission> {
     public SubmissionFilter setPaymentTransactionKey(String paymentTransactionKey) {
         this.paymentTransactionKey = paymentTransactionKey;
         return this;
+    }
+
+    public Integer getFormId() {
+        return formId;
+    }
+
+    public Integer getFormVersion() {
+        return formVersion;
+    }
+
+    public SubmissionFilter setFormVersion(Integer formVersion) {
+        this.formVersion = formVersion;
+        return this;
+    }
+
+    public String getAssigneeId() {
+        return assigneeId;
+    }
+
+    public SubmissionStatus getStatus() {
+        return status;
+    }
+
+    public String getFileNumber() {
+        return fileNumber;
+    }
+
+    public Integer getDestinationId() {
+        return destinationId;
+    }
+
+    public Boolean getNotArchived() {
+        return notArchived;
+    }
+
+    public Boolean getNotPending() {
+        return notPending;
+    }
+
+    public Boolean getNotTestSubmission() {
+        return notTestSubmission;
     }
 }

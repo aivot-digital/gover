@@ -68,7 +68,7 @@ const DrawerGroups: DrawerGroup[] = [
             {
                 icon: ModuleIcons.submissions,
                 label: 'Vorgänge',
-                to: '/submissions',
+                disabled: true,
             },
             {
                 icon: ModuleIcons.forms,

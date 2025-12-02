@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.form.controllers;
 
 import de.aivot.GoverBackend.form.entities.projections.FormEditorProjection;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/form-editors/")
+@Tag(name = "Form", description = "Interact with forms")
 public class FormEditorController {
 
     private final FormRepository formRepository;

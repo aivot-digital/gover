@@ -31,7 +31,9 @@ export interface VDepartmentMembershipWithDetailsEntity {
     fullName?: string | null;
     enabled?: boolean | null;
     verified?: boolean | null;
-    globalAdmin?: boolean | null;
+    globalRole?: 0 | 1 | 2 | null;
+    superAdmin?: boolean | null;
+    systemAdmin?: boolean | null;
     deletedInIdp?: boolean | null;
 }
 
@@ -48,7 +50,9 @@ export function vDepartmentMembershipWithDetailsEntityAsUser(mem: VDepartmentMem
         deletedInIdp: mem.deletedInIdp ?? true,
         fullName: mem.fullName ?? '',
         email: mem.email ?? '',
-        globalAdmin: mem.globalAdmin ?? false,
+        globalRole: mem.globalRole ?? 0,
+        superAdmin: mem.superAdmin ?? false,
+        systemAdmin: mem.systemAdmin ?? false,
         verified: mem.verified ?? false,
     };
 }

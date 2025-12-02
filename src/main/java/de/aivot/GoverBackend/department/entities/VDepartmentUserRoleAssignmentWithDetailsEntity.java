@@ -40,7 +40,7 @@ public class VDepartmentUserRoleAssignmentWithDetailsEntity {
     private String fullName;
     private Boolean enabled;
     private Boolean verified;
-    private Boolean globalAdmin;
+    private Integer globalRole;
     private Boolean deletedInIdp;
     private Integer userRoleAssignmentId;
     private String userRoleName;
@@ -326,12 +326,12 @@ public class VDepartmentUserRoleAssignmentWithDetailsEntity {
         return this;
     }
 
-    public Boolean getGlobalAdmin() {
-        return globalAdmin;
+    public Integer getGlobalRole() {
+        return globalRole;
     }
 
-    public VDepartmentUserRoleAssignmentWithDetailsEntity setGlobalAdmin(Boolean globalAdmin) {
-        this.globalAdmin = globalAdmin;
+    public VDepartmentUserRoleAssignmentWithDetailsEntity setGlobalRole(Integer globalAdmin) {
+        this.globalRole = globalAdmin;
         return this;
     }
 

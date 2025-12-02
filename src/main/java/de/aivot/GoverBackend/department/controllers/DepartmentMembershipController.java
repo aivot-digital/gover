@@ -76,7 +76,7 @@ public class DepartmentMembershipController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!user.getGlobalAdmin()) {
+        if (!user.getSuperAdmin()) {
             var filter = VDepartmentMembershipWithPermissionsFilter
                     .create()
                     .setUserId(user.getId())
@@ -143,7 +143,7 @@ public class DepartmentMembershipController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        if (!user.getGlobalAdmin()) {
+        if (!user.getSuperAdmin()) {
             var filter = VDepartmentMembershipWithPermissionsFilter
                     .create()
                     .setUserId(user.getId())
@@ -184,7 +184,7 @@ public class DepartmentMembershipController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        if (!user.getGlobalAdmin()) {
+        if (!user.getSuperAdmin()) {
             var filter = VDepartmentMembershipWithPermissionsFilter
                     .create()
                     .setUserId(user.getId())

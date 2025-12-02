@@ -1,12 +1,17 @@
 package de.aivot.GoverBackend.form.controllers;
 
 import de.aivot.GoverBackend.enums.EntityLockState;
-import de.aivot.GoverBackend.form.filters.FormVersionWithMembershipFilter;
+import de.aivot.GoverBackend.form.entities.VFormWithPermissionsEntity;
 import de.aivot.GoverBackend.form.services.FormLockService;
-import de.aivot.GoverBackend.form.services.FormVersionWithMembershipService;
+import de.aivot.GoverBackend.form.services.VFormWithPermissionsService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.dtos.EntityLockDto;
+import de.aivot.GoverBackend.security.OpenAPISecurityConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -14,20 +19,22 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/forms/{formId}/lock/")
+@Tag(name = "Form", description = "Interact with forms")
 public class FormLockController {
     private final FormLockService formLockService;
-    private final FormVersionWithMembershipService formVersionWithMembershipService;
+    private final VFormWithPermissionsService vFormWithPermissionsService;
 
     @Autowired
     public FormLockController(
             FormLockService formLockService,
-            FormVersionWithMembershipService formVersionWithMembershipService
-    ) {
+            VFormWithPermissionsService vFormWithPermissionsService) {
         this.formLockService = formLockService;
-        this.formVersionWithMembershipService = formVersionWithMembershipService;
+        this.vFormWithPermissionsService = vFormWithPermissionsService;
     }
 
     @GetMapping("")
+    @Operation(summary = "Retrieve form lock", description = "Retrieve the lock status of a form.")
+    @SecurityRequirement(name = OpenAPISecurityConfiguration.SecurityName)
     public EntityLockDto retrieve(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer formId
@@ -36,15 +43,11 @@ public class FormLockController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var formAccessSpec = FormVersionWithMembershipFilter
-                .create()
-                .setUserId(user.getId())
-                .setId(formId)
-                .build();
-
-        if (!formVersionWithMembershipService.exists(formAccessSpec)) {
-            throw ResponseException.notFound("Das Formular existiert nicht oder Sie haben keinen Zugriff darauf.");
-        }
+        vFormWithPermissionsService.checkUserPermission(
+                formId,
+                user.getId(),
+                VFormWithPermissionsEntity::getFormPermissionRead,
+                PermissionLabels.FormPermissionRead);
 
         return formLockService
                 .retrieve(formId)
@@ -58,6 +61,8 @@ public class FormLockController {
     }
 
     @DeleteMapping("")
+    @Operation(summary = "Delete form lock", description = "Delete the lock on a form.")
+    @SecurityRequirement(name = OpenAPISecurityConfiguration.SecurityName)
     public void delete(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer formId

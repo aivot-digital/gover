@@ -31,7 +31,7 @@ public class UserCacheEntity implements Serializable {
                 .setFullName(entity.getFullName())
                 .setEnabled(entity.getEnabled())
                 .setVerified(entity.getVerified())
-                .setGlobalAdmin(entity.getGlobalAdmin())
+                .setGlobalAdmin(entity.getSuperAdmin())
                 .setDeletedInIdp(entity.getDeletedInIdp());
     }
 

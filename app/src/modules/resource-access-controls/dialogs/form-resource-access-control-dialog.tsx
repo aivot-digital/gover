@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {Box, Button, Dialog, DialogActions, DialogContent, IconButton, Skeleton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography} from '@mui/material';
+import {Box, Button, Chip, Dialog, DialogActions, DialogContent, IconButton, Skeleton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography} from '@mui/material';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {ResourceAccessControlsApiService} from '../resource-access-controls-api-service';
 import {ResourceAccessControlResponseDto} from '../dtos/resource-access-control-response-dto';
@@ -8,14 +8,12 @@ import {ResourceAccessControlRequestDto} from '../dtos/resource-access-control-r
 import {TeamResponseDTO} from '../../teams/dtos/team-response-dto';
 import {TeamsApiService} from '../../teams/teams-api-service';
 import {SelectFieldComponentOption} from '../../../components/select-field/select-field-component-option';
-import {FormDetailsResponseDTO} from '../../forms/dtos/form-details-response-dto';
 import {SelectFieldComponent} from '../../../components/select-field/select-field-component';
 import {CheckboxFieldComponent} from '../../../components/checkbox-field/checkbox-field-component';
 import {Actions} from '../../../components/actions/actions';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {ModuleIcons} from '../../../shells/staff/data/module-icons';
 import {useConfirm} from '../../../providers/confirm-provider';
-import {FormsApiService} from '../../forms/forms-api-service-v2';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
 import {selectIsLoading, setLoadingMessage} from '../../../slices/shell-slice';
@@ -25,6 +23,8 @@ import ApprovalDelegation from '@aivot/mui-material-symbols-400-outlined/dist/ap
 import {VDepartmentShadowedEntity} from '../../departments/entities/v-department-shadowed-entity';
 import {getDepartmentPath, getDepartmentTypeLabel} from '../../departments/utils/department-utils';
 import {VDepartmentShadowedApiService} from '../../departments/services/v-department-shadowed-api-service';
+import {FormApiService} from '../../forms/services/form-api-service';
+import {FormEntity} from '../../forms/entities/form-entity';
 
 interface FormResourceAccessControlDialogProps {
     open: boolean;
@@ -43,7 +43,7 @@ export function FormResourceAccessControlDialog(props: FormResourceAccessControl
     const isGloballyLoading = useAppSelector(selectIsLoading);
 
     // The form to manage access for
-    const [form, setForm] = useState<FormDetailsResponseDTO>();
+    const [form, setForm] = useState<FormEntity>();
 
     // The list of all access controls for the form
     const [accessList, setAccessList] = useState<ResourceAccessControlWithSource[]>();
@@ -79,8 +79,8 @@ export function FormResourceAccessControlDialog(props: FormResourceAccessControl
             return;
         }
 
-        new FormsApiService()
-            .retrieveLatest(formId)
+        new FormApiService()
+            .retrieve(formId)
             .then(setForm)
             .catch((error) => {
                 dispatch(showApiErrorSnackbar(error, 'Das Formular konnte nicht geladen werden.'));
@@ -429,6 +429,7 @@ export function FormResourceAccessControlDialog(props: FormResourceAccessControl
                             {
                                 !isLoading &&
                                 <AccessRow
+                                    isOwner={true}
                                     access={{
                                         ...DefaultAccess,
                                         sourceOrgUnitId: form.developingDepartmentId,
@@ -453,6 +454,7 @@ export function FormResourceAccessControlDialog(props: FormResourceAccessControl
                                 accessList.map((access) => (
                                     <AccessRow
                                         key={access.id}
+                                        isOwner={false}
                                         access={access}
                                         onUpdateAccess={handleUpdateAccess}
                                         onDeleteAccess={handleDeleteAccess}
@@ -462,7 +464,6 @@ export function FormResourceAccessControlDialog(props: FormResourceAccessControl
                         </TableBody>
                     </Table>
                 </TableContainer>
-
 
                 <Box mt={3}>
                     <Typography
@@ -514,6 +515,7 @@ export function FormResourceAccessControlDialog(props: FormResourceAccessControl
 }
 
 interface AccessRowProps {
+    isOwner: boolean;
     access: ResourceAccessControlWithSource;
     onUpdateAccess?: (updated: ResourceAccessControlWithSource) => void;
     onDeleteAccess?: (deleted: ResourceAccessControlWithSource) => void;
@@ -521,6 +523,7 @@ interface AccessRowProps {
 
 function AccessRow(props: AccessRowProps) {
     const {
+        isOwner,
         access,
         onUpdateAccess,
         onDeleteAccess,
@@ -538,6 +541,7 @@ function AccessRow(props: AccessRowProps) {
                 <Box
                     sx={{
                         display: 'flex',
+                        alignItems: 'center',
                     }}
                 >
                     {
@@ -557,6 +561,18 @@ function AccessRow(props: AccessRowProps) {
                                 access.sourceOrgUnit.name
                         }
                     </Typography>
+
+                    {
+                        isOwner &&
+                        <Chip
+                            label="Eigentümer:in"
+                            size="small"
+                            sx={{
+                                ml: 1,
+                            }}
+                            variant="outlined"
+                        />
+                    }
                 </Box>
             </TableCell>
             {
@@ -620,7 +636,6 @@ function AccessRow(props: AccessRowProps) {
 
 const PermissionFields: Array<keyof ResourceAccessControlRequestDto> = [
     'formPermissionRead',
-    'formPermissionCreate',
     'formPermissionEdit',
     'formPermissionDelete',
     'formPermissionAnnotate',
@@ -628,7 +643,6 @@ const PermissionFields: Array<keyof ResourceAccessControlRequestDto> = [
 ];
 
 const PermissionLabels: Partial<Record<keyof ResourceAccessControlRequestDto, string>> = {
-    'formPermissionCreate': 'Anlegen',
     'formPermissionRead': 'Lesen',
     'formPermissionEdit': 'Bearbeiten',
     'formPermissionDelete': 'Löschen',

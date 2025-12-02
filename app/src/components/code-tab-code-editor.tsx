@@ -53,7 +53,7 @@ export function CodeTabCodeEditor(props: CodeTabCodeEditorProps) {
     useEffect(() => {
         if (monacoRef.current != null && loadedForm != null) {
             monacoRef.current?.languages.typescript.javascriptDefaults.addExtraLib(
-                formToTypeDefinition(loadedForm),
+                formToTypeDefinition(loadedForm.version),
                 '@types/data.d.ts',
             );
         }
@@ -126,7 +126,7 @@ function LookupElementIdDialog(props: { open: boolean, onClose: () => void }) {
         if (form == null) {
             return [];
         }
-        return (form.rootElement.children ?? [])
+        return (form.version.rootElement.children ?? [])
             .flatMap(ch => flattenElementsWithParents(ch, []))
             .map((e) => ({
                 ...e,

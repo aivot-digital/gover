@@ -2,13 +2,13 @@ import {FormStatusChip} from './form-status-chip';
 import {FormStatus} from '../enums/form-status';
 import {Box} from '@mui/material';
 import React, {useMemo} from 'react';
-import {FormListResponseDTO} from '../dtos/form-list-response-dto';
+import {FormEntity} from '../entities/form-entity';
 
 interface FormStatusChipGroupProps {
-    form: FormListResponseDTO;
+    form: FormEntity;
 }
 
-export function getFormStatus(form: FormListResponseDTO): {
+export function getFormStatus(form: FormEntity): {
     isDrafted: boolean;
     isPublished: boolean;
     isRevoked: boolean;

@@ -6,18 +6,18 @@ import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dia
 import {type AdminToolsDialogProps} from './admin-tools-dialog-props';
 import {selectLoadedForm} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {downloadBlobFile, downloadConfigFile} from '../../utils/download-utils';
+import {downloadBlobFile, downloadFormExportFile} from '../../utils/download-utils';
 import ImportExportOutlinedIcon from '@mui/icons-material/ImportExportOutlined';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
-import {Form} from '../../models/entities/form';
 import {useApi} from '../../hooks/use-api';
 import {hideLoadingOverlay, hideLoadingOverlayWithTimeout, showLoadingOverlay} from '../../slices/loading-overlay-slice';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import DrawIcon from '@mui/icons-material/Draw';
-import {ExportApplicationDialog} from '../application-dialogs/export-application-dialog/export-application-dialog';
 import {PrefillFormDialog} from '../prefill-form-dialog/prefill-form-dialog';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
+import {FormApiService} from '../../modules/forms/services/form-api-service';
+import {ExportFormDialog} from '../../modules/forms/dialogs/export-form-dialog';
 
 const switches: Array<{
     label: string;
@@ -61,12 +61,16 @@ export function AdminToolsDialog(props: AdminToolsDialogProps) {
     const [showPrefill, setShowPrefill] = useState(false);
     const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
-    const downloadPdfFile = (form: Form) => {
+    const downloadPdfFile = () => {
+        if (form == null) {
+            return;
+        }
+
         dispatch(showLoadingOverlay('Vordruck wird generiert'));
         api
-            .getBlob(`forms/${form.id}/${form.version}/print/`)
+            .getBlob(`forms/${form.form.id}/${form.version.version}/print/`)
             .then((blob) => {
-                downloadBlobFile(`vordruck - ${form.slug} - ${form.version}.pdf`, blob);
+                downloadBlobFile(`vordruck - ${form.form.slug} - ${form.version.version}.pdf`, blob);
                 dispatch(hideLoadingOverlayWithTimeout(1000));
             })
             .catch((error) => {
@@ -81,8 +85,15 @@ export function AdminToolsDialog(props: AdminToolsDialogProps) {
     };
 
     const startExportForm = () => {
+        if (form == null) {
+            return;
+        }
+
         try {
-            downloadConfigFile(form);
+            new FormApiService()
+                .export(form.form.id, form.version.version)
+                .then(downloadFormExportFile);
+
             dispatch(showSuccessSnackbar('Formular wurde erfolgreich exportiert.'));
         } catch (error) {
             console.error(error);
@@ -95,18 +106,12 @@ export function AdminToolsDialog(props: AdminToolsDialogProps) {
         {
             label: 'Formular exportieren (.gov)',
             icon: <ImportExportOutlinedIcon />,
-            onClick: () => {
-                openExportDialog();
-            },
+            onClick: openExportDialog,
         },
         {
             label: 'Vordruck exportieren (.pdf)',
             icon: <PictureAsPdfOutlinedIcon />,
-            onClick: () => {
-                if (form != null) {
-                    downloadPdfFile(form);
-                }
-            },
+            onClick: downloadPdfFile,
         },
         {
             label: 'Entwicklerwerkzeuge öffnen',
@@ -203,7 +208,7 @@ export function AdminToolsDialog(props: AdminToolsDialogProps) {
                 </DialogContent>
             </Dialog>
 
-            <ExportApplicationDialog
+            <ExportFormDialog
                 open={exportDialogOpen}
                 onCancel={() => setExportDialogOpen(false)}
                 onExport={startExportForm}

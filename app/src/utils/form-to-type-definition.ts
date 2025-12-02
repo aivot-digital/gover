@@ -1,7 +1,7 @@
-import {Form} from '../models/entities/form';
 import {flattenElements} from './flatten-elements';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
 import {ElementType} from '../data/element-type/element-type';
+import {FormVersionEntity} from '../modules/forms/entities/form-version-entity';
 
 const typeMap: Record<ElementType, string> = {
     [ElementType.Root]: 'undefined',
@@ -29,7 +29,7 @@ const typeMap: Record<ElementType, string> = {
     [ElementType.FileUpload]: '{name: string; uri: string; size: number;}',
 };
 
-export function formToTypeDefinition(form: Form): string {
+export function formToTypeDefinition(form: FormVersionEntity): string {
     const lines = ['interface Data {'];
     for (const element of flattenElements(form.rootElement)) {
         if (isAnyInputElement(element)) {

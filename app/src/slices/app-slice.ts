@@ -2,16 +2,31 @@ import {createSlice, type PayloadAction} from '@reduxjs/toolkit';
 import {type RootState} from '../store.staff';
 import {AnyElement} from '../models/elements/any-element';
 import {ElementWithParents, flattenElements, flattenElementsWithParents} from '../utils/flatten-elements';
-import {FormDetailsResponseDTO} from '../modules/forms/dtos/form-details-response-dto';
+import {FormEntity} from '../modules/forms/entities/form-entity';
+import {FormVersionEntity} from '../modules/forms/entities/form-version-entity';
+import {VFormWithPermissionsEntity} from '../modules/forms/entities/v-form-with-permissions-entity';
 
+export interface LoadedForm {
+    form: FormEntity;
+    version: FormVersionEntity;
+    permissions: VFormWithPermissionsEntity;
+}
+
+export function isLoadedForm(obj: any): obj is LoadedForm {
+    return obj != null
+        && typeof obj === 'object'
+        && 'form' in obj
+        && 'version' in obj
+        && 'permissions' in obj;
+}
 
 const initialState: {
     // Future states of the loaded form. These get created when changes are undone
-    futureLoadedForm: Array<FormDetailsResponseDTO>,
+    futureLoadedForm: Array<LoadedForm>,
     // The form that has been loaded
-    loadedForm?: FormDetailsResponseDTO;
+    loadedForm?: LoadedForm;
     // Past states of the loaded form. These get created when changes are done
-    pastLoadedForm: Array<FormDetailsResponseDTO>,
+    pastLoadedForm: Array<LoadedForm>,
 
     // A list of all elements in the form
     allElements?: AnyElement[];
@@ -38,14 +53,14 @@ const appSlice = createSlice({
             state.showDialog = undefined;
         },
 
-        updateLoadedForm: (state, action: PayloadAction<FormDetailsResponseDTO>) => {
+        updateLoadedForm: (state, action: PayloadAction<LoadedForm>) => {
             if (state.loadedForm != null) {
                 state.pastLoadedForm.push(state.loadedForm);
                 state.futureLoadedForm = [];
             }
             state.loadedForm = action.payload;
-            state.allElements = flattenElements(state.loadedForm.rootElement);
-            state.allElementsWithParents = flattenElementsWithParents(state.loadedForm.rootElement, [], false);
+            state.allElements = flattenElements(state.loadedForm.version.rootElement);
+            state.allElementsWithParents = flattenElementsWithParents(state.loadedForm.version.rootElement, [], false);
         },
 
         undoLoadedForm: (state, _: PayloadAction<void>) => {
@@ -53,8 +68,8 @@ const appSlice = createSlice({
                 state.futureLoadedForm.push(state.loadedForm);
                 state.loadedForm = state.pastLoadedForm.pop();
                 if (state.loadedForm != null) {
-                    state.allElements = flattenElements(state.loadedForm.rootElement);
-                    state.allElementsWithParents = flattenElementsWithParents(state.loadedForm.rootElement, [], false);
+                    state.allElements = flattenElements(state.loadedForm.version.rootElement);
+                    state.allElementsWithParents = flattenElementsWithParents(state.loadedForm.version.rootElement, [], false);
                 } else {
                     state.allElements = undefined;
                     state.allElementsWithParents = undefined;
@@ -67,8 +82,8 @@ const appSlice = createSlice({
                 state.pastLoadedForm.push(state.loadedForm);
                 state.loadedForm = state.futureLoadedForm.pop();
                 if (state.loadedForm != null) {
-                    state.allElements = flattenElements(state.loadedForm.rootElement);
-                    state.allElementsWithParents = flattenElementsWithParents(state.loadedForm.rootElement, [], false);
+                    state.allElements = flattenElements(state.loadedForm.version.rootElement);
+                    state.allElementsWithParents = flattenElementsWithParents(state.loadedForm.version.rootElement, [], false);
                 } else {
                     state.allElements = undefined;
                     state.allElementsWithParents = undefined;

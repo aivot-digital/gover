@@ -12,6 +12,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.validator.constraints.Length;
 
@@ -100,23 +101,28 @@ public class FormVersionEntity {
 
     @Nullable
     @Column(length = 27)
+    @Size(max = 27, message = "Der Zahlungszweck darf maximal 27 Zeichen lang sein")
     private String paymentPurpose;
 
     @Nullable
     @Column(length = 250)
+    @Size(max = 250, message = "Die Zahlungsbeschreibung darf maximal 250 Zeichen lang sein")
     private String paymentDescription;
 
-    @Nullable
+    @Nonnull
     @Column(columnDefinition = "jsonb")
     @Convert(converter = PaymentProductsConverter.class)
+    @NotNull(message = "Die Liste der Zahlungspositionen darf nicht null sein, kann aber leer sein")
     private List<PaymentProduct> paymentProducts;
 
-    @Nullable
+    @Nonnull
     @Column(columnDefinition = "jsonb")
     @Convert(converter = IdentityProviderLinksConverter.class)
+    @NotNull(message = "Die Liste der Identitätsanbieter darf nicht null sein, kann aber leer sein")
     private List<IdentityProviderLink> identityProviders = new LinkedList<>();
 
-    @Nullable
+    @Nonnull
+    @NotNull(message = "Die Anforderung zur Identitätsprüfung darf nicht null sein")
     private Boolean identityVerificationRequired;
 
     @Nonnull
@@ -144,11 +150,10 @@ public class FormVersionEntity {
     }
 
     // Full constructor
-
     public FormVersionEntity(@Nonnull Integer formId,
+                             @Nonnull String publicTitle,
                              @Nonnull Integer version,
                              @Nonnull FormStatus status,
-                             @Nonnull String publicTitle,
                              @Nonnull FormType type,
                              @Nullable Integer managingDepartmentId,
                              @Nullable Integer responsibleDepartmentId,
@@ -165,18 +170,18 @@ public class FormVersionEntity {
                              @Nullable UUID paymentProviderKey,
                              @Nullable String paymentPurpose,
                              @Nullable String paymentDescription,
-                             @Nullable List<PaymentProduct> paymentProducts,
-                             @Nullable List<IdentityProviderLink> identityProviders,
-                             @Nullable Boolean identityVerificationRequired,
+                             @Nonnull List<PaymentProduct> paymentProducts,
+                             @Nonnull List<IdentityProviderLink> identityProviders,
+                             @Nonnull Boolean identityVerificationRequired,
                              @Nonnull RootElement rootElement,
                              @Nonnull LocalDateTime created,
                              @Nonnull LocalDateTime updated,
                              @Nullable LocalDateTime published,
                              @Nullable LocalDateTime revoked) {
         this.formId = formId;
+        this.publicTitle = publicTitle;
         this.version = version;
         this.status = status;
-        this.publicTitle = publicTitle;
         this.type = type;
         this.managingDepartmentId = managingDepartmentId;
         this.responsibleDepartmentId = responsibleDepartmentId;
@@ -203,39 +208,6 @@ public class FormVersionEntity {
         this.revoked = revoked;
     }
 
-    public static FormVersionEntity from(FormVersionWithDetailsEntity formVersionWithDetailsEntity) {
-        return new FormVersionEntity(
-                formVersionWithDetailsEntity.getId(),
-                formVersionWithDetailsEntity.getVersion(),
-                formVersionWithDetailsEntity.getStatus(),
-                formVersionWithDetailsEntity.getPublicTitle(),
-                formVersionWithDetailsEntity.getType(),
-                formVersionWithDetailsEntity.getManagingDepartmentId(),
-                formVersionWithDetailsEntity.getResponsibleDepartmentId(),
-                formVersionWithDetailsEntity.getLegalSupportDepartmentId(),
-                formVersionWithDetailsEntity.getTechnicalSupportDepartmentId(),
-                formVersionWithDetailsEntity.getImprintDepartmentId(),
-                formVersionWithDetailsEntity.getPrivacyDepartmentId(),
-                formVersionWithDetailsEntity.getAccessibilityDepartmentId(),
-                formVersionWithDetailsEntity.getDestinationId(),
-                formVersionWithDetailsEntity.getCustomerAccessHours(),
-                formVersionWithDetailsEntity.getSubmissionRetentionWeeks(),
-                formVersionWithDetailsEntity.getThemeId(),
-                formVersionWithDetailsEntity.getPdfTemplateKey(),
-                formVersionWithDetailsEntity.getPaymentProviderKey(),
-                formVersionWithDetailsEntity.getPaymentPurpose(),
-                formVersionWithDetailsEntity.getPaymentDescription(),
-                formVersionWithDetailsEntity.getPaymentProducts(),
-                formVersionWithDetailsEntity.getIdentityProviders(),
-                formVersionWithDetailsEntity.getIdentityVerificationRequired(),
-                formVersionWithDetailsEntity.getRootElement(),
-                formVersionWithDetailsEntity.getCreated(),
-                formVersionWithDetailsEntity.getUpdated(),
-                formVersionWithDetailsEntity.getPublished(),
-                formVersionWithDetailsEntity.getRevoked()
-        );
-    }
-
     // endregion
 
     // region Signales
@@ -260,7 +232,7 @@ public class FormVersionEntity {
         if (o == null || getClass() != o.getClass()) return false;
 
         FormVersionEntity that = (FormVersionEntity) o;
-        return formId.equals(that.formId) && publicTitle.equals(that.publicTitle) && version.equals(that.version) && status == that.status && type == that.type && Objects.equals(managingDepartmentId, that.managingDepartmentId) && Objects.equals(responsibleDepartmentId, that.responsibleDepartmentId) && Objects.equals(legalSupportDepartmentId, that.legalSupportDepartmentId) && Objects.equals(technicalSupportDepartmentId, that.technicalSupportDepartmentId) && Objects.equals(imprintDepartmentId, that.imprintDepartmentId) && Objects.equals(privacyDepartmentId, that.privacyDepartmentId) && Objects.equals(accessibilityDepartmentId, that.accessibilityDepartmentId) && Objects.equals(destinationId, that.destinationId) && Objects.equals(customerAccessHours, that.customerAccessHours) && Objects.equals(submissionRetentionWeeks, that.submissionRetentionWeeks) && Objects.equals(themeId, that.themeId) && Objects.equals(pdfTemplateKey, that.pdfTemplateKey) && Objects.equals(paymentProviderKey, that.paymentProviderKey) && Objects.equals(paymentPurpose, that.paymentPurpose) && Objects.equals(paymentDescription, that.paymentDescription) && Objects.equals(paymentProducts, that.paymentProducts) && Objects.equals(identityProviders, that.identityProviders) && Objects.equals(identityVerificationRequired, that.identityVerificationRequired) && rootElement.equals(that.rootElement) && created.equals(that.created) && updated.equals(that.updated) && Objects.equals(published, that.published) && Objects.equals(revoked, that.revoked);
+        return formId.equals(that.formId) && publicTitle.equals(that.publicTitle) && version.equals(that.version) && status == that.status && type == that.type && Objects.equals(managingDepartmentId, that.managingDepartmentId) && Objects.equals(responsibleDepartmentId, that.responsibleDepartmentId) && Objects.equals(legalSupportDepartmentId, that.legalSupportDepartmentId) && Objects.equals(technicalSupportDepartmentId, that.technicalSupportDepartmentId) && Objects.equals(imprintDepartmentId, that.imprintDepartmentId) && Objects.equals(privacyDepartmentId, that.privacyDepartmentId) && Objects.equals(accessibilityDepartmentId, that.accessibilityDepartmentId) && Objects.equals(destinationId, that.destinationId) && Objects.equals(customerAccessHours, that.customerAccessHours) && Objects.equals(submissionRetentionWeeks, that.submissionRetentionWeeks) && Objects.equals(themeId, that.themeId) && Objects.equals(pdfTemplateKey, that.pdfTemplateKey) && Objects.equals(paymentProviderKey, that.paymentProviderKey) && Objects.equals(paymentPurpose, that.paymentPurpose) && Objects.equals(paymentDescription, that.paymentDescription) && paymentProducts.equals(that.paymentProducts) && identityProviders.equals(that.identityProviders) && identityVerificationRequired.equals(that.identityVerificationRequired) && rootElement.equals(that.rootElement) && created.equals(that.created) && updated.equals(that.updated) && Objects.equals(published, that.published) && Objects.equals(revoked, that.revoked);
     }
 
     @Override
@@ -285,9 +257,9 @@ public class FormVersionEntity {
         result = 31 * result + Objects.hashCode(paymentProviderKey);
         result = 31 * result + Objects.hashCode(paymentPurpose);
         result = 31 * result + Objects.hashCode(paymentDescription);
-        result = 31 * result + Objects.hashCode(paymentProducts);
-        result = 31 * result + Objects.hashCode(identityProviders);
-        result = 31 * result + Objects.hashCode(identityVerificationRequired);
+        result = 31 * result + paymentProducts.hashCode();
+        result = 31 * result + identityProviders.hashCode();
+        result = 31 * result + identityVerificationRequired.hashCode();
         result = 31 * result + rootElement.hashCode();
         result = 31 * result + created.hashCode();
         result = 31 * result + updated.hashCode();
@@ -295,7 +267,6 @@ public class FormVersionEntity {
         result = 31 * result + Objects.hashCode(revoked);
         return result;
     }
-
 
     // endregion
 
@@ -501,32 +472,32 @@ public class FormVersionEntity {
         return this;
     }
 
-    @Nullable
+    @Nonnull
     public List<PaymentProduct> getPaymentProducts() {
         return paymentProducts;
     }
 
-    public FormVersionEntity setPaymentProducts(@Nullable List<PaymentProduct> paymentProducts) {
+    public FormVersionEntity setPaymentProducts(@Nonnull List<PaymentProduct> paymentProducts) {
         this.paymentProducts = paymentProducts;
         return this;
     }
 
-    @Nullable
+    @Nonnull
     public List<IdentityProviderLink> getIdentityProviders() {
         return identityProviders;
     }
 
-    public FormVersionEntity setIdentityProviders(@Nullable List<IdentityProviderLink> identityProviders) {
+    public FormVersionEntity setIdentityProviders(@Nonnull List<IdentityProviderLink> identityProviders) {
         this.identityProviders = identityProviders;
         return this;
     }
 
-    @Nullable
+    @Nonnull
     public Boolean getIdentityVerificationRequired() {
         return identityVerificationRequired;
     }
 
-    public FormVersionEntity setIdentityVerificationRequired(@Nullable Boolean identityVerificationRequired) {
+    public FormVersionEntity setIdentityVerificationRequired(@Nonnull Boolean identityVerificationRequired) {
         this.identityVerificationRequired = identityVerificationRequired;
         return this;
     }

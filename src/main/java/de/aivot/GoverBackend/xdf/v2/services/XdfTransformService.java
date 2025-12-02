@@ -18,7 +18,7 @@ import de.aivot.GoverBackend.enums.AlertType;
 import de.aivot.GoverBackend.enums.ConditionOperator;
 import de.aivot.GoverBackend.enums.ConditionSetOperator;
 import de.aivot.GoverBackend.enums.DateType;
-import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -49,7 +49,7 @@ public class XdfTransformService {
     }
 
     @Nullable
-    public FormVersionWithDetailsEntity transformToGover(@Nonnull XdfStammdatenschema0102 xdfStammdatenschema0102) {
+    public VFormVersionWithDetailsEntity transformToGover(@Nonnull XdfStammdatenschema0102 xdfStammdatenschema0102) {
         var sd = xdfStammdatenschema0102
                 .getStammdatenschema();
 
@@ -62,7 +62,7 @@ public class XdfTransformService {
         return stammdatenschemaToRootElement(idCounter, sd);
     }
 
-    private FormVersionWithDetailsEntity stammdatenschemaToRootElement(@Nonnull XdfIdCounter idCounter,
+    private VFormVersionWithDetailsEntity stammdatenschemaToRootElement(@Nonnull XdfIdCounter idCounter,
                                                                        @Nullable XdfStammdatenschema stammdatenschema) {
         if (stammdatenschema == null) {
             return null;
@@ -116,7 +116,7 @@ public class XdfTransformService {
                 .setSubmitStep(new SubmitStepElement());
         root.setId("root");
 
-        return new FormVersionWithDetailsEntity()
+        return new VFormVersionWithDetailsEntity()
                 .setSlug(slug)
                 .setInternalTitle(internalTitle)
                 .setPublicTitle(publicTitle)

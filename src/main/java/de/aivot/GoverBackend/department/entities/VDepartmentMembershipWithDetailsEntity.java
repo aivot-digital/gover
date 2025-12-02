@@ -40,7 +40,7 @@ public class VDepartmentMembershipWithDetailsEntity {
     private String fullName;
     private Boolean enabled;
     private Boolean verified;
-    private Boolean globalAdmin;
+    private Integer globalRole;
     private Boolean deletedInIdp;
 
     // Getters and Setters
@@ -306,12 +306,12 @@ public class VDepartmentMembershipWithDetailsEntity {
         return this;
     }
 
-    public Boolean getGlobalAdmin() {
-        return globalAdmin;
+    public Integer getGlobalRole() {
+        return globalRole;
     }
 
-    public VDepartmentMembershipWithDetailsEntity setGlobalAdmin(Boolean globalAdmin) {
-        this.globalAdmin = globalAdmin;
+    public VDepartmentMembershipWithDetailsEntity setGlobalRole(Integer globalRole) {
+        this.globalRole = globalRole;
         return this;
     }
 

@@ -10,6 +10,7 @@ import de.aivot.GoverBackend.models.lib.DiffItem;
 import de.aivot.GoverBackend.services.DiffService;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,44 +23,55 @@ import java.util.List;
 
 @Service
 public class FormRevisionService {
-    private final FormRevisionRepository formRevisionRepository;
     private final FormService formService;
+    private final FormRevisionRepository formRevisionRepository;
     private final FormVersionService formVersionService;
 
     private static final String[] IGNORED_FIELDS = new String[] {
             "created",
             "updated",
-            "internalTitle",
-            "relevantDepartmentId"
+            "internalTitle"
     };
 
-    public FormRevisionService(FormRevisionRepository formRevisionRepository, FormService formService, FormVersionService formVersionService) {
+    @Autowired
+    public FormRevisionService(FormService formService,
+                               FormRevisionRepository formRevisionRepository,
+                               FormVersionService formVersionService) {
         this.formRevisionRepository = formRevisionRepository;
         this.formService = formService;
         this.formVersionService = formVersionService;
     }
 
     @Nonnull
-    public Page<FormRevisionEntity> list(@Nonnull Integer formId, @Nonnull Integer formVersion, @Nonnull Pageable pageable) {
+    public Page<FormRevisionEntity> list(@Nonnull Integer formId,
+                                         @Nonnull Integer formVersion,
+                                         @Nonnull Pageable pageable) {
         return formRevisionRepository
                 .getAllByFormIdAndFormVersionOrderByTimestampDesc(formId, formVersion, pageable);
     }
 
     public void create(
             @Nonnull UserEntity user,
-            @Nonnull FormVersionWithDetailsEntity updatedForm,
-            @Nullable FormVersionWithDetailsEntity existingForm
+            @Nonnull VFormVersionWithDetailsEntity updatedFormVersion
     ) {
-        if (existingForm == null) {
-            createForNewForm(user, updatedForm);
+        create(user, updatedFormVersion, null);
+    }
+
+    public void create(
+            @Nonnull UserEntity user,
+            @Nonnull VFormVersionWithDetailsEntity updatedFormVersion,
+            @Nullable VFormVersionWithDetailsEntity existingFormVersion
+    ) {
+        if (existingFormVersion == null) {
+            createForNewForm(user, updatedFormVersion);
         } else {
-            createForExistingForm(user, updatedForm, existingForm);
+            createForExistingForm(user, updatedFormVersion, existingFormVersion);
         }
     }
 
     private void createForNewForm(
             @Nonnull UserEntity user,
-            @Nonnull FormVersionWithDetailsEntity createdForm
+            @Nonnull VFormVersionWithDetailsEntity createdForm
     ) {
         var formJson = new JSONObject(createdForm);
         for (String field : IGNORED_FIELDS) {
@@ -83,8 +95,8 @@ public class FormRevisionService {
 
     private void createForExistingForm(
             @Nonnull UserEntity user,
-            @Nonnull FormVersionWithDetailsEntity updatedForm,
-            @Nonnull FormVersionWithDetailsEntity existingForm
+            @Nonnull VFormVersionWithDetailsEntity updatedForm,
+            @Nonnull VFormVersionWithDetailsEntity existingForm
     ) {
         var updatedFormJson = new JSONObject(updatedForm);
         var existingFormJson = new JSONObject(existingForm);
@@ -111,7 +123,7 @@ public class FormRevisionService {
         formRevisionRepository.save(formRevision);
     }
 
-    public FormVersionWithDetailsEntity rollback(FormVersionWithDetailsEntity form, BigInteger revisionId) throws ResponseException {
+    public VFormVersionWithDetailsEntity rollback(VFormVersionWithDetailsEntity form, BigInteger revisionId) throws ResponseException {
         var firstRevision = formRevisionRepository
                 .getFirstByFormIdAndFormVersionOrderByTimestampAsc(form.getId(), form.getVersion())
                 .orElseThrow(ResponseException::notFound);
@@ -121,7 +133,7 @@ public class FormRevisionService {
                 .orElseThrow(ResponseException::notFound);
 
         if (firstRevision.getId().equals(targetRevisionToRollBackTo.getId())) {
-            throw new BadRequestException();
+            throw ResponseException.badRequest();
         }
 
         var succeedingRevisionsToRollBack = formRevisionRepository
@@ -142,10 +154,10 @@ public class FormRevisionService {
 
         var objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        var rolledBackFormVersionWithDetails = objectMapper.convertValue(formObj.toMap(), FormVersionWithDetailsEntity.class);
+        var rolledBackFormVersionWithDetails = objectMapper.convertValue(formObj.toMap(), VFormVersionWithDetailsEntity.class);
 
-        var rolledBackForm = FormEntity.from(rolledBackFormVersionWithDetails);
-        var rolledBackVersion = FormVersionEntity.from(rolledBackFormVersionWithDetails);
+        FormEntity rolledBackForm = rolledBackFormVersionWithDetails.toFormEntity();
+        FormVersionEntity rolledBackVersion = rolledBackFormVersionWithDetails.toFormVersionEntity();
 
         formService
                 .update(form.getId(), rolledBackForm);

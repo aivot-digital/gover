@@ -66,7 +66,7 @@ public class UserConfigController {
         filter.setUserId(targetUserId);
 
         // If the user is not fetching their own configurations, and the user is not an admin only public configurations are allowed
-        if (!userId.equals(user.getId()) && !user.getGlobalAdmin()) {
+        if (!userId.equals(user.getId()) && !user.getSuperAdmin()) {
             filter.setPublicConfig(true);
         }
 
@@ -99,7 +99,7 @@ public class UserConfigController {
         }
 
         // If the user is not updating their own configurations, and the user is not an admin, the action is forbidden
-        if (!userId.equals(user.getId()) && !user.getGlobalAdmin()) {
+        if (!userId.equals(user.getId()) && !user.getSuperAdmin()) {
             throw new ResponseException(HttpStatus.FORBIDDEN, "Nur Administratoren dürfen die Konfigurationen anderer Benutzer ändern.");
         }
 
