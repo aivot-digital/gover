@@ -132,7 +132,7 @@ export class FormApiService extends BaseCrudApiService<FormEntity, FormEntity, F
     }
 
     public async getIdentityProviders(slug: string, version?: number): Promise<Page<IdentityProviderInfo>> {
-        return await this.get(`/api/forms/${slug}/identity-providers/`, {
+        return await this.get(`/api/public/forms/${slug}/identity-providers/`, {
             query: {
                 version: version,
             },

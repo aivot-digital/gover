@@ -114,6 +114,7 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
         var cleanedEntity = cleanRelatedData(null, entity);
 
         cleanedEntity.setVersion(currentMaxVersion + 1);
+        cleanedEntity.setStatus(FormStatus.Drafted);
         cleanedEntity.setCreated(null);
         cleanedEntity.setUpdated(null);
         cleanedEntity.setPublished(null);
