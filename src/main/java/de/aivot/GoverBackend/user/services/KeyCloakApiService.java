@@ -6,16 +6,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
 import de.aivot.GoverBackend.core.services.HttpService;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.KeyCloakOIDCConfig;
-import de.aivot.GoverBackend.user.models.KeycloakRoleMapping;
-import de.aivot.GoverBackend.user.models.KeycloakRoleMappings;
 import de.aivot.GoverBackend.user.models.KeycloakUser;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.io.IOException;
 import java.net.URI;
@@ -23,7 +25,6 @@ import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -40,7 +41,98 @@ public class KeyCloakApiService {
         this.httpService = httpService;
     }
 
-    public Optional<KeycloakUser> getUser(String userId) throws ResponseException {
+    public KeycloakUser createUser(KeycloakUser userToCreate) throws ResponseException {
+        // Normalize the user object before creating
+        userToCreate.setId(null);
+        userToCreate.setEmailVerified(false);
+
+        var mapper = ObjectMapperFactory
+                .getInstance();
+
+        String keycloakUserJson;
+        try {
+            keycloakUserJson = mapper.writeValueAsString(userToCreate);
+        } catch (JsonProcessingException e) {
+            throw ResponseException.internalServerError("Die Mitarbeiter:in konnte nicht erstellt werden", e);
+        }
+
+        String accessToken;
+        try {
+            accessToken = getAccessToken();
+        } catch (URISyntaxException | IOException | HttpConnectionException e) {
+            throw ResponseException
+                    .internalServerError("Die Mitarbeiter:in konnte nicht erstellt werden, da keine Anmeldung am Keycloak möglich war.", e);
+        }
+
+        URI uri;
+        try {
+            uri = new URI(keyCloakOIDCConfig.getHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + "/users");
+        } catch (URISyntaxException e) {
+            throw ResponseException
+                    .internalServerError("Die Mitarbeiter:in konnte nicht erstellt werden, da die Keycloak-URL ungültig ist.", e);
+        }
+
+        ResponseEntity<Void> response;
+        try {
+            response = httpService
+                    .postEntity(
+                            uri,
+                            keycloakUserJson,
+                            HttpServiceHeaders
+                                    .create()
+                                    .withContentType(MediaType.APPLICATION_JSON_VALUE)
+                                    .withAuthorizationBearer(accessToken),
+                            Void.class
+                    );
+        } catch (RestClientResponseException e) {
+            throw ResponseException
+                    .internalServerError("Die Mitarbeiter:in konnte nicht erstellt werden.", e);
+        }
+
+        if (response.getStatusCode().isError()) {
+            throw ResponseException
+                    .internalServerError("Die Mitarbeiter:in konnte nicht erstellt werden. Status-Code: " + response.getStatusCode());
+        }
+
+        // Extract the created user ID from the Location header because no http body is returned
+        var location = response.getHeaders().getFirst("Location");
+        if (location == null || location.isEmpty()) {
+            throw ResponseException.internalServerError("Die Mitarbeiter:in Das Mitarbeiter:innen-Profil steht nach der nächsten Synchronisation zur Verfügung.");
+        }
+
+        String createdUserId = location
+                .substring(location.lastIndexOf("/") + 1);
+
+        return retrieveUser(createdUserId)
+                .orElseThrow(() -> ResponseException.internalServerError("Die Mitarbeiter:in konnte nach der Erstellung nicht geladen werden."));
+    }
+
+    public Collection<KeycloakUser> listUsers() throws ResponseException {
+        HttpResponse<String> response;
+        try {
+            response = get("/users?max=1000");
+        } catch (URISyntaxException | IOException | HttpConnectionException e) {
+            throw ResponseException.internalServerError("Die Liste der Mitarbeiter:innen konnte nicht geladen werden.", e);
+        }
+
+        if (response.statusCode() != 200) {
+            throw ResponseException.internalServerError("Die Liste der Mitarbeiter:innen konnte nicht geladen werden.", "Status-Code: " + response.statusCode() + " - " + response.body());
+        }
+
+        var mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        Collection<KeycloakUser> keycloakUsers;
+        try {
+            keycloakUsers = mapper.readerForListOf(KeycloakUser.class).readValue(response.body());
+        } catch (JsonProcessingException e) {
+            throw ResponseException.internalServerError("Die Mitarbeiter:in konnte nicht geladen werden", e);
+        }
+
+        return keycloakUsers;
+    }
+
+
+    public Optional<KeycloakUser> retrieveUser(String userId) throws ResponseException {
         HttpResponse<String> response;
         try {
             response = get("/users/" + userId);
@@ -52,20 +144,15 @@ public class KeyCloakApiService {
             if (response.statusCode() == 404) {
                 return Optional.empty();
             } else {
-                throw ResponseException.internalServerError(
-                        "Mitarbeiter:in mit der ID " + userId + " konnte nicht geladen werden.",
-                        "Status-Code: " + response.statusCode() + " - " + response.body()
-                );
+                throw ResponseException.internalServerError("Mitarbeiter:in mit der ID " + userId + " konnte nicht geladen werden.", "Status-Code: " + response.statusCode() + " - " + response.body());
             }
         }
 
-        var mapper = new ObjectMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        var mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         KeycloakUser keycloakUser;
         try {
-            keycloakUser = mapper
-                    .readValue(response.body(), KeycloakUser.class);
+            keycloakUser = mapper.readValue(response.body(), KeycloakUser.class);
         } catch (JsonProcessingException e) {
             throw ResponseException.internalServerError("Die Mitarbeiter:in konnte nicht geladen werden", e);
         }
@@ -73,71 +160,69 @@ public class KeyCloakApiService {
         return Optional.of(keycloakUser);
     }
 
-    public Collection<KeycloakUser> getUsers() throws ResponseException {
-        HttpResponse<String> response;
+    public KeycloakUser updateUser(String userId, KeycloakUser userToUpdate) throws ResponseException {
+        // Normalize the user object before updating
+        userToUpdate.setId(userId);
+
+        var mapper = ObjectMapperFactory
+                .getInstance();
+
+        String keycloakUserJson;
         try {
-            response = get("/users?max=1000");
-        } catch (URISyntaxException | IOException | HttpConnectionException e) {
-            throw ResponseException.internalServerError("Die Liste der Mitarbeiter:innen konnte nicht geladen werden.", e);
-        }
-
-        if (response.statusCode() != 200) {
-            throw ResponseException.internalServerError(
-                    "Die Liste der Mitarbeiter:innen konnte nicht geladen werden.",
-                    "Status-Code: " + response.statusCode() + " - " + response.body()
-            );
-        }
-
-        var mapper = new ObjectMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-        Collection<KeycloakUser> keycloakUsers;
-        try {
-            keycloakUsers = mapper
-                    .readerForListOf(KeycloakUser.class)
-                    .readValue(response.body());
+            keycloakUserJson = mapper.writeValueAsString(userToUpdate);
         } catch (JsonProcessingException e) {
-            throw ResponseException.internalServerError("Die Mitarbeiter:in konnte nicht geladen werden", e);
+            throw ResponseException.internalServerError("Die Mitarbeiter:in konnte nicht aktualisiert werden", e);
         }
 
-        return keycloakUsers;
+        String accessToken;
+        try {
+            accessToken = getAccessToken();
+        } catch (URISyntaxException | IOException | HttpConnectionException e) {
+            throw ResponseException
+                    .internalServerError("Die Mitarbeiter:in konnte nicht erstellt werden, da keine Anmeldung am Keycloak möglich war.", e);
+        }
+
+        URI uri;
+        try {
+            uri = new URI(keyCloakOIDCConfig.getHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + "/users/" + userId);
+        } catch (URISyntaxException e) {
+            throw ResponseException
+                    .internalServerError("Die Mitarbeiter:in konnte nicht erstellt werden, da die Keycloak-URL ungültig ist.", e);
+        }
+
+        ResponseEntity<Void> response;
+        try {
+            response = httpService.put(
+                    uri,
+                    keycloakUserJson,
+                    HttpServiceHeaders
+                            .create()
+                            .withContentType(MediaType.APPLICATION_JSON_VALUE)
+                            .withAuthorizationBearer(accessToken),
+                    Void.class
+            );
+        } catch (RestClientResponseException e) {
+            throw ResponseException.internalServerError("Die Mitarbeiter:in konnte nicht aktualisiert werden.", e);
+        }
+
+        if (response.getStatusCode().isError()) {
+            throw ResponseException.internalServerError("Die Mitarbeiter:in konnte nicht aktualisiert werden.", "Status-Code: " + response.getStatusCode());
+        }
+
+        return retrieveUser(userId)
+                .orElseThrow(() -> ResponseException.internalServerError("Die Mitarbeiter:in konnte nach der Aktualisierung nicht geladen werden."));
     }
 
-    public List<String> getRoles(String userId) throws ResponseException {
-        HttpResponse<String> response;
+    public void deleteUser(String id) {
         try {
-            response = get("/users/" + userId + "/role-mappings");
-        } catch (URISyntaxException | IOException | HttpConnectionException e) {
-            throw ResponseException.internalServerError("Liste der Rollen für die Mitarbeiter:in mit der ID " + userId + " konnte nicht geladen werden.", e);
-        }
+            var response = httpService.delete(new URI(keyCloakOIDCConfig.getHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + "/users/" + id), HttpServiceHeaders.create().withAuthorizationBearer(getAccessToken()));
 
-        if (response.statusCode() != 200) {
-            if (response.statusCode() == 404) {
-                return List.of();
-            } else {
-                throw ResponseException.internalServerError(
-                        "Liste der Rollen für die Mitarbeiter:in mit der ID " + userId + " konnte nicht geladen werden.",
-                        "Status-Code: " + response.statusCode() + " - " + response.body()
-                );
+            if (response.getStatusCode().isError()) {
+                logger.error("Mitarbeiter:in mit der ID {} konnte nicht gelöscht werden. Status-Code: {}", id, response.getStatusCode());
             }
+        } catch (URISyntaxException | IOException | HttpConnectionException e) {
+            logger.error("Mitarbeiter:in mit der ID {} konnte nicht gelöscht werden.", id, e);
         }
-
-        var mapper = new ObjectMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-        KeycloakRoleMappings roles;
-        try {
-            roles = mapper
-                    .readValue(response.body(), KeycloakRoleMappings.class);
-        } catch (JsonProcessingException e) {
-            throw ResponseException.internalServerError("Die Liste der Rollen für die Mitarbeiter:in mit der ID " + userId + " konnte nicht geladen werden", e);
-        }
-
-        return roles
-                .getRealmMappings()
-                .stream()
-                .map(KeycloakRoleMapping::getName)
-                .toList();
     }
 
     /**
@@ -156,13 +241,36 @@ public class KeyCloakApiService {
 
         logger.info("Starting GET request to Keycloak API at {}", uri);
 
-        var res = httpService
-                .get(uri, HttpServiceHeaders
-                        .create()
-                        .withContentType("application/json")
-                        .withAuthorizationBearer(accessToken));
+        var res = httpService.get(uri, HttpServiceHeaders.create().withContentType("application/json").withAuthorizationBearer(accessToken));
 
         logger.info("GET request to Keycloak API at {} finished with status code {}", uri, res.statusCode());
+
+        return res;
+    }
+
+    /**
+     * Get a resource from the keycloak api
+     *
+     * @param path the path to the resource
+     * @return the response from the api
+     * @throws URISyntaxException      if the uri is invalid
+     * @throws IOException             if the request fails
+     * @throws HttpConnectionException if the request is interrupted
+     */
+    private <T> ResponseEntity<T> post(String path, String body, Class<T> clazz) throws URISyntaxException, IOException, RestClientResponseException, HttpConnectionException {
+        var accessToken = getAccessToken();
+
+        var uri = new URI(keyCloakOIDCConfig.getHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + path);
+
+        logger.info("Starting POST request to Keycloak API at {}", uri);
+
+        var res = httpService.postEntity(
+                uri,
+                body,
+                HttpServiceHeaders.create().withContentType("application/json").withAuthorizationBearer(accessToken),
+                clazz);
+
+        logger.info("POST request to Keycloak API at {} finished with status code {}", uri, res.getStatusCode());
 
         return res;
     }
@@ -184,11 +292,7 @@ public class KeyCloakApiService {
         }
 
         // Create the request body for fetching the access token
-        var requestBody = Map.of(
-                "grant_type", "client_credentials",
-                "client_id", keyCloakOIDCConfig.getBackendClientId(),
-                "client_secret", keyCloakOIDCConfig.getBackendClientSecret()
-        );
+        var requestBody = Map.of("grant_type", "client_credentials", "client_id", keyCloakOIDCConfig.getBackendClientId(), "client_secret", keyCloakOIDCConfig.getBackendClientSecret());
 
         // Create the uri for the token endpoint
         var uri = new URI(keyCloakOIDCConfig.getHostname() + "/realms/" + keyCloakOIDCConfig.getRealm() + "/protocol/openid-connect/token");

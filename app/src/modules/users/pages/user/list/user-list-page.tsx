@@ -13,6 +13,7 @@ import {CellContentWrapper} from '../../../../../components/cell-content-wrapper
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 import {UserStatusChip} from '../../../components/user-status-chip';
 import {setUser} from '../../../../../slices/user-slice';
+import {SystemUserRole} from '../../../models/user';
 
 export function UserListPage() {
     const hasAccess = useAccessGuard({
@@ -144,11 +145,32 @@ export function UserListPage() {
                         ),
                     },
                     {
+                        field: 'globalRole',
+                        headerName: 'Systemrolle',
+                        flex: 1,
+                        renderCell: (params) => {
+                            let roleLabel = 'Mitarbeiter:in';
+                            if (params.row.globalRole === SystemUserRole.SystemAdmin) {
+                                roleLabel = 'Systemadministrator:in';
+                            } else if (params.row.globalRole  === SystemUserRole.SuperAdmin) {
+                                roleLabel = 'Superadministrator:in';
+                            }
+                            return <Chip
+                                label={roleLabel}
+                                size="small"
+                                variant="outlined"
+                            />;
+                        },
+                    },
+                    {
                         field: 'enabled',
                         headerName: 'Status',
                         type: 'boolean',
                         renderCell: (params) => (
-                            <UserStatusChip userDeletedInIdp={params.row.deletedInIdp} userEnabled={params.row.enabled} />
+                            <UserStatusChip
+                                userDeletedInIdp={params.row.deletedInIdp}
+                                userEnabled={params.row.enabled}
+                            />
                         ),
                     },
                 ]}

@@ -22,8 +22,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.Map;
 import java.util.Objects;
 
@@ -36,31 +36,28 @@ public class VTeamUserRoleAssignmentWithDetailsController {
     private final UserRoleAssignmentService userRoleAssignmentService;
     private final VTeamMembershipWithDetailsService VTeamMembershipWithDetailsService;
     private final VTeamMembershipWithPermissionsService vTeamMembershipWithPermissionsService;
+    private final UserService userService;
 
     @Autowired
     public VTeamUserRoleAssignmentWithDetailsController(AuditService auditService,
                                                         VTeamUserRoleAssignmentWithDetailsService VTeamUserRoleAssignmentWithDetailsService,
                                                         UserRoleAssignmentService userRoleAssignmentService,
                                                         VTeamMembershipWithDetailsService VTeamMembershipWithDetailsService,
-                                                        VTeamMembershipWithPermissionsService vTeamMembershipWithPermissionsService) {
+                                                        VTeamMembershipWithPermissionsService vTeamMembershipWithPermissionsService, UserService userService) {
         this.auditService = auditService.createScopedAuditService(VTeamUserRoleAssignmentWithDetailsController.class);
 
         this.VTeamUserRoleAssignmentWithDetailsService = VTeamUserRoleAssignmentWithDetailsService;
         this.userRoleAssignmentService = userRoleAssignmentService;
         this.VTeamMembershipWithDetailsService = VTeamMembershipWithDetailsService;
         this.vTeamMembershipWithPermissionsService = vTeamMembershipWithPermissionsService;
+        this.userService = userService;
     }
 
     @GetMapping("")
     public Page<VTeamUserRoleAssignmentWithDetailsEntity> list(
-            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PageableDefault Pageable pageable,
             @Nonnull @Valid VTeamUserRoleAssignmentWithDetailsFilter filter
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
         return VTeamUserRoleAssignmentWithDetailsService.list(pageable, filter);
     }
 
@@ -69,10 +66,10 @@ public class VTeamUserRoleAssignmentWithDetailsController {
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @RequestBody @Valid UserRoleAssignmentEntity newAssignment
     ) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asGlobalAdmin()
+                .asSuperAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         if (Objects.isNull(newAssignment.getDepartmentMembershipId())) {
@@ -83,7 +80,7 @@ public class VTeamUserRoleAssignmentWithDetailsController {
                 .retrieve(newAssignment.getDepartmentMembershipId())
                 .orElseThrow(ResponseException::badRequest);
 
-        if (!user.getSuperAdmin()) {
+        if (!user.getIsSuperAdmin()) {
             var filter = VTeamMembershipWithPermissionsFilter
                     .create()
                     .setUserId(user.getId())
@@ -115,13 +112,8 @@ public class VTeamUserRoleAssignmentWithDetailsController {
 
     @GetMapping("{id}/")
     public VTeamUserRoleAssignmentWithDetailsEntity retrieve(
-            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
         return VTeamUserRoleAssignmentWithDetailsService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
@@ -132,10 +124,10 @@ public class VTeamUserRoleAssignmentWithDetailsController {
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer id
     ) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asGlobalAdmin()
+                .asSuperAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var entity = userRoleAssignmentService
@@ -150,7 +142,7 @@ public class VTeamUserRoleAssignmentWithDetailsController {
                 .retrieve(entity.getDepartmentMembershipId())
                 .orElseThrow(ResponseException::badRequest);
 
-        if (!user.getSuperAdmin()) {
+        if (!user.getIsSuperAdmin()) {
             var filter = VTeamMembershipWithPermissionsFilter
                     .create()
                     .setUserId(user.getId())

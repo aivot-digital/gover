@@ -436,17 +436,41 @@ export function FormDetailsPage() {
         }
     }, [lockState, enqueueSnackbar]);
 
+    const isEditable = useMemo(() => {
+        if (loadedForm == null) {
+            return false;
+        }
+
+        if (lockState != null && lockState.state === EntityLockState.LockedOther) {
+            return false;
+        }
+
+        return (
+            isAdmin(user) ||
+            loadedForm.permissions.formPermissionEdit
+        );
+    }, [user, lockState, loadedForm]);
+
+    const canViewHistory = useMemo(() => {
+        if (loadedForm == null) {
+            return false;
+        }
+
+        if (lockState != null && lockState.state === EntityLockState.LockedOther) {
+            return false;
+        }
+
+        return (
+            isAdmin(user) ||
+            loadedForm.permissions.formPermissionEdit ||
+            loadedForm.permissions.formPermissionRead
+        );
+    }, [loadedForm, lockState, user]);
+
     if (loadedForm == null) {
         return <LoadingPlaceholder />;
     } else {
         const allElements = flattenElements(loadedForm.version.rootElement);
-
-        const isEditable = (
-            loadedForm.version.status == FormStatus.Drafted &&
-            (memberships ?? []).some((mem) => mem.departmentId === loadedForm.form.developingDepartmentId) &&
-            (lockState == null || lockState.state === EntityLockState.Free || lockState.state === EntityLockState.LockedSelf)
-        );
-        const canViewHistory = isAdmin(user) || (memberships ?? []).some((mem) => mem.departmentId === loadedForm.form.developingDepartmentId);
 
         const handlePatch = async (patchedLoadedForm: Partial<LoadedForm>) => {
             if (loadedForm == null) {
@@ -466,6 +490,12 @@ export function FormDetailsPage() {
                 ...loadedForm.version,
                 ...patchedLoadedForm.version,
             };
+            dispatch(updateLoadedForm({
+                ...loadedForm,
+                form: formToUpdate,
+                version: versionToUpdate,
+            }));
+
             const originalLoadedForm: LoadedForm = {
                 ...loadedForm,
             };

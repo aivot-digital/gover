@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
 import de.aivot.GoverBackend.utils.MultipartUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
@@ -56,9 +57,31 @@ public class HttpService {
         return new HttpResponseImpl<>(200, responseBody);
     }
 
-    // endregion
-    // region HTTP-Post
+    @Nonnull
+    public <T> ResponseEntity<T> getEntity(@Nonnull URI uri,
+                                           @Nonnull Class<T> clazz) throws RestClientResponseException {
+        return getEntity(uri, null, clazz);
+    }
 
+    @Nonnull
+    public <T> ResponseEntity<T> getEntity(@Nonnull URI uri,
+                                           @Nullable HttpServiceHeaders headers,
+                                           @Nonnull Class<T> clazz) throws RestClientResponseException {
+        return httpClient
+                .get()
+                .uri(uri)
+                .headers(_headers -> {
+                    if (headers != null) {
+                        headers.forEach(_headers::add);
+                    }
+                })
+                .retrieve()
+                .toEntity(clazz);
+    }
+
+    // endregion
+
+    // region HTTP-Post
     @Nonnull
     public HttpResponse<String> post(@Nonnull URI uri, @Nonnull String body) throws HttpConnectionException {
         return post(uri, body, null);
@@ -89,7 +112,33 @@ public class HttpService {
         return new HttpResponseImpl<>(200, responseBody);
     }
 
+    @Nonnull
+    public <T> ResponseEntity<T> postEntity(@Nonnull URI uri,
+                                            @Nonnull String body,
+                                            @Nonnull Class<T> clazz) throws RestClientResponseException {
+        return postEntity(uri, body, null, clazz);
+    }
+
+    @Nonnull
+    public <T> ResponseEntity<T> postEntity(@Nonnull URI uri,
+                                            @Nonnull String body,
+                                            @Nullable HttpServiceHeaders headers,
+                                            @Nonnull Class<T> clazz) throws RestClientResponseException {
+        return httpClient
+                .post()
+                .uri(uri)
+                .body(body)
+                .headers(_headers -> {
+                    if (headers != null) {
+                        headers.forEach(_headers::add);
+                    }
+                })
+                .retrieve()
+                .toEntity(clazz);
+    }
+
     // endregion
+
     // region HTTP-Post Form-UrlEncoded
 
     @Nonnull
@@ -120,7 +169,34 @@ public class HttpService {
         return post(uri, formUrlEncodedBody, extendedHeaders);
     }
 
+    @Nonnull
+    public <T> ResponseEntity<T> postFormUrlEncodedEntity(@Nonnull URI uri,
+                                                    @Nonnull Map<String, String> body,
+                                                    @Nonnull Class<T> clazz) throws RestClientResponseException {
+        return postFormUrlEncodedEntity(uri, body, null, clazz);
+    }
+
+    @Nonnull
+    public <T> ResponseEntity<T> postFormUrlEncodedEntity(@Nonnull URI uri,
+                                                    @Nonnull Map<String, String> body,
+                                                    @Nullable HttpServiceHeaders headers,
+                                                    @Nonnull Class<T> clazz) throws RestClientResponseException {
+        var formUrlEncodedBody = body
+                .entrySet()
+                .stream()
+                .map(e -> e.getKey() + "=" + e.getValue())
+                .collect(Collectors.joining("&"));
+
+        var extendedHeaders = HttpServiceHeaders
+                .create()
+                .with(headers)
+                .with("Content-Type", HttpServiceHeaders.APPLICATION_X_WWW_FORM_URLENCODED);
+
+        return postEntity(uri, formUrlEncodedBody, extendedHeaders, clazz);
+    }
+
     // endregion
+
     // region HTTP-Post Multipart
 
     @Nonnull
@@ -151,6 +227,79 @@ public class HttpService {
         }
 
         return new HttpResponseImpl<>(200, responseBody);
+    }
+
+    @Nonnull
+    public <T> ResponseEntity<T> postMultipartEntity(@Nonnull URI uri,
+                                               @Nonnull MultipartUtils.MultipartBodyPublisher body,
+                                               @Nonnull Class<T> clazz) throws RestClientResponseException {
+        return postMultipartEntity(uri, body, null, clazz);
+    }
+
+    @Nonnull
+    public <T> ResponseEntity<T> postMultipartEntity(@Nonnull URI uri,
+                                               @Nonnull MultipartUtils.MultipartBodyPublisher body,
+                                               @Nullable HttpServiceHeaders headers,
+                                               @Nonnull Class<T> clazz) throws RestClientResponseException {
+        return httpClient
+                .post()
+                .uri(uri)
+                .body(body.build())
+                .headers(_headers -> {
+                    if (headers != null) {
+                        headers.forEach(_headers::add);
+                    }
+                })
+                .retrieve()
+                .toEntity(clazz);
+    }
+
+    // endregion
+
+
+    // region HTTP-PUT
+
+    @Nonnull
+    public <T> ResponseEntity<T> put(@Nonnull URI uri,
+                                     @Nonnull String body,
+                                     @Nonnull Class<T> clazz) throws RestClientResponseException {
+        return put(uri, body, null, clazz);
+    }
+
+    @Nonnull
+    public <T> ResponseEntity<T> put(@Nonnull URI uri,
+                                     @Nonnull String body,
+                                     @Nullable HttpServiceHeaders headers,
+                                     @Nonnull Class<T> clazz) throws RestClientResponseException {
+        return httpClient
+                .put()
+                .uri(uri)
+                .body(body)
+                .headers(_headers -> {
+                    if (headers != null) {
+                        headers.forEach(_headers::add);
+                    }
+                })
+                .retrieve()
+                .toEntity(clazz);
+    }
+
+    // endregion
+
+    // region HTTP-DELETE
+
+    public ResponseEntity<Void> delete(@Nonnull URI uri,
+                                       @Nullable HttpServiceHeaders httpServiceHeaders) throws RestClientResponseException {
+        return httpClient
+                .delete()
+                .uri(uri)
+                .headers(_headers -> {
+                    if (httpServiceHeaders != null) {
+                        httpServiceHeaders.forEach(_headers::add);
+                    }
+                })
+                .retrieve()
+                .toBodilessEntity();
     }
 
     // endregion

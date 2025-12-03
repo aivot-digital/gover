@@ -10,7 +10,7 @@ import de.aivot.GoverBackend.form.services.FormRevisionService;
 import de.aivot.GoverBackend.form.services.VFormVersionWithDetailsService;
 import de.aivot.GoverBackend.form.services.VFormWithPermissionsService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.security.OpenAPISecurityConfiguration;
+import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,8 +35,12 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/forms/{formId}/{version}/revisions/")
-@Tag(name = "Form Version Revisions", description = "Interact with the revisions of form versions")
-@SecurityRequirement(name = OpenAPISecurityConfiguration.SecurityName)
+@Tag(
+        name = "Form Version Revisions",
+        description = "Form revisions track the changes made to form versions over time. " +
+                      "They allow administrators to view the history of modifications and revert to previous states if necessary."
+)
+@SecurityRequirement(name = OpenAPIConfiguration.Name)
 public class FormRevisionController {
     private final ScopedAuditService auditService;
 
@@ -44,17 +48,22 @@ public class FormRevisionController {
     private final FormRevisionService formRevisionService;
     private final VFormWithPermissionsService vFormWithPermissionsService;
     private final VFormVersionWithDetailsService vFormVersionWithDetailsService;
+    private final UserService userService;
 
     @Autowired
     public FormRevisionController(AuditService auditService,
                                   FormLockService formLockService,
                                   FormRevisionService formRevisionService,
-                                  VFormWithPermissionsService vFormWithPermissionsService, VFormVersionWithDetailsService vFormVersionWithDetailsService) {
+                                  VFormWithPermissionsService vFormWithPermissionsService,
+                                  VFormVersionWithDetailsService vFormVersionWithDetailsService,
+                                  UserService userService) {
         this.auditService = auditService.createScopedAuditService(FormRevisionController.class);
+
         this.formLockService = formLockService;
         this.formRevisionService = formRevisionService;
         this.vFormWithPermissionsService = vFormWithPermissionsService;
         this.vFormVersionWithDetailsService = vFormVersionWithDetailsService;
+        this.userService = userService;
     }
 
     @GetMapping("")
@@ -70,12 +79,12 @@ public class FormRevisionController {
             @Nonnull @PathVariable Integer version
     ) throws ResponseException {
         // Determine the user for the permission check
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
         // Check if the user has the permission to revoke the form
-        if (!user.getSuperAdmin()) {
+        if (!user.getIsSuperAdmin()) {
             vFormWithPermissionsService.checkUserPermission(
                     formId,
                     user.getId(),
@@ -101,12 +110,12 @@ public class FormRevisionController {
             @PathVariable Integer version,
             @PathVariable BigInteger revisionId
     ) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
         // Check if the user has the permission to revoke the form
-        if (!user.getSuperAdmin()) {
+        if (!user.getIsSuperAdmin()) {
             vFormWithPermissionsService.checkUserPermission(
                     formId,
                     user.getId(),

@@ -51,8 +51,8 @@ export function vDepartmentMembershipWithDetailsEntityAsUser(mem: VDepartmentMem
         fullName: mem.fullName ?? '',
         email: mem.email ?? '',
         globalRole: mem.globalRole ?? 0,
-        superAdmin: mem.superAdmin ?? false,
-        systemAdmin: mem.systemAdmin ?? false,
+        isSuperAdmin: mem.superAdmin ?? false,
+        isSystemAdmin: mem.systemAdmin ?? false,
         verified: mem.verified ?? false,
     };
 }

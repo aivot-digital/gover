@@ -4,7 +4,6 @@ import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.department.filters.VDepartmentMembershipWithPermissionsFilter;
-import de.aivot.GoverBackend.department.services.DepartmentMembershipService;
 import de.aivot.GoverBackend.department.services.VDepartmentMembershipWithPermissionsService;
 import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
 import de.aivot.GoverBackend.exceptions.NoValidUserEMailsInDepartmentException;
@@ -21,9 +20,8 @@ import de.aivot.GoverBackend.form.services.*;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.services.ExceptionMailService;
 import de.aivot.GoverBackend.mail.services.FormMailService;
-import de.aivot.GoverBackend.security.OpenAPISecurityConfiguration;
+import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
 import de.aivot.GoverBackend.system.properties.BuildProperties;
-import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,8 +38,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -49,15 +48,20 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/forms/")
-@Tag(name = "Form", description = "Interact with forms")
-@SecurityRequirement(name = OpenAPISecurityConfiguration.SecurityName)
+@Tag(
+        name = "Forms",
+        description = "Forms are built for collecting data from users. " +
+                      "They can be designed with various elements and configurations to suit different data collection needs. " +
+                      "Forms can be published, managed, and analyzed within the system. " +
+                      "Forms are versioned with the „Form Version” resource."
+)
+@SecurityRequirement(name = OpenAPIConfiguration.Name)
 public class FormController {
     private final ScopedAuditService auditService;
 
     private final FormMailService formMailService;
     private final ExceptionMailService exceptionMailService;
     private final FormService formService;
-    private final DepartmentMembershipService departmentMembershipService;
     private final FormLockService formLockService;
     private final FormRevisionService formRevisionService;
     private final VFormWithPermissionsService vFormWithPermissionsService;
@@ -65,24 +69,26 @@ public class FormController {
     private final VFormVersionWithDetailsService vFormVersionWithDetailsService;
     private final FormVersionService formVersionService;
     private final BuildProperties buildProperties;
+    private final UserService userService;
 
     @Autowired
     public FormController(AuditService auditService,
                           FormMailService formMailService,
                           ExceptionMailService exceptionMailService,
                           FormService formService,
-                          DepartmentMembershipService departmentMembershipService,
                           FormLockService formLockService,
                           FormRevisionService formRevisionService,
                           VFormWithPermissionsService vFormWithPermissionsService,
                           VDepartmentMembershipWithPermissionsService vDepartmentMembershipWithPermissionsService,
-                          VFormVersionWithDetailsService vFormVersionWithDetailsService, FormVersionService formVersionService, BuildProperties buildProperties) {
+                          VFormVersionWithDetailsService vFormVersionWithDetailsService,
+                          FormVersionService formVersionService,
+                          BuildProperties buildProperties,
+                          UserService userService) {
         this.auditService = auditService.createScopedAuditService(FormController.class);
 
         this.formMailService = formMailService;
         this.exceptionMailService = exceptionMailService;
         this.formService = formService;
-        this.departmentMembershipService = departmentMembershipService;
         this.formLockService = formLockService;
         this.formRevisionService = formRevisionService;
         this.vFormWithPermissionsService = vFormWithPermissionsService;
@@ -90,6 +96,7 @@ public class FormController {
         this.vFormVersionWithDetailsService = vFormVersionWithDetailsService;
         this.formVersionService = formVersionService;
         this.buildProperties = buildProperties;
+        this.userService = userService;
     }
 
     @GetMapping("")
@@ -104,12 +111,12 @@ public class FormController {
             @Nonnull @ParameterObject @Valid FormFilter filter
     ) throws ResponseException {
         // Check if the user is a staff user
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
         // If the user is a super admin, return all forms
-        if (user.getSuperAdmin()) {
+        if (user.getIsSuperAdmin()) {
             return formService
                     .list(pageable, filter);
         }
@@ -137,7 +144,7 @@ public class FormController {
             @Nonnull @Valid @RequestBody FormEntity newForm
     ) throws ResponseException {
         // Extract staff user
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
@@ -148,7 +155,7 @@ public class FormController {
                 .setUserId(user.getId())
                 .setFormPermissionCreate(true)
                 .build();
-        var canCreate = user.getSuperAdmin() || vDepartmentMembershipWithPermissionsService
+        var canCreate = user.getIsSuperAdmin() || vDepartmentMembershipWithPermissionsService
                 .exists(departmentMembershipSpec);
 
         // If the user does not have permission, throw an exception
@@ -168,95 +175,26 @@ public class FormController {
                 "developingDepartmentId", cratedForm.getDevelopingDepartmentId()
         ));
 
-        /*
-
-        // create the initial version
-        var createdVersionEntity = formVersionService
-                .create(
-                        requestDTO
-                                .toFormVersionEntity()
-                                .setFormId(createdFormEntity.getId())
-                );
-        auditService.logAction(user, AuditAction.Create, FormVersionEntity.class, Map.of(
-                "formId", createdVersionEntity.getFormId(),
-                "version", createdVersionEntity.getVersion()
-        ));
-
-        createdFormEntity
-                .setDraftedVersion(createdVersionEntity.getVersion());
-
-        var createdForm = FormVersionWithDetailsEntity
-                .of(createdFormEntity, createdVersionEntity);
-
-
-        // Send a message about the form creation to the department
-        try {
-            formMailService.sendAdded(user, createdForm);
-        } catch (MessagingException | IOException | NoValidUserEMailsInDepartmentException e) {
-            auditService.logException("Failed to send message about form creation", e, Map.of(
-                    "formId", createdForm.getId(),
-                    "formSlug", createdForm.getSlug(),
-                    "formVersion", createdForm.getVersion(),
-                    "developingDepartmentId", createdForm.getDevelopingDepartmentId()
-            ));
-            exceptionMailService.send(e);
-        }
-         */
-
-        // Create the initial revision for the form
-        //formRevisionService.create(user, createdForm, null);
-
-        // Save and return the application as a DTO.
-
         return cratedForm;
     }
 
-    /**
-     * Retrieve a form by its id.
-     * Form retrieval is not limited to the user's department.
-     *
-     * @param jwt    The authentication object.
-     * @param formId The id of the form.
-     * @return The form as a DTO.
-     */
-/*
-    @GetMapping("{formId}/latest/")
-    public FormDetailsResponseDTO retrieveLatest(
-            @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable Integer formId
-    ) throws ResponseException {
-        // Check if the user is a staff user
-        var user = UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
-        // Create a form filter
-        var formFilter = FormVersionWithMembershipFilter
-                .create()
-                .setId(formId)
-                .setUserId(user.getId());
-
-        // Retrieve the form by its id
-        return formVersionWithMembershipService
-                .retrieveLatest(formFilter)
-                .map(FormDetailsResponseDTO::fromEntity)
-                .orElseThrow(ResponseException::notFound);
-    }
-
- */
     @GetMapping("{formId}/")
-    @Operation(summary = "Retrieve Form", description = "Retrieve a form by its id.")
-    @SecurityRequirement(name = OpenAPISecurityConfiguration.SecurityName)
+    @Operation(
+            summary = "Retrieve Form",
+            description = "Retrieve a form by its id. " +
+                          "Superadmins can retrieve any form, staff users can retrieve forms they have read permission for."
+    )
+    @SecurityRequirement(name = OpenAPIConfiguration.Name)
     public FormEntity retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer formId
     ) throws ResponseException {
         // Check if the user is a staff user
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (user.getSuperAdmin()) {
+        if (user.getIsSuperAdmin()) {
             return formService
                     .retrieve(formId)
                     .orElseThrow(ResponseException::notFound);
@@ -276,15 +214,19 @@ public class FormController {
     }
 
     @PutMapping("{formId}/")
-    @Operation(summary = "Update Form", description = "Update a form by its id.")
-    @SecurityRequirement(name = OpenAPISecurityConfiguration.SecurityName)
+    @Operation(
+            summary = "Update Form",
+            description = "Update a form by its id." +
+                          "Super admins can update any form, staff users can update forms they have edit permission for."
+    )
+    @SecurityRequirement(name = OpenAPIConfiguration.Name)
     public FormEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer formId,
             @Nonnull @Valid @RequestBody FormEntity patchedForm
     ) throws ResponseException {
         // Extract staff user
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
@@ -295,14 +237,14 @@ public class FormController {
                 .setUserId(user.getId())
                 .setFormPermissionEdit(true)
                 .build();
-        var canUpdate = user.getSuperAdmin() ||
+        var canUpdate = user.getIsSuperAdmin() ||
                         vDepartmentMembershipWithPermissionsService.exists(canUpdateSpec);
         if (!canUpdate) {
-            throw ResponseException.noPermission("Formular Bearbeiten");
+            throw ResponseException.noPermission(PermissionLabels.FormPermissionEdit);
         }
 
         // Check if the form is locked by another user
-        checkFormLock(formId, user, formLockService);
+        formLockService.checkFormLock(formId, user);
 
         // Update the form
         var updatedForm = formService
@@ -315,36 +257,44 @@ public class FormController {
                 "developingDepartmentId", updatedForm.getDevelopingDepartmentId()
         ));
 
-        // Create a revision for the form
         // TODO: Create revision formRevisionService.create(user, form, existingForm);
 
-        // Return the form as a DTO
         return updatedForm;
     }
 
     @PutMapping("{formId}/move/")
-    @Operation(summary = "Move Form", description = "Move a form to another department.")
-    @SecurityRequirement(name = OpenAPISecurityConfiguration.SecurityName)
+    @Operation(
+            summary = "Move Form",
+            description = "Move a form to another department. " +
+                          "The user must be a super admin or have edit permission in the current developing department of the form."
+    )
+    @SecurityRequirement(name = OpenAPIConfiguration.Name)
     public void move(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer formId,
             @Nonnull @RequestParam Integer targetDepartmentId
     ) throws ResponseException {
         // Extract staff user
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
+
+        // Check if the user has edit permission for the form
+        if (!user.getIsSuperAdmin()) {
+            vFormWithPermissionsService.checkUserPermission(
+                    formId,
+                    user.getId(),
+                    VFormWithPermissionsEntity::getFormPermissionEdit,
+                    PermissionLabels.FormPermissionEdit);
+        }
 
         // Retrieve the form by its id
         var form = formService
                 .retrieve(formId)
                 .orElseThrow(ResponseException::notFound);
 
-        // Check if the user has access to the department the form resides in
-        checkUserHasAccessToForm(user, form.getDevelopingDepartmentId(), departmentMembershipService);
-
         // Check if the form is locked by another user
-        checkFormLock(formId, user, formLockService);
+        formLockService.checkFormLock(formId, user);
 
         // Store the previous department id
         var previousDepartmentId = form.getDevelopingDepartmentId();
@@ -374,27 +324,37 @@ public class FormController {
 
 
     @DeleteMapping("{formId}/")
-    @Operation(summary = "Delete Form", description = "Delete a form by its id.")
-    @SecurityRequirement(name = OpenAPISecurityConfiguration.SecurityName)
+    @Operation(
+            summary = "Delete Form",
+            description = "Delete a form by its id. " +
+                          "Super admins can delete any form, staff users can delete forms they have delete permission for."
+    )
+    @SecurityRequirement(name = OpenAPIConfiguration.Name)
     public void destroy(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer formId
     ) throws ResponseException {
         // Extract staff user
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
+
+        // Check if the user has edit permission for the form
+        if (!user.getIsSuperAdmin()) {
+            vFormWithPermissionsService.checkUserPermission(
+                    formId,
+                    user.getId(),
+                    VFormWithPermissionsEntity::getFormPermissionEdit,
+                    PermissionLabels.FormPermissionEdit);
+        }
 
         // Retrieve the form by its id
         var form = formService
                 .retrieve(formId)
                 .orElseThrow(ResponseException::notFound);
 
-        // Check if the user has access to the department the form resides in
-        checkUserHasAccessToForm(user, form.getDevelopingDepartmentId(), departmentMembershipService);
-
         // Check if the form is locked by another user
-        checkFormLock(formId, user, formLockService);
+        formLockService.checkFormLock(formId, user);
 
         // Delete the form
         var deletedForm = formService.delete(formId);
@@ -418,36 +378,6 @@ public class FormController {
         }
     }
 
-    public static void checkUserHasAccessToForm(@Nonnull UserEntity user,
-                                                @Nonnull Integer developingDepartmentId,
-                                                @Nonnull DepartmentMembershipService departmentMembershipService) throws ResponseException {
-        // The user has access if they are a global admin
-        if (user.getSuperAdmin()) {
-            return;
-        }
-
-        // The user has access if they are a member of the developing department
-        if (departmentMembershipService.checkUserInDepartment(user, developingDepartmentId)) {
-            return;
-        }
-
-        throw ResponseException.forbidden("Sie haben keinen Zugriff auf das Formular, da Sie kein Mitglied des entwickelnden Fachbereichs sind.");
-    }
-
-    /**
-     * @param formId
-     * @param accessingUser
-     * @param formLockService
-     * @throws ResponseException
-     * @deprecated use {@link FormLockService#checkFormLock(Integer, UserEntity)} instead
-     */
-    public static void checkFormLock(@Nonnull Integer formId,
-                                     @Nonnull UserEntity accessingUser,
-                                     @Nonnull FormLockService formLockService) throws ResponseException {
-        formLockService.checkFormLock(formId, accessingUser);
-    }
-
-
     @GetMapping("{formId}/export/")
     @Operation(
             summary = "Export Form",
@@ -461,11 +391,11 @@ public class FormController {
             @Nullable @RequestParam(name = "version", required = false) Integer versionNumber
     ) throws ResponseException {
         // Check if the user is a staff user
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!user.getSuperAdmin()) {
+        if (!user.getIsSuperAdmin()) {
             vFormWithPermissionsService.checkUserPermission(formId,
                     user.getId(),
                     VFormWithPermissionsEntity::getFormPermissionRead,

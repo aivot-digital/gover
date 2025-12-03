@@ -3,8 +3,12 @@ package de.aivot.GoverBackend.form.controllers;
 import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntityId;
 import de.aivot.GoverBackend.form.services.VFormVersionWithDetailsService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
 import de.aivot.GoverBackend.services.PdfService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -18,7 +22,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.thymeleaf.exceptions.TemplateProcessingException;
 
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -26,7 +29,13 @@ import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/forms/{formId}/{formVersion}/print/")
-@Tag(name = "Form", description = "Interact with forms")
+@Tag(
+        name = "Forms",
+        description = "Forms are built for collecting data from users. " +
+                      "They can be designed with various elements and configurations to suit different data collection needs. " +
+                      "Forms can be published, managed, and analyzed within the system."
+)
+@SecurityRequirement(name = OpenAPIConfiguration.Name)
 public class FormPrintController {
     private final PdfService pdfService;
     private final VFormVersionWithDetailsService formVersionWithDetailsService;
@@ -53,6 +62,10 @@ public class FormPrintController {
      * @throws ResponseException If the form is not found or PDF generation fails.
      */
     @GetMapping("")
+    @Operation(
+            summary = "Print Form as PDF",
+            description = "Generate and retrieve a printable PDF version of the specified form and version."
+    )
     public ResponseEntity<Resource> print(
             @Nonnull @PathVariable Integer formId,
             @Nonnull @PathVariable Integer formVersion
@@ -64,9 +77,7 @@ public class FormPrintController {
         byte[] bytes;
         try {
             bytes = pdfService.generatePrintableForm(form);
-        } catch (IOException | URISyntaxException | InterruptedException e) {
-            throw ResponseException.internalServerError("Fehler beim Erzeugen der PDF-Datei. Bitte versuchen Sie es später erneut.", e);
-        } catch (TemplateProcessingException e) {
+        } catch (IOException | URISyntaxException | InterruptedException | TemplateProcessingException e) {
             throw ResponseException.internalServerError("Fehler beim Erzeugen der PDF-Datei. Bitte versuchen Sie es später erneut.", e);
         }
 

@@ -52,7 +52,7 @@ public record TeamMembershipResponseDTO(
                 user.getEmail(),
                 user.getEnabled(),
                 user.getVerified(),
-                user.getSuperAdmin(),
+                user.getIsSuperAdmin(),
                 user.getDeletedInIdp()
         );
     }

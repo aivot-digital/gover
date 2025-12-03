@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.asset.dtos;
 
 import de.aivot.GoverBackend.asset.entities.AssetEntity;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.time.LocalDateTime;
 import java.util.UUID;
 

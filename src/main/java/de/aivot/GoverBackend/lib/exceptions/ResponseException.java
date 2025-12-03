@@ -3,8 +3,8 @@ package de.aivot.GoverBackend.lib.exceptions;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import org.springframework.http.HttpStatus;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 public class ResponseException extends Exception {
     @Nonnull
@@ -122,9 +122,17 @@ public class ResponseException extends Exception {
         return new ResponseException(HttpStatus.FORBIDDEN, message);
     }
 
+    public static ResponseException noSuperAdminPermission() {
+        return ResponseException.forbidden("Sie müssen die Systemrolle „Superadministrator:in“ besitzen, um diese Aktion durchzuführen.");
+    }
+
+    public static ResponseException noSystemAdminPermission() {
+        return ResponseException.forbidden("Sie müssen die Systemrolle „Systemadministrator:in“ besitzen, um diese Aktion durchzuführen.");
+    }
+
     public static ResponseException noPermission(String permissionName) {
         return ResponseException.forbidden(String.format(
-                "Sie müssen die Systemrolle \"Superadministrator:in\" besitzen, oder benötigen eine Domänenrolle mit der Berechtigung \"%s\", um diese Aktion durchzuführen.", permissionName));
+                "Sie müssen die Systemrolle „Superadministrator:in“ besitzen, oder benötigen eine Domänenrolle mit der Berechtigung „%s“, um diese Aktion durchzuführen.", permissionName));
     }
 
     public static ResponseException notFound() {

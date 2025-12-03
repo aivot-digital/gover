@@ -94,10 +94,24 @@ export class FormVersionApiService extends BaseCrudApiService<FormVersionEntity,
     }
 
     public async latestAsNewVersion(formId: number): Promise<FormVersionEntity> {
-        const latestVersion = await this.retrieve({
-            formId: formId,
-            version: 'latest',
-        });
+        let latestVersion: FormVersionEntity;
+        try {
+            latestVersion = await this.retrieve({
+                formId: formId,
+                version: 'latest',
+            });
+        } catch (err: any) {
+            if ('status' in err && err.status === 404) {
+                latestVersion = {
+                    ...this.initialize(),
+                    formId: formId,
+                    version: 0,
+                    status: FormStatus.Published,
+                };
+            } else {
+                throw err;
+            }
+        }
 
         if (latestVersion.status === FormStatus.Drafted) {
             throw DraftExistsError;

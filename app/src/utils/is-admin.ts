@@ -2,7 +2,7 @@ import {User} from '../modules/users/models/user';
 import {VDepartmentMembershipWithDetailsEntityWithRoles} from '../modules/departments/entities/v-department-membership-with-details-entity';
 
 export function isAdmin(user: User | undefined | null): boolean {
-    return user != null && user.superAdmin;
+    return user != null && user.isSuperAdmin;
 }
 
 export function isDepartmentAdmin(departmentMemberships: VDepartmentMembershipWithDetailsEntityWithRoles[] | undefined | null, departmentId: number | undefined | null): boolean {

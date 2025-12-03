@@ -31,7 +31,7 @@ import de.aivot.GoverBackend.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.net.URI;
 import java.net.http.HttpResponse;
 import java.security.InvalidKeyException;

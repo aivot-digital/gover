@@ -10,7 +10,7 @@ import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.security.OpenAPISecurityConfiguration;
+import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
 import de.aivot.GoverBackend.services.AVService;
 import de.aivot.GoverBackend.services.storages.AssetStorageService;
 import de.aivot.GoverBackend.user.services.UserService;
@@ -29,8 +29,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -38,8 +38,12 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/assets/")
-@Tag(name = "Asset", description = "APIs for managing assets")
-@SecurityRequirement(name = OpenAPISecurityConfiguration.SecurityName)
+@Tag(
+        name = "Assets",
+        description = "Assets are files uploaded to the system, such as images or documents. " +
+                      "They can be associated with various entities within the application and should be used if you need to provides files to citizens publicly."
+)
+@SecurityRequirement(name = OpenAPIConfiguration.Name)
 public class AssetController {
     private final ScopedAuditService auditService;
 
@@ -47,37 +51,36 @@ public class AssetController {
     private final AssetStorageService assetStorageService;
     private final AssetRepository assetRepository;
     private final AVService avService;
+    private final UserService userService;
 
     @Autowired
-    public AssetController(
-            AuditService auditService,
-            AssetService assetService,
-            AssetStorageService assetStorageService,
-            AssetRepository assetRepository,
-            AVService avService
-    ) {
+    public AssetController(AuditService auditService,
+                           AssetService assetService,
+                           AssetStorageService assetStorageService,
+                           AssetRepository assetRepository,
+                           AVService avService,
+                           UserService userService) {
         this.auditService = auditService.createScopedAuditService(AssetController.class);
 
         this.assetService = assetService;
         this.assetStorageService = assetStorageService;
         this.assetRepository = assetRepository;
         this.avService = avService;
+        this.userService = userService;
     }
 
-    @GetMapping("")
+    @GetMapping(
+            value = "",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
     @Operation(
             summary = "List all assets",
             description = "Retrieve a paginated list of assets with optional filtering."
     )
     public Page<AssetResponseDTO> list(
-            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid AssetFilter filter
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
         return assetService
                 .list(pageable, filter)
                 .map(AssetResponseDTO::fromEntity);
@@ -90,7 +93,8 @@ public class AssetController {
     )
     @Operation(
             summary = "Create a new asset",
-            description = "Upload a new asset file and create an asset record."
+            description = "Upload a new asset file and create an asset record. " +
+                          "The uploaded file will be scanned for viruses before being stored."
     )
     public AssetResponseDTO create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -99,7 +103,7 @@ public class AssetController {
             @Nullable @RequestPart(value = "private", required = false) Boolean privateAsset
     ) throws ResponseException {
         // TODO: Refactor with new AssetService.create method
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
@@ -143,36 +147,38 @@ public class AssetController {
         return AssetResponseDTO.fromEntity(createdAsset);
     }
 
-    @GetMapping("{assetId}/")
+    @GetMapping(
+            value = "{assetId}/",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
     @Operation(
             summary = "Retrieve an asset",
             description = "Retrieve details of a specific asset by its ID."
     )
     public AssetResponseDTO retrieve(
-            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable UUID assetId
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
         return assetService
                 .retrieve(assetId)
                 .map(AssetResponseDTO::fromEntity)
                 .orElseThrow(ResponseException::notFound);
     }
 
-    @PutMapping("{assetId}/")
+    @PutMapping(
+            value = "{assetId}/",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
     @Operation(
             summary = "Update an asset",
-            description = "Update the details of an existing asset."
+            description = "Update the details of an existing asset. " +
+                          "Note that the actual file content cannot be changed through this endpoint."
     )
     public AssetResponseDTO update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable UUID assetId,
             @Nonnull @RequestBody @Valid AssetRequestDTO requestDTO
     ) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
@@ -192,13 +198,14 @@ public class AssetController {
     @DeleteMapping("{assetId}/")
     @Operation(
             summary = "Delete an asset",
-            description = "Delete a specific asset by its ID."
+            description = "Delete a specific asset by its ID. " +
+                          "This will remove both the asset record and the associated file from storage."
     )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable UUID assetId
     ) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 

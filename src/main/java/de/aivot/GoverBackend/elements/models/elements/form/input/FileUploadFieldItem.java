@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.elements.models.elements.form.input;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.io.Serializable;
 
 public class FileUploadFieldItem implements Serializable {

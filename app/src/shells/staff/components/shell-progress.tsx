@@ -80,20 +80,18 @@ export function ShellProgress() {
     }
 
     return (
-        <>
-            <LinearProgress
-                sx={{
-                    position: 'sticky',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '0.25rem',
-                    zIndex: (theme) => theme.zIndex.drawer + 2,
-                }}
-                color="secondary"
-                value={progress * 100}
-                variant={progress < MAX_PROGRESS ? 'determinate' : 'indeterminate'}
-            />
-        </>
+        <LinearProgress
+            sx={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '0.25rem',
+                zIndex: (theme) => theme.zIndex.drawer + 2,
+            }}
+            color="secondary"
+            value={progress * 100}
+            variant={progress < MAX_PROGRESS ? 'determinate' : 'indeterminate'}
+        />
     );
 }

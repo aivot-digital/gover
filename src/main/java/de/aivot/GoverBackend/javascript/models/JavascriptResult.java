@@ -2,8 +2,8 @@ package de.aivot.GoverBackend.javascript.models;
 
 import org.graalvm.polyglot.Value;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;

@@ -9,7 +9,7 @@ import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import jakarta.validation.Valid;
 import org.springframework.data.jpa.domain.Specification;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.UUID;
 
 public class VFormVersionWithDetailsAndPermissionFilter implements Filter<VFormVersionWithDetailsAndPermissionsEntity> {

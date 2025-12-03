@@ -12,9 +12,15 @@ import de.aivot.GoverBackend.exceptions.InvalidUserEMailException;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.services.DepartmentMembershipMailService;
 import de.aivot.GoverBackend.mail.services.ExceptionMailService;
+import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,13 +29,20 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.io.IOException;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/department-memberships/")
+@Tag(
+        name = "Department Memberships",
+        description = "Department Memberships link users to organisational units (departments) within the system. " +
+                      "They define which users belong to which departments and what roles or permissions they have within those departments. " +
+                      "Managing department memberships is crucial for controlling access to resources and functionalities based on organisational structure."
+)
+@SecurityRequirement(name = OpenAPIConfiguration.Name)
 public class DepartmentMembershipController {
     private final ScopedAuditService auditService;
 
@@ -37,49 +50,56 @@ public class DepartmentMembershipController {
     private final DepartmentMembershipMailService departmentMembershipMailService;
     private final ExceptionMailService exceptionMailService;
     private final VDepartmentMembershipWithPermissionsService vDepartmentMembershipWithPermissionsService;
+    private final UserService userService;
 
     @Autowired
     public DepartmentMembershipController(AuditService auditService,
                                           DepartmentMembershipService departmentMembershipService,
                                           DepartmentMembershipMailService departmentMembershipMailService,
                                           ExceptionMailService exceptionMailService,
-                                          VDepartmentMembershipWithPermissionsService vDepartmentMembershipWithPermissionsService) {
+                                          VDepartmentMembershipWithPermissionsService vDepartmentMembershipWithPermissionsService,
+                                          UserService userService) {
         this.auditService = auditService.createScopedAuditService(DepartmentMembershipController.class);
 
         this.departmentMembershipService = departmentMembershipService;
         this.departmentMembershipMailService = departmentMembershipMailService;
         this.exceptionMailService = exceptionMailService;
         this.vDepartmentMembershipWithPermissionsService = vDepartmentMembershipWithPermissionsService;
+        this.userService = userService;
     }
 
     @GetMapping("")
+    @Operation(
+            summary = "List department memberships",
+            description = "List department memberships with pagination and filtering."
+    )
     public Page<DepartmentMembershipEntity> list(
-            @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PageableDefault Pageable pageable,
-            @Nonnull @Valid DepartmentMembershipFilter filter
+            @Nonnull @ParameterObject @PageableDefault Pageable pageable,
+            @Nonnull @ParameterObject @Valid DepartmentMembershipFilter filter
 
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
         return departmentMembershipService
                 .list(pageable, filter);
     }
 
     @PostMapping("")
+    @Operation(
+            summary = "Create department membership",
+            description = "Create a new department membership linking a user to a department. " +
+                          "Requires super admin permissions or department edit permissions for the membership's target department."
+    )
     public DepartmentMembershipEntity create(
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody DepartmentMembershipEntity newMembership
     ) throws ResponseException {
-        var user = UserService
+        var execUser = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!user.getSuperAdmin()) {
+        if (!execUser.getIsSuperAdmin()) {
             var filter = VDepartmentMembershipWithPermissionsFilter
                     .create()
-                    .setUserId(user.getId())
+                    .setUserId(execUser.getId())
                     .setDepartmentId(newMembership.getDepartmentId())
                     .setDepartmentPermissionEdit(true);
 
@@ -88,23 +108,23 @@ public class DepartmentMembershipController {
 
             if (!hasPermissionToEdit) {
                 throw ResponseException
-                        .forbidden("Sie benötigen die globale Rolle „Superadmin“ order „Systemadministrator:in“ order benötigen eine Organisationsrolle mit der Berechtigung „Organisationseinheit bearbeiten“.");
+                        .noPermission(PermissionLabels.DepartmentPermissionEdit);
             }
         }
 
         var createdMembership = departmentMembershipService
                 .create(newMembership);
 
-        auditService.logAction(user, AuditAction.Create, DepartmentMembershipEntity.class, Map.of(
+        auditService.logAction(execUser, AuditAction.Create, DepartmentMembershipEntity.class, Map.of(
                 "id", createdMembership.getId(),
                 "departmentId", createdMembership.getDepartmentId(),
                 "userId", createdMembership.getUserId()
         ));
 
-        if (!user.getId().equals(createdMembership.getUserId())) {
+        if (!execUser.getId().equals(createdMembership.getUserId())) {
             try {
                 departmentMembershipMailService
-                        .sendAdded(user, createdMembership);
+                        .sendAdded(execUser, createdMembership);
             } catch (MessagingException | IOException | InvalidUserEMailException e) {
                 exceptionMailService
                         .send(e);
@@ -115,26 +135,30 @@ public class DepartmentMembershipController {
     }
 
     @GetMapping("{id}/")
+    @Operation(
+            summary = "Retrieve department membership",
+            description = "Retrieve a department membership by its id."
+    )
     public DepartmentMembershipEntity retrieve(
-            @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer id
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
         return departmentMembershipService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
     }
 
     @PutMapping("{id}/")
+    @Operation(
+            summary = "Update department membership",
+            description = "Update an existing department membership. " +
+                          "Requires super admin permissions or department edit permissions for the membership's department."
+    )
     public DepartmentMembershipEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id,
             @Nonnull @Valid @RequestBody DepartmentMembershipEntity updatedMembership
     ) throws ResponseException {
-        var user = UserService
+        var execUser = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
@@ -143,10 +167,10 @@ public class DepartmentMembershipController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        if (!user.getSuperAdmin()) {
+        if (!execUser.getIsSuperAdmin()) {
             var filter = VDepartmentMembershipWithPermissionsFilter
                     .create()
-                    .setUserId(user.getId())
+                    .setUserId(execUser.getId())
                     .setDepartmentId(existingMembership.getDepartmentId())
                     .setDepartmentPermissionEdit(true);
 
@@ -155,14 +179,14 @@ public class DepartmentMembershipController {
 
             if (!hasPermissionToEdit) {
                 throw ResponseException
-                        .forbidden("Sie benötigen die globale Rolle „Superadmin“ order „Systemadministrator:in“ order benötigen eine Organisationsrolle mit der Berechtigung „Organisationseinheit bearbeiten“.");
+                        .noPermission(PermissionLabels.DepartmentPermissionEdit);
             }
         }
 
         var savedMembership = departmentMembershipService
                 .update(id, updatedMembership);
 
-        auditService.logAction(user, AuditAction.Update, DepartmentMembershipEntity.class, Map.of(
+        auditService.logAction(execUser, AuditAction.Update, DepartmentMembershipEntity.class, Map.of(
                 "id", savedMembership.getId(),
                 "departmentId", savedMembership.getDepartmentId(),
                 "userId", savedMembership.getUserId()
@@ -172,11 +196,16 @@ public class DepartmentMembershipController {
     }
 
     @DeleteMapping("{id}/")
+    @Operation(
+            summary = "Delete department membership",
+            description = "Delete an existing department membership. " +
+                          "Requires super admin permissions or department edit permissions for the membership's department."
+    )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
@@ -184,7 +213,7 @@ public class DepartmentMembershipController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        if (!user.getSuperAdmin()) {
+        if (!user.getIsSuperAdmin()) {
             var filter = VDepartmentMembershipWithPermissionsFilter
                     .create()
                     .setUserId(user.getId())
@@ -196,7 +225,7 @@ public class DepartmentMembershipController {
 
             if (!hasPermissionToEdit) {
                 throw ResponseException
-                        .forbidden("Sie benötigen die globale Rolle „Superadmin“ order „Systemadministrator:in“ order benötigen eine Organisationsrolle mit der Berechtigung „Organisationseinheit bearbeiten“.");
+                        .noPermission(PermissionLabels.DepartmentPermissionEdit);
             }
         }
 

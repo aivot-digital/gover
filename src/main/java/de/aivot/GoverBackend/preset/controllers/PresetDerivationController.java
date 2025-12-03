@@ -10,6 +10,8 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.preset.entities.PresetVersionEntityId;
 import de.aivot.GoverBackend.preset.repositories.PresetRepository;
 import de.aivot.GoverBackend.preset.repositories.PresetVersionRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -18,8 +20,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-// TODO: Move to dedicated preset module
 @RestController
+@Tag(
+        name = "Preset Derivation",
+        description = "Endpoints for deriving elements from presets"
+)
 public class PresetDerivationController {
     private final PresetRepository presetRepository;
     private final PresetVersionRepository presetVersionRepository;
@@ -36,6 +41,10 @@ public class PresetDerivationController {
     }
 
     @PostMapping("/api/presets/{presetKey}/{presetVersion}/derive")
+    @Operation(
+            summary = "Derive Element from Preset",
+            description = "Derive an element based on the specified preset and version, applying the provided element data."
+    )
     public ElementDerivationResponse derive(
             @PathVariable UUID presetKey,
             @PathVariable Integer presetVersion,

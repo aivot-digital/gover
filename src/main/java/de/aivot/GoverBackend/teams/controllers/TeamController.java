@@ -19,8 +19,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+
 import java.util.Map;
 
 
@@ -29,26 +30,22 @@ import java.util.Map;
 public class TeamController {
     private final ScopedAuditService auditService;
     private final TeamRepository teamRepository;
+    private final UserService userService;
 
     @Autowired
-    public TeamController(
-            AuditService auditService,
-            TeamRepository teamRepository
-    ) {
+    public TeamController(AuditService auditService,
+                          TeamRepository teamRepository,
+                          UserService userService) {
         this.auditService = auditService.createScopedAuditService(TeamController.class);
         this.teamRepository = teamRepository;
+        this.userService = userService;
     }
 
     @GetMapping("")
     public Page<TeamResponseDTO> list(
-            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PageableDefault Pageable pageable,
             @Nonnull @Valid TeamFilter filter
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
         return teamRepository
                 .findAll(filter.build(), pageable)
                 .map(TeamResponseDTO::fromEntity);
@@ -59,10 +56,10 @@ public class TeamController {
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody @Valid TeamRequestDTO createDTO
     ) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asGlobalAdmin()
+                .asSuperAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         TeamEntity result;
@@ -83,13 +80,8 @@ public class TeamController {
 
     @GetMapping("{id}/")
     public TeamResponseDTO retrieve(
-            @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer id
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
         TeamEntity entity = teamRepository
                 .findById(id)
                 .orElseThrow(ResponseException::notFound);
@@ -102,10 +94,10 @@ public class TeamController {
             @PathVariable Integer id,
             @RequestBody @Valid TeamRequestDTO updateDTO
     ) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asGlobalAdmin()
+                .asSuperAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         TeamEntity entityToUpdate = updateDTO.toEntity().setId(id);
@@ -131,10 +123,10 @@ public class TeamController {
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer id
     ) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asGlobalAdmin()
+                .asSuperAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var entity = teamRepository

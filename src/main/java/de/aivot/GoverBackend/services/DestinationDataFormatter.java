@@ -19,8 +19,8 @@ import de.aivot.GoverBackend.submission.entities.Submission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.HashMap;

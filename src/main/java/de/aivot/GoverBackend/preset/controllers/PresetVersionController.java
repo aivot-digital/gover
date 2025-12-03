@@ -13,7 +13,10 @@ import de.aivot.GoverBackend.preset.repositories.PresetRepository;
 import de.aivot.GoverBackend.preset.repositories.PresetVersionRepository;
 import de.aivot.GoverBackend.preset.repositories.PresetVersionWithDetailsRepository;
 import de.aivot.GoverBackend.user.services.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,50 +25,55 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+
 import java.util.Map;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/presets/{presetKey}/versions/")
+@Tag(
+        name = "Preset Versions",
+        description = "Endpoints for managing preset versions"
+)
 public class PresetVersionController {
     private final PresetRepository repository;
     private final PresetVersionRepository versionRepository;
     private final ScopedAuditService auditService;
     private final PresetVersionWithDetailsRepository presetVersionWithDetailsRepository;
+    private final UserService userService;
 
     @Autowired
-    public PresetVersionController(
-            PresetRepository repository,
-            PresetVersionRepository versionRepository,
-            AuditService auditService,
-            PresetVersionWithDetailsRepository presetVersionWithDetailsRepository) {
+    public PresetVersionController(PresetRepository repository,
+                                   PresetVersionRepository versionRepository,
+                                   AuditService auditService,
+                                   PresetVersionWithDetailsRepository presetVersionWithDetailsRepository,
+                                   UserService userService) {
         this.repository = repository;
         this.versionRepository = versionRepository;
         this.auditService = auditService.createScopedAuditService(PresetController.class);
         this.presetVersionWithDetailsRepository = presetVersionWithDetailsRepository;
+        this.userService = userService;
     }
 
     /**
      * List all versions of a preset.
      *
-     * @param jwt       The JWT of the user.
      * @param pageable  The pagination information.
      * @param presetKey The key of the preset.
      * @return The page of versions.
      */
     @GetMapping("")
+    @Operation(
+            summary = "List Preset Versions",
+            description = "Retrieve a paginated list of versions for a specific preset with optional filtering."
+    )
     public Page<PresetVersionEntity> list(
-            @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PageableDefault Pageable pageable,
-            @Nonnull @Valid PresetVersionFilter filter,
+            @Nonnull @ParameterObject @PageableDefault Pageable pageable,
+            @Nonnull @ParameterObject @Valid PresetVersionFilter filter,
             @Nonnull @PathVariable UUID presetKey
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
         filter.setPresetKey(presetKey);
 
         return presetVersionWithDetailsRepository
@@ -81,12 +89,16 @@ public class PresetVersionController {
      * @return The new version.
      */
     @PostMapping("")
+    @Operation(
+            summary = "Create Preset Version",
+            description = "Create a new version for a specific preset."
+    )
     public PresetVersionEntity createVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable UUID presetKey,
             @Valid @RequestBody PresetVersionEntity newVersion
     ) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
@@ -95,8 +107,8 @@ public class PresetVersionController {
                 .orElseThrow(ResponseException::badRequest);
 
         var newVersionNumber = versionRepository
-                .maxVersionForPresetKey(preset.getKey())
-                .orElse(0) + 1;
+                                       .maxVersionForPresetKey(preset.getKey())
+                                       .orElse(0) + 1;
 
         newVersion.setPresetKey(presetKey);
         newVersion.setVersion(newVersionNumber);
@@ -132,15 +144,15 @@ public class PresetVersionController {
      * @return The version.
      */
     @GetMapping("{version}/")
+    @Operation(
+            summary = "Retrieve Preset Version",
+            description = "Retrieve a specific version of a preset by its version number."
+    )
     public PresetVersionEntity retrieveVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable UUID presetKey,
             @Nonnull @PathVariable Integer version
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
         var id = new PresetVersionEntityId(presetKey, version);
 
         return versionRepository
@@ -158,13 +170,17 @@ public class PresetVersionController {
      * @return The updated version.
      */
     @PutMapping("{version}/")
+    @Operation(
+            summary = "Update Preset Version",
+            description = "Update an existing version of a preset."
+    )
     public PresetVersionEntity updateVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable UUID presetKey,
             @Nonnull @PathVariable Integer version,
             @Valid @RequestBody PresetVersionEntity updatedPreset
     ) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
@@ -207,12 +223,16 @@ public class PresetVersionController {
      * @param version   The version.
      */
     @DeleteMapping("{version}/")
+    @Operation(
+            summary = "Delete Preset Version",
+            description = "Delete a specific version of a preset. Published versions cannot be deleted."
+    )
     public void destroyVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable UUID presetKey,
             @Nonnull @PathVariable Integer version,
             Pageable pageable) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
@@ -245,12 +265,16 @@ public class PresetVersionController {
     }
 
     @PutMapping("{version}/publish/")
+    @Operation(
+            summary = "Publish Preset Version",
+            description = "Publish a specific version of a preset."
+    )
     public PresetVersionEntity publishVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable UUID presetKey,
             @Nonnull @PathVariable Integer version
     ) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
@@ -281,12 +305,16 @@ public class PresetVersionController {
     }
 
     @PutMapping("{version}/revoke/")
+    @Operation(
+            summary = "Revoke Preset Version",
+            description = "Revoke a specific version of a preset."
+    )
     public PresetVersionEntity revokeVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable UUID presetKey,
             @Nonnull @PathVariable Integer version
     ) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 

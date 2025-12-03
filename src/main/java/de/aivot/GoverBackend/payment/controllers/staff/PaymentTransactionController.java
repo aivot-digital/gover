@@ -7,27 +7,35 @@ import de.aivot.GoverBackend.payment.exceptions.PaymentException;
 import de.aivot.GoverBackend.payment.filters.PaymentTransactionFilter;
 import de.aivot.GoverBackend.payment.services.PaymentProviderTestService;
 import de.aivot.GoverBackend.payment.services.PaymentTransactionService;
-import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+
 import java.io.IOException;
 import java.util.Map;
 
 @RestController
+@Tag(
+        name = "Payment Transactions",
+        description = "Endpoints for managing payment transactions"
+)
+@SecurityRequirement(name = OpenAPIConfiguration.Name)
 public class PaymentTransactionController {
     private final GoverConfig goverConfig;
     private final PaymentTransactionService paymentTransactionService;
@@ -42,30 +50,28 @@ public class PaymentTransactionController {
     }
 
     @GetMapping("/api/payment-transactions/")
+    @Operation(
+            summary = "List Payment Transactions",
+            description = "Retrieve a paginated list of payment transactions with optional filtering."
+    )
     public Page<PaymentTransactionResponseDTO> list(
-            @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PageableDefault Pageable pageable,
-            @Nonnull @Valid PaymentTransactionFilter filter
+            @Nonnull @ParameterObject @PageableDefault Pageable pageable,
+            @Nonnull @ParameterObject @Valid PaymentTransactionFilter filter
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
         return paymentTransactionService
                 .list(pageable, filter)
                 .map(PaymentTransactionResponseDTO::fromEntity);
     }
 
     @GetMapping("/api/payment-transactions/{key}/")
+    @Operation(
+            summary = "Retrieve Payment Transaction",
+            description = "Retrieve a specific payment transaction by its unique key."
+    )
     public PaymentTransactionResponseDTO retrieve(
-            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable String key
 
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
         return paymentTransactionService
                 .retrieve(key)
                 .map(PaymentTransactionResponseDTO::fromEntity)
@@ -84,6 +90,10 @@ public class PaymentTransactionController {
      * @throws ResponseException If an error occurs while processing the callback data
      */
     @GetMapping("/api/public/payment-transaction-callback/{transactionKey}/notify/")
+    @Operation(
+            summary = "Payment Transaction Callback Notify",
+            description = "Endpoint to handle notify callbacks from payment providers."
+    )
     public void getCallbackNotify(
             @Nonnull @PathVariable String transactionKey,
             @Nullable @RequestParam Map<String, Object> callbackData
@@ -126,6 +136,10 @@ public class PaymentTransactionController {
      * @throws ResponseException If an error occurs while processing the callback data
      */
     @GetMapping("/api/public/payment-transaction-callback/{transactionKey}/redirect/")
+    @Operation(
+            summary = "Payment Transaction Callback Redirect",
+            description = "Endpoint to handle redirect callbacks from payment providers."
+    )
     public void getCallbackRedirect(
             @Nonnull @PathVariable String transactionKey,
             @Nullable @RequestParam Map<String, Object> callbackData,

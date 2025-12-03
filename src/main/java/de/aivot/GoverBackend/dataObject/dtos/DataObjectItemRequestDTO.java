@@ -4,7 +4,7 @@ import de.aivot.GoverBackend.dataObject.entities.DataObjectItemEntity;
 import de.aivot.GoverBackend.dataObject.entities.DataObjectSchemaEntity;
 import de.aivot.GoverBackend.elements.models.ElementData;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 public record DataObjectItemRequestDTO(
         @Nonnull

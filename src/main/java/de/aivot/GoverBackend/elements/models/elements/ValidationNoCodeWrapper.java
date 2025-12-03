@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.elements.models.elements;
 
 import de.aivot.GoverBackend.nocode.models.NoCodeOperand;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.io.Serializable;
 import java.util.Objects;
 

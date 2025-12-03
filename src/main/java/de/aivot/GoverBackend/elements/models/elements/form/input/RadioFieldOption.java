@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.elements.models.elements.form.input;
 
 import de.aivot.GoverBackend.secrets.repositories.SecretRepository;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.io.Serializable;
 import java.util.Objects;
 

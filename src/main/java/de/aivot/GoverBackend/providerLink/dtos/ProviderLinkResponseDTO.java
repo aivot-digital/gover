@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.providerLink.dtos;
 
 import de.aivot.GoverBackend.providerLink.entities.ProviderLink;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.time.LocalDateTime;
 
 public record ProviderLinkResponseDTO(

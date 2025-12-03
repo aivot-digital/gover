@@ -5,7 +5,7 @@ import de.aivot.GoverBackend.teams.entities.TeamEntity;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 public class TeamFilter implements Filter<TeamEntity> {
     private String name;

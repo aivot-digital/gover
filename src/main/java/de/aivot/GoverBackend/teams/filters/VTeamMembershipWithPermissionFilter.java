@@ -5,7 +5,7 @@ import de.aivot.GoverBackend.teams.entities.VTeamMembershipWithPermissionsEntity
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 public class VTeamMembershipWithPermissionFilter implements Filter<VTeamMembershipWithPermissionsEntity> {
     private Integer teamId;

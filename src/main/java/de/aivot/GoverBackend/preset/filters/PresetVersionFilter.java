@@ -6,7 +6,7 @@ import de.aivot.GoverBackend.preset.entities.PresetVersionEntity;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.UUID;
 
 public class PresetVersionFilter implements Filter<PresetVersionEntity> {

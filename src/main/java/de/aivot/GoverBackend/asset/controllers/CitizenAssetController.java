@@ -24,7 +24,11 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/public/assets/")
-@Tag(name = "Asset", description = "APIs for retrieving public assets")
+@Tag(
+        name = "Asset",
+        description = "Assets are files uploaded to the system, such as images or documents. " +
+                      "They can be associated with various entities within the application and should be used if you need to provides files to citizens publicly."
+)
 public class CitizenAssetController {
     private final AssetStorageService assetStorageService;
     private final AssetRepository assetRepository;
@@ -32,12 +36,10 @@ public class CitizenAssetController {
     private final StorageConfig storageConfig;
 
     @Autowired
-    public CitizenAssetController(
-            AssetStorageService assetStorageService,
-            AssetRepository assetRepository,
-            GoverConfig goverConfig,
-            StorageConfig storageConfig
-    ) {
+    public CitizenAssetController(AssetStorageService assetStorageService,
+                                  AssetRepository assetRepository,
+                                  GoverConfig goverConfig,
+                                  StorageConfig storageConfig) {
         this.assetStorageService = assetStorageService;
         this.assetRepository = assetRepository;
         this.goverConfig = goverConfig;

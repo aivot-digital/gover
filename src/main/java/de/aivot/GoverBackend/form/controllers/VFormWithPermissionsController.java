@@ -4,14 +4,15 @@ import de.aivot.GoverBackend.form.entities.VFormWithPermissionsEntity;
 import de.aivot.GoverBackend.form.entities.VFormWithPermissionsEntityId;
 import de.aivot.GoverBackend.form.filters.VFormWithPermissionsFilter;
 import de.aivot.GoverBackend.form.services.FormService;
-import de.aivot.GoverBackend.form.services.FormVersionService;
 import de.aivot.GoverBackend.form.services.VFormWithPermissionsService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.security.OpenAPISecurityConfiguration;
+import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,23 +26,28 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 @RestController
 @RequestMapping("/api/form-with-permissions/")
-@Tag(name = "FormWithPermissions", description = "Interact with forms along with user permissions")
-@SecurityRequirement(name = OpenAPISecurityConfiguration.SecurityName)
+@Tag(
+        name = "Forms",
+        description = "Forms are built for collecting data from users. " +
+                      "They can be designed with various elements and configurations to suit different data collection needs. " +
+                      "Forms can be published, managed, and analyzed within the system. " +
+                      "Forms are versioned with the „Form Version” resource."
+)
+@SecurityRequirement(name = OpenAPIConfiguration.Name)
 public class VFormWithPermissionsController {
     private final VFormWithPermissionsService vFormWithPermissionsService;
-    private final FormVersionService formVersionService;
     private final FormService formService;
+    private final UserService userService;
 
     @Autowired
-    public VFormWithPermissionsController(VFormWithPermissionsService vFormWithPermissionsService, FormVersionService formVersionService, FormService formService) {
+    public VFormWithPermissionsController(VFormWithPermissionsService vFormWithPermissionsService,
+                                          FormService formService,
+                                          UserService userService) {
         this.vFormWithPermissionsService = vFormWithPermissionsService;
-        this.formVersionService = formVersionService;
         this.formService = formService;
+        this.userService = userService;
     }
 
     @GetMapping("")
@@ -56,11 +62,11 @@ public class VFormWithPermissionsController {
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid VFormWithPermissionsFilter filter
     ) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (user.getSuperAdmin()) {
+        if (user.getIsSuperAdmin()) {
             return vFormWithPermissionsService
                     .list(pageable, filter);
         }
@@ -83,36 +89,36 @@ public class VFormWithPermissionsController {
             @Nonnull @PathVariable Integer formId,
             @Nonnull @PathVariable String userId
     ) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!user.getId().equals(userId) && !user.getSuperAdmin()) {
+        if (!user.getId().equals(userId) && !user.getIsSuperAdmin()) {
             throw ResponseException.forbidden();
         }
 
-        if (user.getId().equals(userId) && user.getSuperAdmin()) {
+        if (user.getId().equals(userId) && user.getIsSuperAdmin()) {
             var form = formService
                     .retrieve(formId)
                     .orElseThrow(ResponseException::notFound);
 
             return new VFormWithPermissionsEntity(
-                            form.getId(),
-                            form.getSlug(),
-                            form.getInternalTitle(),
-                            form.getDevelopingDepartmentId(),
-                            form.getCreated(),
-                            form.getUpdated(),
-                            form.getPublishedVersion(),
-                            form.getDraftedVersion(),
-                            form.getVersionCount(),
-                            userId,
-                            true,
-                            true,
-                            true,
-                            true,
-                            true,
-                            true
+                    form.getId(),
+                    form.getSlug(),
+                    form.getInternalTitle(),
+                    form.getDevelopingDepartmentId(),
+                    form.getCreated(),
+                    form.getUpdated(),
+                    form.getPublishedVersion(),
+                    form.getDraftedVersion(),
+                    form.getVersionCount(),
+                    userId,
+                    true,
+                    true,
+                    true,
+                    true,
+                    true,
+                    true
             );
         }
 

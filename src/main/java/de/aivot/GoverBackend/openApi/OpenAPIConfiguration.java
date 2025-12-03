@@ -1,4 +1,4 @@
-package de.aivot.GoverBackend.security;
+package de.aivot.GoverBackend.openApi;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
@@ -22,11 +22,11 @@ import org.springframework.context.annotation.Configuration;
         )
 )
 @SecurityScheme(
-        name = OpenAPISecurityConfiguration.SecurityName,
+        name = OpenAPIConfiguration.Name,
         type = SecuritySchemeType.HTTP,
         bearerFormat = "JWT",
         scheme = "bearer"
 )
-public class OpenAPISecurityConfiguration {
-    public static final String SecurityName = "JWT";
+public class OpenAPIConfiguration {
+    public static final String Name = "JWT";
 }

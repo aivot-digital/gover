@@ -1,6 +1,5 @@
 package de.aivot.GoverBackend.user.entities;
 
-import de.aivot.GoverBackend.user.cache.entities.UserCacheEntity;
 import de.aivot.GoverBackend.user.models.KeycloakUser;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -9,16 +8,16 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.ColumnDefault;
-import org.springframework.security.oauth2.jwt.Jwt;
 
-import java.util.List;
 import java.util.Optional;
 
 @Entity
 @Table(name = "users")
 public class UserEntity {
-    private static final String ADMIN_ROLE_IDENTIFIER = "admin";
     public static final Integer DEFAULT_USER_ROLE_VALUE = 0;
     public static final Integer SYSTEM_ADMIN_ROLE_VALUE = 1;
     public static final Integer SUPER_ADMIN_ROLE_VALUE = 2;
@@ -30,19 +29,22 @@ public class UserEntity {
 
     @Nullable
     @Column(length = 255)
+    @NotNull(message = "Die E-Mail Adresse darf nicht null sein.")
+    @Email(message = "Die E-Mail Adresse muss gültig sein.")
+    @Size(min = 8, max = 255, message = "Die E-Mail Adresse muss zwischen 8 und 255 Zeichen lang sein.")
     private String email;
 
     @Nullable
     @Column(length = 255)
+    @NotNull(message = "Der Vorname darf nicht null sein.")
+    @Size(min = 1, max = 255, message = "Der Vorname muss zwischen 1 und 255 Zeichen lang sein.")
     private String firstName;
 
     @Nullable
     @Column(length = 255)
+    @NotNull(message = "Der Nachname darf nicht null sein.")
+    @Size(min = 1, max = 255, message = "Der Nachname muss zwischen 1 und 255 Zeichen lang sein.")
     private String lastName;
-
-    @Nullable
-    @Column(length = 255)
-    private String fullName;
 
     @Nonnull
     @ColumnDefault("FALSE")
@@ -60,20 +62,26 @@ public class UserEntity {
     @ColumnDefault("0")
     private Integer globalRole;
 
-    // Properties
+    // region Properties
 
-    public Boolean getSuperAdmin() {
+    public String getFullName() {
+        return String.join(" ", firstName, lastName);
+    }
+
+    public Boolean getIsSuperAdmin() {
         return globalRole >= SUPER_ADMIN_ROLE_VALUE;
     }
 
-    public Boolean getSystemAdmin() {
+    public Boolean getIsSystemAdmin() {
         return globalRole >= SYSTEM_ADMIN_ROLE_VALUE;
     }
 
+    // endregion
+
     // region Transformers
 
-    public Optional<UserEntity> asGlobalAdmin() {
-        if (getSuperAdmin()) {
+    public Optional<UserEntity> asSuperAdmin() {
+        if (getIsSuperAdmin()) {
             return Optional.of(this);
         } else {
             return Optional.empty();
@@ -81,12 +89,16 @@ public class UserEntity {
     }
 
     public Optional<UserEntity> asSystemAdmin() {
-        if (getSystemAdmin() || getSuperAdmin()) {
+        if (getIsSystemAdmin() || getIsSuperAdmin()) {
             return Optional.of(this);
         } else {
             return Optional.empty();
         }
     }
+
+    // endregion
+
+    // region Utils
 
     public void clearPersonalData() {
         int maskLength = 6;
@@ -103,8 +115,6 @@ public class UserEntity {
             lastName = "?";
         }
 
-        fullName = firstName + " " + lastName;
-
         if (StringUtils.isNotNullOrEmpty(email) && email.contains("@")) {
             String[] parts = email.split("@");
             if (!parts[0].isEmpty()) {
@@ -117,10 +127,6 @@ public class UserEntity {
         }
     }
 
-    // endregion
-
-    // region Utils
-
     public boolean hasId(String id) {
         return this.id.equals(id);
     }
@@ -129,57 +135,15 @@ public class UserEntity {
 
     // region Builders
 
-    public static UserEntity from(@Nonnull Jwt jwt) {
-        var user = new UserEntity()
-                .setId(jwt.getClaimAsString("sub"))
-                .setEmail(jwt.getClaimAsString("email"))
-                .setFirstName(jwt.getClaimAsString("given_name"))
-                .setLastName(jwt.getClaimAsString("family_name"))
-                .setFullName(jwt.getClaimAsString("given_name") + " " + jwt.getClaimAsString("family_name"))
-                .setEnabled(true) // Users with a valid JWT are always enabled
-                .setVerified(jwt.getClaimAsBoolean("verified"))
-                .setGlobalRole(DEFAULT_USER_ROLE_VALUE) // Set default value for later check
-                .setDeletedInIdp(false); // Users with a valid JWT are never deleted in the IDP
-
-        var realmAccessMap = jwt.getClaimAsMap("realm_access");
-        if (realmAccessMap != null) {
-            var realmAccessRoles = realmAccessMap.get("roles");
-            if (realmAccessRoles instanceof List<?> realmAccessRoleList) {
-                for (Object role : realmAccessRoleList) {
-                    if (role.toString().equalsIgnoreCase(ADMIN_ROLE_IDENTIFIER)) {
-                        user.setGlobalRole(SUPER_ADMIN_ROLE_VALUE);
-                        break;
-                    }
-                }
-            }
-        }
-
-        return user;
-    }
-
-    public static UserEntity from(@Nonnull UserCacheEntity userCacheEntity) {
-        return new UserEntity()
-                .setId(userCacheEntity.getId())
-                .setEmail(userCacheEntity.getEmail())
-                .setFirstName(userCacheEntity.getFirstName())
-                .setLastName(userCacheEntity.getLastName())
-                .setFullName(userCacheEntity.getFullName())
-                .setEnabled(userCacheEntity.getEnabled())
-                .setVerified(userCacheEntity.getVerified())
-                .setGlobalRole(userCacheEntity.getGlobalAdmin() ? SUPER_ADMIN_ROLE_VALUE : DEFAULT_USER_ROLE_VALUE)
-                .setDeletedInIdp(userCacheEntity.getDeletedInIdp());
-    }
-
-    public static UserEntity from(@Nonnull KeycloakUser keycloakUser, @Nonnull List<String> roles) {
+    public static UserEntity from(@Nonnull KeycloakUser keycloakUser) {
         return new UserEntity()
                 .setId(keycloakUser.getId())
                 .setEmail(keycloakUser.getEmail())
                 .setFirstName(keycloakUser.getFirstName())
                 .setLastName(keycloakUser.getLastName())
-                .setFullName(keycloakUser.getFirstName() + " " + keycloakUser.getLastName())
                 .setEnabled(keycloakUser.getEnabled())
                 .setVerified(keycloakUser.getEmailVerified())
-                .setGlobalRole(roles.stream().anyMatch(role -> role.equalsIgnoreCase(ADMIN_ROLE_IDENTIFIER)) ? SUPER_ADMIN_ROLE_VALUE : DEFAULT_USER_ROLE_VALUE)
+                .setGlobalRole(DEFAULT_USER_ROLE_VALUE)
                 .setDeletedInIdp(false);
     }
 
@@ -187,83 +151,82 @@ public class UserEntity {
 
     // region Getters and Setters
 
+    @Nonnull
     public String getId() {
         return id;
     }
 
-    public UserEntity setId(String id) {
+    public UserEntity setId(@Nonnull String id) {
         this.id = id;
         return this;
     }
 
+    @Nullable
     public String getEmail() {
         return email;
     }
 
-    public UserEntity setEmail(String email) {
+    public UserEntity setEmail(@Nullable String email) {
         this.email = email;
         return this;
     }
 
+    @Nullable
     public String getFirstName() {
         return firstName;
     }
 
-    public UserEntity setFirstName(String firstName) {
+    public UserEntity setFirstName(@Nullable String firstName) {
         this.firstName = firstName;
         return this;
     }
 
+    @Nullable
     public String getLastName() {
         return lastName;
     }
 
-    public UserEntity setLastName(String lastName) {
+    public UserEntity setLastName(@Nullable String lastName) {
         this.lastName = lastName;
         return this;
     }
 
-    public String getFullName() {
-        return fullName;
-    }
-
-    public UserEntity setFullName(String fullName) {
-        this.fullName = fullName;
-        return this;
-    }
-
+    @Nonnull
     public Boolean getEnabled() {
         return enabled;
     }
 
-    public UserEntity setEnabled(Boolean enabled) {
+    public UserEntity setEnabled(@Nonnull Boolean enabled) {
         this.enabled = enabled;
         return this;
     }
 
+    @Nonnull
     public Boolean getVerified() {
         return verified;
     }
 
-    public UserEntity setVerified(Boolean verified) {
+    public UserEntity setVerified(@Nonnull Boolean verified) {
         this.verified = verified;
         return this;
     }
 
+    @Nonnull
     public Boolean getDeletedInIdp() {
         return deletedInIdp;
     }
 
-    public UserEntity setDeletedInIdp(Boolean deletedInIdp) {
+    public UserEntity setDeletedInIdp(@Nonnull Boolean deletedInIdp) {
         this.deletedInIdp = deletedInIdp;
         return this;
     }
 
+    @Nonnull
     public Integer getGlobalRole() {
         return globalRole;
     }
 
-    public UserEntity setGlobalRole(Integer globalRole) {
+    public UserEntity setGlobalRole(@Nonnull Integer globalRole) {
         this.globalRole = globalRole;
         return this;
     }

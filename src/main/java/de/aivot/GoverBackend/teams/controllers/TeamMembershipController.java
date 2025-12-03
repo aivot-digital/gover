@@ -21,8 +21,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.Map;
 
 
@@ -49,14 +49,9 @@ public class TeamMembershipController {
 
     @GetMapping("")
     public Page<TeamMembershipResponseDTO> list(
-            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PageableDefault Pageable pageable,
             @Nonnull @Valid VTeamMembershipWithDetailsFilter filter
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
         return vTeamMembershipWithDetailsService
                 .list(pageable, filter)
                 .map(TeamMembershipResponseDTO::fromEntity);
@@ -67,10 +62,10 @@ public class TeamMembershipController {
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody @Valid TeamMembershipRequestDTO createDTO
     ) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asGlobalAdmin()
+                .asSuperAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var team = teamRepository
@@ -101,13 +96,8 @@ public class TeamMembershipController {
 
     @GetMapping("{id}/")
     public TeamMembershipResponseDTO retrieve(
-            @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer id
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
         var entity = vTeamMembershipWithDetailsService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
@@ -122,10 +112,10 @@ public class TeamMembershipController {
             @PathVariable Integer id,
             @RequestBody @Valid TeamMembershipRequestDTO updateDTO
     ) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asGlobalAdmin()
+                .asSuperAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var team = teamRepository
@@ -162,10 +152,10 @@ public class TeamMembershipController {
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer id
     ) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asGlobalAdmin()
+                .asSuperAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
         var entity = repository

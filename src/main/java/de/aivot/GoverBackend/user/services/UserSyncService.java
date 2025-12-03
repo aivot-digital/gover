@@ -3,8 +3,6 @@ package de.aivot.GoverBackend.user.services;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.user.cache.entities.UserCacheEntity;
-import de.aivot.GoverBackend.user.cache.repositories.UserCacheRepository;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.models.KeycloakUser;
 import de.aivot.GoverBackend.user.repositories.UserRepository;
@@ -15,7 +13,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 
 @Service
@@ -26,20 +23,17 @@ public class UserSyncService {
     private final ScopedAuditService auditService;
 
     private final UserRepository userRepository;
-    private final UserCacheRepository userCacheRepository;
     private final KeyCloakApiService keycloakApiService;
 
     @Autowired
     public UserSyncService(
             AuditService auditService,
             UserRepository userRepository,
-            UserCacheRepository userCacheRepository,
             KeyCloakApiService keycloakApiService
     ) {
         this.auditService = auditService.createScopedAuditService(UserSyncService.class);
 
         this.userRepository = userRepository;
-        this.userCacheRepository = userCacheRepository;
         this.keycloakApiService = keycloakApiService;
     }
 
@@ -51,7 +45,7 @@ public class UserSyncService {
         Collection<KeycloakUser> keycloakUsers;
         try {
             keycloakUsers = keycloakApiService
-                    .getUsers();
+                    .listUsers();
         } catch (ResponseException e) {
             throw new RuntimeException(e.getMessage() + " - " + e.getDetails(), e);
         }
@@ -59,20 +53,27 @@ public class UserSyncService {
         var updatedUserIds = new HashSet<String>();
 
         for (var keycloakUser : keycloakUsers) {
-            List<String> roles;
-            try {
-                roles = keycloakApiService
-                        .getRoles(keycloakUser.getId());
-            } catch (ResponseException e) {
-                throw new RuntimeException(e.getMessage() + " - " + e.getDetails(), e);
-            }
-
             var userEntity = UserEntity
-                    .from(keycloakUser, roles);
-            userRepository
-                    .save(userEntity);
-            userCacheRepository
-                    .save(UserCacheEntity.from(userEntity));
+                    .from(keycloakUser);
+
+            var existingUserOpt = userRepository
+                    .findById(userEntity.getId());
+
+            if (existingUserOpt.isPresent()) {
+                var existingUser = existingUserOpt
+                        .get()
+                        .setDeletedInIdp(false)
+                        .setEnabled(userEntity.getEnabled())
+                        .setVerified(userEntity.getVerified())
+                        .setEmail(userEntity.getEmail())
+                        .setFirstName(userEntity.getFirstName())
+                        .setLastName(userEntity.getLastName());
+                userRepository
+                        .save(existingUser);
+            } else {
+                userRepository
+                        .save(userEntity);
+            }
 
             updatedUserIds.add(userEntity.getId());
         }
@@ -82,14 +83,17 @@ public class UserSyncService {
                 continue;
             }
 
+            // Check if the user ID is a placeholder ID (e.g., "0000-000-0000", "0000-000-0001", etc.)
+            if (localUser.getId().matches("^[0-]+[0-9]$")) {
+                continue;
+            }
+
             localUser.clearPersonalData();
             localUser.setDeletedInIdp(true);
             localUser.setEnabled(false);
 
             userRepository
                     .save(localUser);
-            userCacheRepository
-                    .save(UserCacheEntity.from(localUser));
 
             auditService
                     .logMessage("User with id " + localUser.getId() + " was deleted in IDP", Map.of(

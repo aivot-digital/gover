@@ -43,6 +43,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -61,7 +62,12 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/public/forms/")
-@Tag(name = "PublicForm", description = "Interact with forms unauthenticated as a citizen")
+@Tag(
+        name = "Forms",
+        description = "Forms are built for collecting data from users. " +
+                      "They can be designed with various elements and configurations to suit different data collection needs. " +
+                      "Forms can be published, managed, and analyzed within the system."
+)
 public class PublicFormController {
     private final GoverConfig goverConfig;
     private final FormPaymentService paymentService;
@@ -72,8 +78,8 @@ public class PublicFormController {
     private final ElementDerivationService elementDerivationService;
     private final AssetService assetService;
     private final FormVersionService formVersionService;
-    private final FormService formService;
     private final VFormVersionWithDetailsService vFormVersionWithDetailsService;
+    private final UserService userService;
 
     @Autowired
     public PublicFormController(GoverConfig goverConfig,
@@ -84,7 +90,8 @@ public class PublicFormController {
                                 IdentityCacheRepository identityCacheRepository,
                                 ElementDerivationService elementDerivationService,
                                 AssetService assetService,
-                                FormVersionService formVersionService, FormService formService, VFormVersionWithDetailsService vFormVersionWithDetailsService) {
+                                FormVersionService formVersionService,
+                                VFormVersionWithDetailsService vFormVersionWithDetailsService, UserService userService) {
         this.goverConfig = goverConfig;
         this.paymentService = paymentService;
         this.paymentProviderService = paymentProviderService;
@@ -94,15 +101,18 @@ public class PublicFormController {
         this.elementDerivationService = elementDerivationService;
         this.assetService = assetService;
         this.formVersionService = formVersionService;
-        this.formService = formService;
         this.vFormVersionWithDetailsService = vFormVersionWithDetailsService;
+        this.userService = userService;
     }
 
     @GetMapping("")
-    @Operation(summary = "List published forms for citizens")
-    public Page<FormCitizenListResponseDTO> list(@Nullable @AuthenticationPrincipal Jwt jwt,
-                                                 @Nonnull @PageableDefault Pageable pageable,
-                                                 @Nonnull @Valid VFormVersionWithDetailsFilter filter) throws ResponseException {
+    @Operation(
+            summary = "List published forms for citizens",
+            description = "List all published forms that are available for citizens to fill out. " +
+                          "Only published public forms are included in the list."
+    )
+    public Page<FormCitizenListResponseDTO> list(@Nonnull @ParameterObject @PageableDefault Pageable pageable,
+                                                 @Nonnull @ParameterObject @Valid VFormVersionWithDetailsFilter filter) throws ResponseException {
         filter.setStatus(FormStatus.Published);
         filter.setType(FormType.Public);
 
@@ -112,7 +122,12 @@ public class PublicFormController {
     }
 
     @GetMapping("{slug}/")
-    @Operation(summary = "Retrieve form details for citizens")
+    @Operation(
+            summary = "Retrieve form details for citizens",
+            description = "Retrieve detailed information about a specific form available for citizens to fill out. " +
+                          "Includes form structure, elements, and configuration details. " +
+                          "Internal forms without identity verification will have all steps, except the first, obfuscated."
+    )
     public FormCitizenDetailsResponseDTO retrieve(@Nullable @AuthenticationPrincipal Jwt jwt,
                                                   @Nonnull @PathVariable String slug,
                                                   @Nullable @RequestParam(value = "version", required = false) Integer version,
@@ -133,7 +148,12 @@ public class PublicFormController {
     }
 
     @GetMapping("{slug}/max-file-size/")
-    @Operation(summary = "Get maximum file size for attachments in a form")
+    @Operation(
+            summary = "Get maximum file size for attachments in a form",
+            description = "Retrieve the maximum allowed file size for attachments in the specified form. " +
+                          "If the form is linked to a destination with specific file size limits, those limits will be returned. " +
+                          "Otherwise, a default value will be provided."
+    )
     public MaxFileSizeDto getMaxFileSize(@Nullable @AuthenticationPrincipal Jwt jwt,
                                          @Nonnull @PathVariable String slug,
                                          @Nullable @RequestParam(value = "version", required = false) Integer version) throws ResponseException {
@@ -161,7 +181,12 @@ public class PublicFormController {
     }
 
     @PostMapping("{slug}/costs/")
-    @Operation(summary = "Calculate costs for a form based on customer data")
+    @Operation(
+            summary = "Calculate costs for a form based on customer data",
+            description = "Calculate the total costs for a form based on the provided customer data. " +
+                          "If the form has an associated payment provider, the costs will be calculated accordingly. " +
+                          "If no payment provider is linked, the response will indicate that there are no costs."
+    )
     public FormCostCalculationResponseDTO calculateCosts(@Nullable @AuthenticationPrincipal Jwt jwt,
                                                          @Nonnull @PathVariable String slug,
                                                          @Nullable @RequestParam(value = "version", required = false) Integer version,
@@ -198,7 +223,11 @@ public class PublicFormController {
     }
 
     @GetMapping("{slug}/identity-providers/")
-    @Operation(summary = "List identity providers linked to a form")
+    @Operation(
+            summary = "List identity providers linked to a form",
+            description = "Retrieve a list of identity providers that are linked to the specified form. " +
+                          "Only enabled identity providers will be included in the response."
+    )
     public Page<IdentityDetailsDTO> getIdentityProviders(@Nullable @AuthenticationPrincipal Jwt jwt,
                                                          @Nonnull @PathVariable String slug,
                                                          @Nullable @RequestParam(value = "version", required = false) Integer version
@@ -230,7 +259,12 @@ public class PublicFormController {
     }
 
     @PostMapping("{slug}/derive")
-    @Operation(summary = "Derive element data based on input for a form")
+    @Operation(
+            summary = "Derive element data based on input for a form",
+            description = "Derive the element data for a form based on the provided input data. " +
+                          "This process evaluates the form's logic, visibility rules, and calculations to produce the derived data. " +
+                          "Options are available to skip certain derivation aspects for specific elements."
+    )
     public ElementDerivationResponse derive(@Nullable @AuthenticationPrincipal Jwt jwt,
                                             @Nonnull @PathVariable String slug,
                                             @Nullable @RequestParam(value = "version", required = false) Integer version,
@@ -273,7 +307,11 @@ public class PublicFormController {
     }
 
     @GetMapping("{slug}/theme/")
-    @Operation(summary = "Get theme details for a form")
+    @Operation(
+            summary = "Get theme details for a form",
+            description = "Retrieve the theme details associated with the specified form. " +
+                          "Includes information such as colors, fonts, logos, and other visual elements that define the form's appearance."
+    )
     public ThemeResponseDTO getTheme(@Nullable @AuthenticationPrincipal Jwt jwt,
                                      @Nonnull @PathVariable String slug,
                                      @Nullable @RequestParam(value = "version", required = false) Integer version
@@ -284,7 +322,11 @@ public class PublicFormController {
     }
 
     @GetMapping("{slug}/logo/")
-    @Operation(summary = "Get the logo for a form")
+    @Operation(
+            summary = "Get the logo for a form",
+            description = "Get the logo image associated with the specified form. " +
+                          "If the form does not have a custom logo, a default logo URL will be provided."
+    )
     public void getLogo(@Nullable @AuthenticationPrincipal Jwt jwt,
                         @Nonnull @PathVariable String slug,
                         @Nullable @RequestParam(value = "version", required = false) Integer version,
@@ -304,7 +346,11 @@ public class PublicFormController {
     }
 
     @GetMapping("{slug}/favicon/")
-    @Operation(summary = "Get the favicon for a form")
+    @Operation(
+            summary = "Get the favicon for a form",
+            description = "Get the favicon image associated with the specified form. " +
+                          "If the form does not have a custom favicon, a default favicon URL will be provided."
+    )
     public void getFavicon(@Nullable @AuthenticationPrincipal Jwt jwt,
                            @Nonnull @PathVariable String slug,
                            @Nullable @RequestParam(value = "version", required = false) Integer version,
@@ -327,7 +373,7 @@ public class PublicFormController {
                                                                           @Nullable Integer version,
                                                                           @Nullable @AuthenticationPrincipal Jwt jwt,
                                                                           @Nonnull Boolean acceptUnauthenticated) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElse(null);
 

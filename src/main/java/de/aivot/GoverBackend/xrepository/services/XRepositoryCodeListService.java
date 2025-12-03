@@ -9,7 +9,7 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.xrepository.models.XRepositoryCodeList;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpResponse;
