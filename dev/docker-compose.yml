@@ -91,7 +91,7 @@ services:
       - "5433:5432"
 
   keycloak:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.4.5.0
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.4.7.0
     restart: unless-stopped
     depends_on:
       - keycloak-database
@@ -111,7 +111,7 @@ services:
       KC_FEATURES: "transient-users,update-email,hostname:v2"
 
   keycloak_setup:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.12
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.13
     restart: on-failure
     depends_on:
       - keycloak
