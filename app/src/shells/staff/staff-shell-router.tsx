@@ -23,6 +23,7 @@ import {configsRoutes} from '../../modules/configs/configs-routes';
 import {Testinghall} from '../../modules/testinghall/testinghall';
 import {userRolesRoutes} from '../../modules/user-roles/user-roles-routes';
 import {teamsRoutes} from '../../modules/teams/teams-routes';
+import {Organigram} from "../../modules/system/pages/organigram";
 
 const sentryCreateBrowserRouter = Sentry.wrapCreateBrowserRouterV7(
     createBrowserRouter,
@@ -59,6 +60,10 @@ const router = sentryCreateBrowserRouter(
                 {
                     path: '/testinghall',
                     element: <Testinghall />,
+                },
+                {
+                    path: '/organigram',
+                    element: <Organigram />,
                 },
             ],
         },

@@ -27,6 +27,7 @@ import {AboutGoverDialog} from './about-gover-dialog';
 import {ShellNotificationsMenu} from './shell-notifications-menu';
 import Api from '@aivot/mui-material-symbols-400-outlined/dist/api/Api';
 import ReadinessScore from '@aivot/mui-material-symbols-400-outlined/dist/readiness-score/ReadinessScore';
+import FamilyHistory from "@aivot/mui-material-symbols-400-outlined/dist/family-history/FamilyHistory";
 
 /* -----------------------------
  * Types & Navigation Structure
@@ -117,6 +118,7 @@ const DrawerGroups: DrawerGroup[] = [
                     {icon: ModuleIcons.users, label: 'Mitarbeiter:innen', to: '/users'},
                     {icon: ModuleIcons.teams, label: 'Teams', to: '/teams'},
                     {icon: ModuleIcons.roles, label: 'Domänenrollen', to: '/user-roles'},
+                    {icon: <FamilyHistory/>, label: 'Organigramm', to: '/organigram'},
                 ],
             },
             {icon: ModuleIcons.assets, label: 'Dateien & Medien', to: '/assets'},
