@@ -28,14 +28,13 @@ import {setLoadingMessage} from "../../../../../slices/shell-slice";
 import {isApiError} from "../../../../../models/api-error";
 import {TeamEntity} from "../../../../teams/entities/team-entity";
 import {TeamsApiService} from "../../../../teams/services/teams-api-service";
-import { TeamMembershipsApiService } from "../../../../teams/services/team-memberships-api-service";
+import {TeamMembershipsApiService} from "../../../../teams/services/team-memberships-api-service";
 import {
     VTeamUserRoleAssignmentWithDetailsApiService
 } from "../../../../teams/services/v-team-user-role-assignment-with-details-api-service";
 import {
     VTeamMembershipWithDetailsApiService
 } from "../../../../teams/services/v-team-membership-with-details-api-service";
-import {ModuleIcons} from "../../../../../shells/staff/data/module-icons";
 
 
 const columns: Array<GridColDef<VTeamMembershipWithDetailsEntityWithRoles>> = [
