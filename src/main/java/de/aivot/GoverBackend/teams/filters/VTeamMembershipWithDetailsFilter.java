@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.teams.filters;
 
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.teams.entities.VTeamMembershipWithDetailsEntity;
+import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -11,16 +12,15 @@ import java.util.List;
 public class VTeamMembershipWithDetailsFilter implements Filter<VTeamMembershipWithDetailsEntity> {
     private List<Integer> teamIds;
     private Integer teamId;
-    private String teamName;
+    private String name;
     private String userId;
     private List<String> userIds;
-    private String userFullName;
-    private String userEmail;
-
-    private Boolean userEnabled;
-    private Boolean userVerified;
-    private Boolean userGlobalAdmin;
-    private Boolean userDeletedInIdp;
+    private String fullName;
+    private String email;
+    private Boolean enabled;
+    private Boolean verified;
+    private Boolean globalAdmin;
+    private Boolean deletedInIdp;
 
     public static VTeamMembershipWithDetailsFilter create() {
         return new VTeamMembershipWithDetailsFilter();
@@ -32,30 +32,30 @@ public class VTeamMembershipWithDetailsFilter implements Filter<VTeamMembershipW
                 .create(VTeamMembershipWithDetailsEntity.class)
                 .withEquals("teamId", teamId)
                 .withInList("teamId", teamIds)
-                .withContains("teamName", teamName)
+                .withContains("name", name)
                 .withEquals("userId", userId)
                 .withInList("userId", userIds)
-                .withContains("userFullName", userFullName)
-                .withContains("userEmail", userEmail);
+                .withContains("fullName", fullName)
+                .withContains("email", email);
 
-        if (userEnabled != null) {
+        if (enabled != null) {
             builder = builder
-                    .withEquals("userEnabled", userEnabled);
+                    .withEquals("enabled", enabled);
         }
 
-        if (userVerified != null) {
+        if (verified != null) {
             builder = builder
-                    .withEquals("userVerified", userVerified);
+                    .withEquals("verified", verified);
         }
 
-        if (userGlobalAdmin != null) {
+        if (globalAdmin != null) {
             builder = builder
-                    .withEquals("userGlobalAdmin", userGlobalAdmin);
+                    .withEquals("globalRole", UserEntity.SUPER_ADMIN_ROLE_VALUE);
         }
 
-        if (userDeletedInIdp != null) {
+        if (deletedInIdp != null) {
             builder = builder
-                    .withEquals("userDeletedInIdp", userDeletedInIdp);
+                    .withEquals("deletedInIdp", deletedInIdp);
         }
 
         return builder
@@ -80,12 +80,12 @@ public class VTeamMembershipWithDetailsFilter implements Filter<VTeamMembershipW
         return this;
     }
 
-    public String getTeamName() {
-        return teamName;
+    public String getName() {
+        return name;
     }
 
-    public VTeamMembershipWithDetailsFilter setTeamName(String teamName) {
-        this.teamName = teamName;
+    public VTeamMembershipWithDetailsFilter setName(String name) {
+        this.name = name;
         return this;
     }
 
@@ -107,57 +107,57 @@ public class VTeamMembershipWithDetailsFilter implements Filter<VTeamMembershipW
         return this;
     }
 
-    public String getUserFullName() {
-        return userFullName;
+    public String getFullName() {
+        return fullName;
     }
 
-    public VTeamMembershipWithDetailsFilter setUserFullName(String userFullName) {
-        this.userFullName = userFullName;
+    public VTeamMembershipWithDetailsFilter setFullName(String fullName) {
+        this.fullName = fullName;
         return this;
     }
 
-    public String getUserEmail() {
-        return userEmail;
+    public String getEmail() {
+        return email;
     }
 
-    public VTeamMembershipWithDetailsFilter setUserEmail(String userEmail) {
-        this.userEmail = userEmail;
+    public VTeamMembershipWithDetailsFilter setEmail(String email) {
+        this.email = email;
         return this;
     }
 
-    public Boolean getUserEnabled() {
-        return userEnabled;
+    public Boolean getEnabled() {
+        return enabled;
     }
 
-    public VTeamMembershipWithDetailsFilter setUserEnabled(Boolean userEnabled) {
-        this.userEnabled = userEnabled;
+    public VTeamMembershipWithDetailsFilter setEnabled(Boolean enabled) {
+        this.enabled = enabled;
         return this;
     }
 
-    public Boolean getUserVerified() {
-        return userVerified;
+    public Boolean getVerified() {
+        return verified;
     }
 
-    public VTeamMembershipWithDetailsFilter setUserVerified(Boolean userVerified) {
-        this.userVerified = userVerified;
+    public VTeamMembershipWithDetailsFilter setVerified(Boolean verified) {
+        this.verified = verified;
         return this;
     }
 
-    public Boolean getUserGlobalAdmin() {
-        return userGlobalAdmin;
+    public Boolean getGlobalAdmin() {
+        return globalAdmin;
     }
 
-    public VTeamMembershipWithDetailsFilter setUserGlobalAdmin(Boolean userGlobalAdmin) {
-        this.userGlobalAdmin = userGlobalAdmin;
+    public VTeamMembershipWithDetailsFilter setGlobalAdmin(Boolean globalAdmin) {
+        this.globalAdmin = globalAdmin;
         return this;
     }
 
-    public Boolean getUserDeletedInIdp() {
-        return userDeletedInIdp;
+    public Boolean getDeletedInIdp() {
+        return deletedInIdp;
     }
 
-    public VTeamMembershipWithDetailsFilter setUserDeletedInIdp(Boolean userDeletedInIdp) {
-        this.userDeletedInIdp = userDeletedInIdp;
+    public VTeamMembershipWithDetailsFilter setDeletedInIdp(Boolean deletedInIdp) {
+        this.deletedInIdp = deletedInIdp;
         return this;
     }
 }

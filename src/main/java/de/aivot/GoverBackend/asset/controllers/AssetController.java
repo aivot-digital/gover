@@ -10,7 +10,7 @@ import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.services.AVService;
 import de.aivot.GoverBackend.services.storages.AssetStorageService;
 import de.aivot.GoverBackend.user.services.UserService;
@@ -43,7 +43,7 @@ import java.util.UUID;
         description = "Assets are files uploaded to the system, such as images or documents. " +
                       "They can be associated with various entities within the application and should be used if you need to provides files to citizens publicly."
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class AssetController {
     private final ScopedAuditService auditService;
 

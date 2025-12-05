@@ -14,6 +14,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -85,13 +86,25 @@ public class KeyCloakApiService {
                             Void.class
                     );
         } catch (RestClientResponseException e) {
-            throw ResponseException
-                    .internalServerError("Die Mitarbeiter:in konnte nicht erstellt werden.", e);
+                throw switch (e.getStatusCode()) {
+                    case HttpStatus.BAD_REQUEST ->  ResponseException
+                            .badRequest("Die Mitarbeiter:in konnte nicht erstellt werden. Ungültige Daten wurden übermittelt.", e);
+                    case HttpStatus.FORBIDDEN ->  ResponseException
+                            .badRequest("Der Backend-Client hat keine Berechtigung, um Mitarbeiter:innen zu erstellen.", e);
+                    default -> ResponseException
+                            .internalServerError("Die Mitarbeiter:in konnte nicht erstellt werden.", e);
+                };
         }
 
         if (response.getStatusCode().isError()) {
-            throw ResponseException
-                    .internalServerError("Die Mitarbeiter:in konnte nicht erstellt werden. Status-Code: " + response.getStatusCode());
+            throw switch (response.getStatusCode()) {
+                case HttpStatus.BAD_REQUEST ->  ResponseException
+                        .badRequest("Die Mitarbeiter:in konnte nicht erstellt werden. Ungültige Daten wurden übermittelt.");
+                case HttpStatus.FORBIDDEN ->  ResponseException
+                        .badRequest("Der Backend-Client hat keine Berechtigung, um Mitarbeiter:innen zu erstellen.");
+                default -> ResponseException
+                        .internalServerError("Die Mitarbeiter:in konnte nicht erstellt werden. Status-Code: " + response.getStatusCode());
+            };
         }
 
         // Extract the created user ID from the Location header because no http body is returned

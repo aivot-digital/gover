@@ -13,8 +13,8 @@ import java.util.Objects;
 @Table(name = "forms")
 public class FormEntity {
     @Id
-    @Nonnull
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Nonnull@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "applications_id_seq")
+    @SequenceGenerator(name = "applications_id_seq", allocationSize = 1)
     private Integer id;
 
     @Nonnull

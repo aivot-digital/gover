@@ -22,11 +22,11 @@ import org.springframework.context.annotation.Configuration;
         )
 )
 @SecurityScheme(
-        name = OpenAPIConfiguration.Name,
+        name = OpenApiConfiguration.Security,
         type = SecuritySchemeType.HTTP,
         bearerFormat = "JWT",
         scheme = "bearer"
 )
-public class OpenAPIConfiguration {
-    public static final String Name = "JWT";
+public class OpenApiConfiguration {
+    public static final String Security = "JWT";
 }

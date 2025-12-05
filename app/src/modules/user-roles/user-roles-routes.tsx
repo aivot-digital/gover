@@ -3,6 +3,9 @@ import React from 'react';
 import {UserRolesListPage} from './pages/list/user-roles-list-page';
 import {UserRolesDetailsPage} from './pages/details/user-roles-details-page';
 import {UserRolesDetailsPageIndex} from './pages/details/user-roles-details-page-index';
+import {
+    UserRolesDetailsPageDepartmentMemberships
+} from "./pages/details/user-roles-details-page-department-memberships";
 
 export const userRolesRoutes: RouteObject[] = [
     {
@@ -16,6 +19,10 @@ export const userRolesRoutes: RouteObject[] = [
             {
                 index: true,
                 element: <UserRolesDetailsPageIndex />,
+            },
+            {
+                path: '/user-roles/:id/department-memberships',
+                element: <UserRolesDetailsPageDepartmentMemberships />,
             },
         ],
     },

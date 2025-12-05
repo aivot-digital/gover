@@ -6,7 +6,7 @@ import de.aivot.GoverBackend.form.filters.VFormWithPermissionsFilter;
 import de.aivot.GoverBackend.form.services.FormService;
 import de.aivot.GoverBackend.form.services.VFormWithPermissionsService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -35,7 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
                       "Forms can be published, managed, and analyzed within the system. " +
                       "Forms are versioned with the „Form Version” resource."
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class VFormWithPermissionsController {
     private final VFormWithPermissionsService vFormWithPermissionsService;
     private final FormService formService;

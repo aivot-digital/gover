@@ -27,6 +27,7 @@ public class UserRoleAssignmentService implements EntityService<UserRoleAssignme
     @Nonnull
     @Override
     public UserRoleAssignmentEntity create(@Nonnull UserRoleAssignmentEntity entity) throws ResponseException {
+        entity.setId(null);
         return repository.save(entity);
     }
 

@@ -3,18 +3,14 @@ import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Typography} from '@mui/material';
 import {EditOutlined, GroupOutlined} from '@mui/icons-material';
-import {selectUser} from '../../../../slices/user-slice';
-import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
 import {CellLink} from '../../../../components/cell-link/cell-link';
-import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
-import {useAppSelector} from '../../../../hooks/use-app-selector';
-import {TeamResponseDTO} from '../../dtos/team-response-dto';
-import {TeamsApiService} from '../../teams-api-service';
+import {TeamsApiService} from '../../services/teams-api-service';
+import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
+import {TeamEntity} from "../../entities/team-entity";
 
 export function TeamsListPage() {
-    const user = useAppSelector(selectUser);
     const hasAccess = useAccessGuard({
         onlyGlobalAdmin: true,
         messageType: 'snackbar',
@@ -26,9 +22,9 @@ export function TeamsListPage() {
             fullWidth
             background
         >
-            <GenericListPage<TeamResponseDTO>
+            <GenericListPage<TeamEntity>
                 header={{
-                    icon: <BusinessOutlinedIcon />,
+                    icon: ModuleIcons.teams,
                     title: 'Teams',
                     actions: [
                         {
@@ -69,15 +65,8 @@ export function TeamsListPage() {
                             },
                         );
                 }}
+                columnIcon={ModuleIcons.teams}
                 columnDefinitions={[
-                    {
-                        field: 'icon',
-                        headerName: '',
-                        renderCell: () => <CellContentWrapper><BusinessOutlinedIcon /></CellContentWrapper>,
-                        disableColumnMenu: true,
-                        width: 24,
-                        sortable: false,
-                    },
                     {
                         field: 'name',
                         headerName: 'Name',
@@ -96,7 +85,7 @@ export function TeamsListPage() {
                 noDataPlaceholder="Keine Team angelegt"
                 noSearchResultsPlaceholder="Keine Teams gefunden"
                 rowActionsCount={3}
-                rowActions={(item: TeamResponseDTO) => [
+                rowActions={(item) => [
                     {
                         icon: hasAccess ? <EditOutlined /> : <Visibility />,
                         to: `/teams/${item.id}`,

@@ -1,17 +1,12 @@
-import {UserRoleResponseDTO} from '../dtos/user-role-response-dto';
-import {OrgUserRoleAssignmentResponseDTO} from '../dtos/org-user-role-assignment-response-dto';
 import {Box, Chip, Typography} from '@mui/material';
 import {HintTooltip} from '../../../components/hint-tooltip/hint-tooltip';
-import {TeamUserRoleAssignmentResponseDTO} from '../dtos/team-user-role-assignment-response-dto';
-import {VDepartmentUserRoleAssignmentWithDetailsEntity} from '../../departments/entities/v-department-user-role-assignment-with-details-entity';
 
 interface UserRoleChipsProps {
-    roles: UserRoleResponseDTO[] | OrgUserRoleAssignmentResponseDTO[] | TeamUserRoleAssignmentResponseDTO[] | VDepartmentUserRoleAssignmentWithDetailsEntity[];
+    roles: {
+        id: number | string;
+        name: string;
+    }[];
     maxVisibleChips?: number;
-}
-
-function isUserRoleResponseDTO(role: UserRoleResponseDTO | OrgUserRoleAssignmentResponseDTO | TeamUserRoleAssignmentResponseDTO | VDepartmentUserRoleAssignmentWithDetailsEntity): role is UserRoleResponseDTO {
-    return (role as UserRoleResponseDTO).name !== undefined;
 }
 
 export function UserRoleChips(props: UserRoleChipsProps) {
@@ -25,7 +20,7 @@ export function UserRoleChips(props: UserRoleChipsProps) {
     const hasExtraRoles = extraRolesCount > 0;
     const extraRoles = roles.slice(maxVisibleChips);
     const extraRolesNames = extraRoles
-        .map(role => (isUserRoleResponseDTO(role) ? role.name : role.userRoleName) ?? 'Unbenannt')
+        .map(role => role.name)
         .join(', ');
 
     return (
@@ -38,8 +33,8 @@ export function UserRoleChips(props: UserRoleChipsProps) {
                 visibleRoles.length > 0 &&
                 visibleRoles.map((role, index) => (
                     <Chip
-                        key={(isUserRoleResponseDTO(role) ? role.id : role.userRoleName)}
-                        label={(isUserRoleResponseDTO(role) ? role.name : role.userRoleName) ?? 'Unbenannt'}
+                        key={role.id}
+                        label={role.name}
                         variant="outlined"
                         size="small"
                         sx={{

@@ -3,38 +3,50 @@ import {useCallback, useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {UsersApiService} from '../../users/users-api-service';
 import {User} from '../../users/models/user';
-import {TeamResponseDTO} from '../../teams/dtos/team-response-dto';
-import {TeamsApiService} from '../../teams/teams-api-service';
+import {TeamsApiService} from '../../teams/services/teams-api-service';
 import {UserRolesApiService} from '../user-roles-api-service';
 import {UserRoleResponseDTO} from '../dtos/user-role-response-dto';
-import {OrgUserRoleAssignmentsApiService} from '../org-user-role-assignments-api-service';
-import {OrgUserRoleAssignmentResponseDTO} from '../dtos/org-user-role-assignment-response-dto';
-import {TeamUserRoleAssignmentResponseDTO} from '../dtos/team-user-role-assignment-response-dto';
-import {TeamUserRoleAssignmentsApiService} from '../team-user-role-assignments-api-service';
 import {CheckboxFieldComponent} from '../../../components/checkbox-field/checkbox-field-component';
 import {DepartmentEntity} from '../../departments/entities/department-entity';
 import {DepartmentApiService} from '../../departments/services/department-api-service';
+import {useAppDispatch} from "../../../hooks/use-app-dispatch";
+import {showApiErrorSnackbar} from "../../../slices/snackbar-slice";
+import {
+    VDepartmentUserRoleAssignmentWithDetailsService
+} from "../../departments/services/v-department-user-role-assignment-with-details-service";
+import {
+    VDepartmentUserRoleAssignmentWithDetailsEntity
+} from "../../departments/entities/v-department-user-role-assignment-with-details-entity";
+import {TeamEntity} from "../../teams/entities/team-entity";
+import {
+    VTeamUserRoleAssignmentWithDetailsApiService
+} from "../../teams/services/v-team-user-role-assignment-with-details-api-service";
+import {
+    VTeamUserRoleAssignmentWithDetailsEntity
+} from "../../teams/entities/v-team-user-role-assignment-with-details-entity";
 
 interface UserRolesAssignmentDialogProps {
     open: boolean;
     onClose: () => void;
     onSave: (roleIdsToAdd: number[], userRoleAssignmentIdsToRemove: number[]) => void;
     userId?: string;
-    parentId: number;
+    parentId?: number;
     parentType: 'orgUnit' | 'team';
 }
 
 type ParentType<T extends 'orgUnit' | 'team'> =
     T extends 'orgUnit' ?
         DepartmentEntity :
-        TeamResponseDTO;
+        TeamEntity;
 
 type MembershipType<T extends 'orgUnit' | 'team'> =
     T extends 'orgUnit' ?
-        OrgUserRoleAssignmentResponseDTO :
-        TeamUserRoleAssignmentResponseDTO;
+        VDepartmentUserRoleAssignmentWithDetailsEntity :
+        VTeamUserRoleAssignmentWithDetailsEntity;
 
 export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps) {
+    const dispatch = useAppDispatch();
+
     const {
         open,
         onClose,
@@ -49,15 +61,19 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
     const [parent, setParent] = useState<ParentType<typeof parentType>>();
     const [memberships, setMemberships] = useState<MembershipType<typeof parentType>[]>();
 
-    const [activeRoles, setActiveRoles] = useState<Record<number, boolean>>();
+    const [activeRoleIds, setActiveRoleIds] = useState<Set<number>>();
 
+    // Load all available roles
     useEffect(() => {
         new UserRolesApiService()
             .listAll()
             .then((rolesPage) => setRoles(rolesPage.content))
-            .catch(console.error); // TODO: Dispatch Error Snackbar
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Rollen konnten nicht geladen werden'))
+            });
     }, []);
 
+    // Load user details
     useEffect(() => {
         if (userId == null) {
             setUser(undefined);
@@ -67,9 +83,36 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
         new UsersApiService()
             .retrieve(userId)
             .then(setUser)
-            .catch(console.error); // TODO: Dispatch Error Snackbar
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Benutzer konnte nicht geladen werden'))
+            });
     }, [userId]);
 
+    // Load parent details
+    useEffect(() => {
+        if (parentId == null) {
+            setParent(undefined);
+            return;
+        }
+
+        if (parentType === 'orgUnit') {
+            new DepartmentApiService()
+                .retrieve(parentId)
+                .then(setParent)
+                .catch((err) => {
+                    dispatch(showApiErrorSnackbar(err, 'Organisationseinheit konnte nicht geladen werden'));
+                });
+        } else {
+            new TeamsApiService()
+                .retrieve(parentId)
+                .then(setParent)
+                .catch((err) => {
+                    dispatch(showApiErrorSnackbar(err, 'Team konnte nicht geladen werden'));
+                })
+        }
+    }, [parentId, parentType]);
+
+    // Load assignments
     useEffect(() => {
         if (userId == null) {
             setMemberships(undefined);
@@ -77,61 +120,60 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
         }
 
         if (parentType === 'orgUnit') {
-            new OrgUserRoleAssignmentsApiService()
+            new VDepartmentUserRoleAssignmentWithDetailsService()
                 .listAll({
-                    orgUnitMembershipOrganizationalUnitId: parentId,
-                    orgUnitMembershipUserId: userId,
+                    departmentId: parentId,
+                    userId: userId,
                 })
                 .then((membershipsPage) => {
                     setMemberships(membershipsPage.content);
                 })
-                .catch(console.error); // TODO: Dispatch Error Snackbar
+                .catch((err) => {
+                    dispatch(showApiErrorSnackbar(err, 'Rollen-Zuweisungen konnten nicht geladen werden'))
+                });
         } else {
-            new TeamUserRoleAssignmentsApiService()
+            new VTeamUserRoleAssignmentWithDetailsApiService()
                 .listAll({
-                    teamMembershipTeamId: parentId,
-                    teamMembershipUserId: userId,
+                    teamId: parentId,
+                    userId: userId,
                 })
                 .then((membershipsPage) => {
                     setMemberships(membershipsPage.content);
                 })
-                .catch(console.error); // TODO: Dispatch Error Snackbar
+                .catch((err) => {
+                    dispatch(showApiErrorSnackbar(err, 'Rollen-Zuweisungen konnten nicht geladen werden'))
+                });
         }
     }, [userId, parentId, parentType]);
 
+    // Determine
     useEffect(() => {
         if (memberships == null) {
-            setActiveRoles(undefined);
+            setActiveRoleIds(undefined);
             return;
         }
 
-        setActiveRoles(memberships.reduce((acc, membership) => ({
-            ...acc,
-            [membership.userRoleId]: true,
-        }), {} as Record<number, boolean>));
-    }, [memberships]);
+        console.log(memberships);
 
-    useEffect(() => {
-        if (parentType === 'orgUnit') {
-            new DepartmentApiService()
-                .retrieve(parentId)
-                .then(setParent)
-                .catch(console.error); // TODO: Dispatch Error Snackbar
-        } else {
-            new TeamsApiService()
-                .retrieve(parentId)
-                .then(setParent)
-                .catch(console.error); // TODO: Dispatch Error Snackbar
-        }
-    }, [parentId, parentType]);
+        const activeRoleIdsSet = new Set<number>();
+
+        memberships
+            .map(mem => mem.userRoleId)
+            .filter(id => id != null)
+            .forEach(id => activeRoleIdsSet.add(id));
+
+        console.log('Active Role IDs Set:', activeRoleIdsSet);
+
+        setActiveRoleIds(activeRoleIdsSet);
+    }, [memberships]);
 
     const handleSave = useCallback(() => {
         const roleIdsToAdd: number[] = [];
         const userRoleAssignmentIdsToRemove: number[] = [];
 
-        if (roles != null && activeRoles != null) {
+        if (roles != null && activeRoleIds != null) {
             roles.forEach((role) => {
-                const isActive = activeRoles[role.id] ?? false;
+                const isActive = activeRoleIds.has(role.id) ?? false;
                 const isCurrentlyAssigned = memberships?.some((membership) => membership.userRoleId === role.id) ?? false;
 
                 if (isActive && !isCurrentlyAssigned) {
@@ -139,14 +181,14 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                 } else if (!isActive && isCurrentlyAssigned) {
                     const membership = memberships?.find((m) => m.userRoleId === role.id);
                     if (membership != null) {
-                        userRoleAssignmentIdsToRemove.push(membership.userRoleAssignmentId);
+                        userRoleAssignmentIdsToRemove.push(membership.userRoleAssignmentId!);
                     }
                 }
             });
         }
 
         onSave(roleIdsToAdd, userRoleAssignmentIdsToRemove);
-    }, [onSave, roles, activeRoles, memberships]);
+    }, [onSave, roles, activeRoleIds, memberships]);
 
     return (
         <Dialog
@@ -167,12 +209,16 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                             key={role.id}
                             label={role.name ?? ''}
                             hint={role.description ?? ''}
-                            value={activeRoles?.[role.id] ?? false}
+                            value={activeRoleIds?.has(role.id) ?? false}
                             onChange={(val) => {
-                                setActiveRoles({
-                                    ...activeRoles,
-                                    [role.id]: val,
-                                });
+                                const newSet = new Set(activeRoleIds);
+                                if (val) {
+                                    newSet.add(role.id);
+                                } else {
+                                    newSet.delete(role.id);
+                                }
+
+                                setActiveRoleIds(newSet);
                             }}
                         />
                     ))

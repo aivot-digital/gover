@@ -9,7 +9,7 @@ import de.aivot.GoverBackend.preset.entities.PresetEntity;
 import de.aivot.GoverBackend.preset.filters.PresetFilter;
 import de.aivot.GoverBackend.preset.repositories.PresetRepository;
 import de.aivot.GoverBackend.preset.repositories.PresetVersionRepository;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -37,7 +37,7 @@ import java.util.UUID;
         name = "Presets",
         description = "Presets are prebuilt elements which can be used in element builders."
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class PresetController {
     private final PresetRepository presetRepository;
     private final ScopedAuditService auditService;

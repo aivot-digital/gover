@@ -16,7 +16,7 @@ import de.aivot.GoverBackend.identity.entities.IdentityProviderEntity;
 import de.aivot.GoverBackend.identity.filters.IdentityProviderFilter;
 import de.aivot.GoverBackend.identity.services.IdentityProviderService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -44,7 +44,7 @@ import java.util.UUID;
                       "They can be configured by systems administrators and linked to forms to enable user authentication. " +
                       "Identity providers support OAuth2 and OpenID Connect protocols and provide mappings for user attributes."
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class IdentityProviderController {
     private final ScopedAuditService auditService;
 

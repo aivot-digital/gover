@@ -61,7 +61,7 @@ export function AccountDetailsPageDepartmentMemberships() {
                 ]}
                 fetch={(options) => {
                     return new VDepartmentMembershipWithDetailsService()
-                        .listDepartmentMembershipsWithRoles(0, 999, 'organizationalUnitName', options.order, {
+                        .listDepartmentMembershipsWithRoles(0, 999, 'name', options.order, {
                             userId: user?.id,
                             departmentSearch: options.search,
                         });

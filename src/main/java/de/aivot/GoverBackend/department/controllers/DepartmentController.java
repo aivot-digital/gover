@@ -10,7 +10,7 @@ import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
 import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.department.services.VDepartmentMembershipWithPermissionsService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,7 +39,7 @@ import java.util.Map;
                       "Departments help in structuring users and managing permissions effectively. " +
                       "They also own certain resources and can have specific settings that apply to all users within the department."
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class DepartmentController {
     private final ScopedAuditService auditService;
 

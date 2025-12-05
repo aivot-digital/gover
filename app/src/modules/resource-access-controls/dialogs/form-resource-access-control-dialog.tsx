@@ -5,8 +5,7 @@ import {ResourceAccessControlsApiService} from '../resource-access-controls-api-
 import {ResourceAccessControlResponseDto} from '../dtos/resource-access-control-response-dto';
 import AddIcon from '@mui/icons-material/Add';
 import {ResourceAccessControlRequestDto} from '../dtos/resource-access-control-request-dto';
-import {TeamResponseDTO} from '../../teams/dtos/team-response-dto';
-import {TeamsApiService} from '../../teams/teams-api-service';
+import {TeamsApiService} from '../../teams/services/teams-api-service';
 import {SelectFieldComponentOption} from '../../../components/select-field/select-field-component-option';
 import {SelectFieldComponent} from '../../../components/select-field/select-field-component';
 import {CheckboxFieldComponent} from '../../../components/checkbox-field/checkbox-field-component';
@@ -25,6 +24,7 @@ import {getDepartmentPath, getDepartmentTypeLabel} from '../../departments/utils
 import {VDepartmentShadowedApiService} from '../../departments/services/v-department-shadowed-api-service';
 import {FormApiService} from '../../forms/services/form-api-service';
 import {FormEntity} from '../../forms/entities/form-entity';
+import {TeamEntity} from "../../teams/entities/team-entity";
 
 interface FormResourceAccessControlDialogProps {
     open: boolean;
@@ -102,7 +102,7 @@ export function FormResourceAccessControlDialog(props: FormResourceAccessControl
                     .listAll(),
             ])
             .then(([teams, orgs]) => {
-                const teamOptions: SourceSelectionOption[] = teams.content.map((t: TeamResponseDTO) => ({
+                const teamOptions: SourceSelectionOption[] = teams.content.map((t: TeamEntity) => ({
                     value: createTeamOptionValue(t.id),
                     label: t.name ?? 'Unbenanntes Team',
                     subLabel: 'Team',
@@ -483,16 +483,25 @@ export function FormResourceAccessControlDialog(props: FormResourceAccessControl
                         }
 
                         {
-                            targetOptions != null &&
+                            targetOptionsWithoutAlreadyInAccessList != null &&
+                            targetOptionsWithoutAlreadyInAccessList.length > 0 &&
                             <SelectFieldComponent
                                 label="Hinzufügen"
                                 value={addId}
                                 onChange={(val) => {
                                     setAddId(val);
                                 }}
-                                options={targetOptions}
+                                options={targetOptionsWithoutAlreadyInAccessList}
                                 disabled={isGloballyLoading}
                             />
+                        }
+
+                        {
+                            targetOptionsWithoutAlreadyInAccessList != null &&
+                            targetOptionsWithoutAlreadyInAccessList.length === 0 &&
+                            <Typography>
+                                Alle verfügbaren Teams und Organisationseinheiten haben bereits Zugriff.
+                            </Typography>
                         }
 
                         <IconButton
@@ -653,7 +662,7 @@ const PermissionLabels: Partial<Record<keyof ResourceAccessControlRequestDto, st
 const DefaultAccess = ResourceAccessControlsApiService.initialize();
 
 type ResourceAccessControlWithTeam = ResourceAccessControlResponseDto & {
-    sourceTeam: TeamResponseDTO;
+    sourceTeam: TeamEntity;
 };
 
 function isResourceAccessControlWithTeam(access: ResourceAccessControlResponseDto): access is ResourceAccessControlWithTeam {
@@ -667,7 +676,7 @@ type ResourceAccessControlWithOrgUnit = ResourceAccessControlResponseDto & {
 type ResourceAccessControlWithSource = ResourceAccessControlWithTeam | ResourceAccessControlWithOrgUnit;
 
 type SourceSelectionOptionWithTeam = SelectFieldComponentOption & {
-    team: TeamResponseDTO;
+    team: TeamEntity;
 };
 
 function isSourceSelectionOptionWithTeam(option: SourceSelectionOption): option is SourceSelectionOptionWithTeam {

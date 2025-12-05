@@ -9,7 +9,7 @@ import de.aivot.GoverBackend.resourceAccessControl.dtos.ResourceAccessControlRes
 import de.aivot.GoverBackend.resourceAccessControl.entities.ResourceAccessControlEntity;
 import de.aivot.GoverBackend.resourceAccessControl.filters.ResourceAccessControlFilter;
 import de.aivot.GoverBackend.resourceAccessControl.services.ResourceAccessControlService;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -36,7 +36,7 @@ import java.util.Map;
         name = "Resource Access Controls",
         description = "Resource access controls are used to manage access to various resources within the application."
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ResourceAccessControlController {
     private final ScopedAuditService auditService;
     private final ResourceAccessControlService resourceAccessControlService;

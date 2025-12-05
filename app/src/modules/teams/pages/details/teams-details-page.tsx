@@ -1,23 +1,23 @@
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {Typography} from '@mui/material';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
-import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 import {GenericPageHeaderPropsHelpDialog} from '../../../../components/generic-page-header/generic-page-header-props';
-import {TeamResponseDTO} from '../../dtos/team-response-dto';
-import {TeamsApiService} from '../../teams-api-service';
+import {TeamsApiService} from '../../services/teams-api-service';
+import {TeamEntity} from "../../entities/team-entity";
+import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
 
 export function TeamsDetailsPage() {
     return (
         <PageWrapper
-            title="Fachbereich bearbeiten"
+            title="Team bearbeiten"
             fullWidth
             background
         >
-            <GenericDetailsPage<TeamResponseDTO, number, void>
+            <GenericDetailsPage<TeamEntity, number, void>
                 header={{
-                    icon: <BusinessOutlinedIcon />,
-                    title: 'Fachbereich bearbeiten',
+                    icon: ModuleIcons.teams,
+                    title: 'Team bearbeiten',
                     helpDialog: HelpDialogContent,
                 }}
                 tabs={[
@@ -33,7 +33,7 @@ export function TeamsDetailsPage() {
                 ]}
                 initializeItem={(api) => TeamsApiService.initialize()}
                 fetchData={(api, id: number) => new TeamsApiService().retrieve(id)}
-                getTabTitle={(item: TeamResponseDTO) => {
+                getTabTitle={(item) => {
                     if (item.id === 0 || item.name == null) {
                         return 'Neues Team';
                     } else {

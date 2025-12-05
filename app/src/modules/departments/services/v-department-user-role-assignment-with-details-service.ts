@@ -1,5 +1,6 @@
 import {BaseCrudApiService} from '../../../services/base-crud-api-service';
 import {VDepartmentUserRoleAssignmentWithDetailsEntity} from '../entities/v-department-user-role-assignment-with-details-entity';
+import {UserRoleAssignmentEntity} from "../../user-roles/entities/user-role-assignment-entity";
 
 interface VDepartmentUserRoleAssignmentWithDetailsFilter {
     id: number;
@@ -7,10 +8,11 @@ interface VDepartmentUserRoleAssignmentWithDetailsFilter {
     name: string;
     userId: string;
     fullName: string;
+    userRoleId: number;
 }
 
 export class VDepartmentUserRoleAssignmentWithDetailsService extends BaseCrudApiService<
-    VDepartmentUserRoleAssignmentWithDetailsEntity,
+    UserRoleAssignmentEntity,
     VDepartmentUserRoleAssignmentWithDetailsEntity,
     VDepartmentUserRoleAssignmentWithDetailsEntity,
     VDepartmentUserRoleAssignmentWithDetailsEntity,

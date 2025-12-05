@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.search.controllers;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.search.entities.SearchItemEntity;
 import de.aivot.GoverBackend.search.repositories.SearchEntityRepository;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,7 +31,7 @@ import jakarta.annotation.Nullable;
         name = "Search",
         description = "Endpoints for searching various entities within the application."
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class SearchController {
 
     private final SearchEntityRepository searchEntityRepository;

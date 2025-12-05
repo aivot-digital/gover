@@ -11,6 +11,7 @@ import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 import {UserRoleResponseDTO} from '../../dtos/user-role-response-dto';
 import {UserRolesApiService} from '../../user-roles-api-service';
+import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
 
 export function UserRolesListPage() {
     const hasAccess = useAccessGuard({
@@ -20,17 +21,17 @@ export function UserRolesListPage() {
 
     return (
         <PageWrapper
-            title="Nutzerrollen"
+            title="Domänenrollen"
             fullWidth
             background
         >
             <GenericListPage<UserRoleResponseDTO>
                 header={{
-                    icon: <KeyOutlinedIcon />,
-                    title: 'Nutzerrollen',
+                    icon: ModuleIcons.roles,
+                    title: 'Domänenrollen',
                     actions: [
                         {
-                            label: 'Neue Nutzerrolle',
+                            label: 'Neue Domänenrolle',
                             icon: <AddOutlinedIcon />,
                             to: '/user-roles/new',
                             variant: 'contained',
@@ -38,29 +39,22 @@ export function UserRolesListPage() {
                         },
                     ],
                     helpDialog: {
-                        title: 'Hilfe zu Geheimnissen',
+                        title: 'Hilfe zu Domänenrollen',
                         tooltip: 'Hilfe anzeigen',
                         content: (
                             <>
                                 <Typography
                                     variant="body1"
-                                    paragraph
+                                    component="p"
                                 >
-                                    Verwalten Sie hier sicher die Geheimnisse Ihrer Webanwendung, wie API-Schlüssel, Passwörter oder andere vertrauliche Daten.
-                                    Diese werden getrennt vom Code gespeichert, um Sicherheitsrisiken zu minimieren und eine einfache Aktualisierung ohne Anpassung der Anwendung zu ermöglichen.
-                                </Typography>
-                                <Typography
-                                    variant="body1"
-                                    paragraph
-                                >
-                                    Alle Geheimnisse sind verschlüsselt und nur für autorisierte Nutzer:innen oder Dienste mit entsprechender Berechtigung zugänglich.
+                                    Verwalten Sie hier die Domänenrollen, die Berechtigungen und Zugriffsrechte für Benutzer:innen innerhalb der Anwendung definieren.
                                 </Typography>
                             </>
                         ),
                     },
                 }}
-                searchLabel="Geheimnis suchen"
-                searchPlaceholder="Name des Geheimnisses eingeben…"
+                searchLabel="Domänenrolle suchen"
+                searchPlaceholder="Name der Domänenrolle eingeben…"
                 fetch={(options) => {
                     return new UserRolesApiService()
                         .list(
@@ -71,15 +65,8 @@ export function UserRolesListPage() {
                             {name: options.search},
                         );
                 }}
+                columnIcon={() => ModuleIcons.roles}
                 columnDefinitions={[
-                    {
-                        field: 'icon',
-                        headerName: '',
-                        renderCell: () => <CellContentWrapper><KeyOutlinedIcon /></CellContentWrapper>,
-                        disableColumnMenu: true,
-                        width: 24,
-                        sortable: false,
-                    },
                     {
                         field: 'name',
                         headerName: 'Name',
@@ -87,7 +74,7 @@ export function UserRolesListPage() {
                         renderCell: (params) => (
                             <CellLink
                                 to={`/user-roles/${params.id}`}
-                                title={hasAccess ? 'Geheimnis bearbeiten' : 'Geheimnis anzeigen'}
+                                title={hasAccess ? 'Domänenrolle bearbeiten' : 'Domänenrolle anzeigen'}
                             >
                                 {String(params.value)}
                             </CellLink>
@@ -100,14 +87,14 @@ export function UserRolesListPage() {
                     },
                 ]}
                 getRowIdentifier={row => row.id.toString()}
-                noDataPlaceholder="Keine Geheimnisse angelegt"
-                noSearchResultsPlaceholder="Keine Geheimnisse gefunden"
+                noDataPlaceholder="Keine Domänenrolle angelegt"
+                noSearchResultsPlaceholder="Keine Domänenrolle gefunden"
                 rowActionsCount={1}
                 rowActions={(item: UserRoleResponseDTO) => [
                     {
                         icon: hasAccess ? <EditOutlined /> : <Visibility />,
                         to: `/user-roles/${item.id}`,
-                        tooltip: hasAccess ? 'Geheimnis bearbeiten' : 'Geheimnis anzeigen',
+                        tooltip: hasAccess ? 'Domänenrolle bearbeiten' : 'Domänenrolle anzeigen',
                     },
                 ]}
                 defaultSortField="name"

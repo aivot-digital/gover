@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.teams.entities;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
@@ -9,7 +10,6 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "v_team_user_role_assignments_with_details")
 public class VTeamUserRoleAssignmentWithDetailsEntity {
-    @Id
     private Integer id;
     private Integer teamId;
     private String userId;
@@ -24,7 +24,9 @@ public class VTeamUserRoleAssignmentWithDetailsEntity {
     private Boolean verified;
     private Integer globalRole;
     private Boolean deletedInIdp;
+    @Id
     private Integer userRoleAssignmentId;
+    private Integer userRoleId;
     private String userRoleName;
     private String description;
     private Boolean departmentPermissionEdit;
@@ -368,6 +370,15 @@ public class VTeamUserRoleAssignmentWithDetailsEntity {
 
     public VTeamUserRoleAssignmentWithDetailsEntity setProcessInstancePermissionAnnotate(Boolean processInstancePermissionAnnotate) {
         this.processInstancePermissionAnnotate = processInstancePermissionAnnotate;
+        return this;
+    }
+
+    public Integer getUserRoleId() {
+        return userRoleId;
+    }
+
+    public VTeamUserRoleAssignmentWithDetailsEntity setUserRoleId(Integer userRoleId) {
+        this.userRoleId = userRoleId;
         return this;
     }
 }

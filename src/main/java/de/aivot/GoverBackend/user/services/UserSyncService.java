@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.user.services;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.models.KeycloakUser;
 import de.aivot.GoverBackend.user.repositories.UserRepository;
@@ -25,26 +26,31 @@ public class UserSyncService {
     private final UserRepository userRepository;
     private final KeyCloakApiService keycloakApiService;
 
+    private final GoverConfig goverConfig;
+
     @Autowired
-    public UserSyncService(
-            AuditService auditService,
-            UserRepository userRepository,
-            KeyCloakApiService keycloakApiService
-    ) {
+    public UserSyncService(AuditService auditService,
+                           UserRepository userRepository,
+                           KeyCloakApiService keycloakApiService,
+                           GoverConfig goverConfig) {
         this.auditService = auditService.createScopedAuditService(UserSyncService.class);
 
         this.userRepository = userRepository;
         this.keycloakApiService = keycloakApiService;
+        this.goverConfig = goverConfig;
     }
 
     @Scheduled(fixedDelay = delayInMS)
     public void syncUsers() {
-        var localUsers = userRepository
-                .findAllByDeletedInIdpIsFalse();
+        var hasSuperAdmin = userRepository
+                .existsByGlobalRole(UserEntity.SUPER_ADMIN_ROLE_VALUE);
 
-        Collection<KeycloakUser> keycloakUsers;
+        var alreadyImportedUsers = userRepository
+                .findAll();
+
+        Collection<KeycloakUser> keycloakUsersToImport;
         try {
-            keycloakUsers = keycloakApiService
+            keycloakUsersToImport = keycloakApiService
                     .listUsers();
         } catch (ResponseException e) {
             throw new RuntimeException(e.getMessage() + " - " + e.getDetails(), e);
@@ -52,33 +58,44 @@ public class UserSyncService {
 
         var updatedUserIds = new HashSet<String>();
 
-        for (var keycloakUser : keycloakUsers) {
-            var userEntity = UserEntity
-                    .from(keycloakUser);
+        // Iterate over all keycloak users and import or update them in the local database
+        for (var keycloakUser : keycloakUsersToImport) {
+            var userEntity = userRepository
+                    .findById(keycloakUser.getId())
+                    .orElse(
+                            new UserEntity()
+                                    .setId(keycloakUser.getId())
+                                    .setGlobalRole(UserEntity.DEFAULT_USER_ROLE_VALUE)
+                    )
+                    .setDeletedInIdp(false)
+                    .setEnabled(keycloakUser.getEnabled())
+                    .setVerified(keycloakUser.getEmailVerified())
+                    .setEmail(keycloakUser.getEmail())
+                    .setFirstName(keycloakUser.getFirstName())
+                    .setLastName(keycloakUser.getLastName());
 
-            var existingUserOpt = userRepository
-                    .findById(userEntity.getId());
-
-            if (existingUserOpt.isPresent()) {
-                var existingUser = existingUserOpt
-                        .get()
-                        .setDeletedInIdp(false)
-                        .setEnabled(userEntity.getEnabled())
-                        .setVerified(userEntity.getVerified())
-                        .setEmail(userEntity.getEmail())
-                        .setFirstName(userEntity.getFirstName())
-                        .setLastName(userEntity.getLastName());
-                userRepository
-                        .save(existingUser);
-            } else {
-                userRepository
-                        .save(userEntity);
+            if (!hasSuperAdmin &&
+                    goverConfig.getBootstrapAdminMail() != null &&
+                    goverConfig.getBootstrapAdminMail().contains(userEntity.getEmail())) {
+                auditService
+                        .logMessage("User with id " + userEntity.getId() + " was promoted to a super admin because no super admin exists and their e-mail address is in the list of bootstrapAdminMail", Map.of(
+                                "userId", userEntity.getId()
+                        ));
+                userEntity.setGlobalRole(UserEntity.SUPER_ADMIN_ROLE_VALUE);
             }
 
+            userRepository
+                    .save(userEntity);
+
             updatedUserIds.add(userEntity.getId());
+
+            auditService
+                    .logMessage("User with id " + userEntity.getId() + " was imported or updated from the IDP", Map.of(
+                            "userId", userEntity.getId()
+                    ));
         }
 
-        for (var localUser : localUsers) {
+        for (var localUser : alreadyImportedUsers) {
             if (updatedUserIds.contains(localUser.getId())) {
                 continue;
             }

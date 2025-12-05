@@ -10,7 +10,7 @@ import de.aivot.GoverBackend.config.filters.UserConfigFilter;
 import de.aivot.GoverBackend.config.models.UserConfigDefinition;
 import de.aivot.GoverBackend.config.services.UserConfigService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
         description = "User configurations are key-value pairs that define various settings and preferences for individual users. " +
                       "These configurations can be used to customize the behavior of the system for each user."
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class UserConfigController {
     private final static String SELF_USER_ID = "self";
 

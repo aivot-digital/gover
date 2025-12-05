@@ -10,7 +10,7 @@ import de.aivot.GoverBackend.department.services.VDepartmentMembershipWithDetail
 import de.aivot.GoverBackend.department.services.VDepartmentMembershipWithPermissionsService;
 import de.aivot.GoverBackend.department.services.VDepartmentUserRoleAssignmentWithDetailsService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
 import de.aivot.GoverBackend.userRoles.entities.UserRoleAssignmentEntity;
@@ -40,7 +40,7 @@ import java.util.Objects;
         description = "User roles are assigned to users within the context of a department membership. " +
                       "This allows for granular control over user permissions and access rights specific to each department."
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class VDepartmentUserRoleAssignmentWithDetailsController {
     private final ScopedAuditService auditService;
 

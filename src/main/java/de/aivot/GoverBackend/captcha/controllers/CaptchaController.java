@@ -6,7 +6,7 @@ import de.aivot.GoverBackend.captcha.filters.ChallengeRateLimitFilter;
 import de.aivot.GoverBackend.captcha.services.AltchaService;
 import de.aivot.GoverBackend.captcha.services.RedisCaptchaReplayGuard;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -65,7 +65,7 @@ public class CaptchaController {
             description = "Verifies the captcha solution provided by the client. " +
                           "This endpoint requires authentication and is mainly for debugging purposes."
     )
-    @SecurityRequirement(name = OpenAPIConfiguration.Name)
+    @SecurityRequirement(name = OpenApiConfiguration.Security)
     public ResponseEntity<CaptchaVerificationResponseDTO> verify(
             @RequestBody CaptchaVerificationRequestDTO request
     ) throws Exception {

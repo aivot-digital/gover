@@ -9,7 +9,7 @@ import de.aivot.GoverBackend.config.entities.SystemConfigEntity;
 import de.aivot.GoverBackend.config.filters.SystemConfigFilter;
 import de.aivot.GoverBackend.config.services.SystemConfigService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -38,7 +38,7 @@ import java.util.Map;
         description = "System configurations are key-value pairs that define various settings and parameters of the application. " +
                       "These configurations can be used to customize the behavior of the system and should be used if you need to provide configuration values to citizens publicly."
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class SystemConfigController {
     private final ScopedAuditService auditService;
     private final SystemConfigService systemConfigService;

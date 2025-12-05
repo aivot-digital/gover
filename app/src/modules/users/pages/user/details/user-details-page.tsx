@@ -46,6 +46,11 @@ export function UserDetailsPage() {
                         label: 'Fachbereiche und Rollen',
                         isDisabled: (item) => !item?.id,
                     },
+                    {
+                        path: '/users/:id/teams-and-roles',
+                        label: 'Teams und Rollen',
+                        isDisabled: (item) => !item?.id,
+                    },
                 ]}
                 initializeItem={(api) => new UsersApiService().initialize()}
                 fetchData={(api, id: number) => new UsersApiService().retrieve(String(id))}

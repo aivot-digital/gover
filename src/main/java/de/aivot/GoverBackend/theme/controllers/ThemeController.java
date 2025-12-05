@@ -4,7 +4,7 @@ import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.theme.dtos.ThemeRequestDTO;
 import de.aivot.GoverBackend.theme.dtos.ThemeResponseDTO;
 import de.aivot.GoverBackend.theme.entities.ThemeEntity;
@@ -31,7 +31,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/themes/")
 @Tag(name = "Themes", description = "Manage themes")
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ThemeController {
     private final ScopedAuditService auditService;
     private final ThemeService service;

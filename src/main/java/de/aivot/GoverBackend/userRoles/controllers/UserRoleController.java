@@ -4,7 +4,7 @@ import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.dtos.UserRoleRequestDTO;
 import de.aivot.GoverBackend.userRoles.dtos.UserRoleResponseDTO;
@@ -31,7 +31,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/user-roles/")
 @Tag(name = "User Roles", description = "Manage user roles")
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class UserRoleController {
     private final ScopedAuditService auditService;
     private final UserRoleService userRoleService;

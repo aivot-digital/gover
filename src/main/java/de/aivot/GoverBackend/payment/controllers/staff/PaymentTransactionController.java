@@ -7,7 +7,7 @@ import de.aivot.GoverBackend.payment.exceptions.PaymentException;
 import de.aivot.GoverBackend.payment.filters.PaymentTransactionFilter;
 import de.aivot.GoverBackend.payment.services.PaymentProviderTestService;
 import de.aivot.GoverBackend.payment.services.PaymentTransactionService;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -35,7 +35,7 @@ import java.util.Map;
         name = "Payment Transactions",
         description = "Endpoints for managing payment transactions"
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class PaymentTransactionController {
     private final GoverConfig goverConfig;
     private final PaymentTransactionService paymentTransactionService;

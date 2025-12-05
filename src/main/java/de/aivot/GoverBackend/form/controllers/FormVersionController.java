@@ -13,7 +13,7 @@ import de.aivot.GoverBackend.form.filters.VFormVersionWithDetailsAndPermissionFi
 import de.aivot.GoverBackend.form.models.FormPublishChecklistItem;
 import de.aivot.GoverBackend.form.services.*;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
 import io.swagger.v3.oas.annotations.Operation;
@@ -42,7 +42,7 @@ import java.util.Map;
                       "They allow for version control of a form over time. " +
                       "Versions can be published and revoken but only one version can be published at a time."
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class FormVersionController {
     private final ScopedAuditService auditService;
 

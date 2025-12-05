@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.department.filters;
 
 import de.aivot.GoverBackend.department.entities.VDepartmentMembershipWithDetailsEntity;
 import de.aivot.GoverBackend.lib.models.Filter;
+import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -49,7 +50,7 @@ public class VDepartmentMembershipWithDetailsFilter implements Filter<VDepartmen
 
         if (globalAdmin != null) {
             builder = builder
-                    .withEquals("globalAdmin", globalAdmin);
+                    .withEquals("globalRole", UserEntity.SUPER_ADMIN_ROLE_VALUE);
         }
 
         if (deletedInIdp != null) {

@@ -18,8 +18,8 @@ import {GenericDetailsSkeleton} from '../../../../components/generic-details-pag
 import {ThemeResponseDTO} from '../../../themes/models/theme';
 import {ThemesApiService} from '../../../themes/themes-api-service';
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
-import {TeamResponseDTO} from '../../dtos/team-response-dto';
-import {TeamsApiService} from '../../teams-api-service';
+import {TeamsApiService} from '../../services/teams-api-service';
+import {TeamEntity} from "../../entities/team-entity";
 
 export const TeamSchema = yup.object({
     name: yup.string()
@@ -40,7 +40,7 @@ export function TeamsDetailsPageIndex() {
         isBusy,
         setIsBusy,
         isEditable,
-    } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<TeamResponseDTO, void>;
+    } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<TeamEntity, void>;
 
     useEffect(() => {
         if (isEditable) {
@@ -67,7 +67,7 @@ export function TeamsDetailsPageIndex() {
         handleInputChange,
         validate,
         reset,
-    } = useFormManager<TeamResponseDTO>(item, TeamSchema as any);
+    } = useFormManager<TeamEntity>(item, TeamSchema as any);
 
     const apiService = useMemo(() => new TeamsApiService(), []);
     const changeBlocker = useChangeBlocker(item, team);
@@ -110,7 +110,10 @@ export function TeamsDetailsPageIndex() {
             if (team.id === 0) {
                 apiService
                     .create({
+                        id: 0,
                         name: team.name ?? 'Unbenanntes Team',
+                        created: new Date().toISOString(),
+                        updated: new Date().toISOString(),
                     })
                     .then((newDepartment) => {
                         setItem(newDepartment);
@@ -133,7 +136,10 @@ export function TeamsDetailsPageIndex() {
             } else {
                 apiService
                     .update(team.id, {
+                        id: team.id,
                         name: team.name ?? 'Unbenanntes Team',
+                        created: team.created,
+                        updated: team.updated,
                     })
                     .then((updatedDepartment) => {
                         setItem(updatedDepartment);

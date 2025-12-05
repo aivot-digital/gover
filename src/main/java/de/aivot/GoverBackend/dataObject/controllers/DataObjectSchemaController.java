@@ -8,7 +8,7 @@ import de.aivot.GoverBackend.dataObject.entities.DataObjectSchemaEntity;
 import de.aivot.GoverBackend.dataObject.filters.DataObjectSchemaFilter;
 import de.aivot.GoverBackend.dataObject.services.DataObjectSchemaService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -35,7 +35,7 @@ import java.util.Map;
                       "Schemas define the structure of the data objects, while items are the actual data entries conforming to these schemas. " +
                       "Data Objects are used to store flexible and dynamic data within the application."
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class DataObjectSchemaController {
     private final ScopedAuditService auditService;
     private final DataObjectSchemaService service;

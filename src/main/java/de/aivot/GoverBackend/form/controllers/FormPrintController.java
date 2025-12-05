@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.form.controllers;
 import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntityId;
 import de.aivot.GoverBackend.form.services.VFormVersionWithDetailsService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.services.PdfService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -35,7 +35,7 @@ import java.nio.charset.StandardCharsets;
                       "They can be designed with various elements and configurations to suit different data collection needs. " +
                       "Forms can be published, managed, and analyzed within the system."
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class FormPrintController {
     private final PdfService pdfService;
     private final VFormVersionWithDetailsService formVersionWithDetailsService;

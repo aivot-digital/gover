@@ -9,7 +9,7 @@ import de.aivot.GoverBackend.providerLink.dtos.ProviderLinkResponseDTO;
 import de.aivot.GoverBackend.providerLink.entities.ProviderLink;
 import de.aivot.GoverBackend.providerLink.filters.ProviderLinkFilter;
 import de.aivot.GoverBackend.providerLink.services.ProviderLinkService;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -36,7 +36,7 @@ import java.util.Map;
         description = "Provider links can be used to link to external resources from within Gover. " +
                       "They can be managed by system administrators and are often used to provide links to documentation, support pages, or other relevant external sites."
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ProviderLinkController {
     private final ScopedAuditService auditService;
     private final ProviderLinkService providerLinkService;

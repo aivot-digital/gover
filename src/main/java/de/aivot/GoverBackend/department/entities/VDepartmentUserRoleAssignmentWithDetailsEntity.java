@@ -10,7 +10,6 @@ import java.util.List;
 @Entity
 @Table(name = "v_department_user_role_assignments_with_details")
 public class VDepartmentUserRoleAssignmentWithDetailsEntity {
-    @Id
     private Integer id;
     private Integer departmentId;
     private String userId;
@@ -42,7 +41,9 @@ public class VDepartmentUserRoleAssignmentWithDetailsEntity {
     private Boolean verified;
     private Integer globalRole;
     private Boolean deletedInIdp;
+    @Id
     private Integer userRoleAssignmentId;
+    private Integer userRoleId;
     private String userRoleName;
     private String description;
     private Boolean departmentPermissionEdit;
@@ -539,6 +540,15 @@ public class VDepartmentUserRoleAssignmentWithDetailsEntity {
 
     public VDepartmentUserRoleAssignmentWithDetailsEntity setProcessInstancePermissionAnnotate(Boolean processInstancePermissionAnnotate) {
         this.processInstancePermissionAnnotate = processInstancePermissionAnnotate;
+        return this;
+    }
+
+    public Integer getUserRoleId() {
+        return userRoleId;
+    }
+
+    public VDepartmentUserRoleAssignmentWithDetailsEntity setUserRoleId(Integer userRoleId) {
+        this.userRoleId = userRoleId;
         return this;
     }
 }

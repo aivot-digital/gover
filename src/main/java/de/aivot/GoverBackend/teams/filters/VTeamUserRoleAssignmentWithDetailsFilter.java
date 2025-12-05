@@ -9,7 +9,10 @@ import org.springframework.data.jpa.domain.Specification;
 public class VTeamUserRoleAssignmentWithDetailsFilter implements Filter<VTeamUserRoleAssignmentWithDetailsEntity> {
     private Integer id;
     private Integer teamId;
+    private String name;
     private String userId;
+    private String fullName;
+    private Integer userRoleId;
 
     public static VTeamUserRoleAssignmentWithDetailsFilter create() {
         return new VTeamUserRoleAssignmentWithDetailsFilter();
@@ -21,7 +24,10 @@ public class VTeamUserRoleAssignmentWithDetailsFilter implements Filter<VTeamUse
                 .create(VTeamUserRoleAssignmentWithDetailsEntity.class)
                 .withEquals("id", id)
                 .withEquals("teamId", teamId)
+                .withContains("name", name)
                 .withEquals("userId", userId)
+                .withContains("fullName", fullName)
+                .withEquals("userRoleId", userRoleId)
                 .build();
     }
 
@@ -43,12 +49,39 @@ public class VTeamUserRoleAssignmentWithDetailsFilter implements Filter<VTeamUse
         return this;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public VTeamUserRoleAssignmentWithDetailsFilter setName(String name) {
+        this.name = name;
+        return this;
+    }
+
     public String getUserId() {
         return userId;
     }
 
     public VTeamUserRoleAssignmentWithDetailsFilter setUserId(String userId) {
         this.userId = userId;
+        return this;
+    }
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public VTeamUserRoleAssignmentWithDetailsFilter setFullName(String fullName) {
+        this.fullName = fullName;
+        return this;
+    }
+
+    public Integer getUserRoleId() {
+        return userRoleId;
+    }
+
+    public VTeamUserRoleAssignmentWithDetailsFilter setUserRoleId(Integer userRoleId) {
+        this.userRoleId = userRoleId;
         return this;
     }
 }

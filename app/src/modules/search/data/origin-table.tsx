@@ -16,6 +16,7 @@ export const OriginTableLabels: Record<ServerEntityType, string> = {
     [ServerEntityType.Secrets]: 'Geheimnis',
     [ServerEntityType.Submissions]: 'Vorgang',
     [ServerEntityType.Themes]: 'Farbschema',
+    [ServerEntityType.UserRoles]: 'Domänenrolle',
 };
 
 export const OriginTableIcons: Record<ServerEntityType, ReactNode> = {
@@ -32,4 +33,5 @@ export const OriginTableIcons: Record<ServerEntityType, ReactNode> = {
     [ServerEntityType.Secrets]: ModuleIcons.secrets,
     [ServerEntityType.Submissions]: ModuleIcons.submissions,
     [ServerEntityType.Themes]: ModuleIcons.themes,
+    [ServerEntityType.UserRoles]: ModuleIcons.roles,
 };

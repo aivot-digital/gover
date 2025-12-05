@@ -1,4 +1,12 @@
-import {DataGrid, GridCallbackDetails, gridClasses, gridPageCountSelector, gridPageSelector, GridPaginationModel, GridSortModel} from '@mui/x-data-grid';
+import {
+    DataGrid,
+    GridCallbackDetails,
+    gridClasses,
+    gridPageCountSelector,
+    gridPageSelector,
+    GridPaginationModel,
+    GridSortModel
+} from '@mui/x-data-grid';
 import {Box, CircularProgress, Menu, MenuItem, styled, SxProps, Tab, Tabs} from '@mui/material';
 import React, {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react';
 import {TextFieldComponent} from '../text-field/text-field-component';
@@ -17,6 +25,7 @@ import {GenericListProps} from './generic-list-props';
 import CloseIcon from '@mui/icons-material/Close';
 import {useSearchParams} from 'react-router-dom';
 import {GridSortItem} from '@mui/x-data-grid/models/gridSortModel';
+import {CellContentWrapper} from "../cell-content-wrapper/cell-content-wrapper";
 
 const UrlParamKeys = {
     search: 'search',
@@ -39,6 +48,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
         getRowIdentifier,
         defaultFilter,
         fetch: fetchFunc,
+        columnIcon,
     } = props;
 
     const api = useApi();
@@ -306,6 +316,24 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
         const columns = originalColumnDefinitions
             .filter(column => !column.onlyFullScreen || isFullWidth);
 
+        if (columnIcon != null) {
+            columns.unshift({
+                field: 'icon',
+                headerName: '',
+                renderCell: (params) => {
+                    const icon = typeof columnIcon === 'function' ? columnIcon(params.row) : columnIcon;
+                    return (
+                        <CellContentWrapper>
+                            {icon}
+                        </CellContentWrapper>
+                    )
+                },
+                disableColumnMenu: true,
+                width: 24,
+                sortable: false,
+            })
+        }
+
         if (rowActions != null) {
             columns.push({
                 field: 'actions',
@@ -333,7 +361,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
         }
 
         return columns;
-    }, [originalColumnDefinitions, isFullWidth, rowActions, rowActionsCount]);
+    }, [columnIcon, originalColumnDefinitions, isFullWidth, rowActions, rowActionsCount]);
 
     const showTopControls =
         ((props.filters != null && props.filters.length > 0) || props.disableFullWidthToggle !== true);
@@ -442,8 +470,8 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                         >
                             {
                                 isFullWidth ?
-                                    <ZoomInMapOutlinedIcon /> :
-                                    <ZoomOutMapOutlinedIcon />
+                                    <ZoomInMapOutlinedIcon/> :
+                                    <ZoomOutMapOutlinedIcon/>
                             }
                         </IconButton>
                     }
@@ -483,13 +511,13 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                             value={search}
                             onChange={handleSearchChange}
                             placeholder={props.searchPlaceholder}
-                            startIcon={<SearchOutlinedIcon />}
+                            startIcon={<SearchOutlinedIcon/>}
                             endAction={
                                 search
                                     ? {
                                         onClick: () => handleSearchChange(undefined),
                                         tooltip: 'Suche zurücksetzen',
-                                        icon: <CloseIcon sx={{fontSize: 20}} />,
+                                        icon: <CloseIcon sx={{fontSize: 20}}/>,
                                     }
                                     : undefined
                             }
@@ -510,7 +538,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                                 title: 'Mehr',
                             }}
                         >
-                            <MoreVertOutlinedIcon />
+                            <MoreVertOutlinedIcon/>
                         </IconButton>
                     </Box>
                 }
@@ -639,7 +667,7 @@ const LoadingOverlay = () => (
                 display: 'inline-flex',
             }}
         >
-            <CircularProgress />
+            <CircularProgress/>
         </Box>
     </StyledGridOverlay>
 );

@@ -2,6 +2,8 @@ package de.aivot.GoverBackend.teams.entities;
 
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
 
@@ -15,15 +17,19 @@ import java.time.LocalDateTime;
 public class TeamMembershipEntity {
     @Id
     @Nonnull
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "team_memberships_id_seq")
+    @SequenceGenerator(name = "team_memberships_id_seq", allocationSize = 1)
     private Integer id;
 
     @Nonnull
     @Column(name = "team_id", nullable = false)
+    @NotNull(message = "Die ID des Teams darf nicht null sein.")
     private Integer teamId;
 
     @Nonnull
     @Column(name = "user_id", length = 36, nullable = false)
+    @NotNull(message = "Die ID des Benutzers darf nicht null sein.")
+    @NotBlank(message = "Die ID des Benutzers darf nicht leer sein.")
     private String userId;
 
     @Nonnull

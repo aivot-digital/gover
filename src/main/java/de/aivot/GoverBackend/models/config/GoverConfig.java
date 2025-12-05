@@ -23,6 +23,7 @@ public class GoverConfig {
     private List<String> contentTypes;
     private String goverHostname;
     private Integer maxSubmissionCopyRetryCount;
+    private List<String> bootstrapAdminMail;
 
     public String getDefaultLogoUrl() {
         return createUrl("/assets/default-logo.png");
@@ -126,6 +127,14 @@ public class GoverConfig {
 
     public void setMaxSubmissionCopyRetryCount(Integer maxSubmissionCopyRetryCount) {
         this.maxSubmissionCopyRetryCount = maxSubmissionCopyRetryCount;
+    }
+
+    public List<String> getBootstrapAdminMail() {
+        return bootstrapAdminMail;
+    }
+
+    public void setBootstrapAdminMail(List<String> bootstrapAdminMail) {
+        this.bootstrapAdminMail = bootstrapAdminMail;
     }
 
     // endregion

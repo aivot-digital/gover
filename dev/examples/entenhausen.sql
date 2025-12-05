@@ -27,7 +27,7 @@ values ('00000000-0000-0000-0000-000000000000',
         'sascha.saiga@entenhausen.de',
         'Sascha',
         'Saiga',
-        2,
+        0,
         false,
         true,
         true)
@@ -185,6 +185,10 @@ on conflict (id) do update
         process_instance_permission_annotate = excluded.process_instance_permission_annotate,
         updated                              = now();
 
+-- fix id sequence for user_roles
+select setval('user_roles_id_seq',
+                (select max(id) from user_roles));
+
 -- Create example themes
 insert into themes (id,
                     name,
@@ -222,6 +226,10 @@ on conflict (id) do update
         info      = excluded.info,
         warning   = excluded.warning,
         error     = excluded.error;
+
+-- fix id sequence for themes
+select setval('themes_id_seq',
+                (select max(id) from themes));
 
 -- Create example departments
 insert into departments (id,
@@ -350,6 +358,10 @@ on conflict (id) do update
         parent_department_id      = excluded.parent_department_id,
         updated                   = now();
 
+-- fix id sequence for departments
+select setval('departments_id_seq',
+                (select max(id) from departments));
+
 -- create memberships for departments
 insert into department_memberships (id,
                                     department_id,
@@ -381,6 +393,10 @@ on conflict (id) do update
         user_id       = excluded.user_id,
         updated       = now();
 
+-- fix id sequence for department_memberships
+select setval('department_memberships_id_seq',
+                (select max(id) from department_memberships));
+
 -- assign user roles to memberships
 insert into user_role_assignments (id,
                                    department_membership_id,
@@ -395,6 +411,10 @@ on conflict (id) do update
     set department_membership_id = excluded.department_membership_id,
         user_role_id             = excluded.user_role_id;
 
+-- fix id sequence for user_role_assignments
+select setval('user_role_assignments_id_seq',
+                (select max(id) from user_role_assignments));
+
 -- create teams
 insert into teams (id,
                    name)
@@ -404,6 +424,10 @@ values (1,
         'Prüfteam')
 on conflict (id) do update
     set name = excluded.name;
+
+-- fix id sequence for teams
+select setval('teams_id_seq',
+                (select max(id) from teams));
 
 -- create team memberships
 insert into team_memberships (id,
@@ -421,12 +445,18 @@ on conflict (id) do update
         user_id = excluded.user_id,
         updated = now();
 
+-- fix id sequence for team_memberships
+select setval('team_memberships_id_seq',
+                (select max(id) from team_memberships));
+
+-- assign the default system theme
 insert into system_configs (key,
                             value)
 values ('SystemTheme', '1')
 on conflict (key) do update
     set value = excluded.value;
 
+-- create example forms
 insert into forms (id,
                    developing_department_id,
                    slug,
@@ -472,7 +502,11 @@ on conflict (id) do update
         version_count            = excluded.version_count,
         updated                  = now();
 
+-- fix id sequence for forms
+select setval('applications_id_seq',
+                (select max(id) from forms));
 
+-- create example form versions
 insert into form_versions (form_id,
                            version,
                            status,
@@ -696,11 +730,13 @@ on conflict (form_id,
         managing_department_id          = excluded.managing_department_id,
         responsible_department_id       = excluded.responsible_department_id;
 
+-- update forms with draft and version info
 update forms
 set drafted_version = 1,
     version_count   = 1
 where id = 2;
 
+-- create resource access controls
 insert into resource_access_controls (id,
                                       source_department_id,
                                       source_team_id,
@@ -735,6 +771,11 @@ on conflict (id) do update
         form_permission_read     = excluded.form_permission_read,
         form_permission_annotate = excluded.form_permission_annotate;
 
+-- fix id sequence for resource_access_controls
+select setval('resource_access_controls_id_seq',
+                (select max(id) from resource_access_controls));
+
+-- create example data object schema and items
 insert into data_object_schemas (key,
                                  name,
                                  description,

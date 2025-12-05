@@ -20,7 +20,7 @@ import de.aivot.GoverBackend.form.services.*;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.services.ExceptionMailService;
 import de.aivot.GoverBackend.mail.services.FormMailService;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.system.properties.BuildProperties;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
@@ -55,7 +55,7 @@ import java.util.Map;
                       "Forms can be published, managed, and analyzed within the system. " +
                       "Forms are versioned with the „Form Version” resource."
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class FormController {
     private final ScopedAuditService auditService;
 
@@ -184,7 +184,7 @@ public class FormController {
             description = "Retrieve a form by its id. " +
                           "Superadmins can retrieve any form, staff users can retrieve forms they have read permission for."
     )
-    @SecurityRequirement(name = OpenAPIConfiguration.Name)
+    @SecurityRequirement(name = OpenApiConfiguration.Security)
     public FormEntity retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer formId
@@ -219,7 +219,7 @@ public class FormController {
             description = "Update a form by its id." +
                           "Super admins can update any form, staff users can update forms they have edit permission for."
     )
-    @SecurityRequirement(name = OpenAPIConfiguration.Name)
+    @SecurityRequirement(name = OpenApiConfiguration.Security)
     public FormEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer formId,
@@ -268,7 +268,7 @@ public class FormController {
             description = "Move a form to another department. " +
                           "The user must be a super admin or have edit permission in the current developing department of the form."
     )
-    @SecurityRequirement(name = OpenAPIConfiguration.Name)
+    @SecurityRequirement(name = OpenApiConfiguration.Security)
     public void move(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer formId,
@@ -329,7 +329,7 @@ public class FormController {
             description = "Delete a form by its id. " +
                           "Super admins can delete any form, staff users can delete forms they have delete permission for."
     )
-    @SecurityRequirement(name = OpenAPIConfiguration.Name)
+    @SecurityRequirement(name = OpenApiConfiguration.Security)
     public void destroy(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer formId

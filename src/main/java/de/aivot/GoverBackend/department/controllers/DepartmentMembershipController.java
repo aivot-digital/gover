@@ -12,7 +12,7 @@ import de.aivot.GoverBackend.exceptions.InvalidUserEMailException;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.services.DepartmentMembershipMailService;
 import de.aivot.GoverBackend.mail.services.ExceptionMailService;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
 import io.swagger.v3.oas.annotations.Operation;
@@ -42,7 +42,7 @@ import java.util.Map;
                       "They define which users belong to which departments and what roles or permissions they have within those departments. " +
                       "Managing department memberships is crucial for controlling access to resources and functionalities based on organisational structure."
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class DepartmentMembershipController {
     private final ScopedAuditService auditService;
 

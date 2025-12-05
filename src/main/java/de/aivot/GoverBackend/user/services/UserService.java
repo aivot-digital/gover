@@ -8,6 +8,10 @@ import de.aivot.GoverBackend.user.models.KeycloakUser;
 import de.aivot.GoverBackend.user.repositories.UserRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -55,6 +59,11 @@ public class UserService implements EntityService<UserEntity, String> {
     public UserEntity create(@Nonnull UserEntity entity) throws ResponseException {
         var keycloakUserToCreate = KeycloakUser
                 .from(entity);
+
+        if (userRepository.existsByEmail(entity.getEmail())) {
+            throw ResponseException
+                    .badRequest("Es existiert bereits eine Mitarbeiter:in mit dieser E-Mail-Adresse.");
+        }
 
         var createdKeycloakUser = keyCloakApiService
                 .createUser(keycloakUserToCreate);
@@ -170,5 +179,12 @@ public class UserService implements EntityService<UserEntity, String> {
         entity.setEnabled(false);
 
         userRepository.save(entity);
+    }
+
+    public UserEntity updatePassword(String id, String password) throws ResponseException {
+        var user = retrieve(id)
+                .orElseThrow(() -> ResponseException.notFound("Mitarbeiter:in nicht gefunden"));
+
+        return user;
     }
 }

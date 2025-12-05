@@ -3,6 +3,9 @@ package de.aivot.GoverBackend.teams.entities;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 
@@ -11,11 +14,15 @@ import java.time.LocalDateTime;
 public class TeamEntity {
     @Id
     @Nonnull
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "teams_id_seq")
+    @SequenceGenerator(name = "teams_id_seq", allocationSize = 1)
     private Integer id;
 
     @Nullable
     @Column(length = 64, nullable = false, unique = true)
+    @NotNull(message = "Der Name des Teams darf nicht null sein.")
+    @NotBlank(message = "Der Name des Teams darf nicht leer sein.")
+    @Size(min = 3, max = 64, message = "Der Name des Teams muss zwischen 3 und 64 Zeichen lang sein.")
     private String name;
 
     @Nonnull

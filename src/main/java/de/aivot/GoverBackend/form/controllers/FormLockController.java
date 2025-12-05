@@ -6,7 +6,7 @@ import de.aivot.GoverBackend.form.services.FormLockService;
 import de.aivot.GoverBackend.form.services.VFormWithPermissionsService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.dtos.EntityLockDto;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.*;
                       "They can be designed with various elements and configurations to suit different data collection needs. " +
                       "Forms can be published, managed, and analyzed within the system."
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class FormLockController {
     private final FormLockService formLockService;
     private final VFormWithPermissionsService vFormWithPermissionsService;

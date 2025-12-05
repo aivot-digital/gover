@@ -4,7 +4,7 @@ import de.aivot.GoverBackend.department.entities.VDepartmentMembershipWithDetail
 import de.aivot.GoverBackend.department.filters.VDepartmentMembershipWithDetailsFilter;
 import de.aivot.GoverBackend.department.services.VDepartmentMembershipWithDetailsService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,7 +29,7 @@ import jakarta.annotation.Nonnull;
                       "They define which users belong to which departments and what roles or permissions they have within those departments. " +
                       "Managing department memberships is crucial for controlling access to resources and functionalities based on organisational structure."
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class VDepartmentMembershipWithDetailsController {
     private final VDepartmentMembershipWithDetailsService service;
 

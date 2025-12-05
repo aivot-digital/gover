@@ -4,7 +4,7 @@ import de.aivot.GoverBackend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.GoverBackend.department.filters.VDepartmentShadowedFilter;
 import de.aivot.GoverBackend.department.services.VDepartmentShadowedService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
                       "Departments help in structuring users and managing permissions effectively. " +
                       "They also own certain resources and can have specific settings that apply to all users within the department."
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class VDepartmentShadowedController {
     private final VDepartmentShadowedService vDepartmentShadowedService;
 

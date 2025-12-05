@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.nocode.controllers;
 
 import de.aivot.GoverBackend.nocode.dtos.NoCodeOperatorDetailsDTO;
 import de.aivot.GoverBackend.nocode.providers.NoCodeOperatorServiceProvider;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -20,7 +20,7 @@ import java.util.List;
         name = "No-Code Operators",
         description = "No-Code operators are the building blocks for creating no-code functionalities."
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class NoCodeOperatorController {
     private final List<NoCodeOperatorServiceProvider> noCodeOperatorServiceProviders;
 

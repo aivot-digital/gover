@@ -14,7 +14,6 @@ import {UserRoleChips} from '../../../user-roles/components/user-role-chips';
 import {UserStatusChip} from '../../../users/components/user-status-chip';
 import {UserRolesAssignmentDialog} from '../../../user-roles/components/user-roles-assignment-dialog';
 import {setLoadingMessage} from '../../../../slices/shell-slice';
-import {OrgUserRoleAssignmentsApiService} from '../../../user-roles/org-user-role-assignments-api-service';
 import {isApiError} from '../../../../models/api-error';
 import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {useConfirm} from '../../../../providers/confirm-provider';
@@ -23,6 +22,9 @@ import {vDepartmentMembershipWithDetailsEntityAsUser, VDepartmentMembershipWithD
 import {ListDepartmentMembershipsWithRolesFilter, VDepartmentMembershipWithDetailsService} from '../../services/v-department-membership-with-details-service';
 import {DepartmentMembershipApiService} from '../../services/department-membership-api-service';
 import {resolveUserName} from '../../../users/utils/resolve-user-name';
+import {
+    VDepartmentUserRoleAssignmentWithDetailsService
+} from "../../services/v-department-user-role-assignment-with-details-service";
 
 export function DepartmentsDetailsPageMembers() {
     const dispatch = useAppDispatch();
@@ -163,10 +165,13 @@ export function DepartmentsDetailsPageMembers() {
                 updated: new Date().toISOString(),
             })
             .then((membership) => {
-                const apiService = new OrgUserRoleAssignmentsApiService();
+                const apiService = new VDepartmentUserRoleAssignmentWithDetailsService();
                 return Promise.all(roleIdsToAdd.map((roleId) => apiService.create({
+                    id: 0,
                     departmentMembershipId: membership.id,
+                    teamMembershipId: null,
                     userRoleId: roleId,
+                    created: new Date().toISOString(),
                 })));
             })
             .then(() => {
@@ -197,12 +202,15 @@ export function DepartmentsDetailsPageMembers() {
             estimatedTime: 5000,
         }));
 
-        const apiService = new OrgUserRoleAssignmentsApiService();
+        const apiService = new VDepartmentUserRoleAssignmentWithDetailsService();
 
         const addPromises = roleIdsToAdd
             .map((roleId) => apiService.create({
+                id: 0,
                 departmentMembershipId: membership.id,
+                teamMembershipId: null,
                 userRoleId: roleId,
+                created: new Date().toISOString(),
             }));
 
         const removePromises = userRoleAssignmentIdsToRemove
@@ -345,7 +353,7 @@ const Columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntityWithRoles>
         },
     },
     {
-        field: 'userEmail',
+        field: 'email',
         headerName: 'E-Mail',
         flex: 1,
     },
@@ -356,7 +364,10 @@ const Columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntityWithRoles>
         sortable: false,
         renderCell: (params) => (
             <UserRoleChips
-                roles={params.row.roles}
+                roles={params.row.roles.map(item => ({
+                    name: item.userRoleName ?? '',
+                    id: item.userId,
+                }))}
                 maxVisibleChips={1}
             />
         ),

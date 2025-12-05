@@ -7,36 +7,36 @@ import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type
 import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
 import {UserRoleResponseDTO} from '../../dtos/user-role-response-dto';
 import {UserRolesApiService} from '../../user-roles-api-service';
+import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
 
 export function UserRolesDetailsPage() {
     const userIsAdmin = useUserIsAdmin();
 
     return (
         <PageWrapper
-            title="Geheimnis bearbeiten"
+            title="Domänenrolle bearbeiten"
             fullWidth
             background
         >
             <GenericDetailsPage<UserRoleResponseDTO, number, undefined>
                 isEditable={() => userIsAdmin}
                 header={{
-                    icon: <KeyOutlinedIcon />,
-                    title: 'Geheimnis bearbeiten',
+                    icon: ModuleIcons.roles,
+                    title: 'Domänenrolle bearbeiten',
                     helpDialog: {
-                        title: 'Hilfe zu Geheimnissen',
+                        title: 'Hilfe zu Domänenrollen',
                         tooltip: 'Hilfe anzeigen',
                         content: (
                             <>
                                 <Typography
                                     variant="body1"
-                                    paragraph
+                                    component="p"
                                 >
-                                    Verwalten Sie hier sicher die Geheimnisse Ihrer Webanwendung, wie API-Schlüssel, Passwörter oder andere vertrauliche Daten.
-                                    Diese werden getrennt vom Code gespeichert, um Sicherheitsrisiken zu minimieren und eine einfache Aktualisierung ohne Anpassung der Anwendung zu ermöglichen.
+                                    Domänenrollen definieren Berechtigungen und Zugriffsrechte für Benutzer:innen innerhalb der Anwendung.
                                 </Typography>
                                 <Typography
                                     variant="body1"
-                                    paragraph
+                                    component="p"
                                 >
                                     Alle Geheimnisse sind verschlüsselt und nur für autorisierte Nutzer:innen oder Dienste mit entsprechender Berechtigung zugänglich.
                                 </Typography>
@@ -46,29 +46,34 @@ export function UserRolesDetailsPage() {
                 }}
                 tabs={[
                     {
-                        path: '/secrets/:id',
-                        label: '',
+                        path: '/user-roles/:id',
+                        label: 'Allgemeine Informationen',
                     },
+                    {
+                        path: '/user-roles/:id/department-memberships',
+                        label: 'Fachbereichszuordnungen',
+                        isDisabled: (item) => !item?.id,
+                    }
                 ]}
                 initializeItem={(api) => new UserRolesApiService().initialize()}
                 fetchData={(api, id: number) => new UserRolesApiService().retrieve(id)}
                 getTabTitle={(item: UserRoleResponseDTO) => {
                     if (item.id === 0) {
-                        return 'Neue Rolle';
+                        return 'Neue Domänenrolle';
                     } else {
-                        return item.name ?? 'Unbenannte Rolle';
+                        return item.name ?? 'Unbenannte Domänenrolle';
                     }
                 }}
                 getHeaderTitle={(item, isNewItem, notFound) => {
-                    if (notFound) return 'Geheimnis nicht gefunden';
-                    if (isNewItem) return 'Neues Geheimnis anlegen';
-                    return `Geheimnis: ${item?.name ?? 'Unbenannt'}`;
+                    if (notFound) return 'Domänenrolle nicht gefunden';
+                    if (isNewItem) return 'Neue Domänenrolle anlegen';
+                    return `Domänenrolle: ${item?.name ?? 'Unbenannt'}`;
                 }}
                 parentLink={{
-                    label: 'Liste der Geheimnisse',
+                    label: 'Liste der Domänenrollen',
                     to: '/user-roles',
                 }}
-                entityType={ServerEntityType.Secrets}
+                entityType={ServerEntityType.UserRoles}
             />
         </PageWrapper>
     );

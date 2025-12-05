@@ -54,7 +54,7 @@ export class VDepartmentMembershipWithDetailsService extends BaseCrudApiService<
     public async listDepartmentMembershipsWithRoles(
         page: number,
         limit: number,
-        sort?: 'organizationalUnitName' | 'userFullName',
+        sort?: 'name' | 'fullName',
         order?: SortOrder,
         filters?: Partial<ListDepartmentMembershipsWithRolesFilter>,
     ): Promise<Page<VDepartmentMembershipWithDetailsEntityWithRoles>> {
@@ -84,6 +84,9 @@ export class VDepartmentMembershipWithDetailsService extends BaseCrudApiService<
         const {
             content: memberships,
         } = membershipsPage;
+
+        console.log('Assignments:', assignments);
+        console.log('Memberships:', memberships);
 
         const membershipsWithRoles: VDepartmentMembershipWithDetailsEntityWithRoles[] = memberships
             .map((membership) => {

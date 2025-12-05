@@ -4,13 +4,19 @@ import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.teams.entities.TeamEntity;
 import de.aivot.GoverBackend.teams.filters.TeamFilter;
-import de.aivot.GoverBackend.teams.repositories.TeamRepository;
-import de.aivot.GoverBackend.teams.dtos.TeamRequestDTO;
-import de.aivot.GoverBackend.teams.dtos.TeamResponseDTO;
+import de.aivot.GoverBackend.teams.services.TeamService;
 import de.aivot.GoverBackend.user.services.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,80 +25,93 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
-
 import java.util.Map;
 
 
 @RestController
 @RequestMapping("/api/teams/")
+@Tag(
+        name = OpenApiConstants.Tags.TeamsName,
+        description = OpenApiConstants.Tags.TeamsDescription
+)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class TeamController {
     private final ScopedAuditService auditService;
-    private final TeamRepository teamRepository;
     private final UserService userService;
+    private final TeamService teamService;
 
     @Autowired
     public TeamController(AuditService auditService,
-                          TeamRepository teamRepository,
-                          UserService userService) {
+                          UserService userService,
+                          TeamService teamService) {
         this.auditService = auditService.createScopedAuditService(TeamController.class);
-        this.teamRepository = teamRepository;
+
         this.userService = userService;
+        this.teamService = teamService;
     }
 
     @GetMapping("")
-    public Page<TeamResponseDTO> list(
-            @Nonnull @PageableDefault Pageable pageable,
-            @Nonnull @Valid TeamFilter filter
+    @Operation(
+            summary = "List Teams",
+            description = "Retrieve a paginated list of teams. " +
+                    "Supports filtering and pagination parameters."
+    )
+    public Page<TeamEntity> list(
+            @Nonnull @ParameterObject @PageableDefault Pageable pageable,
+            @Nonnull @ParameterObject @Valid TeamFilter filter
     ) throws ResponseException {
-        return teamRepository
-                .findAll(filter.build(), pageable)
-                .map(TeamResponseDTO::fromEntity);
+        return teamService
+                .list(pageable, filter);
     }
 
     @PostMapping("")
-    public TeamResponseDTO create(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestBody @Valid TeamRequestDTO createDTO
+    @Operation(
+            summary = "Create Team",
+            description = "Create a new team. Requires system admin privileges."
+    )
+    public TeamEntity create(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @RequestBody @Valid TeamEntity newTeam
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::forbidden);
+                .asSystemAdmin()
+                .orElseThrow(ResponseException::noSystemAdminPermission);
 
-        TeamEntity result;
-        try {
-            result = teamRepository
-                    .save(createDTO.toEntity());
-        } catch (Exception e) {
-            throw ResponseException.badRequest("Fehler beim Speichern des Teams", e);
-        }
+        var result = teamService
+                .create(newTeam);
 
         auditService.logAction(user, AuditAction.Create, TeamEntity.class, Map.of(
                 "id", result.getId(),
                 "name", result.getName()
         ));
 
-        return TeamResponseDTO.fromEntity(result);
+        return result;
     }
 
     @GetMapping("{id}/")
-    public TeamResponseDTO retrieve(
-            @PathVariable Integer id
+    @Operation(
+            summary = "Retrieve Team",
+            description = "Retrieve a team by its ID."
+    )
+    public TeamEntity retrieve(
+            @Nonnull @PathVariable Integer id
     ) throws ResponseException {
-        TeamEntity entity = teamRepository
-                .findById(id)
+        return teamService
+                .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
-        return TeamResponseDTO.fromEntity(entity);
     }
 
     @PutMapping("{id}/")
-    public TeamResponseDTO update(
-            @AuthenticationPrincipal Jwt jwt,
-            @PathVariable Integer id,
-            @RequestBody @Valid TeamRequestDTO updateDTO
+    @Operation(
+            summary = "Update Team",
+            description = "Update an existing team. Requires super admin privileges."
+    )
+    public TeamEntity update(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer id,
+            @Nonnull @RequestBody @Valid TeamEntity updateDTO
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
@@ -100,12 +119,10 @@ public class TeamController {
                 .asSuperAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
-        TeamEntity entityToUpdate = updateDTO.toEntity().setId(id);
-
         TeamEntity result;
         try {
-            result = teamRepository
-                    .save(entityToUpdate);
+            result = teamService
+                    .update(id, updateDTO);
         } catch (Exception e) {
             throw ResponseException.badRequest("Fehler beim Speichern des Teams", e);
         }
@@ -115,13 +132,17 @@ public class TeamController {
                 "name", result.getName()
         ));
 
-        return TeamResponseDTO.fromEntity(result);
+        return result;
     }
 
     @DeleteMapping("{id}/")
+    @Operation(
+            summary = "Delete Team",
+            description = "Delete a team by its ID. Requires super admin privileges."
+    )
     public void delete(
-            @AuthenticationPrincipal Jwt jwt,
-            @PathVariable Integer id
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer id
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
@@ -129,16 +150,12 @@ public class TeamController {
                 .asSuperAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
-        var entity = teamRepository
-                .findById(id)
-                .orElseThrow(ResponseException::notFound);
-
-        teamRepository
-                .delete(entity);
+        var deleted = teamService
+                .delete(id);
 
         auditService.logAction(user, AuditAction.Delete, TeamEntity.class, Map.of(
-                "id", entity.getId(),
-                "name", entity.getName()
+                "id", deleted.getId(),
+                "name", deleted.getName()
         ));
     }
 }

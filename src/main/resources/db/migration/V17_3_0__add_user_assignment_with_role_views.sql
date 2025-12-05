@@ -2,8 +2,9 @@
 create view v_department_user_role_assignments_with_details as
 select mems.*,
 
-       ura.id as user_role_assignment_id,
+       ura.id    as user_role_assignment_id,
 
+       urls.id   as user_role_id,
        urls.name as user_role_name,
        urls.description,
        urls.department_permission_edit,
@@ -36,6 +37,7 @@ select mems.*,
 
        ura.id    as user_role_assignment_id,
 
+       urls.id   as user_role_id,
        urls.name as user_role_name,
        urls.description,
        urls.department_permission_edit,

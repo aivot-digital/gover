@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.userRoles.entities;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
 
@@ -11,7 +12,8 @@ import java.time.LocalDateTime;
 public class UserRoleAssignmentEntity {
     @Id
     @Nonnull
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_role_assignments_id_seq")
+    @SequenceGenerator(name = "user_role_assignments_id_seq", allocationSize = 1)
     private Integer id;
 
     @Nullable
@@ -21,6 +23,7 @@ public class UserRoleAssignmentEntity {
     private Integer teamMembershipId;
 
     @Nonnull
+    @NotNull(message = "Die ID der Benutzerrollen muss angegeben werden.")
     private Integer userRoleId;
 
     @Nonnull

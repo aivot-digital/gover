@@ -17,7 +17,7 @@ import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
 import de.aivot.GoverBackend.payment.filters.PaymentProviderFilter;
 import de.aivot.GoverBackend.payment.services.PaymentProviderService;
 import de.aivot.GoverBackend.payment.services.PaymentProviderTestService;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -43,7 +43,7 @@ import java.util.UUID;
         name = "Payment Providers",
         description = "Payment providers are used to handle payments within forms or processes."
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class PaymentProviderController {
     private final ScopedAuditService auditService;
 

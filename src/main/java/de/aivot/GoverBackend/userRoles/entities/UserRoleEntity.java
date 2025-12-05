@@ -11,7 +11,8 @@ import java.time.LocalDateTime;
 public class UserRoleEntity {
     @Id
     @Nonnull
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_roles_id_seq")
+    @SequenceGenerator(name = "user_roles_id_seq", allocationSize = 1)
     private Integer id;
 
     @Nonnull

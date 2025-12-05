@@ -31,6 +31,7 @@ export interface VDepartmentUserRoleAssignmentWithDetailsEntity {
     globalAdmin?: boolean | null;
     deletedInIdp?: boolean | null;
     userRoleAssignmentId?: number | null;
+    userRoleId?: number | null;
     userRoleName?: string | null;
     description?: string | null;
     departmentPermissionEdit?: boolean | null;

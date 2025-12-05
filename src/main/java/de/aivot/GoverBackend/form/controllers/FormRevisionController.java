@@ -10,7 +10,7 @@ import de.aivot.GoverBackend.form.services.FormRevisionService;
 import de.aivot.GoverBackend.form.services.VFormVersionWithDetailsService;
 import de.aivot.GoverBackend.form.services.VFormWithPermissionsService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,7 +40,7 @@ import java.util.Map;
         description = "Form revisions track the changes made to form versions over time. " +
                       "They allow administrators to view the history of modifications and revert to previous states if necessary."
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class FormRevisionController {
     private final ScopedAuditService auditService;
 

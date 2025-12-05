@@ -11,7 +11,8 @@ import java.time.LocalDateTime;
 public class ResourceAccessControlEntity {
     @Id
     @Nonnull
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "resource_access_controls_id_seq")
+    @SequenceGenerator(name = "resource_access_controls_id_seq", allocationSize = 1)
     private Integer id;
 
     @Nullable

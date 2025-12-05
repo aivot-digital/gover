@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.javascript.controllers;
 
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
         name = "Javascript Function Providers",
         description = "Provides type definitions for Javascript function providers."
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class JavascriptFunctionProviderController {
     private final String types;
 

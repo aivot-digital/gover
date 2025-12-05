@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.nocode.controllers;
 import de.aivot.GoverBackend.nocode.dtos.NoCodeTestRequestDTO;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 import de.aivot.GoverBackend.nocode.services.NoCodeEvaluationService;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
         name = "No-Code Testing",
         description = "Endpoints for testing no-code expressions."
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class NoCodeTestController {
     private final NoCodeEvaluationService noCodeEvaluationService;
 

@@ -44,7 +44,7 @@ const permissions: {
         groupLabel: 'Organisationseinheiten',
         permissions: [{
             label: 'Administrieren',
-            field: 'orgUnitMemberPermissionEdit',
+            field: 'departmentPermissionEdit',
             forcesOthersActive: [],
         }],
     },
@@ -52,7 +52,7 @@ const permissions: {
         groupLabel: 'Teams',
         permissions: [{
             label: 'Administrieren',
-            field: 'teamMemberPermissionEdit',
+            field: 'teamPermissionEdit',
             forcesOthersActive: [],
         }],
     },
@@ -190,7 +190,6 @@ export function UserRolesDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
-    const api = useApi();
     const {
         item,
         setItem,

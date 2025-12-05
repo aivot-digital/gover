@@ -33,6 +33,14 @@ spring:
       ddl-auto: validate
     # Close the hibernate session at the end of a transaction to prevent lazy loading issues
     open-in-view: true
+    # Debug SQL
+    # showSql: true
+    # Pretty print SQL
+    # properties:
+    #   hibernate:
+    #     format_sql: true
+    #     # Use the PostgreSQL dialect
+    #     dialect: org.hibernate.dialect.PostgreSQLDialect
 
   data:
     rest:
@@ -169,6 +177,7 @@ gover:
   fileExtensions: "${GOVER_FILE_EXTENSIONS}"
   contentTypes: "${GOVER_CONTENT_TYPES}"
   maxSubmissionCopyRetryCount: 3
+  bootstrapAdminMail: "${GOVER_BOOTSTRAP_ADMIN_MAIL:}"
 
 # Configure the details for fetching, managing and updating the gover user data from keycloak
 keycloak:

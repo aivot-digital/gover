@@ -4,7 +4,7 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.dtos.TestMailRequestDTO;
 import de.aivot.GoverBackend.mail.dtos.TestMailResponseDTO;
 import de.aivot.GoverBackend.mail.services.TestMailService;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -29,7 +29,7 @@ import java.io.IOException;
         name = "Mail",
         description = "Endpoints for testing mail functionality"
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class TestMailController {
     private final TestMailService testMailService;
     private final UserService userService;

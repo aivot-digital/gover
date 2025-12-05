@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.payment.controllers.staff;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.payment.dtos.PaymentProviderDefinitionResponseDTO;
 import de.aivot.GoverBackend.payment.models.PaymentProviderDefinition;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,7 +22,7 @@ import java.util.List;
         name = "Payment Provider Definitions",
         description = "Endpoints for retrieving payment provider definitions"
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class PaymentProviderDefinitionController {
     private final List<PaymentProviderDefinition> paymentProviderDefinitions;
 

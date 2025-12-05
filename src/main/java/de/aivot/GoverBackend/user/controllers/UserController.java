@@ -4,7 +4,8 @@ import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
+import de.aivot.GoverBackend.user.dtos.SetPasswordRequestDTO;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.filters.UserFilter;
 import de.aivot.GoverBackend.user.services.UserService;
@@ -22,12 +23,13 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users/")
 @Tag(name = "User Management", description = "APIs for managing users")
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class UserController {
     private final ScopedAuditService auditService;
 
@@ -77,6 +79,9 @@ public class UserController {
             result = userService
                     .create(newUser);
         } catch (Exception e) {
+            if (e instanceof ResponseException re) {
+                throw re;
+            }
             throw ResponseException.badRequest("Fehler beim Anlegen der Mitarbeiter:in", e);
         }
 
@@ -92,7 +97,7 @@ public class UserController {
     @Operation(
             summary = "Retrieve Self",
             description = "Retrieve the details of the currently authenticated user. " +
-                          "If the user does not exist in the system, the authenticated user's information is imported from Keycloak."
+                    "If the user does not exist in the system, the authenticated user's information is imported from Keycloak."
     )
     public UserEntity retrieveSelf(
             @Nullable @AuthenticationPrincipal Jwt jwt
@@ -119,7 +124,7 @@ public class UserController {
     @Operation(
             summary = "Update User",
             description = "Update the details of an existing user. " +
-                          "Requires super admin permissions or the user can update their own information."
+                    "Requires super admin permissions or the user can update their own information."
     )
     public UserEntity update(
             @AuthenticationPrincipal Jwt jwt,
@@ -178,5 +183,36 @@ public class UserController {
                                 "lastName", deletedUser.getLastName()
                         )
                 );
+    }
+
+    @PutMapping("{id}/password/")
+    @Operation(
+            summary = "Update User",
+            description = "Update the details of an existing user. " +
+                    "Requires super admin permissions or the user can update their own information."
+    )
+    public UserEntity updatePassword(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String id,
+            @RequestBody @Valid SetPasswordRequestDTO passwordRequestDTO
+    ) throws ResponseException {
+        var execUser = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        if (!execUser.getIsSuperAdmin() && !execUser.getId().equals(id)) {
+            throw ResponseException.noSuperAdminPermission();
+        }
+
+        var result = userService
+                .updatePassword(id, passwordRequestDTO.password());
+
+        auditService.logAction(execUser, AuditAction.Update, UserEntity.class, Map.of(
+                "id", result.getId(),
+                "email", result.getEmail(),
+                "passwordChanged", true
+        ));
+
+        return result;
     }
 }

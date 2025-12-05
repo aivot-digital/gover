@@ -16,7 +16,8 @@ import java.time.LocalDateTime;
 public class DepartmentMembershipEntity {
     @Id
     @Nonnull
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "department_memberships_id_seq")
+    @SequenceGenerator(name = "department_memberships_id_seq", allocationSize = 1)
     private Integer id;
 
     @Nonnull

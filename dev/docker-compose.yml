@@ -52,7 +52,6 @@ services:
 
   s3-object-storage-setup:
     image: minio/mc:RELEASE.2025-08-13T08-35-41Z
-    restart: on-failure
     depends_on:
       - s3-object-storage
     entrypoint: >
@@ -112,7 +111,6 @@ services:
 
   keycloak_setup:
     image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.13
-    restart: on-failure
     depends_on:
       - keycloak
     environment:
@@ -156,9 +154,22 @@ services:
     ports:
       - "9595:80"
 
+  code-analysis:
+    image: sonarqube:25.11.0.114957-community
+    restart: unless-stopped
+    ports:
+      - "9010:9000"
+    volumes:
+      - sonar_data:/opt/sonarqube/data
+      - sonar_logs:/opt/sonarqube/logs
+      - sonar_extensions:/opt/sonarqube/extensions
+
 volumes:
   gover_pg_data:
   keycloak_pg_data:
   minio_data:
   mailpit_data:
   rabbitmq_data:
+  sonar_data:
+  sonar_logs:
+  sonar_extensions:

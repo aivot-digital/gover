@@ -12,6 +12,7 @@ public class VDepartmentUserRoleAssignmentWithDetailsFilter implements Filter<VD
     private String name;
     private String userId;
     private String fullName;
+    private Integer userRoleId;
 
     public static VDepartmentUserRoleAssignmentWithDetailsFilter create() {
         return new VDepartmentUserRoleAssignmentWithDetailsFilter();
@@ -26,6 +27,7 @@ public class VDepartmentUserRoleAssignmentWithDetailsFilter implements Filter<VD
                 .withEquals("userId", userId)
                 .withContains("fullName", fullName)
                 .withContains("name", name)
+                .withEquals("userRoleId", userRoleId)
                 .build();
     }
 
@@ -71,6 +73,15 @@ public class VDepartmentUserRoleAssignmentWithDetailsFilter implements Filter<VD
 
     public VDepartmentUserRoleAssignmentWithDetailsFilter setName(String name) {
         this.name = name;
+        return this;
+    }
+
+    public Integer getUserRoleId() {
+        return userRoleId;
+    }
+
+    public VDepartmentUserRoleAssignmentWithDetailsFilter setUserRoleId(Integer userRoleId) {
+        this.userRoleId = userRoleId;
         return this;
     }
 }

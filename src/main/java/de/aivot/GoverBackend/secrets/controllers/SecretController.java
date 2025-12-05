@@ -10,7 +10,7 @@ import de.aivot.GoverBackend.secrets.dtos.SecretEntityResponseDTO;
 import de.aivot.GoverBackend.secrets.entities.SecretEntity;
 import de.aivot.GoverBackend.secrets.filters.SecretFilter;
 import de.aivot.GoverBackend.secrets.services.SecretService;
-import de.aivot.GoverBackend.openApi.OpenAPIConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -39,7 +39,7 @@ import java.util.UUID;
         description = "Secrets are used to store sensitive information like passwords, API keys, etc. " +
                       "They are encrypted and can be retrieved securely."
 )
-@SecurityRequirement(name = OpenAPIConfiguration.Name)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class SecretController {
     private final ScopedAuditService auditService;
     private final SecretService secretService;
