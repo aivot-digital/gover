@@ -54,4 +54,8 @@ export class UsersApiService extends BaseCrudApiService<User, User, User, User, 
             deletedInIdp: false,
         };
     }
+
+    public async resetPassword(id: string): Promise<void> {
+        await this.put<any, void>(`/api/users/${id}/reset-password/`, {});
+    }
 }

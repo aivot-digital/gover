@@ -1,9 +1,12 @@
 import {Box, Button, Grid, Typography} from '@mui/material';
-import React, {useContext, useState} from 'react';
+import React, {useContext, useId, useState} from 'react';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {useNavigate} from 'react-router-dom';
-import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../../components/generic-details-page/generic-details-page-context';
+import {
+    GenericDetailsPageContext,
+    GenericDetailsPageContextType
+} from '../../../../../components/generic-details-page/generic-details-page-context';
 import {type User} from '../../../../../models/entities/user';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../../slices/snackbar-slice';
 import {isApiError} from '../../../../../models/api-error';
@@ -20,6 +23,7 @@ import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete'
 import {SelectFieldComponent} from '../../../../../components/select-field-2/select-field-component';
 import {SystemUserRole} from '../../../models/user';
 import {UsersApiService} from '../../../users-api-service';
+import {useConfirm} from "../../../../../providers/confirm-provider";
 
 const Schema = yup.object({});
 
@@ -37,6 +41,8 @@ export function UserDetailsPageIndex() {
         currentItem: updatedUser,
         handleInputChange,
     } = useFormManager<User>(user, Schema as any);
+
+    const confirm = useConfirm();
 
     const hasAccess = useAccessGuard({
         onlyGlobalAdmin: true,
@@ -104,6 +110,34 @@ export function UserDetailsPageIndex() {
                 }
             })
             .finally(() => setIsBusy(false));
+    };
+
+    const handlePasswordReset = () => {
+        confirm({
+            title: 'Passwort zurücksetzen',
+            children: (
+                <>
+                    <Typography>
+                        Möchten Sie das Passwort für diese Mitarbeiter:in wirklich zurücksetzen?
+                    </Typography>
+                    <Typography>
+                        Dazu wird an die hinterlegte E-Mail-Adresse ein Link zum Zurücksetzen des Passworts gesendet.
+                    </Typography>
+                </>
+            ),
+        })
+            .then((confirm) => {
+                if (confirm) {
+                    new UsersApiService()
+                        .resetPassword(user.id)
+                        .then(() => {
+                            dispatch(showSuccessSnackbar('Der Passwort-Zurücksetzen-Link wurde erfolgreich versendet.'));
+                        })
+                        .catch(err => {
+                            dispatch(showApiErrorSnackbar(err, 'Beim Zurücksetzen des Passworts ist ein Fehler aufgetreten.'));
+                        });
+                }
+            });
     };
 
     return (
@@ -190,6 +224,19 @@ export function UserDetailsPageIndex() {
                             onClick={handleSave}
                         >
                             Speichern
+                        </Button>
+                    }
+
+                    {
+                        hasAccess &&
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            startIcon={<OpenInNewIcon />}
+                            disabled={isBusy}
+                            onClick={handlePasswordReset}
+                        >
+                            Passwort zurücksetzen
                         </Button>
                     }
 

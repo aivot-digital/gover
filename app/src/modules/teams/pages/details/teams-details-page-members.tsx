@@ -371,7 +371,7 @@ const Columns: Array<GridColDef<VTeamMembershipWithDetailsEntityWithRoles>> = [
         flex: 1,
     },
     {
-        field: 'userEmail',
+        field: 'email',
         headerName: 'E-Mail',
         flex: 1,
     },

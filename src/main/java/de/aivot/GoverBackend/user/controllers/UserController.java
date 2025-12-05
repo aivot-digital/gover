@@ -8,6 +8,7 @@ import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.dtos.SetPasswordRequestDTO;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.filters.UserFilter;
+import de.aivot.GoverBackend.user.services.KeyCloakApiService;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -34,16 +35,18 @@ public class UserController {
     private final ScopedAuditService auditService;
 
     private final UserService userService;
+    private final KeyCloakApiService keyCloakApiService;
 
     @Autowired
     public UserController(
             AuditService auditService,
-            UserService userService
-    ) {
+            UserService userService,
+            KeyCloakApiService keyCloakApiService) {
         this.auditService = auditService
                 .createScopedAuditService(UserController.class);
 
         this.userService = userService;
+        this.keyCloakApiService = keyCloakApiService;
     }
 
     @GetMapping("")
@@ -185,11 +188,47 @@ public class UserController {
                 );
     }
 
+    @PutMapping("{id}/reset-password/")
+    @Operation(
+            summary = "Reset Password",
+            description = "Reset the password of a user. " +
+                    "Requires super admin permissions or the user can reset their own password."
+    )
+    public Map<String, String> resetPassword(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String id
+    ) throws ResponseException {
+        var execUser = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        if (!execUser.getIsSuperAdmin() && !execUser.getId().equals(id)) {
+            throw ResponseException.noSuperAdminPermission();
+        }
+
+        var user = userService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        keyCloakApiService
+                .triggerPasswordReset(id);
+
+        auditService.logAction(execUser, AuditAction.Update, UserEntity.class, Map.of(
+                "id", user.getId(),
+                "email", user.getEmail(),
+                "passwordReset", true
+        ));
+
+        return Map.of(
+                "message", "Password reset triggered for user with ID: " + id
+        );
+    }
+
     @PutMapping("{id}/password/")
     @Operation(
-            summary = "Update User",
-            description = "Update the details of an existing user. " +
-                    "Requires super admin permissions or the user can update their own information."
+            summary = "Update Password",
+            description = "Update the password of a user. " +
+                    "Requires super admin permissions or the user can update their own password."
     )
     public UserEntity updatePassword(
             @AuthenticationPrincipal Jwt jwt,

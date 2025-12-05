@@ -226,6 +226,43 @@ public class KeyCloakApiService {
                 .orElseThrow(() -> ResponseException.internalServerError("Die Mitarbeiter:in konnte nach der Aktualisierung nicht geladen werden."));
     }
 
+    public void triggerPasswordReset(String userId) throws ResponseException {
+        String accessToken;
+        try {
+            accessToken = getAccessToken();
+        } catch (URISyntaxException | IOException | HttpConnectionException e) {
+            throw ResponseException
+                    .internalServerError("Der Passwort-Reset kann nicht initiiert werden, da keine Anmeldung am Keycloak möglich war.", e);
+        }
+
+        URI uri;
+        try {
+            uri = new URI(keyCloakOIDCConfig.getHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + "/users/" + userId + "/execute-actions-email");
+        } catch (URISyntaxException e) {
+            throw ResponseException
+                    .internalServerError("Der Passwort-Reset kann nicht initiiert werden, da die Keycloak-URL ungültig ist.", e);
+        }
+
+        ResponseEntity<Void> response;
+        try {
+            response = httpService.put(
+                    uri,
+                    "[\"UPDATE_PASSWORD\"]",
+                    HttpServiceHeaders
+                            .create()
+                            .withContentType(MediaType.APPLICATION_JSON_VALUE)
+                            .withAuthorizationBearer(accessToken),
+                    Void.class
+            );
+        } catch (RestClientResponseException e) {
+            throw ResponseException.internalServerError("Der Passwort-Reset kann nicht initiiert werden.", e);
+        }
+
+        if (response.getStatusCode().isError()) {
+            throw ResponseException.internalServerError("Der Passwort-Reset kann nicht initiiert werden.", "Status-Code: " + response.getStatusCode());
+        }
+    }
+
     public void deleteUser(String id) {
         try {
             var response = httpService.delete(new URI(keyCloakOIDCConfig.getHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + "/users/" + id), HttpServiceHeaders.create().withAuthorizationBearer(getAccessToken()));
