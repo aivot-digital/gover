@@ -2,9 +2,6 @@ import React, {useContext} from 'react';
 import {type GridColDef} from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import {
-    VDepartmentMembershipWithDetailsEntity
-} from "../../../departments/entities/v-department-membership-with-details-entity";
 import {CellLink} from "../../../../components/cell-link/cell-link";
 import {
     GenericDetailsPageContext,
@@ -14,13 +11,13 @@ import {UserRoleResponseDTO} from "../../dtos/user-role-response-dto";
 import {GenericDetailsSkeleton} from "../../../../components/generic-details-page/generic-details-skeleton";
 import {GenericList} from "../../../../components/generic-list/generic-list";
 import {
-    VDepartmentUserRoleAssignmentWithDetailsService
-} from "../../../departments/services/v-department-user-role-assignment-with-details-service";
+    VTeamUserRoleAssignmentWithDetailsEntity
+} from "../../../teams/entities/v-team-user-role-assignment-with-details-entity";
 import {
-    VDepartmentUserRoleAssignmentWithDetailsEntity
-} from "../../../departments/entities/v-department-user-role-assignment-with-details-entity";
+    VTeamUserRoleAssignmentWithDetailsApiService
+} from "../../../teams/services/v-team-user-role-assignment-with-details-api-service";
 
-const columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntity>> = [
+const columns: Array<GridColDef<VTeamUserRoleAssignmentWithDetailsEntity>> = [
     {
         field: 'fullName',
         headerName: 'Mitarbeiter:in',
@@ -36,11 +33,11 @@ const columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntity>> = [
     },
     {
         field: 'name',
-        headerName: 'Fachbereich',
+        headerName: 'Team',
         flex: 1,
         renderCell: (params) => (
             <CellLink
-                to={`/departments/${params.row.departmentId}`}
+                to={`/teams/${params.row.teamId}`}
                 title="Fachbereich bearbeiten"
             >
                 {String(params.row.name)}
@@ -49,7 +46,7 @@ const columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntity>> = [
     },
 ];
 
-export function UserRolesDetailsPageDepartmentMemberships() {
+export function UserRolesDetailsPageTeamMemberships() {
     const {
         item: userRole,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<UserRoleResponseDTO, undefined>;
@@ -78,7 +75,7 @@ export function UserRolesDetailsPageDepartmentMemberships() {
                     Organisationseinheiten zugewiesen sind.
                 </Typography>
 
-                <GenericList<VDepartmentUserRoleAssignmentWithDetailsEntity>
+                <GenericList<VTeamUserRoleAssignmentWithDetailsEntity>
                     disableFullWidthToggle={true}
                     sx={{
                         mx: '-16px',
@@ -86,7 +83,7 @@ export function UserRolesDetailsPageDepartmentMemberships() {
                     }}
                     columnDefinitions={columns}
                     fetch={(options) => {
-                        return new VDepartmentUserRoleAssignmentWithDetailsService()
+                        return new VTeamUserRoleAssignmentWithDetailsApiService()
                             .list(options.page, options.size, options.sort, options.order, {
                                 userRoleId: userRole.id,
                                 fullName: options.search,

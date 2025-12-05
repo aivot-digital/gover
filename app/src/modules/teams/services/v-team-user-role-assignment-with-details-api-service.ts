@@ -9,7 +9,7 @@ interface VTeamUserRoleAssignmentWithDetailsFilter {
     name: string;
     userId: string;
     fullName: string;
-    userRoleId: string;
+    userRoleId: number;
 }
 
 export class VTeamUserRoleAssignmentWithDetailsApiService extends BaseCrudApiService<

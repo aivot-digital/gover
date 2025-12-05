@@ -53,7 +53,12 @@ export function UserRolesDetailsPage() {
                         path: '/user-roles/:id/department-memberships',
                         label: 'Fachbereichszuordnungen',
                         isDisabled: (item) => !item?.id,
-                    }
+                    },
+                    {
+                        path: '/user-roles/:id/team-memberships',
+                        label: 'Teamzuordnungen',
+                        isDisabled: (item) => !item?.id,
+                    },
                 ]}
                 initializeItem={(api) => new UserRolesApiService().initialize()}
                 fetchData={(api, id: number) => new UserRolesApiService().retrieve(id)}

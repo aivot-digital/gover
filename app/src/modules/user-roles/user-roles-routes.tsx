@@ -6,6 +6,7 @@ import {UserRolesDetailsPageIndex} from './pages/details/user-roles-details-page
 import {
     UserRolesDetailsPageDepartmentMemberships
 } from "./pages/details/user-roles-details-page-department-memberships";
+import {UserRolesDetailsPageTeamMemberships} from "./pages/details/user-roles-details-page-team-memberships";
 
 export const userRolesRoutes: RouteObject[] = [
     {
@@ -23,6 +24,10 @@ export const userRolesRoutes: RouteObject[] = [
             {
                 path: '/user-roles/:id/department-memberships',
                 element: <UserRolesDetailsPageDepartmentMemberships />,
+            },
+            {
+                path: '/user-roles/:id/team-memberships',
+                element: <UserRolesDetailsPageTeamMemberships />,
             },
         ],
     },
