@@ -239,7 +239,7 @@ function DepartmentNode(props: DepartmentNodeProps) {
                     <ul>
                         {
                             props.department._members.map(member => (
-                                <li>
+                                <li key={member.id}>
                                     <Link
                                         to={`/users/${member.id}`}
                                     >
