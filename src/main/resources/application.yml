@@ -20,6 +20,7 @@ spring:
     url: "jdbc:postgresql://${GOVER_DB_HOST}:${GOVER_DB_PORT}/${GOVER_DB_DATABASE}?stringtype=unspecified"
     username: "${GOVER_DB_USERNAME}"
     password: "${GOVER_DB_PASSWORD}"
+    driver-class-name: "org.postgresql.Driver"
 
     # Define the database connection pool properties
     hikari:
@@ -41,6 +42,15 @@ spring:
     #     format_sql: true
     #     # Use the PostgreSQL dialect
     #     dialect: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        connection:
+          url: "jdbc:postgresql://${GOVER_DB_HOST}:${GOVER_DB_PORT}/${GOVER_DB_DATABASE}?stringtype=unspecified"
+          username: "${GOVER_DB_USERNAME}"
+          password: "${GOVER_DB_PASSWORD}"
+          autocommit: false
+          isolation: TRANSACTION_REPEATABLE_READ
+          pool_size: ${spring.datasource.hikari.maximum-pool-size}
 
   data:
     rest:
@@ -178,6 +188,10 @@ gover:
   contentTypes: "${GOVER_CONTENT_TYPES}"
   maxSubmissionCopyRetryCount: 3
   bootstrapAdminMail: "${GOVER_BOOTSTRAP_ADMIN_MAIL:}"
+
+  security:
+    keystorePassword: "${GOVER_SECURITY_KEYSTORE_PASSWORD}"
+    keystorePath: "${GOVER_SECURITY_KEYSTORE_PATH:./keystore.pkcs12}"
 
 # Configure the details for fetching, managing and updating the gover user data from keycloak
 keycloak:
