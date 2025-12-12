@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.elements.models.elements.form.layout;
 
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.ElementWithChildren;
 import de.aivot.GoverBackend.enums.ElementType;
@@ -20,6 +21,15 @@ public class GroupLayout extends BaseFormElement implements ElementWithChildren<
     public GroupLayout() {
         super(ElementType.Group);
     }
+
+    // region Utils
+
+    public GroupLayout addChild(@Nonnull BaseFormElement child) {
+        getChildren().add(child);
+        return this;
+    }
+
+    // endregion
 
     // region Hash & Equals
 

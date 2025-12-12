@@ -44,6 +44,9 @@ spring:
     #     dialect: org.hibernate.dialect.PostgreSQLDialect
     properties:
       hibernate:
+        type:
+          # Fix for Hibernate 6 to map Java Duration to PostgreSQL interval type
+          preferred_duration_jdbc_type: INTERVAL_SECOND
         connection:
           url: "jdbc:postgresql://${GOVER_DB_HOST}:${GOVER_DB_PORT}/${GOVER_DB_DATABASE}?stringtype=unspecified"
           username: "${GOVER_DB_USERNAME}"
@@ -109,6 +112,12 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: "${GOVER_KEYCLOAK_OIDC_HOSTNAME}/realms/${GOVER_KEYCLOAK_OIDC_REALM}"
+
+  rabbitmq:
+    host: "${GOVER_RABBITMQ_HOST}"
+    port: "${GOVER_RABBITMQ_PORT}"
+    username: "${GOVER_RABBITMQ_USERNAME}"
+    password: "${GOVER_RABBITMQ_PASSWORD}"
 
 # Set cors configuration
 cors:

@@ -1,0 +1,154 @@
+package de.aivot.GoverBackend.plugins.corePlugin.components.nodes;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextField;
+import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
+import de.aivot.GoverBackend.javascript.models.JavascriptCode;
+import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
+import de.aivot.GoverBackend.plugin.models.PluginComponent;
+import de.aivot.GoverBackend.plugins.corePlugin.Core;
+import de.aivot.GoverBackend.process.entities.ProcessDefinitionEntity;
+import de.aivot.GoverBackend.process.entities.ProcessDefinitionNodeEntity;
+import de.aivot.GoverBackend.process.entities.ProcessDefinitionVersionEntity;
+import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
+import de.aivot.GoverBackend.process.enums.ProcessNodeType;
+import de.aivot.GoverBackend.process.models.*;
+import de.aivot.GoverBackend.process.repositories.ProcessDefinitionNodeRepository;
+import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
+import de.aivot.GoverBackend.user.entities.UserEntity;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import org.springframework.stereotype.Component;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@Component
+public class JavascriptActionNode implements ProcessNodeProvider, PluginComponent {
+    private static final String PORT_NAME = "output";
+
+    private static final String CODE_FIELD_KEY = "js_code";
+    private final JavascriptEngineFactoryService javascriptEngineFactoryService;
+    private final ProcessInstanceTaskRepository processInstanceTaskRepository;
+    private final ProcessDefinitionNodeRepository processDefinitionNodeRepository;
+
+    public JavascriptActionNode(JavascriptEngineFactoryService javascriptEngineFactoryService, ProcessInstanceTaskRepository processInstanceTaskRepository, ProcessDefinitionNodeRepository processDefinitionNodeRepository) {
+        this.javascriptEngineFactoryService = javascriptEngineFactoryService;
+        this.processInstanceTaskRepository = processInstanceTaskRepository;
+        this.processDefinitionNodeRepository = processDefinitionNodeRepository;
+    }
+
+    @Nonnull
+    @Override
+    public String getKey() {
+        return "js";
+    }
+
+    @Override
+    public String getParentPluginKey() {
+        return Core.PLUGIN_KEY;
+    }
+
+    @Nonnull
+    @Override
+    @JsonIgnore
+    public GroupLayout getConfigurationLayout(@Nonnull UserEntity user,
+                                              @Nonnull ProcessDefinitionEntity processDefinition,
+                                              @Nonnull ProcessDefinitionVersionEntity processDefinitionVersion,
+                                              @Nullable ProcessDefinitionNodeEntity thisNode) {
+        var layout = new GroupLayout();
+        layout.setId(getKey() + "-config");
+
+        var codeField = new TextField();
+        codeField.setId(CODE_FIELD_KEY);
+        codeField.setLabel("Javascript-Code");
+        codeField.setHint("Geben Sie den benutzerdefinierten Javascript-Code ein, der zur Verarbeitung der Daten verwendet werden soll.");
+        codeField.setRequired(true);
+        codeField.setIsMultiline(true);
+        layout.addChild(codeField);
+
+        return layout;
+    }
+
+    @Nonnull
+    @Override
+    public ProcessNodeType getType() {
+        return ProcessNodeType.Action;
+    }
+
+    @Nonnull
+    @Override
+    public String getName() {
+        return "Javascript";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return "Verarbeitet Daten mithilfe von benutzerdefiniertem Javascript-Code.";
+    }
+
+    @Nonnull
+    @Override
+    public List<ProcessNodePort> getPorts() {
+        return List.of(
+                new ProcessNodePort(
+                        PORT_NAME,
+                        "Datenweitergabe",
+                        "Die verarbeiteten Daten werden hier weitergegeben."
+                )
+        );
+    }
+
+    @Override
+    public ProcessNodeExecutionResult init(@Nonnull ProcessInstanceEntity processInstance,
+                                           @Nonnull ProcessDefinitionNodeEntity thisNode,
+                                           @Nonnull Map<String, Object> workingData) throws Exception {
+        var configuration = thisNode
+                .getConfiguration();
+        var code = configuration
+                .get(CODE_FIELD_KEY)
+                .getOptionalValue()
+                .orElse("")
+                .toString();
+
+        var jsCode = new JavascriptCode()
+                .setCode(code);
+
+        var engine = javascriptEngineFactoryService
+                .getEngine();
+
+        var allNodes = processDefinitionNodeRepository
+                .findAllByProcessDefinitionIdAndProcessDefinitionVersion(
+                        thisNode.getProcessDefinitionId(),
+                        thisNode.getProcessDefinitionVersion()
+                );
+        for (var node : allNodes) {
+            var task = processInstanceTaskRepository
+                    .findFirstByProcessInstanceIdAndProcessDefinitionNodeIdOrderByStartedDesc(
+                            processInstance.getId(),
+                            node.getId()
+                    );
+            if (task != null) {
+                var data = new HashMap<String, Object>();
+                data.put("meta", task.getMetaData());
+                data.put("data", task.getWorkingData());
+                engine.registerGlobalObject("$" + node.getDataKey(), data);
+            }
+        }
+
+        try {
+            var result = engine
+                    .registerGlobalObject("$", workingData.get("$"))
+                    .evaluateCode(jsCode);
+
+            return new ProcessNodeExecutionResultTaskCompleted()
+                    .setViaPort(PORT_NAME)
+                    .setOutput(result.asMap());
+        } catch (Exception e) {
+            return new ProcessNodeExecutionResultError()
+                    .setMessage(e.getLocalizedMessage());
+        }
+    }
+}

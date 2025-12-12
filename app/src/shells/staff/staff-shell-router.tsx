@@ -24,6 +24,7 @@ import {Testinghall} from '../../modules/testinghall/testinghall';
 import {userRolesRoutes} from '../../modules/user-roles/user-roles-routes';
 import {teamsRoutes} from '../../modules/teams/teams-routes';
 import {Organigram} from "../../modules/system/pages/organigram";
+import {processRoutes} from "../../modules/process/process-routes";
 
 const sentryCreateBrowserRouter = Sentry.wrapCreateBrowserRouterV7(
     createBrowserRouter,
@@ -49,6 +50,7 @@ const router = sentryCreateBrowserRouter(
                 ...identityRoutes,
                 ...paymentRoutes,
                 ...presetsRoutes,
+                ...processRoutes,
                 ...providerLinksRoutes,
                 ...secretsRoutes,
                 ...teamsRoutes,

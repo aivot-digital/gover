@@ -1,11 +1,10 @@
 package de.aivot.GoverBackend.javascript.providers;
 
-import de.aivot.GoverBackend.core.javascript.HttpJavascriptFunctionProvider;
+import de.aivot.GoverBackend.plugins.corePlugin.components.javascript.HttpJavascript;
 import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
-import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +28,7 @@ class HttpJavascriptPluginTest {
 
     @Test
     void get() {
-        try (var jsService = new JavascriptEngine(new HttpJavascriptFunctionProvider(httpService))) {
+        try (var jsService = new JavascriptEngine(new HttpJavascript(httpService))) {
             HttpResponse<String> mockResponse = mock(HttpResponse.class);
             when(mockResponse.statusCode())
                     .thenReturn(200);
@@ -50,7 +49,7 @@ class HttpJavascriptPluginTest {
 
     @Test
     void post() {
-        try (var jsService = new JavascriptEngine(new HttpJavascriptFunctionProvider(httpService))) {
+        try (var jsService = new JavascriptEngine(new HttpJavascript(httpService))) {
             HttpResponse<String> mockResponse = mock(HttpResponse.class);
             when(mockResponse.statusCode())
                     .thenReturn(200);

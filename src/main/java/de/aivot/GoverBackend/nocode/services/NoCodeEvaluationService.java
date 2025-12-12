@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.nocode.services;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.*;
-import de.aivot.GoverBackend.nocode.providers.NoCodeOperatorServiceProvider;
+import de.aivot.GoverBackend.nocode.providers.NoCodeOperatorsProvider;
 import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +17,7 @@ import java.util.Map;
 
 /**
  * This service evaluates no code expressions.
- * It uses the operators provided by the registered {@link NoCodeOperatorServiceProvider} to evaluate the expressions.
+ * It uses the operators provided by the registered {@link NoCodeOperatorsProvider} to evaluate the expressions.
  */
 @Service
 public class NoCodeEvaluationService {
@@ -26,19 +26,18 @@ public class NoCodeEvaluationService {
     private final Map<String, NoCodeOperator> noCodeOperatorProviders;
 
     @Autowired
-    public NoCodeEvaluationService(List<NoCodeOperatorServiceProvider> noCodeOperatorProviders) {
+    public NoCodeEvaluationService(List<NoCodeOperatorsProvider> noCodeOperatorProviders) {
         this.noCodeOperatorProviders = new HashMap<>();
 
         for (var provider : noCodeOperatorProviders) {
             for (var operator : provider.getOperators()) {
-                var packageScopedOperatorIdentifier = provider.getPackageName() + "." + operator.getIdentifier();
+                var packageScopedOperatorIdentifier = operator.getIdentifier();
                 if (this.noCodeOperatorProviders.containsKey(packageScopedOperatorIdentifier)) {
                     logger
                             .atWarn()
                             .setMessage("No code operator with identifier " + packageScopedOperatorIdentifier + " already exists. Skipping this operator.")
                             .addKeyValue("operatorIdentifier", packageScopedOperatorIdentifier)
                             .addKeyValue("providerClassName", provider.getClass().getName())
-                            .addKeyValue("providerPackageName", provider.getPackageName())
                             .addKeyValue("operatorClassName", operator.getClass().getName())
                             .addKeyValue("operatorPackageName", operator.getClass().getPackageName())
                             .log();

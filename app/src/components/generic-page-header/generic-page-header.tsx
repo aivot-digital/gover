@@ -67,6 +67,7 @@ export function GenericPageHeader(props: GenericPageHeaderProps) {
                     sx={{
                         marginLeft: 'auto',
                     }}
+                    dense={true}
                 />
             </Box>
 

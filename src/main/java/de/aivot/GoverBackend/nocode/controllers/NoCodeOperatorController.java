@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.nocode.controllers;
 
 import de.aivot.GoverBackend.nocode.dtos.NoCodeOperatorDetailsDTO;
-import de.aivot.GoverBackend.nocode.providers.NoCodeOperatorServiceProvider;
+import de.aivot.GoverBackend.nocode.providers.NoCodeOperatorsProvider;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -22,11 +22,11 @@ import java.util.List;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class NoCodeOperatorController {
-    private final List<NoCodeOperatorServiceProvider> noCodeOperatorServiceProviders;
+    private final List<NoCodeOperatorsProvider> noCodeOperatorsProviders;
 
     @Autowired
-    public NoCodeOperatorController(List<NoCodeOperatorServiceProvider> noCodeOperatorServiceProviders) {
-        this.noCodeOperatorServiceProviders = noCodeOperatorServiceProviders;
+    public NoCodeOperatorController(List<NoCodeOperatorsProvider> noCodeOperatorsProviders) {
+        this.noCodeOperatorsProviders = noCodeOperatorsProviders;
     }
 
     /**
@@ -40,7 +40,7 @@ public class NoCodeOperatorController {
             description = "Retrieve a list of all available no-code operators."
     )
     public List<NoCodeOperatorDetailsDTO> listOperators() {
-        return noCodeOperatorServiceProviders
+        return noCodeOperatorsProviders
                 .stream()
                 .flatMap(NoCodeOperatorDetailsDTO::fromSPI)
                 .toList();

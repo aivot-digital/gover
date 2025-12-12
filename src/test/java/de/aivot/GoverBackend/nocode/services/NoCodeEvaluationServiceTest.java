@@ -5,7 +5,7 @@ import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.*;
-import de.aivot.GoverBackend.nocode.providers.NoCodeOperatorServiceProvider;
+import de.aivot.GoverBackend.nocode.providers.NoCodeOperatorsProvider;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -91,7 +91,7 @@ class NoCodeEvaluationServiceTest {
         assertEquals(true, result.getValue());
     }
 
-    private static NoCodeOperatorServiceProvider getNoCodeOperatorSPI() {
+    private static NoCodeOperatorsProvider getNoCodeOperatorSPI() {
         var testOperator = new NoCodeOperator() {
             @Override
             public String getIdentifier() {
@@ -130,7 +130,7 @@ class NoCodeEvaluationServiceTest {
             }
         };
 
-        return new NoCodeOperatorServiceProvider() {
+        return new NoCodeOperatorsProvider() {
             @Override
             public String getPackageName() {
                 return "de.aivot.gover.test";

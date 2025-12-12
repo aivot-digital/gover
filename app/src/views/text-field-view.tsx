@@ -5,6 +5,7 @@ import {useMemo} from 'react';
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
 import {TextFieldComponentProps} from '../components/text-field/text-field-component-props';
 import Autocomplete from '@mui/material/Autocomplete';
+import {CodeEditor} from "../components/code-editor/code-editor";
 
 export function TextFieldView(props: BaseViewProps<TextFieldElement, string>) {
     const {
@@ -76,6 +77,16 @@ export function TextFieldView(props: BaseViewProps<TextFieldElement, string>) {
                         muiPassTroughProps={params}
                     />
                 )}
+            />
+        );
+    }
+
+    if (element.id != null && element.id.endsWith('_code')) {
+        return (
+            <CodeEditor
+                value={value?.toString()}
+                onChange={setValue}
+                actions={[]}
             />
         );
     }

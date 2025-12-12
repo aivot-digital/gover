@@ -79,7 +79,7 @@ const DrawerGroups: DrawerGroup[] = [
             {
                 icon: ModuleIcons.processes,
                 label: 'Prozesse',
-                disabled: true,
+                to: '/processes',
             },
             {
                 icon: ModuleIcons.dataObjects,

@@ -5,6 +5,12 @@ public class OpenApiConstants {
         public static final String FormsName = "Forms";
         public static final String FormsDescription = "APIs for managing forms";
 
+        public static final String ProcessesDefinitionsName = "Processes";
+        public static final String ProcessesDefinitionsDescription =
+                "Processes are used to define and manage workflows within the system. " +
+                "They are versioned and consist of a series of steps and transitions that dictate how tasks are assigned and completed. " +
+                "Processes can be initiated by users or system events, and their progress can be tracked and monitored.";
+
         public static final String TeamsName = "Teams";
         public static final String TeamsDescription =
                 "Teams are used to group users together for cross-departmental collaboration. " +
