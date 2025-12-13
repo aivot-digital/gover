@@ -18,6 +18,7 @@
 * **System:** Added data object management to the backend and app.
 * **Build-System:** Pre-Release builds are now published to a separate 'gover-next' package.
 * **Build-System:** Create separate workflow to build "next" images.
+* **System:** Add new prototype for processes.
 
 ## [4.5.4](https://github.com/aivot-digital/gover/compare/v4.5.3...v4.5.4) (2025-09-XX)
 
