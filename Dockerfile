@@ -56,9 +56,9 @@ COPY pom.xml pom.xml
 COPY src/main src/main
 
 # Set build version and date
-RUN sed -i 's/@buildVersion/'"$BUILD_VERSION"'/g' /app/src/main/resources/application.properties && \
-    sed -i 's/@buildNumber/'"$BUILD_NUMBER"'/g' /app/src/main/resources/application.properties && \
-    sed -i 's/@buildTimestamp/'"$BUILD_DATE"'/g' /app/src/main/resources/application.properties
+RUN sed -i 's/@buildVersion/'"$BUILD_VERSION"'/g' /app/src/main/resources/application.yml && \
+    sed -i 's/@buildNumber/'"$BUILD_NUMBER"'/g' /app/src/main/resources/application.yml && \
+    sed -i 's/@buildTimestamp/'"$BUILD_DATE"'/g' /app/src/main/resources/application.yml
 
 # Copy mails files
 COPY --from=build_mails /mails/dist src/main/resources/templates/mail

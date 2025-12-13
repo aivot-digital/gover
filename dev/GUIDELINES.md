@@ -85,7 +85,7 @@ Models should never be returned to the user directly.
 ## Properties
 
 Properties contain module specific properties that are used in the module.
-These properties are fetched from the `application.properties` file.
+These properties are fetched from the `application.yml` file.
 Properties should only be used in the module they are defined in.
 
 ## Repositories
