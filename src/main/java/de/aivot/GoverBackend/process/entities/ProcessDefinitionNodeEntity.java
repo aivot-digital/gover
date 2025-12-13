@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.core.converters.ElementDataConverter;
 import de.aivot.GoverBackend.core.converters.JsonObjectConverter;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -28,6 +29,14 @@ public class ProcessDefinitionNodeEntity {
     @Nonnull
     @NotNull(message = "Die Version der Prozessdefinition darf nicht null sein.")
     private Integer processDefinitionVersion;
+
+    @Nullable
+    @Size(max = 96, message = "Der Name darf maximal 96 Zeichen lang sein.")
+    private String name;
+
+    @Nullable
+    @Size(max = 512, message = "Die Beschreibung darf maximal 512 Zeichen lang sein.")
+    private String description;
 
     @Nonnull
     @NotBlank(message = "Der Data-Key darf nicht leer sein.")
@@ -76,6 +85,26 @@ public class ProcessDefinitionNodeEntity {
 
     public ProcessDefinitionNodeEntity setProcessDefinitionVersion(@Nonnull Integer processDefinitionVersion) {
         this.processDefinitionVersion = processDefinitionVersion;
+        return this;
+    }
+
+    @Nullable
+    public String getName() {
+        return name;
+    }
+
+    public ProcessDefinitionNodeEntity setName(@Nullable String name) {
+        this.name = name;
+        return this;
+    }
+
+    @Nullable
+    public String getDescription() {
+        return description;
+    }
+
+    public ProcessDefinitionNodeEntity setDescription(@Nullable String description) {
+        this.description = description;
         return this;
     }
 

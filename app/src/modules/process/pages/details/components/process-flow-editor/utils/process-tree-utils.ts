@@ -7,6 +7,7 @@ export interface TreeNode {
     provider: ProcessNodeProvider;
     children: TreeEdge[];
     depth: number;
+    order: number;
 }
 
 export interface TreeEdge {
@@ -22,10 +23,14 @@ export function processDataToTree(nodes: ProcessDefinitionNodeEntity[],
     const providerMap = new Map<string, ProcessNodeProvider>();
     const incomingEdgeCount = new Map<number, number>();
     const edgesByFromNode = new Map<number, ProcessDefinitionEdgeEntity[]>();
+    const parentMap = new Map<number, number[]>(); // nodeId -> parent nodeIds
+    const childMap = new Map<number, number[]>(); // nodeId -> child nodeIds
 
     nodes.forEach(node => {
         nodeMap.set(node.id, node);
         incomingEdgeCount.set(node.id, 0);
+        parentMap.set(node.id, []);
+        childMap.set(node.id, []);
     });
 
     providers.forEach(provider => {
@@ -38,21 +43,54 @@ export function processDataToTree(nodes: ProcessDefinitionNodeEntity[],
             edgesByFromNode.set(edge.fromNodeId, []);
         }
         edgesByFromNode.get(edge.fromNodeId)!.push(edge);
+        // Build parent/child maps
+        parentMap.get(edge.toNodeId)!.push(edge.fromNodeId);
+        childMap.get(edge.fromNodeId)!.push(edge.toNodeId);
     });
 
-    function buildTree(nodeId: number, depth: number): TreeNode {
+    // Compute rank (depth) for each node using topological sort
+    const rankMap = new Map<number, number>();
+    const queue: number[] = [];
+    // Start with nodes with no incoming edges (roots)
+    nodes.forEach(node => {
+        if ((incomingEdgeCount.get(node.id) || 0) === 0) {
+            queue.push(node.id);
+            rankMap.set(node.id, 0);
+        }
+    });
+    while (queue.length > 0) {
+        const nodeId = queue.shift()!;
+        const children = childMap.get(nodeId) || [];
+        for (const childId of children) {
+            // For each child, compute its rank as max(rank of all parents) + 1
+            const parents = parentMap.get(childId) || [];
+            let maxParentRank = -1;
+            for (const parentId of parents) {
+                maxParentRank = Math.max(maxParentRank, rankMap.get(parentId) ?? 0);
+            }
+            const newRank = maxParentRank + 1;
+            if (!rankMap.has(childId) || rankMap.get(childId)! < newRank) {
+                rankMap.set(childId, newRank);
+            }
+            // Decrement incoming edge count and add to queue if all parents processed
+            incomingEdgeCount.set(childId, (incomingEdgeCount.get(childId) || 1) - 1);
+            if (incomingEdgeCount.get(childId) === 0) {
+                queue.push(childId);
+            }
+        }
+    }
+
+    function buildTree(nodeId: number, order: number): TreeNode {
         const node = nodeMap.get(nodeId)!;
         const provider = providerMap.get(node.codeKey)!;
         const children: TreeEdge[] = [];
-
         const outgoingEdges = edgesByFromNode.get(nodeId) || [];
-        provider.ports.forEach(port => {
-            const edge = outgoingEdges
-                .find(e => e.viaPort === port.key);
+        provider.ports.forEach((port, index) => {
+            const edge = outgoingEdges.find(e => e.viaPort === port.key);
             if (edge == null) {
                 // No edge for this port, could handle differently if needed
             } else {
-                const childNode = buildTree(edge.toNodeId, depth + 1);
+                const childNode = buildTree(edge.toNodeId, index);
                 children.push({
                     edge,
                     port,
@@ -60,20 +98,19 @@ export function processDataToTree(nodes: ProcessDefinitionNodeEntity[],
                 });
             }
         });
-
         return {
             node,
             provider,
             children,
-            depth,
+            depth: rankMap.get(nodeId) ?? 0,
+            order,
         };
     }
 
     // Find root nodes (no incoming edges)
     const rootNodeIds = nodes
-        .filter(node => (incomingEdgeCount.get(node.id) || 0) === 0)
+        .filter(node => (parentMap.get(node.id)?.length || 0) === 0)
         .map(node => node.id);
 
     return rootNodeIds.map(nodeId => buildTree(nodeId, 0));
 }
-

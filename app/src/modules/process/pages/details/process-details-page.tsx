@@ -146,6 +146,8 @@ export function ProcessDetailsPage() {
                 id: 0,
                 processDefinitionId: processFlow.definition.id,
                 processDefinitionVersion: processFlow.version.processDefinitionVersion,
+                name: null,
+                description: null,
                 codeKey: nodeProvider.key,
                 dataKey: generateId(5),
                 configuration: {},
@@ -198,6 +200,8 @@ export function ProcessDetailsPage() {
                 id: 0,
                 processDefinitionId: processFlow.definition.id,
                 processDefinitionVersion: processFlow.version.processDefinitionVersion,
+                name: null,
+                description: null,
                 codeKey: nodeProvider.key,
                 dataKey: generateId(5),
                 configuration: {},
@@ -278,6 +282,8 @@ export function ProcessDetailsPage() {
                 id: 0,
                 processDefinitionId: processFlow.definition.id,
                 processDefinitionVersion: processFlow.version.processDefinitionVersion,
+                name: null,
+                description: null,
                 codeKey: nodeProvider.key,
                 dataKey: generateId(5),
                 configuration: {},
@@ -616,6 +622,33 @@ function Editor(props: EditorProps) {
                         dataKey: val ?? '',
                     });
                 }}
+                required={true}
+                maxCharacters={32}
+            />
+
+            <TextFieldComponent
+                label="Name"
+                value={selectedNode.name}
+                onChange={(val) => {
+                    setLocalNode({
+                        ...(localNode ?? selectedNode),
+                        name: val ?? null,
+                    });
+                }}
+                maxCharacters={96}
+            />
+
+            <TextFieldComponent
+                label="Kurzbeschreibung"
+                value={selectedNode.description}
+                onChange={(val) => {
+                    setLocalNode({
+                        ...(localNode ?? selectedNode),
+                        description: val ?? null,
+                    });
+                }}
+                multiline={true}
+                maxCharacters={512}
             />
 
             {

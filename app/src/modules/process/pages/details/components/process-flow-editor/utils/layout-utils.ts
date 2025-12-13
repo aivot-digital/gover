@@ -94,6 +94,13 @@ function transformNodes(treeNodes: TreeNode[]): {
             children,
         } = treeNode;
 
+        const nodeAlreadyExists = flowNodes
+            .some((n) => n.id === String(node.id));
+
+        if (nodeAlreadyExists) {
+            return;
+        }
+
         flowNodes.push({
             id: String(node.id),
             type: DEFAULT_FLOW_NODE_TYPE,
@@ -112,6 +119,13 @@ function transformNodes(treeNodes: TreeNode[]): {
         });
 
         for (const childEdge of children) {
+            const edgeAlreadyExists = flowEdges
+                .some((e) => e.id === String(childEdge.edge.id));
+
+            if (edgeAlreadyExists) {
+                continue;
+            }
+
             const {edge, childNode} = childEdge;
 
             flowEdges.push({
@@ -134,6 +148,14 @@ function transformNodes(treeNodes: TreeNode[]): {
     }
 
     treeNodes.forEach(transformTreeNode);
+
+    flowNodes.sort((a, b) => {
+        return a.data.treeNode.depth - b.data.treeNode.depth;
+    });
+
+    for (const node of flowNodes) {
+        console.log(node.data.treeNode.provider.name, node.data.treeNode.depth);
+    }
 
     return {
         flowNodes,

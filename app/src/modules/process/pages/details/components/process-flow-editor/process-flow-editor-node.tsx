@@ -10,6 +10,8 @@ import {ProcessFlowEditorNodeHandle} from "./process-flow-editor-node-handle";
 import {ProcessFlowEditorContext} from "./process-flow-editor-context";
 import {HANDLE_SIZE, NODE_WIDTH} from "./data/process-flow-constants";
 import {FlowNode} from "./utils/layout-utils";
+import {isStringNotNullOrEmpty, isStringNullOrEmpty} from "../../../../../../utils/string-utils";
+import {getNodeDescription, getNodeName} from "./utils/node-utils";
 
 export function ProcessFlowEditorNode(props: NodeProps<FlowNode>) {
     const theme = useTheme();
@@ -122,7 +124,7 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>) {
                         />
 
                         <Typography>
-                            {provider.name} {}
+                            {getNodeName(node, provider)}
                         </Typography>
                     </Box>
 
@@ -142,11 +144,10 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>) {
                         }}
                     >
                         <Typography>
-                            {provider.description}
+                            {getNodeDescription(node, provider)}
                         </Typography>
                     </Box>
                 </Paper>
-
 
             </Box>
 

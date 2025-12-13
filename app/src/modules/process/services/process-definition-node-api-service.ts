@@ -27,6 +27,8 @@ export class ProcessDefinitionNodeApiService extends BaseCrudApiService<
             id: 0,
             processDefinitionId: 0,
             processDefinitionVersion: 0,
+            name: null,
+            description: null,
             dataKey: "",
             codeKey: "",
             configuration: {},

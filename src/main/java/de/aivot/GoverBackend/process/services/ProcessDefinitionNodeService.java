@@ -105,6 +105,8 @@ public class ProcessDefinitionNodeService implements EntityService<ProcessDefini
                                                      @Nonnull ProcessDefinitionNodeEntity existingEntity) throws ResponseException {
         existingEntity.setProcessDefinitionId(entity.getProcessDefinitionId());
         existingEntity.setProcessDefinitionVersion(entity.getProcessDefinitionVersion());
+        existingEntity.setName(entity.getName());
+        existingEntity.setDescription(entity.getDescription());
         existingEntity.setDataKey(entity.getDataKey());
         existingEntity.setCodeKey(entity.getCodeKey());
 

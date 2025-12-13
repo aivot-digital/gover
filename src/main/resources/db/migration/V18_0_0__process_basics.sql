@@ -75,6 +75,11 @@ create table process_definition_nodes
     process_definition_id      int         not null,
     process_definition_version int         not null,
 
+    -- The name of this node
+    name                       varchar(96) null,
+    -- A short description of this node
+    description                text        null,
+
     -- The key, the data of this node are stored in the process instance context
     data_key                   varchar(32) not null,
 

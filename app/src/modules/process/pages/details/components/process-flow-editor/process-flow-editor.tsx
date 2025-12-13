@@ -9,6 +9,7 @@ import {ProcessFlowEditorEdge} from "./process-flow-editor-edge";
 import {ProcessFlowEditorContext} from "./process-flow-editor-context";
 import {DEFAULT_FLOW_EDGE_TYPE, DEFAULT_FLOW_NODE_TYPE} from "./data/process-flow-constants";
 import {FlowEdge, FlowNode, layoutElements} from "./utils/layout-utils";
+import {Button} from "@mui/material";
 
 interface ProcessFlowEditorProps {
     editable: boolean;
@@ -91,6 +92,12 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps) {
                 onAddInbetweenNode: onAddInbetweenNode ?? (() => {}),
             }}
         >
+            <Button onClick={() => {
+                layoutNodes();
+            }}>
+                Layout
+            </Button>
+
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
