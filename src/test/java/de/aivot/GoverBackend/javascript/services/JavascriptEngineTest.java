@@ -90,21 +90,6 @@ class JavascriptEngineTest {
     }
 
     public static class TestJavascriptFunctionProvider implements JavascriptFunctionProvider {
-        @Override
-        public String getPackageName() {
-            return "de.aivot.gover.test";
-        }
-
-        @Override
-        public String getLabel() {
-            return "";
-        }
-
-        @Override
-        public String getDescription() {
-            return "";
-        }
-
         @HostAccess.Export
         public String getValue() {
             return "value";
@@ -113,6 +98,11 @@ class JavascriptEngineTest {
         @HostAccess.Export
         public String echoValue(String value) {
             return value;
+        }
+
+        @Override
+        public String getObjectName() {
+            return "de_aivot_gover_test";
         }
 
         @Override

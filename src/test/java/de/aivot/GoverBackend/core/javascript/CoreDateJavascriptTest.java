@@ -32,18 +32,8 @@ class CoreDateJavascriptTest {
     }
 
     @Test
-    void testGetPackageName() {
-        assertEquals("_date", provider.getPackageName());
-    }
-
-    @Test
-    void testGetLabel() {
-        assertEquals("Datumsangaben", provider.getLabel());
-    }
-
-    @Test
     void testGetDescription() {
-        assertEquals("Dieses Paket enthält Funktionen für Datumsoperationen.", provider.getDescription());
+        assertEquals("Dieses Modul stellt Funktionen zur Verarbeitung von Datumswerten bereit.", provider.getDescription());
     }
 
     @Test

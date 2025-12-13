@@ -25,7 +25,7 @@ class NoCodeEvaluationServiceTest {
 
         var res = evalService.evaluate(
                 new NoCodeExpression(
-                        "de.aivot.gover.test.and",
+                        "and",
                         new NoCodeStaticValue(true),
                         new NoCodeStaticValue(true)
                 ),
@@ -40,7 +40,7 @@ class NoCodeEvaluationServiceTest {
 
         var result = evalService.evaluate(
                 new NoCodeExpression(
-                        "de.aivot.gover.test.and",
+                        "and",
                         new NoCodeReference("a"),
                         new NoCodeReference("a")
                 ),
@@ -51,7 +51,7 @@ class NoCodeEvaluationServiceTest {
 
         result = evalService.evaluate(
                 new NoCodeExpression(
-                        "de.aivot.gover.test.and",
+                        "and",
                         new NoCodeReference("a"),
                         new NoCodeReference("b")
                 ),
@@ -62,7 +62,7 @@ class NoCodeEvaluationServiceTest {
 
         result = evalService.evaluate(
                 new NoCodeExpression(
-                        "de.aivot.gover.test.and",
+                        "and",
                         new NoCodeReference("a"),
                         new NoCodeReference("c")
                 ),
@@ -73,13 +73,13 @@ class NoCodeEvaluationServiceTest {
 
         result = evalService.evaluate(
                 new NoCodeExpression(
-                        "de.aivot.gover.test.and",
+                        "and",
                         new NoCodeStaticValue(true),
                         new NoCodeExpression(
-                                "de.aivot.gover.test.and",
+                                "and",
                                 new NoCodeStaticValue(true),
                                 new NoCodeExpression(
-                                        "de.aivot.gover.test.and",
+                                        "and",
                                         new NoCodeStaticValue(true),
                                         new NoCodeReference("a")
                                 )
@@ -131,21 +131,6 @@ class NoCodeEvaluationServiceTest {
         };
 
         return new NoCodeOperatorsProvider() {
-            @Override
-            public String getPackageName() {
-                return "de.aivot.gover.test";
-            }
-
-            @Override
-            public String getLabel() {
-                return "test";
-            }
-
-            @Override
-            public String getDescription() {
-                return "test";
-            }
-
             @Override
             public NoCodeOperator[] getOperators() {
                 return new NoCodeOperator[]{
