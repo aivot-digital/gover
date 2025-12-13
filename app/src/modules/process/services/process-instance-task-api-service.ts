@@ -12,6 +12,7 @@ interface ProcessInstanceTaskFilter {
     processDefinitionVersion: number;
     processDefinitionNodeId: number;
     assignedUserId: string;
+    status: ProcessTaskStatus;
 }
 
 export interface TaskView {

@@ -1,6 +1,6 @@
 import {useEffect, useState} from "react";
 import {Box, Button, Container, Paper} from "@mui/material";
-import {useParams} from "react-router-dom";
+import {useNavigate, useParams} from "react-router-dom";
 import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
 import {GenericDetailsSkeleton} from "../../../../components/generic-details-page/generic-details-skeleton";
 import {PageWrapper} from "../../../../components/page-wrapper/page-wrapper";
@@ -9,12 +9,14 @@ import {ElementDerivationContext} from "../../../elements/components/element-der
 import {ProcessInstanceTaskApiService, TaskView, TaskViewEvent} from "../../services/process-instance-task-api-service";
 import FactCheck from "@aivot/mui-material-symbols-400-outlined/dist/fact-check/FactCheck";
 import {useAppDispatch} from "../../../../hooks/use-app-dispatch";
-import {setErrorMessage, setLoadingMessage} from "../../../../slices/shell-slice";
+import {clearLoadingMessage, setErrorMessage, setLoadingMessage} from "../../../../slices/shell-slice";
 import {showApiErrorSnackbar} from "../../../../slices/snackbar-slice";
+import {withDelay} from "../../../../utils/with-delay";
 
 export function ProcessTaskViewPage() {
     const params = useParams();
     const dispatch = useAppDispatch();
+    const navigate = useNavigate();
 
     const [taskView, setTaskView] = useState<TaskView>();
 
@@ -41,11 +43,15 @@ export function ProcessTaskViewPage() {
             estimatedTime: 500,
         }));
 
-        new ProcessInstanceTaskApiService()
-            .putTaskView(params.instanceAccessKey!, params.taskAccessKey!, taskView?.data!, evt.event)
+        withDelay(
+            new ProcessInstanceTaskApiService()
+                .putTaskView(params.instanceAccessKey!, params.taskAccessKey!, taskView?.data!, evt.event),
+            500,
+        )
             .then(setTaskView)
             .finally(() => {
-                window.location.reload();
+                navigate('/tasks');
+                dispatch(clearLoadingMessage());
             });
     };
 

@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.process.filters;
 
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.lib.models.Filter;
+import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -17,6 +18,7 @@ public class ProcessInstanceTaskFilter implements Filter<ProcessInstanceTaskEnti
     private Integer processDefinitionVersion;
     private Integer processDefinitionNodeId;
     private String assignedUserId;
+    private ProcessTaskStatus status;
 
     public static ProcessInstanceTaskFilter create() {
         return new ProcessInstanceTaskFilter();
@@ -33,6 +35,7 @@ public class ProcessInstanceTaskFilter implements Filter<ProcessInstanceTaskEnti
                 .withEquals("processDefinitionId", processDefinitionId)
                 .withEquals("processDefinitionVersion", processDefinitionVersion)
                 .withEquals("processDefinitionNodeId", processDefinitionNodeId)
+                .withEquals("status", status)
                 .withContains("assignedUserId", assignedUserId);
 
         return builder.build();
@@ -98,6 +101,11 @@ public class ProcessInstanceTaskFilter implements Filter<ProcessInstanceTaskEnti
 
     public ProcessInstanceTaskFilter setAssignedUserId(String assignedUserId) {
         this.assignedUserId = assignedUserId;
+        return this;
+    }
+
+    public ProcessInstanceTaskFilter setStatus(ProcessTaskStatus status) {
+        this.status = status;
         return this;
     }
 }
