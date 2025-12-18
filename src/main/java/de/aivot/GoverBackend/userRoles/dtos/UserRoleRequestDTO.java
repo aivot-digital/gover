@@ -7,6 +7,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import jakarta.annotation.Nullable;
 
+import java.util.List;
+
 public record UserRoleRequestDTO(
     @NotNull
     @NotBlank
@@ -17,68 +19,14 @@ public record UserRoleRequestDTO(
     String description,
 
     @NotNull
-    Boolean orgUnitMemberPermissionEdit,
-    @NotNull
-    Boolean teamMemberPermissionEdit,
-    @NotNull
-    Boolean formPermissionCreate,
-    @NotNull
-    Boolean formPermissionRead,
-    @NotNull
-    Boolean formPermissionEdit,
-    @NotNull
-    Boolean formPermissionDelete,
-    @NotNull
-    Boolean formPermissionAnnotate,
-    @NotNull
-    Boolean formPermissionPublish,
-    @NotNull
-    Boolean processPermissionCreate,
-    @NotNull
-    Boolean processPermissionRead,
-    @NotNull
-    Boolean processPermissionEdit,
-    @NotNull
-    Boolean processPermissionDelete,
-    @NotNull
-    Boolean processPermissionAnnotate,
-    @NotNull
-    Boolean processPermissionPublish,
-    @NotNull
-    Boolean processInstancePermissionCreate,
-    @NotNull
-    Boolean processInstancePermissionRead,
-    @NotNull
-    Boolean processInstancePermissionEdit,
-    @NotNull
-    Boolean processInstancePermissionDelete,
-    @NotNull
-    Boolean processInstancePermissionAnnotate
+    List<String> permissions
 ) implements RequestDTO<UserRoleEntity> {
     @Override
     public UserRoleEntity toEntity() {
         UserRoleEntity entity = new UserRoleEntity();
         entity.setName(name);
         entity.setDescription(description);
-        entity.setDepartmentPermissionEdit(orgUnitMemberPermissionEdit);
-        entity.setTeamPermissionEdit(teamMemberPermissionEdit);
-        entity.setFormPermissionCreate(formPermissionCreate);
-        entity.setFormPermissionRead(formPermissionRead);
-        entity.setFormPermissionEdit(formPermissionEdit);
-        entity.setFormPermissionDelete(formPermissionDelete);
-        entity.setFormPermissionAnnotate(formPermissionAnnotate);
-        entity.setFormPermissionPublish(formPermissionPublish);
-        entity.setProcessPermissionCreate(processPermissionCreate);
-        entity.setProcessPermissionRead(processPermissionRead);
-        entity.setProcessPermissionEdit(processPermissionEdit);
-        entity.setProcessPermissionDelete(processPermissionDelete);
-        entity.setProcessPermissionAnnotate(processPermissionAnnotate);
-        entity.setProcessPermissionPublish(processPermissionPublish);
-        entity.setProcessInstancePermissionCreate(processInstancePermissionCreate);
-        entity.setProcessInstancePermissionRead(processInstancePermissionRead);
-        entity.setProcessInstancePermissionEdit(processInstancePermissionEdit);
-        entity.setProcessInstancePermissionDelete(processInstancePermissionDelete);
-        entity.setProcessInstancePermissionAnnotate(processInstancePermissionAnnotate);
+        entity.setPermissions(permissions);
         return entity;
     }
 }

@@ -5,6 +5,7 @@ import {isAdmin} from '../utils/is-admin';
 import {addSnackbarMessage, removeSnackbarMessage, selectErrorMessage, setErrorMessage, SnackbarSeverity, SnackbarType} from '../slices/shell-slice';
 import {UserRole} from '../data/user-role';
 import {useAppSelector} from './use-app-selector';
+import {Permission} from "../data/permissions/permission";
 
 
 export function useUser() {
@@ -55,7 +56,7 @@ export function useAccessGuard(options: Options): boolean {
             return memberships
                 .some(dept => (
                     dept.departmentId === onlyAdminOfDepartmentId &&
-                    dept.roles.some(role => role.departmentPermissionEdit)
+                    dept.domainRolePermissions.some(role => role === Permission.DEPARTMENT_UPDATE)
                 )) ?? false;
         }
 

@@ -213,6 +213,6 @@ public class WebhookTriggerNode implements ProcessNodeProvider, PluginComponent 
                                            @Nonnull Map<String, Object> workingData) throws Exception {
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_NAME)
-                .setOutput(processInstance.getInitialPayload());
+                .setProcessData(processInstance.getInitialPayload());
     }
 }

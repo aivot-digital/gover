@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.plugins.corePlugin.components.nodes;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
+import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.form.content.RichText;
 import de.aivot.GoverBackend.elements.models.elements.form.input.MultiCheckboxField;
 import de.aivot.GoverBackend.elements.models.elements.form.input.MultiCheckboxFieldOption;
@@ -144,7 +145,7 @@ public class CheckAndUpdateActionNode implements ProcessNodeProvider, PluginComp
             json = ObjectMapperFactory
                     .getInstance()
                     .writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(thisTask.getWorkingData());
+                    .writeValueAsString(thisTask.getProcessData());
         } catch (JsonProcessingException e) {
             throw ResponseException.internalServerError(e);
         }
@@ -221,7 +222,6 @@ public class CheckAndUpdateActionNode implements ProcessNodeProvider, PluginComp
                                                        @Nonnull Map<String, Object> workingData,
                                                        @Nonnull Map<String, Object> updateData,
                                                        @Nonnull String event) throws Exception {
-
         if (event.equals(ACCEPT_EVENT_NAME)) {
             return Optional.of(ProcessNodeExecutionResultTaskCompleted.of(ACCEPT_PORT_NAME));
         } else {

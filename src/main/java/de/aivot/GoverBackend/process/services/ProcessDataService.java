@@ -1,5 +1,8 @@
 package de.aivot.GoverBackend.process.services;
 
+import de.aivot.GoverBackend.javascript.models.JavascriptCode;
+import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
+import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.process.entities.ProcessDefinitionNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
@@ -18,18 +21,19 @@ import java.util.regex.Pattern;
 
 @Service
 public class ProcessDataService {
-    private static final Pattern lastAccessPattern = Pattern
-            .compile("\\$\\.(meta|data)\\.[a-zA-Z0-9_.]+");
-    private static final Pattern directAccessPattern = Pattern
-            .compile("\\$[a-zA-Z0-9_]+\\.(meta|data)\\.[a-zA-Z0-9_.]+");
+    private static final Pattern jsPattern = Pattern
+            .compile("\\{\\{([^{}]+)\\}\\}");
 
     private final ProcessInstanceTaskRepository processInstanceTaskRepository;
     private final ProcessDefinitionNodeRepository processDefinitionNodeRepository;
+    private final JavascriptEngineFactoryService javascriptEngineFactoryService;
 
     public ProcessDataService(ProcessInstanceTaskRepository processInstanceTaskRepository,
-                              ProcessDefinitionNodeRepository processDefinitionNodeRepository) {
+                              ProcessDefinitionNodeRepository processDefinitionNodeRepository,
+                              JavascriptEngineFactoryService javascriptEngineFactoryService) {
         this.processInstanceTaskRepository = processInstanceTaskRepository;
         this.processDefinitionNodeRepository = processDefinitionNodeRepository;
+        this.javascriptEngineFactoryService = javascriptEngineFactoryService;
     }
 
     @Nullable
@@ -41,36 +45,46 @@ public class ProcessDataService {
 
         var result = string;
 
-        List<String> matches = new LinkedList<>();
-        lastAccessPattern
+        List<String> matches = jsPattern
                 .matcher(string)
                 .results()
                 .map(MatchResult::group)
-                .forEach(matches::add);
+                .toList();
 
-        directAccessPattern
-                .matcher(string)
-                .results()
-                .map(MatchResult::group)
-                .forEach(matches::add);
+        for (String jsSnippet : matches) {
+            String interpolated;
+            try (var engine = javascriptEngineFactoryService.getEngine()) {
+                fillJsEngineWithData(processData, engine);
 
-        for (String path : matches) {
-            Object value = processData;
-            String[] keys = path.split("\\.");
+                var code = JavascriptCode
+                        .of(jsSnippet);
 
-            for (String key : keys) {
-                if (value instanceof Map<?, ?> map) {
-                    value = map.get(key);
-                } else {
-                    value = null;
-                    break;
-                }
+                interpolated = engine
+                        .evaluateCode(code)
+                        .toString();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
 
-            result = result.replace(path, value != null ? value.toString() : "null");
+            if (interpolated != null) {
+                result = result
+                        .replace(jsSnippet, interpolated);
+            }
         }
 
         return result;
+    }
+
+    public static void fillJsEngineWithData(@Nonnull Map<String, Object> processData, JavascriptEngine engine) {
+        engine
+                .registerGlobalObject("$", processData.get("$"))
+                .registerGlobalObject("$$", processData.get("$$"));
+
+        for (String key : processData.keySet()) {
+            if (key.startsWith("_")) {
+                engine.registerGlobalObject(key, processData.get(key));
+            }
+        }
     }
 
     @Nonnull
@@ -93,12 +107,12 @@ public class ProcessDataService {
                         .findFirst()
                         .orElse(null);
 
-        Map<String, Object> previousData = new HashMap<>();
-        previousData.put("data", previousTask != null ? previousTask.getWorkingData() : instance.getInitialPayload());
-        previousData.put("meta", previousTask != null ? previousTask.getMetaData() : null);
+        Map<String, Object> allData = new HashMap<>();
+        allData.put("$", previousTask != null ? previousTask.getProcessData() : instance.getInitialPayload());
 
         Map<String, Object> instanceData = new HashMap<>();
-        instanceData.put("$", previousData);
+        // TODO: Specify Instance Data
+        allData.put("$$", instanceData);
 
         for (ProcessInstanceTaskEntity task : tasks) {
             var node = nodes
@@ -111,12 +125,9 @@ public class ProcessDataService {
                 continue;
             }
 
-            Map<String, Object> taskData = new HashMap<>();
-            taskData.put("data", task.getWorkingData());
-            taskData.put("meta", task.getMetaData());
-            instanceData.put("$" + node.getDataKey(), taskData);
+            allData.put("_" + node.getDataKey(), task.getNodeData());
         }
 
-        return instanceData;
+        return allData;
     }
 }

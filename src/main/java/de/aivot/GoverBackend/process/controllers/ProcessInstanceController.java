@@ -3,8 +3,6 @@ package de.aivot.GoverBackend.process.controllers;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
-import de.aivot.GoverBackend.department.filters.VDepartmentMembershipWithPermissionsFilter;
-import de.aivot.GoverBackend.department.repositories.VDepartmentMembershipWithPermissionsRepository;
 import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
@@ -14,7 +12,6 @@ import de.aivot.GoverBackend.process.filters.ProcessInstanceFilter;
 import de.aivot.GoverBackend.process.services.ProcessInstanceService;
 import de.aivot.GoverBackend.process.services.ProcessDefinitionService;
 import de.aivot.GoverBackend.user.services.UserService;
-import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -44,7 +41,6 @@ public class ProcessInstanceController {
     private final UserService userService;
     private final ProcessInstanceService processInstanceService;
     private final DepartmentService departmentService;
-    private final VDepartmentMembershipWithPermissionsRepository vDepartmentMembershipWithPermissionsRepository;
     private final ProcessDefinitionService processDefinitionService;
 
     @Autowired
@@ -52,13 +48,11 @@ public class ProcessInstanceController {
                                     UserService userService,
                                     ProcessInstanceService processInstanceService,
                                     DepartmentService departmentService,
-                                    VDepartmentMembershipWithPermissionsRepository vDepartmentMembershipWithPermissionsRepository,
                                     ProcessDefinitionService processDefinitionService) {
         this.auditService = auditService.createScopedAuditService(ProcessInstanceController.class);
         this.userService = userService;
         this.processInstanceService = processInstanceService;
         this.departmentService = departmentService;
-        this.vDepartmentMembershipWithPermissionsRepository = vDepartmentMembershipWithPermissionsRepository;
         this.processDefinitionService = processDefinitionService;
     }
 
@@ -87,28 +81,6 @@ public class ProcessInstanceController {
         var execUser = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
-
-        if (!execUser.getIsSuperAdmin()) {
-            var processDefinition = processDefinitionService
-                    .retrieve(newInstance.getProcessDefinitionId())
-                    .orElseThrow(ResponseException::badRequest);
-
-            var department = departmentService
-                    .retrieve(processDefinition.getDepartmentId())
-                    .orElseThrow(ResponseException::badRequest);
-
-            var spec = VDepartmentMembershipWithPermissionsFilter
-                    .create()
-                    .setUserId(execUser.getId())
-                    .setDepartmentId(department.getId())
-                    .setProcessPermissionCreate(true)
-                    .build();
-            var hasPermission = vDepartmentMembershipWithPermissionsRepository
-                    .exists(spec);
-            if (!hasPermission) {
-                throw ResponseException.noPermission(PermissionLabels.ProcessPermissionCreate);
-            }
-        }
 
         var result = processInstanceService
                 .create(newInstance);
@@ -152,28 +124,6 @@ public class ProcessInstanceController {
         var existing = processInstanceService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
-
-        if (!execUser.getIsSuperAdmin()) {
-            var processDefinition = processDefinitionService
-                    .retrieve(existing.getProcessDefinitionId())
-                    .orElseThrow(ResponseException::badRequest);
-
-            var department = departmentService
-                    .retrieve(processDefinition.getDepartmentId())
-                    .orElseThrow(ResponseException::badRequest);
-
-            var spec = VDepartmentMembershipWithPermissionsFilter
-                    .create()
-                    .setUserId(execUser.getId())
-                    .setDepartmentId(department.getId())
-                    .setProcessPermissionEdit(true)
-                    .build();
-            var hasPermission = vDepartmentMembershipWithPermissionsRepository
-                    .exists(spec);
-            if (!hasPermission) {
-                throw ResponseException.noPermission(PermissionLabels.ProcessPermissionEdit);
-            }
-        }
 
         updateDTO.setId(existing.getId());
 

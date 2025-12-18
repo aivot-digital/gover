@@ -3,8 +3,8 @@ package de.aivot.GoverBackend.process.controllers;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
-import de.aivot.GoverBackend.department.filters.VDepartmentMembershipWithPermissionsFilter;
-import de.aivot.GoverBackend.department.repositories.VDepartmentMembershipWithPermissionsRepository;
+import de.aivot.GoverBackend.core.data.Permissions;
+import de.aivot.GoverBackend.core.services.PermissionService;
 import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
@@ -15,7 +15,6 @@ import de.aivot.GoverBackend.process.repositories.ProcessDefinitionVersionReposi
 import de.aivot.GoverBackend.process.services.*;
 import de.aivot.GoverBackend.teams.entities.TeamEntity;
 import de.aivot.GoverBackend.user.services.UserService;
-import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -47,7 +46,7 @@ public class ProcessDefinitionController {
     private final UserService userService;
     private final ProcessDefinitionService processDefinitionService;
     private final DepartmentService departmentService;
-    private final VDepartmentMembershipWithPermissionsRepository vDepartmentMembershipWithPermissionsRepository;
+    private final PermissionService permissionService;
     private final ProcessExportService processExportService;
     private final ProcessDefinitionVersionRepository processDefinitionVersionRepository;
     private final ProcessDefinitionVersionService processDefinitionVersionService;
@@ -59,15 +58,18 @@ public class ProcessDefinitionController {
                                        UserService userService,
                                        ProcessDefinitionService processDefinitionService,
                                        DepartmentService departmentService,
-                                       VDepartmentMembershipWithPermissionsRepository vDepartmentMembershipWithPermissionsRepository,
+                                       PermissionService permissionService,
                                        ProcessExportService processExportService,
-                                       ProcessDefinitionVersionRepository processDefinitionVersionRepository, ProcessDefinitionVersionService processDefinitionVersionService, ProcessDefinitionNodeService processDefinitionNodeService, ProcessDefinitionEdgeService processDefinitionEdgeService) {
+                                       ProcessDefinitionVersionRepository processDefinitionVersionRepository,
+                                       ProcessDefinitionVersionService processDefinitionVersionService,
+                                       ProcessDefinitionNodeService processDefinitionNodeService,
+                                       ProcessDefinitionEdgeService processDefinitionEdgeService) {
         this.auditService = auditService.createScopedAuditService(ProcessDefinitionController.class);
 
         this.userService = userService;
         this.processDefinitionService = processDefinitionService;
         this.departmentService = departmentService;
-        this.vDepartmentMembershipWithPermissionsRepository = vDepartmentMembershipWithPermissionsRepository;
+        this.permissionService = permissionService;
         this.processExportService = processExportService;
         this.processDefinitionVersionRepository = processDefinitionVersionRepository;
         this.processDefinitionVersionService = processDefinitionVersionService;
@@ -106,19 +108,12 @@ public class ProcessDefinitionController {
                 .retrieve(newProcessDefinition.getDepartmentId())
                 .orElseThrow(ResponseException::badRequest);
 
-        if (!execUser.getIsSuperAdmin()) {
-            var spec = VDepartmentMembershipWithPermissionsFilter
-                    .create()
-                    .setUserId(execUser.getId())
-                    .setDepartmentId(department.getId())
-                    .setProcessPermissionCreate(true)
-                    .build();
-            var hasPermission = vDepartmentMembershipWithPermissionsRepository
-                    .exists(spec);
-            if (!hasPermission) {
-                throw ResponseException.noPermission(PermissionLabels.ProcessPermissionCreate);
-            }
-        }
+        permissionService
+                .hasDepartmentPermissionThrows(
+                        execUser.getId(),
+                        department.getId(),
+                        Permissions.PROCESS_DEFINITION_CREATE
+                );
 
         var result = processDefinitionService
                 .create(newProcessDefinition);
@@ -151,19 +146,12 @@ public class ProcessDefinitionController {
                 .retrieve(exportData.process().getDepartmentId())
                 .orElseThrow(ResponseException::badRequest);
 
-        if (!execUser.getIsSuperAdmin()) {
-            var spec = VDepartmentMembershipWithPermissionsFilter
-                    .create()
-                    .setUserId(execUser.getId())
-                    .setDepartmentId(department.getId())
-                    .setProcessPermissionCreate(true)
-                    .build();
-            var hasPermission = vDepartmentMembershipWithPermissionsRepository
-                    .exists(spec);
-            if (!hasPermission) {
-                throw ResponseException.noPermission(PermissionLabels.ProcessPermissionCreate);
-            }
-        }
+        permissionService
+                .hasDepartmentPermissionThrows(
+                        execUser.getId(),
+                        department.getId(),
+                        Permissions.PROCESS_DEFINITION_CREATE
+                );
 
         var newProcess = processDefinitionService
                 .create(exportData.process());
@@ -241,19 +229,12 @@ public class ProcessDefinitionController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        if (!execUser.getIsSuperAdmin()) {
-            var spec = VDepartmentMembershipWithPermissionsFilter
-                    .create()
-                    .setUserId(execUser.getId())
-                    .setDepartmentId(existing.getDepartmentId())
-                    .setProcessPermissionCreate(true)
-                    .build();
-            var hasPermission = vDepartmentMembershipWithPermissionsRepository
-                    .exists(spec);
-            if (!hasPermission) {
-                throw ResponseException.noPermission(PermissionLabels.ProcessPermissionCreate);
-            }
-        }
+        permissionService
+                .hasDepartmentPermissionThrows(
+                        execUser.getId(),
+                        updateDTO.getDepartmentId(),
+                        Permissions.PROCESS_DEFINITION_CREATE
+                );
 
         updateDTO.setId(existing.getId());
 
@@ -330,19 +311,12 @@ public class ProcessDefinitionController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        if (!execUser.getIsSuperAdmin()) {
-            var spec = VDepartmentMembershipWithPermissionsFilter
-                    .create()
-                    .setUserId(execUser.getId())
-                    .setDepartmentId(existing.getDepartmentId())
-                    .setProcessPermissionRead(true)
-                    .build();
-            var hasPermission = vDepartmentMembershipWithPermissionsRepository
-                    .exists(spec);
-            if (!hasPermission) {
-                throw ResponseException.noPermission(PermissionLabels.ProcessPermissionRead);
-            }
-        }
+        permissionService
+                .hasDepartmentPermissionThrows(
+                        execUser.getId(),
+                        existing.getDepartmentId(),
+                        Permissions.PROCESS_DEFINITION_READ
+                );
 
         var result = processExportService
                 .export(id, version);

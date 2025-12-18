@@ -111,7 +111,6 @@ public class ProcessWorker {
         );
 
         try {
-
             var processData = processDataService
                     .foldProcessInstanceData(
                             processInstance,

@@ -42,9 +42,12 @@ const columns: GenericListColDef<User>[] = [
             <Link
                 href={`mailto:${params.value}`}
                 title="E-Mail an Mitarbeiter:in verfassen (im Standard-Mailprogramm, wenn verfügbar)"
-                sx={{textDecoration: 'none', color: 'inherit'}}
+                sx={{
+                    textDecoration: 'none',
+                    color: 'inherit',
+                }}
             >
-                {String(params.value)}
+                <span>{params.value}</span>
             </Link>
         ),
     },
@@ -146,7 +149,7 @@ export function UserListPage() {
                 searchPlaceholder="Name der Mitarbeiter:in eingeben…"
                 fetch={(options) => {
                     const filters: Partial<UserFilter> = {
-                        name: options.search,
+                        fullName: options.search,
                     };
 
                     switch (options.filter) {
@@ -173,9 +176,7 @@ export function UserListPage() {
                             filters,
                         );
                 }}
-                columnIcon={(col) => (
-                    <Person/>
-                )}
+                columnIcon={<Person/>}
                 columnDefinitions={columns}
                 getRowIdentifier={row => row.id.toString()}
                 noDataPlaceholder="Keine Mitarbeiter:innen angelegt"

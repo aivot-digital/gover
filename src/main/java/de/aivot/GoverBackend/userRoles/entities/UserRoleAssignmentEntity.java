@@ -8,12 +8,12 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "user_role_assignments")
+@Table(name = "domain_role_assignments")
 public class UserRoleAssignmentEntity {
     @Id
     @Nonnull
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_role_assignments_id_seq")
-    @SequenceGenerator(name = "user_role_assignments_id_seq", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "domain_role_assignments_id_seq")
+    @SequenceGenerator(name = "domain_role_assignments_id_seq", allocationSize = 1)
     private Integer id;
 
     @Nullable
@@ -24,6 +24,7 @@ public class UserRoleAssignmentEntity {
 
     @Nonnull
     @NotNull(message = "Die ID der Benutzerrollen muss angegeben werden.")
+    @Column(name = "domain_role_id")
     private Integer userRoleId;
 
     @Nonnull

@@ -45,8 +45,8 @@ export function AccountDetailsPageDepartmentMemberships() {
                                 to={`/departments/${params.row.departmentId}`}
                                 title={`Fachbereich bearbeiten`}
                             >
-                                {String(params.row.name)}
-                            </CellLink> : params.row.name);
+                                {String(params.row.departmentName)}
+                            </CellLink> : params.row.departmentName);
                         },
                     },
                     {
@@ -66,10 +66,10 @@ export function AccountDetailsPageDepartmentMemberships() {
                             departmentSearch: options.search,
                         });
                 }}
-                getRowIdentifier={(item) => item.id.toString()}
+                getRowIdentifier={(item) => item.membershipId.toString()}
                 searchLabel="Fachbereich suchen"
                 searchPlaceholder="Titel des Fachbereichs eingeben…"
-                defaultSortField="name"
+                defaultSortField="departmentName"
                 rowMenuItems={[]}
                 noDataPlaceholder="Keine Fachbereiche vorhanden"
                 loadingPlaceholder="Lade Fachbereiche…"

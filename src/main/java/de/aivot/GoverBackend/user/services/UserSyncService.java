@@ -7,6 +7,8 @@ import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.models.KeycloakUser;
 import de.aivot.GoverBackend.user.repositories.UserRepository;
+import de.aivot.GoverBackend.userRoles.entities.SystemRoleEntity;
+import de.aivot.GoverBackend.userRoles.repositories.SystemRoleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -27,23 +29,30 @@ public class UserSyncService {
     private final KeyCloakApiService keycloakApiService;
 
     private final GoverConfig goverConfig;
+    private final SystemRoleRepository systemRoleRepository;
 
     @Autowired
     public UserSyncService(AuditService auditService,
                            UserRepository userRepository,
                            KeyCloakApiService keycloakApiService,
-                           GoverConfig goverConfig) {
+                           GoverConfig goverConfig, SystemRoleRepository systemRoleRepository) {
         this.auditService = auditService.createScopedAuditService(UserSyncService.class);
 
         this.userRepository = userRepository;
         this.keycloakApiService = keycloakApiService;
         this.goverConfig = goverConfig;
+        this.systemRoleRepository = systemRoleRepository;
     }
 
     @Scheduled(fixedDelay = delayInMS)
     public void syncUsers() {
+        var superRoleId = systemRoleRepository
+                .findByMaxPermissions()
+                .map(SystemRoleEntity::getId)
+                .orElse(0);
+
         var hasSuperAdmin = userRepository
-                .existsByGlobalRole(UserEntity.SUPER_ADMIN_ROLE_VALUE);
+                .existsBySystemRoleId(superRoleId);
 
         var alreadyImportedUsers = userRepository
                 .findAll();
@@ -65,7 +74,6 @@ public class UserSyncService {
                     .orElse(
                             new UserEntity()
                                     .setId(keycloakUser.getId())
-                                    .setGlobalRole(UserEntity.DEFAULT_USER_ROLE_VALUE)
                     )
                     .setDeletedInIdp(false)
                     .setEnabled(keycloakUser.getEnabled())
@@ -81,7 +89,8 @@ public class UserSyncService {
                         .logMessage("User with id " + userEntity.getId() + " was promoted to a super admin because no super admin exists and their e-mail address is in the list of bootstrapAdminMail", Map.of(
                                 "userId", userEntity.getId()
                         ));
-                userEntity.setGlobalRole(UserEntity.SUPER_ADMIN_ROLE_VALUE);
+
+                userEntity.setSystemRoleId(superRoleId);
             }
 
             userRepository
@@ -101,7 +110,7 @@ public class UserSyncService {
             }
 
             // Check if the user ID is a placeholder ID (e.g., "0000-000-0000", "0000-000-0001", etc.)
-            if (localUser.getId().matches("^[0-]+[0-9]$")) {
+            if (localUser.getId().matches("^[0-]+[0-9]{3}$")) {
                 continue;
             }
 

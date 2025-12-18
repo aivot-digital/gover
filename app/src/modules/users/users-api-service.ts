@@ -2,9 +2,10 @@ import {SystemUserRole, User} from './models/user';
 import {BaseCrudApiService} from '../../services/base-crud-api-service';
 
 export interface UserFilter {
-    name: string;
+    fullName: string;
     deletedInIdp: boolean;
     disabledInIdp: boolean;
+    systemRoleId: number;
 }
 
 export class UsersApiService extends BaseCrudApiService<User, User, User, User, string, UserFilter> {
@@ -29,6 +30,7 @@ export class UsersApiService extends BaseCrudApiService<User, User, User, User, 
                     isSystemAdmin: false,
                     globalRole: SystemUserRole.Default,
                     deletedInIdp: false,
+                    systemRoleId: null,
                 };
             }
             throw err;
@@ -52,6 +54,7 @@ export class UsersApiService extends BaseCrudApiService<User, User, User, User, 
             isSystemAdmin: false,
             globalRole: SystemUserRole.Default,
             deletedInIdp: false,
+            systemRoleId: null,
         };
     }
 

@@ -93,7 +93,7 @@ public class ProcessInstanceTaskViewController {
                 );
 
         var elementData = ElementData
-                .fromValueMap(layout, taskViewData.task.getWorkingData());
+                .fromValueMap(layout, taskViewData.task.getProcessData());
 
         return new TaskViewResponse(
                 layout,
@@ -189,7 +189,7 @@ public class ProcessInstanceTaskViewController {
 
         if (res.isEmpty()) {
             var workingElementData = ElementData
-                    .fromValueMap(layout, taskViewData.task.getWorkingData());
+                    .fromValueMap(layout, taskViewData.task.getProcessData());
             return new TaskViewResponse(
                     layout,
                     workingElementData,
@@ -225,7 +225,7 @@ public class ProcessInstanceTaskViewController {
                 );
 
         var updatedElementData = ElementData
-                .fromValueMap(updatedLayout, taskViewData.task.getWorkingData());
+                .fromValueMap(updatedLayout, taskViewData.task.getProcessData());
 
         return new TaskViewResponse(
                 updatedLayout,

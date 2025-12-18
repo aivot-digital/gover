@@ -14,6 +14,7 @@ import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
 import de.aivot.GoverBackend.process.models.ProcessNodeProvider;
+import de.aivot.GoverBackend.process.services.ProcessDataService;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -29,6 +30,11 @@ public class IfFlowControlNode implements ProcessNodeProvider, PluginComponent {
     private static final String PORT_NAME_FALSE = "false";
 
     private static final String CONDITION_FIELD_KEY = "condition";
+    private final ProcessDataService processDataService;
+
+    public IfFlowControlNode(ProcessDataService processDataService) {
+        this.processDataService = processDataService;
+    }
 
     @Nonnull
     @Override
@@ -107,15 +113,18 @@ public class IfFlowControlNode implements ProcessNodeProvider, PluginComponent {
                 .orElse("")
                 .toString();
 
-        var conditionValue = workingData
-                .get(condition);
+        var conditionValueStr = processDataService
+                .interpolate(workingData, condition);
+
+        var conditionValue = Boolean
+                .parseBoolean(conditionValueStr);
 
         var metadata = new HashMap<String, Object>();
         metadata.put("condition", condition);
         metadata.put("conditionValue", conditionValue);
 
         return new ProcessNodeExecutionResultTaskCompleted()
-                .setViaPort(Boolean.TRUE.equals(conditionValue) ? PORT_NAME_TRUE : PORT_NAME_FALSE)
-                .setMetadata(metadata);
+                .setViaPort(conditionValue ? PORT_NAME_TRUE : PORT_NAME_FALSE)
+                .setNodeData(metadata);
     }
 }

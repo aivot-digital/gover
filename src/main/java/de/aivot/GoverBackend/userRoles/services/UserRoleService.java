@@ -52,31 +52,7 @@ public class UserRoleService implements EntityService<UserRoleEntity, Integer> {
         existingEntity.setDescription(entity.getDescription());
 
         // Update permissions the parent entity
-        existingEntity.setDepartmentPermissionEdit(entity.getDepartmentPermissionEdit());
-        existingEntity.setTeamPermissionEdit(entity.getTeamPermissionEdit());
-
-        // Update permissions for forms
-        existingEntity.setFormPermissionCreate(entity.getFormPermissionCreate());
-        existingEntity.setFormPermissionRead(entity.getFormPermissionRead());
-        existingEntity.setFormPermissionEdit(entity.getFormPermissionEdit());
-        existingEntity.setFormPermissionDelete(entity.getFormPermissionDelete());
-        existingEntity.setFormPermissionAnnotate(entity.getFormPermissionAnnotate());
-        existingEntity.setFormPermissionPublish(entity.getFormPermissionPublish());
-
-        // Update permissions for processes
-        existingEntity.setProcessPermissionCreate(entity.getProcessPermissionCreate());
-        existingEntity.setProcessPermissionRead(entity.getProcessPermissionRead());
-        existingEntity.setProcessPermissionEdit(entity.getProcessPermissionEdit());
-        existingEntity.setProcessPermissionDelete(entity.getProcessPermissionDelete());
-        existingEntity.setProcessPermissionAnnotate(entity.getProcessPermissionAnnotate());
-        existingEntity.setProcessPermissionPublish(entity.getProcessPermissionPublish());
-
-        // Update permissions for process instances
-        existingEntity.setProcessInstancePermissionCreate(entity.getProcessInstancePermissionCreate());
-        existingEntity.setProcessInstancePermissionRead(entity.getProcessInstancePermissionRead());
-        existingEntity.setProcessInstancePermissionEdit(entity.getProcessInstancePermissionEdit());
-        existingEntity.setProcessInstancePermissionDelete(entity.getProcessInstancePermissionDelete());
-        existingEntity.setProcessInstancePermissionAnnotate(entity.getProcessInstancePermissionAnnotate());
+        existingEntity.setPermissions(entity.getPermissions());
 
         // Save updated entity
         return repository.save(existingEntity);

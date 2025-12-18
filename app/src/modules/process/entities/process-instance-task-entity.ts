@@ -13,8 +13,8 @@ export interface ProcessInstanceTaskEntity {
     updated: string; // ISO date string
     finished: string | null; // ISO date string
     runtime: string | null; // ISO 8601 duration string
-    bufferData: Record<string, any>; // JSON as string, or consider Record<string, any>
-    metaData: Record<string, any>; // JSON as string, or consider Record<string, any>
-    workingData: Record<string, any>; // JSON as string, or consider Record<string, any>
+    runtimeData: Record<string, any>; // JSON as string, or consider Record<string, any>
+    nodeData: Record<string, any>; // JSON as string, or consider Record<string, any>
+    processData: Record<string, any>; // JSON as string, or consider Record<string, any>
     assignedUserId: string | null;
 }

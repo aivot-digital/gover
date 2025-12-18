@@ -15,6 +15,7 @@ import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.repositories.ProcessDefinitionNodeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
+import de.aivot.GoverBackend.process.services.ProcessDataService;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -116,36 +117,22 @@ public class JavascriptActionNode implements ProcessNodeProvider, PluginComponen
         var jsCode = new JavascriptCode()
                 .setCode(code);
 
-        var engine = javascriptEngineFactoryService
-                .getEngine();
+        try (var engine = javascriptEngineFactoryService.getEngine()) {
+            ProcessDataService
+                    .fillJsEngineWithData(workingData, engine);
 
-        var allNodes = processDefinitionNodeRepository
-                .findAllByProcessDefinitionIdAndProcessDefinitionVersion(
-                        thisNode.getProcessDefinitionId(),
-                        thisNode.getProcessDefinitionVersion()
-                );
-        for (var node : allNodes) {
-            var task = processInstanceTaskRepository
-                    .findFirstByProcessInstanceIdAndProcessDefinitionNodeIdOrderByStartedDesc(
-                            processInstance.getId(),
-                            node.getId()
-                    );
-            if (task != null) {
-                var data = new HashMap<String, Object>();
-                data.put("meta", task.getMetaData());
-                data.put("data", task.getWorkingData());
-                engine.registerGlobalObject("$" + node.getDataKey(), data);
+            try {
+                var result = engine
+                        .registerGlobalObject("$", workingData.get("$"))
+                        .evaluateCode(jsCode);
+
+                return new ProcessNodeExecutionResultTaskCompleted()
+                        .setViaPort(PORT_NAME)
+                        .setProcessData(result.asMap());
+            } catch (Exception e) {
+                return new ProcessNodeExecutionResultError()
+                        .setMessage(e.getLocalizedMessage());
             }
-        }
-
-        try {
-            var result = engine
-                    .registerGlobalObject("$", workingData.get("$"))
-                    .evaluateCode(jsCode);
-
-            return new ProcessNodeExecutionResultTaskCompleted()
-                    .setViaPort(PORT_NAME)
-                    .setOutput(result.asMap());
         } catch (Exception e) {
             return new ProcessNodeExecutionResultError()
                     .setMessage(e.getLocalizedMessage());

@@ -9,7 +9,7 @@ import java.util.Collection;
 public interface UserRepository extends JpaRepository<UserEntity, String>, JpaSpecificationExecutor<UserEntity> {
     Integer countAllByDeletedInIdpIsFalseAndEnabledIsTrue();
 
-    Boolean existsByGlobalRole(Integer globalRole);
+    Boolean existsBySystemRoleId(Integer globalRole);
 
     boolean existsByEmail(String email);
 }

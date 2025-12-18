@@ -46,8 +46,8 @@ export class ProcessInstanceTaskApiService extends BaseCrudApiService<
             id: 0,
             status: ProcessTaskStatus.Running,
             statusOverride: null,
-            bufferData: {},
-            metaData: {},
+            runtimeData: {},
+            nodeData: {},
             processDefinitionId: 0,
             processDefinitionNodeId: 0,
             processDefinitionVersion: 0,
@@ -55,7 +55,7 @@ export class ProcessInstanceTaskApiService extends BaseCrudApiService<
             runtime: null,
             started: new Date().toISOString(),
             updated: new Date().toISOString(),
-            workingData: {},
+            processData: {},
         };
     }
 

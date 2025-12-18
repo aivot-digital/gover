@@ -21,6 +21,7 @@ import {ElementEditorSectionHeader} from '../element-editor-section-header/eleme
 import {FormStatus} from '../../modules/forms/enums/form-status';
 import {withDelay} from '../../utils/with-delay';
 import {FormApiService} from '../../modules/forms/services/form-api-service';
+import {Permission} from "../../data/permissions/permission";
 
 export function ApplicationInternalPublishTab<T extends RootElement, E extends LoadedForm>(props: ElementEditorContentProps<T, E>) {
     const api = useApi();
@@ -28,7 +29,7 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends L
     const showConfirm = useConfirm();
 
     const [checklist, setChecklist] = useState<FormPublishChecklistItem[] | null>(null);
-    const canPublish = useAppSelector(selectHasMemberships(props.entity.form.developingDepartmentId, 'formPermissionPublish'));
+    const canPublish = useAppSelector(selectHasMemberships(props.entity.form.developingDepartmentId, Permission.PRESET_PUBLISH_LOCAL));
 
     const [isPublished, setIsPublished] = useState(props.entity.version.status === FormStatus.Published);
     const [isRevoked, setIsRevoked] = useState(props.entity.version.status === FormStatus.Revoked);
@@ -61,8 +62,10 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends L
                 >
                     <AlertTitle>Internes Formular mit erzwungener Authentifizierung</AlertTitle>
                     <Box sx={{maxWidth: 940}}>
-                        Dieses Formular erscheint nicht auf der öffentlichen Formularübersicht (Index-Liste), ist aber über den direkten Link zugänglich.
-                        Ohne Authentifizierung sind die allgemeinen Informationen und Titel der Abschnitte öffentlich einsehbar.
+                        Dieses Formular erscheint nicht auf der öffentlichen Formularübersicht (Index-Liste), ist aber
+                        über den direkten Link zugänglich.
+                        Ohne Authentifizierung sind die allgemeinen Informationen und Titel der Abschnitte öffentlich
+                        einsehbar.
                     </Box>
                 </AlertComponent>
             );
@@ -76,7 +79,8 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends L
                 >
                     <AlertTitle>Internes Formular</AlertTitle>
                     <Box sx={{maxWidth: 940}}>
-                        Dieses Formular erscheint nicht auf der öffentlichen Formularliste (Index-Liste), ist aber über den direkten Link zugänglich.
+                        Dieses Formular erscheint nicht auf der öffentlichen Formularliste (Index-Liste), ist aber über
+                        den direkten Link zugänglich.
                         Alle Inhalte sind öffentlich einsehbar.
                     </Box>
                 </AlertComponent>
@@ -93,10 +97,12 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends L
             children: (
                 <>
                     <Box>
-                        Möchten Sie dieses Formular wirklich veröffentlichen? Dieses Formular bzw. diese Version steht ab diesem Zeitpunkt online zur Verfügung und kann ausgefüllt werden.
+                        Möchten Sie dieses Formular wirklich veröffentlichen? Dieses Formular bzw. diese Version steht
+                        ab diesem Zeitpunkt online zur Verfügung und kann ausgefüllt werden.
                     </Box>
                     <Box sx={{mt: 2}}>
-                        Wenn Sie das Formular veröffentlichen, können Sie die Inhalte dieser Version nicht mehr bearbeiten und müssen für Änderungen am Formular eine neue Version erstellen.
+                        Wenn Sie das Formular veröffentlichen, können Sie die Inhalte dieser Version nicht mehr
+                        bearbeiten und müssen für Änderungen am Formular eine neue Version erstellen.
                     </Box>
                     {
                         isInternal && renderInternalAlert({mt: 4, mb: 0})
@@ -149,7 +155,8 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends L
             isDestructive: true,
             children: (
                 <div>
-                    Möchten Sie dieses Formular wirklich zurückziehen? Dieses Formular bzw. diese Version ist ab diesem Zeitpunkt nicht mehr online verfügbar und kann nicht mehr ausgefüllt werden.
+                    Möchten Sie dieses Formular wirklich zurückziehen? Dieses Formular bzw. diese Version ist ab diesem
+                    Zeitpunkt nicht mehr online verfügbar und kann nicht mehr ausgefüllt werden.
                 </div>
             ),
         });
@@ -278,7 +285,7 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends L
                         <Button
                             variant="outlined"
                             endIcon={
-                                <PauseCircleOutlineOutlinedIcon />
+                                <PauseCircleOutlineOutlinedIcon/>
                             }
                             color="warning"
                             onClick={handleRevoke}
@@ -347,7 +354,7 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends L
                     <Button
                         variant="contained"
                         endIcon={
-                            <SendOutlinedIcon />
+                            <SendOutlinedIcon/>
                         }
                         onClick={handlePublish}
                     >

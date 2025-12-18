@@ -76,8 +76,8 @@ public class ProcessInstanceTaskService implements EntityService<ProcessInstance
         existingEntity.setUpdated(entity.getUpdated());
         existingEntity.setFinished(entity.getFinished());
         existingEntity.setRuntime(entity.getRuntime());
-        existingEntity.setMetaData(entity.getMetaData());
-        existingEntity.setWorkingData(entity.getWorkingData());
+        existingEntity.setNodeData(entity.getNodeData());
+        existingEntity.setProcessData(entity.getProcessData());
         existingEntity.setAssignedUserId(entity.getAssignedUserId());
         return processInstanceTaskRepository.save(existingEntity);
     }

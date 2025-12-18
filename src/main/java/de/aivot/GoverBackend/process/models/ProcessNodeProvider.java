@@ -121,6 +121,23 @@ public interface ProcessNodeProvider {
     }
 
     /**
+     * Get the task view data for nodes of this provider type.
+     *
+     * @param user            The user requesting the data. If null, the request is unauthenticated.
+     * @param thisNode        The node entity for which the data is requested.
+     * @param processInstance The process instance the task belongs to.
+     * @param thisTask        The task entity for which the data is requested.
+     * @return The task view data.
+     * @throws ResponseException If an error occurs while generating the data.
+     */
+    default ElementData getTaskViewData(@Nullable UserEntity user,
+                                        @Nonnull ProcessDefinitionNodeEntity thisNode,
+                                        @Nonnull ProcessInstanceEntity processInstance,
+                                        @Nonnull ProcessInstanceTaskEntity thisTask) throws ResponseException {
+        return new ElementData();
+    }
+
+    /**
      * Get the task view events for nodes of this provider type.
      * These events can be used to trigger actions in the task view UI.
      *
@@ -149,6 +166,17 @@ public interface ProcessNodeProvider {
      */
     @Nonnull
     default ElementData cleanConfigurationForExport(@Nonnull ElementData configuration) {
+        return configuration;
+    }
+
+    /**
+     * Prefills the configuration data on import.
+     *
+     * @param configuration The configuration data to be prefilled.
+     * @return The prefilled configuration data.
+     */
+    @Nonnull
+    default ElementData prefillConfigurationOnImport(@Nonnull ElementData configuration) {
         return configuration;
     }
 

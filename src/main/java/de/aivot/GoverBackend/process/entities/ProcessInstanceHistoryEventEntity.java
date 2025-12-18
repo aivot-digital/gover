@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.process.entities;
 
+import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
 import org.hibernate.validator.constraints.Length;
 
@@ -8,8 +9,12 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "process_instance_history_events")
 public class ProcessInstanceHistoryEventEntity {
+    private static final String ID_SEQUENCE_NAME = "process_instance_history_events_id_seq";
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Nonnull
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = ID_SEQUENCE_NAME)
+    @SequenceGenerator(name = ID_SEQUENCE_NAME, allocationSize = 1)
     private Long id;
 
     private java.time.LocalDateTime timestamp;

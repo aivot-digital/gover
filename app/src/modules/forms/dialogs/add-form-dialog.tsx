@@ -123,9 +123,9 @@ export function AddFormDialog(props: AddFormDialogProps) {
                 const options: SelectFieldComponentOption<number>[] = content
                     .map((membership) => ({
                         value: membership.departmentId,
-                        label: membership.name,
-                        icon: getDepartmentTypeIcons(membership.depth),
-                        subLabel: getDepartmentTypeLabel(membership.depth),
+                        label: membership.departmentName,
+                        icon: getDepartmentTypeIcons(membership.departmentDepth),
+                        subLabel: getDepartmentTypeLabel(membership.departmentDepth),
                     }));
                 setAvailableDepartments(options);
             })

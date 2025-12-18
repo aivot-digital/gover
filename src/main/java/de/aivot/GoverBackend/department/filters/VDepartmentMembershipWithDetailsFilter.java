@@ -19,7 +19,6 @@ public class VDepartmentMembershipWithDetailsFilter implements Filter<VDepartmen
     private String email;
     private Boolean enabled;
     private Boolean verified;
-    private Boolean globalAdmin;
     private Boolean deletedInIdp;
 
     public static VDepartmentMembershipWithDetailsFilter create() {
@@ -32,30 +31,25 @@ public class VDepartmentMembershipWithDetailsFilter implements Filter<VDepartmen
                 .create(VDepartmentMembershipWithDetailsEntity.class)
                 .withEquals("departmentId", departmentId)
                 .withInList("departmentId", departmentIds)
-                .withContains("name", name)
+                .withContains("departmentName", name)
                 .withEquals("userId", userId)
                 .withInList("userId", userIds)
-                .withContains("fullName", fullName)
-                .withContains("email", email);
+                .withContains("userFullName", fullName)
+                .withContains("userEmail", email);
 
         if (enabled != null) {
             builder = builder
-                    .withEquals("enabled", enabled);
+                    .withEquals("userEnabled", enabled);
         }
 
         if (verified != null) {
             builder = builder
-                    .withEquals("verified", verified);
-        }
-
-        if (globalAdmin != null) {
-            builder = builder
-                    .withEquals("globalRole", UserEntity.SUPER_ADMIN_ROLE_VALUE);
+                    .withEquals("userVerified", verified);
         }
 
         if (deletedInIdp != null) {
             builder = builder
-                    .withEquals("deletedInIdp", deletedInIdp);
+                    .withEquals("userDeletedInIdp", deletedInIdp);
         }
 
         return builder
@@ -140,15 +134,6 @@ public class VDepartmentMembershipWithDetailsFilter implements Filter<VDepartmen
 
     public VDepartmentMembershipWithDetailsFilter setVerified(Boolean verified) {
         this.verified = verified;
-        return this;
-    }
-
-    public Boolean getGlobalAdmin() {
-        return globalAdmin;
-    }
-
-    public VDepartmentMembershipWithDetailsFilter setGlobalAdmin(Boolean globalAdmin) {
-        this.globalAdmin = globalAdmin;
         return this;
     }
 

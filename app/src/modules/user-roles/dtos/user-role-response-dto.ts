@@ -1,26 +1,10 @@
+import {Permission} from "../../../data/permissions/permission";
+
 export interface UserRoleResponseDTO {
     id: number;
     name: string | null;
     description: string | null;
-    departmentPermissionEdit: boolean;
-    teamPermissionEdit: boolean;
-    formPermissionCreate: boolean;
-    formPermissionRead: boolean;
-    formPermissionEdit: boolean;
-    formPermissionDelete: boolean;
-    formPermissionAnnotate: boolean;
-    formPermissionPublish: boolean;
-    processPermissionCreate: boolean;
-    processPermissionRead: boolean;
-    processPermissionEdit: boolean;
-    processPermissionDelete: boolean;
-    processPermissionAnnotate: boolean;
-    processPermissionPublish: boolean;
-    processInstancePermissionCreate: boolean;
-    processInstancePermissionRead: boolean;
-    processInstancePermissionEdit: boolean;
-    processInstancePermissionDelete: boolean;
-    processInstancePermissionAnnotate: boolean;
+    permissions: Permission[];
     created: string; // ISO date string
     updated: string; // ISO date string
 }

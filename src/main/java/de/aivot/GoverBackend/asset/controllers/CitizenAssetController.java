@@ -5,6 +5,7 @@ import de.aivot.GoverBackend.asset.repositories.AssetRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.models.config.StorageConfig;
+import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.services.storages.AssetStorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,9 +26,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/public/assets/")
 @Tag(
-        name = "Asset",
-        description = "Assets are files uploaded to the system, such as images or documents. " +
-                      "They can be associated with various entities within the application and should be used if you need to provides files to citizens publicly."
+        name = OpenApiConstants.Tags.AssetsName,
+        description = OpenApiConstants.Tags.AssetsDescription
 )
 public class CitizenAssetController {
     private final AssetStorageService assetStorageService;

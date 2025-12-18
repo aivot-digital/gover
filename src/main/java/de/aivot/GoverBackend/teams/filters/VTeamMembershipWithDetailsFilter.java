@@ -19,7 +19,6 @@ public class VTeamMembershipWithDetailsFilter implements Filter<VTeamMembershipW
     private String email;
     private Boolean enabled;
     private Boolean verified;
-    private Boolean globalAdmin;
     private Boolean deletedInIdp;
 
     public static VTeamMembershipWithDetailsFilter create() {
@@ -46,11 +45,6 @@ public class VTeamMembershipWithDetailsFilter implements Filter<VTeamMembershipW
         if (verified != null) {
             builder = builder
                     .withEquals("verified", verified);
-        }
-
-        if (globalAdmin != null) {
-            builder = builder
-                    .withEquals("globalRole", UserEntity.SUPER_ADMIN_ROLE_VALUE);
         }
 
         if (deletedInIdp != null) {
@@ -140,15 +134,6 @@ public class VTeamMembershipWithDetailsFilter implements Filter<VTeamMembershipW
 
     public VTeamMembershipWithDetailsFilter setVerified(Boolean verified) {
         this.verified = verified;
-        return this;
-    }
-
-    public Boolean getGlobalAdmin() {
-        return globalAdmin;
-    }
-
-    public VTeamMembershipWithDetailsFilter setGlobalAdmin(Boolean globalAdmin) {
-        this.globalAdmin = globalAdmin;
         return this;
     }
 

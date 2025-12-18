@@ -3,18 +3,15 @@ package de.aivot.GoverBackend.process.controllers;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
-import de.aivot.GoverBackend.department.filters.VDepartmentMembershipWithPermissionsFilter;
-import de.aivot.GoverBackend.department.repositories.VDepartmentMembershipWithPermissionsRepository;
 import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceHistoryEventEntity;
 import de.aivot.GoverBackend.process.filters.ProcessInstanceHistoryEventFilter;
-import de.aivot.GoverBackend.process.services.ProcessInstanceHistoryEventService;
 import de.aivot.GoverBackend.process.services.ProcessDefinitionService;
+import de.aivot.GoverBackend.process.services.ProcessInstanceHistoryEventService;
 import de.aivot.GoverBackend.user.services.UserService;
-import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -43,23 +40,16 @@ public class ProcessInstanceHistoryEventController {
     private final ScopedAuditService auditService;
     private final UserService userService;
     private final ProcessInstanceHistoryEventService processInstanceHistoryEventService;
-    private final DepartmentService departmentService;
-    private final VDepartmentMembershipWithPermissionsRepository vDepartmentMembershipWithPermissionsRepository;
-    private final ProcessDefinitionService processDefinitionService;
 
     @Autowired
     public ProcessInstanceHistoryEventController(AuditService auditService,
-                                                UserService userService,
-                                                ProcessInstanceHistoryEventService processInstanceHistoryEventService,
-                                                DepartmentService departmentService,
-                                                VDepartmentMembershipWithPermissionsRepository vDepartmentMembershipWithPermissionsRepository,
-                                                ProcessDefinitionService processDefinitionService) {
+                                                 UserService userService,
+                                                 ProcessInstanceHistoryEventService processInstanceHistoryEventService,
+                                                 DepartmentService departmentService,
+                                                 ProcessDefinitionService processDefinitionService) {
         this.auditService = auditService.createScopedAuditService(ProcessInstanceHistoryEventController.class);
         this.userService = userService;
         this.processInstanceHistoryEventService = processInstanceHistoryEventService;
-        this.departmentService = departmentService;
-        this.vDepartmentMembershipWithPermissionsRepository = vDepartmentMembershipWithPermissionsRepository;
-        this.processDefinitionService = processDefinitionService;
     }
 
     @GetMapping("")

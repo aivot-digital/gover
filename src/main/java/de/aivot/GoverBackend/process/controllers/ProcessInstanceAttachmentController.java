@@ -3,18 +3,13 @@ package de.aivot.GoverBackend.process.controllers;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
-import de.aivot.GoverBackend.department.filters.VDepartmentMembershipWithPermissionsFilter;
-import de.aivot.GoverBackend.department.repositories.VDepartmentMembershipWithPermissionsRepository;
-import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.GoverBackend.process.filters.ProcessInstanceAttachmentFilter;
 import de.aivot.GoverBackend.process.services.ProcessInstanceAttachmentService;
-import de.aivot.GoverBackend.process.services.ProcessDefinitionService;
 import de.aivot.GoverBackend.user.services.UserService;
-import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,7 +27,6 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
@@ -48,23 +42,14 @@ public class ProcessInstanceAttachmentController {
     private final ScopedAuditService auditService;
     private final UserService userService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
-    private final DepartmentService departmentService;
-    private final VDepartmentMembershipWithPermissionsRepository vDepartmentMembershipWithPermissionsRepository;
-    private final ProcessDefinitionService processDefinitionService;
 
     @Autowired
     public ProcessInstanceAttachmentController(AuditService auditService,
-                                              UserService userService,
-                                              ProcessInstanceAttachmentService processInstanceAttachmentService,
-                                              DepartmentService departmentService,
-                                              VDepartmentMembershipWithPermissionsRepository vDepartmentMembershipWithPermissionsRepository,
-                                              ProcessDefinitionService processDefinitionService) {
+                                               UserService userService,
+                                               ProcessInstanceAttachmentService processInstanceAttachmentService) {
         this.auditService = auditService.createScopedAuditService(ProcessInstanceAttachmentController.class);
         this.userService = userService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
-        this.departmentService = departmentService;
-        this.vDepartmentMembershipWithPermissionsRepository = vDepartmentMembershipWithPermissionsRepository;
-        this.processDefinitionService = processDefinitionService;
     }
 
     @GetMapping("")

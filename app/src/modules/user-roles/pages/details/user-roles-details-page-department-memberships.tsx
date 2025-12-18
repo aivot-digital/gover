@@ -19,10 +19,13 @@ import {
 import {
     VDepartmentUserRoleAssignmentWithDetailsEntity
 } from "../../../departments/entities/v-department-user-role-assignment-with-details-entity";
+import {
+    VDepartmentMembershipWithDetailsService
+} from "../../../departments/services/v-department-membership-with-details-service";
 
 const columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntity>> = [
     {
-        field: 'fullName',
+        field: 'userFullName',
         headerName: 'Mitarbeiter:in',
         flex: 1,
         renderCell: (params) => (
@@ -30,12 +33,12 @@ const columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntity>> = [
                 to={`/users/${params.row.userId}`}
                 title="Mitarbeiter:in anzeigen"
             >
-                {String(params.row.fullName)}
+                {String(params.row.userFullName)}
             </CellLink>
         ),
     },
     {
-        field: 'name',
+        field: 'departmentName',
         headerName: 'Fachbereich',
         flex: 1,
         renderCell: (params) => (
@@ -43,7 +46,7 @@ const columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntity>> = [
                 to={`/departments/${params.row.departmentId}`}
                 title="Fachbereich bearbeiten"
             >
-                {String(params.row.name)}
+                {String(params.row.departmentName)}
             </CellLink>
         ),
     },
@@ -78,7 +81,7 @@ export function UserRolesDetailsPageDepartmentMemberships() {
                     Organisationseinheiten zugewiesen sind.
                 </Typography>
 
-                <GenericList<VDepartmentUserRoleAssignmentWithDetailsEntity>
+                <GenericList<VDepartmentMembershipWithDetailsEntity>
                     disableFullWidthToggle={true}
                     sx={{
                         mx: '-16px',
@@ -86,16 +89,16 @@ export function UserRolesDetailsPageDepartmentMemberships() {
                     }}
                     columnDefinitions={columns}
                     fetch={(options) => {
-                        return new VDepartmentUserRoleAssignmentWithDetailsService()
+                        return new VDepartmentMembershipWithDetailsService()
                             .list(options.page, options.size, options.sort, options.order, {
-                                userRoleId: userRole.id,
-                                fullName: options.search,
+                                //userRoleId: userRole.id,
+                                userFullName: options.search,
                             });
                     }}
-                    getRowIdentifier={(item) => item.id.toString()}
+                    getRowIdentifier={(item) => item.membershipId.toString()}
                     searchLabel="Mitarbeiter:in suchen"
                     searchPlaceholder="Name der Mitarbeiter:in eingeben…"
-                    defaultSortField="fullName"
+                    defaultSortField="userFullName"
                     noDataPlaceholder="Keine Mitarbeiter:innen vorhanden"
                     loadingPlaceholder="Lade Mitarbeiter:innen…"
                     noSearchResultsPlaceholder="Keine Mitarbeiter:innen gefunden"

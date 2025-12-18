@@ -72,22 +72,22 @@ public class ProcessInstanceTaskEntity {
     private Duration runtime;
 
     @Nonnull
-    @NotNull(message = "Die Puffer-Daten dürfen nicht null sein.")
+    @NotNull(message = "Die Laufzeitdaten dürfen nicht null sein.")
     @Column(columnDefinition = "jsonb")
     @Convert(converter = JsonObjectConverter.class)
-    private Map<String, Object> bufferData;
+    private Map<String, Object> runtimeData;
 
     @Nonnull
-    @NotNull(message = "Die Metadaten dürfen nicht null sein.")
+    @NotNull(message = "Die Prozesselementdaten dürfen nicht null sein.")
     @Column(columnDefinition = "jsonb")
     @Convert(converter = JsonObjectConverter.class)
-    private Map<String, Object> metaData;
+    private Map<String, Object> nodeData;
 
     @Nonnull
-    @NotNull(message = "Die Arbeitsdaten dürfen nicht null sein.")
+    @NotNull(message = "Die Vorgangsdaten dürfen nicht null sein.")
     @Column(columnDefinition = "jsonb")
     @Convert(converter = JsonObjectConverter.class)
-    private Map<String, Object> workingData;
+    private Map<String, Object> processData;
 
     @Nullable
     @Size(max = 36, message = "Die zugewiesene Benutzer-ID darf maximal 36 Zeichen lang sein.")
@@ -113,9 +113,9 @@ public class ProcessInstanceTaskEntity {
                                      @Nonnull LocalDateTime updated,
                                      @Nullable LocalDateTime finished,
                                      @Nullable Duration runtime,
-                                     @Nonnull Map<String, Object> bufferData,
-                                     @Nonnull Map<String, Object> metaData,
-                                     @Nonnull Map<String, Object> workingData,
+                                     @Nonnull Map<String, Object> runtimeData,
+                                     @Nonnull Map<String, Object> nodeData,
+                                     @Nonnull Map<String, Object> processData,
                                      @Nullable String assignedUserId) {
         this.id = id;
         this.accessKey = accessKey;
@@ -130,15 +130,25 @@ public class ProcessInstanceTaskEntity {
         this.updated = updated;
         this.finished = finished;
         this.runtime = runtime;
-        this.bufferData = bufferData;
-        this.metaData = metaData;
-        this.workingData = workingData;
+        this.runtimeData = runtimeData;
+        this.nodeData = nodeData;
+        this.processData = processData;
         this.assignedUserId = assignedUserId;
     }
 
     // endregion
 
     // region Getters and Setters
+
+    @Nonnull
+    public Long getProcessInstanceId() {
+        return processInstanceId;
+    }
+
+    public ProcessInstanceTaskEntity setProcessInstanceId(@Nonnull Long processInstanceId) {
+        this.processInstanceId = processInstanceId;
+        return this;
+    }
 
     @Nonnull
     public Long getId() {
@@ -157,16 +167,6 @@ public class ProcessInstanceTaskEntity {
 
     public ProcessInstanceTaskEntity setAccessKey(@Nonnull UUID accessKey) {
         this.accessKey = accessKey;
-        return this;
-    }
-
-    @Nonnull
-    public Long getProcessInstanceId() {
-        return processInstanceId;
-    }
-
-    public ProcessInstanceTaskEntity setProcessInstanceId(@Nonnull Long processInstanceId) {
-        this.processInstanceId = processInstanceId;
         return this;
     }
 
@@ -271,32 +271,32 @@ public class ProcessInstanceTaskEntity {
     }
 
     @Nonnull
-    public Map<String, Object> getBufferData() {
-        return bufferData;
+    public Map<String, Object> getRuntimeData() {
+        return runtimeData;
     }
 
-    public ProcessInstanceTaskEntity setBufferData(@Nonnull Map<String, Object> bufferData) {
-        this.bufferData = bufferData;
+    public ProcessInstanceTaskEntity setRuntimeData(@Nonnull Map<String, Object> runtimeData) {
+        this.runtimeData = runtimeData;
         return this;
     }
 
     @Nonnull
-    public Map<String, Object> getMetaData() {
-        return metaData;
+    public Map<String, Object> getNodeData() {
+        return nodeData;
     }
 
-    public ProcessInstanceTaskEntity setMetaData(@Nonnull Map<String, Object> metaData) {
-        this.metaData = metaData;
+    public ProcessInstanceTaskEntity setNodeData(@Nonnull Map<String, Object> nodeData) {
+        this.nodeData = nodeData;
         return this;
     }
 
     @Nonnull
-    public Map<String, Object> getWorkingData() {
-        return workingData;
+    public Map<String, Object> getProcessData() {
+        return processData;
     }
 
-    public ProcessInstanceTaskEntity setWorkingData(@Nonnull Map<String, Object> workingData) {
-        this.workingData = workingData;
+    public ProcessInstanceTaskEntity setProcessData(@Nonnull Map<String, Object> processData) {
+        this.processData = processData;
         return this;
     }
 
@@ -309,7 +309,6 @@ public class ProcessInstanceTaskEntity {
         this.assignedUserId = assignedUserId;
         return this;
     }
-
 
     // endregion
 }

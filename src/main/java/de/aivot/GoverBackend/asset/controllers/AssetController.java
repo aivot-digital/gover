@@ -11,6 +11,7 @@ import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.services.AVService;
 import de.aivot.GoverBackend.services.storages.AssetStorageService;
 import de.aivot.GoverBackend.user.services.UserService;
@@ -31,6 +32,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -39,9 +41,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/assets/")
 @Tag(
-        name = "Assets",
-        description = "Assets are files uploaded to the system, such as images or documents. " +
-                      "They can be associated with various entities within the application and should be used if you need to provides files to citizens publicly."
+        name = OpenApiConstants.Tags.AssetsName,
+        description = OpenApiConstants.Tags.AssetsDescription
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class AssetController {
@@ -94,7 +95,7 @@ public class AssetController {
     @Operation(
             summary = "Create a new asset",
             description = "Upload a new asset file and create an asset record. " +
-                          "The uploaded file will be scanned for viruses before being stored."
+                    "The uploaded file will be scanned for viruses before being stored."
     )
     public AssetResponseDTO create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -171,7 +172,7 @@ public class AssetController {
     @Operation(
             summary = "Update an asset",
             description = "Update the details of an existing asset. " +
-                          "Note that the actual file content cannot be changed through this endpoint."
+                    "Note that the actual file content cannot be changed through this endpoint."
     )
     public AssetResponseDTO update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -199,7 +200,7 @@ public class AssetController {
     @Operation(
             summary = "Delete an asset",
             description = "Delete a specific asset by its ID. " +
-                          "This will remove both the asset record and the associated file from storage."
+                    "This will remove both the asset record and the associated file from storage."
     )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,

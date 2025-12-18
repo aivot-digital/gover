@@ -3,8 +3,6 @@ package de.aivot.GoverBackend.process.controllers;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
-import de.aivot.GoverBackend.department.filters.VDepartmentMembershipWithPermissionsFilter;
-import de.aivot.GoverBackend.department.repositories.VDepartmentMembershipWithPermissionsRepository;
 import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
@@ -43,23 +41,14 @@ public class ProcessDefinitionEdgeController {
     private final ScopedAuditService auditService;
     private final UserService userService;
     private final ProcessDefinitionEdgeService processDefinitionEdgeService;
-    private final DepartmentService departmentService;
-    private final VDepartmentMembershipWithPermissionsRepository vDepartmentMembershipWithPermissionsRepository;
-    private final ProcessDefinitionService processDefinitionService;
 
     @Autowired
     public ProcessDefinitionEdgeController(AuditService auditService,
                                            UserService userService,
-                                           ProcessDefinitionEdgeService processDefinitionEdgeService,
-                                           DepartmentService departmentService,
-                                           VDepartmentMembershipWithPermissionsRepository vDepartmentMembershipWithPermissionsRepository,
-                                           ProcessDefinitionService processDefinitionService) {
+                                           ProcessDefinitionEdgeService processDefinitionEdgeService) {
         this.auditService = auditService.createScopedAuditService(ProcessDefinitionEdgeController.class);
         this.userService = userService;
         this.processDefinitionEdgeService = processDefinitionEdgeService;
-        this.departmentService = departmentService;
-        this.vDepartmentMembershipWithPermissionsRepository = vDepartmentMembershipWithPermissionsRepository;
-        this.processDefinitionService = processDefinitionService;
     }
 
     @GetMapping("")
@@ -87,28 +76,6 @@ public class ProcessDefinitionEdgeController {
         var execUser = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
-
-        if (!execUser.getIsSuperAdmin()) {
-            var processDefinition = processDefinitionService
-                    .retrieve(newEdge.getProcessDefinitionId())
-                    .orElseThrow(ResponseException::badRequest);
-
-            var department = departmentService
-                    .retrieve(processDefinition.getDepartmentId())
-                    .orElseThrow(ResponseException::badRequest);
-
-            var spec = VDepartmentMembershipWithPermissionsFilter
-                    .create()
-                    .setUserId(execUser.getId())
-                    .setDepartmentId(department.getId())
-                    .setProcessPermissionCreate(true)
-                    .build();
-            var hasPermission = vDepartmentMembershipWithPermissionsRepository
-                    .exists(spec);
-            if (!hasPermission) {
-                throw ResponseException.noPermission(PermissionLabels.ProcessPermissionCreate);
-            }
-        }
 
         var result = processDefinitionEdgeService
                 .create(newEdge);
@@ -152,28 +119,6 @@ public class ProcessDefinitionEdgeController {
         var existing = processDefinitionEdgeService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
-
-        if (!execUser.getIsSuperAdmin()) {
-            var processDefinition = processDefinitionService
-                    .retrieve(existing.getProcessDefinitionId())
-                    .orElseThrow(ResponseException::badRequest);
-
-            var department = departmentService
-                    .retrieve(processDefinition.getDepartmentId())
-                    .orElseThrow(ResponseException::badRequest);
-
-            var spec = VDepartmentMembershipWithPermissionsFilter
-                    .create()
-                    .setUserId(execUser.getId())
-                    .setDepartmentId(department.getId())
-                    .setProcessPermissionEdit(true)
-                    .build();
-            var hasPermission = vDepartmentMembershipWithPermissionsRepository
-                    .exists(spec);
-            if (!hasPermission) {
-                throw ResponseException.noPermission(PermissionLabels.ProcessPermissionEdit);
-            }
-        }
 
         updateDTO.setId(existing.getId());
 

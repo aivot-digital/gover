@@ -10,7 +10,7 @@ interface VDepartmentMembershipWithDetailsFilter {
     name: string;
     userId: string;
     userIds: string[];
-    fullName: string;
+    userFullName: string;
     email: string;
     enabled: boolean;
     verified: boolean;
@@ -41,13 +41,18 @@ export class VDepartmentMembershipWithDetailsService extends BaseCrudApiService<
 
     public initialize(): VDepartmentMembershipWithDetailsEntity {
         return {
-            created: '',
+            departmentDepth: 0,
             departmentId: 0,
-            depth: 0,
-            id: 0,
-            name: '',
-            updated: '',
-            userId: '',
+            departmentName: "",
+            domainRolePermissions: [],
+            domainRoles: [],
+            membershipId: 0,
+            membershipIsDeputy: false,
+            userDeletedInIdp: false,
+            userEnabled: false,
+            userId: "",
+            userSystemRoleId: 0,
+            userVerified: false
         };
     }
 
@@ -71,7 +76,7 @@ export class VDepartmentMembershipWithDetailsService extends BaseCrudApiService<
                 userId: filters?.userId,
                 name: filters?.departmentSearch,
                 departmentId: filters?.departmentId,
-                fullName: filters?.userSearch,
+                userFullName: filters?.userSearch,
                 deletedInIdp: filters?.deletedUser,
                 enabled: filters?.enabledUser,
             }),
@@ -91,7 +96,7 @@ export class VDepartmentMembershipWithDetailsService extends BaseCrudApiService<
         const membershipsWithRoles: VDepartmentMembershipWithDetailsEntityWithRoles[] = memberships
             .map((membership) => {
                 const membershipRoles = assignments
-                    .filter((assignment) => assignment.id === membership.id);
+                    .filter((assignment) => assignment.id === membership.membershipId);
 
                 return {
                     ...membership,

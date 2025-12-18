@@ -8,10 +8,6 @@ import de.aivot.GoverBackend.user.models.KeycloakUser;
 import de.aivot.GoverBackend.user.repositories.UserRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,7 +16,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -70,7 +65,7 @@ public class UserService implements EntityService<UserEntity, String> {
 
         var createdUserEntity = UserEntity
                 .from(createdKeycloakUser)
-                .setGlobalRole(entity.getGlobalRole());
+                .setSystemRoleId(entity.getSystemRoleId());
 
         return userRepository.save(createdUserEntity);
     }
@@ -152,7 +147,7 @@ public class UserService implements EntityService<UserEntity, String> {
             var execUser = fromJWT(jwt)
                     .orElseThrow(ResponseException::unauthorized);
             if (execUser.getIsSuperAdmin()) {
-                userToUpdate.setGlobalRole(entity.getGlobalRole());
+                userToUpdate.setSystemRoleId(entity.getSystemRoleId());
             }
         }
 

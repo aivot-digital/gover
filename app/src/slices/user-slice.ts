@@ -1,12 +1,16 @@
 import {createSlice, type PayloadAction} from '@reduxjs/toolkit';
 import {type RootState} from '../store.staff';
 import {User} from '../modules/users/models/user';
-import {VDepartmentMembershipWithDetailsEntityWithRoles} from '../modules/departments/entities/v-department-membership-with-details-entity';
+import {
+    VDepartmentMembershipWithDetailsEntity,
+    VDepartmentMembershipWithDetailsEntityWithRoles
+} from '../modules/departments/entities/v-department-membership-with-details-entity';
 import {VDepartmentUserRoleAssignmentWithDetailsEntity} from '../modules/departments/entities/v-department-user-role-assignment-with-details-entity';
+import {Permission} from "../data/permissions/permission";
 
 interface UserState {
     user: User | undefined;
-    memberships: VDepartmentMembershipWithDetailsEntityWithRoles[] | undefined;
+    memberships: VDepartmentMembershipWithDetailsEntity[] | undefined;
 }
 
 const initialState: UserState = {
@@ -24,7 +28,7 @@ const userSlice = createSlice({
                 state.memberships = [];
             }
         },
-        setMemberships: (state, action: PayloadAction<VDepartmentMembershipWithDetailsEntityWithRoles[]>) => {
+        setMemberships: (state, action: PayloadAction<VDepartmentMembershipWithDetailsEntity[]>) => {
             state.memberships = action.payload;
         },
     },
@@ -36,7 +40,7 @@ export const {
 } = userSlice.actions;
 
 export const selectUser = (state: RootState): User | undefined => state.user.user;
-export const selectMemberships = (state: RootState): VDepartmentMembershipWithDetailsEntityWithRoles[] | undefined => state.user.memberships;
-export const selectHasMemberships = (departmentId: number, permission: keyof VDepartmentUserRoleAssignmentWithDetailsEntity) => (state: RootState): boolean => state.user.memberships != null && state.user.memberships.some(mem => mem.departmentId === departmentId && mem.roles.some(role => role[permission] === true));
+export const selectMemberships = (state: RootState): VDepartmentMembershipWithDetailsEntity[] | undefined => state.user.memberships;
+export const selectHasMemberships = (departmentId: number, permission: Permission) => (state: RootState): boolean => state.user.memberships != null && state.user.memberships.some(mem => mem.departmentId === departmentId && mem.domainRoles.some(role => role.permissions.includes(permission)));
 
 export const userReducer = userSlice.reducer;

@@ -44,25 +44,7 @@ public class ResourceAccessControlService implements EntityService<ResourceAcces
     @Nonnull
     @Override
     public ResourceAccessControlEntity performUpdate(@Nonnull Integer id, @Nonnull ResourceAccessControlEntity entity, @Nonnull ResourceAccessControlEntity existingEntity) throws ResponseException {
-        existingEntity
-                .setFormPermissionCreate(entity.getFormPermissionCreate())
-                .setFormPermissionRead(entity.getFormPermissionRead())
-                .setFormPermissionEdit(entity.getFormPermissionEdit())
-                .setFormPermissionDelete(entity.getFormPermissionDelete())
-                .setFormPermissionAnnotate(entity.getFormPermissionAnnotate())
-                .setFormPermissionPublish(entity.getFormPermissionPublish())
-                .setProcessPermissionCreate(entity.getProcessPermissionCreate())
-                .setProcessPermissionRead(entity.getProcessPermissionRead())
-                .setProcessPermissionEdit(entity.getProcessPermissionEdit())
-                .setProcessPermissionDelete(entity.getProcessPermissionDelete())
-                .setProcessPermissionAnnotate(entity.getProcessPermissionAnnotate())
-                .setProcessPermissionPublish(entity.getProcessPermissionPublish())
-                .setProcessInstancePermissionCreate(entity.getProcessInstancePermissionCreate())
-                .setProcessInstancePermissionRead(entity.getProcessInstancePermissionRead())
-                .setProcessInstancePermissionEdit(entity.getProcessInstancePermissionEdit())
-                .setProcessInstancePermissionDelete(entity.getProcessInstancePermissionDelete())
-                .setProcessInstancePermissionAnnotate(entity.getProcessInstancePermissionAnnotate());
-
+        existingEntity.setPermissions(entity.getPermissions());
         return repository
                 .save(existingEntity);
     }

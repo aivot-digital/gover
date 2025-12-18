@@ -3,8 +3,7 @@ package de.aivot.GoverBackend.process.controllers;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
-import de.aivot.GoverBackend.department.filters.VDepartmentMembershipWithPermissionsFilter;
-import de.aivot.GoverBackend.department.repositories.VDepartmentMembershipWithPermissionsRepository;
+import de.aivot.GoverBackend.core.services.PermissionService;
 import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
@@ -45,22 +44,21 @@ public class ProcessDefinitionVersionController {
     private final UserService userService;
     private final ProcessDefinitionVersionService processDefinitionVersionService;
     private final DepartmentService departmentService;
-    private final VDepartmentMembershipWithPermissionsRepository vDepartmentMembershipWithPermissionsRepository;
     private final ProcessDefinitionService processDefinitionService;
+    private final PermissionService permissionService;
 
     @Autowired
     public ProcessDefinitionVersionController(AuditService auditService,
                                               UserService userService,
                                               ProcessDefinitionVersionService processDefinitionVersionService,
                                               DepartmentService departmentService,
-                                              VDepartmentMembershipWithPermissionsRepository vDepartmentMembershipWithPermissionsRepository,
-                                              ProcessDefinitionService processDefinitionService) {
+                                              ProcessDefinitionService processDefinitionService, PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(ProcessDefinitionVersionController.class);
         this.userService = userService;
         this.processDefinitionVersionService = processDefinitionVersionService;
         this.departmentService = departmentService;
-        this.vDepartmentMembershipWithPermissionsRepository = vDepartmentMembershipWithPermissionsRepository;
         this.processDefinitionService = processDefinitionService;
+        this.permissionService = permissionService;
     }
 
     @GetMapping("")
@@ -99,19 +97,12 @@ public class ProcessDefinitionVersionController {
                 .retrieve(processDefinition.getDepartmentId())
                 .orElseThrow(ResponseException::badRequest);
 
-        if (!execUser.getIsSuperAdmin()) {
-            var spec = VDepartmentMembershipWithPermissionsFilter
-                    .create()
-                    .setUserId(execUser.getId())
-                    .setDepartmentId(department.getId())
-                    .setProcessPermissionCreate(true)
-                    .build();
-            var hasPermission = vDepartmentMembershipWithPermissionsRepository
-                    .exists(spec);
-            if (!hasPermission) {
-                throw ResponseException.noPermission(PermissionLabels.ProcessPermissionCreate);
-            }
-        }
+        permissionService
+                .hasDepartmentPermissionThrows(
+                        execUser.getId(),
+                        department.getId(),
+                        PermissionLabels.ProcessPermissionCreate
+                );
 
         var result = processDefinitionVersionService
                 .create(newVersion);
@@ -166,19 +157,12 @@ public class ProcessDefinitionVersionController {
                 .retrieve(existing.getProcessDefinitionId())
                 .orElseThrow(ResponseException::badRequest);
 
-        if (!execUser.getIsSuperAdmin()) {
-            var spec = VDepartmentMembershipWithPermissionsFilter
-                    .create()
-                    .setUserId(execUser.getId())
-                    .setDepartmentId(department.getId())
-                    .setProcessPermissionEdit(true)
-                    .build();
-            var hasPermission = vDepartmentMembershipWithPermissionsRepository
-                    .exists(spec);
-            if (!hasPermission) {
-                throw ResponseException.noPermission(PermissionLabels.ProcessPermissionEdit);
-            }
-        }
+        permissionService
+                .hasDepartmentPermissionThrows(
+                        execUser.getId(),
+                        department.getId(),
+                        PermissionLabels.ProcessPermissionCreate
+                );
 
         updateDTO.setProcessDefinitionId(existing.getProcessDefinitionId());
         updateDTO.setProcessDefinitionVersion(existing.getProcessDefinitionVersion());

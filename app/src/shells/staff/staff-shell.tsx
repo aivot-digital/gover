@@ -5,7 +5,19 @@ import {setMemberships, setUser} from '../../slices/user-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {SystemConfigResponseDto} from '../../modules/configs/dtos/system-config-response-dto';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {addSnackbarMessage, ErrorMessage, selectErrorMessage, selectSetup, selectStatus, setErrorMessage, setSetup, setStatus, ShellStatus, SnackbarSeverity, SnackbarType} from '../../slices/shell-slice';
+import {
+    addSnackbarMessage,
+    ErrorMessage,
+    selectErrorMessage,
+    selectSetup,
+    selectStatus,
+    setErrorMessage,
+    setSetup,
+    setStatus,
+    ShellStatus,
+    SnackbarSeverity,
+    SnackbarType
+} from '../../slices/shell-slice';
 import {SystemApiService} from '../../modules/system/system-api-service';
 import {SystemSetupDTO} from '../../modules/system/dtos/system-setup-dto';
 import {setSystemConfigs, setSystemConfigsFromMap} from '../../slices/system-config-slice';
@@ -25,8 +37,13 @@ import {ShellOffline} from './components/shell-offline';
 import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 import {ShellResolutionOverlay} from './components/shell-resolution-overlay';
 import {StaffShellError} from './staff-shell-error';
-import {VDepartmentMembershipWithDetailsService} from '../../modules/departments/services/v-department-membership-with-details-service';
-import {VDepartmentMembershipWithDetailsEntityWithRoles} from '../../modules/departments/entities/v-department-membership-with-details-entity';
+import {
+    VDepartmentMembershipWithDetailsService
+} from '../../modules/departments/services/v-department-membership-with-details-service';
+import {
+    VDepartmentMembershipWithDetailsEntity,
+    VDepartmentMembershipWithDetailsEntityWithRoles
+} from '../../modules/departments/entities/v-department-membership-with-details-entity';
 import {UsersApiService} from '../../modules/users/users-api-service';
 
 export function StaffShell() {
@@ -133,7 +150,7 @@ export function StaffShell() {
 
     if (status === ShellStatus.Offline) {
         return (
-            <ShellOffline />
+            <ShellOffline/>
         );
     }
 
@@ -145,11 +162,11 @@ export function StaffShell() {
         <>
             {
                 status === ShellStatus.Loading &&
-                <ShellLoader />
+                <ShellLoader/>
             }
             {
                 status === ShellStatus.Login &&
-                <Login />
+                <Login/>
             }
             {
                 status === ShellStatus.Ready &&
@@ -161,7 +178,7 @@ export function StaffShell() {
                             height: '100vh',
                         }}
                     >
-                        <ShellDrawer />
+                        <ShellDrawer/>
 
                         <Box
                             sx={{
@@ -170,23 +187,23 @@ export function StaffShell() {
                                 overflowY: 'auto',
                             }}
                         >
-                            <ShellProgress />
+                            <ShellProgress/>
 
                             {
                                 error != null &&
-                                <StaffShellError error={error} />
+                                <StaffShellError error={error}/>
                             }
                             {
                                 error == null &&
-                                <Outlet />
+                                <Outlet/>
                             }
                         </Box>
                     </Box>
 
-                    <ShellSearchDialog />
-                    <ShellSessionEndWarnPopup />
-                    <ShellSessionExpiredDialog />
-                    <ShellResolutionOverlay />
+                    <ShellSearchDialog/>
+                    <ShellSessionEndWarnPopup/>
+                    <ShellSessionExpiredDialog/>
+                    <ShellResolutionOverlay/>
                 </>
             }
         </>
@@ -200,7 +217,7 @@ async function fetchSetup(): Promise<SystemSetupDTO> {
 
 async function authenticateWithOidcCode(searchParams: URLSearchParams): Promise<{
     user: User;
-    memberships: VDepartmentMembershipWithDetailsEntityWithRoles[];
+    memberships: VDepartmentMembershipWithDetailsEntity[];
     configs: SystemConfigResponseDto[];
 } | undefined> {
     const authService = new AuthService();
@@ -224,7 +241,7 @@ async function authenticateWithOidcCode(searchParams: URLSearchParams): Promise<
         .retrieveSelf();
 
     const membershipsPage = await new VDepartmentMembershipWithDetailsService()
-        .listDepartmentMembershipsWithRoles(0, 999, undefined, undefined, {
+        .listAll({
             userId: user.id,
         });
     const memberships = membershipsPage.content;

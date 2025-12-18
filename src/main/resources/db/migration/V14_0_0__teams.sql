@@ -1,3 +1,4 @@
+-- create a table for teams to group users
 create table teams
 (
     id      serial primary key,
@@ -6,6 +7,7 @@ create table teams
     updated timestamp   not null default current_timestamp
 );
 
+-- create a table for team memberships to link users to teams
 create table team_memberships
 (
     id      serial primary key,

@@ -2,11 +2,14 @@ package de.aivot.GoverBackend.config.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.util.Objects;
@@ -16,14 +19,20 @@ import java.util.Optional;
 @Table(name = "system_configs")
 public class SystemConfigEntity {
     @Id
+    @Nonnull
+    @NotNull(message = "Der Key darf nicht null sein.")
+    @NotBlank(message = "Der Key darf nicht leer sein.")
+    @Size(min = 1, max = 64, message = "Der Key muss zwischen 1 und 64 Zeichen lang sein.")
     @Column(length = 64)
     private String key;
 
-    @NotNull
+    @Nonnull
+    @NotNull(message = "Der Wert darf nicht null sein.")
     @Column(columnDefinition = "TEXT")
     private String value;
 
-    @NotNull
+    @Nonnull
+    @NotNull(message = "Das publicConfig Feld darf nicht null sein.")
     @ColumnDefault("FALSE")
     private Boolean publicConfig;
 

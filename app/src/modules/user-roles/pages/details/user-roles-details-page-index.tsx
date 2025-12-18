@@ -18,6 +18,8 @@ import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarTyp
 import {UserRoleResponseDTO} from '../../dtos/user-role-response-dto';
 import {UserRolesApiService} from '../../user-roles-api-service';
 import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
+import {PermissionGroups} from "../../../../data/permissions/permission-groups";
+import {PermissionLabelsDe} from "../../../../data/permissions/permission-labels";
 
 export const SecretSchema = yup.object({
     name: yup.string()
@@ -31,160 +33,6 @@ export const SecretSchema = yup.object({
         .max(255, 'Die Beschreibung darf maximal 255 Zeichen lang sein.')
         .required('Die Beschreibung ist ein Pflichtfeld.'),
 });
-
-const permissions: {
-    groupLabel: string;
-    permissions: {
-        label: string;
-        field: keyof UserRoleResponseDTO;
-        forcesOthersActive: Array<keyof UserRoleResponseDTO>;
-    }[];
-}[] = [
-    {
-        groupLabel: 'Organisationseinheiten',
-        permissions: [{
-            label: 'Administrieren',
-            field: 'departmentPermissionEdit',
-            forcesOthersActive: [],
-        }],
-    },
-    {
-        groupLabel: 'Teams',
-        permissions: [{
-            label: 'Administrieren',
-            field: 'teamPermissionEdit',
-            forcesOthersActive: [],
-        }],
-    },
-    {
-        groupLabel: 'Formulare',
-        permissions: [
-            {
-                label: 'Abrufen',
-                field: 'formPermissionRead',
-                forcesOthersActive: [],
-            },
-            {
-                label: 'Erstellen',
-                field: 'formPermissionCreate',
-                forcesOthersActive: [
-                    'formPermissionRead',
-                ],
-            },
-            {
-                label: 'Prüfen',
-                field: 'formPermissionAnnotate',
-                forcesOthersActive: [
-                    'formPermissionRead',
-                ],
-            },
-            {
-                label: 'Bearbeiten',
-                field: 'formPermissionEdit',
-                forcesOthersActive: [
-                    'formPermissionRead',
-                ],
-            },
-            {
-                label: 'Veröffentlichen und Zurückziehen',
-                field: 'formPermissionPublish',
-                forcesOthersActive: [
-                    'formPermissionRead',
-                ],
-            },
-            {
-                label: 'Löschen',
-                field: 'formPermissionDelete',
-                forcesOthersActive: [
-                    'formPermissionRead',
-                ],
-            },
-        ],
-    },
-    {
-        groupLabel: 'Prozesse',
-        permissions: [
-            {
-                label: 'Abrufen',
-                field: 'processPermissionRead',
-                forcesOthersActive: [],
-            },
-            {
-                label: 'Erstellen',
-                field: 'processPermissionCreate',
-                forcesOthersActive: [
-                    'processPermissionRead',
-                ],
-            },
-            {
-                label: 'Prüfen',
-                field: 'processPermissionAnnotate',
-                forcesOthersActive: [
-                    'processPermissionRead',
-                ],
-            },
-            {
-                label: 'Bearbeiten',
-                field: 'processPermissionEdit',
-                forcesOthersActive: [
-                    'processPermissionRead',
-                ],
-            },
-            {
-                label: 'Veröffentlichen und Zurückziehen',
-                field: 'processPermissionPublish',
-                forcesOthersActive: [
-                    'processPermissionRead',
-                ],
-            },
-            {
-                label: 'Löschen',
-                field: 'processPermissionDelete',
-                forcesOthersActive: [
-                    'processPermissionRead',
-                ],
-            },
-        ],
-    },
-    {
-        groupLabel: 'Vorgänge',
-        permissions: [
-            {
-                label: 'Abrufen',
-                field: 'processInstancePermissionRead',
-                forcesOthersActive: [],
-            },
-            {
-                label: 'Starten',
-                field: 'processInstancePermissionCreate',
-                forcesOthersActive: [
-                    'processInstancePermissionRead',
-                ],
-            },
-            {
-                label: 'Kommentieren',
-                field: 'processInstancePermissionAnnotate',
-                forcesOthersActive: [
-                    'processInstancePermissionRead',
-                ],
-            },
-            {
-                label: 'Bearbeiten',
-                field: 'processInstancePermissionEdit',
-                forcesOthersActive: [
-                    'processInstancePermissionRead',
-                ],
-            },
-            {
-                label: 'Löschen',
-                field: 'processInstancePermissionDelete',
-                forcesOthersActive: [
-                    'processInstancePermissionRead',
-                ],
-            },
-        ],
-    },
-];
 
 export function UserRolesDetailsPageIndex() {
     const dispatch = useAppDispatch();
@@ -344,28 +192,32 @@ export function UserRolesDetailsPageIndex() {
                 <Table size="small">
                     <TableBody>
                         {
-                            permissions.map((group) => (
-                                <TableRow key={group.groupLabel}>
+                            PermissionGroups.map((group) => (
+                                <TableRow key={group.label}>
                                     <TableCell>
-                                        {group.groupLabel}
+                                        {group.label}
                                     </TableCell>
 
                                     <TableCell>
                                         {
                                             group.permissions.map((permission) => (
                                                 <CheckboxFieldComponent
-                                                    key={permission.field}
-                                                    label={permission.label}
-                                                    value={entity[permission.field] as boolean ?? false}
+                                                    key={permission}
+                                                    label={PermissionLabelsDe[permission]}
+                                                    value={entity.permissions.includes(permission)}
                                                     onChange={(val) => {
-                                                        const patch: Record<string, boolean> = {
-                                                            [permission.field]: val,
-                                                        };
+                                                        const patch: Partial<UserRoleResponseDTO> = {};
+
+                                                        let newPermissions = [...entity.permissions];
 
                                                         if (val) {
-                                                            permission.forcesOthersActive.forEach((otherField) => {
-                                                                patch[otherField] = true;
-                                                            });
+                                                            // Add permission
+                                                            if (!newPermissions.includes(permission)) {
+                                                                newPermissions.push(permission);
+                                                            }
+                                                        } else {
+                                                            // Remove permission
+                                                            newPermissions = newPermissions.filter((perm) => perm !== permission);
                                                         }
 
                                                         handleInputPatch(patch);
@@ -374,16 +226,6 @@ export function UserRolesDetailsPageIndex() {
                                                         m: 0,
                                                         p: 0,
                                                     }}
-                                                    disabled={
-                                                        group
-                                                            .permissions
-                                                            .some((perm) => perm
-                                                                .forcesOthersActive
-                                                                .includes(permission.field) && (entity[perm.field] as boolean ?? false),
-                                                            ) ||
-                                                        isBusy ||
-                                                        !isEditable
-                                                    }
                                                 />
                                             ))
                                         }

@@ -14,10 +14,12 @@ import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.services.ProcessDataService;
 import de.aivot.GoverBackend.user.entities.UserEntity;
+import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -28,7 +30,7 @@ import java.util.Map;
 public class EMailActionNode implements ProcessNodeProvider, PluginComponent {
     private static final String RECIPIENT_FIELD_ID = "to";
     private static final String SUBJECT_FIELD_ID = "subject";
-    private static final String CONTENT_FIELD_ID = "content";
+    private static final String CONTENT_FIELD_ID = "content_rtx";
 
     private static final String PORT_NAME = "output";
 
@@ -137,6 +139,10 @@ public class EMailActionNode implements ProcessNodeProvider, PluginComponent {
                                         .toString()
                         );
 
+        if (StringUtils.isNullOrEmpty(recipient)) {
+            return ProcessNodeExecutionResultError.of("Empfänger:in darf nicht leer sein.");
+        }
+
         var subject =
                 processDataService
                         .interpolate(
@@ -147,6 +153,10 @@ public class EMailActionNode implements ProcessNodeProvider, PluginComponent {
                                         .orElse("")
                                         .toString()
                         );
+
+        if (StringUtils.isNullOrEmpty(subject)) {
+            return ProcessNodeExecutionResultError.of("Betreff darf nicht leer sein.");
+        }
 
         var content =
                 processDataService
@@ -159,15 +169,20 @@ public class EMailActionNode implements ProcessNodeProvider, PluginComponent {
                                         .toString()
                         );
 
-        var message = new SimpleMailMessage();
-        message.setFrom(goverConfig.getFromMail());
-        message.setTo(recipient);
-        message.setSubject(subject);
-        message.setText(content);
+        if (StringUtils.isNullOrEmpty(content)) {
+            return ProcessNodeExecutionResultError.of("Inhalt darf nicht leer sein.");
+        }
+
+        var mimeMessage = mailSender.createMimeMessage();
+        var helper = new MimeMessageHelper(mimeMessage, "utf-8");
+        helper.setFrom(goverConfig.getFromMail());
+        helper.setTo(recipient);
+        helper.setSubject(subject);
+        helper.setText(content, true);
 
         try {
             mailSender
-                    .send(message);
+                    .send(mimeMessage);
         } catch (Exception e) {
             return ProcessNodeExecutionResultError.of(e);
         }
@@ -179,6 +194,6 @@ public class EMailActionNode implements ProcessNodeProvider, PluginComponent {
 
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_NAME)
-                .setMetadata(metadata);
+                .setNodeData(metadata);
     }
 }

@@ -8,9 +8,7 @@ import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.teams.entities.TeamMembershipEntity;
 import de.aivot.GoverBackend.teams.filters.TeamMembershipFilter;
-import de.aivot.GoverBackend.teams.filters.VTeamMembershipWithPermissionsFilter;
 import de.aivot.GoverBackend.teams.services.TeamMembershipService;
-import de.aivot.GoverBackend.teams.services.VTeamMembershipWithPermissionsService;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
 import io.swagger.v3.oas.annotations.Operation;
@@ -42,17 +40,14 @@ public class TeamMembershipController {
     private final ScopedAuditService auditService;
     private final UserService userService;
     private final TeamMembershipService teamMembershipService;
-    private final VTeamMembershipWithPermissionsService vTeamMembershipWithPermissionsService;
 
     @Autowired
     public TeamMembershipController(AuditService auditService,
                                     UserService userService,
-                                    TeamMembershipService teamMembershipService,
-                                    VTeamMembershipWithPermissionsService vTeamMembershipWithPermissionsService) {
+                                    TeamMembershipService teamMembershipService) {
         this.auditService = auditService.createScopedAuditService(TeamMembershipController.class);
         this.userService = userService;
         this.teamMembershipService = teamMembershipService;
-        this.vTeamMembershipWithPermissionsService = vTeamMembershipWithPermissionsService;
     }
 
     @GetMapping("")
@@ -82,22 +77,6 @@ public class TeamMembershipController {
         var execUser = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
-
-        if (!execUser.getIsSuperAdmin()) {
-            var filter = VTeamMembershipWithPermissionsFilter
-                    .create()
-                    .setUserId(execUser.getId())
-                    .setTeamId(createDTO.getTeamId())
-                    .setTeamPermissionEdit(true);
-
-            var hasPermissionToEdit = vTeamMembershipWithPermissionsService
-                    .exists(filter.build());
-
-            if (!hasPermissionToEdit) {
-                throw ResponseException
-                        .noPermission(PermissionLabels.TeamPermissionEdit);
-            }
-        }
 
         var result = teamMembershipService
                 .create(createDTO);
@@ -139,22 +118,6 @@ public class TeamMembershipController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!execUser.getIsSuperAdmin()) {
-            var filter = VTeamMembershipWithPermissionsFilter
-                    .create()
-                    .setUserId(execUser.getId())
-                    .setTeamId(updateDTO.getTeamId())
-                    .setTeamPermissionEdit(true);
-
-            var hasPermissionToEdit = vTeamMembershipWithPermissionsService
-                    .exists(filter.build());
-
-            if (!hasPermissionToEdit) {
-                throw ResponseException
-                        .noPermission(PermissionLabels.TeamPermissionEdit);
-            }
-        }
-
         var result = teamMembershipService
                 .update(id, updateDTO);
 
@@ -184,22 +147,6 @@ public class TeamMembershipController {
         var entity = teamMembershipService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
-
-        if (!execUser.getIsSuperAdmin()) {
-            var filter = VTeamMembershipWithPermissionsFilter
-                    .create()
-                    .setUserId(execUser.getId())
-                    .setTeamId(entity.getTeamId())
-                    .setTeamPermissionEdit(true);
-
-            var hasPermissionToEdit = vTeamMembershipWithPermissionsService
-                    .exists(filter.build());
-
-            if (!hasPermissionToEdit) {
-                throw ResponseException
-                        .noPermission(PermissionLabels.TeamPermissionEdit);
-            }
-        }
 
         var deleted = teamMembershipService
                 .delete(id);

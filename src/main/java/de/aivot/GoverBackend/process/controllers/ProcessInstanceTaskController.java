@@ -3,8 +3,7 @@ package de.aivot.GoverBackend.process.controllers;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
-import de.aivot.GoverBackend.department.filters.VDepartmentMembershipWithPermissionsFilter;
-import de.aivot.GoverBackend.department.repositories.VDepartmentMembershipWithPermissionsRepository;
+import de.aivot.GoverBackend.core.services.PermissionService;
 import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
@@ -47,24 +46,24 @@ public class ProcessInstanceTaskController {
     private final UserService userService;
     private final ProcessInstanceTaskService processInstanceTaskService;
     private final DepartmentService departmentService;
-    private final VDepartmentMembershipWithPermissionsRepository vDepartmentMembershipWithPermissionsRepository;
     private final ProcessDefinitionService processDefinitionService;
     private final RabbitTemplate rabbitTemplate;
+    private final PermissionService permissionService;
 
     @Autowired
     public ProcessInstanceTaskController(AuditService auditService,
                                          UserService userService,
                                          ProcessInstanceTaskService processInstanceTaskService,
                                          DepartmentService departmentService,
-                                         VDepartmentMembershipWithPermissionsRepository vDepartmentMembershipWithPermissionsRepository,
-                                         ProcessDefinitionService processDefinitionService, RabbitTemplate rabbitTemplate) {
+                                         ProcessDefinitionService processDefinitionService,
+                                         RabbitTemplate rabbitTemplate, PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(ProcessInstanceTaskController.class);
         this.userService = userService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.departmentService = departmentService;
-        this.vDepartmentMembershipWithPermissionsRepository = vDepartmentMembershipWithPermissionsRepository;
         this.processDefinitionService = processDefinitionService;
         this.rabbitTemplate = rabbitTemplate;
+        this.permissionService = permissionService;
     }
 
     @GetMapping("")
@@ -93,27 +92,20 @@ public class ProcessInstanceTaskController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!execUser.getIsSuperAdmin()) {
-            var processDefinition = processDefinitionService
-                    .retrieve(newTask.getProcessDefinitionId())
-                    .orElseThrow(ResponseException::badRequest);
+        var processDefinition = processDefinitionService
+                .retrieve(newTask.getProcessDefinitionId())
+                .orElseThrow(ResponseException::badRequest);
 
-            var department = departmentService
-                    .retrieve(processDefinition.getDepartmentId())
-                    .orElseThrow(ResponseException::badRequest);
+        var department = departmentService
+                .retrieve(processDefinition.getDepartmentId())
+                .orElseThrow(ResponseException::badRequest);
 
-            var spec = VDepartmentMembershipWithPermissionsFilter
-                    .create()
-                    .setUserId(execUser.getId())
-                    .setDepartmentId(department.getId())
-                    .setProcessPermissionCreate(true)
-                    .build();
-            var hasPermission = vDepartmentMembershipWithPermissionsRepository
-                    .exists(spec);
-            if (!hasPermission) {
-                throw ResponseException.noPermission(PermissionLabels.ProcessPermissionCreate);
-            }
-        }
+        permissionService
+                .hasDepartmentPermissionThrows(
+                        execUser.getId(),
+                        department.getId(),
+                        PermissionLabels.ProcessPermissionCreate
+                );
 
         var result = processInstanceTaskService
                 .create(newTask);
@@ -159,27 +151,20 @@ public class ProcessInstanceTaskController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        if (!execUser.getIsSuperAdmin()) {
-            var processDefinition = processDefinitionService
-                    .retrieve(existing.getProcessDefinitionId())
-                    .orElseThrow(ResponseException::badRequest);
+        var processDefinition = processDefinitionService
+                .retrieve(existing.getProcessDefinitionId())
+                .orElseThrow(ResponseException::badRequest);
 
-            var department = departmentService
-                    .retrieve(processDefinition.getDepartmentId())
-                    .orElseThrow(ResponseException::badRequest);
+        var department = departmentService
+                .retrieve(processDefinition.getDepartmentId())
+                .orElseThrow(ResponseException::badRequest);
 
-            var spec = VDepartmentMembershipWithPermissionsFilter
-                    .create()
-                    .setUserId(execUser.getId())
-                    .setDepartmentId(department.getId())
-                    .setProcessPermissionEdit(true)
-                    .build();
-            var hasPermission = vDepartmentMembershipWithPermissionsRepository
-                    .exists(spec);
-            if (!hasPermission) {
-                throw ResponseException.noPermission(PermissionLabels.ProcessPermissionEdit);
-            }
-        }
+        permissionService
+                .hasDepartmentPermissionThrows(
+                        execUser.getId(),
+                        department.getId(),
+                        PermissionLabels.ProcessPermissionCreate
+                );
 
         updateDTO.setId(existing.getId());
 

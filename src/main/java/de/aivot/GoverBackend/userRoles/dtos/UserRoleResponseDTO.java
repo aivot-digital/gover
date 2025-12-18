@@ -3,30 +3,13 @@ package de.aivot.GoverBackend.userRoles.dtos;
 import de.aivot.GoverBackend.userRoles.entities.UserRoleEntity;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record UserRoleResponseDTO(
         Integer id,
         String name,
         String description,
-        Boolean departmentPermissionEdit,
-        Boolean teamPermissionEdit,
-        Boolean formPermissionCreate,
-        Boolean formPermissionRead,
-        Boolean formPermissionEdit,
-        Boolean formPermissionDelete,
-        Boolean formPermissionAnnotate,
-        Boolean formPermissionPublish,
-        Boolean processPermissionCreate,
-        Boolean processPermissionRead,
-        Boolean processPermissionEdit,
-        Boolean processPermissionDelete,
-        Boolean processPermissionAnnotate,
-        Boolean processPermissionPublish,
-        Boolean processInstancePermissionCreate,
-        Boolean processInstancePermissionRead,
-        Boolean processInstancePermissionEdit,
-        Boolean processInstancePermissionDelete,
-        Boolean processInstancePermissionAnnotate,
+        List<String> permissions,
         LocalDateTime created,
         LocalDateTime updated
 ) {
@@ -35,25 +18,7 @@ public record UserRoleResponseDTO(
                 entity.getId(),
                 entity.getName(),
                 entity.getDescription(),
-                entity.getDepartmentPermissionEdit(),
-                entity.getTeamPermissionEdit(),
-                entity.getFormPermissionCreate(),
-                entity.getFormPermissionRead(),
-                entity.getFormPermissionEdit(),
-                entity.getFormPermissionDelete(),
-                entity.getFormPermissionAnnotate(),
-                entity.getFormPermissionPublish(),
-                entity.getProcessPermissionCreate(),
-                entity.getProcessPermissionRead(),
-                entity.getProcessPermissionEdit(),
-                entity.getProcessPermissionDelete(),
-                entity.getProcessPermissionAnnotate(),
-                entity.getProcessPermissionPublish(),
-                entity.getProcessInstancePermissionCreate(),
-                entity.getProcessInstancePermissionRead(),
-                entity.getProcessInstancePermissionEdit(),
-                entity.getProcessInstancePermissionDelete(),
-                entity.getProcessInstancePermissionAnnotate(),
+                entity.getPermissions(),
                 entity.getCreated(),
                 entity.getUpdated()
         );

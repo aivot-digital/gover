@@ -1,65 +1,77 @@
 package de.aivot.GoverBackend.department.entities;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import de.aivot.GoverBackend.core.converters.JsonArrayConverter;
+import jakarta.persistence.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Entity
 @Table(name = "v_department_memberships_with_details")
 public class VDepartmentMembershipWithDetailsEntity {
     @Id
-    private Integer id;
-    private Integer departmentId;
+    private Integer membershipId;
+    private Boolean membershipIsDeputy;
+    private String membershipAsDeputyForUserId;
     private String userId;
-    private LocalDateTime created;
-    private LocalDateTime updated;
-    private String name;
-    private String address;
-    private String imprint;
-    private String commonPrivacy;
-    private String commonAccessibility;
-    private String technicalSupportAddress;
-    private String specialSupportAddress;
+    private String userEmail;
+    private String userFirstName;
+    private String userLastName;
+    private String userFullName;
+    private Boolean userEnabled;
+    private Boolean userVerified;
+    private Boolean userDeletedInIdp;
+    private Integer userSystemRoleId;
+    private Integer departmentId;
+    private String departmentName;
+    private String departmentAddress;
+    private String departmentImprint;
+    private String departmentCommonPrivacy;
+    private String departmentCommonAccessibility;
+    private String departmentTechnicalSupportAddress;
+    private String departmentTechnicalSupportPhone;
+    private String departmentTechnicalSupportInfo;
+    private String departmentSpecialSupportAddress;
+    private String departmentSpecialSupportPhone;
+    private String departmentSpecialSupportInfo;
     private String departmentMail;
-    private Integer themeId;
-    private String technicalSupportPhone;
-    private String technicalSupportInfo;
-    private String specialSupportPhone;
-    private String specialSupportInfo;
-    private String additionalInfo;
-    private Integer depth;
-    private Integer parentDepartmentId;
-    private List<String> parentNames;
-    private List<Integer> parentIds;
-    private String email;
-    private String firstName;
-    private String lastName;
-    private String fullName;
-    private Boolean enabled;
-    private Boolean verified;
-    private Integer globalRole;
-    private Boolean deletedInIdp;
+    private Integer departmentThemeId;
+    private String departmentAdditionalInfo;
+    private Integer departmentDepth;
+    private Integer departmentParentDepartmentId;
+    private List<String> departmentParentNames;
+    private List<Integer> departmentParentIds;
+    @Column(columnDefinition = "jsonb")
+    @Convert(converter = JsonArrayConverter.class)
+    private List<Map<String, Object>> domainRoles;
+    private List<String> domainRolePermissions;
 
     // Getters and Setters
 
-    public Integer getId() {
-        return id;
+    public Integer getMembershipId() {
+        return membershipId;
     }
 
-    public VDepartmentMembershipWithDetailsEntity setId(Integer id) {
-        this.id = id;
+    public VDepartmentMembershipWithDetailsEntity setMembershipId(Integer membershipId) {
+        this.membershipId = membershipId;
         return this;
     }
 
-    public Integer getDepartmentId() {
-        return departmentId;
+    public Boolean getMembershipIsDeputy() {
+        return membershipIsDeputy;
     }
 
-    public VDepartmentMembershipWithDetailsEntity setDepartmentId(Integer departmentId) {
-        this.departmentId = departmentId;
+    public VDepartmentMembershipWithDetailsEntity setMembershipIsDeputy(Boolean membershipIsDeputy) {
+        this.membershipIsDeputy = membershipIsDeputy;
+        return this;
+    }
+
+    public String getMembershipAsDeputyForUserId() {
+        return membershipAsDeputyForUserId;
+    }
+
+    public VDepartmentMembershipWithDetailsEntity setMembershipAsDeputyForUserId(String membershipAsDeputyForUserId) {
+        this.membershipAsDeputyForUserId = membershipAsDeputyForUserId;
         return this;
     }
 
@@ -72,84 +84,183 @@ public class VDepartmentMembershipWithDetailsEntity {
         return this;
     }
 
-    public LocalDateTime getCreated() {
-        return created;
+    public String getUserEmail() {
+        return userEmail;
     }
 
-    public VDepartmentMembershipWithDetailsEntity setCreated(LocalDateTime created) {
-        this.created = created;
+    public VDepartmentMembershipWithDetailsEntity setUserEmail(String userEmail) {
+        this.userEmail = userEmail;
         return this;
     }
 
-    public LocalDateTime getUpdated() {
-        return updated;
+    public String getUserFirstName() {
+        return userFirstName;
     }
 
-    public VDepartmentMembershipWithDetailsEntity setUpdated(LocalDateTime updated) {
-        this.updated = updated;
+    public VDepartmentMembershipWithDetailsEntity setUserFirstName(String userFirstName) {
+        this.userFirstName = userFirstName;
         return this;
     }
 
-    public String getName() {
-        return name;
+    public String getUserLastName() {
+        return userLastName;
     }
 
-    public VDepartmentMembershipWithDetailsEntity setName(String name) {
-        this.name = name;
+    public VDepartmentMembershipWithDetailsEntity setUserLastName(String userLastName) {
+        this.userLastName = userLastName;
         return this;
     }
 
-    public String getAddress() {
-        return address;
+    public String getUserFullName() {
+        return userFullName;
     }
 
-    public VDepartmentMembershipWithDetailsEntity setAddress(String address) {
-        this.address = address;
+    public VDepartmentMembershipWithDetailsEntity setUserFullName(String userFullName) {
+        this.userFullName = userFullName;
         return this;
     }
 
-    public String getImprint() {
-        return imprint;
+    public Boolean getUserEnabled() {
+        return userEnabled;
     }
 
-    public VDepartmentMembershipWithDetailsEntity setImprint(String imprint) {
-        this.imprint = imprint;
+    public VDepartmentMembershipWithDetailsEntity setUserEnabled(Boolean userEnabled) {
+        this.userEnabled = userEnabled;
         return this;
     }
 
-    public String getCommonPrivacy() {
-        return commonPrivacy;
+    public Boolean getUserVerified() {
+        return userVerified;
     }
 
-    public VDepartmentMembershipWithDetailsEntity setCommonPrivacy(String commonPrivacy) {
-        this.commonPrivacy = commonPrivacy;
+    public VDepartmentMembershipWithDetailsEntity setUserVerified(Boolean userVerified) {
+        this.userVerified = userVerified;
         return this;
     }
 
-    public String getCommonAccessibility() {
-        return commonAccessibility;
+    public Boolean getUserDeletedInIdp() {
+        return userDeletedInIdp;
     }
 
-    public VDepartmentMembershipWithDetailsEntity setCommonAccessibility(String commonAccessibility) {
-        this.commonAccessibility = commonAccessibility;
+    public VDepartmentMembershipWithDetailsEntity setUserDeletedInIdp(Boolean userDeletedInIdp) {
+        this.userDeletedInIdp = userDeletedInIdp;
         return this;
     }
 
-    public String getTechnicalSupportAddress() {
-        return technicalSupportAddress;
+    public Integer getUserSystemRoleId() {
+        return userSystemRoleId;
     }
 
-    public VDepartmentMembershipWithDetailsEntity setTechnicalSupportAddress(String technicalSupportAddress) {
-        this.technicalSupportAddress = technicalSupportAddress;
+    public VDepartmentMembershipWithDetailsEntity setUserSystemRoleId(Integer userSystemRoleId) {
+        this.userSystemRoleId = userSystemRoleId;
         return this;
     }
 
-    public String getSpecialSupportAddress() {
-        return specialSupportAddress;
+    public Integer getDepartmentId() {
+        return departmentId;
     }
 
-    public VDepartmentMembershipWithDetailsEntity setSpecialSupportAddress(String specialSupportAddress) {
-        this.specialSupportAddress = specialSupportAddress;
+    public VDepartmentMembershipWithDetailsEntity setDepartmentId(Integer departmentId) {
+        this.departmentId = departmentId;
+        return this;
+    }
+
+    public String getDepartmentName() {
+        return departmentName;
+    }
+
+    public VDepartmentMembershipWithDetailsEntity setDepartmentName(String departmentName) {
+        this.departmentName = departmentName;
+        return this;
+    }
+
+    public String getDepartmentAddress() {
+        return departmentAddress;
+    }
+
+    public VDepartmentMembershipWithDetailsEntity setDepartmentAddress(String departmentAddress) {
+        this.departmentAddress = departmentAddress;
+        return this;
+    }
+
+    public String getDepartmentImprint() {
+        return departmentImprint;
+    }
+
+    public VDepartmentMembershipWithDetailsEntity setDepartmentImprint(String departmentImprint) {
+        this.departmentImprint = departmentImprint;
+        return this;
+    }
+
+    public String getDepartmentCommonPrivacy() {
+        return departmentCommonPrivacy;
+    }
+
+    public VDepartmentMembershipWithDetailsEntity setDepartmentCommonPrivacy(String departmentCommonPrivacy) {
+        this.departmentCommonPrivacy = departmentCommonPrivacy;
+        return this;
+    }
+
+    public String getDepartmentCommonAccessibility() {
+        return departmentCommonAccessibility;
+    }
+
+    public VDepartmentMembershipWithDetailsEntity setDepartmentCommonAccessibility(String departmentCommonAccessibility) {
+        this.departmentCommonAccessibility = departmentCommonAccessibility;
+        return this;
+    }
+
+    public String getDepartmentTechnicalSupportAddress() {
+        return departmentTechnicalSupportAddress;
+    }
+
+    public VDepartmentMembershipWithDetailsEntity setDepartmentTechnicalSupportAddress(String departmentTechnicalSupportAddress) {
+        this.departmentTechnicalSupportAddress = departmentTechnicalSupportAddress;
+        return this;
+    }
+
+    public String getDepartmentTechnicalSupportPhone() {
+        return departmentTechnicalSupportPhone;
+    }
+
+    public VDepartmentMembershipWithDetailsEntity setDepartmentTechnicalSupportPhone(String departmentTechnicalSupportPhone) {
+        this.departmentTechnicalSupportPhone = departmentTechnicalSupportPhone;
+        return this;
+    }
+
+    public String getDepartmentTechnicalSupportInfo() {
+        return departmentTechnicalSupportInfo;
+    }
+
+    public VDepartmentMembershipWithDetailsEntity setDepartmentTechnicalSupportInfo(String departmentTechnicalSupportInfo) {
+        this.departmentTechnicalSupportInfo = departmentTechnicalSupportInfo;
+        return this;
+    }
+
+    public String getDepartmentSpecialSupportAddress() {
+        return departmentSpecialSupportAddress;
+    }
+
+    public VDepartmentMembershipWithDetailsEntity setDepartmentSpecialSupportAddress(String departmentSpecialSupportAddress) {
+        this.departmentSpecialSupportAddress = departmentSpecialSupportAddress;
+        return this;
+    }
+
+    public String getDepartmentSpecialSupportPhone() {
+        return departmentSpecialSupportPhone;
+    }
+
+    public VDepartmentMembershipWithDetailsEntity setDepartmentSpecialSupportPhone(String departmentSpecialSupportPhone) {
+        this.departmentSpecialSupportPhone = departmentSpecialSupportPhone;
+        return this;
+    }
+
+    public String getDepartmentSpecialSupportInfo() {
+        return departmentSpecialSupportInfo;
+    }
+
+    public VDepartmentMembershipWithDetailsEntity setDepartmentSpecialSupportInfo(String departmentSpecialSupportInfo) {
+        this.departmentSpecialSupportInfo = departmentSpecialSupportInfo;
         return this;
     }
 
@@ -162,166 +273,75 @@ public class VDepartmentMembershipWithDetailsEntity {
         return this;
     }
 
-    public Integer getThemeId() {
-        return themeId;
+    public Integer getDepartmentThemeId() {
+        return departmentThemeId;
     }
 
-    public VDepartmentMembershipWithDetailsEntity setThemeId(Integer themeId) {
-        this.themeId = themeId;
+    public VDepartmentMembershipWithDetailsEntity setDepartmentThemeId(Integer departmentThemeId) {
+        this.departmentThemeId = departmentThemeId;
         return this;
     }
 
-    public String getTechnicalSupportPhone() {
-        return technicalSupportPhone;
+    public String getDepartmentAdditionalInfo() {
+        return departmentAdditionalInfo;
     }
 
-    public VDepartmentMembershipWithDetailsEntity setTechnicalSupportPhone(String technicalSupportPhone) {
-        this.technicalSupportPhone = technicalSupportPhone;
+    public VDepartmentMembershipWithDetailsEntity setDepartmentAdditionalInfo(String departmentAdditionalInfo) {
+        this.departmentAdditionalInfo = departmentAdditionalInfo;
         return this;
     }
 
-    public String getTechnicalSupportInfo() {
-        return technicalSupportInfo;
+    public Integer getDepartmentDepth() {
+        return departmentDepth;
     }
 
-    public VDepartmentMembershipWithDetailsEntity setTechnicalSupportInfo(String technicalSupportInfo) {
-        this.technicalSupportInfo = technicalSupportInfo;
+    public VDepartmentMembershipWithDetailsEntity setDepartmentDepth(Integer departmentDepth) {
+        this.departmentDepth = departmentDepth;
         return this;
     }
 
-    public String getSpecialSupportPhone() {
-        return specialSupportPhone;
+    public Integer getDepartmentParentDepartmentId() {
+        return departmentParentDepartmentId;
     }
 
-    public VDepartmentMembershipWithDetailsEntity setSpecialSupportPhone(String specialSupportPhone) {
-        this.specialSupportPhone = specialSupportPhone;
+    public VDepartmentMembershipWithDetailsEntity setDepartmentParentDepartmentId(Integer departmentParentDepartmentId) {
+        this.departmentParentDepartmentId = departmentParentDepartmentId;
         return this;
     }
 
-    public String getSpecialSupportInfo() {
-        return specialSupportInfo;
+    public List<String> getDepartmentParentNames() {
+        return departmentParentNames;
     }
 
-    public VDepartmentMembershipWithDetailsEntity setSpecialSupportInfo(String specialSupportInfo) {
-        this.specialSupportInfo = specialSupportInfo;
+    public VDepartmentMembershipWithDetailsEntity setDepartmentParentNames(List<String> departmentParentNames) {
+        this.departmentParentNames = departmentParentNames;
         return this;
     }
 
-    public String getAdditionalInfo() {
-        return additionalInfo;
+    public List<Integer> getDepartmentParentIds() {
+        return departmentParentIds;
     }
 
-    public VDepartmentMembershipWithDetailsEntity setAdditionalInfo(String additionalInfo) {
-        this.additionalInfo = additionalInfo;
+    public VDepartmentMembershipWithDetailsEntity setDepartmentParentIds(List<Integer> departmentParentIds) {
+        this.departmentParentIds = departmentParentIds;
         return this;
     }
 
-    public Integer getDepth() {
-        return depth;
+    public List<Map<String, Object>> getDomainRoles() {
+        return domainRoles;
     }
 
-    public VDepartmentMembershipWithDetailsEntity setDepth(Integer depth) {
-        this.depth = depth;
+    public VDepartmentMembershipWithDetailsEntity setDomainRoles(List<Map<String, Object>> domainRoles) {
+        this.domainRoles = domainRoles;
         return this;
     }
 
-    public Integer getParentDepartmentId() {
-        return parentDepartmentId;
+    public List<String> getDomainRolePermissions() {
+        return domainRolePermissions;
     }
 
-    public VDepartmentMembershipWithDetailsEntity setParentDepartmentId(Integer parentDepartmentId) {
-        this.parentDepartmentId = parentDepartmentId;
-        return this;
-    }
-
-    public List<String> getParentNames() {
-        return parentNames;
-    }
-
-    public VDepartmentMembershipWithDetailsEntity setParentNames(List<String> parentNames) {
-        this.parentNames = parentNames;
-        return this;
-    }
-
-    public List<Integer> getParentIds() {
-        return parentIds;
-    }
-
-    public VDepartmentMembershipWithDetailsEntity setParentIds(List<Integer> parentIds) {
-        this.parentIds = parentIds;
-        return this;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public VDepartmentMembershipWithDetailsEntity setEmail(String email) {
-        this.email = email;
-        return this;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public VDepartmentMembershipWithDetailsEntity setFirstName(String firstName) {
-        this.firstName = firstName;
-        return this;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public VDepartmentMembershipWithDetailsEntity setLastName(String lastName) {
-        this.lastName = lastName;
-        return this;
-    }
-
-    public String getFullName() {
-        return fullName;
-    }
-
-    public VDepartmentMembershipWithDetailsEntity setFullName(String fullName) {
-        this.fullName = fullName;
-        return this;
-    }
-
-    public Boolean getEnabled() {
-        return enabled;
-    }
-
-    public VDepartmentMembershipWithDetailsEntity setEnabled(Boolean enabled) {
-        this.enabled = enabled;
-        return this;
-    }
-
-    public Boolean getVerified() {
-        return verified;
-    }
-
-    public VDepartmentMembershipWithDetailsEntity setVerified(Boolean verified) {
-        this.verified = verified;
-        return this;
-    }
-
-    public Integer getGlobalRole() {
-        return globalRole;
-    }
-
-    public VDepartmentMembershipWithDetailsEntity setGlobalRole(Integer globalRole) {
-        this.globalRole = globalRole;
-        return this;
-    }
-
-    public Boolean getDeletedInIdp() {
-        return deletedInIdp;
-    }
-
-    public VDepartmentMembershipWithDetailsEntity setDeletedInIdp(Boolean deletedInIdp) {
-        this.deletedInIdp = deletedInIdp;
-        return this;
+    public void setDomainRolePermissions(List<String> domainRolePermissions) {
+        this.domainRolePermissions = domainRolePermissions;
     }
 
     // endregion

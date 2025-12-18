@@ -521,7 +521,7 @@ export function ProcessDetailsPage() {
 
                 <Paper
                     sx={{
-                        width: 480,
+                        width: 720,
                         overflowY: 'auto',
                         p: 2,
                     }}

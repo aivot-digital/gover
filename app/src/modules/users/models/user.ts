@@ -16,4 +16,5 @@ export interface User {
     isSuperAdmin: boolean;
     isSystemAdmin: boolean;
     deletedInIdp: boolean;
+    systemRoleId: number | null;
 }

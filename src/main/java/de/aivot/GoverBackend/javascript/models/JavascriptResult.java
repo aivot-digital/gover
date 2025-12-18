@@ -162,4 +162,11 @@ public class JavascriptResult {
     public String getErrOutput() {
         return errOutput;
     }
+
+    public String toString() {
+        if (isNull() || value == null) {
+            return "null";
+        }
+        return value.toString();
+    }
 }

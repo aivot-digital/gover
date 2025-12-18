@@ -88,19 +88,25 @@ public class ProcessNodeExecutionResultHandler {
                     processInstance.setFinished(LocalDateTime.now());
                     processInstanceRepository.save(processInstance);
                 } else {
-                    var newMetadata = taskCompleted.getMetadata();
-                    if (newMetadata == null) {
-                        newMetadata = new HashMap<>();
+                    var newRuntimeData = taskCompleted.getRuntimeData();
+                    if (newRuntimeData == null) {
+                        newRuntimeData = new HashMap<>();
                     }
-                    processInstanceTask.setMetaData(newMetadata);
+                    processInstanceTask.setRuntimeData(newRuntimeData);
 
-                    var newWorkingData = taskCompleted.getOutput();
-                    if (newWorkingData == null) {
-                        newWorkingData = previousTask != null ?
-                                previousTask.getWorkingData() :
+                    var newNodeData = taskCompleted.getNodeData();
+                    if (newNodeData == null) {
+                        newNodeData = new HashMap<>();
+                    }
+                    processInstanceTask.setNodeData(newNodeData);
+
+                    var newProcessData = taskCompleted.getProcessData();
+                    if (newProcessData == null) {
+                        newProcessData = previousTask != null ?
+                                previousTask.getProcessData() :
                                 processInstance.getInitialPayload();
                     }
-                    processInstanceTask.setWorkingData(newWorkingData);
+                    processInstanceTask.setProcessData(newProcessData);
 
                     processInstanceTask.setStatus(ProcessTaskStatus.Completed);
                     processInstanceTask.setFinished(LocalDateTime.now());
@@ -117,19 +123,25 @@ public class ProcessNodeExecutionResultHandler {
                 }
             }
             case ProcessNodeExecutionResultInstanceCompleted instanceCompleted -> {
-                var newMetadata = instanceCompleted.getMetadata();
+                var newRuntimeData = instanceCompleted.getRuntimeData();
+                if (newRuntimeData == null) {
+                    newRuntimeData = new HashMap<>();
+                }
+                processInstanceTask.setRuntimeData(newRuntimeData);
+
+                var newMetadata = instanceCompleted.getNodeData();
                 if (newMetadata == null) {
                     newMetadata = new HashMap<>();
                 }
-                processInstanceTask.setMetaData(newMetadata);
+                processInstanceTask.setNodeData(newMetadata);
 
-                var newWorkingData = instanceCompleted.getOutput();
+                var newWorkingData = instanceCompleted.getProcessData();
                 if (newWorkingData == null) {
                     newWorkingData = previousTask != null ?
-                            previousTask.getWorkingData() :
+                            previousTask.getProcessData() :
                             processInstance.getInitialPayload();
                 }
-                processInstanceTask.setWorkingData(newWorkingData);
+                processInstanceTask.setProcessData(newWorkingData);
 
                 processInstanceTask.setStatus(ProcessTaskStatus.Completed);
                 processInstanceTask.setFinished(LocalDateTime.now());
@@ -140,19 +152,25 @@ public class ProcessNodeExecutionResultHandler {
                 processInstanceRepository.save(processInstance);
             }
             case ProcessNodeExecutionResultTaskAssigned assigned -> {
-                var newMetadata = assigned.getMetadata();
+                var newRuntimeData = assigned.getRuntimeData();
+                if (newRuntimeData == null) {
+                    newRuntimeData = new HashMap<>();
+                }
+                processInstanceTask.setRuntimeData(newRuntimeData);
+
+                var newMetadata = assigned.getNodeData();
                 if (newMetadata == null) {
                     newMetadata = new HashMap<>();
                 }
-                processInstanceTask.setMetaData(newMetadata);
+                processInstanceTask.setNodeData(newMetadata);
 
-                var newWorkingData = assigned.getOutput();
+                var newWorkingData = assigned.getProcessData();
                 if (newWorkingData == null) {
                     newWorkingData = previousTask != null ?
-                            previousTask.getWorkingData() :
+                            previousTask.getProcessData() :
                             processInstance.getInitialPayload();
                 }
-                processInstanceTask.setWorkingData(newWorkingData);
+                processInstanceTask.setProcessData(newWorkingData);
                 processInstanceTask.setAssignedUserId(assigned.getAssignedUserId());
                 processInstanceTaskRepository.save(processInstanceTask);
                 // TODO: send notification

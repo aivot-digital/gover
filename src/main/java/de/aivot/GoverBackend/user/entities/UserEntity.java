@@ -18,10 +18,6 @@ import java.util.Optional;
 @Entity
 @Table(name = "users")
 public class UserEntity {
-    public static final Integer DEFAULT_USER_ROLE_VALUE = 0;
-    public static final Integer SYSTEM_ADMIN_ROLE_VALUE = 1;
-    public static final Integer SUPER_ADMIN_ROLE_VALUE = 2;
-
     @Id
     @Nonnull
     @Column(length = 36)
@@ -47,6 +43,10 @@ public class UserEntity {
     private String lastName;
 
     @Nonnull
+    @Column(insertable = false, updatable = false)
+    private String fullName;
+
+    @Nonnull
     @ColumnDefault("FALSE")
     private Boolean enabled;
 
@@ -58,22 +58,28 @@ public class UserEntity {
     @ColumnDefault("FALSE")
     private Boolean deletedInIdp;
 
-    @Nonnull
-    @ColumnDefault("0")
-    private Integer globalRole;
+    @Nullable
+    @ColumnDefault("null")
+    private Integer systemRoleId;
 
     // region Properties
 
-    public String getFullName() {
-        return String.join(" ", firstName, lastName);
-    }
-
+    /**
+     * @deprecated TODO: REMOVE
+     * @return
+     */
+    @Deprecated
     public Boolean getIsSuperAdmin() {
-        return globalRole >= SUPER_ADMIN_ROLE_VALUE;
+        return true;
     }
 
+    /**
+     * @deprecated TODO: REMOVE
+     * @return
+     */
+    @Deprecated
     public Boolean getIsSystemAdmin() {
-        return globalRole >= SYSTEM_ADMIN_ROLE_VALUE;
+        return true;
     }
 
     // endregion
@@ -143,7 +149,7 @@ public class UserEntity {
                 .setLastName(keycloakUser.getLastName())
                 .setEnabled(keycloakUser.getEnabled())
                 .setVerified(keycloakUser.getEmailVerified())
-                .setGlobalRole(DEFAULT_USER_ROLE_VALUE)
+                .setSystemRoleId(null)
                 .setDeletedInIdp(false);
     }
 
@@ -221,13 +227,23 @@ public class UserEntity {
         return this;
     }
 
-    @Nonnull
-    public Integer getGlobalRole() {
-        return globalRole;
+    @Nullable
+    public Integer getSystemRoleId() {
+        return systemRoleId;
     }
 
-    public UserEntity setGlobalRole(@Nonnull Integer globalRole) {
-        this.globalRole = globalRole;
+    public UserEntity setSystemRoleId(@Nullable Integer globalRole) {
+        this.systemRoleId = globalRole;
+        return this;
+    }
+
+    @Nonnull
+    public String getFullName() {
+        return fullName;
+    }
+
+    public UserEntity setFullName(@Nonnull String fullName) {
+        this.fullName = fullName;
         return this;
     }
 

@@ -222,13 +222,13 @@ export function ProcessInstanceTaskListPage() {
                                             Arbeitsdaten der Aufgabe:
                                         </Typography>
                                         <ExpandableCodeBlock
-                                            value={JSON.stringify(item.workingData, null, 2)}
+                                            value={JSON.stringify(item.processData, null, 2)}
                                         />
                                         <Typography variant="h6">
                                             Metadaten der Aufgabe:
                                         </Typography>
                                         <ExpandableCodeBlock
-                                            value={JSON.stringify(item.metaData, null, 2)}
+                                            value={JSON.stringify(item.nodeData, null, 2)}
                                         />
                                     </>
                                 ),

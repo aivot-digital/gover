@@ -200,6 +200,6 @@ public class HttpActionNode implements ProcessNodeProvider, PluginComponent {
 
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_NAME)
-                .setMetadata(metadata);
+                .setNodeData(metadata);
     }
 }

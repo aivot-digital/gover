@@ -40,7 +40,7 @@ import {
 
 const columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntityWithRoles>> = [
     {
-        field: 'name',
+        field: 'departmentName',
         headerName: 'Fachbereich',
         flex: 1,
         renderCell: (params) => (
@@ -48,7 +48,7 @@ const columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntityWithRoles>
                 to={`/departments/${params.row.departmentId}`}
                 title="Fachbereich bearbeiten"
             >
-                {String(params.row.name)}
+                {String(params.row.departmentName)}
             </CellLink>
         ),
     },
@@ -160,7 +160,7 @@ export function UserDetailsPageDepartmentMemberships() {
 
     const handleUpdateMembership = (membership: VDepartmentMembershipWithDetailsEntityWithRoles, roleIdsToAdd: number[], userRoleAssignmentIdsToRemove: number[]) => {
         dispatch(setLoadingMessage({
-            message: `Aktualisiere Rollen der Mitarbeiter:in ${membership.fullName}`,
+            message: `Aktualisiere Rollen der Mitarbeiter:in ${membership.userFullName}`,
             blocking: true,
             estimatedTime: 5000,
         }));
@@ -170,7 +170,7 @@ export function UserDetailsPageDepartmentMemberships() {
         const addPromises = roleIdsToAdd
             .map((roleId) => apiService.create({
                 id: 0,
-                departmentMembershipId: membership.id,
+                departmentMembershipId: membership.membershipId,
                 teamMembershipId: null,
                 userRoleId: roleId,
                 created: new Date().toISOString(),
@@ -231,10 +231,10 @@ export function UserDetailsPageDepartmentMemberships() {
                                 departmentSearch: options.search,
                             });
                     }}
-                    getRowIdentifier={(item) => item.id.toString()}
+                    getRowIdentifier={(item) => item.membershipId.toString()}
                     searchLabel="Organisationseinheit suchen"
                     searchPlaceholder="Titel der Organisationseinheit eingeben…"
-                    defaultSortField="name"
+                    defaultSortField="departmentName"
                     rowMenuItems={[]}
                     noDataPlaceholder="Keine Organisationseinheiten vorhanden"
                     loadingPlaceholder="Lade Organisationseinheiten…"
