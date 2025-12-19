@@ -6,6 +6,7 @@ import {ProcessInstanceListPage} from "./pages/list/process-instance-page";
 import {ProcessInstanceTaskListPage} from "./pages/list/process-instance-task-page";
 import {ProcessTaskViewPage} from "./pages/details/process-task-view-page";
 import {ProcessAssignedTaskListPage} from "./pages/list/process-assigned-task-page";
+import {ProcessFlowNodeEditor} from "./pages/details/components/process-flow-node-editor";
 
 export const processRoutes: RouteObject[] = [
     {
@@ -15,6 +16,16 @@ export const processRoutes: RouteObject[] = [
     {
         path: '/processes/:processId/versions/:processVersion',
         element: <ProcessDetailsPage/>,
+        children: [
+            {
+                index: true,
+                element: <div>Placeholder</div>,
+            },
+            {
+                path: '/processes/:processId/versions/:processVersion/nodes/:nodeId',
+                element: <ProcessFlowNodeEditor/>,
+            }
+        ],
     },
     {
         path: '/processes/:processId/versions/:processVersion/instances',

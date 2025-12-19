@@ -1,6 +1,6 @@
 import {useEffect, useMemo, useState} from "react";
 import {Box, Button, Paper} from "@mui/material";
-import {useParams} from "react-router-dom";
+import {Outlet, useNavigate, useParams} from "react-router-dom";
 import {ProcessDefinitionEntity} from "../../entities/process-definition-entity";
 import {ProcessDefinitionVersionApiService} from "../../services/process-definition-version-api-service";
 import {ProcessDefinitionNodeEntity} from "../../entities/process-definition-node-entity";
@@ -36,6 +36,7 @@ import {TextFieldComponent} from "../../../../components/text-field/text-field-c
 import {GroupLayout} from "../../../../models/elements/form/layout/group-layout";
 import {ReactFlowProvider} from "@xyflow/react";
 import ProcessChart from "@aivot/mui-material-symbols-400-outlined/dist/process-chart/ProcessChart";
+import {ProcessDetailsPageContext} from "./process-details-page-context";
 
 export interface ProcessFlow {
     definition: ProcessDefinitionEntity;
@@ -45,8 +46,9 @@ export interface ProcessFlow {
 }
 
 export function ProcessDetailsPage() {
-    const dispatch = useAppDispatch();
     const params = useParams();
+    const dispatch = useAppDispatch();
+    const navigate = useNavigate();
 
     const [processFlow, setProcessFlow] = useState<ProcessFlow | null>(null);
     const [previousProcessFlowStates, setPreviousProcessFlowStates] = useState<ProcessFlow[]>([]);
@@ -351,7 +353,7 @@ export function ProcessDetailsPage() {
             edges: processFlow.edges.filter((e) => !edgesToRemove.some((er) => er.id === e.id)),
         });
 
-        setSelectedNode(null);
+        navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processDefinitionVersion}`);
     };
 
     const handleSaveNode = async (node: ProcessDefinitionNodeEntity) => {
@@ -366,8 +368,6 @@ export function ProcessDetailsPage() {
             ...processFlow,
             nodes: processFlow.nodes.map((n) => n.id === updated.id ? updated : n),
         });
-
-        setSelectedNode(null);
     }
 
     if (processFlow == null) {
@@ -461,7 +461,12 @@ export function ProcessDetailsPage() {
                                 nodeProviders={availableNodeProviders}
                                 selectedNode={selectedNode}
                                 onSelectNode={(node) => {
+                                    if (node == null) {
+                                        setSelectedNode(null);
+                                        return;
+                                    }
                                     setSelectedNode(node);
+                                    navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processDefinitionVersion}/nodes/${node.id}`);
                                 }}
                                 onAddFollowUpNode={(fromNodeId, viaPort) => {
                                     setNewNodeFor({
@@ -526,11 +531,13 @@ export function ProcessDetailsPage() {
                         p: 2,
                     }}
                 >
-                    <Editor
-                        selectedNode={selectedNode}
-                        onSave={handleSaveNode}
-                        onDelete={handleDeleteNode}
-                    />
+                    <ProcessDetailsPageContext.Provider value={{
+                        editable: true,
+                        onSave: handleSaveNode,
+                        onDelete: handleDeleteNode,
+                    }}>
+                        <Outlet/>
+                    </ProcessDetailsPageContext.Provider>
                 </Paper>
             </Box>
 
@@ -558,125 +565,5 @@ export function ProcessDetailsPage() {
                 onSelect={handleAddInbetweenNode}
             />
         </PageWrapper>
-    );
-}
-
-interface EditorProps {
-    selectedNode: ProcessDefinitionNodeEntity | null;
-
-    onSave: (node: ProcessDefinitionNodeEntity) => void;
-    onDelete: (node: ProcessDefinitionNodeEntity) => void;
-}
-
-function Editor(props: EditorProps) {
-    const {
-        selectedNode,
-    } = props;
-
-    const [localNode, setLocalNode] = useState<ProcessDefinitionNodeEntity | null>(selectedNode);
-    const [layout, setLayout] = useState<GroupLayout | null>(null);
-
-    useEffect(() => {
-        if (selectedNode == null) {
-            setLayout(null);
-            setLocalNode(null)
-        } else {
-            setLocalNode(selectedNode);
-            new ProcessDefinitionNodeApiService()
-                .getConfigurationLayout(selectedNode.id)
-                .then(setLayout);
-        }
-    }, [selectedNode]);
-
-    const handleSaveSelected = () => {
-        if (localNode != null) {
-            props.onSave(localNode);
-        }
-    };
-
-    const handleDeleteSelected = () => {
-        if (selectedNode == null) {
-            return;
-        }
-
-        props.onDelete(selectedNode);
-        // TODO: show error because there are edits
-    };
-
-    if (selectedNode == null) {
-        return (
-            <Box>
-                Placeholder
-            </Box>
-        );
-    }
-
-    return (
-        <>
-            <TextFieldComponent
-                label="Eindeutiger Zugriffsschlüssel"
-                value={selectedNode.dataKey}
-                onChange={(val) => {
-                    setLocalNode({
-                        ...(localNode ?? selectedNode),
-                        dataKey: val ?? '',
-                    });
-                }}
-                required={true}
-                maxCharacters={32}
-            />
-
-            <TextFieldComponent
-                label="Name"
-                value={selectedNode.name}
-                onChange={(val) => {
-                    setLocalNode({
-                        ...(localNode ?? selectedNode),
-                        name: val ?? null,
-                    });
-                }}
-                maxCharacters={96}
-            />
-
-            <TextFieldComponent
-                label="Kurzbeschreibung"
-                value={selectedNode.description}
-                onChange={(val) => {
-                    setLocalNode({
-                        ...(localNode ?? selectedNode),
-                        description: val ?? null,
-                    });
-                }}
-                multiline={true}
-                maxCharacters={512}
-            />
-
-            {
-                layout != null &&
-                <ElementDerivationContext
-                    element={layout}
-                    elementData={(localNode ?? selectedNode).configuration}
-                    onElementDataChange={(elementData) => {
-                        console.log('Element data changed:', elementData);
-                        setLocalNode({
-                            ...(localNode ?? selectedNode),
-                            configuration: elementData,
-                        });
-                    }}
-                />
-            }
-
-            <Button
-                onClick={handleSaveSelected}
-            >
-                Knoten speichern
-            </Button>
-
-            <Button
-                onClick={handleDeleteSelected}
-            >
-                Knoten entfernen
-            </Button>
-        </>
     );
 }
