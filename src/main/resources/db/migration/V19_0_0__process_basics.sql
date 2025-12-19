@@ -286,11 +286,30 @@ create table process_instance_history_events
 (
     id                       bigserial   not null,
 
+    -- The type of this event
+    -- Options are:
+    --  0 - Start
+    --  1 - Update
+    --  2 - Error
+    --  3 - Completion
+    type                     smallint    not null default 0,
+
+    -- The title and message of this event
+    title                    varchar(96) not null,
+    message                  text        not null default '',
+
+    -- The details of this event
+    details                  jsonb       not null default '{}',
+
+    -- The timestamp of this event
     timestamp                timestamp   not null default now(),
 
+    -- The user who triggered this event, if any
     triggering_user_id       varchar(36) null,
 
+    -- The process instance this event belongs to
     process_instance_id      bigint      not null,
+    -- The process instance task this event belongs to, if any
     process_instance_task_id bigint      null,
 
     primary key (id),

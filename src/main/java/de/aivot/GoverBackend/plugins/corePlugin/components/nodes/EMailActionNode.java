@@ -10,6 +10,7 @@ import de.aivot.GoverBackend.process.entities.ProcessDefinitionEntity;
 import de.aivot.GoverBackend.process.entities.ProcessDefinitionNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessDefinitionVersionEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
+import de.aivot.GoverBackend.process.enums.ProcessHistoryEventType;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.services.ProcessDataService;
@@ -17,7 +18,6 @@ import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
@@ -140,7 +140,7 @@ public class EMailActionNode implements ProcessNodeProvider, PluginComponent {
                         );
 
         if (StringUtils.isNullOrEmpty(recipient)) {
-            return ProcessNodeExecutionResultError.of("Empfänger:in darf nicht leer sein.");
+            return ProcessNodeExecutionResultError.of("Die Empfänger:in darf nicht leer sein.");
         }
 
         var subject =
@@ -155,7 +155,7 @@ public class EMailActionNode implements ProcessNodeProvider, PluginComponent {
                         );
 
         if (StringUtils.isNullOrEmpty(subject)) {
-            return ProcessNodeExecutionResultError.of("Betreff darf nicht leer sein.");
+            return ProcessNodeExecutionResultError.of("Der Betreff darf nicht leer sein.");
         }
 
         var content =
@@ -170,7 +170,7 @@ public class EMailActionNode implements ProcessNodeProvider, PluginComponent {
                         );
 
         if (StringUtils.isNullOrEmpty(content)) {
-            return ProcessNodeExecutionResultError.of("Inhalt darf nicht leer sein.");
+            return ProcessNodeExecutionResultError.of("Der Inhalt darf nicht leer sein.");
         }
 
         var mimeMessage = mailSender.createMimeMessage();
@@ -194,6 +194,11 @@ public class EMailActionNode implements ProcessNodeProvider, PluginComponent {
 
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_NAME)
-                .setNodeData(metadata);
+                .setNodeData(metadata)
+                .addEvent(ProcessNodeExecutionEvent.of(
+                        ProcessHistoryEventType.Complete,
+                        "E-Mail versendet an " + recipient,
+                        "Die E-Mail wurde erfolgreich versendet."
+                ));
     }
 }

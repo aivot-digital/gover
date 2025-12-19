@@ -3,6 +3,8 @@ package de.aivot.GoverBackend.process.entities;
 import de.aivot.GoverBackend.core.converters.ElementDataConverter;
 import de.aivot.GoverBackend.core.converters.JsonObjectConverter;
 import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.process.models.ProcessNodeProvider;
+import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
@@ -55,6 +57,17 @@ public class ProcessDefinitionNodeEntity {
     @Convert(converter = ElementDataConverter.class)
     @Column(columnDefinition = "jsonb")
     private ElementData configuration;
+
+    // region Utils
+
+    public String resolveName(ProcessNodeProvider provider) {
+        if (StringUtils.isNotNullOrEmpty(name)) {
+            return name;
+        }
+        return provider.getName();
+    }
+
+    // endregion
 
     // region Getters and Setters
 

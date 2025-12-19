@@ -1,10 +1,14 @@
 package de.aivot.GoverBackend.process.models;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 public class ProcessNodeExecutionResultError extends ProcessNodeExecutionResult {
-    @Nonnull
+    @Nullable
     private String message;
+
+    @Nullable
+    private Throwable throwable;
 
     // region constructor
 
@@ -12,8 +16,10 @@ public class ProcessNodeExecutionResultError extends ProcessNodeExecutionResult 
         this.message = "Es ist ein unbekannter Fehler aufgetreten.";
     }
 
-    public ProcessNodeExecutionResultError(@Nonnull String message) {
+    public ProcessNodeExecutionResultError(@Nullable String message,
+                                           @Nullable Throwable throwable) {
         this.message = message;
+        this.throwable = throwable;
     }
 
     // endregion
@@ -21,22 +27,33 @@ public class ProcessNodeExecutionResultError extends ProcessNodeExecutionResult 
     // region factory methods
 
     public static ProcessNodeExecutionResultError of(@Nonnull String message) {
-        return new ProcessNodeExecutionResultError(message);
+        return new ProcessNodeExecutionResultError(message, null);
     }
 
     public static ProcessNodeExecutionResultError of(@Nonnull Throwable throwable) {
-        return new ProcessNodeExecutionResultError(throwable.getLocalizedMessage());
+        return new ProcessNodeExecutionResultError(null, throwable);
     }
 
     // endregion
 
-    @Nonnull
+
+    @Nullable
     public String getMessage() {
         return message;
     }
 
-    public ProcessNodeExecutionResultError setMessage(@Nonnull String message) {
+    public ProcessNodeExecutionResultError setMessage(@Nullable String message) {
         this.message = message;
+        return this;
+    }
+
+    @Nullable
+    public Throwable getThrowable() {
+        return throwable;
+    }
+
+    public ProcessNodeExecutionResultError setThrowable(@Nullable Throwable throwable) {
+        this.throwable = throwable;
         return this;
     }
 }

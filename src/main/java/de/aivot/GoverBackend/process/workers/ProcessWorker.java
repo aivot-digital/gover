@@ -1,10 +1,13 @@
 package de.aivot.GoverBackend.process.workers;
 
+import de.aivot.GoverBackend.process.entities.ProcessInstanceHistoryEventEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
+import de.aivot.GoverBackend.process.enums.ProcessHistoryEventType;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultError;
 import de.aivot.GoverBackend.process.repositories.ProcessDefinitionNodeRepository;
+import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.GoverBackend.process.services.ProcessDataService;
@@ -22,13 +25,12 @@ import org.springframework.stereotype.Service;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 
 @Service
 public class ProcessWorker {
-    private static final Logger logger = LoggerFactory.getLogger(ProcessWorker.class);
-
     public static final String DO_WORK_ON_INSTANCE_QUEUE = "do-work-on-instance-queue";
 
     private final ProcessInstanceRepository processInstanceRepository;
@@ -37,19 +39,23 @@ public class ProcessWorker {
     private final ProcessInstanceTaskRepository processInstanceTaskRepository;
     private final ProcessNodeExecutionResultHandler processNodeExecutionResultHandler;
     private final ProcessDataService processDataService;
+    private final ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository;
 
     @Autowired
     public ProcessWorker(ProcessInstanceRepository processInstanceRepository,
                          ProcessDefinitionNodeRepository processDefinitionNodeRepository,
                          ProcessNodeProviderService processNodeProviderService,
                          ProcessInstanceTaskRepository processInstanceTaskRepository,
-                         ProcessNodeExecutionResultHandler processNodeExecutionResultHandler, ProcessDataService processDataService) {
+                         ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
+                         ProcessDataService processDataService,
+                         ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository) {
         this.processInstanceRepository = processInstanceRepository;
         this.processDefinitionNodeRepository = processDefinitionNodeRepository;
         this.processNodeProviderService = processNodeProviderService;
         this.processInstanceTaskRepository = processInstanceTaskRepository;
         this.processNodeExecutionResultHandler = processNodeExecutionResultHandler;
         this.processDataService = processDataService;
+        this.processInstanceHistoryEventRepository = processInstanceHistoryEventRepository;
     }
 
     @Bean
@@ -65,28 +71,35 @@ public class ProcessWorker {
                     payload.previousNodeId(),
                     payload.nextNodeId()
             );
-        } catch (Exception e) {
-            logger
-                    .atError()
-                    .setMessage("Error processing payload for Process Instance ID: {}")
-                    .addArgument(payload.processInstanceId())
-                    .setCause(e)
-                    .log();
+        } catch (Exception error) {
+            processInstanceHistoryEventRepository.save(ProcessInstanceHistoryEventEntity.from(
+                    payload.processInstanceId(),
+                    null,
+                    null,
+                    error
+            ));
+            // TODO: Create notification for failed process execution
         }
     }
 
     private void process(@Nonnull Long processInstanceId, @Nullable Integer previousNodeId, @Nonnull Integer nodeId) {
         var processInstance = processInstanceRepository
                 .findById(processInstanceId)
-                .orElseThrow(() -> new RuntimeException("Process Instance not found"));
+                .orElseThrow(() -> new RuntimeException(
+                        "Der Vorgang mit der ID „%d“ wurde nicht gefunden.".formatted(processInstanceId)
+                ));
 
         var currentNode = processDefinitionNodeRepository
                 .findById(nodeId)
-                .orElseThrow(() -> new RuntimeException("Process Definition Node not found"));
+                .orElseThrow(() -> new RuntimeException(
+                        "Das Prozesselement mit der ID „%d“ wurde nicht gefunden.".formatted(nodeId)
+                ));
 
         var currentNodeProvider = processNodeProviderService
                 .getProcessNodeProvider(currentNode.getCodeKey())
-                .orElseThrow(() -> new RuntimeException("Process Node Provider not found"));
+                .orElseThrow(() -> new RuntimeException(
+                        "Der Prozesselement-Funktionsanbieter für den Knoten mit dem Schlüssel „%s“ wurde nicht gefunden.".formatted(currentNode.getCodeKey())
+                ));
 
         var taskEntity = processInstanceTaskRepository.save(
                 new ProcessInstanceTaskEntity(
@@ -110,6 +123,18 @@ public class ProcessWorker {
                 )
         );
 
+        processInstanceHistoryEventRepository.save(new ProcessInstanceHistoryEventEntity(
+                null,
+                ProcessHistoryEventType.Start,
+                "Aufgabe gestartet",
+                "Die Aufgabe für das Prozesselement „%s“ wurde gestartet.".formatted(currentNode.resolveName(currentNodeProvider)),
+                Map.of(),
+                LocalDateTime.now(),
+                null,
+                processInstance.getId(),
+                taskEntity.getId()
+        ));
+
         try {
             var processData = processDataService
                     .foldProcessInstanceData(
@@ -126,13 +151,14 @@ public class ProcessWorker {
                                 processData
                         );
             } catch (Exception e) {
-                res = new ProcessNodeExecutionResultError()
-                        .setMessage(e.getLocalizedMessage());
+                throw e;
             }
 
             if (res == null) {
-                res = new ProcessNodeExecutionResultError()
-                        .setMessage("Process Node returned null result");
+                throw new RuntimeException(
+                        "Der Prozessknoten-Funktionsanbieter „%s“ für das Prozesselement „%s“ lieferte kein Ergebnis zurück."
+                                .formatted(currentNodeProvider.getName(), currentNode.resolveName(currentNodeProvider))
+                );
             }
 
             ProcessInstanceTaskEntity previousTask;
@@ -146,9 +172,10 @@ public class ProcessWorker {
                 previousTask = null;
             }
 
-
             processNodeExecutionResultHandler
                     .handleResult(
+                            null,
+                            currentNodeProvider,
                             currentNode,
                             processInstance,
                             taskEntity,
@@ -156,22 +183,15 @@ public class ProcessWorker {
                             res
                     );
         } catch (Exception e) {
-            logger
-                    .atError()
-                    .setMessage("Error executing process node ID: {} for Process Instance ID: {}")
-                    .addArgument(currentNode.getId())
-                    .addArgument(processInstance.getId())
-                    .setCause(e)
-                    .log();
-
             processNodeExecutionResultHandler
                     .handleResult(
+                            null,
+                            currentNodeProvider,
                             currentNode,
                             processInstance,
                             taskEntity,
                             null,
-                            new ProcessNodeExecutionResultError()
-                                    .setMessage(e.getLocalizedMessage())
+                            ProcessNodeExecutionResultError.of(e)
                     );
         }
     }

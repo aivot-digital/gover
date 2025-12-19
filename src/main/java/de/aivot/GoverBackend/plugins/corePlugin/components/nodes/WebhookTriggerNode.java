@@ -11,10 +11,8 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.corePlugin.Core;
-import de.aivot.GoverBackend.process.entities.ProcessDefinitionEntity;
-import de.aivot.GoverBackend.process.entities.ProcessDefinitionNodeEntity;
-import de.aivot.GoverBackend.process.entities.ProcessDefinitionVersionEntity;
-import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
+import de.aivot.GoverBackend.process.entities.*;
+import de.aivot.GoverBackend.process.enums.ProcessHistoryEventType;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
@@ -22,6 +20,7 @@ import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskComple
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
 import de.aivot.GoverBackend.process.models.ProcessNodeProvider;
 import de.aivot.GoverBackend.process.repositories.ProcessDefinitionNodeRepository;
+import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.GoverBackend.process.services.ProcessInstanceService;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.utils.StringUtils;
@@ -48,14 +47,16 @@ public class WebhookTriggerNode implements ProcessNodeProvider, PluginComponent 
     private final GoverConfig goverConfig;
     private final ProcessInstanceService processInstanceService;
     private final ProcessDefinitionNodeRepository processDefinitionNodeRepository;
+    private final ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository;
 
     @Autowired
     public WebhookTriggerNode(GoverConfig goverConfig,
                               ProcessInstanceService processInstanceService,
-                              ProcessDefinitionNodeRepository processDefinitionNodeRepository) {
+                              ProcessDefinitionNodeRepository processDefinitionNodeRepository, ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository) {
         this.goverConfig = goverConfig;
         this.processInstanceService = processInstanceService;
         this.processDefinitionNodeRepository = processDefinitionNodeRepository;
+        this.processInstanceHistoryEventRepository = processInstanceHistoryEventRepository;
     }
 
     @Override

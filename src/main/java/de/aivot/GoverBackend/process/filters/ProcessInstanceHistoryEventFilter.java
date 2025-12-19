@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 
 public class ProcessInstanceHistoryEventFilter implements Filter<ProcessInstanceHistoryEventEntity> {
     private Long id;
-    private LocalDateTime timestamp;
     private String triggeringUserId;
     private Long processInstanceId;
     private Long processInstanceTaskId;
@@ -25,8 +24,7 @@ public class ProcessInstanceHistoryEventFilter implements Filter<ProcessInstance
         var builder = SpecificationBuilder
                 .create(ProcessInstanceHistoryEventEntity.class)
                 .withEquals("id", id)
-                .withEquals("timestamp", timestamp)
-                .withContains("triggeringUserId", triggeringUserId)
+                .withEquals("triggeringUserId", triggeringUserId)
                 .withEquals("processInstanceId", processInstanceId)
                 .withEquals("processInstanceTaskId", processInstanceTaskId);
 
@@ -39,15 +37,6 @@ public class ProcessInstanceHistoryEventFilter implements Filter<ProcessInstance
 
     public ProcessInstanceHistoryEventFilter setId(Long id) {
         this.id = id;
-        return this;
-    }
-
-    public LocalDateTime getTimestamp() {
-        return timestamp;
-    }
-
-    public ProcessInstanceHistoryEventFilter setTimestamp(LocalDateTime timestamp) {
-        this.timestamp = timestamp;
         return this;
     }
 

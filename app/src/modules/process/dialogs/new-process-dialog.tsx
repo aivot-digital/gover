@@ -1,19 +1,15 @@
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import {ProcessDefinitionEntity} from "../entities/process-definition-entity";
-import {ProcessDefinitionVersionEntity} from "../entities/process-definition-version-entity";
 import {DialogTitleWithClose} from "../../../components/dialog-title-with-close/dialog-title-with-close";
 import Stepper from "@mui/material/Stepper";
 import {Box, Button, Grid, Step, StepLabel, SvgIconProps, SxProps} from "@mui/material";
-import {FC, ReactNode, useEffect, useState} from "react";
+import {FC, useEffect, useState} from "react";
 import Typography from "@mui/material/Typography";
 import UploadFile from "@aivot/mui-material-symbols-400-outlined/dist/upload-file/UploadFile";
 import {ProcessTemplates} from "../data/templates";
 import {uploadObjectFile} from "../../../utils/download-utils";
-import {DataObjectSchema} from "../../data-objects/models/data-object-schema";
-import {v4 as uuid4} from "uuid";
 import {ProcessExport, ProcessExportData} from "../entities/process-export";
-import {VDepartmentShadowedEntity} from "../../departments/entities/v-department-shadowed-entity";
 import {
     VDepartmentMembershipWithDetailsService
 } from "../../departments/services/v-department-membership-with-details-service";

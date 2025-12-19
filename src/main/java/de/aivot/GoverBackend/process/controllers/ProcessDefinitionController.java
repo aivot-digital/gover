@@ -52,6 +52,7 @@ public class ProcessDefinitionController {
     private final ProcessDefinitionVersionService processDefinitionVersionService;
     private final ProcessDefinitionNodeService processDefinitionNodeService;
     private final ProcessDefinitionEdgeService processDefinitionEdgeService;
+    private final ProcessNodeProviderService processNodeProviderService;
 
     @Autowired
     public ProcessDefinitionController(AuditService auditService,
@@ -63,7 +64,7 @@ public class ProcessDefinitionController {
                                        ProcessDefinitionVersionRepository processDefinitionVersionRepository,
                                        ProcessDefinitionVersionService processDefinitionVersionService,
                                        ProcessDefinitionNodeService processDefinitionNodeService,
-                                       ProcessDefinitionEdgeService processDefinitionEdgeService) {
+                                       ProcessDefinitionEdgeService processDefinitionEdgeService, ProcessNodeProviderService processNodeProviderService) {
         this.auditService = auditService.createScopedAuditService(ProcessDefinitionController.class);
 
         this.userService = userService;
@@ -75,6 +76,7 @@ public class ProcessDefinitionController {
         this.processDefinitionVersionService = processDefinitionVersionService;
         this.processDefinitionNodeService = processDefinitionNodeService;
         this.processDefinitionEdgeService = processDefinitionEdgeService;
+        this.processNodeProviderService = processNodeProviderService;
     }
 
     @GetMapping("")
@@ -166,10 +168,18 @@ public class ProcessDefinitionController {
         for (var node : exportData.nodes()) {
             var originalId = node.getId();
 
+            var provider = processNodeProviderService
+                    .getProcessNodeProvider(node.getCodeKey())
+                    .orElseThrow(() -> ResponseException.badRequest("Der Prozessknoten-Typ '%s' ist nicht verfügbar.".formatted(node.getCodeKey())));
+
+            var config = provider
+                    .prefillConfigurationOnImport(node.getConfiguration());
+
             var addedNode = processDefinitionNodeService
                     .create(node
                             .setProcessDefinitionId(newProcess.getId())
                             .setProcessDefinitionVersion(newVersion.getProcessDefinitionVersion())
+                            .setConfiguration(config)
                     );
 
             savedNodeIdMap

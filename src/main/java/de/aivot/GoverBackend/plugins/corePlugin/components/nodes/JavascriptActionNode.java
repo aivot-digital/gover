@@ -11,17 +11,15 @@ import de.aivot.GoverBackend.process.entities.ProcessDefinitionEntity;
 import de.aivot.GoverBackend.process.entities.ProcessDefinitionNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessDefinitionVersionEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
+import de.aivot.GoverBackend.process.enums.ProcessHistoryEventType;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.models.*;
-import de.aivot.GoverBackend.process.repositories.ProcessDefinitionNodeRepository;
-import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.GoverBackend.process.services.ProcessDataService;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,13 +29,9 @@ public class JavascriptActionNode implements ProcessNodeProvider, PluginComponen
 
     private static final String CODE_FIELD_KEY = "js_code";
     private final JavascriptEngineFactoryService javascriptEngineFactoryService;
-    private final ProcessInstanceTaskRepository processInstanceTaskRepository;
-    private final ProcessDefinitionNodeRepository processDefinitionNodeRepository;
 
-    public JavascriptActionNode(JavascriptEngineFactoryService javascriptEngineFactoryService, ProcessInstanceTaskRepository processInstanceTaskRepository, ProcessDefinitionNodeRepository processDefinitionNodeRepository) {
+    public JavascriptActionNode(JavascriptEngineFactoryService javascriptEngineFactoryService) {
         this.javascriptEngineFactoryService = javascriptEngineFactoryService;
-        this.processInstanceTaskRepository = processInstanceTaskRepository;
-        this.processDefinitionNodeRepository = processDefinitionNodeRepository;
     }
 
     @Nonnull
@@ -128,7 +122,12 @@ public class JavascriptActionNode implements ProcessNodeProvider, PluginComponen
 
                 return new ProcessNodeExecutionResultTaskCompleted()
                         .setViaPort(PORT_NAME)
-                        .setProcessData(result.asMap());
+                        .setProcessData(result.asMap())
+                        .addEvent(ProcessNodeExecutionEvent.of(
+                                ProcessHistoryEventType.Complete,
+                                "Javascript-Code erfolgreich ausgeführt.",
+                                "Der benutzerdefinierte Javascript-Code wurde erfolgreich ausgeführt."
+                        ));
             } catch (Exception e) {
                 return new ProcessNodeExecutionResultError()
                         .setMessage(e.getLocalizedMessage());

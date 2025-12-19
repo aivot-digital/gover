@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.core.services;
 
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.userRoles.repositories.VUserDomainPermissionRepository;
 import de.aivot.GoverBackend.userRoles.repositories.VUserSystemPermissionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,10 @@ public class PermissionService {
             return;
         }
         throw ResponseException.forbidden("Sie benötigen die Berechtigung „" + permission + "“ im System.");
+    }
+
+    public void hasSystemPermissionThrows(UserEntity user, String permission) throws ResponseException  {
+        hasSystemPermissionThrows(user.getId(), permission);
     }
 
     public boolean hasDepartmentPermission(String userId, Integer departmentId, String permission) {

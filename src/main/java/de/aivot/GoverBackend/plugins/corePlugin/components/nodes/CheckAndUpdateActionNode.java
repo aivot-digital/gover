@@ -13,6 +13,7 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.corePlugin.Core;
 import de.aivot.GoverBackend.process.entities.*;
+import de.aivot.GoverBackend.process.enums.ProcessHistoryEventType;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.user.entities.UserEntity;
@@ -35,7 +36,6 @@ public class CheckAndUpdateActionNode implements ProcessNodeProvider, PluginComp
     private static final String USER_OPTIONS_FIELD_ID = "userOptions";
 
     private static final String ACCEPT_EVENT_NAME = "accept";
-    ;
     private static final String REJECT_EVENT_NAME = "reject";
 
     private final UserRepository userRepository;
@@ -207,8 +207,24 @@ public class CheckAndUpdateActionNode implements ProcessNodeProvider, PluginComp
         if (userOptions instanceof List<?> userIds && !userIds.isEmpty()) {
             var randomUserId = (String) userIds.get((int) (Math.random() * userIds.size()));
 
+            var user = userRepository
+                    .findById(randomUserId)
+                    .orElse(null);
+
+            if (user == null) {
+                return new ProcessNodeExecutionResultError()
+                        .setMessage("Der ausgewählte Benutzer mit der ID " + randomUserId + " existiert nicht.");
+            }
+
             return new ProcessNodeExecutionResultTaskAssigned()
-                    .setAssignedUserId(randomUserId);
+                    .setAssignedUserId(randomUserId)
+                    .addEvent(ProcessNodeExecutionEvent.of(
+                            ProcessHistoryEventType.Assign,
+                            "Aufgabe zur Datenprüfung und -korrektur wurde zugewiesen.",
+                            "Die Aufgabe wurde der Mitarbeiter:in " + user.getFullName() + " (" + user.getEmail() + ") zugewiesen.",
+                            Map.of()
+                    ))
+                    .setTaskStatusOverride("Zur Prüfung und Korrektur zugewiesen");
         } else {
             return new ProcessNodeExecutionResultError()
                     .setMessage("Keine gültigen Benutzeroptionen konfiguriert.");
@@ -222,10 +238,33 @@ public class CheckAndUpdateActionNode implements ProcessNodeProvider, PluginComp
                                                        @Nonnull Map<String, Object> workingData,
                                                        @Nonnull Map<String, Object> updateData,
                                                        @Nonnull String event) throws Exception {
-        if (event.equals(ACCEPT_EVENT_NAME)) {
-            return Optional.of(ProcessNodeExecutionResultTaskCompleted.of(ACCEPT_PORT_NAME));
-        } else {
-            return Optional.of(ProcessNodeExecutionResultTaskCompleted.of(REJECT_PORT_NAME));
+        if (user == null) {
+            return Optional.of(ProcessNodeExecutionResultError.of("Dieser Vorgang erfordert einen angemeldeten Benutzer."));
         }
+
+        var res = new ProcessNodeExecutionResultTaskCompleted();
+
+        if (event.equals(ACCEPT_EVENT_NAME)) {
+            res.setViaPort(ACCEPT_PORT_NAME);
+        } else {
+            res.setViaPort(REJECT_PORT_NAME);
+        }
+
+        res.setNodeData(Map.of(
+                "action", event
+        ));
+
+        res.addEvent(ProcessNodeExecutionEvent.of(
+                ProcessHistoryEventType.Complete,
+                "Datenprüfung und -korrektur abgeschlossen.",
+                "Die Mitarbeiter:in " + user.getFullName() + " hat die Datenprüfung und -korrektur abgeschlossen.",
+                Map.of(
+                        "action", event
+                )
+        ));
+
+        res.setClearTaskStatusOverride(true);
+
+        return Optional.of(res);
     }
 }

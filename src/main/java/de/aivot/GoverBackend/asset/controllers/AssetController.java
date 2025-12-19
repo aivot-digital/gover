@@ -9,6 +9,8 @@ import de.aivot.GoverBackend.asset.services.AssetService;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
+import de.aivot.GoverBackend.core.data.Permissions;
+import de.aivot.GoverBackend.core.services.PermissionService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
@@ -53,6 +55,7 @@ public class AssetController {
     private final AssetRepository assetRepository;
     private final AVService avService;
     private final UserService userService;
+    private final PermissionService permissionService;
 
     @Autowired
     public AssetController(AuditService auditService,
@@ -60,7 +63,7 @@ public class AssetController {
                            AssetStorageService assetStorageService,
                            AssetRepository assetRepository,
                            AVService avService,
-                           UserService userService) {
+                           UserService userService, PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(AssetController.class);
 
         this.assetService = assetService;
@@ -68,6 +71,7 @@ public class AssetController {
         this.assetRepository = assetRepository;
         this.avService = avService;
         this.userService = userService;
+        this.permissionService = permissionService;
     }
 
     @GetMapping(
@@ -104,9 +108,12 @@ public class AssetController {
             @Nullable @RequestPart(value = "private", required = false) Boolean privateAsset
     ) throws ResponseException {
         // TODO: Refactor with new AssetService.create method
-        var user = userService
+        var execUser = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .hasSystemPermissionThrows(execUser, Permissions.ASSET_CREATE);
 
         boolean isClean;
         try {
@@ -128,8 +135,8 @@ public class AssetController {
         asset.setKey(UUID.randomUUID());
         asset.setFilename(filename);
         asset.setCreated(LocalDateTime.now());
-        asset.setUploaderId(user.getId());
-        asset.setContentType(file.getContentType());
+        asset.setUploaderId(execUser.getId());
+        asset.setContentType(file.getContentType() != null ? file.getContentType() : "application/octet-stream");
         asset.setPrivate(privateAsset != null ? privateAsset : true);
 
         try {
@@ -140,7 +147,7 @@ public class AssetController {
 
         var createdAsset = assetRepository.save(asset);
 
-        auditService.logAction(user, AuditAction.Create, AssetEntity.class, Map.of(
+        auditService.logAction(execUser, AuditAction.Create, AssetEntity.class, Map.of(
                 "key", createdAsset.getKey(),
                 "filename", createdAsset.getFilename()
         ));

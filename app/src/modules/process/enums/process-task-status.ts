@@ -7,7 +7,7 @@ export enum ProcessTaskStatus {
 }
 
 export const ProcessTaskStatusLabels: Record<ProcessTaskStatus, string> = {
-    [ProcessTaskStatus.Running]: 'In Bearbeitung',
+    [ProcessTaskStatus.Running]: 'Läuft',
     [ProcessTaskStatus.Paused]: 'Pausiert',
     [ProcessTaskStatus.Completed]: 'Abgeschlossen',
     [ProcessTaskStatus.Aborted]: 'Abgebrochen',

@@ -1,4 +1,4 @@
--- Create example themes
+-- create example themes
 insert into themes (id,
                     name,
                     main,

@@ -9,11 +9,9 @@ import de.aivot.GoverBackend.process.entities.ProcessDefinitionEntity;
 import de.aivot.GoverBackend.process.entities.ProcessDefinitionNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessDefinitionVersionEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
+import de.aivot.GoverBackend.process.enums.ProcessHistoryEventType;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskCompleted;
-import de.aivot.GoverBackend.process.models.ProcessNodePort;
-import de.aivot.GoverBackend.process.models.ProcessNodeProvider;
+import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.services.ProcessDataService;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import jakarta.annotation.Nonnull;
@@ -125,6 +123,11 @@ public class IfFlowControlNode implements ProcessNodeProvider, PluginComponent {
 
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(conditionValue ? PORT_NAME_TRUE : PORT_NAME_FALSE)
-                .setNodeData(metadata);
+                .setNodeData(metadata)
+                .addEvent(ProcessNodeExecutionEvent.of(
+                        ProcessHistoryEventType.Complete,
+                        "Bedingung ausgewertet",
+                        "Die Bedingung '%s' wurde mit dem Wert '%s' ausgewertet.".formatted(condition, conditionValue)
+                ));
     }
 }

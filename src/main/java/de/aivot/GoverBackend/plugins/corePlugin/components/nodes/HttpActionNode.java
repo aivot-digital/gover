@@ -14,6 +14,7 @@ import de.aivot.GoverBackend.process.entities.ProcessDefinitionEntity;
 import de.aivot.GoverBackend.process.entities.ProcessDefinitionNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessDefinitionVersionEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
+import de.aivot.GoverBackend.process.enums.ProcessHistoryEventType;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.services.ProcessDataService;
@@ -200,6 +201,11 @@ public class HttpActionNode implements ProcessNodeProvider, PluginComponent {
 
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_NAME)
-                .setNodeData(metadata);
+                .setNodeData(metadata)
+                .addEvent(ProcessNodeExecutionEvent.of(
+                        ProcessHistoryEventType.Complete,
+                        "HTTP-Anfrage erfolgreich abgeschlossen.",
+                        "Die HTTP-Anfrage an " + url + " wurde erfolgreich ausgeführt. Der Statuscode ist " + response.statusCode() + "."
+                ));
     }
 }

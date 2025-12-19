@@ -23,6 +23,8 @@ import {ProcessDefinitionNodeEntity} from "../../entities/process-definition-nod
 import {ProcessDefinitionApiService} from "../../services/process-definition-api-service";
 import {ProcessDefinitionNodeApiService} from "../../services/process-definition-node-api-service";
 import {ProcessNodeProvider, ProcessNodeProviderApiService} from "../../services/process-node-provider-api-service";
+import {getNodeName} from "../details/components/process-flow-editor/utils/node-utils";
+import {CellLink} from "../../../../components/cell-link/cell-link";
 
 interface ProcessInstanceTaskEntityWithInstance extends ProcessInstanceTaskEntity {
     instance: ProcessInstanceEntity;
@@ -129,8 +131,22 @@ export function ProcessAssignedTaskListPage() {
                         },
                     },
                     {
+                        field: 'processDefinitionNodeId',
+                        headerName: 'Aufgabe',
+                        flex: 2,
+                        renderCell: (params) => {
+                            const node = params.row.node;
+                            const provider = params.row.provider;
+                            return (
+                                <CellLink to={`/tasks/${params.row.instance?.accessKey}/${params.row.accessKey}`}>
+                                    {getNodeName(node, provider)}
+                                </CellLink>
+                            );
+                        }
+                    },
+                    {
                         field: 'started',
-                        headerName: 'Gestartet',
+                        headerName: 'Erstellt',
                         flex: 1,
                         renderCell: (params) => {
                             if (!params.row.started) return '—';
@@ -145,48 +161,12 @@ export function ProcessAssignedTaskListPage() {
                             }).format(date).replace(',', ' –') + ' Uhr';
                         }
                     },
-                    {
-                        field: 'finished',
-                        headerName: 'Beendet',
-                        flex: 1,
-                        renderCell: (params) => {
-                            if (!params.row.finished) return '—';
-                            const date = new Date(params.row.finished);
-                            return new Intl.DateTimeFormat('de-DE', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                hour12: false,
-                            }).format(date).replace(',', ' –') + ' Uhr';
-                        }
-                    },
-                    {
-                        field: 'processDefinitionNodeId',
-                        headerName: 'Knoten',
-                        flex: 1,
-                        renderCell: (params) => {
-                            const node = params.row.node;
-                            const provider = params.row.provider;
-                            return provider
-                                ? `${provider.name} (${node.id})`
-                                : node
-                                    ? node.id
-                                    : 'Unbekannt';
-                        }
-                    },
                 ]}
                 getRowIdentifier={row => row.id.toString()}
                 noDataPlaceholder="Keine Team angelegt"
                 noSearchResultsPlaceholder="Keine Teams gefunden"
                 rowActionsCount={3}
                 rowActions={(item) => [
-                    {
-                        icon: <FactCheck/>,
-                        to: `/tasks/${item.instance?.accessKey}/${item.accessKey}`,
-                        tooltip: 'Aufgabenansicht öffnen',
-                    },
                     {
                         icon: <DataObject/>,
                         onClick: () => {
@@ -211,40 +191,6 @@ export function ProcessAssignedTaskListPage() {
                             })
                         },
                         tooltip: 'Daten ansehen',
-                    },
-                    {
-                        icon: <Replay/>,
-                        onClick: () => {
-                            confirm({
-                                title: 'Aufgabe neu starten',
-                                children: (
-                                    <Typography>
-                                        Wirklich neu starten?
-                                    </Typography>
-                                ),
-                            })
-                                .then((conf) => {
-                                    if (conf) {
-                                        new ProcessInstanceTaskApiService()
-                                            .rerunFailedTask(item.id)
-                                            .then(() => {
-                                                dispatch(setLoadingMessage({
-                                                    message: 'Task wird neu gestartet',
-                                                    blocking: true,
-                                                    estimatedTime: 2000,
-                                                }));
-                                                setTimeout(() => {
-                                                    if (listRef.current != null) {
-                                                        listRef.current.refresh();
-                                                    }
-                                                    dispatch(clearLoadingMessage());
-                                                }, 2000);
-                                            });
-                                    }
-                                })
-                        },
-                        tooltip: 'Fehlgeschlagenen Task neu starten',
-                        disabled: item.status !== ProcessTaskStatus.Failed,
                     },
                 ]}
                 defaultSortField="started"

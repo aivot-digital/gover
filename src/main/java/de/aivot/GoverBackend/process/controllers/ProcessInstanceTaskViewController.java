@@ -199,6 +199,8 @@ public class ProcessInstanceTaskViewController {
 
         processNodeExecutionResultHandler
                 .handleResult(
+                        taskViewData.user,
+                        taskViewData.provider,
                         taskViewData.node,
                         taskViewData.instance,
                         taskViewData.task,
