@@ -7,6 +7,7 @@ import {TextFieldComponent} from "../../../../../components/text-field/text-fiel
 import {ElementDerivationContext} from "../../../../elements/components/element-derivation-context";
 import {useParams} from "react-router-dom";
 import {ProcessDetailsPageContext} from "../process-details-page-context";
+import {withDelay} from "../../../../../utils/with-delay";
 
 export function ProcessFlowNodeEditor() {
     const params = useParams();
@@ -22,8 +23,14 @@ export function ProcessFlowNodeEditor() {
     const [layout, setLayout] = useState<GroupLayout | null>(null);
 
     useEffect(() => {
+        // Reset state
+        setSelectedNode(null);
+        setLocalNode(null);
+
+        // Determine node ID
         const nodeId = parseInt(params.nodeId!);
 
+        // Fetch node details
         new ProcessDefinitionNodeApiService()
             .retrieve(nodeId)
             .then((node) => {
@@ -35,13 +42,15 @@ export function ProcessFlowNodeEditor() {
     useEffect(() => {
         if (selectedNode == null) {
             setLayout(null);
-            setLocalNode(null)
-        } else {
-            setLocalNode(selectedNode);
-            new ProcessDefinitionNodeApiService()
-                .getConfigurationLayout(selectedNode.id)
-                .then(setLayout);
+            setLocalNode(null);
+            return;
         }
+
+        setLocalNode(selectedNode);
+        withDelay(
+            new ProcessDefinitionNodeApiService()
+                .getConfigurationLayout(selectedNode.id), 500)
+            .then(setLayout);
     }, [selectedNode]);
 
     const handleSaveSelected = () => {
@@ -59,10 +68,12 @@ export function ProcessFlowNodeEditor() {
         // TODO: show error because there are edits
     };
 
-    if (selectedNode == null) {
+    if (selectedNode == null || layout == null) {
         return (
             <Box>
-                <Skeleton/>
+                <Skeleton height={96}/>
+                <Skeleton height={96}/>
+                <Skeleton height={256}/>
             </Box>
         );
     }
@@ -107,20 +118,16 @@ export function ProcessFlowNodeEditor() {
                 maxCharacters={512}
             />
 
-            {
-                layout != null &&
-                <ElementDerivationContext
-                    element={layout}
-                    elementData={(localNode ?? selectedNode).configuration}
-                    onElementDataChange={(elementData) => {
-                        console.log('Element data changed:', elementData);
-                        setLocalNode({
-                            ...(localNode ?? selectedNode),
-                            configuration: elementData,
-                        });
-                    }}
-                />
-            }
+            <ElementDerivationContext
+                element={layout}
+                elementData={(localNode ?? selectedNode).configuration}
+                onElementDataChange={(elementData) => {
+                    setLocalNode({
+                        ...(localNode ?? selectedNode),
+                        configuration: elementData,
+                    });
+                }}
+            />
 
             <Button
                 onClick={handleSaveSelected}
