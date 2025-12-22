@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.elements.models.elements.form.input.FunctionInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
-import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.corePlugin.Core;
 import de.aivot.GoverBackend.process.entities.ProcessDefinitionEntity;
@@ -36,12 +35,12 @@ public class IfFlowControlNode implements ProcessNodeProvider, PluginComponent {
         this.processDataService = processDataService;
     }
 
-    @Nonnull
     @Override
-    public String getKey() {
+    public @Nonnull String getKey() {
         return "if";
     }
 
+    @Nonnull
     @Override
     public String getParentPluginKey() {
         return Core.PLUGIN_KEY;
@@ -57,7 +56,7 @@ public class IfFlowControlNode implements ProcessNodeProvider, PluginComponent {
         var layout = new ConfigLayoutElement();
         layout.setId(getKey() + "-config");
 
-        var conditionField = new FunctionInputElement();
+        var conditionField = new TextInputElement();
         conditionField.setId(CONDITION_FIELD_KEY);
         conditionField.setLabel("Bedingung");
         conditionField.setHint("Geben Sie die Bedingung ein, die ausgewertet werden soll. Verwenden Sie gültige Ausdrücke basierend auf den Prozessdaten.");
