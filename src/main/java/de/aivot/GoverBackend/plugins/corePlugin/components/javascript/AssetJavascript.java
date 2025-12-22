@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.corePlugin.Core;
 import de.aivot.GoverBackend.services.storages.AssetStorageService;
+import jakarta.annotation.Nonnull;
 import org.graalvm.polyglot.HostAccess;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -30,20 +31,23 @@ public class AssetJavascript implements JavascriptFunctionProvider, PluginCompon
     }
 
     @Override
-    public String getKey() {
+    public @Nonnull String getKey() {
         return "assets";
     }
 
+    @Nonnull
     @Override
     public String getParentPluginKey() {
         return Core.PLUGIN_KEY;
     }
 
+    @Nonnull
     @Override
     public String getName() {
         return "Dateien & Medien";
     }
 
+    @Nonnull
     @Override
     public String getDescription() {
         return "Dieses Paket enthält Funktionen für Dateien & Medien.";
@@ -51,7 +55,7 @@ public class AssetJavascript implements JavascriptFunctionProvider, PluginCompon
 
     @Override
     public String getObjectName() {
-        return "";
+        return "_" + getKey();
     }
 
     @Override

@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.corePlugin.Core;
+import jakarta.annotation.Nonnull;
 import org.graalvm.polyglot.HostAccess;
 import org.springframework.stereotype.Service;
 
@@ -26,20 +27,23 @@ public class HttpJavascript implements JavascriptFunctionProvider, PluginCompone
     }
 
     @Override
-    public String getKey() {
+    public @Nonnull String getKey() {
         return "http";
     }
 
+    @Nonnull
     @Override
     public String getParentPluginKey() {
         return Core.PLUGIN_KEY;
     }
 
+    @Nonnull
     @Override
     public String getName() {
         return "HTTP-Funktionen";
     }
 
+    @Nonnull
     @Override
     public String getDescription() {
         return "Dieses Modul stellt Funktionen zur Durchführung von HTTP-Anfragen bereit.";

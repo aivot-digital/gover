@@ -4,26 +4,30 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.NumberInputElem
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.corePlugin.Core;
+import jakarta.annotation.Nonnull;
 import org.graalvm.polyglot.HostAccess;
 import org.springframework.stereotype.Service;
 
 @Service
 public class NumberJavascript implements JavascriptFunctionProvider, PluginComponent {
     @Override
-    public String getKey() {
+    public @Nonnull String getKey() {
         return "number";
     }
 
+    @Nonnull
     @Override
     public String getParentPluginKey() {
         return Core.PLUGIN_KEY;
     }
 
+    @Nonnull
     @Override
     public String getName() {
         return "Zahlenfunktionen";
     }
 
+    @Nonnull
     @Override
     public String getDescription() {
         return "Dieses Modul stellt Funktionen zur Verarbeitung von Zahlenwerten bereit.";

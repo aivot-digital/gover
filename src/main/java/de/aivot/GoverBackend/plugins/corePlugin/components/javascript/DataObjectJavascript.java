@@ -43,20 +43,23 @@ public class DataObjectJavascript implements JavascriptFunctionProvider, PluginC
     }
 
     @Override
-    public String getKey() {
+    public @Nonnull String getKey() {
         return "data_objects";
     }
 
+    @Nonnull
     @Override
     public String getParentPluginKey() {
         return Core.PLUGIN_KEY;
     }
 
+    @Nonnull
     @Override
     public String getName() {
         return "Datenobjekte";
     }
 
+    @Nonnull
     @Override
     public String getDescription() {
         return "Dieses Paket enthält Funktionen für Datenobjekte.";
@@ -64,7 +67,7 @@ public class DataObjectJavascript implements JavascriptFunctionProvider, PluginC
 
     @Override
     public String getObjectName() {
-        return "";
+        return "_" + getKey();
     }
 
     @Override

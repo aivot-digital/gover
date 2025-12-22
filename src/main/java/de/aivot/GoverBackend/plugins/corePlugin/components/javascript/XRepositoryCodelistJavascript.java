@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.corePlugin.Core;
 import de.aivot.GoverBackend.xrepository.services.XRepositoryCodeListService;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.proxy.ProxyArray;
@@ -30,20 +31,23 @@ public class XRepositoryCodelistJavascript implements JavascriptFunctionProvider
     }
 
     @Override
-    public String getKey() {
+    public @Nonnull String getKey() {
         return "xrp_codelists";
     }
 
+    @Nonnull
     @Override
     public String getParentPluginKey() {
         return Core.PLUGIN_KEY;
     }
 
+    @Nonnull
     @Override
     public String getName() {
         return "XRepository Codelisten";
     }
 
+    @Nonnull
     @Override
     public String getDescription() {
         return "Dieses Paket enthält Funktionen für Codelisten aus den XRepositories.";
@@ -51,7 +55,7 @@ public class XRepositoryCodelistJavascript implements JavascriptFunctionProvider
 
     @Override
     public String getObjectName() {
-        return "";
+        return "_" + getKey();
     }
 
     @Override

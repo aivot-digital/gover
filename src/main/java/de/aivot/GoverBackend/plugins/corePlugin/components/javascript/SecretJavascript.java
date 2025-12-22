@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.corePlugin.Core;
 import de.aivot.GoverBackend.secrets.services.SecretService;
+import jakarta.annotation.Nonnull;
 import org.graalvm.polyglot.HostAccess;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -24,20 +25,23 @@ public class SecretJavascript implements JavascriptFunctionProvider, PluginCompo
     }
 
     @Override
-    public String getKey() {
+    public @Nonnull String getKey() {
         return "secrets";
     }
 
+    @Nonnull
     @Override
     public String getParentPluginKey() {
         return Core.PLUGIN_KEY;
     }
 
+    @Nonnull
     @Override
     public String getName() {
         return "Geheimnisse";
     }
 
+    @Nonnull
     @Override
     public String getDescription() {
         return "Dieses Paket enthält Funktionen für Geheimnisse.";
@@ -45,7 +49,7 @@ public class SecretJavascript implements JavascriptFunctionProvider, PluginCompo
 
     @Override
     public String getObjectName() {
-        return "";
+        return "_" + getKey();
     }
 
     @Override
