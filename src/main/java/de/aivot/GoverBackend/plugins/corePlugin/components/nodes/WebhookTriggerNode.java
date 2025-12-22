@@ -5,7 +5,6 @@ import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.elements.models.elements.ElementValueFunctions;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
-import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -62,14 +61,14 @@ public class WebhookTriggerNode implements ProcessNodeProvider, PluginComponent 
         this.processInstanceHistoryEventRepository = processInstanceHistoryEventRepository;
     }
 
+    @Nonnull
     @Override
     public String getParentPluginKey() {
         return Core.PLUGIN_KEY;
     }
 
-    @Nonnull
     @Override
-    public String getKey() {
+    public @Nonnull String getKey() {
         return NODE_KEY;
     }
 
@@ -160,7 +159,7 @@ public class WebhookTriggerNode implements ProcessNodeProvider, PluginComponent 
             var spec = SpecificationBuilder
                     .create(ProcessDefinitionNodeEntity.class)
                     .withNotEquals("id", entity.getId())
-                    .withJsonNotEquals("configuration", List.of(SLUG_CONFIG_KEY), slug)
+                    .withJsonEquals("configuration", List.of(SLUG_CONFIG_KEY), slug)
                     .build();
             var otherExists = processDefinitionNodeRepository
                     .exists(spec);
