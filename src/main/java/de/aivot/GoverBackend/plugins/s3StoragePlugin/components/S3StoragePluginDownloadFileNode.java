@@ -1,10 +1,13 @@
 package de.aivot.GoverBackend.plugins.s3StoragePlugin.components;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.GoverBackend.elements.models.elements.form.input.TextField;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
-import de.aivot.GoverBackend.process.entities.*;
+import de.aivot.GoverBackend.process.entities.ProcessDefinitionEntity;
+import de.aivot.GoverBackend.process.entities.ProcessDefinitionNodeEntity;
+import de.aivot.GoverBackend.process.entities.ProcessDefinitionVersionEntity;
+import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
@@ -39,17 +42,19 @@ public class S3StoragePluginDownloadFileNode implements ProcessNodeProvider, Plu
     @Nonnull
     @Override
     @JsonIgnore
-    public GroupLayout getConfigurationLayout(@Nonnull UserEntity user,
-                                              @Nonnull ProcessDefinitionEntity processDefinition,
-                                              @Nonnull ProcessDefinitionVersionEntity processDefinitionVersion,
-                                              @Nullable ProcessDefinitionNodeEntity thisNode) {
-        var accessKeyField = new TextField();
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull UserEntity user,
+                                                      @Nonnull ProcessDefinitionEntity processDefinition,
+                                                      @Nonnull ProcessDefinitionVersionEntity processDefinitionVersion,
+                                                      @Nullable ProcessDefinitionNodeEntity thisNode) {
+        var layout = new ConfigLayoutElement();
+
+        var accessKeyField = new TextInputElement();
         accessKeyField.setId("accessKey");
         accessKeyField.setLabel("Access Key");
         accessKeyField.setHint("The access key for the S3 storage.");
+        layout.addChild(accessKeyField);
 
-        return new GroupLayout()
-                .addChild(accessKeyField);
+        return layout;
     }
 
     @Nonnull

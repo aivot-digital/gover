@@ -1,8 +1,10 @@
 package de.aivot.GoverBackend.plugins.corePlugin.components.nodes;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.GoverBackend.elements.models.elements.form.input.TextField;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
+import de.aivot.GoverBackend.elements.models.elements.form.input.CodeInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
@@ -48,19 +50,18 @@ public class JavascriptActionNode implements ProcessNodeProvider, PluginComponen
     @Nonnull
     @Override
     @JsonIgnore
-    public GroupLayout getConfigurationLayout(@Nonnull UserEntity user,
-                                              @Nonnull ProcessDefinitionEntity processDefinition,
-                                              @Nonnull ProcessDefinitionVersionEntity processDefinitionVersion,
-                                              @Nullable ProcessDefinitionNodeEntity thisNode) {
-        var layout = new GroupLayout();
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull UserEntity user,
+                                                      @Nonnull ProcessDefinitionEntity processDefinition,
+                                                      @Nonnull ProcessDefinitionVersionEntity processDefinitionVersion,
+                                                      @Nullable ProcessDefinitionNodeEntity thisNode) {
+        var layout = new ConfigLayoutElement();
         layout.setId(getKey() + "-config");
 
-        var codeField = new TextField();
+        var codeField = new CodeInputElement();
         codeField.setId(CODE_FIELD_KEY);
         codeField.setLabel("Javascript-Code");
         codeField.setHint("Geben Sie den benutzerdefinierten Javascript-Code ein, der zur Verarbeitung der Daten verwendet werden soll.");
         codeField.setRequired(true);
-        codeField.setIsMultiline(true);
         layout.addChild(codeField);
 
         return layout;
@@ -123,6 +124,10 @@ public class JavascriptActionNode implements ProcessNodeProvider, PluginComponen
                 return new ProcessNodeExecutionResultTaskCompleted()
                         .setViaPort(PORT_NAME)
                         .setProcessData(result.asMap())
+                        .setNodeData(Map.of(
+                                "stdout", result.getStdOutput(),
+                                "stderr", result.getErrOutput()
+                        ))
                         .addEvent(ProcessNodeExecutionEvent.of(
                                 ProcessHistoryEventType.Complete,
                                 "Javascript-Code erfolgreich ausgeführt.",

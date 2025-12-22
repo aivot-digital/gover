@@ -1,5 +1,5 @@
 import React, {useMemo, useState} from 'react';
-import {Box, Button} from '@mui/material';
+import {Box, Button, SxProps} from '@mui/material';
 
 function syntaxHighlight(jsonString: string): React.ReactNode[] {
     const json = jsonString
@@ -54,7 +54,17 @@ function syntaxHighlight(jsonString: string): React.ReactNode[] {
     return elements;
 }
 
-export function ExpandableCodeBlock({ value }: { value: string }) {
+interface ExpandableCodeBlockProps {
+    value: string;
+    sx?: SxProps;
+}
+
+export function ExpandableCodeBlock(props: ExpandableCodeBlockProps) {
+    const {
+        value,
+        sx,
+    } = props;
+
     const [expanded, setExpanded] = useState(false);
 
     const lineCount = useMemo(() => {
@@ -79,6 +89,7 @@ export function ExpandableCodeBlock({ value }: { value: string }) {
                     fontSize: '0.875rem',
                     whiteSpace: 'pre',
                     tabSize: 4,
+                    ...sx,
                 }}
             >
                 {syntaxHighlight(value)}

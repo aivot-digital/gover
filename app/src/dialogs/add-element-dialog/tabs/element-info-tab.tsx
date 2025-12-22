@@ -67,7 +67,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             </Typography>
         </Box>
     ),
-    [ElementType.Container]: (
+    [ElementType.GroupLayout]: (
         <Box>
             <Typography>
                 Das Gruppierungs-Element erlaubt es Ihnen, mehrere Elemente semantisch zusammenzufassen.
@@ -80,7 +80,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
         </Box>
     ),
     [ElementType.Step]: null,
-    [ElementType.Root]: null,
+    [ElementType.FormLayout]: null,
     [ElementType.Checkbox]: (
         <Box>
             <Typography>
@@ -250,12 +250,15 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Number]: (
         <Box>
             <Typography>
-                Das Zahl-Element eignet sich für numerische Eingaben, die rechnerisch weiterverarbeitet werden sollen – etwa Mengen, Beträge oder Längenangaben.
+                Das Zahl-Element eignet sich für numerische Eingaben, die rechnerisch weiterverarbeitet werden sollen –
+                etwa Mengen, Beträge oder Längenangaben.
                 Es unterstützt zudem vielfältige Möglichkeiten für die Validierung der getätigten Eingaben.
             </Typography>
 
             <AlertComponent color={'info'}>
-                Für Zahlenfolgen ohne rechnerische Bedeutung – wie Postleitzahlen, Steuernummern oder Kundennummern – verwenden Sie bitte das Text-Element. In diesem bleiben z. B. führende Nullen erhalten und es findet keine automatische
+                Für Zahlenfolgen ohne rechnerische Bedeutung – wie Postleitzahlen, Steuernummern oder Kundennummern –
+                verwenden Sie bitte das Text-Element. In diesem bleiben z. B. führende Nullen erhalten und es findet
+                keine automatische
                 Formatierung statt.
             </AlertComponent>
 
@@ -302,7 +305,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             </Typography>
         </Box>
     ),
-    [ElementType.Richtext]: (
+    [ElementType.RichText]: (
         <Box>
             <Typography>
                 Das Fließtext-Element ermöglicht Ihnen die Einbindung von formatiertem Text.
@@ -319,7 +322,8 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
 
             <Typography sx={{mt: 2}}>
                 Eine optische Alternative zum Einzelauswahl (Optionsfelder)-Element stellt das
-                Einzelauswahl (Auswahlmenü)-Element dar, welches die Optionen in einem platzsparenden Auswahlmenü darstellt.
+                Einzelauswahl (Auswahlmenü)-Element dar, welches die Optionen in einem platzsparenden Auswahlmenü
+                darstellt.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -330,7 +334,10 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 <RadioFieldComponent
                     label="Einzelauswahl mit Optionsfeldern"
                     value={'Option 2'}
-                    options={[{label: 'Option 1', value: 'option_1'}, {label: 'Option 2', value: 'option_2'}, {label: 'Option 3', value: 'option_3'}]}
+                    options={[{label: 'Option 1', value: 'option_1'}, {
+                        label: 'Option 2',
+                        value: 'option_2'
+                    }, {label: 'Option 3', value: 'option_3'}]}
                     onChange={() => {
                     }}
                     hint="Hinweis zur Einzelauswahl"
@@ -341,7 +348,10 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 <RadioFieldComponent
                     label="Verpflichtende Einzelauswahl mit Optionsfeldern"
                     value={'Option 3'}
-                    options={[{label: 'Option 1', value: 'option_1'}, {label: 'Option 2', value: 'option_2'}, {label: 'Option 3', value: 'option_3'}]}
+                    options={[{label: 'Option 1', value: 'option_1'}, {
+                        label: 'Option 2',
+                        value: 'option_2'
+                    }, {label: 'Option 3', value: 'option_3'}]}
                     onChange={() => {
                     }}
                     required
@@ -352,7 +362,10 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 <RadioFieldComponent
                     label="Einzelauswahl mit Optionsfeldern"
                     value={undefined}
-                    options={[{label: 'Option 1', value: 'option_1'}, {label: 'Option 2', value: 'option_2'}, {label: 'Option 3', value: 'option_3'}]}
+                    options={[{label: 'Option 1', value: 'option_1'}, {
+                        label: 'Option 2',
+                        value: 'option_2'
+                    }, {label: 'Option 3', value: 'option_3'}]}
                     onChange={() => {
                     }}
                     error="Fehlermeldung zur Einzelauswahl"
@@ -461,13 +474,16 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Table]: (
         <Box>
             <Typography>
-                Das Tabellen-Element ermöglicht Ihnen das Entgegennehmen von einfachen Text- und Zahleneingaben in tabellarischer Form.
+                Das Tabellen-Element ermöglicht Ihnen das Entgegennehmen von einfachen Text- und Zahleneingaben in
+                tabellarischer Form.
                 Der Einsatz des Elements wird dabei je nach Umfang für maximal bis zu drei Spalten empfohlen.
             </Typography>
 
             <AlertComponent color={'info'}>
-                Für komplexere Eingaben – etwa mit Datumsfeldern oder vielen Datenpunkten – empfiehlt sich die Strukturierte Listeneingabe.
-                Sie erlaubt die Verwendung aller Elementtypen, bietet detaillierte Konfigurationsmöglichkeiten und sorgt für eine deutlich bessere Nutzerfreundlichkeit.
+                Für komplexere Eingaben – etwa mit Datumsfeldern oder vielen Datenpunkten – empfiehlt sich die
+                Strukturierte Listeneingabe.
+                Sie erlaubt die Verwendung aller Elementtypen, bietet detaillierte Konfigurationsmöglichkeiten und sorgt
+                für eine deutlich bessere Nutzerfreundlichkeit.
             </AlertComponent>
         </Box>
     ),
@@ -528,7 +544,8 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Time]: (
         <Box>
             <Typography>
-                Das Uhrzeit-Element dient Ihnen dazu, Eingaben der Uhrzeit (0-24 Uhr) von Ihren Nutzer:innen entgegenzunehmen.
+                Das Uhrzeit-Element dient Ihnen dazu, Eingaben der Uhrzeit (0-24 Uhr) von Ihren Nutzer:innen
+                entgegenzunehmen.
                 Es beinhaltet zudem vielfältige Möglichkeiten für die Validierung der getätigten Eingaben.
             </Typography>
         </Box>
@@ -556,6 +573,15 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.SummaryStep]: null,
     [ElementType.SubmitStep]: null,
     [ElementType.SubmittedStep]: null,
+    [ElementType.DialogLayout]: null,
+    [ElementType.StepperLayout]: null,
+    [ElementType.ConfigLayout]: null,
+    [ElementType.FunctionInput]: null,
+    [ElementType.CodeInput]: null,
+    [ElementType.RichTextInput]: null,
+    [ElementType.UiDefinitionInput]: null,
+    [ElementType.IdentityInput]: null,
+    [ElementType.TabLayout]: null,
 };
 
 export function ElementInfoTab({
@@ -578,7 +604,7 @@ export function ElementInfoTab({
                         onClick={onClose}
                         size="small"
                     >
-                        <CloseOutlinedIcon />
+                        <CloseOutlinedIcon/>
                     </IconButton>
                 </Tooltip>
             </Box>

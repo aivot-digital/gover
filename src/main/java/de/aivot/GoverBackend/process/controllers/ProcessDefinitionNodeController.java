@@ -3,7 +3,8 @@ package de.aivot.GoverBackend.process.controllers;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
+import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
@@ -176,7 +177,7 @@ public class ProcessDefinitionNodeController {
             summary = "Retrieve Process Definition Node Configuration",
             description = "Retrieve the configuration of a process definition node by its ID."
     )
-    public GroupLayout configuration(
+    public ConfigLayoutElement configuration(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {

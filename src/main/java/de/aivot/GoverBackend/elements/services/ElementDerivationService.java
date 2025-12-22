@@ -8,18 +8,19 @@ import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
-import de.aivot.GoverBackend.elements.models.elements.RootElement;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.ReplicatingContainerLayout;
+import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.nocode.services.NoCodeEvaluationService;
+import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import jakarta.annotation.Nonnull;
 import java.util.LinkedList;
 
 @Service
@@ -86,7 +87,7 @@ public class ElementDerivationService {
             @Nonnull ElementDerivationLogger logger
     ) {
         switch (currentlyDerivedElement) {
-            case RootElement element:
+            case FormLayoutElement element:
                 deriveRootElement(javascriptEngine,
                         rootElement,
                         inputContextElementData,
@@ -108,8 +109,8 @@ public class ElementDerivationService {
                         logger);
                 break;
 
-            case GroupLayout element:
-                deriveGroupLayout(javascriptEngine,
+            case ReplicatingContainerLayoutElement element:
+                deriveReplicatingLayout(javascriptEngine,
                         rootElement,
                         inputContextElementData,
                         outputContextElementData,
@@ -119,8 +120,9 @@ public class ElementDerivationService {
                         logger);
                 break;
 
-            case ReplicatingContainerLayout element:
-                deriveReplicatingLayout(javascriptEngine,
+
+            case LayoutElement element:
+                deriveLayoutElement(javascriptEngine,
                         rootElement,
                         inputContextElementData,
                         outputContextElementData,
@@ -150,7 +152,7 @@ public class ElementDerivationService {
             @Nonnull BaseElement rootElement,
             @Nonnull ElementData inputContextElementData,
             @Nonnull ElementData outputContextElementData,
-            @Nonnull RootElement currentRootElement,
+            @Nonnull FormLayoutElement currentRootElement,
             @Nonnull ElementDerivationOptions options,
             @Nonnull Boolean isParentVisible,
             @Nonnull ElementDerivationLogger logger
@@ -258,43 +260,45 @@ public class ElementDerivationService {
         }
     }
 
-    protected void deriveGroupLayout(
+    protected void deriveLayoutElement(
             @Nonnull JavascriptEngine javascriptEngine,
             @Nonnull BaseElement rootElement,
             @Nonnull ElementData inputContextElementData,
             @Nonnull ElementData outputContextElementData,
-            @Nonnull GroupLayout _groupLayout,
+            @Nonnull LayoutElement<?> _groupLayout,
             @Nonnull ElementDerivationOptions options,
             @Nonnull Boolean isParentVisible,
             @Nonnull ElementDerivationLogger logger
     ) {
-        var dataObject = deriveElement(javascriptEngine,
-                rootElement,
-                inputContextElementData,
-                _groupLayout,
-                options,
-                isParentVisible,
-                logger);
-        inputContextElementData.put(_groupLayout, dataObject);
-        outputContextElementData.put(_groupLayout, dataObject);
+        if (_groupLayout instanceof BaseElement _baseElementGroupLayout) {
+            var dataObject = deriveElement(javascriptEngine,
+                    rootElement,
+                    inputContextElementData,
+                    _baseElementGroupLayout,
+                    options,
+                    isParentVisible,
+                    logger);
+            inputContextElementData.put(_baseElementGroupLayout, dataObject);
+            outputContextElementData.put(_baseElementGroupLayout, dataObject);
 
-        var isVisible = isParentVisible && dataObject.getIsVisible();
+            var isVisible = isParentVisible && dataObject.getIsVisible();
 
-        var groupLayout = (GroupLayout) dataObject
-                .getComputedOverrideOrDefault(_groupLayout);
+            var groupLayout = (LayoutElement<?>) dataObject
+                    .getComputedOverrideOrDefault(_baseElementGroupLayout);
 
-        var optionsForChildren = options.copyForUseInChild(groupLayout.getId());
+            var optionsForChildren = options.copyForUseInChild(_baseElementGroupLayout.getId());
 
-        if (groupLayout.getChildren() != null) {
-            for (var child : groupLayout.getChildren()) {
-                derive(javascriptEngine,
-                        rootElement,
-                        inputContextElementData,
-                        outputContextElementData,
-                        child,
-                        optionsForChildren,
-                        isVisible,
-                        logger);
+            if (groupLayout.getChildren() != null) {
+                for (var child : groupLayout.getChildren()) {
+                    derive(javascriptEngine,
+                            rootElement,
+                            inputContextElementData,
+                            outputContextElementData,
+                            child,
+                            optionsForChildren,
+                            isVisible,
+                            logger);
+                }
             }
         }
     }
@@ -304,7 +308,7 @@ public class ElementDerivationService {
             @Nonnull BaseElement rootElement,
             @Nonnull ElementData inputContextElementData,
             @Nonnull ElementData outputContextElementData,
-            @Nonnull ReplicatingContainerLayout _replicatingContainerLayout,
+            @Nonnull ReplicatingContainerLayoutElement _replicatingContainerLayout,
             @Nonnull ElementDerivationOptions options,
             @Nonnull Boolean isParentVisible,
             @Nonnull ElementDerivationLogger logger
@@ -321,7 +325,7 @@ public class ElementDerivationService {
 
         var isVisible = isParentVisible && dataObject.getIsVisible();
 
-        var replicatingContainerLayout = (ReplicatingContainerLayout) dataObject
+        var replicatingContainerLayout = (ReplicatingContainerLayoutElement) dataObject
                 .getComputedOverrideOrDefault(_replicatingContainerLayout);
 
         var optionsForChildren = options.copyForUseInChild(replicatingContainerLayout.getId());

@@ -3,16 +3,19 @@ package de.aivot.GoverBackend.plugins.corePlugin.components.nodes;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.elements.models.elements.ElementValueFunctions;
-import de.aivot.GoverBackend.elements.models.elements.form.input.TextField;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.corePlugin.Core;
-import de.aivot.GoverBackend.process.entities.*;
-import de.aivot.GoverBackend.process.enums.ProcessHistoryEventType;
+import de.aivot.GoverBackend.process.entities.ProcessDefinitionEntity;
+import de.aivot.GoverBackend.process.entities.ProcessDefinitionNodeEntity;
+import de.aivot.GoverBackend.process.entities.ProcessDefinitionVersionEntity;
+import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
@@ -73,14 +76,14 @@ public class WebhookTriggerNode implements ProcessNodeProvider, PluginComponent 
     @Nonnull
     @Override
     @JsonIgnore
-    public GroupLayout getConfigurationLayout(@Nonnull UserEntity user,
-                                              @Nonnull ProcessDefinitionEntity processDefinition,
-                                              @Nonnull ProcessDefinitionVersionEntity processDefinitionVersion,
-                                              @Nullable ProcessDefinitionNodeEntity thisNode) {
-        var layout = new GroupLayout();
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull UserEntity user,
+                                                      @Nonnull ProcessDefinitionEntity processDefinition,
+                                                      @Nonnull ProcessDefinitionVersionEntity processDefinitionVersion,
+                                                      @Nullable ProcessDefinitionNodeEntity thisNode) {
+        var layout = new ConfigLayoutElement();
         layout.setId(getKey() + "-config");
 
-        var slugField = new TextField();
+        var slugField = new TextInputElement();
         slugField.setId(SLUG_CONFIG_KEY);
         slugField.setLabel("Webhook-Slug");
         slugField.setHint("Der eindeutige Slug, über den der Webhook angesprochen wird.");
@@ -96,7 +99,7 @@ public class WebhookTriggerNode implements ProcessNodeProvider, PluginComponent 
         computeLink.setJavascriptCode(jsCode);
         computeLink.setReferencedIds(List.of(SLUG_CONFIG_KEY));
 
-        var linkField = new TextField();
+        var linkField = new TextInputElement();
         linkField.setId("webhook-link");
         linkField.setLabel("Webhook-URL");
         linkField.setHint("Die URL, über die der Webhook angesprochen werden kann.");

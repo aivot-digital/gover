@@ -95,7 +95,10 @@ export function ProcessInstanceHistoryEventDialog(props: ProcessInstanceHistoryE
                         overflow: 'auto',
                     }}
                 >
-                    <Table size="small">
+                    <Table
+                        size="small"
+                        stickyHeader={true}
+                    >
                         <TableHead>
                             <TableRow>
                                 <TableCell>
@@ -391,9 +394,19 @@ function EventTableRow(props: { event: Item }) {
                                         Details
                                     </Typography>
 
-                                    <ExpandableCodeBlock
-                                        value={JSON.stringify(event.details, null, 2)}
-                                    />
+                                    <Box
+                                        sx={{
+                                            overflowX: 'auto',
+                                        }}
+                                    >
+                                        <ExpandableCodeBlock
+                                            value={JSON.stringify(event.details, null, 2)}
+                                            sx={{
+                                                wordWrap: 'normal',
+                                                whiteSpace: 'normal',
+                                            }}
+                                        />
+                                    </Box>
                                 </Box>
                             }
 

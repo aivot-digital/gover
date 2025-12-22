@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.preset.dtos;
 
-import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.lib.RequestDTO;
 import de.aivot.GoverBackend.preset.entities.PresetEntity;
@@ -21,7 +21,7 @@ public record PresetCreateRequestDTO(
 
         @Nonnull
         @NotNull(message = "Das Root-Element darf nicht null sein.")
-        GroupLayout rootElement
+        GroupLayoutElement rootElement
 ) implements RequestDTO<PresetEntity> {
 
     @Override

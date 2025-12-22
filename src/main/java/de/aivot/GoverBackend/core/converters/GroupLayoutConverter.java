@@ -2,14 +2,14 @@ package de.aivot.GoverBackend.core.converters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
 @Converter
-public class GroupLayoutConverter implements AttributeConverter<GroupLayout, String> {
+public class GroupLayoutConverter implements AttributeConverter<GroupLayoutElement, String> {
     @Override
-    public String convertToDatabaseColumn(GroupLayout baseElement) {
+    public String convertToDatabaseColumn(GroupLayoutElement baseElement) {
         var mapper = ObjectMapperFactory
                 .getInstance();
 
@@ -21,12 +21,12 @@ public class GroupLayoutConverter implements AttributeConverter<GroupLayout, Str
     }
 
     @Override
-    public GroupLayout convertToEntityAttribute(String s) {
+    public GroupLayoutElement convertToEntityAttribute(String s) {
         var mapper = ObjectMapperFactory
                 .getInstance();
 
         try {
-            return mapper.readValue(s, GroupLayout.class);
+            return mapper.readValue(s, GroupLayoutElement.class);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

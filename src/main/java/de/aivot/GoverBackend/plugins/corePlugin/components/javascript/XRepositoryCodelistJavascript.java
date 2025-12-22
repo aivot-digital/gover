@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.plugins.corePlugin.components.javascript;
 
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioFieldOption;
+import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -90,7 +90,7 @@ public class XRepositoryCodelistJavascript implements JavascriptFunctionProvider
             return ProxyArray.fromArray();
         }
 
-        List<RadioFieldOption> codeList;
+        List<RadioInputElementOption> codeList;
         try {
             codeList = codeListService
                     .getRadioFieldOptionCodeList(urn);

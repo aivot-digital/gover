@@ -3,12 +3,12 @@ package de.aivot.GoverBackend.plugins.corePlugin.components.nodes;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
-import de.aivot.GoverBackend.elements.models.ElementData;
-import de.aivot.GoverBackend.elements.models.elements.form.content.RichText;
-import de.aivot.GoverBackend.elements.models.elements.form.input.MultiCheckboxField;
-import de.aivot.GoverBackend.elements.models.elements.form.input.MultiCheckboxFieldOption;
-import de.aivot.GoverBackend.elements.models.elements.form.input.TextField;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
+import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.MultiCheckboxInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.MultiCheckboxInputElementOption;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.corePlugin.Core;
@@ -76,14 +76,14 @@ public class CheckAndUpdateActionNode implements ProcessNodeProvider, PluginComp
     @Nonnull
     @Override
     @JsonIgnore
-    public GroupLayout getConfigurationLayout(@Nonnull UserEntity user,
-                                              @Nonnull ProcessDefinitionEntity processDefinition,
-                                              @Nonnull ProcessDefinitionVersionEntity processDefinitionVersion,
-                                              @Nullable ProcessDefinitionNodeEntity thisNode) {
-        var layout = new GroupLayout();
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull UserEntity user,
+                                                      @Nonnull ProcessDefinitionEntity processDefinition,
+                                                      @Nonnull ProcessDefinitionVersionEntity processDefinitionVersion,
+                                                      @Nullable ProcessDefinitionNodeEntity thisNode) {
+        var layout = new ConfigLayoutElement();
         layout.setId(getKey() + "-config");
 
-        var instructionsField = new TextField();
+        var instructionsField = new TextInputElement();
         instructionsField.setId(INSTRUCTIONS_FIELD_ID);
         instructionsField.setLabel("Anweisungen für die Mitarbeiter:innen");
         instructionsField.setHint("Geben Sie die Anweisungen ein, die den ausgewählten Mitarbeiter:innen angezeigt werden sollen, wenn sie die Daten überprüfen und ggf. korrigieren.");
@@ -94,12 +94,12 @@ public class CheckAndUpdateActionNode implements ProcessNodeProvider, PluginComp
         var options = userRepository
                 .findAll()
                 .stream()
-                .map(u -> new MultiCheckboxFieldOption()
+                .map(u -> new MultiCheckboxInputElementOption()
                         .setLabel(u.getFullName() + " (" + u.getEmail() + ")")
                         .setValue(u.getId()))
                 .toList();
 
-        var method = new MultiCheckboxField();
+        var method = new MultiCheckboxInputElement();
         method.setId(USER_OPTIONS_FIELD_ID);
         method.setLabel("Mögliche, zuweisbare Mitarbeiter:innen");
         method.setHint("Wählen Sie alle Mitarbeiter:innen aus, die für die Aufgabe in Frage kommen.");
@@ -110,20 +110,12 @@ public class CheckAndUpdateActionNode implements ProcessNodeProvider, PluginComp
         return layout;
     }
 
-    @Override
-    public boolean canGetTaskViewLayout(@Nullable UserEntity user,
-                                        @Nonnull ProcessDefinitionNodeEntity thisNode,
-                                        @Nonnull ProcessInstanceEntity processInstance,
-                                        @Nonnull ProcessInstanceTaskEntity thisTask) throws ResponseException {
-        return user != null && Objects.equals(thisTask.getAssignedUserId(), user.getId());
-    }
-
     @Nonnull
     @Override
-    public GroupLayout getTaskViewLayout(@Nullable UserEntity user,
-                                         @Nonnull ProcessDefinitionNodeEntity thisNode,
-                                         @Nonnull ProcessInstanceEntity processInstance,
-                                         @Nonnull ProcessInstanceTaskEntity thisTask) throws ResponseException {
+    public GroupLayoutElement getStaffTaskView(@Nullable UserEntity user,
+                                               @Nonnull ProcessDefinitionNodeEntity thisNode,
+                                               @Nonnull ProcessInstanceEntity processInstance,
+                                               @Nonnull ProcessInstanceTaskEntity thisTask) throws ResponseException {
         var configuration = thisNode.getConfiguration();
 
         var instructionsContent = configuration
@@ -132,10 +124,10 @@ public class CheckAndUpdateActionNode implements ProcessNodeProvider, PluginComp
                 .orElse("Bitte überprüfen und korrigieren Sie die gegebenen Daten.")
                 .toString();
 
-        var layout = new GroupLayout();
+        var layout = new GroupLayoutElement();
         layout.setId(getKey() + "-task-view");
 
-        var instructions = new RichText();
+        var instructions = new RichTextContentElement();
         instructions.setId("instructions");
         instructions.setContent(instructionsContent);
         layout.addChild(instructions);
@@ -150,7 +142,7 @@ public class CheckAndUpdateActionNode implements ProcessNodeProvider, PluginComp
             throw ResponseException.internalServerError(e);
         }
 
-        var content = new RichText();
+        var content = new RichTextContentElement();
         content.setId("content");
         content.setContent(json);
         layout.addChild(content);
@@ -160,10 +152,10 @@ public class CheckAndUpdateActionNode implements ProcessNodeProvider, PluginComp
 
     @Nonnull
     @Override
-    public List<TaskViewEvent> getTaskViewEvents(@Nullable UserEntity user,
-                                                 @Nonnull ProcessDefinitionNodeEntity thisNode,
-                                                 @Nonnull ProcessInstanceEntity processInstance,
-                                                 @Nonnull ProcessInstanceTaskEntity thisTask) throws ResponseException {
+    public List<TaskViewEvent> getStaffTaskViewEvents(@Nullable UserEntity user,
+                                                      @Nonnull ProcessDefinitionNodeEntity thisNode,
+                                                      @Nonnull ProcessInstanceEntity processInstance,
+                                                      @Nonnull ProcessInstanceTaskEntity thisTask) throws ResponseException {
         return List.of(
                 new TaskViewEvent(
                         "Abgeschlossen",
@@ -232,12 +224,12 @@ public class CheckAndUpdateActionNode implements ProcessNodeProvider, PluginComp
     }
 
     @Override
-    public Optional<ProcessNodeExecutionResult> update(@Nullable UserEntity user,
-                                                       @Nonnull ProcessInstanceEntity processInstance,
-                                                       @Nonnull ProcessDefinitionNodeEntity thisNode,
-                                                       @Nonnull Map<String, Object> workingData,
-                                                       @Nonnull Map<String, Object> updateData,
-                                                       @Nonnull String event) throws Exception {
+    public Optional<ProcessNodeExecutionResult> updateStaff(@Nullable UserEntity user,
+                                                            @Nonnull ProcessInstanceEntity processInstance,
+                                                            @Nonnull ProcessDefinitionNodeEntity thisNode,
+                                                            @Nonnull Map<String, Object> workingData,
+                                                            @Nonnull Map<String, Object> updateData,
+                                                            @Nonnull String event) throws Exception {
         if (user == null) {
             return Optional.of(ProcessNodeExecutionResultError.of("Dieser Vorgang erfordert einen angemeldeten Benutzer."));
         }

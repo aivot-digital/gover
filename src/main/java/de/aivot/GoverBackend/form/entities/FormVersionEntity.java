@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.form.entities;
 
 import de.aivot.GoverBackend.core.converters.RootElementConverter;
-import de.aivot.GoverBackend.elements.models.elements.RootElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.identity.converters.IdentityProviderLinksConverter;
@@ -129,7 +129,7 @@ public class FormVersionEntity {
     @Convert(converter = RootElementConverter.class)
     @Column(columnDefinition = "jsonb")
     @NotNull(message = "Das Wurzelelement darf nicht null sein.")
-    private RootElement rootElement;
+    private FormLayoutElement rootElement;
 
     @Nonnull
     private LocalDateTime created;
@@ -173,7 +173,7 @@ public class FormVersionEntity {
                              @Nonnull List<PaymentProduct> paymentProducts,
                              @Nonnull List<IdentityProviderLink> identityProviders,
                              @Nonnull Boolean identityVerificationRequired,
-                             @Nonnull RootElement rootElement,
+                             @Nonnull FormLayoutElement rootElement,
                              @Nonnull LocalDateTime created,
                              @Nonnull LocalDateTime updated,
                              @Nullable LocalDateTime published,
@@ -503,11 +503,11 @@ public class FormVersionEntity {
     }
 
     @Nonnull
-    public RootElement getRootElement() {
+    public FormLayoutElement getRootElement() {
         return rootElement;
     }
 
-    public FormVersionEntity setRootElement(@Nonnull RootElement rootElement) {
+    public FormVersionEntity setRootElement(@Nonnull FormLayoutElement rootElement) {
         this.rootElement = rootElement;
         return this;
     }

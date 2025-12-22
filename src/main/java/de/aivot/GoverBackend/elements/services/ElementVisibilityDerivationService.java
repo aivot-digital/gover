@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.elements.services;
 import de.aivot.GoverBackend.elements.exceptions.DerivationException;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
-import de.aivot.GoverBackend.elements.models.elements.ElementWithChildren;
+import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
 import de.aivot.GoverBackend.nocode.services.NoCodeEvaluationService;
 import jakarta.annotation.Nonnull;
@@ -87,7 +87,7 @@ public class ElementVisibilityDerivationService {
         }
 
         // Determine if visibility calculation should be done with a function
-        if (vis.getConditionSet() != null && rootElement instanceof ElementWithChildren<?> elementWithChildren) {
+        if (vis.getConditionSet() != null && rootElement instanceof LayoutElement<?> elementWithChildren) {
             var res = vis
                     .getConditionSet()
                     .evaluate(

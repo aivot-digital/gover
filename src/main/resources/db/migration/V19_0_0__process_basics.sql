@@ -38,9 +38,10 @@ create table process_definition_versions
     process_definition_version int       not null default 0,
     -- The status of this process definition.
     -- Options are:
-    --   0 - Draft
-    --   1 - Published
-    --   2 - Revoked
+    --   0 - Drafted
+    --   1 - Testing
+    --   2 - Published
+    --   3 - Revoked
     status                     smallint  not null default 0,
 
     -- Define the retention time unit for process instances of this definition.

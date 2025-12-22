@@ -6,8 +6,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.common.contenttype.ContentType;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.*;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
+import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElementPattern;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.enums.XBezahldienstStatus;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -21,10 +24,10 @@ import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.corePlugin.Core;
 import de.aivot.GoverBackend.secrets.services.SecretService;
 import de.aivot.GoverBackend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.Nonnull;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -82,10 +85,10 @@ public class epay21PaymentProviderDefinition implements PaymentProviderDefinitio
 
     @Nonnull
     @Override
-    public GroupLayout getPaymentConfigLayout() throws ResponseException {
+    public GroupLayoutElement getPaymentConfigLayout() throws ResponseException {
         var list = new LinkedList<BaseFormElement>();
 
-        var originatorIdInput = new TextField();
+        var originatorIdInput = new TextInputElement();
         originatorIdInput.setPlaceholder("Originator ID");
         originatorIdInput.setType(ElementType.Text);
         originatorIdInput.setRequired(true);
@@ -95,7 +98,7 @@ public class epay21PaymentProviderDefinition implements PaymentProviderDefinitio
         originatorIdInput.setId(ORIGINATOR_ID_FIELD);
         list.add(originatorIdInput);
 
-        var endpointIdInput = new TextField();
+        var endpointIdInput = new TextInputElement();
         endpointIdInput.setId(ENDPOINT_ID_FIELD);
         endpointIdInput.setType(ElementType.Text);
         endpointIdInput.setRequired(true);
@@ -105,7 +108,7 @@ public class epay21PaymentProviderDefinition implements PaymentProviderDefinitio
         endpointIdInput.setWeight(6.0d);
         list.add(endpointIdInput);
 
-        var usernameInput = new TextField();
+        var usernameInput = new TextInputElement();
         usernameInput.setType(ElementType.Text);
         usernameInput.setId(USERNAME_FIELD);
         usernameInput.setRequired(true);
@@ -115,17 +118,17 @@ public class epay21PaymentProviderDefinition implements PaymentProviderDefinitio
         usernameInput.setWeight(6.0d);
         list.add(usernameInput);
 
-        var passwordInput = new SelectField();
+        var passwordInput = new SelectInputElement();
         passwordInput.setType(ElementType.Select);
         passwordInput.setId(PASSWORD_SECRET_KEY_FIELD);
         passwordInput.setRequired(true);
         passwordInput.setLabel("Passwort");
         passwordInput.setPlaceholder("Passwort");
         passwordInput.setHint("Das Passwort für die Authentifizierung am Zahlungsdienstleister.");
-        List<RadioFieldOption> clientSecretInputOptions = secretService
+        List<RadioInputElementOption> clientSecretInputOptions = secretService
                 .list()
                 .stream()
-                .map(secret -> RadioFieldOption.of(
+                .map(secret -> RadioInputElementOption.of(
                         secret.getKey().toString(),
                         secret.getName()
                 ))
@@ -134,11 +137,11 @@ public class epay21PaymentProviderDefinition implements PaymentProviderDefinitio
         passwordInput.setWeight(6.0d);
         list.add(passwordInput);
 
-        TextPattern urlPattern = new TextPattern();
+        TextInputElementPattern urlPattern = new TextInputElementPattern();
         urlPattern.setRegex("^(https?:\\/\\/)?([\\da-z.-]+)\\.([a-z.]{2,6})([\\/\\w .-]*)*\\/?$");
         urlPattern.setMessage("Bitte geben Sie eine gültige URL ein (z. B. https://example.com).");
 
-        var paymentTransactionUrlInput = new TextField();
+        var paymentTransactionUrlInput = new TextInputElement();
         paymentTransactionUrlInput.setType(ElementType.Text);
         paymentTransactionUrlInput.setId(PAYMENT_TRANSACTION_URL_FIELD);
         paymentTransactionUrlInput.setRequired(true);
@@ -148,7 +151,7 @@ public class epay21PaymentProviderDefinition implements PaymentProviderDefinitio
         paymentTransactionUrlInput.setPattern(urlPattern);
         list.add(paymentTransactionUrlInput);
 
-        var group = new GroupLayout();
+        var group = new GroupLayoutElement();
         group.setType(ElementType.Group);
         group.setId("epay21Config");
         group.setChildren(list);

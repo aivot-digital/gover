@@ -383,7 +383,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                     scope="data_modelling"
                     enabledIdentityProviderInfos={[]}
                     limitElementTypes={[
-                        ElementType.Container,
+                        ElementType.GroupLayout,
                         ElementType.ReplicatingContainer,
                         ElementType.Text,
                         ElementType.Number,

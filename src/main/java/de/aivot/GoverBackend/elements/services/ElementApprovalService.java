@@ -1,14 +1,14 @@
 package de.aivot.GoverBackend.elements.services;
 
 import de.aivot.GoverBackend.elements.enums.ElementApprovalStatus;
-import de.aivot.GoverBackend.elements.models.elements.RootElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class ElementApprovalService {
-    public static Map<String, ElementApprovalStatus> determineApprovals(RootElement rootElement) {
+    public static Map<String, ElementApprovalStatus> determineApprovals(FormLayoutElement rootElement) {
         var allElements = ElementFlattenUtils
                 .flattenElements(rootElement);
 
@@ -20,7 +20,7 @@ public class ElementApprovalService {
         return status;
     }
 
-    public static boolean isApproved(RootElement rootElement) {
+    public static boolean isApproved(FormLayoutElement rootElement) {
         var allElements = ElementFlattenUtils
                 .flattenElements(rootElement);
 

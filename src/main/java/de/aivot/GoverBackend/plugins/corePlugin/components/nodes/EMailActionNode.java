@@ -1,8 +1,9 @@
 package de.aivot.GoverBackend.plugins.corePlugin.components.nodes;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.GoverBackend.elements.models.elements.form.input.TextField;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
+import de.aivot.GoverBackend.elements.models.elements.form.input.RichTextInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.corePlugin.Core;
@@ -18,6 +19,9 @@ import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import org.commonmark.node.Node;
+import org.commonmark.parser.Parser;
+import org.commonmark.renderer.html.HtmlRenderer;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
@@ -30,9 +34,9 @@ import java.util.Map;
 public class EMailActionNode implements ProcessNodeProvider, PluginComponent {
     private static final String RECIPIENT_FIELD_ID = "to";
     private static final String SUBJECT_FIELD_ID = "subject";
-    private static final String CONTENT_FIELD_ID = "content_rtx";
+    private static final String CONTENT_FIELD_ID = "content";
 
-    private static final String PORT_NAME = "output";
+    private static final String SUCCESS_PORT_NAME = "output";
 
     private final GoverConfig goverConfig;
     private final ProcessDataService processDataService;
@@ -60,33 +64,32 @@ public class EMailActionNode implements ProcessNodeProvider, PluginComponent {
     @Nonnull
     @Override
     @JsonIgnore
-    public GroupLayout getConfigurationLayout(@Nonnull UserEntity user,
-                                              @Nonnull ProcessDefinitionEntity processDefinition,
-                                              @Nonnull ProcessDefinitionVersionEntity processDefinitionVersion,
-                                              @Nullable ProcessDefinitionNodeEntity thisNode) {
-        var layout = new GroupLayout();
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull UserEntity user,
+                                                      @Nonnull ProcessDefinitionEntity processDefinition,
+                                                      @Nonnull ProcessDefinitionVersionEntity processDefinitionVersion,
+                                                      @Nullable ProcessDefinitionNodeEntity thisNode) {
+        var layout = new ConfigLayoutElement();
         layout.setId(getKey() + "-config");
 
-        var recipient = new TextField();
+        var recipient = new TextInputElement();
         recipient.setId(RECIPIENT_FIELD_ID);
-        recipient.setLabel("Adresse des Empfänger:in");
+        recipient.setLabel("Adresse der Empfänger:in");
         recipient.setHint("Geben Sie die E-Mail-Adresse der Empfänger:in ein.");
         recipient.setRequired(true);
         layout.addChild(recipient);
 
-        var subject = new TextField();
+        var subject = new TextInputElement();
         subject.setId(SUBJECT_FIELD_ID);
         subject.setLabel("Betreff der E-Mail");
         subject.setHint("Geben Sie den Betreff der E-Mail ein.");
         subject.setRequired(true);
         layout.addChild(subject);
 
-        var content = new TextField();
+        var content = new RichTextInputElement();
         content.setId(CONTENT_FIELD_ID);
         content.setLabel("Inhalt der E-Mail");
         content.setHint("Geben Sie den Inhalt der E-Mail ein.");
         content.setRequired(true);
-        content.setIsMultiline(true);
         layout.addChild(content);
 
         return layout;
@@ -115,7 +118,7 @@ public class EMailActionNode implements ProcessNodeProvider, PluginComponent {
     public List<ProcessNodePort> getPorts() {
         return List.of(
                 new ProcessNodePort(
-                        PORT_NAME,
+                        SUCCESS_PORT_NAME,
                         "Versendet",
                         "Der Prozess wird hier fortgesetzt, nachdem die E-Mail versendet wurde."
                 )
@@ -158,15 +161,22 @@ public class EMailActionNode implements ProcessNodeProvider, PluginComponent {
             return ProcessNodeExecutionResultError.of("Der Betreff darf nicht leer sein.");
         }
 
+        var contentMarkdown = configuration
+                .get(CONTENT_FIELD_ID)
+                .getOptionalValue()
+                .orElse("")
+                .toString();
+
+        Parser parser = Parser.builder().build();
+        Node document = parser.parse(contentMarkdown);
+        HtmlRenderer renderer = HtmlRenderer.builder().build();
+        var contentHtml = renderer.render(document);
+
         var content =
                 processDataService
                         .interpolate(
                                 workingData,
-                                configuration
-                                        .get(CONTENT_FIELD_ID)
-                                        .getOptionalValue()
-                                        .orElse("")
-                                        .toString()
+                                contentHtml
                         );
 
         if (StringUtils.isNullOrEmpty(content)) {
@@ -193,7 +203,7 @@ public class EMailActionNode implements ProcessNodeProvider, PluginComponent {
         metadata.put("content", content);
 
         return new ProcessNodeExecutionResultTaskCompleted()
-                .setViaPort(PORT_NAME)
+                .setViaPort(SUCCESS_PORT_NAME)
                 .setNodeData(metadata)
                 .addEvent(ProcessNodeExecutionEvent.of(
                         ProcessHistoryEventType.Complete,

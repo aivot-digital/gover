@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.form.entities;
 
 import de.aivot.GoverBackend.core.converters.RootElementConverter;
-import de.aivot.GoverBackend.elements.models.elements.RootElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
@@ -56,7 +56,7 @@ public class VFormVersionWithDetailsAndPermissionsEntity {
     private Integer submissionRetentionWeeks;
     @Column(columnDefinition = "jsonb")
     @Convert(converter = RootElementConverter.class)
-    private RootElement rootElement;
+    private FormLayoutElement rootElement;
     private LocalDateTime created;
     private LocalDateTime updated;
     private LocalDateTime published;
@@ -368,11 +368,11 @@ public class VFormVersionWithDetailsAndPermissionsEntity {
         return this;
     }
 
-    public RootElement getRootElement() {
+    public FormLayoutElement getRootElement() {
         return rootElement;
     }
 
-    public VFormVersionWithDetailsAndPermissionsEntity setRootElement(RootElement rootElement) {
+    public VFormVersionWithDetailsAndPermissionsEntity setRootElement(FormLayoutElement rootElement) {
         this.rootElement = rootElement;
         return this;
     }

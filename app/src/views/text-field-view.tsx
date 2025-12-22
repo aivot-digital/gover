@@ -82,25 +82,6 @@ export function TextFieldView(props: BaseViewProps<TextFieldElement, string>) {
         );
     }
 
-    if (element.id != null && element.id.endsWith('_code')) {
-        return (
-            <CodeEditor
-                value={value?.toString()}
-                onChange={setValue}
-                actions={[]}
-            />
-        );
-    }
-
-    if (element.id != null && element.id.endsWith('_rtx')) {
-        return (
-            <RichTextEditorComponentView
-                value={value?.toString()}
-                onChange={setValue}
-            />
-        );
-    }
-
     return (
         <TextFieldComponent
             {...textFieldProps}

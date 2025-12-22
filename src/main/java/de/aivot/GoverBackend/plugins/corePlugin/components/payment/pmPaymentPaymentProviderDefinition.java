@@ -7,11 +7,11 @@ import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioFieldOption;
-import de.aivot.GoverBackend.elements.models.elements.form.input.SelectField;
-import de.aivot.GoverBackend.elements.models.elements.form.input.TextField;
-import de.aivot.GoverBackend.elements.models.elements.form.input.TextPattern;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
+import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElementPattern;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
 import de.aivot.GoverBackend.payment.exceptions.PaymentException;
@@ -88,10 +88,10 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
 
     @Nonnull
     @Override
-    public GroupLayout getPaymentConfigLayout() throws ResponseException {
+    public GroupLayoutElement getPaymentConfigLayout() throws ResponseException {
         var list = new LinkedList<BaseFormElement>();
 
-        var originatorIdInput = new TextField()
+        var originatorIdInput = new TextInputElement()
                 .setPlaceholder("Originator ID")
                 .setRequired(true)
                 .setLabel("Originator ID")
@@ -100,7 +100,7 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
                 .setId(ORIGINATOR_ID_FIELD);
         list.add((BaseFormElement) originatorIdInput);
 
-        var endpointIdInput = new TextField();
+        var endpointIdInput = new TextInputElement();
         endpointIdInput.setId(ENDPOINT_ID_FIELD);
         endpointIdInput.setRequired(true);
         endpointIdInput.setLabel("Endpoint ID");
@@ -109,7 +109,7 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
         endpointIdInput.setWeight(6.0d);
         list.add(endpointIdInput);
 
-        var clientIdInput = new TextField();
+        var clientIdInput = new TextInputElement();
         clientIdInput.setId(CLIENT_ID_FIELD);
         clientIdInput.setRequired(true);
         clientIdInput.setLabel("OAuth Client-ID");
@@ -118,7 +118,7 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
         clientIdInput.setWeight(6.0d);
         list.add(clientIdInput);
 
-        var clientSecretInput = new SelectField();
+        var clientSecretInput = new SelectInputElement();
         clientSecretInput.setId(CLIENT_SECRET_FIELD);
         clientSecretInput.setRequired(true);
         clientSecretInput.setLabel("OAuth Client Secret");
@@ -127,7 +127,7 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
         var clientSecretInputOptions = secretService
                 .list()
                 .stream()
-                .map(secret -> new RadioFieldOption()
+                .map(secret -> new RadioInputElementOption()
                         .setValue(secret.getKey().toString())
                         .setLabel(secret.getName())
                 )
@@ -136,11 +136,11 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
         clientSecretInput.setWeight(6.0d);
         list.add(clientSecretInput);
 
-        TextPattern urlPattern = new TextPattern()
+        TextInputElementPattern urlPattern = new TextInputElementPattern()
                 .setRegex("^(https?:\\/\\/)?([\\da-z.-]+)\\.([a-z.]{2,6})([\\/\\w .-]*)*\\/?$")
                 .setMessage("Bitte geben Sie eine gültige URL ein (z. B. https://example.com).");
 
-        var oauthUrlInput = new TextField();
+        var oauthUrlInput = new TextInputElement();
         oauthUrlInput.setId(OAUTH_URL_FIELD);
         oauthUrlInput.setRequired(true);
         oauthUrlInput.setLabel("OAuth URL");
@@ -149,7 +149,7 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
         oauthUrlInput.setPattern(urlPattern);
         list.add(oauthUrlInput);
 
-        var paymentTransactionUrlInput = new TextField();
+        var paymentTransactionUrlInput = new TextInputElement();
         paymentTransactionUrlInput.setId(PAYMENT_TRANSACTION_URL_FIELD);
         paymentTransactionUrlInput.setRequired(true);
         paymentTransactionUrlInput.setLabel("Basis-URL");
@@ -158,7 +158,7 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
         paymentTransactionUrlInput.setPattern(urlPattern);
         list.add(paymentTransactionUrlInput);
 
-        var group = new GroupLayout();
+        var group = new GroupLayoutElement();
         group.setId("pmPaymentConfig");
         group.setChildren(list);
 

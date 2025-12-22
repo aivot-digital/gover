@@ -138,7 +138,7 @@ export function ProcessAssignedTaskListPage() {
                             const node = params.row.node;
                             const provider = params.row.provider;
                             return (
-                                <CellLink to={`/tasks/${params.row.instance?.accessKey}/${params.row.accessKey}`}>
+                                <CellLink to={`/tasks/${params.row.instance?.id}/${params.row.id}`}>
                                     {getNodeName(node, provider)}
                                 </CellLink>
                             );

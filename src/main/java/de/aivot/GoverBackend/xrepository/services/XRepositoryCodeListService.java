@@ -4,12 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.services.HttpService;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioFieldOption;
+import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.xrepository.models.XRepositoryCodeList;
+import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Service;
 
-import jakarta.annotation.Nonnull;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpResponse;
@@ -58,7 +58,7 @@ public class XRepositoryCodeListService {
         }
     }
 
-    public List<RadioFieldOption> getRadioFieldOptionCodeList(@Nonnull String codeListUrn) throws ResponseException {
+    public List<RadioInputElementOption> getRadioFieldOptionCodeList(@Nonnull String codeListUrn) throws ResponseException {
         var codeList = getCodeList(codeListUrn);
 
         var labelColumnRef = codeList
@@ -67,12 +67,12 @@ public class XRepositoryCodeListService {
                 .getColumnRef()
                 .getRef();
 
-        var options = new LinkedList<RadioFieldOption>();
+        var options = new LinkedList<RadioInputElementOption>();
 
         for (var row : codeList.getCodeList().getRow()) {
             for (var col : row.getValue()) {
                 if (col.getColumnRef().equals(labelColumnRef)) {
-                    options.add(RadioFieldOption.of(
+                    options.add(RadioInputElementOption.of(
                             col.getSimpleValue(),
                             col.getSimpleValue()
                     ));

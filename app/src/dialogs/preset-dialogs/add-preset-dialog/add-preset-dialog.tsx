@@ -24,7 +24,7 @@ function createEmptyPreset(): PresetCreateReqeustDTO {
         title: '',
         rootElement: {
             id: '',
-            type: ElementType.Container,
+            type: ElementType.GroupLayout,
             children: [],
             storeLink: null,
             weight: undefined,

@@ -24,7 +24,7 @@ export class PresetVersionApiService extends CrudApiService<
             presetKey: '',
             version: 1,
             status: FormStatus.Drafted,
-            rootElement: generateElementWithDefaultValues(ElementType.Container) as GroupLayout,
+            rootElement: generateElementWithDefaultValues(ElementType.GroupLayout) as GroupLayout,
             published: null,
             revoked: null,
             created: new Date().toISOString(),

@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.javascript.services;
 
-import de.aivot.GoverBackend.elements.models.elements.RootElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
 import org.graalvm.polyglot.HostAccess;
@@ -64,7 +64,7 @@ class JavascriptEngineTest {
 
         try (var service = new JavascriptEngine(List.of())) {
             var res = service
-                    .registerGlobalObject("test", new RootElement())
+                    .registerGlobalObject("test", new FormLayoutElement())
                     .evaluateCode(new JavascriptCode().setCode("test.headline;"));
             assertTrue(res.isNull());
         } catch (Exception e) {

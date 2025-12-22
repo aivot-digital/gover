@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.Optional;
 
 public enum ElementType implements Identifiable<Integer> {
-    Root(0),
+    FormLayout(0),
     Step(1),
     Alert(2),
     Group(3),
@@ -17,7 +17,7 @@ public enum ElementType implements Identifiable<Integer> {
     MultiCheckbox(7),
     Number(8),
     ReplicatingContainer(9),
-    Richtext(10),
+    RichText(10),
     Radio(11),
     Select(12),
     Spacer(13),
@@ -28,10 +28,20 @@ public enum ElementType implements Identifiable<Integer> {
     SubmitStep(18),
     SummaryStep(19),
     Image(20),
-    SubmittedStep(21), // This step does not eixist anymore, but is kept for compatibility
-    FileUpload(22);
+    SubmittedStep(21), // This step does not exist anymore, but is kept for compatibility
+    FileUpload(22),
+    DialogLayout(23),
+    StepperLayout(24),
+    ConfigLayout(25),
+    FunctionInput(26),
+    CodeInput(27),
+    RichTextInput(28),
+    UiDefinitionInput(29),
+    IdentityInput(30),
+    TabLayout(30),
+    ;
 
-    public static final String ID_Root = "0";
+    public static final String ID_FormLayout = "0";
     public static final String ID_Step = "1";
     public static final String ID_Alert = "2";
     public static final String ID_Group = "3";
@@ -41,7 +51,7 @@ public enum ElementType implements Identifiable<Integer> {
     public static final String ID_MultiCheckbox = "7";
     public static final String ID_Number = "8";
     public static final String ID_ReplicatingContainer = "9";
-    public static final String ID_Richtext = "10";
+    public static final String ID_RichText = "10";
     public static final String ID_Radio = "11";
     public static final String ID_Select = "12";
     public static final String ID_Spacer = "13";
@@ -52,8 +62,17 @@ public enum ElementType implements Identifiable<Integer> {
     public static final String ID_SubmitStep = "18";
     public static final String ID_SummaryStep = "19";
     public static final String ID_Image = "20";
-    public static final String ID_SubmittedStep = "21";  // This step does not eixist anymore, but is kept for compatibility
+    public static final String ID_SubmittedStep = "21"; // This step does not exist anymore, but is kept for compatibility
     public static final String ID_FileUpload = "22";
+    public static final String ID_DialogLayout = "23";
+    public static final String ID_StepperLayout = "24";
+    public static final String ID_ConfigLayout = "25";
+    public static final String ID_FunctionInput = "26";
+    public static final String ID_CodeInput = "27";
+    public static final String ID_RichTextInput = "28";
+    public static final String ID_UiDefinitionInput = "29";
+    public static final String ID_IdentityInput = "30";
+    public static final String ID_TabLayout = "31";
 
     private final Integer key;
 

@@ -228,7 +228,7 @@ export function PresetEditPage() {
             presetKey: preset.key,
             version: 0,
             status: FormStatus.Drafted,
-            rootElement: presetVersion ? presetVersion.rootElement : generateElementWithDefaultValues(ElementType.Container) as GroupLayout,
+            rootElement: presetVersion ? presetVersion.rootElement : generateElementWithDefaultValues(ElementType.GroupLayout) as GroupLayout,
             created: new Date().toISOString(),
             updated: new Date().toISOString(),
             published: null,

@@ -6,11 +6,11 @@ import de.aivot.GoverBackend.asset.repositories.AssetRepository;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioFieldOption;
-import de.aivot.GoverBackend.elements.models.elements.form.input.SelectField;
-import de.aivot.GoverBackend.elements.models.elements.form.input.TextField;
-import de.aivot.GoverBackend.elements.models.elements.form.input.TextPattern;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
+import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElementPattern;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
@@ -23,11 +23,11 @@ import de.aivot.GoverBackend.plugins.corePlugin.Core;
 import de.aivot.GoverBackend.secrets.services.SecretService;
 import de.aivot.GoverBackend.services.storages.AssetStorageService;
 import de.aivot.GoverBackend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import java.io.ByteArrayInputStream;
@@ -97,10 +97,10 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
 
     @Nullable
     @Override
-    public GroupLayout getPaymentConfigLayout() throws ResponseException {
+    public GroupLayoutElement getPaymentConfigLayout() throws ResponseException {
         var list = new LinkedList<BaseFormElement>();
 
-        var originatorIdInput = new TextField();
+        var originatorIdInput = new TextInputElement();
         originatorIdInput.setId(ORIGINATOR_ID_FIELD);
         originatorIdInput.setIsMultiline(false);
         originatorIdInput.setRequired(true);
@@ -110,7 +110,7 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
         originatorIdInput.setWeight(6.0d);
         list.add(originatorIdInput);
 
-        var endpointIdInput = new TextField();
+        var endpointIdInput = new TextInputElement();
         endpointIdInput.setId(ENDPOINT_ID_FIELD);
         endpointIdInput.setIsMultiline(false);
         endpointIdInput.setRequired(true);
@@ -121,7 +121,7 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
         list.add(endpointIdInput);
 
 
-        var clientCertificateInput = new SelectField();
+        var clientCertificateInput = new SelectInputElement();
         clientCertificateInput.setId(CERTIFICATE_FIELD);
         clientCertificateInput.setRequired(true);
         clientCertificateInput.setLabel("Zertifikat");
@@ -131,7 +131,7 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
                 .findAll()
                 .stream()
                 .filter(secret -> "application/x-pkcs12".equals(secret.getContentType()))
-                .map(secret -> new RadioFieldOption()
+                .map(secret -> new RadioInputElementOption()
                         .setValue(secret.getKey().toString())
                         .setLabel(secret.getFilename())
                 )
@@ -140,7 +140,7 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
         clientCertificateInput.setWeight(6.0d);
         list.add(clientCertificateInput);
 
-        var clientSecretInput = new SelectField();
+        var clientSecretInput = new SelectInputElement();
         clientSecretInput.setId(CERTIFICATE_PASSWORD_FIELD);
         clientSecretInput.setRequired(true);
         clientSecretInput.setLabel("Zertifikatpasswort");
@@ -149,7 +149,7 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
         var clientSecretInputOptions = secretService
                 .list()
                 .stream()
-                .map(secret -> new RadioFieldOption()
+                .map(secret -> new RadioInputElementOption()
                         .setValue(secret.getKey().toString())
                         .setLabel(secret.getName())
                 )
@@ -158,19 +158,19 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
         clientSecretInput.setWeight(6.0d);
         list.add(clientSecretInput);
 
-        var paymentTransactionUrlInput = new TextField();
+        var paymentTransactionUrlInput = new TextInputElement();
         paymentTransactionUrlInput.setId(PAYMENT_TRANSACTION_URL_FIELD);
         paymentTransactionUrlInput.setRequired(true);
         paymentTransactionUrlInput.setLabel("Basis-URL");
         paymentTransactionUrlInput.setPlaceholder("https://epayment-stage.dataport.de/konnektor/epayment/");
         paymentTransactionUrlInput.setHint("Die Basis-URL des Zielsystems gemäß XBezahldienste-Standard. Diese wird vom Zahlungsdienstleister bereitgestellt.");
-        TextPattern urlPattern = new TextPattern()
+        TextInputElementPattern urlPattern = new TextInputElementPattern()
                 .setRegex("^(https?:\\/\\/)?([\\da-z.-]+)\\.([a-z.]{2,6})([\\/\\w .-]*)*\\/?$")
                 .setMessage("Bitte geben Sie eine gültige URL ein (z. B. https://example.com).");
         paymentTransactionUrlInput.setPattern(urlPattern);
         list.add(paymentTransactionUrlInput);
 
-        var group = new GroupLayout();
+        var group = new GroupLayoutElement();
         group.setType(ElementType.Group);
         group.setId("ePayBLConfig");
         group.setChildren(list);

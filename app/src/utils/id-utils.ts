@@ -39,17 +39,17 @@ function countIdOccurrences(comp: AnyElement, id: string): number {
 }
 
 const prefixMap: Record<ElementType, string> = {
-    [ElementType.Root]: 'rt',
+    [ElementType.FormLayout]: 'rt',
     [ElementType.Step]: 'st',
     [ElementType.Alert]: 'al',
-    [ElementType.Container]: 'gp',
+    [ElementType.GroupLayout]: 'gp',
     [ElementType.Checkbox]: 'cx',
     [ElementType.Date]: 'dt',
     [ElementType.Headline]: 'hd',
     [ElementType.MultiCheckbox]: 'mx',
     [ElementType.Number]: 'nm',
     [ElementType.ReplicatingContainer]: 'rp',
-    [ElementType.Richtext]: 'rx',
+    [ElementType.RichText]: 'rx',
     [ElementType.Radio]: 'rd',
     [ElementType.Select]: 'sl',
     [ElementType.Spacer]: 'sp',
@@ -62,6 +62,15 @@ const prefixMap: Record<ElementType, string> = {
     [ElementType.Image]: 'im',
     [ElementType.SubmittedStep]: 'sx',
     [ElementType.FileUpload]: 'fu',
+    [ElementType.DialogLayout]: 'da',
+    [ElementType.StepperLayout]: 'sr',
+    [ElementType.ConfigLayout]: 'cl',
+    [ElementType.FunctionInput]: 'fi',
+    [ElementType.CodeInput]: 'ci',
+    [ElementType.RichTextInput]: 'ri',
+    [ElementType.UiDefinitionInput]: 'ui',
+    [ElementType.IdentityInput]: 'ii',
+    [ElementType.TabLayout]: 'tl',
 };
 
 export function generateElementIdForType(type: ElementType): string {

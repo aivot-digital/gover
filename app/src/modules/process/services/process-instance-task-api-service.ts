@@ -59,11 +59,23 @@ export class ProcessInstanceTaskApiService extends BaseCrudApiService<
         };
     }
 
-    public getTaskView(instanceAccessKey: string, taskAccessKey: string): Promise<TaskView> {
+    public getStaffTaskView(instanceId: number, taskId: number): Promise<TaskView> {
+        return this.get(`/api/processes/${instanceId}/task/${taskId}/`);
+    }
+
+    public getCustomerTaskView(instanceAccessKey: string, taskAccessKey: string): Promise<TaskView> {
         return this.get(`/api/public/processes/${instanceAccessKey}/task/${taskAccessKey}/`);
     }
 
-    public putTaskView(instanceAccessKey: string, taskAccessKey: string, payload: ElementData, event: string): Promise<TaskView> {
+    public putStaffTaskView(instanceId: number, taskId: number, payload: ElementData, event: string): Promise<TaskView> {
+        return this.put<ElementData, TaskView>(`/api/processes/${instanceId}/task/${taskId}/`, payload, {
+            query: {
+                event: event,
+            },
+        });
+    }
+
+    public putCustomerTaskView(instanceAccessKey: string, taskAccessKey: string, payload: ElementData, event: string): Promise<TaskView> {
         return this.put<ElementData, TaskView>(`/api/public/processes/${instanceAccessKey}/task/${taskAccessKey}/`, payload, {
             query: {
                 event: event,

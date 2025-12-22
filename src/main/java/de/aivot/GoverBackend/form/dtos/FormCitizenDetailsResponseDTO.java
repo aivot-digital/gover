@@ -1,12 +1,12 @@
 package de.aivot.GoverBackend.form.dtos;
 
-import de.aivot.GoverBackend.elements.models.elements.RootElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
 import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
-
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+
 import java.util.List;
 
 public record FormCitizenDetailsResponseDTO(
@@ -19,7 +19,7 @@ public record FormCitizenDetailsResponseDTO(
         @Nonnull
         String title,
         @Nonnull
-        RootElement root,
+        FormLayoutElement root,
         @Nullable
         Integer legalSupportDepartmentId,
         @Nullable

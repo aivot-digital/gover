@@ -1,5 +1,14 @@
 import React from 'react';
-import {IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Tooltip} from '@mui/material';
+import {
+    IconButton,
+    List,
+    ListItem,
+    ListItemButton,
+    ListItemIcon,
+    ListItemText,
+    ListSubheader,
+    Tooltip
+} from '@mui/material';
 import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
 import {getElementNameForType} from '../../../data/element-type/element-names';
 import {type BaseTabProps} from './base-tab-props';
@@ -32,16 +41,16 @@ const elementTypeGroupsLabels: { [key in ElementTypeGroups]: string } = {
 const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
     [ElementType.Alert]: ElementTypeGroups.Information,
     [ElementType.Image]: ElementTypeGroups.Information,
-    [ElementType.Container]: ElementTypeGroups.Display,
+    [ElementType.GroupLayout]: ElementTypeGroups.Display,
     [ElementType.Step]: null,
-    [ElementType.Root]: null,
+    [ElementType.FormLayout]: null,
     [ElementType.Checkbox]: ElementTypeGroups.Select,
     [ElementType.Date]: ElementTypeGroups.DateTime,
     [ElementType.Headline]: ElementTypeGroups.Information,
     [ElementType.MultiCheckbox]: ElementTypeGroups.Select,
     [ElementType.Number]: ElementTypeGroups.Input,
     [ElementType.ReplicatingContainer]: ElementTypeGroups.Input,
-    [ElementType.Richtext]: ElementTypeGroups.Information,
+    [ElementType.RichText]: ElementTypeGroups.Information,
     [ElementType.Radio]: ElementTypeGroups.Select,
     [ElementType.Select]: ElementTypeGroups.Select,
     [ElementType.Spacer]: ElementTypeGroups.Display,
@@ -54,6 +63,16 @@ const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
     [ElementType.SummaryStep]: null,
     [ElementType.SubmitStep]: null,
     [ElementType.SubmittedStep]: null,
+
+    [ElementType.DialogLayout]: null,
+    [ElementType.StepperLayout]: null,
+    [ElementType.ConfigLayout]: null,
+    [ElementType.FunctionInput]: null,
+    [ElementType.CodeInput]: null,
+    [ElementType.RichTextInput]: null,
+    [ElementType.UiDefinitionInput]: null,
+    [ElementType.IdentityInput]: null,
+    [ElementType.TabLayout]: null,
 };
 
 export function ElementTab({
@@ -118,7 +137,7 @@ export function ElementTab({
                                                         showElementInfo(type);
                                                     }}
                                                 >
-                                                    <InfoOutlinedIcon />
+                                                    <InfoOutlinedIcon/>
                                                 </IconButton>
                                             </Tooltip>
                                         }
@@ -134,7 +153,7 @@ export function ElementTab({
                                             selected={highlightedElement === type}
                                         >
                                             <ListItemIcon sx={{pl: 1.5}}>
-                                                <Icon />
+                                                <Icon/>
                                             </ListItemIcon>
                                             <ListItemText
                                                 disableTypography

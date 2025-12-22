@@ -5,19 +5,14 @@ import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
-import de.aivot.GoverBackend.plugin.models.PluginComponent;
-import de.aivot.GoverBackend.plugins.corePlugin.Core;
-import de.aivot.GoverBackend.plugins.corePlugin.components.payment.models.GiroPayCallbackResponse;
-import de.aivot.GoverBackend.plugins.corePlugin.components.payment.models.GiroPayPaymentRequest;
-import de.aivot.GoverBackend.plugins.corePlugin.components.payment.models.GiroPaymentStartResponse;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioFieldOption;
-import de.aivot.GoverBackend.elements.models.elements.form.input.SelectField;
-import de.aivot.GoverBackend.elements.models.elements.form.input.TextField;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
+import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
@@ -28,12 +23,17 @@ import de.aivot.GoverBackend.payment.exceptions.PaymentSerializationException;
 import de.aivot.GoverBackend.payment.models.PaymentProviderDefinition;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentTransaction;
+import de.aivot.GoverBackend.plugin.models.PluginComponent;
+import de.aivot.GoverBackend.plugins.corePlugin.Core;
+import de.aivot.GoverBackend.plugins.corePlugin.components.payment.models.GiroPayCallbackResponse;
+import de.aivot.GoverBackend.plugins.corePlugin.components.payment.models.GiroPayPaymentRequest;
+import de.aivot.GoverBackend.plugins.corePlugin.components.payment.models.GiroPaymentStartResponse;
 import de.aivot.GoverBackend.secrets.services.SecretService;
 import de.aivot.GoverBackend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.Nonnull;
 import java.net.URI;
 import java.net.http.HttpResponse;
 import java.security.InvalidKeyException;
@@ -96,10 +96,10 @@ public class GirocheckoutPaymentProviderDefinition implements PaymentProviderDef
 
     @Nonnull
     @Override
-    public GroupLayout getPaymentConfigLayout() throws ResponseException {
+    public GroupLayoutElement getPaymentConfigLayout() throws ResponseException {
         var list = new LinkedList<BaseFormElement>();
 
-        var sellerIdInput = new TextField();
+        var sellerIdInput = new TextInputElement();
         sellerIdInput.setType(ElementType.Text);
         sellerIdInput.setId(MERCHANT_ID_FIELD);
         sellerIdInput.setRequired(true);
@@ -109,7 +109,7 @@ public class GirocheckoutPaymentProviderDefinition implements PaymentProviderDef
         sellerIdInput.setWeight(6.0d);
         list.add(sellerIdInput);
 
-        var projectIdInput = new TextField();
+        var projectIdInput = new TextInputElement();
         projectIdInput.setType(ElementType.Text);
         projectIdInput.setId(PROJECT_ID_FIELD);
         projectIdInput.setRequired(true);
@@ -119,17 +119,17 @@ public class GirocheckoutPaymentProviderDefinition implements PaymentProviderDef
         projectIdInput.setWeight(6.0d);
         list.add(projectIdInput);
 
-        var projectPasswordInput = new SelectField();
+        var projectPasswordInput = new SelectInputElement();
         projectPasswordInput.setType(ElementType.Select);
         projectPasswordInput.setId(PROJECT_PASSWORD_FIELD);
         projectPasswordInput.setRequired(true);
         projectPasswordInput.setLabel("Projekt-Passwort");
         projectPasswordInput.setPlaceholder("Projekt-Passwort");
         projectPasswordInput.setHint("Das Projekt-Passwort finden Sie in Ihrem GiroCockpit. Es muss zuvor unter \"Geheimnisse\" hinterlegt werden, um hier auswählbar zu sein.");
-        List<RadioFieldOption> clientSecretInputOptions = secretService
+        List<RadioInputElementOption> clientSecretInputOptions = secretService
                 .list()
                 .stream()
-                .map(secret -> new RadioFieldOption()
+                .map(secret -> new RadioInputElementOption()
                         .setValue(secret.getKey().toString())
                         .setLabel(secret.getName())
                 )
@@ -137,7 +137,7 @@ public class GirocheckoutPaymentProviderDefinition implements PaymentProviderDef
         projectPasswordInput.setOptions(clientSecretInputOptions);
         list.add(projectPasswordInput);
 
-        var group = new GroupLayout();
+        var group = new GroupLayoutElement();
         group.setType(ElementType.Group);
         group.setId("giroCheckoutConfig");
         group.setChildren(list);

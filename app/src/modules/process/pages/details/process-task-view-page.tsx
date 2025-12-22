@@ -22,7 +22,7 @@ export function ProcessTaskViewPage() {
 
     useEffect(() => {
         new ProcessInstanceTaskApiService()
-            .getTaskView(params.instanceAccessKey!, params.taskAccessKey!)
+            .getStaffTaskView(parseInt(params.instanceId!), parseInt(params.taskId!))
             .then(setTaskView)
             .catch((err) => {
                 if (err.status === 403) {
@@ -45,7 +45,7 @@ export function ProcessTaskViewPage() {
 
         withDelay(
             new ProcessInstanceTaskApiService()
-                .putTaskView(params.instanceAccessKey!, params.taskAccessKey!, taskView?.data!, evt.event),
+                .putStaffTaskView(parseInt(params.instanceId!), parseInt(params.taskId!), taskView?.data!, evt.event),
             500,
         )
             .then(setTaskView)

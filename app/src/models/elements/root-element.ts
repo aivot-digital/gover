@@ -5,7 +5,7 @@ import {type IntroductionStepElement} from './steps/introduction-step-element';
 import {type SummaryStepElement} from './steps/summary-step-element';
 import {type SubmitStepElement} from './steps/submit-step-element';
 
-export interface RootElement extends BaseElement<ElementType.Root> {
+export interface RootElement extends BaseElement<ElementType.FormLayout> {
     headline: string | null | undefined;
     tabTitle: string | null | undefined;
     children: StepElement[] | null | undefined;
@@ -22,5 +22,5 @@ export interface RootElement extends BaseElement<ElementType.Root> {
 }
 
 export function isRootElement(obj: any): obj is RootElement {
-    return obj.type === ElementType.Root;
+    return obj.type === ElementType.FormLayout;
 }

@@ -44,9 +44,10 @@ public class ProcessDataService {
         }
 
         var result = string;
+                //.replace("\\_", "_"); // Remove escaping for underscores because we think if markdown
 
         List<String> matches = jsPattern
-                .matcher(string)
+                .matcher(result)
                 .results()
                 .map(MatchResult::group)
                 .toList();

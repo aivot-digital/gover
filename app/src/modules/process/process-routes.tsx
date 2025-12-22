@@ -40,7 +40,7 @@ export const processRoutes: RouteObject[] = [
         element: <ProcessAssignedTaskListPage/>,
     },
     {
-        path: '/tasks/:instanceAccessKey/:taskAccessKey',
+        path: '/tasks/:instanceId/:taskId',
         element: <ProcessTaskViewPage/>,
     },
 ];

@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.elements.models.elements.steps;
 
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
-import de.aivot.GoverBackend.elements.models.elements.ElementWithChildren;
+import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.enums.ElementType;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -11,7 +11,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
-public class StepElement extends BaseElement implements ElementWithChildren<BaseFormElement> {
+public class StepElement extends BaseElement implements LayoutElement<BaseFormElement> {
     @Nullable
     private String title;
     @Nullable

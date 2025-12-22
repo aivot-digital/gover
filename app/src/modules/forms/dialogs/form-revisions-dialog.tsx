@@ -482,7 +482,7 @@ type ElementFieldLabelMap = {
 };
 
 const et: ElementFieldLabelMap = {
-    [ElementType.Root]: {
+    [ElementType.FormLayout]: {
         headline: 'Überschrift',
         tabTitle: 'Tab-Titel',
         expiring: 'Ablaufdatum',

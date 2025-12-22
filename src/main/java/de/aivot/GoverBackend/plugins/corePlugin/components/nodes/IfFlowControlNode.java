@@ -1,8 +1,10 @@
 package de.aivot.GoverBackend.plugins.corePlugin.components.nodes;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.GoverBackend.elements.models.elements.form.input.TextField;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
+import de.aivot.GoverBackend.elements.models.elements.form.input.FunctionInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.corePlugin.Core;
 import de.aivot.GoverBackend.process.entities.ProcessDefinitionEntity;
@@ -48,14 +50,14 @@ public class IfFlowControlNode implements ProcessNodeProvider, PluginComponent {
     @Nonnull
     @Override
     @JsonIgnore
-    public GroupLayout getConfigurationLayout(@Nonnull UserEntity user,
-                                              @Nonnull ProcessDefinitionEntity processDefinition,
-                                              @Nonnull ProcessDefinitionVersionEntity processDefinitionVersion,
-                                              @Nullable ProcessDefinitionNodeEntity thisNode) {
-        var layout = new GroupLayout();
-        layout.setId("if-config");
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull UserEntity user,
+                                                      @Nonnull ProcessDefinitionEntity processDefinition,
+                                                      @Nonnull ProcessDefinitionVersionEntity processDefinitionVersion,
+                                                      @Nullable ProcessDefinitionNodeEntity thisNode) {
+        var layout = new ConfigLayoutElement();
+        layout.setId(getKey() + "-config");
 
-        var conditionField = new TextField();
+        var conditionField = new FunctionInputElement();
         conditionField.setId(CONDITION_FIELD_KEY);
         conditionField.setLabel("Bedingung");
         conditionField.setHint("Geben Sie die Bedingung ein, die ausgewertet werden soll. Verwenden Sie gültige Ausdrücke basierend auf den Prozessdaten.");

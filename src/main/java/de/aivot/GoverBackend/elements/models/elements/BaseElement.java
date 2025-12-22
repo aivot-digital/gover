@@ -7,8 +7,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import de.aivot.GoverBackend.elements.enums.ElementApprovalStatus;
 import de.aivot.GoverBackend.elements.models.elements.form.content.*;
 import de.aivot.GoverBackend.elements.models.elements.form.input.*;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.ReplicatingContainerLayout;
+import de.aivot.GoverBackend.elements.models.elements.layout.*;
 import de.aivot.GoverBackend.elements.models.elements.steps.IntroductionStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
@@ -31,28 +30,37 @@ import java.util.UUID;
         visible = true
 )
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = RootElement.class, name = ElementType.ID_Root),
+        @JsonSubTypes.Type(value = FormLayoutElement.class, name = ElementType.ID_FormLayout),
         @JsonSubTypes.Type(value = StepElement.class, name = ElementType.ID_Step),
-        @JsonSubTypes.Type(value = Alert.class, name = ElementType.ID_Alert),
-        @JsonSubTypes.Type(value = GroupLayout.class, name = ElementType.ID_Group),
-        @JsonSubTypes.Type(value = CheckboxField.class, name = ElementType.ID_Checkbox),
-        @JsonSubTypes.Type(value = DateField.class, name = ElementType.ID_Date),
-        @JsonSubTypes.Type(value = Headline.class, name = ElementType.ID_Headline),
-        @JsonSubTypes.Type(value = MultiCheckboxField.class, name = ElementType.ID_MultiCheckbox),
-        @JsonSubTypes.Type(value = NumberField.class, name = ElementType.ID_Number),
-        @JsonSubTypes.Type(value = ReplicatingContainerLayout.class, name = ElementType.ID_ReplicatingContainer),
-        @JsonSubTypes.Type(value = RichText.class, name = ElementType.ID_Richtext),
-        @JsonSubTypes.Type(value = RadioField.class, name = ElementType.ID_Radio),
-        @JsonSubTypes.Type(value = SelectField.class, name = ElementType.ID_Select),
-        @JsonSubTypes.Type(value = Spacer.class, name = ElementType.ID_Spacer),
-        @JsonSubTypes.Type(value = TableField.class, name = ElementType.ID_Table),
-        @JsonSubTypes.Type(value = TextField.class, name = ElementType.ID_Text),
-        @JsonSubTypes.Type(value = TimeField.class, name = ElementType.ID_Time),
+        @JsonSubTypes.Type(value = AlertContentElement.class, name = ElementType.ID_Alert),
+        @JsonSubTypes.Type(value = GroupLayoutElement.class, name = ElementType.ID_Group),
+        @JsonSubTypes.Type(value = CheckboxInputElement.class, name = ElementType.ID_Checkbox),
+        @JsonSubTypes.Type(value = DateFieldInputElement.class, name = ElementType.ID_Date),
+        @JsonSubTypes.Type(value = HeadlineContentElement.class, name = ElementType.ID_Headline),
+        @JsonSubTypes.Type(value = MultiCheckboxInputElement.class, name = ElementType.ID_MultiCheckbox),
+        @JsonSubTypes.Type(value = NumberInputElement.class, name = ElementType.ID_Number),
+        @JsonSubTypes.Type(value = ReplicatingContainerLayoutElement.class, name = ElementType.ID_ReplicatingContainer),
+        @JsonSubTypes.Type(value = RichTextContentElement.class, name = ElementType.ID_RichText),
+        @JsonSubTypes.Type(value = RadioInputElement.class, name = ElementType.ID_Radio),
+        @JsonSubTypes.Type(value = SelectInputElement.class, name = ElementType.ID_Select),
+        @JsonSubTypes.Type(value = SpacerContentElement.class, name = ElementType.ID_Spacer),
+        @JsonSubTypes.Type(value = TableInputElement.class, name = ElementType.ID_Table),
+        @JsonSubTypes.Type(value = TextInputElement.class, name = ElementType.ID_Text),
+        @JsonSubTypes.Type(value = TimeInputElement.class, name = ElementType.ID_Time),
         @JsonSubTypes.Type(value = IntroductionStepElement.class, name = ElementType.ID_IntroductionStep),
         @JsonSubTypes.Type(value = SubmitStepElement.class, name = ElementType.ID_SubmitStep),
         @JsonSubTypes.Type(value = SummaryStepElement.class, name = ElementType.ID_SummaryStep),
-        @JsonSubTypes.Type(value = Image.class, name = ElementType.ID_Image),
-        @JsonSubTypes.Type(value = FileUploadField.class, name = ElementType.ID_FileUpload),
+        @JsonSubTypes.Type(value = ImageContentElement.class, name = ElementType.ID_Image),
+        @JsonSubTypes.Type(value = FileUploadInputElement.class, name = ElementType.ID_FileUpload),
+        @JsonSubTypes.Type(value = DialogLayoutElement.class, name = ElementType.ID_DialogLayout),
+        @JsonSubTypes.Type(value = StepperLayoutElement.class, name = ElementType.ID_StepperLayout),
+        @JsonSubTypes.Type(value = ConfigLayoutElement.class, name = ElementType.ID_ConfigLayout),
+        @JsonSubTypes.Type(value = FunctionInputElement.class, name = ElementType.ID_FunctionInput),
+        @JsonSubTypes.Type(value = CodeInputElement.class, name = ElementType.ID_CodeInput),
+        @JsonSubTypes.Type(value = RichTextInputElement.class, name = ElementType.ID_RichTextInput),
+        @JsonSubTypes.Type(value = UiDefinitionInputElement.class, name = ElementType.ID_UiDefinitionInput),
+        @JsonSubTypes.Type(value = IdentityInputElement.class, name = ElementType.ID_IdentityInput),
+        @JsonSubTypes.Type(value = TabLayoutElement.class, name = ElementType.ID_TabLayout),
 })
 public abstract class BaseElement implements Serializable {
     @Nonnull

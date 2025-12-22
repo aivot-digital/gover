@@ -23,6 +23,8 @@ import {GroupLayout} from './form/layout/group-layout';
 import {CheckboxFieldElement} from './form/input/checkbox-field-element';
 import {DateFieldElement} from './form/input/date-field-element';
 import {NumberFieldElement} from './form/input/number-field-element';
+import {CodeInputElement} from "./form/input/code-input-element";
+import {RichTextInputElement} from "./form/input/rich-text-input-element";
 
 export type AnyElement =
     RootElement |
@@ -38,14 +40,14 @@ export type AnyElement =
 export type AnyElementType<T extends ElementType> =
     T extends ElementType.Step ? StepElement :
         T extends ElementType.Alert ? AlertElement :
-            T extends ElementType.Container ? GroupLayout :
+            T extends ElementType.GroupLayout ? GroupLayout :
                 T extends ElementType.Checkbox ? CheckboxFieldElement :
                     T extends ElementType.Date ? DateFieldElement :
                         T extends ElementType.Headline ? HeadlineElement :
                             T extends ElementType.MultiCheckbox ? MultiCheckboxFieldElement :
                                 T extends ElementType.Number ? NumberFieldElement :
                                     T extends ElementType.ReplicatingContainer ? ReplicatingContainerLayout :
-                                        T extends ElementType.Richtext ? RichtextElement :
+                                        T extends ElementType.RichText ? RichtextElement :
                                             T extends ElementType.Radio ? RadioFieldElement :
                                                 T extends ElementType.Select ? SelectFieldElement :
                                                     T extends ElementType.Spacer ? SpacerElement :
@@ -57,7 +59,9 @@ export type AnyElementType<T extends ElementType> =
                                                                             T extends ElementType.SummaryStep ? SummaryStepElement :
                                                                                 T extends ElementType.Image ? ImageElement :
                                                                                     T extends ElementType.SubmittedStep ? SubmittedStepElement :
-                                                                                        T extends ElementType.FileUpload ? FileUploadElement : never;
+                                                                                        T extends ElementType.FileUpload ? FileUploadElement :
+                                                                                            T extends ElementType.CodeInput ? CodeInputElement :
+                                                                                                T extends ElementType.RichTextInput ? RichTextInputElement : never;
 
 
 

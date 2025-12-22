@@ -78,7 +78,7 @@ export class VFormVersionWithDetailsService extends BaseCrudApiService<VFormVers
             publishedVersion: 0,
             responsibleDepartmentId: 0,
             revoked: '',
-            rootElement: generateElementWithDefaultValues(ElementType.Root) as RootElement,
+            rootElement: generateElementWithDefaultValues(ElementType.FormLayout) as RootElement,
             slug: '',
             status: FormStatus.Drafted,
             submissionRetentionWeeks: 0,

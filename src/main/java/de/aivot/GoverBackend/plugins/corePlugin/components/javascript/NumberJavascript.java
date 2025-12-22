@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.plugins.corePlugin.components.javascript;
 
-import de.aivot.GoverBackend.elements.models.elements.form.input.NumberField;
+import de.aivot.GoverBackend.elements.models.elements.form.input.NumberInputElement;
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.corePlugin.Core;
@@ -56,7 +56,7 @@ public class NumberJavascript implements JavascriptFunctionProvider, PluginCompo
         if (number == null) {
             throw new IllegalArgumentException("Number cannot be null");
         }
-        return NumberField.formatGermanNumber(number.doubleValue(), decimalPlaces < 0 ? 2 : decimalPlaces);
+        return NumberInputElement.formatGermanNumber(number.doubleValue(), decimalPlaces < 0 ? 2 : decimalPlaces);
     }
 
     @HostAccess.Export

@@ -3,11 +3,12 @@ package de.aivot.GoverBackend.plugins.corePlugin.components.nodes;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
-import de.aivot.GoverBackend.elements.models.elements.form.input.CheckboxField;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioFieldOption;
-import de.aivot.GoverBackend.elements.models.elements.form.input.SelectField;
-import de.aivot.GoverBackend.elements.models.elements.form.input.TextField;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
+import de.aivot.GoverBackend.elements.models.elements.form.input.CheckboxInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.corePlugin.Core;
 import de.aivot.GoverBackend.process.entities.ProcessDefinitionEntity;
@@ -60,29 +61,29 @@ public class HttpActionNode implements ProcessNodeProvider, PluginComponent {
     @Nonnull
     @Override
     @JsonIgnore
-    public GroupLayout getConfigurationLayout(@Nonnull UserEntity user,
-                                              @Nonnull ProcessDefinitionEntity processDefinition,
-                                              @Nonnull ProcessDefinitionVersionEntity processDefinitionVersion,
-                                              @Nullable ProcessDefinitionNodeEntity thisNode) {
-        var layout = new GroupLayout();
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull UserEntity user,
+                                                      @Nonnull ProcessDefinitionEntity processDefinition,
+                                                      @Nonnull ProcessDefinitionVersionEntity processDefinitionVersion,
+                                                      @Nullable ProcessDefinitionNodeEntity thisNode) {
+        var layout = new ConfigLayoutElement();
         layout.setId(getKey() + "-config");
 
-        var method = new SelectField();
+        var method = new SelectInputElement();
         method.setId(METHOD_FIELD_ID);
         method.setLabel("HTTP-Methode");
         method.setHint("Die HTTP-Methode, die für die Anfrage verwendet werden soll.");
         method.setRequired(true);
         method.setOptions(List.of(
-                new RadioFieldOption()
+                new RadioInputElementOption()
                         .setLabel("GET")
                         .setValue("GET"),
-                new RadioFieldOption()
+                new RadioInputElementOption()
                         .setLabel("POST")
                         .setValue("POST")
         ));
         layout.addChild(method);
 
-        var url = new TextField();
+        var url = new TextInputElement();
         url.setId(URL_FIELD_ID);
         url.setLabel("URL");
         url.setHint("Die URL, von der die Daten geladen werden sollen.");
@@ -90,7 +91,7 @@ public class HttpActionNode implements ProcessNodeProvider, PluginComponent {
         layout.addChild(url);
 
 
-        var isJSON = new CheckboxField();
+        var isJSON = new CheckboxInputElement();
         isJSON.setId(IS_JSON_FIELD_ID);
         isJSON.setLabel("JSON-Antwort");
         isJSON.setHint("Geben Sie an, ob die Antwort im JSON-Format erwartet wird. Falls ja, wird diese automatisch verarbeitet.");
