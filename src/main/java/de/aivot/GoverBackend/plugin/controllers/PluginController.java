@@ -38,7 +38,8 @@ public class PluginController {
                             .sorted(Comparator.comparing(PluginComponent::getName))
                             .map(component -> new PluginComponentDTO(
                                     component.getName(),
-                                    component.getDescription()
+                                    component.getDescription(),
+                                    component.getVersion()
                             ))
                             .toList();
 

@@ -8,7 +8,7 @@ import de.aivot.GoverBackend.payment.filters.PaymentTransactionFilter;
 import de.aivot.GoverBackend.payment.services.PaymentProviderTestService;
 import de.aivot.GoverBackend.payment.services.PaymentTransactionService;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
-import de.aivot.GoverBackend.plugins.corePlugin.components.payment.GirocheckoutPaymentProviderDefinition;
+import de.aivot.GoverBackend.plugins.core.v1.payment.GirocheckoutPaymentProviderDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;

@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.nocode.operators.common;
 
-import de.aivot.GoverBackend.plugins.corePlugin.components.operators.common.NoCodeGreaterThanOrEqualOperator;
+import de.aivot.GoverBackend.plugins.core.v1.operators.common.NoCodeGreaterThanOrEqualOperator;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException;

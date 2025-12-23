@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.core.javascript;
 
-import de.aivot.GoverBackend.plugins.corePlugin.components.javascript.DateJavascript;
+import de.aivot.GoverBackend.plugins.core.v1.javascript.DateJavascript;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;

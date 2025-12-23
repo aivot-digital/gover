@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.javascript.providers;
 
-import de.aivot.GoverBackend.plugins.corePlugin.components.javascript.HttpJavascript;
+import de.aivot.GoverBackend.plugins.core.v1.javascript.HttpJavascript;
 import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
