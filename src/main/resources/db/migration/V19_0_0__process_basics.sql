@@ -82,6 +82,18 @@ create table process_nodes
     -- All options are stored in here.
     configuration                   jsonb       not null default '{}',
 
+    -- The output mappings for this node.
+    output_mappings                 jsonb       not null default '{}',
+
+    -- The Timelimit in days for this node.
+    time_limit_days                 integer     null,
+
+    -- The requirements for this node.
+    requirements                    text        null,
+
+    -- Additional notes for this node.
+    notes                           text        null,
+
     -- Define the primary key
     primary key (id),
     -- Define the foreign key to the process definition
@@ -270,6 +282,9 @@ create table process_instance_tasks
 
     -- The user assigned to this task, if any
     assigned_user_id         varchar(36) null,
+
+    -- The deadline for this task, if any, determined by the time limit of the node
+    deadline                  timestamp   null,
 
     primary key (id),
     unique (process_instance_id, access_key),

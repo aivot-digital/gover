@@ -16,10 +16,10 @@ import {useEffect, useMemo, useState} from "react";
 import {ProcessInstanceHistoryEventEntity} from "../entities/process-instance-history-event-entity";
 import {ProcessInstanceHistoryEventApiService} from "../services/process-instance-history-event-api-service";
 import {ProcessInstanceApiService} from "../services/process-instance-api-service";
-import {ProcessDefinitionNodeEntity} from "../entities/process-definition-node-entity";
+import {ProcessNodeEntity} from "../entities/process-node-entity";
 import {ProcessNodeProvider, ProcessNodeProviderApiService} from "../services/process-node-provider-api-service";
 import {ProcessDefinitionApiService} from "../services/process-definition-api-service";
-import {ProcessDefinitionNodeApiService} from "../services/process-definition-node-api-service";
+import {ProcessNodeApiService} from "../services/process-node-api-service";
 import {ProcessInstanceTaskApiService} from "../services/process-instance-task-api-service";
 import {ProcessInstanceTaskEntity} from "../entities/process-instance-task-entity";
 import {getNodeName} from "../pages/details/components/process-flow-editor/utils/node-utils";
@@ -186,11 +186,11 @@ async function getItems(instanceId: number, taskId: number | null): Promise<Item
         });
 
     const processDefinition = await new ProcessDefinitionApiService()
-        .retrieve(processInstance.processDefinitionId);
+        .retrieve(processInstance.processId);
 
-    const processDefinitionNodes = await new ProcessDefinitionNodeApiService()
+    const processDefinitionNodes = await new ProcessNodeApiService()
         .listAll({
-            processDefinitionId: processInstance.processDefinitionId,
+            processDefinitionId: processInstance.processId,
         });
 
     const providers = await new ProcessNodeProviderApiService()
@@ -211,9 +211,9 @@ async function getItems(instanceId: number, taskId: number | null): Promise<Item
             task = processTasks.content.find((t) => t.id === event.processInstanceTaskId)!;
         }
 
-        let node: ProcessDefinitionNodeEntity | null = null;
+        let node: ProcessNodeEntity | null = null;
         if (task != null) {
-            node = processDefinitionNodes.content.find((n) => n.id === task!.processDefinitionNodeId)!;
+            node = processDefinitionNodes.content.find((n) => n.id === task!.processNodeId)!;
         }
 
         let provider: ProcessNodeProvider | null = null;

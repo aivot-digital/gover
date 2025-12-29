@@ -2,14 +2,17 @@ import {ProcessFlow} from "../../process-details-page";
 import {ProcessNodeProvider} from "../../../../services/process-node-provider-api-service";
 import {useCallback, useEffect, useState} from "react";
 import '@xyflow/react/dist/style.css';
-import {ReactFlow, useEdgesState, useNodesState, useReactFlow} from "@xyflow/react";
-import {ProcessDefinitionNodeEntity} from "../../../../entities/process-definition-node-entity";
+import {Background, BackgroundVariant, ReactFlow, useEdgesState, useNodesState, useReactFlow} from "@xyflow/react";
+import {ProcessNodeEntity} from "../../../../entities/process-node-entity";
 import {ProcessFlowEditorNode} from "./process-flow-editor-node";
 import {ProcessFlowEditorEdge} from "./process-flow-editor-edge";
 import {ProcessFlowEditorContext} from "./process-flow-editor-context";
 import {DEFAULT_FLOW_EDGE_TYPE, DEFAULT_FLOW_NODE_TYPE} from "./data/process-flow-constants";
 import {FlowEdge, FlowNode, layoutElements} from "./utils/layout-utils";
-import {Button} from "@mui/material";
+import {Box} from "@mui/material";
+import {Actions} from "../../../../../../components/actions/actions";
+import MobileLayout from "@aivot/mui-material-symbols-400-outlined/dist/mobile-layout/MobileLayout";
+import FitScreen from "@aivot/mui-material-symbols-400-outlined/dist/fit-screen/FitScreen";
 
 interface ProcessFlowEditorProps {
     editable: boolean;
@@ -17,8 +20,8 @@ interface ProcessFlowEditorProps {
     processFlow: ProcessFlow;
     nodeProviders: ProcessNodeProvider[];
 
-    selectedNode?: ProcessDefinitionNodeEntity | null;
-    onSelectNode?: (node: ProcessDefinitionNodeEntity | null) => void;
+    selectedNode?: ProcessNodeEntity | null;
+    onSelectNode?: (node: ProcessNodeEntity | null) => void;
 
     onAddEdge?: (fromNodeId: number, toNodeId: number, viaPortKey: string) => void;
     onDeleteEdge?: (edgeId: number) => void;
@@ -83,20 +86,45 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps) {
                 showTargetHandles: showTargetHandles,
 
                 selectedNode: selectedNode ?? null,
-                onSelectedNode: onSelectNode ?? (() => {}),
+                onSelectedNode: onSelectNode ?? (() => {
+                }),
 
-                onAddEdge: onAddEdge ?? (() => {}),
-                onDeleteEdge: onDeleteEdge ?? (() => {}),
+                onAddEdge: onAddEdge ?? (() => {
+                }),
+                onDeleteEdge: onDeleteEdge ?? (() => {
+                }),
 
-                onAddFollowUpNode: onAddFollowUpNode ?? (() => {}),
-                onAddInbetweenNode: onAddInbetweenNode ?? (() => {}),
+                onAddFollowUpNode: onAddFollowUpNode ?? (() => {
+                }),
+                onAddInbetweenNode: onAddInbetweenNode ?? (() => {
+                }),
             }}
         >
-            <Button onClick={() => {
-                layoutNodes();
-            }}>
-                Layout
-            </Button>
+            <Box
+                sx={{
+                    position: 'absolute',
+                    zIndex: 10,
+                }}
+            >
+                <Actions
+                    size="small"
+                    direction="column"
+                    dense={true}
+                    actions={[
+                        {
+                            tooltip: 'layout',
+                            onClick: layoutNodes,
+                            icon: <MobileLayout/>,
+                        },
+                        {
+                            tooltip: 'fit view',
+                            onClick: () => fitView(),
+                            icon: <FitScreen/>,
+                        },
+                    ]}
+                    tooltipPlacement="right"
+                />
+            </Box>
 
             <ReactFlow
                 nodes={nodes}
@@ -134,7 +162,11 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps) {
                 onConnectEnd={() => {
                     setShowTargetHandles(false);
                 }}
-            />
+            >
+                <Background
+                    variant={BackgroundVariant.Dots}
+                />
+            </ReactFlow>
         </ProcessFlowEditorContext.Provider>
     );
 }

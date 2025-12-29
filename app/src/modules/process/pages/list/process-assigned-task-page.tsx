@@ -19,9 +19,9 @@ import TaskAlt from "@aivot/mui-material-symbols-400-outlined/dist/task-alt/Task
 import DataObject from "@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject";
 import FactCheck from "@aivot/mui-material-symbols-400-outlined/dist/fact-check/FactCheck";
 import {ProcessDefinitionEntity} from "../../entities/process-definition-entity";
-import {ProcessDefinitionNodeEntity} from "../../entities/process-definition-node-entity";
+import {ProcessNodeEntity} from "../../entities/process-node-entity";
 import {ProcessDefinitionApiService} from "../../services/process-definition-api-service";
-import {ProcessDefinitionNodeApiService} from "../../services/process-definition-node-api-service";
+import {ProcessNodeApiService} from "../../services/process-node-api-service";
 import {ProcessNodeProvider, ProcessNodeProviderApiService} from "../../services/process-node-provider-api-service";
 import {getNodeName} from "../details/components/process-flow-editor/utils/node-utils";
 import {CellLink} from "../../../../components/cell-link/cell-link";
@@ -29,7 +29,7 @@ import {CellLink} from "../../../../components/cell-link/cell-link";
 interface ProcessInstanceTaskEntityWithInstance extends ProcessInstanceTaskEntity {
     instance: ProcessInstanceEntity;
     process: ProcessDefinitionEntity;
-    node: ProcessDefinitionNodeEntity;
+    node: ProcessNodeEntity;
     provider: ProcessNodeProvider;
 }
 
@@ -96,7 +96,7 @@ export function ProcessAssignedTaskListPage() {
                             .listAll(),
                         new ProcessDefinitionApiService()
                             .listAll(),
-                        new ProcessDefinitionNodeApiService()
+                        new ProcessNodeApiService()
                             .listAll(),
                         new ProcessNodeProviderApiService()
                             .getNodeProviders(),
@@ -105,12 +105,12 @@ export function ProcessAssignedTaskListPage() {
                             return {
                                 ...tasks,
                                 content: tasks.content.map((task) => {
-                                    const node = nodes.content.find(n => n.id === task.processDefinitionNodeId)!;
+                                    const node = nodes.content.find(n => n.id === task.processNodeId)!;
                                     return {
                                         ...task,
                                         instance: instances.content.find(i => i.id === task.processInstanceId)!,
-                                        process: processes.content.find(p => p.id === task.processDefinitionId)!,
-                                        node: nodes.content.find(n => n.id === task.processDefinitionNodeId)!,
+                                        process: processes.content.find(p => p.id === task.processId)!,
+                                        node: nodes.content.find(n => n.id === task.processNodeId)!,
                                         provider: providers.find(p => p.key === node.processNodeDefinitionKey)!,
                                     };
                                 })

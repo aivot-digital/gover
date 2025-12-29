@@ -1,4 +1,4 @@
-export interface ProcessDefinitionNodeEntity {
+export interface ProcessNodeEntity {
     id: number;
     processId: number;
     processVersion: number;
@@ -8,4 +8,8 @@ export interface ProcessDefinitionNodeEntity {
     description: string | null;
     dataKey: string;
     configuration: Record<string, any>;
+    outputMappings: Record<string, any>;
+    timeLimitDays: number | null;
+    requirements: string | null;
+    notes: string | null;
 }

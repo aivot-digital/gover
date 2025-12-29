@@ -38,6 +38,10 @@ public class HttpActionNode implements ProcessNodeDefinition, PluginComponent {
 
     private static final String PORT_NAME = "output";
 
+    private static final String OUTPUT_NAME_STATUS_CODE = "statusCode";
+    private static final String OUTPUT_NAME_HEADERS = "headers";
+    private static final String OUTPUT_NAME_BODY = "body";
+
     private final HttpService httpService;
     private final ProcessDataService processDataService;
 
@@ -135,6 +139,28 @@ public class HttpActionNode implements ProcessNodeDefinition, PluginComponent {
         );
     }
 
+    @Nonnull
+    @Override
+    public List<ProcessNodeOutput> getOutputs() {
+        return List.of(
+                new ProcessNodeOutput(
+                        OUTPUT_NAME_STATUS_CODE,
+                        "Statuscode der HTTP-Antwort",
+                        "Der HTTP-Statuscode der Antwort."
+                ),
+                new ProcessNodeOutput(
+                        OUTPUT_NAME_HEADERS,
+                        "Header der HTTP-Antwort",
+                        "Die Header der HTTP-Antwort."
+                ),
+                new ProcessNodeOutput(
+                        OUTPUT_NAME_BODY,
+                        "Inhalt der HTTP-Antwort",
+                        "Der Inhalt der HTTP-Antwort, entweder als String oder als JSON-Objekt/Array."
+                )
+        );
+    }
+
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessInstanceEntity processInstance,
                                            @Nonnull ProcessNodeEntity thisNode,
@@ -175,8 +201,8 @@ public class HttpActionNode implements ProcessNodeDefinition, PluginComponent {
         }
 
         var metadata = new HashMap<String, Object>();
-        metadata.put("statusCode", response.statusCode());
-        metadata.put("headers", response.headers() != null ? response.headers().map() : Map.of());
+        metadata.put(OUTPUT_NAME_STATUS_CODE, response.statusCode());
+        metadata.put(OUTPUT_NAME_HEADERS, response.headers() != null ? response.headers().map() : Map.of());
 
         var bodyStr = response.body();
         if (isJson && StringUtils.isNotNullOrEmpty(bodyStr)) {
@@ -188,12 +214,12 @@ public class HttpActionNode implements ProcessNodeDefinition, PluginComponent {
                     var body = ObjectMapperFactory
                             .getInstance()
                             .readValue(bodyStr, Map.class);
-                    metadata.put("body", body);
+                    metadata.put(OUTPUT_NAME_BODY, body);
                 } else if (isArr) {
                     var body = ObjectMapperFactory
                             .getInstance()
                             .readValue(bodyStr, List.class);
-                    metadata.put("body", body);
+                    metadata.put(OUTPUT_NAME_BODY, body);
                 } else {
                     return ProcessNodeExecutionResultError
                             .of("Die Antwort ist kein gültiges JSON-Objekt oder -Array.");
@@ -202,7 +228,7 @@ public class HttpActionNode implements ProcessNodeDefinition, PluginComponent {
                 return ProcessNodeExecutionResultError.of(e);
             }
         } else {
-            metadata.put("body", bodyStr);
+            metadata.put(OUTPUT_NAME_BODY, bodyStr);
         }
 
         return new ProcessNodeExecutionResultTaskCompleted()

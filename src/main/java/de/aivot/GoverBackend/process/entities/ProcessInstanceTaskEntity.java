@@ -93,6 +93,9 @@ public class ProcessInstanceTaskEntity {
     @Size(max = 36, message = "Die zugewiesene Benutzer-ID darf maximal 36 Zeichen lang sein.")
     private String assignedUserId;
 
+    @Nullable
+    private LocalDateTime deadline;
+
     // region Constructors
 
     // Empty constructor for JPA
@@ -116,7 +119,8 @@ public class ProcessInstanceTaskEntity {
                                      @Nonnull Map<String, Object> runtimeData,
                                      @Nonnull Map<String, Object> nodeData,
                                      @Nonnull Map<String, Object> processData,
-                                     @Nullable String assignedUserId) {
+                                     @Nullable String assignedUserId,
+                                     @Nullable LocalDateTime deadline) {
         this.id = id;
         this.accessKey = accessKey;
         this.processInstanceId = processInstanceId;
@@ -134,6 +138,7 @@ public class ProcessInstanceTaskEntity {
         this.nodeData = nodeData;
         this.processData = processData;
         this.assignedUserId = assignedUserId;
+        this.deadline = deadline;
     }
 
     // endregion
@@ -307,6 +312,16 @@ public class ProcessInstanceTaskEntity {
 
     public ProcessInstanceTaskEntity setAssignedUserId(@Nullable String assignedUserId) {
         this.assignedUserId = assignedUserId;
+        return this;
+    }
+
+    @Nullable
+    public LocalDateTime getDeadline() {
+        return deadline;
+    }
+
+    public ProcessInstanceTaskEntity setDeadline(@Nullable LocalDateTime deadline) {
+        this.deadline = deadline;
         return this;
     }
 

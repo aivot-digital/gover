@@ -70,6 +70,17 @@ public interface ProcessNodeDefinition {
     List<ProcessNodePort> getPorts();
 
     /**
+     * Get the outputs of the process node.
+     * The outputs are data produced by this node that can be mapped in the node configuration.
+     *
+     * @return The outputs of the process node.
+     */
+    @Nonnull
+    default List<ProcessNodeOutput> getOutputs() {
+        return List.of();
+    }
+
+    /**
      * Get the configuration layout for nodes of this provider type.
      *
      * @param user                     The user requesting the layout.

@@ -293,7 +293,12 @@ public class ProcessNodeExecutionResultHandler {
                     previousTask.getProcessData() :
                     processInstance.getInitialPayload();
         }
-        processInstanceTask.setProcessData(newProcessData);
+        processInstanceTask.setProcessData(applyOutputMappings(
+                provider,
+                currentNode.getOutputMappings(),
+                newNodeData,
+                newProcessData
+        ));
 
         processInstanceTask.setStatus(ProcessTaskStatus.Completed);
         processInstanceTask.setFinished(LocalDateTime.now());
@@ -353,7 +358,12 @@ public class ProcessNodeExecutionResultHandler {
                     previousTask.getProcessData() :
                     processInstance.getInitialPayload();
         }
-        processInstanceTask.setProcessData(newWorkingData);
+        processInstanceTask.setProcessData(applyOutputMappings(
+                provider,
+                currentNode.getOutputMappings(),
+                newMetadata,
+                newWorkingData
+        ));
 
         processInstanceTask.setStatus(ProcessTaskStatus.Completed);
         processInstanceTask.setFinished(LocalDateTime.now());
@@ -463,5 +473,58 @@ public class ProcessNodeExecutionResultHandler {
                                     )
                     );
         }
+    }
+
+    private static Map<String, Object> applyOutputMappings(@Nonnull ProcessNodeDefinition provider,
+                                                           @Nonnull Map<String, String> outputMappings,
+                                                           @Nonnull Map<String, Object> nodeData,
+                                                           @Nonnull Map<String, Object> processData) {
+        var updatedProcessData = new HashMap<>(processData);
+
+        for (var nodeProviderOutput : provider.getOutputs()) {
+            var targetFieldPath = outputMappings.get(nodeProviderOutput.key());
+            if (targetFieldPath == null) {
+                continue;
+            }
+
+            var pathParts = targetFieldPath.split("\\.");
+
+            if (pathParts.length == 0) {
+                continue;
+            }
+
+            if (pathParts.length == 1) {
+                var outputValue = nodeData.get(nodeProviderOutput.key());
+                updatedProcessData.put(pathParts[0], outputValue);
+                continue;
+            }
+
+            Map<String, Object> targetObject = updatedProcessData;
+
+            for (int i = 0; i < pathParts.length - 1; i++) {
+                var pathPart = pathParts[i];
+
+                if (targetObject.containsKey(pathPart)) {
+                    if (targetObject.get(pathPart) instanceof Map<?,?> map) {
+                        targetObject = (Map<String, Object>) map;
+                    } else {
+                        throw new IllegalStateException("Der Pfadteil '%s' im Ausgabe-Mapping '%s' verweist auf ein existierendes Feld, das kein Objekt ist."
+                                .formatted(pathPart, targetFieldPath));
+                    }
+                } else {
+                    var newObject = new HashMap<String, Object>();
+                    targetObject.put(pathPart, newObject);
+                    targetObject = newObject;
+                }
+            }
+
+            var targetField = pathParts[pathParts.length - 1];
+
+            var outputValue = nodeData.get(nodeProviderOutput.key());
+
+            targetObject.put(targetField, outputValue);
+        }
+
+        return updatedProcessData;
     }
 }

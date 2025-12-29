@@ -3,12 +3,12 @@ import {Box, Button, Paper} from "@mui/material";
 import {Outlet, useNavigate, useParams} from "react-router-dom";
 import {ProcessDefinitionEntity} from "../../entities/process-definition-entity";
 import {ProcessDefinitionVersionApiService} from "../../services/process-definition-version-api-service";
-import {ProcessDefinitionNodeEntity} from "../../entities/process-definition-node-entity";
+import {ProcessNodeEntity} from "../../entities/process-node-entity";
 import {ProcessDefinitionEdgeEntity} from "../../entities/process-definition-edge-entity";
 import {ProcessDefinitionApiService} from "../../services/process-definition-api-service";
 import {ProcessDefinitionEdgeApiService} from "../../services/process-definition-edge-api-service";
 import {ProcessDefinitionVersionEntity} from "../../entities/process-definition-version-entity";
-import {ProcessDefinitionNodeApiService} from "../../services/process-definition-node-api-service";
+import {ProcessNodeApiService} from "../../services/process-node-api-service";
 import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
 import {GenericDetailsSkeleton} from "../../../../components/generic-details-page/generic-details-skeleton";
 import Undo from "@aivot/mui-material-symbols-400-outlined/dist/undo/Undo";
@@ -41,7 +41,7 @@ import {ProcessDetailsPageContext} from "./process-details-page-context";
 export interface ProcessFlow {
     definition: ProcessDefinitionEntity;
     version: ProcessDefinitionVersionEntity;
-    nodes: ProcessDefinitionNodeEntity[];
+    nodes: ProcessNodeEntity[];
     edges: ProcessDefinitionEdgeEntity[];
 }
 
@@ -57,7 +57,7 @@ export function ProcessDetailsPage() {
     const [availableNodeProviders, setAvailableNodeProviders] = useState<ProcessNodeProvider[]>([]);
 
     const [showAddTriggerDialog, setShowAddTriggerDialog] = useState(false);
-    const [selectedNode, setSelectedNode] = useState<ProcessDefinitionNodeEntity | null>(null);
+    const [selectedNode, setSelectedNode] = useState<ProcessNodeEntity | null>(null);
     const [newNodeFor, setNewNodeFor] = useState<{
         fromNodeId: number;
         viaPort: string;
@@ -95,7 +95,7 @@ export function ProcessDetailsPage() {
                 processDefinitionId: processId,
                 processDefinitionVersion: processVersion,
             }),
-            new ProcessDefinitionNodeApiService().listAll({
+            new ProcessNodeApiService().listAll({
                 processDefinitionId: processId,
                 processDefinitionVersion: processVersion,
             }),
@@ -143,17 +143,13 @@ export function ProcessDetailsPage() {
 
         setShowAddTriggerDialog(false);
 
-        new ProcessDefinitionNodeApiService()
+        new ProcessNodeApiService()
             .create({
-                id: 0,
+                ...ProcessNodeApiService.initialize(),
                 processId: processFlow.definition.id,
                 processVersion: processFlow.version.processVersion,
                 processNodeDefinitionKey: nodeProvider.key,
                 processNodeDefinitionVersion: nodeProvider.version,
-                name: null,
-                description: null,
-                dataKey: generateId(5),
-                configuration: {},
             })
             .then((newNode) => {
                 setProcessFlow((prevProcess) => {
@@ -198,17 +194,13 @@ export function ProcessDetailsPage() {
             edge.viaPort === newNodeFor.viaPort
         ));
 
-        const newNode = await new ProcessDefinitionNodeApiService()
+        const newNode = await new ProcessNodeApiService()
             .create({
-                id: 0,
+                ...ProcessNodeApiService.initialize(),
                 processId: processFlow.definition.id,
                 processVersion: processFlow.version.processVersion,
                 processNodeDefinitionKey: nodeProvider.key,
                 processNodeDefinitionVersion: nodeProvider.version,
-                name: null,
-                description: null,
-                dataKey: generateId(5),
-                configuration: {},
             });
 
         const edgeApi = new ProcessDefinitionEdgeApiService()
@@ -281,17 +273,13 @@ export function ProcessDetailsPage() {
 
         await edgeApi.destroy(existingEdge.id);
 
-        const newNode = await new ProcessDefinitionNodeApiService()
+        const newNode = await new ProcessNodeApiService()
             .create({
-                id: 0,
+                ...ProcessNodeApiService.initialize(),
                 processId: processFlow.definition.id,
                 processVersion: processFlow.version.processVersion,
                 processNodeDefinitionKey: nodeProvider.key,
                 processNodeDefinitionVersion: nodeProvider.version,
-                name: null,
-                description: null,
-                dataKey: generateId(5),
-                configuration: {},
             });
 
         const newEdgeToNewNode = await edgeApi
@@ -332,7 +320,7 @@ export function ProcessDetailsPage() {
         dispatch(clearLoadingMessage());
     };
 
-    const handleDeleteNode = async (node: ProcessDefinitionNodeEntity) => {
+    const handleDeleteNode = async (node: ProcessNodeEntity) => {
         if (processFlow == null) {
             return;
         }
@@ -347,7 +335,7 @@ export function ProcessDetailsPage() {
         await Promise
             .all(edgesToRemove.map((e) => edgeApi.destroy(e.id)));
 
-        await new ProcessDefinitionNodeApiService()
+        await new ProcessNodeApiService()
             .destroy(node.id);
 
         setProcessFlow({
@@ -359,13 +347,19 @@ export function ProcessDetailsPage() {
         navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}`);
     };
 
-    const handleSaveNode = async (node: ProcessDefinitionNodeEntity) => {
+    const handleSaveNode = async (node: ProcessNodeEntity) => {
         if (processFlow == null) {
             return;
         }
 
-        const updated = await new ProcessDefinitionNodeApiService()
-            .update(node.id, node);
+        let updated: ProcessNodeEntity;
+        try {
+            updated = await new ProcessNodeApiService()
+                .update(node.id, node);
+        } catch (err) {
+            dispatch(showApiErrorSnackbar(err, 'Der Knoten konnte nicht gespeichert werden.'));
+            return;
+        }
 
         setProcessFlow({
             ...processFlow,
@@ -396,6 +390,9 @@ export function ProcessDetailsPage() {
                         flex: 1,
                         px: 2,
                         py: 2,
+                        height: '100vh',
+                        display: 'flex',
+                        flexDirection: 'column',
                     }}
                 >
                     <GenericPageHeader
@@ -452,7 +449,6 @@ export function ProcessDetailsPage() {
                     <Box
                         sx={{
                             height: '100%',
-                            border: '1px solid #ccc',
                             borderRadius: 1,
                             mt: 2,
                         }}
@@ -529,9 +525,9 @@ export function ProcessDetailsPage() {
 
                 <Paper
                     sx={{
-                        width: 720,
-                        overflowY: 'auto',
-                        p: 2,
+                        width: 480,
+                        height: '100vh',
+                        borderLeft: '1px solid #ccc',
                     }}
                 >
                     <ProcessDetailsPageContext.Provider value={{

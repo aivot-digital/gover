@@ -1,6 +1,7 @@
 import {BaseCrudApiService} from "../../../services/base-crud-api-service";
-import {ProcessDefinitionNodeEntity} from "../entities/process-definition-node-entity";
+import {ProcessNodeEntity} from "../entities/process-node-entity";
 import {GroupLayout} from "../../../models/elements/form/layout/group-layout";
+import {generateId} from "../../../utils/id-utils";
 
 interface ProcessDefinitionNodeFilter {
     id: number;
@@ -10,11 +11,11 @@ interface ProcessDefinitionNodeFilter {
     codeKey: string;
 }
 
-export class ProcessDefinitionNodeApiService extends BaseCrudApiService<
-    ProcessDefinitionNodeEntity,
-    ProcessDefinitionNodeEntity,
-    ProcessDefinitionNodeEntity,
-    ProcessDefinitionNodeEntity,
+export class ProcessNodeApiService extends BaseCrudApiService<
+    ProcessNodeEntity,
+    ProcessNodeEntity,
+    ProcessNodeEntity,
+    ProcessNodeEntity,
     number,
     ProcessDefinitionNodeFilter
 > {
@@ -22,8 +23,16 @@ export class ProcessDefinitionNodeApiService extends BaseCrudApiService<
         super('/api/process-nodes/');
     }
 
-    initialize(): ProcessDefinitionNodeEntity {
+    public initialize(): ProcessNodeEntity {
+        return ProcessNodeApiService.initialize();
+    }
+
+    public static initialize(): ProcessNodeEntity {
         return {
+            notes: null,
+            outputMappings: {},
+            requirements: null,
+            timeLimitDays: null,
             id: 0,
             processId: 0,
             processVersion: 0,
@@ -31,8 +40,8 @@ export class ProcessDefinitionNodeApiService extends BaseCrudApiService<
             processNodeDefinitionVersion: 0,
             name: null,
             description: null,
-            dataKey: "",
-            configuration: {},
+            dataKey: generateId(5),
+            configuration: {}
         };
     }
 

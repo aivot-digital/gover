@@ -1,5 +1,5 @@
 import {Edge as ReactFlowEdge, MarkerType, Node as ReactFlowNode,} from "@xyflow/react";
-import {ProcessDefinitionNodeEntity} from "../../../../../entities/process-definition-node-entity";
+import {ProcessNodeEntity} from "../../../../../entities/process-node-entity";
 import {ProcessDefinitionEdgeEntity} from "../../../../../entities/process-definition-edge-entity";
 import {ProcessNodeProvider} from "../../../../../services/process-node-provider-api-service";
 import {graphlib, layout} from '@dagrejs/dagre';
@@ -21,7 +21,7 @@ export type FlowEdge = ReactFlowEdge<{
     treeEdge: TreeEdge;
 }>;
 
-export function layoutElements(nodes: ProcessDefinitionNodeEntity[],
+export function layoutElements(nodes: ProcessNodeEntity[],
                                edges: ProcessDefinitionEdgeEntity[],
                                providers: ProcessNodeProvider[]): {
     flowNodes: FlowNode[];

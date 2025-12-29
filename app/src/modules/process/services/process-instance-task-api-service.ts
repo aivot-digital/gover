@@ -44,31 +44,33 @@ export class ProcessInstanceTaskApiService extends BaseCrudApiService<
             assignedUserId: null,
             finished: null,
             id: 0,
+            previousProcessNodeId: null,
             status: ProcessTaskStatus.Running,
             statusOverride: null,
             runtimeData: {},
             nodeData: {},
-            processDefinitionId: 0,
-            processDefinitionNodeId: 0,
-            processDefinitionVersion: 0,
+            processId: 0,
+            processNodeId: 0,
+            processVersion: 0,
             processInstanceId: 0,
             runtime: null,
             started: new Date().toISOString(),
             updated: new Date().toISOString(),
             processData: {},
+            deadline: null,
         };
     }
 
     public getStaffTaskView(instanceId: number, taskId: number): Promise<TaskView> {
-        return this.get(`/api/processes/${instanceId}/task/${taskId}/`);
+        return this.get(`/api/processes/${instanceId}/tasks/${taskId}/`);
     }
 
     public getCustomerTaskView(instanceAccessKey: string, taskAccessKey: string): Promise<TaskView> {
-        return this.get(`/api/public/processes/${instanceAccessKey}/task/${taskAccessKey}/`);
+        return this.get(`/api/public/processes/${instanceAccessKey}/tasks/${taskAccessKey}/`);
     }
 
     public putStaffTaskView(instanceId: number, taskId: number, payload: ElementData, event: string): Promise<TaskView> {
-        return this.put<ElementData, TaskView>(`/api/processes/${instanceId}/task/${taskId}/`, payload, {
+        return this.put<ElementData, TaskView>(`/api/processes/${instanceId}/tasks/${taskId}/`, payload, {
             query: {
                 event: event,
             },
@@ -76,7 +78,7 @@ export class ProcessInstanceTaskApiService extends BaseCrudApiService<
     }
 
     public putCustomerTaskView(instanceAccessKey: string, taskAccessKey: string, payload: ElementData, event: string): Promise<TaskView> {
-        return this.put<ElementData, TaskView>(`/api/public/processes/${instanceAccessKey}/task/${taskAccessKey}/`, payload, {
+        return this.put<ElementData, TaskView>(`/api/public/processes/${instanceAccessKey}/tasks/${taskAccessKey}/`, payload, {
             query: {
                 event: event,
             },

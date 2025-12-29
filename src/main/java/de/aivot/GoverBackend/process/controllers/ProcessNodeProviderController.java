@@ -8,7 +8,10 @@ import de.aivot.GoverBackend.process.services.ProcessNodeDefinitionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nonnull;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -36,5 +39,17 @@ public class ProcessNodeProviderController {
     public List<ProcessNodeDefinition> list() throws ResponseException {
         return processNodeProviderService
                 .getAllProcessNodeDefinitions();
+    }
+
+    @GetMapping("{key}/versions/{version}/")
+    @Operation(
+            summary = "Retrieve Process Node Provider",
+            description = "Retrieve a specific process node provider by its key and version."
+    )
+    public ProcessNodeDefinition retrieve(@Nonnull @PathVariable String key,
+                                          @Nonnull @PathVariable Integer version) throws ResponseException {
+        return processNodeProviderService
+                .getProcessNodeDefinition(key, version)
+                .orElseThrow(ResponseException::notFound);
     }
 }

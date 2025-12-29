@@ -3,8 +3,8 @@ import {ProcessInstanceStatus} from "../enums/process-instance-status";
 export interface ProcessInstanceEntity {
     id: number;
     accessKey: string; // UUID as string
-    processDefinitionId: number;
-    processDefinitionVersion: number;
+    processId: number;
+    processVersion: number;
     status: ProcessInstanceStatus; // Should match ProcessInstanceStatus enum
     statusOverride: string | null;
     assignedFileNumbers: string[];

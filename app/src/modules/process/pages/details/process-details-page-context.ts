@@ -1,10 +1,10 @@
 import {createContext} from 'react';
-import {ProcessDefinitionNodeEntity} from "../../entities/process-definition-node-entity";
+import {ProcessNodeEntity} from "../../entities/process-node-entity";
 
 export interface ProcessDetailsPageContext {
     editable: boolean;
-    onSave: (node: ProcessDefinitionNodeEntity) => void;
-    onDelete: (node: ProcessDefinitionNodeEntity) => void;
+    onSave: (node: ProcessNodeEntity) => void;
+    onDelete: (node: ProcessNodeEntity) => void;
 }
 
 export const ProcessDetailsPageContext = createContext<ProcessDetailsPageContext>({

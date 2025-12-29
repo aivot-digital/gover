@@ -100,6 +100,10 @@ public class ProcessWorker {
                                 .formatted(currentNode.getProcessNodeDefinitionKey(), currentNode.getProcessNodeDefinitionVersion())
                 ));
 
+        var deadline = currentNode.getTimeLimitDays() != null ?
+                LocalDateTime.now().plusDays(currentNode.getTimeLimitDays()) :
+                null;
+
         var taskEntity = processInstanceTaskRepository.save(
                 new ProcessInstanceTaskEntity(
                         null,
@@ -118,7 +122,8 @@ public class ProcessWorker {
                         new HashMap<>(),
                         new HashMap<>(),
                         new HashMap<>(),
-                        null
+                        null,
+                        deadline
                 )
         );
 

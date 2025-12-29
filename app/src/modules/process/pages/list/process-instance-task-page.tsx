@@ -8,9 +8,9 @@ import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
 import {useParams} from "react-router-dom";
 import {ProcessInstanceTaskApiService} from "../../services/process-instance-task-api-service";
 import {ProcessInstanceTaskEntity} from "../../entities/process-instance-task-entity";
-import {ProcessDefinitionNodeEntity} from "../../entities/process-definition-node-entity";
+import {ProcessNodeEntity} from "../../entities/process-node-entity";
 import {ProcessNodeProvider, ProcessNodeProviderApiService} from "../../services/process-node-provider-api-service";
-import {ProcessDefinitionNodeApiService} from "../../services/process-definition-node-api-service";
+import {ProcessNodeApiService} from "../../services/process-node-api-service";
 import {useConfirm} from "../../../../providers/confirm-provider";
 import {ExpandableCodeBlock} from "../../../../components/expandable-code-block/expandable-code-block";
 import {ProcessTaskStatus, ProcessTaskStatusLabels} from "../../enums/process-task-status";
@@ -29,7 +29,7 @@ import {ProcessInstanceHistoryEventDialog} from "../../dialogs/process-instance-
 import News from "@aivot/mui-material-symbols-400-outlined/dist/news/News";
 
 interface ProcessInstanceTaskEntityWithNodeAndProvider extends ProcessInstanceTaskEntity {
-    node: ProcessDefinitionNodeEntity;
+    node: ProcessNodeEntity;
     provider: ProcessNodeProvider;
 }
 
@@ -112,47 +112,52 @@ export function ProcessInstanceTaskListPage() {
                     searchLabel="Team suchen"
                     searchPlaceholder="Name des Teams eingeben…"
                     fetch={(options) => {
-                        return Promise.all([
-                            new ProcessNodeProviderApiService()
-                                .getNodeProviders(),
-                            new ProcessDefinitionNodeApiService()
-                                .listAll({
-                                    processDefinitionId: parseInt(params.processId!),
-                                    processDefinitionVersion: parseInt(params.processVersion!),
-                                }),
-                            new ProcessInstanceTaskApiService()
-                                .list(
-                                    options.page,
-                                    options.size,
-                                    options.sort as any,
-                                    options.order,
-                                    {
+                        return Promise
+                            .all([
+                                new ProcessNodeProviderApiService()
+                                    .getNodeProviders(),
+
+                                new ProcessNodeApiService()
+                                    .listAll({
                                         processDefinitionId: parseInt(params.processId!),
                                         processDefinitionVersion: parseInt(params.processVersion!),
-                                        processInstanceId: parseInt(params.instanceId!),
-                                    },
-                                )
-                        ]).then(([providers, {content: nodes}, tasksPage]) => {
-                            const enrichedTasks: ProcessInstanceTaskEntityWithNodeAndProvider[] = [];
-                            for (const task of tasksPage.content) {
-                                const node = nodes.find(n => n.id === task.processDefinitionNodeId);
-                                const provider = node
-                                    ? providers.find(p => p.key === node.processNodeDefinitionKey)
-                                    : undefined;
-                                enrichedTasks.push({
-                                    ...task,
-                                    node: node!,
-                                    provider: provider!,
-                                });
-                            }
+                                    }),
 
-                            console.log(enrichedTasks);
+                                new ProcessInstanceTaskApiService()
+                                    .list(
+                                        options.page,
+                                        options.size,
+                                        options.sort as any,
+                                        options.order,
+                                        {
+                                            processDefinitionId: parseInt(params.processId!),
+                                            processDefinitionVersion: parseInt(params.processVersion!),
+                                            processInstanceId: parseInt(params.instanceId!),
+                                        },
+                                    )
+                            ])
+                            .then(([providers, {content: nodes}, tasksPage]) => {
+                                const enrichedTasks: ProcessInstanceTaskEntityWithNodeAndProvider[] = [];
 
-                            return {
-                                ...tasksPage,
-                                content: enrichedTasks,
-                            };
-                        })
+                                for (const task of tasksPage.content) {
+                                    const node = nodes.find(n => n.id === task.processNodeId);
+                                    const provider = node
+                                        ? providers.find(p => p.key === node.processNodeDefinitionKey)
+                                        : undefined;
+                                    enrichedTasks.push({
+                                        ...task,
+                                        node: node!,
+                                        provider: provider!,
+                                    });
+                                }
+
+                                console.log(enrichedTasks);
+
+                                return {
+                                    ...tasksPage,
+                                    content: enrichedTasks,
+                                };
+                            })
                     }}
                     columnIcon={<TaskAlt/>}
                     columnDefinitions={[

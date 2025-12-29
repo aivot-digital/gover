@@ -85,6 +85,7 @@ begin
            current_timestamp          as updated
     from process_instance_access_control_presets piacp
     where target_process_id = NEW.process_id;
+    return NEW;
 end;
 $$;
 

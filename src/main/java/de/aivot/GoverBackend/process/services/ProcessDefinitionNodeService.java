@@ -114,6 +114,10 @@ public class ProcessDefinitionNodeService implements EntityService<ProcessNodeEn
         existingEntity.setDataKey(entity.getDataKey());
         existingEntity.setProcessNodeDefinitionKey(entity.getProcessNodeDefinitionKey());
         existingEntity.setProcessNodeDefinitionVersion(entity.getProcessNodeDefinitionVersion());
+        existingEntity.setOutputMappings(entity.getOutputMappings());
+        existingEntity.setTimeLimitDays(entity.getTimeLimitDays());
+        existingEntity.setNotes(entity.getNotes());
+        existingEntity.setRequirements(entity.getRequirements());
 
         // Derive configuration
         var derivedObjectItemData = deriveDataObjectItemData(entity, false);

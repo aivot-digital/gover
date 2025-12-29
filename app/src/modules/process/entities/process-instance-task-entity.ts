@@ -4,9 +4,10 @@ export interface ProcessInstanceTaskEntity {
     id: number;
     accessKey: string; // UUID as string
     processInstanceId: number;
-    processDefinitionId: number;
-    processDefinitionVersion: number;
-    processDefinitionNodeId: number;
+    processId: number;
+    processVersion: number;
+    processNodeId: number;
+    previousProcessNodeId: number | null;
     status: ProcessTaskStatus;
     statusOverride: string | null;
     started: string; // ISO date string
@@ -17,4 +18,5 @@ export interface ProcessInstanceTaskEntity {
     nodeData: Record<string, any>; // JSON as string, or consider Record<string, any>
     processData: Record<string, any>; // JSON as string, or consider Record<string, any>
     assignedUserId: string | null;
+    deadline: string | null; // ISO date string
 }

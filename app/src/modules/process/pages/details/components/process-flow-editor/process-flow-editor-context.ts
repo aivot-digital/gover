@@ -1,12 +1,12 @@
 import {createContext} from 'react';
-import {ProcessDefinitionNodeEntity} from "../../../../entities/process-definition-node-entity";
+import {ProcessNodeEntity} from "../../../../entities/process-node-entity";
 
 export interface ProcessFlowEditorContext {
     editable: boolean;
     showTargetHandles: boolean;
 
-    selectedNode: ProcessDefinitionNodeEntity | null;
-    onSelectedNode: (node: ProcessDefinitionNodeEntity | null) => void;
+    selectedNode: ProcessNodeEntity | null;
+    onSelectedNode: (node: ProcessNodeEntity | null) => void;
 
     onAddEdge: (fromNodeId: number, toNodeId: number, viaPortKey: string) => void;
     onDeleteEdge: (forEdgeId: number) => void;

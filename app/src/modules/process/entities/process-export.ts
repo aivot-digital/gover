@@ -1,6 +1,6 @@
 import {ProcessDefinitionEntity} from "./process-definition-entity";
 import {ProcessDefinitionVersionEntity} from "./process-definition-version-entity";
-import {ProcessDefinitionNodeEntity} from "./process-definition-node-entity";
+import {ProcessNodeEntity} from "./process-node-entity";
 import {ProcessDefinitionEdgeEntity} from "./process-definition-edge-entity";
 
 export interface ProcessExport {
@@ -14,6 +14,6 @@ export interface ProcessExportData {
     createdByVendor: string;
     process: ProcessDefinitionEntity;
     version: ProcessDefinitionVersionEntity;
-    nodes: ProcessDefinitionNodeEntity[];
+    nodes: ProcessNodeEntity[];
     edges: ProcessDefinitionEdgeEntity[];
 }

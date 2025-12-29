@@ -6,7 +6,16 @@ import {ProcessInstanceListPage} from "./pages/list/process-instance-page";
 import {ProcessInstanceTaskListPage} from "./pages/list/process-instance-task-page";
 import {ProcessTaskViewPage} from "./pages/details/process-task-view-page";
 import {ProcessAssignedTaskListPage} from "./pages/list/process-assigned-task-page";
-import {ProcessFlowNodeEditor} from "./pages/details/components/process-flow-node-editor";
+import {ProcessNodeEditor} from "./pages/details/components/process-node-editor/process-node-editor";
+import {
+    ProcessNodeEditorConfigurationTab
+} from "./pages/details/components/process-node-editor/tabs/process-node-editor-configuration-tab";
+import {
+    ProcessNodeEditorMoreTab
+} from "./pages/details/components/process-node-editor/tabs/process-node-editor-more-tab";
+import {
+    ProcessNodeEditorOutputsTab
+} from "./pages/details/components/process-node-editor/tabs/process-node-editor-outputs-tab";
 
 export const processRoutes: RouteObject[] = [
     {
@@ -23,7 +32,25 @@ export const processRoutes: RouteObject[] = [
             },
             {
                 path: '/processes/:processId/versions/:processVersion/nodes/:nodeId',
-                element: <ProcessFlowNodeEditor/>,
+                element: <ProcessNodeEditor/>,
+                children: [
+                    {
+                        index: true,
+                        element: <ProcessNodeEditorConfigurationTab/>,
+                    },
+                    {
+                        path: '/processes/:processId/versions/:processVersion/nodes/:nodeId/tabs/configuration',
+                        element: <ProcessNodeEditorConfigurationTab/>,
+                    },
+                    {
+                        path: '/processes/:processId/versions/:processVersion/nodes/:nodeId/tabs/outputs',
+                        element: <ProcessNodeEditorOutputsTab/>,
+                    },
+                    {
+                        path: '/processes/:processId/versions/:processVersion/nodes/:nodeId/tabs/more',
+                        element: <ProcessNodeEditorMoreTab/>,
+                    }
+                ]
             }
         ],
     },

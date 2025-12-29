@@ -1,15 +1,16 @@
 package de.aivot.GoverBackend.process.entities;
 
 import de.aivot.GoverBackend.core.converters.ElementDataConverter;
+import de.aivot.GoverBackend.core.converters.JsonObjectConverter;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
+
+import java.util.Map;
 
 @Entity
 @Table(name = "process_nodes")
@@ -58,6 +59,25 @@ public class ProcessNodeEntity {
     @Convert(converter = ElementDataConverter.class)
     @Column(columnDefinition = "jsonb")
     private ElementData configuration;
+
+    @Nonnull
+    @NotNull(message = "Die Input-Mappings dürfen nicht null sein.")
+    @Convert(converter = JsonObjectConverter.class)
+    @Column(columnDefinition = "jsonb")
+    private Map<String, String> outputMappings;
+
+    @Nullable
+    @Min(value = 1, message = "Das Zeitlimit in Tagen muss mindestens 1 sein.")
+    @Max(value = 3652, message = "Das Zeitlimit in Tagen darf maximal 3652 sein.")
+    private Integer timeLimitDays;
+
+    @Nullable
+    @Size(max = 1024, message = "Die Anforderungen dürfen maximal 1024 Zeichen lang sein.")
+    private String requirements;
+
+    @Nullable
+    @Size(max = 2048, message = "Die Notizen dürfen maximal 2048 Zeichen lang sein.")
+    private String notes;
 
     // region Utils
 
@@ -159,6 +179,46 @@ public class ProcessNodeEntity {
 
     public ProcessNodeEntity setConfiguration(@Nonnull ElementData configuration) {
         this.configuration = configuration;
+        return this;
+    }
+
+    @Nonnull
+    public Map<String, String> getOutputMappings() {
+        return outputMappings;
+    }
+
+    public ProcessNodeEntity setOutputMappings(@Nonnull Map<String, String> outputMappings) {
+        this.outputMappings = outputMappings;
+        return this;
+    }
+
+    @Nullable
+    public Integer getTimeLimitDays() {
+        return timeLimitDays;
+    }
+
+    public ProcessNodeEntity setTimeLimitDays(@Nullable Integer timeLimitDays) {
+        this.timeLimitDays = timeLimitDays;
+        return this;
+    }
+
+    @Nullable
+    public String getRequirements() {
+        return requirements;
+    }
+
+    public ProcessNodeEntity setRequirements(@Nullable String requirements) {
+        this.requirements = requirements;
+        return this;
+    }
+
+    @Nullable
+    public String getNotes() {
+        return notes;
+    }
+
+    public ProcessNodeEntity setNotes(@Nullable String notes) {
+        this.notes = notes;
         return this;
     }
 

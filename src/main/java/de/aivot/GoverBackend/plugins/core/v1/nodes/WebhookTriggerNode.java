@@ -12,17 +12,16 @@ import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
 import de.aivot.GoverBackend.process.entities.ProcessEntity;
+import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntity;
-import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
-import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
-import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.GoverBackend.process.services.ProcessInstanceService;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.utils.StringUtils;
@@ -49,16 +48,14 @@ public class WebhookTriggerNode implements ProcessNodeDefinition, PluginComponen
     private final GoverConfig goverConfig;
     private final ProcessInstanceService processInstanceService;
     private final ProcessNodeRepository processDefinitionNodeRepository;
-    private final ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository;
 
     @Autowired
     public WebhookTriggerNode(GoverConfig goverConfig,
                               ProcessInstanceService processInstanceService,
-                              ProcessNodeRepository processDefinitionNodeRepository, ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository) {
+                              ProcessNodeRepository processDefinitionNodeRepository) {
         this.goverConfig = goverConfig;
         this.processInstanceService = processInstanceService;
         this.processDefinitionNodeRepository = processDefinitionNodeRepository;
-        this.processInstanceHistoryEventRepository = processInstanceHistoryEventRepository;
     }
 
     @Nonnull
@@ -186,7 +183,7 @@ public class WebhookTriggerNode implements ProcessNodeDefinition, PluginComponen
     ) throws ResponseException {
         var spec = SpecificationBuilder
                 .create(ProcessNodeEntity.class)
-                .withEquals("codeKey", NODE_KEY)
+                .withEquals("processNodeDefinitionKey", NODE_KEY)
                 .withJsonEquals("configuration", List.of(SLUG_CONFIG_KEY, "inputValue"), slug)
                 .build();
 

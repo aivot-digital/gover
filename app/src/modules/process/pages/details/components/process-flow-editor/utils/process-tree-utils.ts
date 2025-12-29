@@ -1,9 +1,9 @@
-import {ProcessDefinitionNodeEntity} from "../../../../../entities/process-definition-node-entity";
+import {ProcessNodeEntity} from "../../../../../entities/process-node-entity";
 import {ProcessDefinitionEdgeEntity} from "../../../../../entities/process-definition-edge-entity";
 import {ProcessNodePort, ProcessNodeProvider} from "../../../../../services/process-node-provider-api-service";
 
 export interface TreeNode {
-    node: ProcessDefinitionNodeEntity;
+    node: ProcessNodeEntity;
     provider: ProcessNodeProvider;
     children: TreeEdge[];
     depth: number;
@@ -16,10 +16,10 @@ export interface TreeEdge {
     childNode: TreeNode;
 }
 
-export function processDataToTree(nodes: ProcessDefinitionNodeEntity[],
+export function processDataToTree(nodes: ProcessNodeEntity[],
                                   edges: ProcessDefinitionEdgeEntity[],
                                   providers: ProcessNodeProvider[]): TreeNode[] {
-    const nodeMap = new Map<number, ProcessDefinitionNodeEntity>();
+    const nodeMap = new Map<number, ProcessNodeEntity>();
     const providerMap = new Map<string, ProcessNodeProvider>();
     const incomingEdgeCount = new Map<number, number>();
     const edgesByFromNode = new Map<number, ProcessDefinitionEdgeEntity[]>();

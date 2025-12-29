@@ -14,6 +14,7 @@ export interface ProcessNodeProvider {
     name: string;
     description: string;
     ports: ProcessNodePort[];
+    outputs: ProcessNodeOutput[];
 }
 
 export interface ProcessNodePort {
@@ -22,8 +23,18 @@ export interface ProcessNodePort {
     description: string;
 }
 
+export interface ProcessNodeOutput {
+    key: string;
+    label: string;
+    description: string;
+}
+
 export class ProcessNodeProviderApiService extends BaseApiService {
     public getNodeProviders(): Promise<ProcessNodeProvider[]> {
         return this.get('/api/process-node-definitions/');
+    }
+
+    public getNodeProvider(key: string, version: number): Promise<ProcessNodeProvider> {
+        return this.get(`/api/process-node-definitions/${key}/versions/${version}/`);
     }
 }

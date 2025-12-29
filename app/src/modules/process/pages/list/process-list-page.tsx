@@ -332,7 +332,8 @@ export function ProcessListPage() {
             <NewProcessDialog
                 open={showAddDialog}
                 onNew={(process) => {
-
+                    setShowAddDialog(false);
+                    listControlRef.current?.refresh();
                 }}
                 onCancel={() => {
                     setShowAddDialog(false);

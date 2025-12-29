@@ -119,7 +119,7 @@ export function ProcessInstanceListPage() {
                             flex: 1,
                             renderCell: (params) => (
                                 <CellLink
-                                    to={`/processes/${params.row.processDefinitionId}/versions/${params.row.processDefinitionVersion}/instances/${params.row.id}/tasks`}
+                                    to={`/processes/${params.row.processId}/versions/${params.row.processVersion}/instances/${params.row.id}/tasks`}
                                     title="Aufrufen"
                                 >
                                     {String(params.value)}
