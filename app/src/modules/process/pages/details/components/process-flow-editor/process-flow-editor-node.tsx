@@ -157,8 +157,8 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>) {
                     position={Position.Top}
                     style={{
                         visibility: showTargetHandles ? 'visible' : 'hidden',
-                        width: showTargetHandles ? 0 : `${HANDLE_SIZE}px`,
-                        height: showTargetHandles ? 0 : `${HANDLE_SIZE}px`,
+                        width: showTargetHandles ? `${HANDLE_SIZE}px` : 0,
+                        height: showTargetHandles ? `${HANDLE_SIZE}px` : 0,
                         backgroundColor: 'var(--xy-edge-stroke, var(--xy-edge-stroke-default))',
                         border: 'none',
                     }}

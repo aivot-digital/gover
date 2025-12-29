@@ -80,7 +80,20 @@ export function processDataToTree(nodes: ProcessDefinitionNodeEntity[],
         }
     }
 
-    function buildTree(nodeId: number, order: number): TreeNode {
+    function buildTree(nodeId: number, order: number, visited: Set<number>): TreeNode {
+        if (visited.has(nodeId)) {
+            // Cycle detected, return node without children to prevent infinite recursion
+            const node = nodeMap.get(nodeId)!;
+            const provider = providerMap.get(node.processNodeDefinitionKey)!;
+            return {
+                node,
+                provider,
+                children: [],
+                depth: rankMap.get(nodeId) ?? 0,
+                order,
+            };
+        }
+        visited.add(nodeId);
         const node = nodeMap.get(nodeId)!;
         const provider = providerMap.get(node.processNodeDefinitionKey)!;
         const children: TreeEdge[] = [];
@@ -90,7 +103,7 @@ export function processDataToTree(nodes: ProcessDefinitionNodeEntity[],
             if (edge == null) {
                 // No edge for this port, could handle differently if needed
             } else {
-                const childNode = buildTree(edge.toNodeId, index);
+                const childNode = buildTree(edge.toNodeId, index, new Set(visited));
                 children.push({
                     edge,
                     port,
@@ -112,5 +125,5 @@ export function processDataToTree(nodes: ProcessDefinitionNodeEntity[],
         .filter(node => (parentMap.get(node.id)?.length || 0) === 0)
         .map(node => node.id);
 
-    return rootNodeIds.map(nodeId => buildTree(nodeId, 0));
+    return rootNodeIds.map(nodeId => buildTree(nodeId, 0, new Set<number>()));
 }
