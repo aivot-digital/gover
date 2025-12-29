@@ -24,8 +24,8 @@ public class ProcessDefinitionNodeFilter implements Filter<ProcessNodeEntity> {
         var builder = SpecificationBuilder
                 .create(ProcessNodeEntity.class)
                 .withEquals("id", id)
-                .withEquals("processDefinitionId", processDefinitionId)
-                .withEquals("processDefinitionVersion", processDefinitionVersion)
+                .withEquals("processId", processDefinitionId)
+                .withEquals("processVersion", processDefinitionVersion)
                 .withContains("dataKey", dataKey)
                 .withContains("codeKey", codeKey);
 

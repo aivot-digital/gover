@@ -218,7 +218,7 @@ async function getItems(instanceId: number, taskId: number | null): Promise<Item
 
         let provider: ProcessNodeProvider | null = null;
         if (node != null) {
-            provider = providers.find((p) => p.key === node!.codeKey)!;
+            provider = providers.find((p) => p.key === node!.processNodeDefinitionKey)!;
         }
 
         let user: User | null = null;

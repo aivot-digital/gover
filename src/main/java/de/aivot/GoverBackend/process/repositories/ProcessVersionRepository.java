@@ -11,7 +11,7 @@ import java.util.Optional;
 
 public interface ProcessVersionRepository extends JpaRepository<ProcessVersionEntity, ProcessVersionEntityId>, JpaSpecificationExecutor<ProcessVersionEntity> {
     @Query(value = """
-            SELECT max(process_definition_version) from process_definition_versions where process_definition_id = :processDefinitionId;
+            SELECT max(process_version) from process_versions where process_id = :processDefinitionId;
             """, nativeQuery = true)
     Optional<Integer> maxVersionForProcessDefinition(@Param("processDefinitionId") Integer processDefinitionId);
 }

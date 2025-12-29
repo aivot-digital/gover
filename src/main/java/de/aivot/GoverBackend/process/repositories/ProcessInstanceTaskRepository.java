@@ -13,7 +13,7 @@ public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInst
 
     @Query(
             value = """
-                    SELECT distinct on (process_definition_node_id) * from process_instance_tasks where process_instance_id = :processInstanceId order by process_definition_node_id, started desc;
+                    SELECT distinct on (process_node_id) * from process_instance_tasks where process_instance_id = :processInstanceId order by process_node_id, started desc;
                     """,
             nativeQuery = true
     )

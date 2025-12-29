@@ -31,10 +31,10 @@ public class ProcessDefinitionChangeFilter implements Filter<ProcessChangeEntity
                 .withEquals("id", id)
                 .withEquals("timestamp", timestamp)
                 .withContains("userId", userId)
-                .withEquals("processDefinitionId", processDefinitionId)
-                .withEquals("processDefinitionVersion", processDefinitionVersion)
-                .withEquals("processDefinitionNodeId", processDefinitionNodeId)
-                .withEquals("processDefinitionEdgeId", processDefinitionEdgeId)
+                .withEquals("processId", processDefinitionId)
+                .withEquals("processVersion", processDefinitionVersion)
+                .withEquals("processNodeId", processDefinitionNodeId)
+                .withEquals("processEdgeId", processDefinitionEdgeId)
                 .withEquals("changeType", changeType)
                 .withContains("comment", comment);
 

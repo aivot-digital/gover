@@ -1,5 +1,4 @@
 import {BaseApiService} from "../../../services/base-api-service";
-import {GroupLayout} from "../../../models/elements/form/layout/group-layout";
 
 export enum ProcessNodeType {
     Trigger = 'Trigger',
@@ -10,6 +9,7 @@ export enum ProcessNodeType {
 
 export interface ProcessNodeProvider {
     key: string;
+    version: number;
     type: ProcessNodeType;
     name: string;
     description: string;
@@ -24,6 +24,6 @@ export interface ProcessNodePort {
 
 export class ProcessNodeProviderApiService extends BaseApiService {
     public getNodeProviders(): Promise<ProcessNodeProvider[]> {
-        return this.get('/api/process-node-providers/');
+        return this.get('/api/process-node-definitions/');
     }
 }

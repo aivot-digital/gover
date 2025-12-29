@@ -25,8 +25,8 @@ public class ProcessDefinitionEdgeFilter implements Filter<ProcessEdgeEntity> {
         var builder = SpecificationBuilder
                 .create(ProcessEdgeEntity.class)
                 .withEquals("id", id)
-                .withEquals("processDefinitionId", processDefinitionId)
-                .withEquals("processDefinitionVersion", processDefinitionVersion)
+                .withEquals("processId", processDefinitionId)
+                .withEquals("processVersion", processDefinitionVersion)
                 .withEquals("fromNodeId", fromNodeId)
                 .withEquals("toNodeId", toNodeId)
                 .withContains("viaPort", viaPort);

@@ -23,8 +23,8 @@ public class ProcessDefinitionVersionFilter implements Filter<ProcessVersionEnti
     public Specification<ProcessVersionEntity> build() {
         var builder = SpecificationBuilder
                 .create(ProcessVersionEntity.class)
-                .withEquals("processDefinitionId", processDefinitionId)
-                .withEquals("processDefinitionVersion", processDefinitionVersion)
+                .withEquals("processId", processDefinitionId)
+                .withEquals("processVersion", processDefinitionVersion)
                 .withEquals("status", status)
                 .withEquals("retentionTimeUnit", retentionTimeUnit)
                 .withEquals("retentionTimeAmount", retentionTimeAmount);

@@ -82,7 +82,7 @@ export function processDataToTree(nodes: ProcessDefinitionNodeEntity[],
 
     function buildTree(nodeId: number, order: number): TreeNode {
         const node = nodeMap.get(nodeId)!;
-        const provider = providerMap.get(node.codeKey)!;
+        const provider = providerMap.get(node.processNodeDefinitionKey)!;
         const children: TreeEdge[] = [];
         const outgoingEdges = edgesByFromNode.get(nodeId) || [];
         provider.ports.forEach((port, index) => {

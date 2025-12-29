@@ -137,7 +137,7 @@ export function ProcessInstanceTaskListPage() {
                             for (const task of tasksPage.content) {
                                 const node = nodes.find(n => n.id === task.processDefinitionNodeId);
                                 const provider = node
-                                    ? providers.find(p => p.key === node.codeKey)
+                                    ? providers.find(p => p.key === node.processNodeDefinitionKey)
                                     : undefined;
                                 enrichedTasks.push({
                                     ...task,

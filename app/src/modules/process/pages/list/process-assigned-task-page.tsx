@@ -111,7 +111,7 @@ export function ProcessAssignedTaskListPage() {
                                         instance: instances.content.find(i => i.id === task.processInstanceId)!,
                                         process: processes.content.find(p => p.id === task.processDefinitionId)!,
                                         node: nodes.content.find(n => n.id === task.processDefinitionNodeId)!,
-                                        provider: providers.find(p => p.key === node.codeKey)!,
+                                        provider: providers.find(p => p.key === node.processNodeDefinitionKey)!,
                                     };
                                 })
                             }

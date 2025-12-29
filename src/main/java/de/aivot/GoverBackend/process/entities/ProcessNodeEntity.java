@@ -50,7 +50,6 @@ public class ProcessNodeEntity {
     private String processNodeDefinitionKey;
 
     @Nonnull
-    @NotBlank(message = "Die Version der Prozessknoten-Definition darf nicht leer sein.")
     @NotNull(message = "Die Version  der Prozessknoten-Definition darf nicht null sein.")
     private Integer processNodeDefinitionVersion;
 

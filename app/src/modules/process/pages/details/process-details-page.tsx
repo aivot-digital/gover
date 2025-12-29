@@ -126,7 +126,7 @@ export function ProcessDetailsPage() {
         new ProcessDefinitionApiService()
             .export(processId, processVersion)
             .then((exp) => {
-                downloadObjectFile(`${exp.data.process.name} - ${exp.data.version.processDefinitionVersion}.json`, exp);
+                downloadObjectFile(`${exp.data.process.name} - ${exp.data.version.processVersion}.json`, exp);
             });
     };
 
@@ -146,11 +146,12 @@ export function ProcessDetailsPage() {
         new ProcessDefinitionNodeApiService()
             .create({
                 id: 0,
-                processDefinitionId: processFlow.definition.id,
-                processDefinitionVersion: processFlow.version.processDefinitionVersion,
+                processId: processFlow.definition.id,
+                processVersion: processFlow.version.processVersion,
+                processNodeDefinitionKey: nodeProvider.key,
+                processNodeDefinitionVersion: nodeProvider.version,
                 name: null,
                 description: null,
-                codeKey: nodeProvider.key,
                 dataKey: generateId(5),
                 configuration: {},
             })
@@ -200,11 +201,12 @@ export function ProcessDetailsPage() {
         const newNode = await new ProcessDefinitionNodeApiService()
             .create({
                 id: 0,
-                processDefinitionId: processFlow.definition.id,
-                processDefinitionVersion: processFlow.version.processDefinitionVersion,
+                processId: processFlow.definition.id,
+                processVersion: processFlow.version.processVersion,
+                processNodeDefinitionKey: nodeProvider.key,
+                processNodeDefinitionVersion: nodeProvider.version,
                 name: null,
                 description: null,
-                codeKey: nodeProvider.key,
                 dataKey: generateId(5),
                 configuration: {},
             });
@@ -218,8 +220,8 @@ export function ProcessDetailsPage() {
         const newEdge = await edgeApi
             .create({
                 id: 0,
-                processDefinitionId: processFlow.definition.id,
-                processDefinitionVersion: processFlow.version.processDefinitionVersion,
+                processId: processFlow.definition.id,
+                processVersion: processFlow.version.processVersion,
                 fromNodeId: newNodeFor.fromNodeId,
                 toNodeId: newNode.id,
                 viaPort: newNodeFor.viaPort,
@@ -282,11 +284,12 @@ export function ProcessDetailsPage() {
         const newNode = await new ProcessDefinitionNodeApiService()
             .create({
                 id: 0,
-                processDefinitionId: processFlow.definition.id,
-                processDefinitionVersion: processFlow.version.processDefinitionVersion,
+                processId: processFlow.definition.id,
+                processVersion: processFlow.version.processVersion,
+                processNodeDefinitionKey: nodeProvider.key,
+                processNodeDefinitionVersion: nodeProvider.version,
                 name: null,
                 description: null,
-                codeKey: nodeProvider.key,
                 dataKey: generateId(5),
                 configuration: {},
             });
@@ -294,8 +297,8 @@ export function ProcessDetailsPage() {
         const newEdgeToNewNode = await edgeApi
             .create({
                 id: 0,
-                processDefinitionId: processFlow.definition.id,
-                processDefinitionVersion: processFlow.version.processDefinitionVersion,
+                processId: processFlow.definition.id,
+                processVersion: processFlow.version.processVersion,
                 fromNodeId: existingEdge.fromNodeId,
                 toNodeId: newNode.id,
                 viaPort: existingEdge.viaPort,
@@ -304,8 +307,8 @@ export function ProcessDetailsPage() {
         const newEdgeFromNewNode = await edgeApi
             .create({
                 id: 0,
-                processDefinitionId: processFlow.definition.id,
-                processDefinitionVersion: processFlow.version.processDefinitionVersion,
+                processId: processFlow.definition.id,
+                processVersion: processFlow.version.processVersion,
                 fromNodeId: newNode.id,
                 toNodeId: existingEdge.toNodeId,
                 viaPort: nodeProvider.ports[0].key,
@@ -353,7 +356,7 @@ export function ProcessDetailsPage() {
             edges: processFlow.edges.filter((e) => !edgesToRemove.some((er) => er.id === e.id)),
         });
 
-        navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processDefinitionVersion}`);
+        navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}`);
     };
 
     const handleSaveNode = async (node: ProcessDefinitionNodeEntity) => {
@@ -399,7 +402,7 @@ export function ProcessDetailsPage() {
                         title={'Prozess: ' + processFlow.definition.name}
                         badge={{
                             color: 'default',
-                            label: `Version ${processFlow.version.processDefinitionVersion}`,
+                            label: `Version ${processFlow.version.processVersion}`,
                         }}
                         icon={ModuleIcons.processes}
                         actions={[
@@ -441,7 +444,7 @@ export function ProcessDetailsPage() {
                             {
                                 tooltip: 'Vorgänge',
                                 icon: <ProcessChart/>,
-                                to: `/processes/${processFlow.definition.id}/versions/${processFlow.version.processDefinitionVersion}/instances`,
+                                to: `/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}/instances`,
                             },
                         ]}
                     />
@@ -466,7 +469,7 @@ export function ProcessDetailsPage() {
                                         return;
                                     }
                                     setSelectedNode(node);
-                                    navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processDefinitionVersion}/nodes/${node.id}`);
+                                    navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}/nodes/${node.id}`);
                                 }}
                                 onAddFollowUpNode={(fromNodeId, viaPort) => {
                                     setNewNodeFor({
@@ -481,8 +484,8 @@ export function ProcessDetailsPage() {
                                     new ProcessDefinitionEdgeApiService()
                                         .create({
                                             id: 0,
-                                            processDefinitionId: processFlow.definition.id,
-                                            processDefinitionVersion: processFlow.version.processDefinitionVersion,
+                                            processId: processFlow.definition.id,
+                                            processVersion: processFlow.version.processVersion,
                                             fromNodeId: fromNodeId,
                                             toNodeId: toNodeId,
                                             viaPort: viaPortKey,

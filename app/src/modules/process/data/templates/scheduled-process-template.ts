@@ -18,8 +18,8 @@ export const ScheduledProcessTemplate: ProcessExportData = {
         updated: new Date().toISOString(),
     },
     version: {
-        processDefinitionId: 0,
-        processDefinitionVersion: 0,
+        processId: 0,
+        processVersion: 0,
         status: ProcessStatus.Drafted,
         retentionTimeUnit: RetentionTimeUnit.Days,
         retentionTimeAmount: 30,

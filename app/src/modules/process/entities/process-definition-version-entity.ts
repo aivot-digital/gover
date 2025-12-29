@@ -2,8 +2,8 @@ import {ProcessStatus} from "../enums/process-status";
 import {RetentionTimeUnit} from "../enums/retention-time-unit";
 
 export interface ProcessDefinitionVersionEntity {
-    processDefinitionId: number;
-    processDefinitionVersion: number;
+    processId: number;
+    processVersion: number;
     status: ProcessStatus;
     retentionTimeUnit: RetentionTimeUnit;
     retentionTimeAmount: number;

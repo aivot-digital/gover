@@ -42,9 +42,10 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps) {
                                 key={provider.key}
                                 onClick={() => {
                                     onSelect(provider);
+                                    onClose();
                                 }}
                             >
-                                {provider.name}
+                                {provider.name} (Version {provider.version})
                             </Button>
                         ))
                 }

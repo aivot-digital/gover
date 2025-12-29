@@ -34,8 +34,8 @@ export class ProcessDefinitionVersionApiService extends BaseCrudApiService<
 
     initialize(): ProcessDefinitionVersionEntity {
         return {
-            processDefinitionId: 0,
-            processDefinitionVersion: 0,
+            processId: 0,
+            processVersion: 0,
             retentionTimeAmount: 0,
             retentionTimeUnit: RetentionTimeUnit.Days,
             status: ProcessStatus.Drafted,

@@ -25,12 +25,13 @@ export class ProcessDefinitionNodeApiService extends BaseCrudApiService<
     initialize(): ProcessDefinitionNodeEntity {
         return {
             id: 0,
-            processDefinitionId: 0,
-            processDefinitionVersion: 0,
+            processId: 0,
+            processVersion: 0,
+            processNodeDefinitionKey: "",
+            processNodeDefinitionVersion: 0,
             name: null,
             description: null,
             dataKey: "",
-            codeKey: "",
             configuration: {},
         };
     }

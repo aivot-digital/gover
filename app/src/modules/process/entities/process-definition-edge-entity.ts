@@ -1,7 +1,7 @@
 export interface ProcessDefinitionEdgeEntity {
     id: number;
-    processDefinitionId: number;
-    processDefinitionVersion: number;
+    processId: number;
+    processVersion: number;
     fromNodeId: number;
     toNodeId: number;
     viaPort: string;

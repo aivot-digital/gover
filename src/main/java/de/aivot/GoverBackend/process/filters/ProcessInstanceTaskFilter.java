@@ -32,9 +32,9 @@ public class ProcessInstanceTaskFilter implements Filter<ProcessInstanceTaskEnti
                 .withEquals("id", id)
                 .withEquals("accessKey", accessKey)
                 .withEquals("processInstanceId", processInstanceId)
-                .withEquals("processDefinitionId", processDefinitionId)
-                .withEquals("processDefinitionVersion", processDefinitionVersion)
-                .withEquals("processDefinitionNodeId", processDefinitionNodeId)
+                .withEquals("processId", processDefinitionId)
+                .withEquals("processVersion", processDefinitionVersion)
+                .withEquals("processNodeId", processDefinitionNodeId)
                 .withEquals("status", status)
                 .withContains("assignedUserId", assignedUserId);
 
@@ -109,4 +109,3 @@ public class ProcessInstanceTaskFilter implements Filter<ProcessInstanceTaskEnti
         return this;
     }
 }
-
