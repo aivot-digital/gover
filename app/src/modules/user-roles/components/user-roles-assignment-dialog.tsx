@@ -11,19 +11,15 @@ import {DepartmentEntity} from '../../departments/entities/department-entity';
 import {DepartmentApiService} from '../../departments/services/department-api-service';
 import {useAppDispatch} from "../../../hooks/use-app-dispatch";
 import {showApiErrorSnackbar} from "../../../slices/snackbar-slice";
-import {
-    VDepartmentUserRoleAssignmentWithDetailsService
-} from "../../departments/services/v-department-user-role-assignment-with-details-service";
-import {
-    VDepartmentUserRoleAssignmentWithDetailsEntity
-} from "../../departments/entities/v-department-user-role-assignment-with-details-entity";
 import {TeamEntity} from "../../teams/entities/team-entity";
 import {
-    VTeamUserRoleAssignmentWithDetailsApiService
-} from "../../teams/services/v-team-user-role-assignment-with-details-api-service";
+    VDepartmentMembershipWithDetailsService
+} from "../../departments/services/v-department-membership-with-details-service";
+import {VTeamMembershipWithDetailsApiService} from "../../teams/services/v-team-membership-with-details-api-service";
 import {
-    VTeamUserRoleAssignmentWithDetailsEntity
-} from "../../teams/entities/v-team-user-role-assignment-with-details-entity";
+    VDepartmentMembershipWithDetailsEntity
+} from "../../departments/entities/v-department-membership-with-details-entity";
+import {VTeamMembershipWithDetailsEntity} from "../../teams/entities/v-team-membership-with-details-entity";
 
 interface UserRolesAssignmentDialogProps {
     open: boolean;
@@ -41,8 +37,8 @@ type ParentType<T extends 'orgUnit' | 'team'> =
 
 type MembershipType<T extends 'orgUnit' | 'team'> =
     T extends 'orgUnit' ?
-        VDepartmentUserRoleAssignmentWithDetailsEntity :
-        VTeamUserRoleAssignmentWithDetailsEntity;
+        VDepartmentMembershipWithDetailsEntity :
+        VTeamMembershipWithDetailsEntity;
 
 export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps) {
     const dispatch = useAppDispatch();
@@ -120,7 +116,7 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
         }
 
         if (parentType === 'orgUnit') {
-            new VDepartmentUserRoleAssignmentWithDetailsService()
+            new VDepartmentMembershipWithDetailsService()
                 .listAll({
                     departmentId: parentId,
                     userId: userId,
@@ -132,7 +128,7 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                     dispatch(showApiErrorSnackbar(err, 'Rollen-Zuweisungen konnten nicht geladen werden'))
                 });
         } else {
-            new VTeamUserRoleAssignmentWithDetailsApiService()
+            new VTeamMembershipWithDetailsApiService()
                 .listAll({
                     teamId: parentId,
                     userId: userId,
@@ -146,42 +142,44 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
         }
     }, [userId, parentId, parentType]);
 
-    // Determine
+    // Determine active role IDs
     useEffect(() => {
         if (memberships == null) {
             setActiveRoleIds(undefined);
             return;
         }
 
-        console.log(memberships);
-
         const activeRoleIdsSet = new Set<number>();
 
         memberships
-            .map(mem => mem.userRoleId)
-            .filter(id => id != null)
-            .forEach(id => activeRoleIdsSet.add(id));
-
-        console.log('Active Role IDs Set:', activeRoleIdsSet);
+            .flatMap((mem) => mem.domainRoles)
+            .forEach((role) => activeRoleIdsSet.add(role.id));
 
         setActiveRoleIds(activeRoleIdsSet);
     }, [memberships]);
 
     const handleSave = useCallback(() => {
+        if (memberships == null) {
+            return;
+        }
+
         const roleIdsToAdd: number[] = [];
         const userRoleAssignmentIdsToRemove: number[] = [];
 
         if (roles != null && activeRoleIds != null) {
             roles.forEach((role) => {
-                const isActive = activeRoleIds.has(role.id) ?? false;
-                const isCurrentlyAssigned = memberships?.some((membership) => membership.userRoleId === role.id) ?? false;
+                const isActive = activeRoleIds.has(role.id);
+
+                const isCurrentlyAssigned = memberships
+                    .flatMap((m) => m.domainRoles)
+                    .some(r => r.id === role.id);
 
                 if (isActive && !isCurrentlyAssigned) {
                     roleIdsToAdd.push(role.id);
                 } else if (!isActive && isCurrentlyAssigned) {
-                    const membership = memberships?.find((m) => m.userRoleId === role.id);
+                    const membership = memberships?.find((m) => m.domainRoles.some(r => r.id === role.id));
                     if (membership != null) {
-                        userRoleAssignmentIdsToRemove.push(membership.userRoleAssignmentId!);
+                        userRoleAssignmentIdsToRemove.push(membership.membershipId!);
                     }
                 }
             });

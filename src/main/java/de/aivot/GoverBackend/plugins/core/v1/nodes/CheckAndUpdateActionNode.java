@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @Component
-public class CheckAndUpdateActionNode implements ProcessNodeProvider, PluginComponent {
+public class CheckAndUpdateActionNode implements ProcessNodeDefinition, PluginComponent {
     private static final String ACCEPT_PORT_NAME = "accept";
     private static final String REJECT_PORT_NAME = "reject";
 
@@ -82,9 +82,9 @@ public class CheckAndUpdateActionNode implements ProcessNodeProvider, PluginComp
     @Override
     @JsonIgnore
     public ConfigLayoutElement getConfigurationLayout(@Nonnull UserEntity user,
-                                                      @Nonnull ProcessDefinitionEntity processDefinition,
-                                                      @Nonnull ProcessDefinitionVersionEntity processDefinitionVersion,
-                                                      @Nullable ProcessDefinitionNodeEntity thisNode) {
+                                                      @Nonnull ProcessEntity processDefinition,
+                                                      @Nonnull ProcessVersionEntity processDefinitionVersion,
+                                                      @Nullable ProcessNodeEntity thisNode) {
         var layout = new ConfigLayoutElement();
         layout.setId(getKey() + "-config");
 
@@ -118,7 +118,7 @@ public class CheckAndUpdateActionNode implements ProcessNodeProvider, PluginComp
     @Nonnull
     @Override
     public GroupLayoutElement getStaffTaskView(@Nullable UserEntity user,
-                                               @Nonnull ProcessDefinitionNodeEntity thisNode,
+                                               @Nonnull ProcessNodeEntity thisNode,
                                                @Nonnull ProcessInstanceEntity processInstance,
                                                @Nonnull ProcessInstanceTaskEntity thisTask) throws ResponseException {
         var configuration = thisNode.getConfiguration();
@@ -158,7 +158,7 @@ public class CheckAndUpdateActionNode implements ProcessNodeProvider, PluginComp
     @Nonnull
     @Override
     public List<TaskViewEvent> getStaffTaskViewEvents(@Nullable UserEntity user,
-                                                      @Nonnull ProcessDefinitionNodeEntity thisNode,
+                                                      @Nonnull ProcessNodeEntity thisNode,
                                                       @Nonnull ProcessInstanceEntity processInstance,
                                                       @Nonnull ProcessInstanceTaskEntity thisTask) throws ResponseException {
         return List.of(
@@ -192,7 +192,7 @@ public class CheckAndUpdateActionNode implements ProcessNodeProvider, PluginComp
 
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessInstanceEntity processInstance,
-                                           @Nonnull ProcessDefinitionNodeEntity thisNode,
+                                           @Nonnull ProcessNodeEntity thisNode,
                                            @Nonnull Map<String, Object> workingData) throws Exception {
         var configuration = thisNode.getConfiguration();
 
@@ -231,7 +231,7 @@ public class CheckAndUpdateActionNode implements ProcessNodeProvider, PluginComp
     @Override
     public Optional<ProcessNodeExecutionResult> updateStaff(@Nullable UserEntity user,
                                                             @Nonnull ProcessInstanceEntity processInstance,
-                                                            @Nonnull ProcessDefinitionNodeEntity thisNode,
+                                                            @Nonnull ProcessNodeEntity thisNode,
                                                             @Nonnull Map<String, Object> workingData,
                                                             @Nonnull Map<String, Object> updateData,
                                                             @Nonnull String event) throws Exception {

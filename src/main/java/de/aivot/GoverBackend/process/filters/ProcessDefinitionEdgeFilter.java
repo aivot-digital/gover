@@ -1,13 +1,13 @@
 package de.aivot.GoverBackend.process.filters;
 
-import de.aivot.GoverBackend.process.entities.ProcessDefinitionEdgeEntity;
+import de.aivot.GoverBackend.process.entities.ProcessEdgeEntity;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
 import jakarta.annotation.Nonnull;
 
-public class ProcessDefinitionEdgeFilter implements Filter<ProcessDefinitionEdgeEntity> {
+public class ProcessDefinitionEdgeFilter implements Filter<ProcessEdgeEntity> {
     private Integer id;
     private Integer processDefinitionId;
     private Integer processDefinitionVersion;
@@ -21,9 +21,9 @@ public class ProcessDefinitionEdgeFilter implements Filter<ProcessDefinitionEdge
 
     @Nonnull
     @Override
-    public Specification<ProcessDefinitionEdgeEntity> build() {
+    public Specification<ProcessEdgeEntity> build() {
         var builder = SpecificationBuilder
-                .create(ProcessDefinitionEdgeEntity.class)
+                .create(ProcessEdgeEntity.class)
                 .withEquals("id", id)
                 .withEquals("processDefinitionId", processDefinitionId)
                 .withEquals("processDefinitionVersion", processDefinitionVersion)

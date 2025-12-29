@@ -51,6 +51,11 @@ export function UserDetailsPage() {
                         label: 'Teams und Rollen',
                         isDisabled: (item) => !item?.id,
                     },
+                    {
+                        path: '/users/:id/deputies',
+                        label: 'Stellvertreter:innen',
+                        isDisabled: (item) => !item?.id,
+                    },
                 ]}
                 initializeItem={(api) => new UsersApiService().initialize()}
                 fetchData={(api, id: number) => new UsersApiService().retrieve(String(id))}

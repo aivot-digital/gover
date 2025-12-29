@@ -5,14 +5,14 @@ import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.identity.controllers.IdentityController;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
-import de.aivot.GoverBackend.process.entities.ProcessDefinitionNodeEntity;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.filters.ProcessInstanceFilter;
 import de.aivot.GoverBackend.process.filters.ProcessInstanceTaskFilter;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
-import de.aivot.GoverBackend.process.models.ProcessNodeProvider;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.models.TaskViewEvent;
 import de.aivot.GoverBackend.process.services.*;
 import de.aivot.GoverBackend.process.workers.ProcessNodeExecutionResultHandler;
@@ -27,7 +27,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/public/processes/{procAccess}/task/{taskAccess}/")
+@RequestMapping("/api/public/processes/{procAccess}/tasks/{taskAccess}/")
 @Tag(
         name = OpenApiConstants.Tags.ProcessesDefinitionsName,
         description = "Operations for managing process instance tasks."
@@ -35,14 +35,14 @@ import java.util.UUID;
 public class CitizenProcessInstanceTaskViewController {
     private final ProcessInstanceService processInstanceService;
     private final ProcessInstanceTaskService processInstanceTaskService;
-    private final ProcessNodeProviderService processNodeProviderService;
+    private final ProcessNodeDefinitionService processNodeProviderService;
     private final ProcessDefinitionNodeService processDefinitionNodeService;
     private final ProcessNodeExecutionResultHandler processNodeExecutionResultHandler;
     private final ProcessDataService processDataService;
 
     public CitizenProcessInstanceTaskViewController(ProcessInstanceService processInstanceService,
                                                     ProcessInstanceTaskService processInstanceTaskService,
-                                                    ProcessNodeProviderService processNodeProviderService,
+                                                    ProcessNodeDefinitionService processNodeProviderService,
                                                     ProcessDefinitionNodeService processDefinitionNodeService,
                                                     ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
                                                     ProcessDataService processDataService) {
@@ -123,13 +123,13 @@ public class CitizenProcessInstanceTaskViewController {
         );
 
         ProcessInstanceTaskEntity previousTask;
-        if (taskViewData.task.getPreviousProcessDefinitionNodeId() != null) {
+        if (taskViewData.task.getPreviousProcessNodeId() != null) {
             previousTask = processInstanceTaskService
                     .retrieve(
                             ProcessInstanceTaskFilter
                                     .create()
                                     .setProcessInstanceId(taskViewData.instance.getId())
-                                    .setProcessDefinitionNodeId(taskViewData.task.getPreviousProcessDefinitionNodeId())
+                                    .setProcessDefinitionNodeId(taskViewData.task.getPreviousProcessNodeId())
                                     .build()
                     )
                     .orElse(null);
@@ -168,7 +168,7 @@ public class CitizenProcessInstanceTaskViewController {
         var processData = processDataService
                 .foldProcessInstanceData(
                         taskViewData.instance,
-                        taskViewData.task.getPreviousProcessDefinitionNodeId()
+                        taskViewData.task.getPreviousProcessNodeId()
                 );
 
         Optional<ProcessNodeExecutionResult> res;
@@ -268,11 +268,11 @@ public class CitizenProcessInstanceTaskViewController {
         }
 
         var node = processDefinitionNodeService
-                .retrieve(task.getProcessDefinitionNodeId())
+                .retrieve(task.getProcessNodeId())
                 .orElseThrow(ResponseException::notFound);
 
         var provider = processNodeProviderService
-                .getProcessNodeProvider(node.getCodeKey())
+                .getProcessNodeDefinition(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
                 .orElseThrow(ResponseException::notFound);
 
         return new TaskViewData(
@@ -289,9 +289,9 @@ public class CitizenProcessInstanceTaskViewController {
             @Nonnull
             ProcessInstanceTaskEntity task,
             @Nonnull
-            ProcessDefinitionNodeEntity node,
+            ProcessNodeEntity node,
             @Nonnull
-            ProcessNodeProvider provider
+            ProcessNodeDefinition provider
     ) {
 
     }

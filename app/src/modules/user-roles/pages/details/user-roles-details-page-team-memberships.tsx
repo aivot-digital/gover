@@ -27,7 +27,7 @@ const columns: Array<GridColDef<VTeamUserRoleAssignmentWithDetailsEntity>> = [
                 to={`/users/${params.row.userId}`}
                 title="Mitarbeiter:in anzeigen"
             >
-                {String(params.row.fullName)}
+                {String(params.row.userFullName)}
             </CellLink>
         ),
     },
@@ -38,9 +38,9 @@ const columns: Array<GridColDef<VTeamUserRoleAssignmentWithDetailsEntity>> = [
         renderCell: (params) => (
             <CellLink
                 to={`/teams/${params.row.teamId}`}
-                title="Fachbereich bearbeiten"
+                title="Team bearbeiten"
             >
-                {String(params.row.name)}
+                {String(params.row.teamName)}
             </CellLink>
         ),
     },
@@ -89,10 +89,10 @@ export function UserRolesDetailsPageTeamMemberships() {
                                 fullName: options.search,
                             });
                     }}
-                    getRowIdentifier={(item) => item.id.toString()}
+                    getRowIdentifier={(item) => item.membershipId.toString()}
                     searchLabel="Mitarbeiter:in suchen"
                     searchPlaceholder="Name der Mitarbeiter:in eingeben…"
-                    defaultSortField="fullName"
+                    defaultSortField="userFullName"
                     noDataPlaceholder="Keine Mitarbeiter:innen vorhanden"
                     loadingPlaceholder="Lade Mitarbeiter:innen…"
                     noSearchResultsPlaceholder="Keine Mitarbeiter:innen gefunden"

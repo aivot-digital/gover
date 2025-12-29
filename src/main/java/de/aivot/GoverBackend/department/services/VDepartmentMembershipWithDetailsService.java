@@ -13,9 +13,10 @@ import org.springframework.stereotype.Service;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
-public class VDepartmentMembershipWithDetailsService implements ReadEntityService<VDepartmentMembershipWithDetailsEntity, Integer> {
+public class VDepartmentMembershipWithDetailsService implements ReadEntityService<VDepartmentMembershipWithDetailsEntity, String> {
     private final VDepartmentMembershipWithDetailsRepository vDepartmentMembershipWithDetailsRepository;
 
     @Autowired
@@ -35,7 +36,7 @@ public class VDepartmentMembershipWithDetailsService implements ReadEntityServic
 
     @Nonnull
     @Override
-    public Optional<VDepartmentMembershipWithDetailsEntity> retrieve(@Nonnull Integer id) {
+    public Optional<VDepartmentMembershipWithDetailsEntity> retrieve(@Nonnull String id) {
         return vDepartmentMembershipWithDetailsRepository
                 .findById(id);
     }
@@ -50,7 +51,7 @@ public class VDepartmentMembershipWithDetailsService implements ReadEntityServic
     }
 
     @Override
-    public boolean exists(@Nonnull Integer id) {
+    public boolean exists(@Nonnull String id) {
         return vDepartmentMembershipWithDetailsRepository
                 .existsById(id);
     }

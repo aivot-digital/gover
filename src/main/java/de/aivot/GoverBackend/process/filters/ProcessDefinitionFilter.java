@@ -1,13 +1,13 @@
 package de.aivot.GoverBackend.process.filters;
 
-import de.aivot.GoverBackend.process.entities.ProcessDefinitionEntity;
+import de.aivot.GoverBackend.process.entities.ProcessEntity;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
 import jakarta.annotation.Nonnull;
 
-public class ProcessDefinitionFilter implements Filter<ProcessDefinitionEntity> {
+public class ProcessDefinitionFilter implements Filter<ProcessEntity> {
     private Integer id;
     private String name;
     private Integer departmentId;
@@ -19,9 +19,9 @@ public class ProcessDefinitionFilter implements Filter<ProcessDefinitionEntity> 
 
     @Nonnull
     @Override
-    public Specification<ProcessDefinitionEntity> build() {
+    public Specification<ProcessEntity> build() {
         var builder = SpecificationBuilder
-                .create(ProcessDefinitionEntity.class)
+                .create(ProcessEntity.class)
                 .withEquals("id", id)
                 .withContains("name", name)
                 .withEquals("departmentId", departmentId)

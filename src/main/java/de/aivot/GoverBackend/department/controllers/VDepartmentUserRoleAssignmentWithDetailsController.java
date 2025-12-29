@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.department.entities.VDepartmentUserRoleAssignmentWithDetailsEntity;
 import de.aivot.GoverBackend.department.filters.VDepartmentMembershipWithPermissionsFilter;
 import de.aivot.GoverBackend.department.filters.VDepartmentUserRoleAssignmentWithDetailsFilter;
+import de.aivot.GoverBackend.department.services.DepartmentMembershipService;
 import de.aivot.GoverBackend.department.services.VDepartmentMembershipWithDetailsService;
 import de.aivot.GoverBackend.department.services.VDepartmentMembershipWithPermissionsService;
 import de.aivot.GoverBackend.department.services.VDepartmentUserRoleAssignmentWithDetailsService;
@@ -46,24 +47,24 @@ public class VDepartmentUserRoleAssignmentWithDetailsController {
 
     private final VDepartmentUserRoleAssignmentWithDetailsService vDepartmentUserRoleAssignmentWithDetailsService;
     private final UserRoleAssignmentService userRoleAssignmentService;
-    private final VDepartmentMembershipWithDetailsService vDepartmentMembershipWithDetailsService;
     private final VDepartmentMembershipWithPermissionsService vDepartmentMembershipWithPermissionsService;
     private final UserService userService;
+    private final DepartmentMembershipService departmentMembershipService;
 
     @Autowired
     public VDepartmentUserRoleAssignmentWithDetailsController(AuditService auditService,
                                                               VDepartmentUserRoleAssignmentWithDetailsService vDepartmentUserRoleAssignmentWithDetailsService,
                                                               UserRoleAssignmentService userRoleAssignmentService,
-                                                              VDepartmentMembershipWithDetailsService vDepartmentMembershipWithDetailsService,
                                                               VDepartmentMembershipWithPermissionsService vDepartmentMembershipWithPermissionsService,
-                                                              UserService userService) {
+                                                              UserService userService,
+                                                              DepartmentMembershipService departmentMembershipService) {
         this.auditService = auditService.createScopedAuditService(VDepartmentUserRoleAssignmentWithDetailsController.class);
 
         this.vDepartmentUserRoleAssignmentWithDetailsService = vDepartmentUserRoleAssignmentWithDetailsService;
         this.userRoleAssignmentService = userRoleAssignmentService;
-        this.vDepartmentMembershipWithDetailsService = vDepartmentMembershipWithDetailsService;
         this.vDepartmentMembershipWithPermissionsService = vDepartmentMembershipWithPermissionsService;
         this.userService = userService;
+        this.departmentMembershipService = departmentMembershipService;
     }
 
     @GetMapping("")
@@ -98,7 +99,7 @@ public class VDepartmentUserRoleAssignmentWithDetailsController {
             throw ResponseException.badRequest("Die ID der Abteilungszugehörigkeit muss angegeben werden.");
         }
 
-        var membership = vDepartmentMembershipWithDetailsService
+        var membership = departmentMembershipService
                 .retrieve(newAssignment.getDepartmentMembershipId())
                 .orElseThrow(ResponseException::badRequest);
 
@@ -167,7 +168,7 @@ public class VDepartmentUserRoleAssignmentWithDetailsController {
             throw ResponseException.badRequest("Die ID der Abteilungszugehörigkeit muss angegeben werden.");
         }
 
-        var membership = vDepartmentMembershipWithDetailsService
+        var membership = departmentMembershipService
                 .retrieve(entity.getDepartmentMembershipId())
                 .orElseThrow(ResponseException::badRequest);
 

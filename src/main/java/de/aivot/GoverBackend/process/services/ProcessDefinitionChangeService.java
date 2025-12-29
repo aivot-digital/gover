@@ -3,8 +3,8 @@ package de.aivot.GoverBackend.process.services;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
-import de.aivot.GoverBackend.process.entities.ProcessDefinitionChangeEntity;
-import de.aivot.GoverBackend.process.repositories.ProcessDefinitionChangeRepository;
+import de.aivot.GoverBackend.process.entities.ProcessChangeEntity;
+import de.aivot.GoverBackend.process.repositories.ProcessChangeRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,39 +16,39 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
-public class ProcessDefinitionChangeService implements EntityService<ProcessDefinitionChangeEntity, Long> {
+public class ProcessDefinitionChangeService implements EntityService<ProcessChangeEntity, Long> {
 
-    private final ProcessDefinitionChangeRepository processDefinitionChangeRepository;
+    private final ProcessChangeRepository processDefinitionChangeRepository;
 
     @Autowired
-    public ProcessDefinitionChangeService(ProcessDefinitionChangeRepository processDefinitionChangeRepository) {
+    public ProcessDefinitionChangeService(ProcessChangeRepository processDefinitionChangeRepository) {
         this.processDefinitionChangeRepository = processDefinitionChangeRepository;
     }
 
     @Nonnull
     @Override
-    public ProcessDefinitionChangeEntity create(@Nonnull ProcessDefinitionChangeEntity entity) throws ResponseException {
+    public ProcessChangeEntity create(@Nonnull ProcessChangeEntity entity) throws ResponseException {
         entity.setId(null);
         return processDefinitionChangeRepository.save(entity);
     }
 
     @Nullable
     @Override
-    public Page<ProcessDefinitionChangeEntity> performList(@Nonnull Pageable pageable,
-                                                           @Nullable Specification<ProcessDefinitionChangeEntity> specification,
-                                                           @Nullable Filter<ProcessDefinitionChangeEntity> filter) throws ResponseException {
+    public Page<ProcessChangeEntity> performList(@Nonnull Pageable pageable,
+                                                 @Nullable Specification<ProcessChangeEntity> specification,
+                                                 @Nullable Filter<ProcessChangeEntity> filter) throws ResponseException {
         return processDefinitionChangeRepository.findAll(specification, pageable);
     }
 
     @Nonnull
     @Override
-    public Optional<ProcessDefinitionChangeEntity> retrieve(@Nonnull Long id) throws ResponseException {
+    public Optional<ProcessChangeEntity> retrieve(@Nonnull Long id) throws ResponseException {
         return processDefinitionChangeRepository.findById(id);
     }
 
     @Nonnull
     @Override
-    public Optional<ProcessDefinitionChangeEntity> retrieve(@Nonnull Specification<ProcessDefinitionChangeEntity> specification) throws ResponseException {
+    public Optional<ProcessChangeEntity> retrieve(@Nonnull Specification<ProcessChangeEntity> specification) throws ResponseException {
         return processDefinitionChangeRepository.findOne(specification);
     }
 
@@ -58,21 +58,21 @@ public class ProcessDefinitionChangeService implements EntityService<ProcessDefi
     }
 
     @Override
-    public boolean exists(@Nonnull Specification<ProcessDefinitionChangeEntity> specification) {
+    public boolean exists(@Nonnull Specification<ProcessChangeEntity> specification) {
         return processDefinitionChangeRepository.exists(specification);
     }
 
     @Nonnull
     @Override
-    public ProcessDefinitionChangeEntity performUpdate(@Nonnull Long id,
-                                                      @Nonnull ProcessDefinitionChangeEntity entity,
-                                                      @Nonnull ProcessDefinitionChangeEntity existingEntity) throws ResponseException {
+    public ProcessChangeEntity performUpdate(@Nonnull Long id,
+                                             @Nonnull ProcessChangeEntity entity,
+                                             @Nonnull ProcessChangeEntity existingEntity) throws ResponseException {
         existingEntity.setTimestamp(entity.getTimestamp());
         existingEntity.setUserId(entity.getUserId());
-        existingEntity.setProcessDefinitionId(entity.getProcessDefinitionId());
-        existingEntity.setProcessDefinitionVersion(entity.getProcessDefinitionVersion());
-        existingEntity.setProcessDefinitionNodeId(entity.getProcessDefinitionNodeId());
-        existingEntity.setProcessDefinitionEdgeId(entity.getProcessDefinitionEdgeId());
+        existingEntity.setProcessId(entity.getProcessId());
+        existingEntity.setProcessVersion(entity.getProcessVersion());
+        existingEntity.setProcessNodeId(entity.getProcessNodeId());
+        existingEntity.setProcessEdgeId(entity.getProcessEdgeId());
         existingEntity.setChangeType(entity.getChangeType());
         existingEntity.setDiff(entity.getDiff());
         existingEntity.setComment(entity.getComment());
@@ -80,7 +80,7 @@ public class ProcessDefinitionChangeService implements EntityService<ProcessDefi
     }
 
     @Override
-    public void performDelete(@Nonnull ProcessDefinitionChangeEntity entity) throws ResponseException {
+    public void performDelete(@Nonnull ProcessChangeEntity entity) throws ResponseException {
         processDefinitionChangeRepository.delete(entity);
     }
 }

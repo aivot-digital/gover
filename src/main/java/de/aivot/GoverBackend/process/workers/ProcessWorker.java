@@ -6,16 +6,14 @@ import de.aivot.GoverBackend.process.enums.ProcessHistoryEventType;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultError;
-import de.aivot.GoverBackend.process.repositories.ProcessDefinitionNodeRepository;
+import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.GoverBackend.process.services.ProcessDataService;
-import de.aivot.GoverBackend.process.services.ProcessNodeProviderService;
+import de.aivot.GoverBackend.process.services.ProcessNodeDefinitionService;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,8 +32,8 @@ public class ProcessWorker {
     public static final String DO_WORK_ON_INSTANCE_QUEUE = "do-work-on-instance-queue";
 
     private final ProcessInstanceRepository processInstanceRepository;
-    private final ProcessDefinitionNodeRepository processDefinitionNodeRepository;
-    private final ProcessNodeProviderService processNodeProviderService;
+    private final ProcessNodeRepository processDefinitionNodeRepository;
+    private final ProcessNodeDefinitionService processNodeProviderService;
     private final ProcessInstanceTaskRepository processInstanceTaskRepository;
     private final ProcessNodeExecutionResultHandler processNodeExecutionResultHandler;
     private final ProcessDataService processDataService;
@@ -43,8 +41,8 @@ public class ProcessWorker {
 
     @Autowired
     public ProcessWorker(ProcessInstanceRepository processInstanceRepository,
-                         ProcessDefinitionNodeRepository processDefinitionNodeRepository,
-                         ProcessNodeProviderService processNodeProviderService,
+                         ProcessNodeRepository processDefinitionNodeRepository,
+                         ProcessNodeDefinitionService processNodeProviderService,
                          ProcessInstanceTaskRepository processInstanceTaskRepository,
                          ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
                          ProcessDataService processDataService,
@@ -96,9 +94,10 @@ public class ProcessWorker {
                 ));
 
         var currentNodeProvider = processNodeProviderService
-                .getProcessNodeProvider(currentNode.getCodeKey())
+                .getProcessNodeDefinition(currentNode.getProcessNodeDefinitionKey(), currentNode.getProcessNodeDefinitionVersion())
                 .orElseThrow(() -> new RuntimeException(
-                        "Der Prozesselement-Funktionsanbieter für den Knoten mit dem Schlüssel „%s“ wurde nicht gefunden.".formatted(currentNode.getCodeKey())
+                        "Die Prozesselementdefinition mit dem Schlüssel „%s“ und der Version „%d“ wurde nicht gefunden."
+                                .formatted(currentNode.getProcessNodeDefinitionKey(), currentNode.getProcessNodeDefinitionVersion())
                 ));
 
         var taskEntity = processInstanceTaskRepository.save(
@@ -106,8 +105,8 @@ public class ProcessWorker {
                         null,
                         UUID.randomUUID(),
                         processInstance.getId(),
-                        processInstance.getProcessDefinitionId(),
-                        processInstance.getProcessDefinitionVersion(),
+                        processInstance.getProcessId(),
+                        processInstance.getProcessVersion(),
                         currentNode.getId(),
                         previousNodeId,
                         ProcessTaskStatus.Running,
@@ -164,7 +163,7 @@ public class ProcessWorker {
             ProcessInstanceTaskEntity previousTask;
             if (previousNodeId != null) {
                 previousTask = processInstanceTaskRepository
-                        .findFirstByProcessInstanceIdAndProcessDefinitionNodeIdOrderByStartedDesc(
+                        .findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(
                                 processInstance.getId(),
                                 previousNodeId
                         );

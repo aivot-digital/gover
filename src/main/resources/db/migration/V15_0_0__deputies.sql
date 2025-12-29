@@ -46,7 +46,7 @@ select distinct dh.deputy_user_id,
 from deputy_hierarchy dh;
 
 -- create function to check if a deputy creates a circular reference
-create or replace function check_deputy_circular_reference()
+create or replace function fun_check_deputy_circular_reference()
     returns trigger as
 $$
 begin
@@ -65,4 +65,4 @@ create trigger trg_check_deputy_circular_reference
     before insert
     on user_deputies
     for each row
-execute function check_deputy_circular_reference();
+execute function fun_check_deputy_circular_reference();

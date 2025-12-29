@@ -1,7 +1,6 @@
 import {BaseCrudApiService} from '../../../services/base-crud-api-service';
 import {
     VTeamMembershipWithDetailsEntity,
-    VTeamMembershipWithDetailsEntityWithRoles
 } from "../entities/v-team-membership-with-details-entity";
 import {SystemUserRole} from "../../users/models/user";
 import {TeamMembershipsApiService} from "./team-memberships-api-service";
@@ -51,16 +50,30 @@ export class VTeamMembershipWithDetailsApiService extends BaseCrudApiService<
 
     public static initialize(): VTeamMembershipWithDetailsEntity {
         return {
-            ...TeamMembershipsApiService.initialize(),
-            name: '',
-            firstName: null,
-            lastName: null,
-            fullName: null,
-            email: null,
-            enabled: false,
-            verified: false,
-            globalRole: SystemUserRole.Default,
-            deletedInIdp: false,
+            membershipAsDeputyForUserDeletedInIdp: null,
+            membershipAsDeputyForUserEmail: null,
+            membershipAsDeputyForUserEnabled: null,
+            membershipAsDeputyForUserFirstName: null,
+            membershipAsDeputyForUserFullName: null,
+            membershipAsDeputyForUserId: null,
+            membershipAsDeputyForUserLastName: null,
+            membershipAsDeputyForUserSystemRoleId: null,
+            membershipAsDeputyForUserVerified: null,
+            membershipIsDeputy: false,
+            userEmail: null,
+            userFirstName: null,
+            userFullName: null,
+            userLastName: null,
+            domainRolePermissions: [],
+            domainRoles: [],
+            membershipId: 0,
+            teamId: 0,
+            teamName: "",
+            userDeletedInIdp: false,
+            userEnabled: false,
+            userId: "",
+            userSystemRoleId: 0,
+            userVerified: false
         };
     }
 
@@ -70,7 +83,7 @@ export class VTeamMembershipWithDetailsApiService extends BaseCrudApiService<
         sort?: 'name' | 'fullName',
         order?: SortOrder,
         filters?: Partial<ListTeamMembershipsWithRolesFilter>,
-    ): Promise<Page<VTeamMembershipWithDetailsEntityWithRoles>> {
+    ): Promise<Page<VTeamMembershipWithDetailsEntity>> {
         const userRoleAssignmentService = new VTeamUserRoleAssignmentWithDetailsApiService();
 
         const [assignmentsPage, membershipsPage] = await Promise.all([
@@ -98,13 +111,10 @@ export class VTeamMembershipWithDetailsApiService extends BaseCrudApiService<
             content: memberships,
         } = membershipsPage;
 
-        console.log('Assignments:', assignments);
-        console.log('Memberships:', memberships);
-
-        const membershipsWithRoles: VTeamMembershipWithDetailsEntityWithRoles[] = memberships
+        const membershipsWithRoles: VTeamMembershipWithDetailsEntity[] = memberships
             .map((membership) => {
                 const membershipRoles = assignments
-                    .filter((assignment) => assignment.id === membership.id);
+                    .filter((assignment) => assignment.membershipId === membership.membershipId);
 
                 return {
                     ...membership,

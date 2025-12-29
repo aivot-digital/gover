@@ -1,13 +1,13 @@
 package de.aivot.GoverBackend.process.filters;
 
-import de.aivot.GoverBackend.process.entities.ProcessDefinitionNodeEntity;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
 import jakarta.annotation.Nonnull;
 
-public class ProcessDefinitionNodeFilter implements Filter<ProcessDefinitionNodeEntity> {
+public class ProcessDefinitionNodeFilter implements Filter<ProcessNodeEntity> {
     private Integer id;
     private Integer processDefinitionId;
     private Integer processDefinitionVersion;
@@ -20,9 +20,9 @@ public class ProcessDefinitionNodeFilter implements Filter<ProcessDefinitionNode
 
     @Nonnull
     @Override
-    public Specification<ProcessDefinitionNodeEntity> build() {
+    public Specification<ProcessNodeEntity> build() {
         var builder = SpecificationBuilder
-                .create(ProcessDefinitionNodeEntity.class)
+                .create(ProcessNodeEntity.class)
                 .withEquals("id", id)
                 .withEquals("processDefinitionId", processDefinitionId)
                 .withEquals("processDefinitionVersion", processDefinitionVersion)

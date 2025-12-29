@@ -161,7 +161,7 @@ public class PdfService {
             dto.put("paymentProvider", paymentProvider);
 
             var paymentProviderDefinition = paymentProviderDefinitionsService
-                    .getProviderDefinition(paymentProvider.getProviderKey())
+                    .getProviderDefinition(paymentProvider.getPaymentProviderDefinitionKey())
                     .orElseThrow(() -> new RuntimeException("Payment provider definition not found"));
 
             dto.put("paymentProviderDefinition", paymentProviderDefinition);

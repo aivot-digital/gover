@@ -11,17 +11,17 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
-import de.aivot.GoverBackend.process.entities.ProcessDefinitionEntity;
-import de.aivot.GoverBackend.process.entities.ProcessDefinitionNodeEntity;
-import de.aivot.GoverBackend.process.entities.ProcessDefinitionVersionEntity;
+import de.aivot.GoverBackend.process.entities.ProcessEntity;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
+import de.aivot.GoverBackend.process.entities.ProcessVersionEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
-import de.aivot.GoverBackend.process.models.ProcessNodeProvider;
-import de.aivot.GoverBackend.process.repositories.ProcessDefinitionNodeRepository;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
+import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.GoverBackend.process.services.ProcessInstanceService;
 import de.aivot.GoverBackend.user.entities.UserEntity;
@@ -40,7 +40,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-public class WebhookTriggerNode implements ProcessNodeProvider, PluginComponent {
+public class WebhookTriggerNode implements ProcessNodeDefinition, PluginComponent {
     private static final String NODE_KEY = "webhook";
     private static final String PORT_NAME = "input";
 
@@ -48,13 +48,13 @@ public class WebhookTriggerNode implements ProcessNodeProvider, PluginComponent 
 
     private final GoverConfig goverConfig;
     private final ProcessInstanceService processInstanceService;
-    private final ProcessDefinitionNodeRepository processDefinitionNodeRepository;
+    private final ProcessNodeRepository processDefinitionNodeRepository;
     private final ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository;
 
     @Autowired
     public WebhookTriggerNode(GoverConfig goverConfig,
                               ProcessInstanceService processInstanceService,
-                              ProcessDefinitionNodeRepository processDefinitionNodeRepository, ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository) {
+                              ProcessNodeRepository processDefinitionNodeRepository, ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository) {
         this.goverConfig = goverConfig;
         this.processInstanceService = processInstanceService;
         this.processDefinitionNodeRepository = processDefinitionNodeRepository;
@@ -82,9 +82,9 @@ public class WebhookTriggerNode implements ProcessNodeProvider, PluginComponent 
     @Override
     @JsonIgnore
     public ConfigLayoutElement getConfigurationLayout(@Nonnull UserEntity user,
-                                                      @Nonnull ProcessDefinitionEntity processDefinition,
-                                                      @Nonnull ProcessDefinitionVersionEntity processDefinitionVersion,
-                                                      @Nullable ProcessDefinitionNodeEntity thisNode) {
+                                                      @Nonnull ProcessEntity processDefinition,
+                                                      @Nonnull ProcessVersionEntity processDefinitionVersion,
+                                                      @Nullable ProcessNodeEntity thisNode) {
         var layout = new ConfigLayoutElement();
         layout.setId(getKey() + "-config");
 
@@ -146,7 +146,7 @@ public class WebhookTriggerNode implements ProcessNodeProvider, PluginComponent 
     }
 
     @Override
-    public void validateConfiguration(@Nonnull ProcessDefinitionNodeEntity entity) throws ResponseException {
+    public void validateConfiguration(@Nonnull ProcessNodeEntity entity) throws ResponseException {
         var configuration = entity
                 .getConfiguration();
 
@@ -163,7 +163,7 @@ public class WebhookTriggerNode implements ProcessNodeProvider, PluginComponent 
 
         if (slugObj instanceof String slug && StringUtils.isNotNullOrEmpty(slug)) {
             var spec = SpecificationBuilder
-                    .create(ProcessDefinitionNodeEntity.class)
+                    .create(ProcessNodeEntity.class)
                     .withNotEquals("id", entity.getId())
                     .withJsonEquals("configuration", List.of(SLUG_CONFIG_KEY), slug)
                     .build();
@@ -185,7 +185,7 @@ public class WebhookTriggerNode implements ProcessNodeProvider, PluginComponent 
             @Nonnull @RequestBody Map<String, Object> payload
     ) throws ResponseException {
         var spec = SpecificationBuilder
-                .create(ProcessDefinitionNodeEntity.class)
+                .create(ProcessNodeEntity.class)
                 .withEquals("codeKey", NODE_KEY)
                 .withJsonEquals("configuration", List.of(SLUG_CONFIG_KEY, "inputValue"), slug)
                 .build();
@@ -197,9 +197,10 @@ public class WebhookTriggerNode implements ProcessNodeProvider, PluginComponent 
             var instance = new ProcessInstanceEntity(
                     null,
                     null,
-                    entity.getProcessDefinitionId(),
-                    entity.getProcessDefinitionVersion(),
+                    entity.getProcessId(),
+                    entity.getProcessVersion(),
                     ProcessInstanceStatus.Created,
+                    null,
                     null,
                     List.of(),
                     List.of(),
@@ -209,7 +210,8 @@ public class WebhookTriggerNode implements ProcessNodeProvider, PluginComponent 
                     null,
                     null,
                     payload,
-                    entity.getId()
+                    entity.getId(),
+                    null
             );
 
             processInstanceService.create(instance);
@@ -218,7 +220,7 @@ public class WebhookTriggerNode implements ProcessNodeProvider, PluginComponent 
 
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessInstanceEntity processInstance,
-                                           @Nonnull ProcessDefinitionNodeEntity thisNode,
+                                           @Nonnull ProcessNodeEntity thisNode,
                                            @Nonnull Map<String, Object> workingData) throws Exception {
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_NAME)

@@ -1,6 +1,5 @@
 package de.aivot.GoverBackend.payment.services;
 
-import de.aivot.GoverBackend.form.filters.FormFilter;
 import de.aivot.GoverBackend.form.filters.FormVersionFilter;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
 import de.aivot.GoverBackend.form.repositories.FormVersionRepository;
@@ -59,7 +58,7 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
             @Nonnull PaymentProviderEntity paymentProviderEntity
     ) throws ResponseException {
         // Retrieve the payment provider definition
-        getProviderDefinition(paymentProviderEntity.getProviderKey())
+        getProviderDefinition(paymentProviderEntity.getPaymentProviderDefinitionKey())
                 .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Der ausgewählte Zahlungsanbieter ist nicht vorhanden"));
 
         // Create new key for the payment provider entity
@@ -115,7 +114,7 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
             @Nonnull PaymentProviderEntity existingEntity
     ) throws ResponseException {
         // Retrieve the payment provider definition
-        var providerDefinition = getProviderDefinition(entity.getProviderKey())
+        var providerDefinition = getProviderDefinition(entity.getPaymentProviderDefinitionKey())
                 .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Der ausgewählte Zahlungsanbieter ist nicht vorhanden"));
 
         // Test if the provider key is valid

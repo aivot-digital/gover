@@ -93,7 +93,7 @@ public class ProcessInstanceTaskController {
                 .orElseThrow(ResponseException::unauthorized);
 
         var processDefinition = processDefinitionService
-                .retrieve(newTask.getProcessDefinitionId())
+                .retrieve(newTask.getProcessId())
                 .orElseThrow(ResponseException::badRequest);
 
         var department = departmentService
@@ -113,8 +113,8 @@ public class ProcessInstanceTaskController {
         auditService.logAction(execUser, AuditAction.Create, ProcessInstanceTaskEntity.class, Map.of(
                 "id", result.getId(),
                 "processInstanceId", result.getProcessInstanceId(),
-                "processDefinitionId", result.getProcessDefinitionId(),
-                "processDefinitionVersion", result.getProcessDefinitionVersion()
+                "processDefinitionId", result.getProcessId(),
+                "processDefinitionVersion", result.getProcessVersion()
         ));
 
         return result;
@@ -152,7 +152,7 @@ public class ProcessInstanceTaskController {
                 .orElseThrow(ResponseException::notFound);
 
         var processDefinition = processDefinitionService
-                .retrieve(existing.getProcessDefinitionId())
+                .retrieve(existing.getProcessId())
                 .orElseThrow(ResponseException::badRequest);
 
         var department = departmentService
@@ -174,8 +174,8 @@ public class ProcessInstanceTaskController {
         auditService.logAction(execUser, AuditAction.Update, ProcessInstanceTaskEntity.class, Map.of(
                 "id", result.getId(),
                 "processInstanceId", result.getProcessInstanceId(),
-                "processDefinitionId", result.getProcessDefinitionId(),
-                "processDefinitionVersion", result.getProcessDefinitionVersion()
+                "processDefinitionId", result.getProcessId(),
+                "processDefinitionVersion", result.getProcessVersion()
         ));
 
         return result;
@@ -202,8 +202,8 @@ public class ProcessInstanceTaskController {
         auditService.logAction(user, AuditAction.Delete, ProcessInstanceTaskEntity.class, Map.of(
                 "id", deleted.getId(),
                 "processInstanceId", deleted.getProcessInstanceId(),
-                "processDefinitionId", deleted.getProcessDefinitionId(),
-                "processDefinitionVersion", deleted.getProcessDefinitionVersion()
+                "processDefinitionId", deleted.getProcessId(),
+                "processDefinitionVersion", deleted.getProcessVersion()
         ));
     }
 
@@ -232,8 +232,8 @@ public class ProcessInstanceTaskController {
 
         var payload = new ProcessWorker.WorkerPayload(
                 taskEntity.getProcessInstanceId(),
-                taskEntity.getPreviousProcessDefinitionNodeId(),
-                taskEntity.getProcessDefinitionNodeId()
+                taskEntity.getPreviousProcessNodeId(),
+                taskEntity.getProcessNodeId()
         );
 
         rabbitTemplate.convertAndSend(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE, payload);

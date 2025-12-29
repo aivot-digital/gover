@@ -6,8 +6,10 @@ public class OpenApiConstants {
         public static final String AssetsDescription = "Assets are files uploaded to the system, such as images or documents. " +
                 "They can be associated with various entities within the application and should be used if you need to provides files to citizens publicly.";
 
-        public static final String FormsName = "Forms";
-        public static final String FormsDescription = "APIs for managing forms";
+        public static final String ProcessAccessControlsName = "Process Access Controls";
+        public static final String ProcessAccessControlsDescription =
+                "Process Access Controls define the permissions for teams and departments to access and interact with specific processes. " +
+                        "They specify which actions can be performed on a process by members of a team or department, ensuring proper access management and security within the workflow system.";
 
         public static final String ProcessesDefinitionsName = "Processes";
         public static final String ProcessesDefinitionsDescription =
@@ -26,12 +28,11 @@ public class OpenApiConstants {
                 "Team memberships are used to assign users to teams. " +
                         "The permissions of a user inside a team are determined by the team roles assigned to the membership.";
 
-        public static final String TeamUserRoleAssignmentsWithDetails = "Team User Role Assignments";
-        public static final String TeamUserRoleAssignmentsWithDetailsDescription =
-                "User roles are assigned to users within the context of a team membership. " +
-                        "This allows for granular control over user permissions and access rights specific to each team.";
-
         public static final String SystemRolesName = "System Roles";
         public static final String SystemRolesDescription = "System roles define the permissions and access levels for users across the entire system.";
+
+        public static final String UserDeputiesName = "User Deputies";
+        public static final String UserDeputiesDescription = "User deputies allow users to delegate their responsibilities to other users for a specified period of time. " +
+                "This is useful for managing workloads and ensuring continuity in case of absences.";
     }
 }

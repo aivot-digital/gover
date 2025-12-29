@@ -5,5 +5,5 @@ import de.aivot.GoverBackend.department.entities.VDepartmentMembershipWithDetail
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 
-public interface VDepartmentMembershipWithDetailsRepository extends ReadOnlyRepository<VDepartmentMembershipWithDetailsEntity, Integer>, JpaSpecificationExecutor<VDepartmentMembershipWithDetailsEntity> {
+public interface VDepartmentMembershipWithDetailsRepository extends ReadOnlyRepository<VDepartmentMembershipWithDetailsEntity, String>, JpaSpecificationExecutor<VDepartmentMembershipWithDetailsEntity> {
 }

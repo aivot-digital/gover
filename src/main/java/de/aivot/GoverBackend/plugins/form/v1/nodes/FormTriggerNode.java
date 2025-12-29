@@ -1,12 +1,12 @@
 package de.aivot.GoverBackend.plugins.form.v1.nodes;
 
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
-import de.aivot.GoverBackend.process.entities.ProcessDefinitionNodeEntity;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
-import de.aivot.GoverBackend.process.models.ProcessNodeProvider;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class FormTriggerNode implements ProcessNodeProvider, PluginComponent {
+public class FormTriggerNode implements ProcessNodeDefinition, PluginComponent {
     @Nonnull
     @Override
     public Integer getVersion() {
@@ -58,7 +58,7 @@ public class FormTriggerNode implements ProcessNodeProvider, PluginComponent {
     }
 
     @Override
-    public ProcessNodeExecutionResult init(@Nonnull ProcessInstanceEntity processInstance, @Nonnull ProcessDefinitionNodeEntity thisNode, @Nonnull Map<String, Object> data) throws Exception {
+    public ProcessNodeExecutionResult init(@Nonnull ProcessInstanceEntity processInstance, @Nonnull ProcessNodeEntity thisNode, @Nonnull Map<String, Object> data) throws Exception {
         return null;
     }
 }

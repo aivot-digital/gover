@@ -34,18 +34,18 @@ public class ProcessInstanceTaskEntity {
 
     @Nonnull
     @NotNull(message = "Die Prozessdefinitions-ID darf nicht null sein.")
-    private Integer processDefinitionId;
+    private Integer processId;
 
     @Nonnull
     @NotNull(message = "Die Prozessdefinitions-Version darf nicht null sein.")
-    private Integer processDefinitionVersion;
+    private Integer processVersion;
 
     @Nonnull
     @NotNull(message = "Die Prozessdefinitions-Knoten-ID darf nicht null sein.")
-    private Integer processDefinitionNodeId;
+    private Integer processNodeId;
 
     @Nullable
-    private Integer previousProcessDefinitionNodeId;
+    private Integer previousProcessNodeId;
 
     @Nonnull
     @NotNull(message = "Der Aufgaben-Status darf nicht null sein.")
@@ -103,10 +103,10 @@ public class ProcessInstanceTaskEntity {
     public ProcessInstanceTaskEntity(@Nonnull Long id,
                                      @Nonnull UUID accessKey,
                                      @Nonnull Long processInstanceId,
-                                     @Nonnull Integer processDefinitionId,
-                                     @Nonnull Integer processDefinitionVersion,
-                                     @Nonnull Integer processDefinitionNodeId,
-                                     @Nullable Integer previousProcessDefinitionNodeId,
+                                     @Nonnull Integer processId,
+                                     @Nonnull Integer processVersion,
+                                     @Nonnull Integer processNodeId,
+                                     @Nullable Integer previousProcessNodeId,
                                      @Nonnull ProcessTaskStatus status,
                                      @Nullable String statusOverride,
                                      @Nonnull LocalDateTime started,
@@ -120,10 +120,10 @@ public class ProcessInstanceTaskEntity {
         this.id = id;
         this.accessKey = accessKey;
         this.processInstanceId = processInstanceId;
-        this.processDefinitionId = processDefinitionId;
-        this.processDefinitionVersion = processDefinitionVersion;
-        this.processDefinitionNodeId = processDefinitionNodeId;
-        this.previousProcessDefinitionNodeId = previousProcessDefinitionNodeId;
+        this.processId = processId;
+        this.processVersion = processVersion;
+        this.processNodeId = processNodeId;
+        this.previousProcessNodeId = previousProcessNodeId;
         this.status = status;
         this.statusOverride = statusOverride;
         this.started = started;
@@ -171,42 +171,42 @@ public class ProcessInstanceTaskEntity {
     }
 
     @Nonnull
-    public Integer getProcessDefinitionId() {
-        return processDefinitionId;
+    public Integer getProcessId() {
+        return processId;
     }
 
-    public ProcessInstanceTaskEntity setProcessDefinitionId(@Nonnull Integer processDefinitionId) {
-        this.processDefinitionId = processDefinitionId;
+    public ProcessInstanceTaskEntity setProcessId(@Nonnull Integer processDefinitionId) {
+        this.processId = processDefinitionId;
         return this;
     }
 
     @Nonnull
-    public Integer getProcessDefinitionVersion() {
-        return processDefinitionVersion;
+    public Integer getProcessVersion() {
+        return processVersion;
     }
 
-    public ProcessInstanceTaskEntity setProcessDefinitionVersion(@Nonnull Integer processDefinitionVersion) {
-        this.processDefinitionVersion = processDefinitionVersion;
+    public ProcessInstanceTaskEntity setProcessVersion(@Nonnull Integer processDefinitionVersion) {
+        this.processVersion = processDefinitionVersion;
         return this;
     }
 
     @Nonnull
-    public Integer getProcessDefinitionNodeId() {
-        return processDefinitionNodeId;
+    public Integer getProcessNodeId() {
+        return processNodeId;
     }
 
-    public ProcessInstanceTaskEntity setProcessDefinitionNodeId(@Nonnull Integer processDefinitionNodeId) {
-        this.processDefinitionNodeId = processDefinitionNodeId;
+    public ProcessInstanceTaskEntity setProcessNodeId(@Nonnull Integer processDefinitionNodeId) {
+        this.processNodeId = processDefinitionNodeId;
         return this;
     }
 
     @Nullable
-    public Integer getPreviousProcessDefinitionNodeId() {
-        return previousProcessDefinitionNodeId;
+    public Integer getPreviousProcessNodeId() {
+        return previousProcessNodeId;
     }
 
-    public ProcessInstanceTaskEntity setPreviousProcessDefinitionNodeId(@Nullable Integer previousProcessDefinitionNodeId) {
-        this.previousProcessDefinitionNodeId = previousProcessDefinitionNodeId;
+    public ProcessInstanceTaskEntity setPreviousProcessNodeId(@Nullable Integer previousProcessDefinitionNodeId) {
+        this.previousProcessNodeId = previousProcessDefinitionNodeId;
         return this;
     }
 

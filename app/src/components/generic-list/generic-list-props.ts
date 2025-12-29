@@ -42,6 +42,7 @@ export interface GenericListProps<ItemType extends GenericListRowModel> {
     rowActions?: (item: ItemType) => Action[];
     rowActionsCount?: number;
     defaultSortField?: keyof ItemType;
+    // TODO: We should add a defaultSortOrder too
     filters?: GenericListFilter[];
     defaultFilter?: string;
     fetch: (options: GenericListPropsFetchOptions<ItemType>) => Promise<Page<ItemType>>;

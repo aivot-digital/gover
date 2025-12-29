@@ -7,9 +7,9 @@ import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
-import de.aivot.GoverBackend.process.entities.ProcessDefinitionEntity;
-import de.aivot.GoverBackend.process.entities.ProcessDefinitionNodeEntity;
-import de.aivot.GoverBackend.process.entities.ProcessDefinitionVersionEntity;
+import de.aivot.GoverBackend.process.entities.ProcessEntity;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
+import de.aivot.GoverBackend.process.entities.ProcessVersionEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.enums.ProcessHistoryEventType;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class JavascriptActionNode implements ProcessNodeProvider, PluginComponent {
+public class JavascriptActionNode implements ProcessNodeDefinition, PluginComponent {
     private static final String PORT_NAME = "output";
 
     private static final String CODE_FIELD_KEY = "js_code";
@@ -55,9 +55,9 @@ public class JavascriptActionNode implements ProcessNodeProvider, PluginComponen
     @Override
     @JsonIgnore
     public ConfigLayoutElement getConfigurationLayout(@Nonnull UserEntity user,
-                                                      @Nonnull ProcessDefinitionEntity processDefinition,
-                                                      @Nonnull ProcessDefinitionVersionEntity processDefinitionVersion,
-                                                      @Nullable ProcessDefinitionNodeEntity thisNode) {
+                                                      @Nonnull ProcessEntity processDefinition,
+                                                      @Nonnull ProcessVersionEntity processDefinitionVersion,
+                                                      @Nullable ProcessNodeEntity thisNode) {
         var layout = new ConfigLayoutElement();
         layout.setId(getKey() + "-config");
 
@@ -103,7 +103,7 @@ public class JavascriptActionNode implements ProcessNodeProvider, PluginComponen
 
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessInstanceEntity processInstance,
-                                           @Nonnull ProcessDefinitionNodeEntity thisNode,
+                                           @Nonnull ProcessNodeEntity thisNode,
                                            @Nonnull Map<String, Object> workingData) throws Exception {
         var configuration = thisNode
                 .getConfiguration();

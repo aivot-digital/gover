@@ -1,5 +1,8 @@
 import React, {useCallback, useContext, useMemo, useRef, useState} from 'react';
-import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
+import {
+    GenericDetailsPageContext,
+    GenericDetailsPageContextType
+} from '../../../../components/generic-details-page/generic-details-page-context';
 import {GenericList} from '../../../../components/generic-list/generic-list';
 import {Box, Button, Typography} from '@mui/material';
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
@@ -18,13 +21,12 @@ import {isApiError} from '../../../../models/api-error';
 import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import {DepartmentEntity} from '../../entities/department-entity';
+import {VDepartmentMembershipWithDetailsEntity} from '../../entities/v-department-membership-with-details-entity';
 import {
-    VDepartmentMembershipWithDetailsEntity,
-    vDepartmentMembershipWithDetailsEntityAsUser, VDepartmentMembershipWithDetailsEntityWithRoles
-} from '../../entities/v-department-membership-with-details-entity';
-import {ListDepartmentMembershipsWithRolesFilter, VDepartmentMembershipWithDetailsService} from '../../services/v-department-membership-with-details-service';
+    ListDepartmentMembershipsWithRolesFilter,
+    VDepartmentMembershipWithDetailsService
+} from '../../services/v-department-membership-with-details-service';
 import {DepartmentMembershipApiService} from '../../services/department-membership-api-service';
-import {resolveUserName} from '../../../users/utils/resolve-user-name';
 import {
     VDepartmentUserRoleAssignmentWithDetailsService
 } from "../../services/v-department-user-role-assignment-with-details-service";
@@ -70,9 +72,13 @@ export function DepartmentsDetailsPageMembers() {
     }, [item]);
 
     const buildRowActions = useCallback((membershipItem: VDepartmentMembershipWithDetailsEntity) => {
+        if (membershipItem.membershipIsDeputy) {
+            return [];
+        }
+
         return [
             {
-                icon: <EditOutlinedIcon />,
+                icon: <EditOutlinedIcon/>,
                 onClick: () => {
                     setShowSelectRolesDialogForMembership(membershipItem);
                 },
@@ -80,18 +86,22 @@ export function DepartmentsDetailsPageMembers() {
                 disabled: membershipItem.userDeletedInIdp ?? undefined,
             },
             {
-                icon: <DeleteOutlineOutlinedIcon />,
+                icon: <DeleteOutlineOutlinedIcon/>,
                 onClick: () => {
                     showConfirm({
                         title: 'Mitarbeiter:in entfernen',
                         children: (
                             <>
                                 <Typography>
-                                    Durch das Entfernen der Mitarbeiter:in <strong>{membershipItem.userFullName}</strong> aus dem Fachbereich <strong>{item?.name}</strong> verliert diese alle zugewiesenen Rollen und Berechtigungen in diesem
+                                    Durch das Entfernen der
+                                    Mitarbeiter:in <strong>{membershipItem.userFullName}</strong> aus dem
+                                    Fachbereich <strong>{item?.name}</strong> verliert diese alle zugewiesenen Rollen
+                                    und Berechtigungen in diesem
                                     Fachbereich.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
-                                    Diese Aktion kann nicht rückgängig gemacht werden. Stellen Sie sicher, dass Sie die richtige Mitarbeiter:in entfernen.
+                                    Diese Aktion kann nicht rückgängig gemacht werden. Stellen Sie sicher, dass Sie die
+                                    richtige Mitarbeiter:in entfernen.
                                 </Typography>
                             </>
                         ),
@@ -140,7 +150,7 @@ export function DepartmentsDetailsPageMembers() {
         return [
             <Button
                 variant="contained"
-                startIcon={<AddOutlinedIcon />}
+                startIcon={<AddOutlinedIcon/>}
                 onClick={() => setShowSelectNewMemberDialog(true)}
             >
                 Mitarbeiter:in hinzufügen
@@ -263,7 +273,8 @@ export function DepartmentsDetailsPageMembers() {
                     maxWidth: 900,
                 }}
             >
-                Eine Liste der Mitarbeiter:innen, die diesem Fachbereich zugeordnet sind. Mitarbeiter:innen können unterschiedliche Rollen besitzen, die ihre Berechtigungen innerhalb des Fachbereichs definieren.
+                Eine Liste der Mitarbeiter:innen, die diesem Fachbereich zugeordnet sind. Mitarbeiter:innen können
+                unterschiedliche Rollen besitzen, die ihre Berechtigungen innerhalb des Fachbereichs definieren.
             </Typography>
 
             <GenericList<VDepartmentMembershipWithDetailsEntity>
@@ -282,7 +293,7 @@ export function DepartmentsDetailsPageMembers() {
                 searchPlaceholder="Name der Mitarbeiter:in eingeben…"
                 rowActionsCount={isEditable ? 2 : 0}
                 rowActions={isEditable ? buildRowActions : undefined}
-                defaultSortField="userId"
+                defaultSortField="userFullName"
                 rowMenuItems={[]}
                 noDataPlaceholder="Keine Mitarbeiter:innen vorhanden"
                 loadingPlaceholder="Lade Mitarbeiter:innen…"
@@ -348,15 +359,31 @@ const Filters = [
 
 const Columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntity>> = [
     {
-        field: 'fullName',
+        field: 'userFullName',
         headerName: 'Mitarbeiter:in',
         flex: 1,
-        renderCell: (params) => {
-            return resolveUserName(vDepartmentMembershipWithDetailsEntityAsUser(params.row));
-        },
+        renderCell: (params) => (
+            <Box
+                display="flex"
+                flexDirection="column"
+                justifyContent="center"
+                height="100%"
+            >
+                <Typography>
+                    {params.row.userFullName}
+                </Typography>
+                {
+                    params.row.membershipIsDeputy && (
+                        <Typography variant="caption" color="text.secondary">
+                            (Stellvertretung für {params.row.membershipAsDeputyForUserFullName})
+                        </Typography>
+                    )
+                }
+            </Box>
+        )
     },
     {
-        field: 'email',
+        field: 'userEmail',
         headerName: 'E-Mail',
         flex: 1,
     },

@@ -21,7 +21,7 @@ public class ProcessExportService {
     private final ProcessDefinitionVersionService processDefinitionVersionService;
     private final ProcessDefinitionNodeService processDefinitionNodeService;
     private final ProcessDefinitionEdgeService processDefinitionEdgeService;
-    private final ProcessNodeProviderService processNodeProviderService;
+    private final ProcessNodeDefinitionService processNodeProviderService;
     private final BuildProperties buildProperties;
     private final SystemConfigService systemConfigService;
 
@@ -29,7 +29,7 @@ public class ProcessExportService {
                                 ProcessDefinitionVersionService processDefinitionVersionService,
                                 ProcessDefinitionNodeService processDefinitionNodeService,
                                 ProcessDefinitionEdgeService processDefinitionEdgeService,
-                                ProcessNodeProviderService processNodeProviderService,
+                                ProcessNodeDefinitionService processNodeProviderService,
                                 BuildProperties buildProperties, SystemConfigService systemConfigService) {
         this.processDefinitionService = processDefinitionService;
         this.processDefinitionVersionService = processDefinitionVersionService;
@@ -46,7 +46,7 @@ public class ProcessExportService {
                 .orElseThrow(ResponseException::notFound);
 
         var processVersion = processDefinitionVersionService
-                .retrieve(ProcessDefinitionVersionEntityId.of(processId, version))
+                .retrieve(ProcessVersionEntityId.of(processId, version))
                 .orElseThrow(ResponseException::notFound);
 
         var nodes = processDefinitionNodeService
@@ -54,8 +54,9 @@ public class ProcessExportService {
                 .stream()
                 .peek((node) -> {
                     var nodeProvider = processNodeProviderService
-                            .getProcessNodeProvider(node.getCodeKey())
-                            .orElseThrow(() -> new RuntimeException("Node provider not found for code key: " + node.getCodeKey()));
+                            .getProcessNodeDefinition(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
+                            .orElseThrow(() -> new RuntimeException("Eine Prozesselementdefinition mit dem Schlüssel „%s“ und der Version „%d“ konnte nicht gefunden werden."
+                                    .formatted(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())));
 
                     var cleanedNodeData = nodeProvider
                             .cleanConfigurationForExport(node.getConfiguration());
@@ -140,16 +141,16 @@ public class ProcessExportService {
             String createdByVendor,
             @NotNull
             @Nonnull
-            ProcessDefinitionEntity process,
+            ProcessEntity process,
             @NotNull
             @Nonnull
-            ProcessDefinitionVersionEntity version,
+            ProcessVersionEntity version,
             @NotNull
             @Nonnull
-            List<ProcessDefinitionNodeEntity> nodes,
+            List<ProcessNodeEntity> nodes,
             @NotNull
             @Nonnull
-            List<ProcessDefinitionEdgeEntity> edges
+            List<ProcessEdgeEntity> edges
     ) {
         public String toJSONString() throws JsonProcessingException {
             return ObjectMapperFactory

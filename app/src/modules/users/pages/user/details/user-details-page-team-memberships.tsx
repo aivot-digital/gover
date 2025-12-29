@@ -14,9 +14,6 @@ import {GenericDetailsSkeleton} from '../../../../../components/generic-details-
 import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 import {UserRoleChips} from '../../../../user-roles/components/user-role-chips';
-import {
-    VTeamMembershipWithDetailsEntityWithRoles
-} from '../../../../teams/entities/v-team-membership-with-details-entity';
 import {Button} from "@mui/material";
 import Add from "@aivot/mui-material-symbols-400-outlined/dist/add/Add";
 import {SearchBaseDialog} from "../../../../../dialogs/search-base-dialog/search-base-dialog";
@@ -35,9 +32,10 @@ import {
 import {
     VTeamMembershipWithDetailsApiService
 } from "../../../../teams/services/v-team-membership-with-details-api-service";
+import {VTeamMembershipWithDetailsEntity} from "../../../../teams/entities/v-team-membership-with-details-entity";
 
 
-const columns: Array<GridColDef<VTeamMembershipWithDetailsEntityWithRoles>> = [
+const columns: Array<GridColDef<VTeamMembershipWithDetailsEntity>> = [
     {
         field: 'name',
         headerName: 'Fachbereich',
@@ -47,7 +45,7 @@ const columns: Array<GridColDef<VTeamMembershipWithDetailsEntityWithRoles>> = [
                 to={`/teams/${params.row.teamId}`}
                 title="Fachbereich bearbeiten"
             >
-                {String(params.row.name)}
+                {String(params.row.teamName)}
             </CellLink>
         ),
     },
@@ -57,10 +55,10 @@ const columns: Array<GridColDef<VTeamMembershipWithDetailsEntityWithRoles>> = [
         flex: 1,
         sortable: false,
         renderCell: (params) => (
-            <UserRoleChips roles={params.row.roles.map(item => ({
-                id: item.userRoleName!,
-                name: item.userRoleName ?? '',
-            }))} />
+            <UserRoleChips roles={params.row.domainRoles.map(item => ({
+                id: item.id!,
+                name: item.name ?? '',
+            }))}/>
         ),
     },
 ];
@@ -77,7 +75,7 @@ export function UserDetailsPageTeamMemberships() {
     const [availableTeams, setAvailableTeams] = useState<TeamEntity[]>();
     const [showSelectNewTeamDialog, setShowSelectNewTeamDialog] = useState(false);
     const [showSelectRolesDialogForTeam, setShowSelectRolesDialogForTeam] = useState<TeamEntity | null>(null);
-    const [showSelectRolesDialogForMembership, setShowSelectRolesDialogForMembership] = useState<VTeamMembershipWithDetailsEntityWithRoles | null>(null);
+    const [showSelectRolesDialogForMembership, setShowSelectRolesDialogForMembership] = useState<VTeamMembershipWithDetailsEntity | null>(null);
 
     const hasAccess = useAccessGuard({
         onlyGlobalAdmin: true,
@@ -101,7 +99,7 @@ export function UserDetailsPageTeamMemberships() {
         return [
             <Button
                 variant="contained"
-                startIcon={<Add />}
+                startIcon={<Add/>}
                 onClick={() => setShowSelectNewTeamDialog(true)}
             >
                 Mitgliedschaft hinzufügen
@@ -111,7 +109,7 @@ export function UserDetailsPageTeamMemberships() {
 
     if (user == null) {
         return (
-            <GenericDetailsSkeleton />
+            <GenericDetailsSkeleton/>
         );
     }
 
@@ -157,9 +155,9 @@ export function UserDetailsPageTeamMemberships() {
             });
     };
 
-    const handleUpdateMembership = (membership: VTeamMembershipWithDetailsEntityWithRoles, roleIdsToAdd: number[], userRoleAssignmentIdsToRemove: number[]) => {
+    const handleUpdateMembership = (membership: VTeamMembershipWithDetailsEntity, roleIdsToAdd: number[], userRoleAssignmentIdsToRemove: number[]) => {
         dispatch(setLoadingMessage({
-            message: `Aktualisiere Rollen der Mitarbeiter:in ${membership.fullName}`,
+            message: `Aktualisiere Rollen der Mitarbeiter:in ${membership.userFullName}`,
             blocking: true,
             estimatedTime: 5000,
         }));
@@ -170,7 +168,7 @@ export function UserDetailsPageTeamMemberships() {
             .map((roleId) => apiService.create({
                 id: 0,
                 departmentMembershipId: null,
-                teamMembershipId: membership.id,
+                teamMembershipId: membership.membershipId,
                 userRoleId: roleId,
                 created: new Date().toISOString(),
             }));
@@ -211,11 +209,12 @@ export function UserDetailsPageTeamMemberships() {
                 </Typography>
 
                 <Typography sx={{mb: 3, maxWidth: 900}}>
-                    Eine Übersicht der Organisationseinheiten, in denen diese Mitarbeiter:in Mitglied ist, und die dazugehörigen
+                    Eine Übersicht der Organisationseinheiten, in denen diese Mitarbeiter:in Mitglied ist, und die
+                    dazugehörigen
                     Rollen.
                 </Typography>
 
-                <GenericList<VTeamMembershipWithDetailsEntityWithRoles>
+                <GenericList<VTeamMembershipWithDetailsEntity>
                     disableFullWidthToggle={true}
                     sx={{
                         mx: '-16px',
@@ -230,23 +229,23 @@ export function UserDetailsPageTeamMemberships() {
                                 teamSearch: options.search,
                             });
                     }}
-                    getRowIdentifier={(item) => item.id.toString()}
+                    getRowIdentifier={(item) => item.membershipId.toString()}
                     searchLabel="Organisationseinheit suchen"
                     searchPlaceholder="Titel der Organisationseinheit eingeben…"
-                    defaultSortField="name"
+                    defaultSortField="teamName"
                     rowMenuItems={[]}
                     noDataPlaceholder="Keine Organisationseinheiten vorhanden"
                     loadingPlaceholder="Lade Organisationseinheiten…"
                     noSearchResultsPlaceholder="Keine Organisationseinheiten gefunden"
                     rowActions={(item) => [
                         {
-                            icon: hasAccess ? <EditOutlined /> : <Visibility />,
+                            icon: hasAccess ? <EditOutlined/> : <Visibility/>,
                             onClick: () => {
                                 setShowSelectRolesDialogForMembership(item);
                             },
                             tooltip: hasAccess ? 'Rollen bearbeiten' : 'Rollen anzeigen',
                         }, {
-                            icon: hasAccess ? <EditOutlined /> : <Visibility />,
+                            icon: hasAccess ? <EditOutlined/> : <Visibility/>,
                             to: `/teams/${item.teamId}`,
                             tooltip: hasAccess ? 'Organisationseinheit bearbeiten' : 'Organisationseinheit anzeigen',
                         }

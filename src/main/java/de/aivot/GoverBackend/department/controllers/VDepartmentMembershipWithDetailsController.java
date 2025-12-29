@@ -8,6 +8,7 @@ import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nonnull;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,15 +20,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.annotation.Nonnull;
-
 @RestController
 @RequestMapping("/api/department-memberships-with-details/")
 @Tag(
         name = "Department Memberships",
         description = "Department Memberships link users to organisational units (departments) within the system. " +
-                      "They define which users belong to which departments and what roles or permissions they have within those departments. " +
-                      "Managing department memberships is crucial for controlling access to resources and functionalities based on organisational structure."
+                "They define which users belong to which departments and what roles or permissions they have within those departments. " +
+                "Managing department memberships is crucial for controlling access to resources and functionalities based on organisational structure."
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class VDepartmentMembershipWithDetailsController {
@@ -42,7 +41,7 @@ public class VDepartmentMembershipWithDetailsController {
     @Operation(
             summary = "List Department Memberships with Details",
             description = "Retrieves a paginated list of department memberships along with detailed information about each membership. " +
-                          "Supports filtering based on various criteria to narrow down the results."
+                    "Supports filtering based on various criteria to narrow down the results."
     )
     public Page<VDepartmentMembershipWithDetailsEntity> list(
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
@@ -57,7 +56,7 @@ public class VDepartmentMembershipWithDetailsController {
             description = "Retrieves detailed information about a specific department membership identified by its ID."
     )
     public VDepartmentMembershipWithDetailsEntity retrieve(
-            @Nonnull @PathVariable Integer id
+            @Nonnull @PathVariable String id
     ) throws ResponseException {
         return service
                 .retrieve(id)

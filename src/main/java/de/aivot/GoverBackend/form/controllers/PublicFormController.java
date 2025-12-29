@@ -18,7 +18,6 @@ import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.form.filters.VFormVersionWithDetailsFilter;
 import de.aivot.GoverBackend.form.services.FormPaymentService;
-import de.aivot.GoverBackend.form.services.FormService;
 import de.aivot.GoverBackend.form.services.FormVersionService;
 import de.aivot.GoverBackend.form.services.VFormVersionWithDetailsService;
 import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
@@ -205,7 +204,7 @@ public class PublicFormController {
         }
 
         var paymentProviderDefinition = paymentProviderService
-                .getProviderDefinition(paymentProvider.get().getProviderKey());
+                .getProviderDefinition(paymentProvider.get().getPaymentProviderDefinitionKey());
 
         if (paymentProviderDefinition.isEmpty()) {
             return new FormCostCalculationResponseDTO(null, null, null);

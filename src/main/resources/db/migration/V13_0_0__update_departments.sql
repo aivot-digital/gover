@@ -22,7 +22,7 @@ ALTER TABLE departments
     RENAME COLUMN accessibility TO common_accessibility;
 
 -- Create a function to check for cycles and calculate depth
-CREATE FUNCTION count_depth_on_org_unit_insert_or_update()
+CREATE FUNCTION fun_count_depth_on_org_unit_insert_or_update()
     RETURNS TRIGGER
     LANGUAGE plpgsql AS
 $$
@@ -82,14 +82,14 @@ END;
 $$;
 
 -- Create trigger to invoke the function before insert or update
-CREATE TRIGGER on_org_unit_insert_or_update
+CREATE TRIGGER trg_on_org_unit_insert_or_update
     BEFORE INSERT OR UPDATE OF parent_department_id
     ON departments
     FOR EACH ROW
-EXECUTE FUNCTION count_depth_on_org_unit_insert_or_update();
+EXECUTE FUNCTION fun_count_depth_on_org_unit_insert_or_update();
 
 -- Create a function to recalculate depths for all child org units after an update
-CREATE OR REPLACE FUNCTION recalculate_org_unit_child_depths()
+CREATE OR REPLACE FUNCTION fun_recalculate_org_unit_child_depths()
     RETURNS TRIGGER
     LANGUAGE plpgsql AS
 $$
@@ -131,4 +131,4 @@ CREATE TRIGGER trg_recalculate_child_depths
     ON departments
     FOR EACH ROW
     WHEN (OLD.parent_department_id IS DISTINCT FROM NEW.parent_department_id)
-EXECUTE FUNCTION recalculate_org_unit_child_depths();
+EXECUTE FUNCTION fun_recalculate_org_unit_child_depths();

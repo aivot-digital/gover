@@ -1,9 +1,9 @@
 -- create a view to get a users permissions for a process definition based on their team/department memberships
-create view v_user_process_definition_access_permission as
+create view v_user_process_access_permission as
 select udp.user_id                                       as user_id,
        pac.source_team_id                                as via_source_team_id,
        pac.source_department_id                          as via_source_department_id,
-       pac.target_process_definition_id                  as target_process_definition_id,
+       pac.target_process_id                  as target_process_id,
        array_intersect(pac.permissions, udp.permissions) as permissions
 from v_user_domain_permission udp
          join process_access_controls pac
@@ -11,7 +11,7 @@ from v_user_domain_permission udp
                  pac.source_team_id = udp.team_id;
 
 -- create a view to get the full process definition a user has access to
-create view v_user_process_definition_with_details as
+create view v_user_process_with_details as
 select pd.*,
 
        u.id                          as user_id,
@@ -44,11 +44,11 @@ select pd.*,
        vds.parent_department_id      as department_parent_department_id,
        vds.parent_names              as department_parent_names,
        vds.parent_ids                as department_parent_ids
-from v_user_process_definition_access_permission updap
+from v_user_process_access_permission updap
          join users u
               on u.id = updap.user_id
-         join process_definitions pd
-              on pd.id = updap.target_process_definition_id
+         join processes pd
+              on pd.id = updap.target_process_id
          join v_departments_shadowed vds
               on pd.department_id = vds.id
 where array_length(updap.permissions, 1) > 0;

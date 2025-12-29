@@ -24,7 +24,7 @@ import {
     ListTeamMembershipsWithRolesFilter,
     VTeamMembershipWithDetailsApiService
 } from "../../services/v-team-membership-with-details-api-service";
-import {VTeamMembershipWithDetailsEntityWithRoles} from "../../entities/v-team-membership-with-details-entity";
+import {VTeamMembershipWithDetailsEntity} from "../../entities/v-team-membership-with-details-entity";
 import {TeamEntity} from "../../entities/team-entity";
 import {TeamMembershipsApiService} from "../../services/team-memberships-api-service";
 import {Page} from "../../../../models/dtos/page";
@@ -45,11 +45,11 @@ export function TeamsDetailsPageMembers() {
     const listControlRef = useRef<ListControlRef | null>(null);
     const [showSelectNewMemberDialog, setShowSelectNewMemberDialog] = useState(false);
     const [showSelectRolesDialogForUser, setShowSelectRolesDialogForUser] = useState<User | null>(null);
-    const [showSelectRolesDialogForMembership, setShowSelectRolesDialogForMembership] = useState<VTeamMembershipWithDetailsEntityWithRoles | null>(null);
+    const [showSelectRolesDialogForMembership, setShowSelectRolesDialogForMembership] = useState<VTeamMembershipWithDetailsEntity | null>(null);
 
-    const fetchMembers = useCallback((options: GenericListPropsFetchOptions<VTeamMembershipWithDetailsEntityWithRoles>) => {
+    const fetchMembers = useCallback((options: GenericListPropsFetchOptions<VTeamMembershipWithDetailsEntity>) => {
         if (item == null) {
-            const p: Page<VTeamMembershipWithDetailsEntityWithRoles> = {
+            const p: Page<VTeamMembershipWithDetailsEntity> = {
                 content: [],
                 empty: false,
                 first: false,
@@ -87,15 +87,15 @@ export function TeamsDetailsPageMembers() {
             .listTeamMembershipsWithRoles(0, 999, options.sort as any, options.order, filters);
     }, [item]);
 
-    const buildRowActions = useCallback((membershipItem: VTeamMembershipWithDetailsEntityWithRoles) => {
+    const buildRowActions = useCallback((membershipItem: VTeamMembershipWithDetailsEntity) => {
         return [
             {
                 icon: <EditOutlinedIcon />,
                 onClick: () => {
                     setShowSelectRolesDialogForMembership(membershipItem);
                 },
-                tooltip: membershipItem.deletedInIdp ? `Kann für gelöschte Mitarbeiter:innen nicht geändert werden` : 'Rolle der Mitarbeiter:in bearbeiten',
-                disabled: membershipItem.deletedInIdp ?? undefined,
+                tooltip: membershipItem.userDeletedInIdp ? `Kann für gelöschte Mitarbeiter:innen nicht geändert werden` : 'Rolle der Mitarbeiter:in bearbeiten',
+                disabled: membershipItem.userDeletedInIdp ?? undefined,
             },
             {
                 icon: <DeleteOutlineOutlinedIcon />,
@@ -105,7 +105,7 @@ export function TeamsDetailsPageMembers() {
                         children: (
                             <>
                                 <Typography>
-                                    Durch das Entfernen der Mitarbeiter:in <strong>{membershipItem.fullName}</strong> aus dem Fachbereich <strong>{item?.name}</strong> verliert diese alle zugewiesenen Rollen und Berechtigungen in diesem
+                                    Durch das Entfernen der Mitarbeiter:in <strong>{membershipItem.userFullName}</strong> aus dem Fachbereich <strong>{item?.name}</strong> verliert diese alle zugewiesenen Rollen und Berechtigungen in diesem
                                     Fachbereich.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
@@ -121,13 +121,13 @@ export function TeamsDetailsPageMembers() {
                             }
 
                             dispatch(setLoadingMessage({
-                                message: `Entferne Mitarbeiter:in ${membershipItem.fullName} aus dem Fachbereich`,
+                                message: `Entferne Mitarbeiter:in ${membershipItem.userFullName} aus dem Fachbereich`,
                                 blocking: true,
                                 estimatedTime: 5000,
                             }));
 
                             new TeamMembershipsApiService()
-                                .destroy(membershipItem.id)
+                                .destroy(membershipItem.membershipId)
                                 .then(() => {
                                     // Refresh list
                                     listControlRef.current?.refresh();
@@ -212,13 +212,13 @@ export function TeamsDetailsPageMembers() {
             });
     }, [dispatch, item, listControlRef]);
 
-    const handleUpdateMembership = useCallback((membership: VTeamMembershipWithDetailsEntityWithRoles | null, roleIdsToAdd: number[], userRoleAssignmentIdsToRemove: number[]) => {
+    const handleUpdateMembership = useCallback((membership: VTeamMembershipWithDetailsEntity | null, roleIdsToAdd: number[], userRoleAssignmentIdsToRemove: number[]) => {
         if (membership == null) {
             return;
         }
 
         dispatch(setLoadingMessage({
-            message: `Aktualisiere Rollen der Mitarbeiter:in ${membership.fullName}`,
+            message: `Aktualisiere Rollen der Mitarbeiter:in ${membership.userFullName}`,
             blocking: true,
             estimatedTime: 5000,
         }));
@@ -229,7 +229,7 @@ export function TeamsDetailsPageMembers() {
             .map((roleId) => apiService.create({
                 id: 0,
                 departmentMembershipId: null,
-                teamMembershipId: membership.id,
+                teamMembershipId: membership.membershipId,
                 userRoleId: roleId,
                 created: new Date().toISOString(),
             }));
@@ -284,7 +284,7 @@ export function TeamsDetailsPageMembers() {
                 Eine Liste der Mitarbeiter:innen, die diesem Fachbereich zugeordnet sind. Mitarbeiter:innen können unterschiedliche Rollen besitzen, die ihre Berechtigungen innerhalb des Fachbereichs definieren.
             </Typography>
 
-            <GenericList<VTeamMembershipWithDetailsEntityWithRoles>
+            <GenericList<VTeamMembershipWithDetailsEntity>
                 controlRef={listControlRef}
                 filters={Filters}
                 defaultFilter="active"
@@ -364,7 +364,7 @@ const Filters = [
     },
 ];
 
-const Columns: Array<GridColDef<VTeamMembershipWithDetailsEntityWithRoles>> = [
+const Columns: Array<GridColDef<VTeamMembershipWithDetailsEntity>> = [
     {
         field: 'fullName',
         headerName: 'Mitarbeiter:in',
@@ -382,9 +382,9 @@ const Columns: Array<GridColDef<VTeamMembershipWithDetailsEntityWithRoles>> = [
         sortable: false,
         renderCell: (params) => (
             <UserRoleChips
-                roles={params.row.roles.map(item => ({
-                    name: item.userRoleName,
-                    id: item.userRoleId,
+                roles={params.row.domainRoles.map(item => ({
+                    name: item.name ?? '',
+                    id: item.id,
                 }))}
                 maxVisibleChips={1}
             />
@@ -397,13 +397,13 @@ const Columns: Array<GridColDef<VTeamMembershipWithDetailsEntityWithRoles>> = [
         sortable: false,
         renderCell: (params) => (
             <UserStatusChip
-                userDeletedInIdp={params.row.deletedInIdp}
-                userEnabled={params.row.enabled}
+                userDeletedInIdp={params.row.userDeletedInIdp}
+                userEnabled={params.row.userEnabled}
             />
         ),
     },
 ];
 
-function getRowIdentifier(item: VTeamMembershipWithDetailsEntityWithRoles): string {
+function getRowIdentifier(item: VTeamMembershipWithDetailsEntity): string {
     return item.userId;
 }

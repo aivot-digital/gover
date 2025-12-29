@@ -31,7 +31,7 @@ public record PaymentProviderResponseDTO(
                 entity.getKey(),
                 entity.getName(),
                 entity.getDescription(),
-                entity.getProviderKey(),
+                entity.getPaymentProviderDefinitionKey(),
                 entity.getTestProvider(),
                 entity.getIsEnabled(),
                 entity.getConfig()

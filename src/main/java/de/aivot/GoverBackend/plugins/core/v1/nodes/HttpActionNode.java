@@ -10,9 +10,9 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElemen
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
-import de.aivot.GoverBackend.process.entities.ProcessDefinitionEntity;
-import de.aivot.GoverBackend.process.entities.ProcessDefinitionNodeEntity;
-import de.aivot.GoverBackend.process.entities.ProcessDefinitionVersionEntity;
+import de.aivot.GoverBackend.process.entities.ProcessEntity;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
+import de.aivot.GoverBackend.process.entities.ProcessVersionEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.enums.ProcessHistoryEventType;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class HttpActionNode implements ProcessNodeProvider, PluginComponent {
+public class HttpActionNode implements ProcessNodeDefinition, PluginComponent {
     private static final String METHOD_FIELD_ID = "method";
     private static final String URL_FIELD_ID = "url";
     private static final String IS_JSON_FIELD_ID = "isJson";
@@ -67,9 +67,9 @@ public class HttpActionNode implements ProcessNodeProvider, PluginComponent {
     @Override
     @JsonIgnore
     public ConfigLayoutElement getConfigurationLayout(@Nonnull UserEntity user,
-                                                      @Nonnull ProcessDefinitionEntity processDefinition,
-                                                      @Nonnull ProcessDefinitionVersionEntity processDefinitionVersion,
-                                                      @Nullable ProcessDefinitionNodeEntity thisNode) {
+                                                      @Nonnull ProcessEntity processDefinition,
+                                                      @Nonnull ProcessVersionEntity processDefinitionVersion,
+                                                      @Nullable ProcessNodeEntity thisNode) {
         var layout = new ConfigLayoutElement();
         layout.setId(getKey() + "-config");
 
@@ -137,7 +137,7 @@ public class HttpActionNode implements ProcessNodeProvider, PluginComponent {
 
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessInstanceEntity processInstance,
-                                           @Nonnull ProcessDefinitionNodeEntity thisNode,
+                                           @Nonnull ProcessNodeEntity thisNode,
                                            @Nonnull Map<String, Object> workingData) throws Exception {
         var configuration = thisNode.getConfiguration();
 

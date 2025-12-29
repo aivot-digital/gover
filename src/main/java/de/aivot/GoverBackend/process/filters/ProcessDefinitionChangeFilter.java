@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.process.filters;
 
-import de.aivot.GoverBackend.process.entities.ProcessDefinitionChangeEntity;
+import de.aivot.GoverBackend.process.entities.ProcessChangeEntity;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
@@ -8,7 +8,7 @@ import org.springframework.data.jpa.domain.Specification;
 import jakarta.annotation.Nonnull;
 import java.time.LocalDateTime;
 
-public class ProcessDefinitionChangeFilter implements Filter<ProcessDefinitionChangeEntity> {
+public class ProcessDefinitionChangeFilter implements Filter<ProcessChangeEntity> {
     private Long id;
     private LocalDateTime timestamp;
     private String userId;
@@ -25,9 +25,9 @@ public class ProcessDefinitionChangeFilter implements Filter<ProcessDefinitionCh
 
     @Nonnull
     @Override
-    public Specification<ProcessDefinitionChangeEntity> build() {
+    public Specification<ProcessChangeEntity> build() {
         var builder = SpecificationBuilder
-                .create(ProcessDefinitionChangeEntity.class)
+                .create(ProcessChangeEntity.class)
                 .withEquals("id", id)
                 .withEquals("timestamp", timestamp)
                 .withContains("userId", userId)

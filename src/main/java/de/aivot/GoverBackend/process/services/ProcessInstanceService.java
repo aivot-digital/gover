@@ -71,10 +71,11 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
                                               @Nonnull ProcessInstanceEntity existingEntity) throws ResponseException {
         // Update fields as needed, example:
         existingEntity.setAccessKey(entity.getAccessKey());
-        existingEntity.setProcessDefinitionId(entity.getProcessDefinitionId());
-        existingEntity.setProcessDefinitionVersion(entity.getProcessDefinitionVersion());
+        existingEntity.setProcessId(entity.getProcessId());
+        existingEntity.setProcessVersion(entity.getProcessVersion());
         existingEntity.setStatus(entity.getStatus());
         existingEntity.setStatusOverride(entity.getStatusOverride());
+        existingEntity.setAssignedUserId(entity.getAssignedUserId());
         existingEntity.setAssignedFileNumbers(entity.getAssignedFileNumbers());
         existingEntity.setDeliveryChannels(entity.getDeliveryChannels());
         existingEntity.setTags(entity.getTags());
@@ -84,6 +85,7 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
         existingEntity.setRuntime(entity.getRuntime());
         existingEntity.setInitialPayload(entity.getInitialPayload());
         existingEntity.setInitialNodeId(entity.getInitialNodeId());
+        existingEntity.setKeepUntil(entity.getKeepUntil());
         return processInstanceRepository.save(existingEntity);
     }
 

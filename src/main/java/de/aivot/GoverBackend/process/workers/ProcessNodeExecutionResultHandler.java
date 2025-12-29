@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.process.workers;
 
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.process.entities.ProcessDefinitionNodeEntity;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceHistoryEventEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
@@ -9,7 +9,7 @@ import de.aivot.GoverBackend.process.enums.ProcessHistoryEventType;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.models.*;
-import de.aivot.GoverBackend.process.repositories.ProcessDefinitionEdgeRepository;
+import de.aivot.GoverBackend.process.repositories.ProcessEdgeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
@@ -31,7 +31,7 @@ public class ProcessNodeExecutionResultHandler {
     private final RabbitTemplate rabbitTemplate;
     private final ProcessInstanceRepository processInstanceRepository;
     private final ProcessInstanceTaskRepository processInstanceTaskRepository;
-    private final ProcessDefinitionEdgeRepository processDefinitionEdgeRepository;
+    private final ProcessEdgeRepository processDefinitionEdgeRepository;
     private final ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository;
     private final UserService userService;
 
@@ -39,7 +39,7 @@ public class ProcessNodeExecutionResultHandler {
     public ProcessNodeExecutionResultHandler(RabbitTemplate rabbitTemplate,
                                              ProcessInstanceRepository processInstanceRepository,
                                              ProcessInstanceTaskRepository processInstanceTaskRepository,
-                                             ProcessDefinitionEdgeRepository processDefinitionEdgeRepository,
+                                             ProcessEdgeRepository processDefinitionEdgeRepository,
                                              ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository, UserService userService) {
         this.rabbitTemplate = rabbitTemplate;
         this.processInstanceRepository = processInstanceRepository;
@@ -50,8 +50,8 @@ public class ProcessNodeExecutionResultHandler {
     }
 
     public void handleResult(@Nullable UserEntity triggeringUser,
-                             @Nonnull ProcessNodeProvider provider,
-                             @Nonnull ProcessDefinitionNodeEntity currentNode,
+                             @Nonnull ProcessNodeDefinition provider,
+                             @Nonnull ProcessNodeEntity currentNode,
                              @Nonnull ProcessInstanceEntity processInstance,
                              @Nonnull ProcessInstanceTaskEntity processInstanceTask,
                              @Nullable ProcessInstanceTaskEntity previousTask,
@@ -122,8 +122,8 @@ public class ProcessNodeExecutionResultHandler {
     }
 
     private void handleAssigned(@Nullable UserEntity triggeringUser,
-                                @Nonnull ProcessNodeProvider provider,
-                                @Nonnull ProcessDefinitionNodeEntity currentNode,
+                                @Nonnull ProcessNodeDefinition provider,
+                                @Nonnull ProcessNodeEntity currentNode,
                                 @Nonnull ProcessInstanceEntity processInstance,
                                 @Nonnull ProcessInstanceTaskEntity processInstanceTask,
                                 @Nullable ProcessInstanceTaskEntity previousTask,
@@ -227,8 +227,8 @@ public class ProcessNodeExecutionResultHandler {
     }
 
     private void handleTaskComplete(@Nullable UserEntity triggeringUser,
-                                    @Nonnull ProcessNodeProvider provider,
-                                    @Nonnull ProcessDefinitionNodeEntity currentNode,
+                                    @Nonnull ProcessNodeDefinition provider,
+                                    @Nonnull ProcessNodeEntity currentNode,
                                     @Nonnull ProcessInstanceEntity processInstance,
                                     @Nonnull ProcessInstanceTaskEntity processInstanceTask,
                                     @Nullable ProcessInstanceTaskEntity previousTask,
@@ -329,8 +329,8 @@ public class ProcessNodeExecutionResultHandler {
     }
 
     private void handleInstanceComplete(@Nullable UserEntity triggeringUser,
-                                        @Nonnull ProcessNodeProvider provider,
-                                        @Nonnull ProcessDefinitionNodeEntity currentNode,
+                                        @Nonnull ProcessNodeDefinition provider,
+                                        @Nonnull ProcessNodeEntity currentNode,
                                         @Nonnull ProcessInstanceEntity processInstance,
                                         @Nonnull ProcessInstanceTaskEntity processInstanceTask,
                                         @Nullable ProcessInstanceTaskEntity previousTask,
@@ -385,8 +385,8 @@ public class ProcessNodeExecutionResultHandler {
     }
 
     private void handleError(@Nullable UserEntity triggeringUser,
-                             @Nonnull ProcessNodeProvider provider,
-                             @Nonnull ProcessDefinitionNodeEntity currentNode,
+                             @Nonnull ProcessNodeDefinition provider,
+                             @Nonnull ProcessNodeEntity currentNode,
                              @Nonnull ProcessInstanceEntity processInstance,
                              @Nonnull ProcessInstanceTaskEntity processInstanceTask,
                              @Nonnull ProcessNodeExecutionResultError err) {

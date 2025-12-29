@@ -32,7 +32,7 @@ export class VDepartmentMembershipWithDetailsService extends BaseCrudApiService<
     VDepartmentMembershipWithDetailsEntity,
     VDepartmentMembershipWithDetailsEntity,
     VDepartmentMembershipWithDetailsEntity,
-    number,
+    string,
     VDepartmentMembershipWithDetailsFilter
 > {
     public constructor() {
@@ -41,6 +41,34 @@ export class VDepartmentMembershipWithDetailsService extends BaseCrudApiService<
 
     public initialize(): VDepartmentMembershipWithDetailsEntity {
         return {
+            departmentAdditionalInfo: null,
+            departmentAddress: null,
+            departmentCommonAccessibility: null,
+            departmentImprint: null,
+            departmentMail: null,
+            departmentParentDepartmentId: null,
+            departmentParentIds: null,
+            departmentParentNames: null,
+            departmentSpecialSupportAddress: null,
+            departmentSpecialSupportInfo: null,
+            departmentSpecialSupportPhone: null,
+            departmentTechnicalSupportAddress: null,
+            departmentTechnicalSupportInfo: null,
+            departmentTechnicalSupportPhone: null,
+            departmentThemeId: null,
+            membershipAsDeputyForUserDeletedInIdp: null,
+            membershipAsDeputyForUserEmail: null,
+            membershipAsDeputyForUserEnabled: null,
+            membershipAsDeputyForUserFirstName: null,
+            membershipAsDeputyForUserFullName: null,
+            membershipAsDeputyForUserId: null,
+            membershipAsDeputyForUserLastName: null,
+            membershipAsDeputyForUserSystemRoleId: null,
+            membershipAsDeputyForUserVerified: null,
+            userEmail: null,
+            userFirstName: null,
+            userFullName: null,
+            userLastName: null,
             departmentDepth: 0,
             departmentId: 0,
             departmentName: "",

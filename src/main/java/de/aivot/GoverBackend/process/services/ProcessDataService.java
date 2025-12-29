@@ -3,17 +3,16 @@ package de.aivot.GoverBackend.process.services;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
-import de.aivot.GoverBackend.process.entities.ProcessDefinitionNodeEntity;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
-import de.aivot.GoverBackend.process.repositories.ProcessDefinitionNodeRepository;
+import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.MatchResult;
@@ -25,11 +24,11 @@ public class ProcessDataService {
             .compile("\\{\\{([^{}]+)\\}\\}");
 
     private final ProcessInstanceTaskRepository processInstanceTaskRepository;
-    private final ProcessDefinitionNodeRepository processDefinitionNodeRepository;
+    private final ProcessNodeRepository processDefinitionNodeRepository;
     private final JavascriptEngineFactoryService javascriptEngineFactoryService;
 
     public ProcessDataService(ProcessInstanceTaskRepository processInstanceTaskRepository,
-                              ProcessDefinitionNodeRepository processDefinitionNodeRepository,
+                              ProcessNodeRepository processDefinitionNodeRepository,
                               JavascriptEngineFactoryService javascriptEngineFactoryService) {
         this.processInstanceTaskRepository = processInstanceTaskRepository;
         this.processDefinitionNodeRepository = processDefinitionNodeRepository;
@@ -91,10 +90,10 @@ public class ProcessDataService {
     @Nonnull
     public Map<String, Object> foldProcessInstanceData(@Nonnull ProcessInstanceEntity instance,
                                                        @Nullable Integer previousNodeId) {
-        List<ProcessDefinitionNodeEntity> nodes = processDefinitionNodeRepository
-                .findAllByProcessDefinitionIdAndProcessDefinitionVersion(
-                        instance.getProcessDefinitionId(),
-                        instance.getProcessDefinitionVersion()
+        List<ProcessNodeEntity> nodes = processDefinitionNodeRepository
+                .findAllByProcessIdAndProcessVersion(
+                        instance.getProcessId(),
+                        instance.getProcessVersion()
                 );
 
         List<ProcessInstanceTaskEntity> tasks = processInstanceTaskRepository
@@ -104,7 +103,7 @@ public class ProcessDataService {
                 null :
                 tasks
                         .stream()
-                        .filter(t -> t.getProcessDefinitionNodeId().equals(previousNodeId))
+                        .filter(t -> t.getProcessNodeId().equals(previousNodeId))
                         .findFirst()
                         .orElse(null);
 
@@ -118,7 +117,7 @@ public class ProcessDataService {
         for (ProcessInstanceTaskEntity task : tasks) {
             var node = nodes
                     .stream()
-                    .filter(n -> n.getId().equals(task.getProcessDefinitionNodeId()))
+                    .filter(n -> n.getId().equals(task.getProcessNodeId()))
                     .findFirst()
                     .orElse(null);
 

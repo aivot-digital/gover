@@ -9,7 +9,6 @@ import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import org.hibernate.validator.constraints.Length;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -34,11 +33,11 @@ public class ProcessInstanceEntity {
 
     @Nonnull
     @NotNull(message = "Die Prozessdefinitions-ID darf nicht null sein.")
-    private Integer processDefinitionId;
+    private Integer processId;
 
     @Nonnull
     @NotNull(message = "Die Prozessdefinitions-Version darf nicht null sein.")
-    private Integer processDefinitionVersion;
+    private Integer processVersion;
 
     @Nonnull
     @NotNull(message = "Der Prozessinstanz-Status darf nicht null sein.")
@@ -48,6 +47,10 @@ public class ProcessInstanceEntity {
     @Nullable
     @Size(max = 96, message = "Die Status-Überschreibung darf maximal 96 Zeichen lang sein.")
     private String statusOverride;
+
+    @Nullable
+    @Size(min = 36, max = 36, message = "Die Benutzer-ID des Zuständigen muss 36 Zeichen lang sein.")
+    private String assignedUserId;
 
     // Arrays and JSON fields can be mapped as String or custom types
     @Nonnull
@@ -91,6 +94,9 @@ public class ProcessInstanceEntity {
     @NotNull(message = "Die Initial-Knoten-ID darf nicht null sein.")
     private Integer initialNodeId;
 
+    @Nullable
+    private LocalDateTime keepUntil;
+
     // region Constructors
 
     // Empty constructor for JPA
@@ -99,10 +105,11 @@ public class ProcessInstanceEntity {
 
     public ProcessInstanceEntity(@Nonnull Long id,
                                  @Nonnull UUID accessKey,
-                                 @Nonnull Integer processDefinitionId,
-                                 @Nonnull Integer processDefinitionVersion,
+                                 @Nonnull Integer processId,
+                                 @Nonnull Integer processVersion,
                                  @Nonnull ProcessInstanceStatus status,
                                  @Nullable String statusOverride,
+                                 @Nullable String assignedUserId,
                                  @Nonnull List<String> assignedFileNumbers,
                                  @Nonnull List<DeliveryChannelConfig> deliveryChannels,
                                  @Nonnull List<String> tags,
@@ -111,13 +118,15 @@ public class ProcessInstanceEntity {
                                  @Nullable LocalDateTime finished,
                                  @Nullable Duration runtime,
                                  @Nonnull Map<String, Object> initialPayload,
-                                 @Nonnull Integer initialNodeId) {
+                                 @Nonnull Integer initialNodeId,
+                                 @Nullable LocalDateTime keepUntil) {
         this.id = id;
         this.accessKey = accessKey;
-        this.processDefinitionId = processDefinitionId;
-        this.processDefinitionVersion = processDefinitionVersion;
+        this.processId = processId;
+        this.processVersion = processVersion;
         this.status = status;
         this.statusOverride = statusOverride;
+        this.assignedUserId = assignedUserId;
         this.assignedFileNumbers = assignedFileNumbers;
         this.deliveryChannels = deliveryChannels;
         this.tags = tags;
@@ -127,6 +136,7 @@ public class ProcessInstanceEntity {
         this.runtime = runtime;
         this.initialPayload = initialPayload;
         this.initialNodeId = initialNodeId;
+        this.keepUntil = keepUntil;
     }
 
     // endregion
@@ -154,22 +164,22 @@ public class ProcessInstanceEntity {
     }
 
     @Nonnull
-    public Integer getProcessDefinitionId() {
-        return processDefinitionId;
+    public Integer getProcessId() {
+        return processId;
     }
 
-    public ProcessInstanceEntity setProcessDefinitionId(@Nonnull Integer processDefinitionId) {
-        this.processDefinitionId = processDefinitionId;
+    public ProcessInstanceEntity setProcessId(@Nonnull Integer processDefinitionId) {
+        this.processId = processDefinitionId;
         return this;
     }
 
     @Nonnull
-    public Integer getProcessDefinitionVersion() {
-        return processDefinitionVersion;
+    public Integer getProcessVersion() {
+        return processVersion;
     }
 
-    public ProcessInstanceEntity setProcessDefinitionVersion(@Nonnull Integer processDefinitionVersion) {
-        this.processDefinitionVersion = processDefinitionVersion;
+    public ProcessInstanceEntity setProcessVersion(@Nonnull Integer processDefinitionVersion) {
+        this.processVersion = processDefinitionVersion;
         return this;
     }
 
@@ -280,6 +290,26 @@ public class ProcessInstanceEntity {
 
     public ProcessInstanceEntity setInitialNodeId(@Nonnull Integer initialNodeId) {
         this.initialNodeId = initialNodeId;
+        return this;
+    }
+
+    @Nullable
+    public String getAssignedUserId() {
+        return assignedUserId;
+    }
+
+    public ProcessInstanceEntity setAssignedUserId(@Nullable String assigneeUserId) {
+        this.assignedUserId = assigneeUserId;
+        return this;
+    }
+
+    @Nullable
+    public LocalDateTime getKeepUntil() {
+        return keepUntil;
+    }
+
+    public ProcessInstanceEntity setKeepUntil(@Nullable LocalDateTime keepUntil) {
+        this.keepUntil = keepUntil;
         return this;
     }
 

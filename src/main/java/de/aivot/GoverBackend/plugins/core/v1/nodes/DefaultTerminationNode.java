@@ -4,15 +4,15 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
-import de.aivot.GoverBackend.process.entities.ProcessDefinitionEntity;
-import de.aivot.GoverBackend.process.entities.ProcessDefinitionNodeEntity;
-import de.aivot.GoverBackend.process.entities.ProcessDefinitionVersionEntity;
+import de.aivot.GoverBackend.process.entities.ProcessEntity;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
+import de.aivot.GoverBackend.process.entities.ProcessVersionEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultInstanceCompleted;
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
-import de.aivot.GoverBackend.process.models.ProcessNodeProvider;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-public class DefaultTerminationNode implements ProcessNodeProvider, PluginComponent {
+public class DefaultTerminationNode implements ProcessNodeDefinition, PluginComponent {
     private static final String NODE_KEY = "default-termination";
 
     @Nonnull
@@ -46,9 +46,9 @@ public class DefaultTerminationNode implements ProcessNodeProvider, PluginCompon
     @Override
     @JsonIgnore
     public ConfigLayoutElement getConfigurationLayout(@Nonnull UserEntity user,
-                                                      @Nonnull ProcessDefinitionEntity processDefinition,
-                                                      @Nonnull ProcessDefinitionVersionEntity processDefinitionVersion,
-                                                      @Nullable ProcessDefinitionNodeEntity thisNode) {
+                                                      @Nonnull ProcessEntity processDefinition,
+                                                      @Nonnull ProcessVersionEntity processDefinitionVersion,
+                                                      @Nullable ProcessNodeEntity thisNode) {
         var layout = new ConfigLayoutElement();
         layout.setId(getKey() + "-config");
         return layout;
@@ -80,7 +80,7 @@ public class DefaultTerminationNode implements ProcessNodeProvider, PluginCompon
 
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessInstanceEntity processInstance,
-                                           @Nonnull ProcessDefinitionNodeEntity thisNode,
+                                           @Nonnull ProcessNodeEntity thisNode,
                                            @Nonnull Map<String, Object> workingData) throws Exception {
         return new ProcessNodeExecutionResultInstanceCompleted();
     }

@@ -36,6 +36,15 @@ public class SpecificationBuilder<T> {
     }
 
     @Nonnull
+    public SpecificationBuilder<T> withGreaterThan(@Nonnull String field, @Nullable Number value) {
+        if (value == null) {
+            return this;
+        }
+
+        return with(new SpecificationBuilderGreaterThan<>(field, value));
+    }
+
+    @Nonnull
     public SpecificationBuilder<T> withJsonEquals(@Nonnull String field, @Nonnull List<String> path, @Nullable String value) {
         if (value == null) {
             return this;

@@ -22,7 +22,6 @@ import de.aivot.GoverBackend.exceptions.UserFriendlyResponseStatusException;
 import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntityId;
 import de.aivot.GoverBackend.form.enums.FormStatus;
-import de.aivot.GoverBackend.form.repositories.FormRepository;
 import de.aivot.GoverBackend.form.repositories.VFormVersionWithDetailsRepository;
 import de.aivot.GoverBackend.form.services.FormPaymentService;
 import de.aivot.GoverBackend.identity.cache.entities.IdentityCacheEntity;
@@ -489,7 +488,7 @@ public class SubmitController {
         Optional<PaymentProviderDefinition> paymentProviderDefinition = Optional.empty();
         if (paymentProvider.isPresent()) {
             paymentProviderDefinition = paymentProviderService
-                    .getProviderDefinition(paymentProvider.get().getProviderKey());
+                    .getProviderDefinition(paymentProvider.get().getPaymentProviderDefinitionKey());
         }
 
         return new SubmissionStatusResponseDTO(

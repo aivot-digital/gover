@@ -199,7 +199,7 @@ public class DestinationDataFormatter {
             if (paymentProvider != null) {
                 insertValue("payment.provider.key", paymentProvider.getKey());
                 insertValue("payment.provider.name", paymentProvider.getName());
-                insertValue("payment.provider.provider_identifier", paymentProvider.getProviderKey());
+                insertValue("payment.provider.provider_identifier", paymentProvider.getPaymentProviderDefinitionKey());
                 insertValue("payment.provider.is_test_provider", paymentProvider.getTestProvider());
             }
         }

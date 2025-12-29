@@ -3,8 +3,8 @@ package de.aivot.GoverBackend.process.services;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
-import de.aivot.GoverBackend.process.entities.ProcessDefinitionEdgeEntity;
-import de.aivot.GoverBackend.process.repositories.ProcessDefinitionEdgeRepository;
+import de.aivot.GoverBackend.process.entities.ProcessEdgeEntity;
+import de.aivot.GoverBackend.process.repositories.ProcessEdgeRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,39 +16,39 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
-public class ProcessDefinitionEdgeService implements EntityService<ProcessDefinitionEdgeEntity, Integer> {
+public class ProcessDefinitionEdgeService implements EntityService<ProcessEdgeEntity, Integer> {
 
-    private final ProcessDefinitionEdgeRepository processDefinitionEdgeRepository;
+    private final ProcessEdgeRepository processDefinitionEdgeRepository;
 
     @Autowired
-    public ProcessDefinitionEdgeService(ProcessDefinitionEdgeRepository processDefinitionEdgeRepository) {
+    public ProcessDefinitionEdgeService(ProcessEdgeRepository processDefinitionEdgeRepository) {
         this.processDefinitionEdgeRepository = processDefinitionEdgeRepository;
     }
 
     @Nonnull
     @Override
-    public ProcessDefinitionEdgeEntity create(@Nonnull ProcessDefinitionEdgeEntity entity) throws ResponseException {
+    public ProcessEdgeEntity create(@Nonnull ProcessEdgeEntity entity) throws ResponseException {
         entity.setId(null);
         return processDefinitionEdgeRepository.save(entity);
     }
 
     @Nullable
     @Override
-    public Page<ProcessDefinitionEdgeEntity> performList(@Nonnull Pageable pageable,
-                                                         @Nullable Specification<ProcessDefinitionEdgeEntity> specification,
-                                                         @Nullable Filter<ProcessDefinitionEdgeEntity> filter) throws ResponseException {
+    public Page<ProcessEdgeEntity> performList(@Nonnull Pageable pageable,
+                                               @Nullable Specification<ProcessEdgeEntity> specification,
+                                               @Nullable Filter<ProcessEdgeEntity> filter) throws ResponseException {
         return processDefinitionEdgeRepository.findAll(specification, pageable);
     }
 
     @Nonnull
     @Override
-    public Optional<ProcessDefinitionEdgeEntity> retrieve(@Nonnull Integer id) throws ResponseException {
+    public Optional<ProcessEdgeEntity> retrieve(@Nonnull Integer id) throws ResponseException {
         return processDefinitionEdgeRepository.findById(id);
     }
 
     @Nonnull
     @Override
-    public Optional<ProcessDefinitionEdgeEntity> retrieve(@Nonnull Specification<ProcessDefinitionEdgeEntity> specification) throws ResponseException {
+    public Optional<ProcessEdgeEntity> retrieve(@Nonnull Specification<ProcessEdgeEntity> specification) throws ResponseException {
         return processDefinitionEdgeRepository.findOne(specification);
     }
 
@@ -58,17 +58,17 @@ public class ProcessDefinitionEdgeService implements EntityService<ProcessDefini
     }
 
     @Override
-    public boolean exists(@Nonnull Specification<ProcessDefinitionEdgeEntity> specification) {
+    public boolean exists(@Nonnull Specification<ProcessEdgeEntity> specification) {
         return processDefinitionEdgeRepository.exists(specification);
     }
 
     @Nonnull
     @Override
-    public ProcessDefinitionEdgeEntity performUpdate(@Nonnull Integer id,
-                                                    @Nonnull ProcessDefinitionEdgeEntity entity,
-                                                    @Nonnull ProcessDefinitionEdgeEntity existingEntity) throws ResponseException {
-        existingEntity.setProcessDefinitionId(entity.getProcessDefinitionId());
-        existingEntity.setProcessDefinitionVersion(entity.getProcessDefinitionVersion());
+    public ProcessEdgeEntity performUpdate(@Nonnull Integer id,
+                                           @Nonnull ProcessEdgeEntity entity,
+                                           @Nonnull ProcessEdgeEntity existingEntity) throws ResponseException {
+        existingEntity.setProcessId(entity.getProcessId());
+        existingEntity.setProcessVersion(entity.getProcessVersion());
         existingEntity.setFromNodeId(entity.getFromNodeId());
         existingEntity.setToNodeId(entity.getToNodeId());
         existingEntity.setViaPort(entity.getViaPort());
@@ -76,7 +76,7 @@ public class ProcessDefinitionEdgeService implements EntityService<ProcessDefini
     }
 
     @Override
-    public void performDelete(@Nonnull ProcessDefinitionEdgeEntity entity) throws ResponseException {
+    public void performDelete(@Nonnull ProcessEdgeEntity entity) throws ResponseException {
         processDefinitionEdgeRepository.delete(entity);
     }
 }

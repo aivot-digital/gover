@@ -69,9 +69,9 @@ public class ProcessInstanceTaskService implements EntityService<ProcessInstance
                                                   @Nonnull ProcessInstanceTaskEntity existingEntity) throws ResponseException {
         existingEntity.setAccessKey(entity.getAccessKey());
         existingEntity.setProcessInstanceId(entity.getProcessInstanceId());
-        existingEntity.setProcessDefinitionId(entity.getProcessDefinitionId());
-        existingEntity.setProcessDefinitionVersion(entity.getProcessDefinitionVersion());
-        existingEntity.setProcessDefinitionNodeId(entity.getProcessDefinitionNodeId());
+        existingEntity.setProcessId(entity.getProcessId());
+        existingEntity.setProcessVersion(entity.getProcessVersion());
+        existingEntity.setProcessNodeId(entity.getProcessNodeId());
         existingEntity.setStarted(entity.getStarted());
         existingEntity.setUpdated(entity.getUpdated());
         existingEntity.setFinished(entity.getFinished());

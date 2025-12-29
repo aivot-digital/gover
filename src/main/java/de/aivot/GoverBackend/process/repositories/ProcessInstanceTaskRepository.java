@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInstanceTaskEntity, Long>, JpaSpecificationExecutor<ProcessInstanceTaskEntity> {
-    ProcessInstanceTaskEntity findFirstByProcessInstanceIdAndProcessDefinitionNodeIdOrderByStartedDesc(Long processInstanceId, Integer processDefinitionNodeId);
+    ProcessInstanceTaskEntity findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(Long processInstanceId, Integer processDefinitionNodeId);
 
     @Query(
             value = """

@@ -13,7 +13,6 @@ public class VDepartmentUserRoleAssignmentWithDetailsEntity {
     @Id
     private Integer id;
 
-
     public Integer getId() {
         return id;
     }

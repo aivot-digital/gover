@@ -3,13 +3,11 @@ package de.aivot.GoverBackend.process.workers;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceHistoryEventEntity;
 import de.aivot.GoverBackend.process.enums.ProcessHistoryEventType;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
-import de.aivot.GoverBackend.process.repositories.ProcessDefinitionNodeRepository;
-import de.aivot.GoverBackend.process.repositories.ProcessDefinitionRepository;
+import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
+import de.aivot.GoverBackend.process.repositories.ProcessRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceRepository;
-import de.aivot.GoverBackend.process.services.ProcessNodeProviderService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import de.aivot.GoverBackend.process.services.ProcessNodeDefinitionService;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -25,14 +23,14 @@ public class ProcessStarter {
     private final ProcessInstanceRepository processInstanceRepository;
     private final RabbitTemplate rabbitTemplate;
     private final ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository;
-    private final ProcessDefinitionRepository processDefinitionRepository;
-    private final ProcessDefinitionNodeRepository processDefinitionNodeRepository;
-    private final ProcessNodeProviderService processNodeProviderService;
+    private final ProcessRepository processDefinitionRepository;
+    private final ProcessNodeRepository processDefinitionNodeRepository;
+    private final ProcessNodeDefinitionService processNodeProviderService;
 
     @Autowired
     public ProcessStarter(ProcessInstanceRepository processInstanceRepository,
                           RabbitTemplate rabbitTemplate,
-                          ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository, ProcessDefinitionRepository processDefinitionRepository, ProcessDefinitionNodeRepository processDefinitionNodeRepository, ProcessNodeProviderService processNodeProviderService) {
+                          ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository, ProcessRepository processDefinitionRepository, ProcessNodeRepository processDefinitionNodeRepository, ProcessNodeDefinitionService processNodeProviderService) {
         this.processInstanceRepository = processInstanceRepository;
         this.rabbitTemplate = rabbitTemplate;
         this.processInstanceHistoryEventRepository = processInstanceHistoryEventRepository;
@@ -66,11 +64,11 @@ public class ProcessStarter {
             );
 
             var process = processDefinitionRepository
-                    .findById(processInstance.getProcessDefinitionId())
+                    .findById(processInstance.getProcessId())
                     .orElseThrow(RuntimeException::new);
 
             var provider = processNodeProviderService
-                    .getProcessNodeProvider(initialNode.getCodeKey())
+                    .getProcessNodeDefinition(initialNode.getProcessNodeDefinitionKey(), initialNode.getProcessNodeDefinitionVersion())
                     .orElseThrow(RuntimeException::new);
 
             processInstanceHistoryEventRepository.save(new ProcessInstanceHistoryEventEntity(

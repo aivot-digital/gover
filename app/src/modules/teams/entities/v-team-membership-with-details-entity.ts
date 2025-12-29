@@ -1,20 +1,33 @@
-import {TeamMembershipEntity} from "./team-membership-entity";
-import {SystemUserRole} from "../../users/models/user";
-import {VTeamUserRoleAssignmentWithDetailsEntity} from "./v-team-user-role-assignment-with-details-entity";
+import {UserRoleResponseDTO} from "../../user-roles/dtos/user-role-response-dto";
+import {Permission} from "../../../data/permissions/permission";
 
-export interface VTeamMembershipWithDetailsEntity extends TeamMembershipEntity {
-    name: string;
+export interface VTeamMembershipWithDetailsEntity {
+    membershipId: number;
 
-    firstName: string | null;
-    lastName: string | null;
-    fullName: string | null;
-    email: string | null;
-    enabled: boolean;
-    verified: boolean;
-    globalRole: SystemUserRole;
-    deletedInIdp: boolean;
-}
+    membershipIsDeputy: boolean;
+    membershipAsDeputyForUserId: string | null;
+    membershipAsDeputyForUserEmail: string | null;
+    membershipAsDeputyForUserFirstName: string | null;
+    membershipAsDeputyForUserLastName: string | null;
+    membershipAsDeputyForUserFullName: string | null;
+    membershipAsDeputyForUserEnabled: boolean | null;
+    membershipAsDeputyForUserVerified: boolean | null;
+    membershipAsDeputyForUserDeletedInIdp: boolean | null;
+    membershipAsDeputyForUserSystemRoleId: number | null;
 
-export interface  VTeamMembershipWithDetailsEntityWithRoles extends VTeamMembershipWithDetailsEntity {
-    roles: VTeamUserRoleAssignmentWithDetailsEntity[];
+    teamId: number;
+    teamName: string;
+
+    userId: string;
+    userEmail: string | null;
+    userFirstName: string | null;
+    userLastName: string | null;
+    userFullName: string | null;
+    userEnabled: boolean;
+    userVerified: boolean;
+    userDeletedInIdp: boolean;
+    userSystemRoleId: number;
+
+    domainRoles: UserRoleResponseDTO[];
+    domainRolePermissions: Permission[];
 }
