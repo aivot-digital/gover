@@ -19,7 +19,7 @@ export class ProcessDefinitionEdgeApiService extends BaseCrudApiService<
     ProcessDefinitionEdgeFilter
 > {
     constructor() {
-        super('/api/process-definition-edges/');
+        super('/api/process-edges/');
     }
 
     initialize(): ProcessDefinitionEdgeEntity {

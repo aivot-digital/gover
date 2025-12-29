@@ -18,7 +18,7 @@ export class ProcessDefinitionApiService extends BaseCrudApiService<
     ProcessDefinitionFilter
 > {
     constructor() {
-        super('/api/process-definitions/');
+        super('/api/processes/');
     }
 
     initialize(): ProcessDefinitionEntity {
@@ -35,10 +35,10 @@ export class ProcessDefinitionApiService extends BaseCrudApiService<
     }
 
     public export(processId: number, version: number | 'latest'): Promise<ProcessExport> {
-        return this.get<ProcessExport>(`/api/process-definitions/${processId}/export/${version}/`)
+        return this.get<ProcessExport>(`/api/processes/${processId}/export/${version}/`)
     }
 
     public import(processData: ProcessExport): Promise<ProcessDefinitionEntity> {
-        return this.post<ProcessExport, ProcessDefinitionEntity>(`/api/process-definitions/import/`, processData);
+        return this.post<ProcessExport, ProcessDefinitionEntity>(`/api/processes/import/`, processData);
     }
 }

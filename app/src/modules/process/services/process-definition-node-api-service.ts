@@ -19,7 +19,7 @@ export class ProcessDefinitionNodeApiService extends BaseCrudApiService<
     ProcessDefinitionNodeFilter
 > {
     constructor() {
-        super('/api/process-definition-nodes/');
+        super('/api/process-nodes/');
     }
 
     initialize(): ProcessDefinitionNodeEntity {

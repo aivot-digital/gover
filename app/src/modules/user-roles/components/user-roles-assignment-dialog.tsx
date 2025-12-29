@@ -188,14 +188,24 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
         onSave(roleIdsToAdd, userRoleAssignmentIdsToRemove);
     }, [onSave, roles, activeRoleIds, memberships]);
 
+    const handleClose = () => {
+        onClose();
+        setTimeout(() => {
+            setUser(undefined);
+            setParent(undefined);
+            setMemberships(undefined);
+            setActiveRoleIds(undefined);
+        }, 300);
+    };
+
     return (
         <Dialog
             open={open}
-            onClose={onClose}
+            onClose={handleClose}
             fullWidth
             maxWidth="md"
         >
-            <DialogTitleWithClose onClose={onClose}>
+            <DialogTitleWithClose onClose={handleClose}>
                 Rollen von {user?.fullName} in {parent?.name}
             </DialogTitleWithClose>
 
@@ -232,7 +242,7 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                 </Button>
                 <Button
                     variant="contained"
-                    onClick={onClose}
+                    onClick={handleClose}
                 >
                     Abbrechen
                 </Button>

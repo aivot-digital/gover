@@ -25,7 +25,7 @@ export class ProcessDefinitionVersionApiService extends BaseCrudApiService<
     ProcessDefinitionVersionFilter
 > {
     constructor() {
-        super('/api/process-definition-versions/');
+        super('/api/process-versions/');
     }
 
     buildPath(id: ProcessDefinitionVersionEntityId): string {
