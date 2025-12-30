@@ -2,7 +2,6 @@ package de.aivot.GoverBackend.teams.filters;
 
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.teams.entities.VTeamMembershipWithDetailsEntity;
-import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -31,25 +30,25 @@ public class VTeamMembershipWithDetailsFilter implements Filter<VTeamMembershipW
                 .create(VTeamMembershipWithDetailsEntity.class)
                 .withEquals("teamId", teamId)
                 .withInList("teamId", teamIds)
-                .withContains("name", name)
+                .withContains("teamName", name)
                 .withEquals("userId", userId)
                 .withInList("userId", userIds)
-                .withContains("fullName", fullName)
-                .withContains("email", email);
+                .withContains("userFullName", fullName)
+                .withContains("userEmail", email);
 
         if (enabled != null) {
             builder = builder
-                    .withEquals("enabled", enabled);
+                    .withEquals("userEnabled", enabled);
         }
 
         if (verified != null) {
             builder = builder
-                    .withEquals("verified", verified);
+                    .withEquals("userVerified", verified);
         }
 
         if (deletedInIdp != null) {
             builder = builder
-                    .withEquals("deletedInIdp", deletedInIdp);
+                    .withEquals("userDeletedInIdp", deletedInIdp);
         }
 
         return builder

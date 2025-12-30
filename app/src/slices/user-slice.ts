@@ -2,10 +2,8 @@ import {createSlice, type PayloadAction} from '@reduxjs/toolkit';
 import {type RootState} from '../store.staff';
 import {User} from '../modules/users/models/user';
 import {
-    VDepartmentMembershipWithDetailsEntity,
-    VDepartmentMembershipWithDetailsEntityWithRoles
+    VDepartmentMembershipWithDetailsEntity
 } from '../modules/departments/entities/v-department-membership-with-details-entity';
-import {VDepartmentUserRoleAssignmentWithDetailsEntity} from '../modules/departments/entities/v-department-user-role-assignment-with-details-entity';
 import {Permission} from "../data/permissions/permission";
 
 interface UserState {

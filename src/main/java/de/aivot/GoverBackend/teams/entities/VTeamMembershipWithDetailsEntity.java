@@ -10,25 +10,20 @@ import java.util.Map;
 @Entity
 @Table(name = "v_team_memberships_with_details")
 public class VTeamMembershipWithDetailsEntity {
+    @Id
+    @Nonnull
     private Integer membershipId;
 
-    private Boolean membershipIsDeputy;
-    private String membershipAsDeputyForUserId;
-    private String membershipAsDeputyForUserEmail;
-    private String membershipAsDeputyForUserFirstName;
-    private String membershipAsDeputyForUserLastName;
-    private String membershipAsDeputyForUserFullName;
-    private Boolean membershipAsDeputyForUserEnabled;
-    private Boolean membershipAsDeputyForUserVerified;
-    private Boolean membershipAsDeputyForUserDeletedInIdp;
-    private Integer membershipAsDeputyForUserSystemRoleId;
+    private Boolean membershipHasDeputies;
+    @Column(columnDefinition = "jsonb")
+    @Convert(converter = JsonArrayConverter.class)
+    private List<Map<String, Object>> membershipDeputies;
 
     @Nonnull
     private Integer teamId;
     @Nonnull
     private String teamName;
 
-    @Id
     @Nonnull
     private String userId;
     @Nonnull
@@ -52,102 +47,33 @@ public class VTeamMembershipWithDetailsEntity {
     @Nonnull
     private List<String> domainRolePermissions;
 
+    // region Getters and Setters
+
+    @Nonnull
     public Integer getMembershipId() {
         return membershipId;
     }
 
-    public VTeamMembershipWithDetailsEntity setMembershipId(Integer membershipId) {
+    public VTeamMembershipWithDetailsEntity setMembershipId(@Nonnull Integer membershipId) {
         this.membershipId = membershipId;
         return this;
     }
 
-    public Boolean getMembershipIsDeputy() {
-        return membershipIsDeputy;
+    public Boolean getMembershipHasDeputies() {
+        return membershipHasDeputies;
     }
 
-    public VTeamMembershipWithDetailsEntity setMembershipIsDeputy(Boolean membershipIsDeputy) {
-        this.membershipIsDeputy = membershipIsDeputy;
+    public VTeamMembershipWithDetailsEntity setMembershipHasDeputies(Boolean membershipHasDeputies) {
+        this.membershipHasDeputies = membershipHasDeputies;
         return this;
     }
 
-    public String getMembershipAsDeputyForUserId() {
-        return membershipAsDeputyForUserId;
+    public List<Map<String, Object>> getMembershipDeputies() {
+        return membershipDeputies;
     }
 
-    public VTeamMembershipWithDetailsEntity setMembershipAsDeputyForUserId(String membershipAsDeputyForUserId) {
-        this.membershipAsDeputyForUserId = membershipAsDeputyForUserId;
-        return this;
-    }
-
-    public String getMembershipAsDeputyForUserEmail() {
-        return membershipAsDeputyForUserEmail;
-    }
-
-    public VTeamMembershipWithDetailsEntity setMembershipAsDeputyForUserEmail(String membershipAsDeputyForUserEmail) {
-        this.membershipAsDeputyForUserEmail = membershipAsDeputyForUserEmail;
-        return this;
-    }
-
-    public String getMembershipAsDeputyForUserFirstName() {
-        return membershipAsDeputyForUserFirstName;
-    }
-
-    public VTeamMembershipWithDetailsEntity setMembershipAsDeputyForUserFirstName(String membershipAsDeputyForUserFirstName) {
-        this.membershipAsDeputyForUserFirstName = membershipAsDeputyForUserFirstName;
-        return this;
-    }
-
-    public String getMembershipAsDeputyForUserLastName() {
-        return membershipAsDeputyForUserLastName;
-    }
-
-    public VTeamMembershipWithDetailsEntity setMembershipAsDeputyForUserLastName(String membershipAsDeputyForUserLastName) {
-        this.membershipAsDeputyForUserLastName = membershipAsDeputyForUserLastName;
-        return this;
-    }
-
-    public String getMembershipAsDeputyForUserFullName() {
-        return membershipAsDeputyForUserFullName;
-    }
-
-    public VTeamMembershipWithDetailsEntity setMembershipAsDeputyForUserFullName(String membershipAsDeputyForUserFullName) {
-        this.membershipAsDeputyForUserFullName = membershipAsDeputyForUserFullName;
-        return this;
-    }
-
-    public Boolean getMembershipAsDeputyForUserEnabled() {
-        return membershipAsDeputyForUserEnabled;
-    }
-
-    public VTeamMembershipWithDetailsEntity setMembershipAsDeputyForUserEnabled(Boolean membershipAsDeputyForUserEnabled) {
-        this.membershipAsDeputyForUserEnabled = membershipAsDeputyForUserEnabled;
-        return this;
-    }
-
-    public Boolean getMembershipAsDeputyForUserVerified() {
-        return membershipAsDeputyForUserVerified;
-    }
-
-    public VTeamMembershipWithDetailsEntity setMembershipAsDeputyForUserVerified(Boolean membershipAsDeputyForUserVerified) {
-        this.membershipAsDeputyForUserVerified = membershipAsDeputyForUserVerified;
-        return this;
-    }
-
-    public Boolean getMembershipAsDeputyForUserDeletedInIdp() {
-        return membershipAsDeputyForUserDeletedInIdp;
-    }
-
-    public VTeamMembershipWithDetailsEntity setMembershipAsDeputyForUserDeletedInIdp(Boolean membershipAsDeputyForUserDeletedInIdp) {
-        this.membershipAsDeputyForUserDeletedInIdp = membershipAsDeputyForUserDeletedInIdp;
-        return this;
-    }
-
-    public Integer getMembershipAsDeputyForUserSystemRoleId() {
-        return membershipAsDeputyForUserSystemRoleId;
-    }
-
-    public VTeamMembershipWithDetailsEntity setMembershipAsDeputyForUserSystemRoleId(Integer membershipAsDeputyForUserSystemRoleId) {
-        this.membershipAsDeputyForUserSystemRoleId = membershipAsDeputyForUserSystemRoleId;
+    public VTeamMembershipWithDetailsEntity setMembershipDeputies(List<Map<String, Object>> membershipDeputies) {
+        this.membershipDeputies = membershipDeputies;
         return this;
     }
 
@@ -269,4 +195,7 @@ public class VTeamMembershipWithDetailsEntity {
         this.domainRolePermissions = domainRolePermissions;
         return this;
     }
+
+
+    // endregion
 }

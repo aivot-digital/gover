@@ -45,6 +45,7 @@ const columns: GenericListColDef<User>[] = [
                 sx={{
                     textDecoration: 'none',
                     color: 'inherit',
+                    whiteSpace: 'nowrap',
                 }}
             >
                 <span>{params.value}</span>

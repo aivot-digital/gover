@@ -8,8 +8,12 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import {isAdmin} from '../../../../utils/is-admin';
 import {UserRoleChips} from '../../../user-roles/components/user-role-chips';
-import {VDepartmentMembershipWithDetailsEntityWithRoles} from '../../../departments/entities/v-department-membership-with-details-entity';
-import {VDepartmentMembershipWithDetailsService} from '../../../departments/services/v-department-membership-with-details-service';
+import {
+    VDepartmentMembershipWithDetailsEntity
+} from '../../../departments/entities/v-department-membership-with-details-entity';
+import {
+    VDepartmentMembershipWithDetailsService
+} from '../../../departments/services/v-department-membership-with-details-service';
 
 export function AccountDetailsPageDepartmentMemberships() {
     const user = useSelector(selectUser);
@@ -25,10 +29,11 @@ export function AccountDetailsPageDepartmentMemberships() {
 
             <Typography sx={{mb: 3, maxWidth: 900}}>
                 Eine Übersicht der Fachbereiche, in denen Sie Mitglied sind, und den dazugehörigen Rollen.
-                Wenn Sie noch keinem Fachbereich zugeordnet sind, bitten Sie eine Administrator:in, Sie zu einem Fachbereich hinzuzufügen.
+                Wenn Sie noch keinem Fachbereich zugeordnet sind, bitten Sie eine Administrator:in, Sie zu einem
+                Fachbereich hinzuzufügen.
             </Typography>
 
-            <GenericList<VDepartmentMembershipWithDetailsEntityWithRoles>
+            <GenericList<VDepartmentMembershipWithDetailsEntity>
                 disableFullWidthToggle={true}
                 sx={{
                     mx: '-16px',
@@ -40,13 +45,14 @@ export function AccountDetailsPageDepartmentMemberships() {
                         headerName: 'Fachbereich',
                         flex: 1,
                         renderCell: (params) => {
-                            const isMembershipAdmin = isAdmin(user) || params.row.roles.some(role => role.departmentPermissionEdit);
-                            return (isMembershipAdmin ? <CellLink
-                                to={`/departments/${params.row.departmentId}`}
-                                title={`Fachbereich bearbeiten`}
-                            >
-                                {String(params.row.departmentName)}
-                            </CellLink> : params.row.departmentName);
+                            return (
+                                <CellLink
+                                    to={`/departments/${params.row.departmentId}`}
+                                    title={`Fachbereich bearbeiten`}
+                                >
+                                    {String(params.row.departmentName)}
+                                </CellLink>
+                            );
                         },
                     },
                     {
@@ -55,15 +61,18 @@ export function AccountDetailsPageDepartmentMemberships() {
                         flex: 1,
                         sortable: false,
                         renderCell: (params) => (
-                            <UserRoleChips roles={params.row.roles} />
+                            <UserRoleChips roles={params.row.domainRoles.map(item => ({
+                                id: item.id!,
+                                name: item.name ?? '',
+                            }))}/>
                         ),
                     },
                 ]}
                 fetch={(options) => {
                     return new VDepartmentMembershipWithDetailsService()
-                        .listDepartmentMembershipsWithRoles(0, 999, 'name', options.order, {
+                        .list(options.page, options.size, options.sort, options.order, {
                             userId: user?.id,
-                            departmentSearch: options.search,
+                            name: options.search,
                         });
                 }}
                 getRowIdentifier={(item) => item.membershipId.toString()}
@@ -74,14 +83,11 @@ export function AccountDetailsPageDepartmentMemberships() {
                 noDataPlaceholder="Keine Fachbereiche vorhanden"
                 loadingPlaceholder="Lade Fachbereiche…"
                 noSearchResultsPlaceholder="Keine Fachbereiche gefunden"
-                rowActions={(item) => {
-                    const isMembershipAdmin = isAdmin(user) || item.roles.some(role => role.departmentPermissionEdit);
-                    return isMembershipAdmin ? [{
-                        icon: <EditOutlined />,
-                        to: `/departments/${item.departmentId}`,
-                        tooltip: 'Fachbereich bearbeiten',
-                    }] : [];
-                }}
+                rowActions={(item) => [{
+                    icon: <EditOutlined/>,
+                    to: `/departments/${item.departmentId}`,
+                    tooltip: 'Fachbereich bearbeiten',
+                }]}
                 preSearchElements={[]}
             />
         </Box>

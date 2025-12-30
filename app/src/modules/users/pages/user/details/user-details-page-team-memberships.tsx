@@ -37,8 +37,8 @@ import {VTeamMembershipWithDetailsEntity} from "../../../../teams/entities/v-tea
 
 const columns: Array<GridColDef<VTeamMembershipWithDetailsEntity>> = [
     {
-        field: 'name',
-        headerName: 'Fachbereich',
+        field: 'teamName',
+        headerName: 'Team',
         flex: 1,
         renderCell: (params) => (
             <CellLink
@@ -50,7 +50,7 @@ const columns: Array<GridColDef<VTeamMembershipWithDetailsEntity>> = [
         ),
     },
     {
-        field: 'role',
+        field: 'domainRoles',
         headerName: 'Rollen',
         flex: 1,
         sortable: false,
@@ -224,9 +224,9 @@ export function UserDetailsPageTeamMemberships() {
                     controlRef={listControlRef}
                     fetch={(options) => {
                         return new VTeamMembershipWithDetailsApiService()
-                            .listTeamMembershipsWithRoles(0, 999, 'name', options.order, {
+                            .list(options.page, options.size, options.sort, options.order, {
                                 userId: user?.id,
-                                teamSearch: options.search,
+                                name: options.search,
                             });
                     }}
                     getRowIdentifier={(item) => item.membershipId.toString()}

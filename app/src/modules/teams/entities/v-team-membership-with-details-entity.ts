@@ -1,19 +1,13 @@
 import {UserRoleResponseDTO} from "../../user-roles/dtos/user-role-response-dto";
 import {Permission} from "../../../data/permissions/permission";
+import {KeysToSnakeCase} from "../../../utils/camel-to-snake";
+import {User} from "../../users/models/user";
 
 export interface VTeamMembershipWithDetailsEntity {
     membershipId: number;
 
-    membershipIsDeputy: boolean;
-    membershipAsDeputyForUserId: string | null;
-    membershipAsDeputyForUserEmail: string | null;
-    membershipAsDeputyForUserFirstName: string | null;
-    membershipAsDeputyForUserLastName: string | null;
-    membershipAsDeputyForUserFullName: string | null;
-    membershipAsDeputyForUserEnabled: boolean | null;
-    membershipAsDeputyForUserVerified: boolean | null;
-    membershipAsDeputyForUserDeletedInIdp: boolean | null;
-    membershipAsDeputyForUserSystemRoleId: number | null;
+    membershipHasDeputies: boolean;
+    membershipDeputies: KeysToSnakeCase<User>[];
 
     teamId: number;
     teamName: string;

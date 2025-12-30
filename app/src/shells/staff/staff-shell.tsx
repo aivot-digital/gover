@@ -41,8 +41,7 @@ import {
     VDepartmentMembershipWithDetailsService
 } from '../../modules/departments/services/v-department-membership-with-details-service';
 import {
-    VDepartmentMembershipWithDetailsEntity,
-    VDepartmentMembershipWithDetailsEntityWithRoles
+    VDepartmentMembershipWithDetailsEntity
 } from '../../modules/departments/entities/v-department-membership-with-details-entity';
 import {UsersApiService} from '../../modules/users/users-api-service';
 

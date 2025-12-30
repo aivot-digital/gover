@@ -1,6 +1,6 @@
 -- create function for array intersection
-create function array_intersect(varchar(32)[], varchar(32)[])
-    returns varchar(32)[] AS
+create function array_intersect(varchar[], varchar[])
+    returns varchar[] AS
 $$
 select array(
            -- UNNEST converts array to a set of rows (elements)
@@ -13,16 +13,16 @@ select array(
 $$ language sql immutable;
 
 -- create aggregate function for array intersection
-create aggregate array_intersect_agg(varchar(32)[]) (
+create aggregate array_intersect_agg(varchar[]) (
     sfunc = array_intersect,
-    stype = varchar(32)[],
+    stype = varchar[],
     -- Initial condition should be NULL so the first array becomes the initial state
     initcond = '{}'
     );
 
 -- create function for array unique union
-create function array_unique_union(varchar(32)[], varchar(32)[])
-    returns varchar(32)[] AS
+create function array_unique_union(varchar[], varchar[])
+    returns varchar[] AS
 $$
 select array(
                select unnest($1)
@@ -33,9 +33,9 @@ select array(
 $$ language sql immutable;
 
 -- create aggregate function for array unique union
-create aggregate array_unique_union_agg(varchar(32)[]) (
+create aggregate array_unique_union_agg(varchar[]) (
     sfunc = array_unique_union,
-    stype = varchar(32)[],
+    stype = varchar[],
     -- INITCOND is NULL, meaning the first array becomes the initial state
     initcond = '{}'
     );

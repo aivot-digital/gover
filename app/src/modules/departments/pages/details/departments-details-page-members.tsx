@@ -30,6 +30,8 @@ import {DepartmentMembershipApiService} from '../../services/department-membersh
 import {
     VDepartmentUserRoleAssignmentWithDetailsService
 } from "../../services/v-department-user-role-assignment-with-details-service";
+import {resolveUserName} from "../../../users/utils/resolve-user-name";
+import {snakeToCamel} from "../../../../utils/camel-to-snake";
 
 export function DepartmentsDetailsPageMembers() {
     const dispatch = useAppDispatch();
@@ -72,10 +74,6 @@ export function DepartmentsDetailsPageMembers() {
     }, [item]);
 
     const buildRowActions = useCallback((membershipItem: VDepartmentMembershipWithDetailsEntity) => {
-        if (membershipItem.membershipIsDeputy) {
-            return [];
-        }
-
         return [
             {
                 icon: <EditOutlinedIcon/>,
@@ -373,9 +371,20 @@ const Columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntity>> = [
                     {params.row.userFullName}
                 </Typography>
                 {
-                    params.row.membershipIsDeputy && (
-                        <Typography variant="caption" color="text.secondary">
-                            (Stellvertretung für {params.row.membershipAsDeputyForUserFullName})
+                    params.row.membershipHasDeputies && (
+                        <Typography
+                            variant="caption"
+
+                            color="text.secondary"
+                        >
+                            (Stellvertretung durch {
+                                params
+                                    .row
+                                    .membershipDeputies
+                                    .map(snakeToCamel)
+                                    .map(resolveUserName)
+                                    .join(', ')
+                            })
                         </Typography>
                     )
                 }

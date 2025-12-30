@@ -1,21 +1,13 @@
-import {VDepartmentUserRoleAssignmentWithDetailsEntity} from './v-department-user-role-assignment-with-details-entity';
 import {User} from '../../users/models/user';
 import {UserRoleResponseDTO} from "../../user-roles/dtos/user-role-response-dto";
 import {Permission} from "../../../data/permissions/permission";
+import {KeysToSnakeCase} from "../../../utils/camel-to-snake";
 
 export interface VDepartmentMembershipWithDetailsEntity {
     membershipId: number;
 
-    membershipIsDeputy: boolean;
-    membershipAsDeputyForUserId: string | null;
-    membershipAsDeputyForUserEmail: string | null;
-    membershipAsDeputyForUserFirstName: string | null;
-    membershipAsDeputyForUserLastName: string | null;
-    membershipAsDeputyForUserFullName: string | null;
-    membershipAsDeputyForUserEnabled: boolean | null;
-    membershipAsDeputyForUserVerified: boolean | null;
-    membershipAsDeputyForUserDeletedInIdp: boolean | null;
-    membershipAsDeputyForUserSystemRoleId: number | null;
+    membershipHasDeputies: boolean;
+    membershipDeputies: KeysToSnakeCase<User>[];
 
     userId: string;
     userEmail: string | null;
@@ -31,7 +23,7 @@ export interface VDepartmentMembershipWithDetailsEntity {
     departmentName: string;
     departmentAddress: string | null;
     departmentImprint: string | null;
-    departmentCommonPrivacy?: string;
+    departmentCommonPrivacy: string | null;
     departmentCommonAccessibility: string | null;
     departmentTechnicalSupportAddress: string | null;
     departmentTechnicalSupportPhone: string | null;
@@ -47,27 +39,6 @@ export interface VDepartmentMembershipWithDetailsEntity {
     departmentParentNames: string[] | null;
     departmentParentIds: number[] | null;
 
-    domainRoles: UserRoleResponseDTO[];
+    domainRoles: KeysToSnakeCase<UserRoleResponseDTO>[];
     domainRolePermissions: Permission[];
-}
-
-export interface VDepartmentMembershipWithDetailsEntityWithRoles extends VDepartmentMembershipWithDetailsEntity {
-    roles: VDepartmentUserRoleAssignmentWithDetailsEntity[];
-}
-
-export function vDepartmentMembershipWithDetailsEntityAsUser(mem: VDepartmentMembershipWithDetailsEntity): User {
-    return {
-        id: mem.userId,
-        firstName: mem.userFirstName ?? '',
-        lastName: mem.userLastName ?? '',
-        enabled: mem.userEnabled ?? false,
-        deletedInIdp: mem.userDeletedInIdp ?? true,
-        fullName: mem.userFullName ?? '',
-        email: mem.userEmail ?? '',
-        globalRole: mem.userSystemRoleId ?? 0,
-        isSuperAdmin: (mem.userSystemRoleId ?? 2) === 0,
-        isSystemAdmin: (mem.userSystemRoleId ?? 2) === 0,
-        verified: mem.userVerified ?? false,
-        systemRoleId: mem.userSystemRoleId,
-    };
 }

@@ -15,7 +15,7 @@ import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 import {UserRoleChips} from '../../../../user-roles/components/user-role-chips';
 import {
-    VDepartmentMembershipWithDetailsEntityWithRoles
+    VDepartmentMembershipWithDetailsEntity
 } from '../../../../departments/entities/v-department-membership-with-details-entity';
 import {
     VDepartmentMembershipWithDetailsService
@@ -38,30 +38,30 @@ import {
 } from "../../../../departments/services/v-department-user-role-assignment-with-details-service";
 
 
-const columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntityWithRoles>> = [
+const columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntity>> = [
     {
         field: 'departmentName',
-        headerName: 'Fachbereich',
+        headerName: 'Organisationseinheit',
         flex: 1,
         renderCell: (params) => (
             <CellLink
                 to={`/departments/${params.row.departmentId}`}
-                title="Fachbereich bearbeiten"
+                title="Organisationseinheit bearbeiten"
             >
                 {String(params.row.departmentName)}
             </CellLink>
         ),
     },
     {
-        field: 'role',
+        field: 'domainRoles',
         headerName: 'Rollen',
         flex: 1,
         sortable: false,
         renderCell: (params) => (
-            <UserRoleChips roles={params.row.roles.map(item => ({
-                id: item.userRoleName!,
-                name: item.userRoleName ?? '',
-            }))} />
+            <UserRoleChips roles={params.row.domainRoles.map(item => ({
+                id: item.id!,
+                name: item.name ?? '',
+            }))}/>
         ),
     },
 ];
@@ -78,7 +78,7 @@ export function UserDetailsPageDepartmentMemberships() {
     const [availableDepartments, setAvailableDepartments] = useState<VDepartmentShadowedEntity[]>();
     const [showSelectNewDepartmentDialog, setShowSelectNewDepartmentDialog] = useState(false);
     const [showSelectRolesDialogForDepartment, setShowSelectRolesDialogForDepartment] = useState<VDepartmentShadowedEntity | null>(null);
-    const [showSelectRolesDialogForMembership, setShowSelectRolesDialogForMembership] = useState<VDepartmentMembershipWithDetailsEntityWithRoles | null>(null);
+    const [showSelectRolesDialogForMembership, setShowSelectRolesDialogForMembership] = useState<VDepartmentMembershipWithDetailsEntity | null>(null);
 
     const hasAccess = useAccessGuard({
         onlyGlobalAdmin: true,
@@ -102,7 +102,7 @@ export function UserDetailsPageDepartmentMemberships() {
         return [
             <Button
                 variant="contained"
-                startIcon={<Add />}
+                startIcon={<Add/>}
                 onClick={() => setShowSelectNewDepartmentDialog(true)}
             >
                 Mitgliedschaft hinzufügen
@@ -112,7 +112,7 @@ export function UserDetailsPageDepartmentMemberships() {
 
     if (user == null) {
         return (
-            <GenericDetailsSkeleton />
+            <GenericDetailsSkeleton/>
         );
     }
 
@@ -158,7 +158,7 @@ export function UserDetailsPageDepartmentMemberships() {
             });
     };
 
-    const handleUpdateMembership = (membership: VDepartmentMembershipWithDetailsEntityWithRoles, roleIdsToAdd: number[], userRoleAssignmentIdsToRemove: number[]) => {
+    const handleUpdateMembership = (membership: VDepartmentMembershipWithDetailsEntity, roleIdsToAdd: number[], userRoleAssignmentIdsToRemove: number[]) => {
         dispatch(setLoadingMessage({
             message: `Aktualisiere Rollen der Mitarbeiter:in ${membership.userFullName}`,
             blocking: true,
@@ -212,11 +212,12 @@ export function UserDetailsPageDepartmentMemberships() {
                 </Typography>
 
                 <Typography sx={{mb: 3, maxWidth: 900}}>
-                    Eine Übersicht der Organisationseinheiten, in denen diese Mitarbeiter:in Mitglied ist, und die dazugehörigen
+                    Eine Übersicht der Organisationseinheiten, in denen diese Mitarbeiter:in Mitglied ist, und die
+                    dazugehörigen
                     Rollen.
                 </Typography>
 
-                <GenericList<VDepartmentMembershipWithDetailsEntityWithRoles>
+                <GenericList<VDepartmentMembershipWithDetailsEntity>
                     disableFullWidthToggle={true}
                     sx={{
                         mx: '-16px',
@@ -226,9 +227,9 @@ export function UserDetailsPageDepartmentMemberships() {
                     controlRef={listControlRef}
                     fetch={(options) => {
                         return new VDepartmentMembershipWithDetailsService()
-                            .listDepartmentMembershipsWithRoles(0, 999, 'name', options.order, {
+                            .list(options.page, options.size, options.sort, options.order, {
                                 userId: user?.id,
-                                departmentSearch: options.search,
+                                name: options.search,
                             });
                     }}
                     getRowIdentifier={(item) => item.membershipId.toString()}
@@ -241,13 +242,13 @@ export function UserDetailsPageDepartmentMemberships() {
                     noSearchResultsPlaceholder="Keine Organisationseinheiten gefunden"
                     rowActions={(item) => [
                         {
-                            icon: hasAccess ? <EditOutlined /> : <Visibility />,
+                            icon: hasAccess ? <EditOutlined/> : <Visibility/>,
                             onClick: () => {
                                 setShowSelectRolesDialogForMembership(item);
                             },
                             tooltip: hasAccess ? 'Rollen bearbeiten' : 'Rollen anzeigen',
                         }, {
-                            icon: hasAccess ? <EditOutlined /> : <Visibility />,
+                            icon: hasAccess ? <EditOutlined/> : <Visibility/>,
                             to: `/departments/${item.departmentId}`,
                             tooltip: hasAccess ? 'Organisationseinheit bearbeiten' : 'Organisationseinheit anzeigen',
                         }

@@ -50,16 +50,8 @@ export class VTeamMembershipWithDetailsApiService extends BaseCrudApiService<
 
     public static initialize(): VTeamMembershipWithDetailsEntity {
         return {
-            membershipAsDeputyForUserDeletedInIdp: null,
-            membershipAsDeputyForUserEmail: null,
-            membershipAsDeputyForUserEnabled: null,
-            membershipAsDeputyForUserFirstName: null,
-            membershipAsDeputyForUserFullName: null,
-            membershipAsDeputyForUserId: null,
-            membershipAsDeputyForUserLastName: null,
-            membershipAsDeputyForUserSystemRoleId: null,
-            membershipAsDeputyForUserVerified: null,
-            membershipIsDeputy: false,
+            membershipDeputies: [],
+            membershipHasDeputies: false,
             userEmail: null,
             userFirstName: null,
             userFullName: null,
