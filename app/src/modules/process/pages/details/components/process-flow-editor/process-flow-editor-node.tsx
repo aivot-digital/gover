@@ -53,7 +53,7 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>) {
             data-node-id={node.id}
             sx={{
                 position: 'relative',
-                width: `${NODE_WIDTH}px`,
+                width: `${Math.max(NODE_WIDTH * 2, NODE_WIDTH * (provider.ports.length + 1))}px`,
             }}
         >
             <Box
