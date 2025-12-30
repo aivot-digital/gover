@@ -51,8 +51,6 @@ export function ProcessDetailsPage() {
     const navigate = useNavigate();
 
     const [processFlow, setProcessFlow] = useState<ProcessFlow | null>(null);
-    const [previousProcessFlowStates, setPreviousProcessFlowStates] = useState<ProcessFlow[]>([]);
-    const [futureProcessFlowStates, setFutureProcessFlowStates] = useState<ProcessFlow[]>([]);
 
     const [availableNodeProviders, setAvailableNodeProviders] = useState<ProcessNodeProvider[]>([]);
 
@@ -113,14 +111,6 @@ export function ProcessDetailsPage() {
                 });
             });
     }, [processId, processVersion]);
-
-    const handleUndo = () => {
-
-    };
-
-    const handleRedo = () => {
-
-    };
 
     const handleExport = () => {
         new ProcessDefinitionApiService()
@@ -403,20 +393,6 @@ export function ProcessDetailsPage() {
                         }}
                         icon={ModuleIcons.processes}
                         actions={[
-                            {
-                                tooltip: 'Änderung rückgängig machen',
-                                icon: <Undo/>,
-                                onClick: handleUndo,
-                                disabled: previousProcessFlowStates.length === 0,
-                                visible: processFlow.version.status === ProcessStatus.Drafted,
-                            },
-                            {
-                                tooltip: 'Änderung wiederherstellen',
-                                icon: <Redo/>,
-                                onClick: handleRedo,
-                                disabled: futureProcessFlowStates.length === 0,
-                                visible: processFlow.version.status === ProcessStatus.Drafted,
-                            },
                             'separator',
                             /*
                             {
@@ -525,7 +501,7 @@ export function ProcessDetailsPage() {
 
                 <Paper
                     sx={{
-                        width: 480,
+                        width: 680,
                         height: '100vh',
                         borderLeft: '1px solid #ccc',
                     }}
