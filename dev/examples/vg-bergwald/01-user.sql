@@ -69,6 +69,12 @@ values
      '00000000-0000-0000-0000-000000000001',
      '00000000-0000-0000-0000-000000000002',
      now() - interval '1 day',
+     now() + interval '3 day'),
+-- current deputy
+    (5,
+     '00000000-0000-0000-0000-000000000002',
+     '00000000-0000-0000-0000-000000000003',
+     now() - interval '1 day',
      now() + interval '1 day')
 on conflict (id) do update
     set original_user_id = excluded.original_user_id,

@@ -2,7 +2,7 @@
 -- TODO: drop view form_version_with_details;
 -- TODO: drop view user_form_access;
 -- TODO: drop view user_form_version_access;
-create view v_department_memberships_with_permissions as
+create view v_department_memberships_with_permissions_leg as
 select dms.*,
        false as department_permission_edit,
        false as form_permission_create,
@@ -49,7 +49,7 @@ from (select f.id                         as form_id,
              mem.form_permission_annotate as form_permission_annotate,
              mem.form_permission_publish  as form_permission_publish
       from forms as f
-               join v_department_memberships_with_permissions mem on mem.department_id = f.developing_department_id
+               join v_department_memberships_with_permissions_leg mem on mem.department_id = f.developing_department_id
       union
       select f.id        as form_id,
              mem.user_id as user_id,
@@ -61,7 +61,7 @@ from (select f.id                         as form_id,
              true        as form_permission_annotate,
              true        as form_permission_publish
       from forms as f
-               join v_department_memberships_with_permissions mem on
+               join department_memberships mem on
           mem.department_id = f.developing_department_id) as accesses
 group by form_id, user_id;
 

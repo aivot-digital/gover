@@ -22,6 +22,10 @@ export class ProcessDefinitionApiService extends BaseCrudApiService<
     }
 
     initialize(): ProcessDefinitionEntity {
+        return ProcessDefinitionApiService.initialize();
+    }
+
+    public static initialize(): ProcessDefinitionEntity {
         return {
             id: 0,
             name: "",

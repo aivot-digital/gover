@@ -3,70 +3,41 @@ package de.aivot.GoverBackend.department.entities;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
-@Table(name = "v_department_memberships_with_permissions")
+@Table(name = "v_user_department_permissions")
+@IdClass(VDepartmentMembershipWithPermissionsEntityId.class)
 public class VDepartmentMembershipWithPermissionsEntity {
     @Id
-    private Integer id;
     @Nonnull
     private Integer departmentId;
+    @Id
     @Nonnull
     private String userId;
+
     @Nonnull
-    private LocalDateTime created;
+    private List<String> systemRolePermissions;
     @Nonnull
-    private LocalDateTime updated;
+    private List<String> systemRoleNames;
     @Nonnull
-    private Boolean departmentPermissionEdit;
+    private List<Integer> systemRoleIds;
+
     @Nonnull
-    private Boolean formPermissionCreate;
+    private List<String> domainRolePermissions;
     @Nonnull
-    private Boolean formPermissionRead;
+    private List<String> domainRoleNames;
     @Nonnull
-    private Boolean formPermissionEdit;
+    private List<Integer> domainRoleIds;
+
     @Nonnull
-    private Boolean formPermissionDelete;
-    @Nonnull
-    private Boolean formPermissionAnnotate;
-    @Nonnull
-    private Boolean formPermissionPublish;
-    @Nonnull
-    private Boolean processPermissionCreate;
-    @Nonnull
-    private Boolean processPermissionRead;
-    @Nonnull
-    private Boolean processPermissionEdit;
-    @Nonnull
-    private Boolean processPermissionDelete;
-    @Nonnull
-    private Boolean processPermissionAnnotate;
-    @Nonnull
-    private Boolean processPermissionPublish;
-    @Nonnull
-    private Boolean processInstancePermissionCreate;
-    @Nonnull
-    private Boolean processInstancePermissionRead;
-    @Nonnull
-    private Boolean processInstancePermissionEdit;
-    @Nonnull
-    private Boolean processInstancePermissionDelete;
-    @Nonnull
-    private Boolean processInstancePermissionAnnotate;
+    private List<String> permissions;
 
     // region Getters & Setters
-
-    public Integer getId() {
-        return id;
-    }
-
-    public VDepartmentMembershipWithPermissionsEntity setId(Integer id) {
-        this.id = id;
-        return this;
-    }
 
     @Nonnull
     public Integer getDepartmentId() {
@@ -89,205 +60,74 @@ public class VDepartmentMembershipWithPermissionsEntity {
     }
 
     @Nonnull
-    public LocalDateTime getCreated() {
-        return created;
+    public List<String> getSystemRolePermissions() {
+        return systemRolePermissions;
     }
 
-    public VDepartmentMembershipWithPermissionsEntity setCreated(@Nonnull LocalDateTime created) {
-        this.created = created;
+    public VDepartmentMembershipWithPermissionsEntity setSystemRolePermissions(@Nonnull List<String> systemRolePermissions) {
+        this.systemRolePermissions = systemRolePermissions;
         return this;
     }
 
     @Nonnull
-    public LocalDateTime getUpdated() {
-        return updated;
+    public List<String> getSystemRoleNames() {
+        return systemRoleNames;
     }
 
-    public VDepartmentMembershipWithPermissionsEntity setUpdated(@Nonnull LocalDateTime updated) {
-        this.updated = updated;
+    public VDepartmentMembershipWithPermissionsEntity setSystemRoleNames(@Nonnull List<String> systemRoleNames) {
+        this.systemRoleNames = systemRoleNames;
         return this;
     }
 
     @Nonnull
-    public Boolean getDepartmentPermissionEdit() {
-        return departmentPermissionEdit;
+    public List<Integer> getSystemRoleIds() {
+        return systemRoleIds;
     }
 
-    public VDepartmentMembershipWithPermissionsEntity setDepartmentPermissionEdit(@Nonnull Boolean orgUnitMemberPermissionEdit) {
-        this.departmentPermissionEdit = orgUnitMemberPermissionEdit;
+    public VDepartmentMembershipWithPermissionsEntity setSystemRoleIds(@Nonnull List<Integer> systemRoleIds) {
+        this.systemRoleIds = systemRoleIds;
         return this;
     }
 
     @Nonnull
-    public Boolean getFormPermissionCreate() {
-        return formPermissionCreate;
+    public List<String> getDomainRolePermissions() {
+        return domainRolePermissions;
     }
 
-    public VDepartmentMembershipWithPermissionsEntity setFormPermissionCreate(@Nonnull Boolean formPermissionCreate) {
-        this.formPermissionCreate = formPermissionCreate;
+    public VDepartmentMembershipWithPermissionsEntity setDomainRolePermissions(@Nonnull List<String> domainRolePermissions) {
+        this.domainRolePermissions = domainRolePermissions;
         return this;
     }
 
     @Nonnull
-    public Boolean getFormPermissionRead() {
-        return formPermissionRead;
+    public List<String> getDomainRoleNames() {
+        return domainRoleNames;
     }
 
-    public VDepartmentMembershipWithPermissionsEntity setFormPermissionRead(@Nonnull Boolean formPermissionRead) {
-        this.formPermissionRead = formPermissionRead;
+    public VDepartmentMembershipWithPermissionsEntity setDomainRoleNames(@Nonnull List<String> domainRoleNames) {
+        this.domainRoleNames = domainRoleNames;
         return this;
     }
 
     @Nonnull
-    public Boolean getFormPermissionEdit() {
-        return formPermissionEdit;
+    public List<Integer> getDomainRoleIds() {
+        return domainRoleIds;
     }
 
-    public VDepartmentMembershipWithPermissionsEntity setFormPermissionEdit(@Nonnull Boolean formPermissionEdit) {
-        this.formPermissionEdit = formPermissionEdit;
+    public VDepartmentMembershipWithPermissionsEntity setDomainRoleIds(@Nonnull List<Integer> domainRoleIds) {
+        this.domainRoleIds = domainRoleIds;
         return this;
     }
 
     @Nonnull
-    public Boolean getFormPermissionDelete() {
-        return formPermissionDelete;
+    public List<String> getPermissions() {
+        return permissions;
     }
 
-    public VDepartmentMembershipWithPermissionsEntity setFormPermissionDelete(@Nonnull Boolean formPermissionDelete) {
-        this.formPermissionDelete = formPermissionDelete;
+    public VDepartmentMembershipWithPermissionsEntity setPermissions(@Nonnull List<String> permissions) {
+        this.permissions = permissions;
         return this;
     }
-
-    @Nonnull
-    public Boolean getFormPermissionAnnotate() {
-        return formPermissionAnnotate;
-    }
-
-    public VDepartmentMembershipWithPermissionsEntity setFormPermissionAnnotate(@Nonnull Boolean formPermissionAnnotate) {
-        this.formPermissionAnnotate = formPermissionAnnotate;
-        return this;
-    }
-
-    @Nonnull
-    public Boolean getFormPermissionPublish() {
-        return formPermissionPublish;
-    }
-
-    public VDepartmentMembershipWithPermissionsEntity setFormPermissionPublish(@Nonnull Boolean formPermissionPublish) {
-        this.formPermissionPublish = formPermissionPublish;
-        return this;
-    }
-
-    @Nonnull
-    public Boolean getProcessPermissionCreate() {
-        return processPermissionCreate;
-    }
-
-    public VDepartmentMembershipWithPermissionsEntity setProcessPermissionCreate(@Nonnull Boolean processPermissionCreate) {
-        this.processPermissionCreate = processPermissionCreate;
-        return this;
-    }
-
-    @Nonnull
-    public Boolean getProcessPermissionRead() {
-        return processPermissionRead;
-    }
-
-    public VDepartmentMembershipWithPermissionsEntity setProcessPermissionRead(@Nonnull Boolean processPermissionRead) {
-        this.processPermissionRead = processPermissionRead;
-        return this;
-    }
-
-    @Nonnull
-    public Boolean getProcessPermissionEdit() {
-        return processPermissionEdit;
-    }
-
-    public VDepartmentMembershipWithPermissionsEntity setProcessPermissionEdit(@Nonnull Boolean processPermissionEdit) {
-        this.processPermissionEdit = processPermissionEdit;
-        return this;
-    }
-
-    @Nonnull
-    public Boolean getProcessPermissionDelete() {
-        return processPermissionDelete;
-    }
-
-    public VDepartmentMembershipWithPermissionsEntity setProcessPermissionDelete(@Nonnull Boolean processPermissionDelete) {
-        this.processPermissionDelete = processPermissionDelete;
-        return this;
-    }
-
-    @Nonnull
-    public Boolean getProcessPermissionAnnotate() {
-        return processPermissionAnnotate;
-    }
-
-    public VDepartmentMembershipWithPermissionsEntity setProcessPermissionAnnotate(@Nonnull Boolean processPermissionAnnotate) {
-        this.processPermissionAnnotate = processPermissionAnnotate;
-        return this;
-    }
-
-    @Nonnull
-    public Boolean getProcessPermissionPublish() {
-        return processPermissionPublish;
-    }
-
-    public VDepartmentMembershipWithPermissionsEntity setProcessPermissionPublish(@Nonnull Boolean processPermissionPublish) {
-        this.processPermissionPublish = processPermissionPublish;
-        return this;
-    }
-
-    @Nonnull
-    public Boolean getProcessInstancePermissionCreate() {
-        return processInstancePermissionCreate;
-    }
-
-    public VDepartmentMembershipWithPermissionsEntity setProcessInstancePermissionCreate(@Nonnull Boolean processInstancePermissionCreate) {
-        this.processInstancePermissionCreate = processInstancePermissionCreate;
-        return this;
-    }
-
-    @Nonnull
-    public Boolean getProcessInstancePermissionRead() {
-        return processInstancePermissionRead;
-    }
-
-    public VDepartmentMembershipWithPermissionsEntity setProcessInstancePermissionRead(@Nonnull Boolean processInstancePermissionRead) {
-        this.processInstancePermissionRead = processInstancePermissionRead;
-        return this;
-    }
-
-    @Nonnull
-    public Boolean getProcessInstancePermissionEdit() {
-        return processInstancePermissionEdit;
-    }
-
-    public VDepartmentMembershipWithPermissionsEntity setProcessInstancePermissionEdit(@Nonnull Boolean processInstancePermissionEdit) {
-        this.processInstancePermissionEdit = processInstancePermissionEdit;
-        return this;
-    }
-
-    @Nonnull
-    public Boolean getProcessInstancePermissionDelete() {
-        return processInstancePermissionDelete;
-    }
-
-    public VDepartmentMembershipWithPermissionsEntity setProcessInstancePermissionDelete(@Nonnull Boolean processInstancePermissionDelete) {
-        this.processInstancePermissionDelete = processInstancePermissionDelete;
-        return this;
-    }
-
-    @Nonnull
-    public Boolean getProcessInstancePermissionAnnotate() {
-        return processInstancePermissionAnnotate;
-    }
-
-    public VDepartmentMembershipWithPermissionsEntity setProcessInstancePermissionAnnotate(@Nonnull Boolean processInstancePermissionAnnotate) {
-        this.processInstancePermissionAnnotate = processInstancePermissionAnnotate;
-        return this;
-    }
-
 
     // endregion
 }

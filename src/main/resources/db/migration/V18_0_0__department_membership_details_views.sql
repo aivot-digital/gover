@@ -1,15 +1,12 @@
--- create a view to show deputy department memberships with details from
--- 1. the user
--- 2. the department
--- 3. the domain roles
-
+-- create a view that shows department memberships with user details, department details and details about the assigned domain roles.
+-- also include the active deputies for the user in the department membership.
 create view v_department_memberships_with_details as
-with aggregated_roles as (select dra.department_membership_id           as department_membership_id,
-                                 jsonb_agg(dr)                          as domain_roles,
-                                 array_unique_union_agg(dr.permissions) as domain_role_permissions
-                          from domain_role_assignments dra
-                                   join domain_roles dr on dr.id = dra.domain_role_id
-                          group by dra.department_membership_id),
+with aggregated_domain_roles as (select dra.department_membership_id           as department_membership_id,
+                                        jsonb_agg(dr)                          as domain_roles,
+                                        array_unique_union_agg(dr.permissions) as domain_role_permissions
+                                 from domain_role_assignments dra
+                                          join domain_roles dr on dr.id = dra.domain_role_id
+                                 group by dra.department_membership_id),
      aggregated_deputies as (select dep.original_user_id as original_user_id,
                                     jsonb_agg(usr)       as deputies
                              from v_user_is_recursively_deputy_for dep
@@ -49,10 +46,51 @@ select mem.id                                              as membership_id,
        dep.parent_names                                    as department_parent_names,
        dep.parent_ids                                      as department_parent_ids,
 
-       coalesce(ar.domain_roles, '[]')                     as domain_roles,
-       coalesce(ar.domain_role_permissions, '{}')          as domain_role_permissions
+       coalesce(adr.domain_roles, '[]')                    as domain_roles,
+       coalesce(adr.domain_role_permissions, '{}')         as domain_role_permissions
 from department_memberships mem
          left join v_departments_shadowed dep on dep.id = mem.department_id
          left join users original_usr on original_usr.id = mem.user_id
          left join aggregated_deputies as ad on ad.original_user_id = mem.user_id
-         left join aggregated_roles ar on ar.department_membership_id = mem.id;
+         left join aggregated_domain_roles adr on adr.department_membership_id = mem.id;
+
+-- create a view, which shows all permissions a user has in a specific department, based on their own department memberships as well as the memberships of users the user is currently a deputy.
+-- the permissions include the domain role permissions assigned to the department memberships as well as the system role permissions of the users and all users the user is deputy for.
+create view v_user_department_permissions as
+with aggregated_system_permissions as (select usr.id                                 as user_id,
+                                              array_unique_union_agg(sr.permissions) as system_role_permissions,
+                                              array_agg(distinct sr.name)            as system_role_names,
+                                              array_agg(distinct sr.id)              as system_role_ids
+                                       from users usr
+                                                left join v_user_is_recursively_deputy_for dpty on usr.id = dpty.deputy_user_id
+                                                left join users ou on dpty.original_user_id = ou.id
+                                                left join system_roles sr
+                                                          on sr.id = usr.system_role_id or
+                                                             sr.id = ou.system_role_id
+                                       group by usr.id),
+     aggregated_domain_permissions as (select usr.id                                 as user_id,
+                                              dm.department_id                       as department_id,
+                                              array_unique_union_agg(dr.permissions) as domain_role_permissions,
+                                              array_agg(distinct dr.name)            as domain_role_names,
+                                              array_agg(distinct dr.id)              as domain_role_ids
+                                       from users usr
+                                                left join v_user_is_recursively_deputy_for dpty on usr.id = dpty.deputy_user_id
+                                                left join department_memberships dm
+                                                          on dm.user_id = dpty.original_user_id or dm.user_id = usr.id
+                                                left join domain_role_assignments dra
+                                                          on dra.department_membership_id = dm.id
+                                                left join domain_roles dr on dr.id = dra.domain_role_id
+                                       group by usr.id, dm.department_id)
+select usr.id                                                                                 as user_id,
+       adp.department_id                                                                      as department_id,
+       array_unique_union_agg(asp.system_role_permissions)                                    as system_role_permissions,
+       array_unique_union_agg(asp.system_role_names)                                          as system_role_names,
+       array_unique_union_agg(asp.system_role_ids)                                            as system_role_ids,
+       array_unique_union_agg(adp.domain_role_permissions)                                    as domain_role_permissions,
+       array_unique_union_agg(adp.domain_role_names)                                          as domain_role_names,
+       array_unique_union_agg(adp.domain_role_ids)                                            as domain_role_ids,
+       array_unique_union_multi_agg(asp.system_role_permissions, adp.domain_role_permissions) as permissions
+from users usr
+         left join aggregated_system_permissions asp on asp.user_id = usr.id
+         left join aggregated_domain_permissions adp on adp.user_id = usr.id
+group by usr.id, adp.department_id;

@@ -1,6 +1,7 @@
 import {Permission} from "./permission";
 
 export const PermissionLabelsDe: Record<Permission, string> = {
+
     [Permission.ASSET_CREATE]: "Asset erstellen",
     [Permission.ASSET_READ]: "Asset anzeigen",
     [Permission.ASSET_UPDATE]: "Asset bearbeiten",
@@ -101,4 +102,5 @@ export const PermissionLabelsDe: Record<Permission, string> = {
     [Permission.PROCESS_INSTANCE_COMMUNICATION_INTERNAL]: "Interne Prozesskommunikation",
     [Permission.PROCESS_INSTANCE_COMMUNICATION_EXTERNAL]: "Externe Prozesskommunikation",
     [Permission.PROCESS_INSTANCE_EDIT_TASK]: "Prozesstask bearbeiten",
+    [Permission.PROCESS_INSTANCE_MIGRATE]: "process_instance.migrate",
 };

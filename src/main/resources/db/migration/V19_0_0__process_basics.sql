@@ -6,6 +6,7 @@ create table processes
     id                serial      not null,
     -- The internal name of the definition
     name              varchar(96) not null,
+
     -- A short description of this process definition
     description       text        null,
     -- The ID of the owning department who can create, edit and delete this process definition
@@ -33,22 +34,25 @@ create table processes
 create table process_versions
 (
     -- The parent definition ID
-    process_id      int       not null,
+    process_id      int          not null,
     -- The version of this process definition
-    process_version int       not null default 0,
+    process_version int          not null default 0,
     -- The status of this process definition.
     -- Options are:
     --   0 - Drafted
     --   1 - Testing
     --   2 - Published
     --   3 - Revoked
-    status          smallint  not null default 0,
+    status          smallint     not null default 0,
+
+    -- The public name of this process definition version
+    public_name     varchar(192) not null,
 
     -- Timestamps for creation and last update
-    created         timestamp not null default now(),
-    updated         timestamp not null default now(),
-    published       timestamp null,
-    revoked         timestamp null,
+    created         timestamp    not null default now(),
+    updated         timestamp    not null default now(),
+    published       timestamp    null,
+    revoked         timestamp    null,
 
     -- Define the composite primary key
     primary key (process_id, process_version),
@@ -284,7 +288,7 @@ create table process_instance_tasks
     assigned_user_id         varchar(36) null,
 
     -- The deadline for this task, if any, determined by the time limit of the node
-    deadline                  timestamp   null,
+    deadline                 timestamp   null,
 
     primary key (id),
     unique (process_instance_id, access_key),

@@ -101,4 +101,5 @@ public class Permissions {
         public static final String PROCESS_INSTANCE_COMMUNICATION_INTERNAL = "process_instance.communication.internal";
         public static final String PROCESS_INSTANCE_COMMUNICATION_EXTERNAL = "process_instance.communication.external";
         public static final String PROCESS_INSTANCE_EDIT_TASK = "process_instance.edit_task";
+        public static final String PROCESS_INSTANCE_MIGRATE = "process_instance.migrate";
 }

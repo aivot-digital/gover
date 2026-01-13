@@ -2,32 +2,28 @@ import {ProcessExportData} from "../../entities/process-export";
 import {AppInfo} from "../../../../app-info";
 import {ProcessStatus} from "../../enums/process-status";
 import {RetentionTimeUnit} from "../../enums/retention-time-unit";
+import {ProcessNodeApiService} from "../../services/process-node-api-service";
+import {ProcessDefinitionApiService} from "../../services/process-definition-api-service";
+import {ProcessDefinitionVersionApiService} from "../../services/process-definition-version-api-service";
 
 export const ApiProcessTemplate: ProcessExportData = {
     appVersion: AppInfo.version,
     createdByVendor: '',
     exportTimestamp: new Date().toISOString(),
     process: {
-        id: 0,
+        ...ProcessDefinitionApiService.initialize(),
         name: "API-gesteuertes Verfahren",
-        departmentId: 0,
-        versionCount: 0,
-        draftedVersion: null,
-        publishedVersion: null,
-        created: new Date().toISOString(),
-        updated: new Date().toISOString(),
     },
     version: {
-        processId: 0,
-        processVersion: 0,
+        ...ProcessDefinitionVersionApiService.initialize(),
         status: ProcessStatus.Drafted,
-        retentionTimeUnit: RetentionTimeUnit.Days,
-        retentionTimeAmount: 30,
-        crated: new Date().toISOString(),
-        updated: new Date().toISOString(),
-        published: null,
-        revoked: null,
     },
-    nodes: [],
+    nodes: [
+        {
+            ...ProcessNodeApiService.initialize(),
+            processNodeDefinitionKey: 'webhook',
+            processNodeDefinitionVersion: 1,
+        },
+    ],
     edges: [],
 }

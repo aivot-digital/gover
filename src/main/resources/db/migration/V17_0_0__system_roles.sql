@@ -15,6 +15,8 @@ alter table users
     add column system_role_id integer null references system_roles (id) on delete set null;
 
 -- create a view to easily get users along with their system role permissions
+-- this view also takes into account deputies, so that a user gets the permissions
+-- of their original user if they are a deputy
 create view v_user_system_permission as
 select u.id                                   as user_id,
        array_unique_union_agg(sr.permissions) as permissions

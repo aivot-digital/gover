@@ -33,6 +33,10 @@ export class ProcessDefinitionVersionApiService extends BaseCrudApiService<
     }
 
     initialize(): ProcessDefinitionVersionEntity {
+        return ProcessDefinitionVersionApiService.initialize();
+    }
+
+    public static initialize(): ProcessDefinitionVersionEntity {
         return {
             processId: 0,
             processVersion: 0,

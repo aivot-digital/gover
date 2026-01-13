@@ -19,6 +19,9 @@ create table domain_role_assignments
     check ( (department_membership_id is null) <> (team_membership_id is null) )
 );
 
+-- create a view to easily get users along with their domain role permissions
+-- this view also takes into account deputies, so that a user gets the permissions
+-- of their original user if they are a deputy
 create view v_user_domain_permission as
 select u.user_id                              as user_id,
        u.department_id                        as department_id,

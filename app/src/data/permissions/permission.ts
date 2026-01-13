@@ -99,4 +99,5 @@ export enum Permission {
     PROCESS_INSTANCE_COMMUNICATION_INTERNAL = "process_instance.communication.internal",
     PROCESS_INSTANCE_COMMUNICATION_EXTERNAL = "process_instance.communication.external",
     PROCESS_INSTANCE_EDIT_TASK = "process_instance.edit_task",
+    PROCESS_INSTANCE_MIGRATE = "process_instance.migrate",
 }
