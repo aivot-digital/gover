@@ -81,7 +81,7 @@ spring:
     baselineVersion: ${GOVER_DB_BASELINE_VERSION:0}
     baselineOnMigrate: ${GOVER_DB_BASELINE_ON_MIGRATE:false}
     # Add the option to allow flyway to repair the migration checksums
-    repairOnMigrate: ${GOVER_DB_REPAIR_ON_MIGRATE:true}
+    repairOnMigrate: ${GOVER_DB_REPAIR_ON_MIGRATE:false}
 
   # Set the properties for the mail server
   mail:
