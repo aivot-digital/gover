@@ -1,0 +1,396 @@
+package de.aivot.GoverBackend.elements.utils;
+
+import de.aivot.GoverBackend.elements.annotations.ElementPOJOBindingProperty;
+import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
+import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
+import de.aivot.GoverBackend.elements.annotations.ReplicatingContainerLayoutElementElementPOJOBinding;
+import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
+import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
+import de.aivot.GoverBackend.enums.ElementType;
+import de.aivot.GoverBackend.utils.ReflectionUtils;
+import de.aivot.GoverBackend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
+
+import java.lang.reflect.*;
+import java.util.LinkedList;
+import java.util.List;
+
+/**
+ * A mapper for converting ElementData objects to POJOs and vice versa.
+ */
+public class ElementPOJOMapper {
+    /**
+     * Convert a given ElementData to an instance of the pojoClass.
+     * Based on the annotations present in the pojoClass, the method maps the data from the ElementData to the fields of the pojoClass.
+     * See {@link InputElementPOJOBinding} and {@link LayoutElementPOJOBinding} for more details on the annotations used for mapping.
+     *
+     * @param elementData The ElementData to convert.
+     * @param pojoClass   The target class to convert to.
+     * @param <T>         The type of the target class.
+     * @return An instance of the pojoClass populated with data from the ElementData.
+     * @throws ElementDataConversionException If there is an error during the conversion process.
+     */
+    public static <T> T mapToPOJO(ElementData elementData, Class<T> pojoClass) throws ElementDataConversionException {
+        // Create an instance of the target class to fill the fields into
+        T target = instantiateTargetClass(pojoClass);
+
+        // Get a list of all fields in the target class.
+        var fields = ReflectionUtils.getAllDeclaredFields(pojoClass);
+
+        // Iterate over all fields and set their values based on the annotations present
+        for (var field : fields) {
+            Object valueToSet;
+
+            // Check if the field has the relevant annotations and extract the value accordingly
+            if (field.isAnnotationPresent(InputElementPOJOBinding.class)) {
+                valueToSet = extractInputFieldValue(elementData, field);
+            } else if (List.class.isAssignableFrom(field.getType())) {
+                // Get the generic type of the list. This represents the item type for the replicating container datasets.
+                var genericTypeClass = ReflectionUtils
+                        .getGenericType(field, 0)
+                        .orElse(null);
+
+                // Check if the generic type class has the ReplicatingContainerLayoutElementElementPOJOBinding annotation
+                if (genericTypeClass == null || !genericTypeClass.isAnnotationPresent(ReplicatingContainerLayoutElementElementPOJOBinding.class)) {
+                    continue;
+                }
+
+                valueToSet = extractReplicatingContainerLayoutValue(elementData, field, genericTypeClass);
+            } else if (field.getType().isAnnotationPresent(LayoutElementPOJOBinding.class)) {
+                valueToSet = mapToPOJO(elementData, field.getType());
+            } else {
+                // No relevant annotation present, skip this field
+                continue;
+            }
+
+            // Set the extracted value to the field using its setter method
+            try {
+                var setterMethod = getSetterMethodForField(pojoClass, field);
+                setterMethod.invoke(target, valueToSet);
+            } catch (IllegalAccessException e) {
+                throw new ElementDataConversionException(
+                        "Setter method %s for field %s of class %s is not accessible.",
+                        StringUtils.quote(StringUtils.getSetterMethodName(field.getName())),
+                        StringUtils.quote(field.getName()),
+                        StringUtils.quote(pojoClass.getCanonicalName())
+                );
+            } catch (InvocationTargetException e) {
+                throw new ElementDataConversionException(
+                        "Setter method %s for field %s of class %s threw an exception: %s",
+                        StringUtils.quote(StringUtils.getSetterMethodName(field.getName())),
+                        StringUtils.quote(field.getName()),
+                        StringUtils.quote(pojoClass.getCanonicalName()),
+                        e.getTargetException().getMessage()
+                );
+            }
+        }
+
+        // Return the populated target instance
+        return target;
+    }
+
+    /**
+     * Extract the child items for a replicating container layout pojo.
+     * This always returns a {@link List} consisting of the child item pojo types.
+     *
+     * @param elementData The ElementData to extract the values from.
+     * @param field       The field to map the values to.
+     * @return The extracted list of child item pojos.
+     * @throws ElementDataConversionException If there is a type mismatch or other error during extraction.
+     */
+    private static List<Object> extractReplicatingContainerLayoutValue(@Nonnull ElementData elementData,
+                                                                       @Nonnull Field field,
+                                                                       @Nonnull Class<?> itemClass) throws ElementDataConversionException {
+        var annotation = itemClass
+                .getAnnotation(ReplicatingContainerLayoutElementElementPOJOBinding.class);
+
+        List<?> childElementData = elementData
+                .getOpt(annotation.id())
+                .flatMap(e -> e.getOptionalValue(List.class))
+                .orElse(new LinkedList<>());
+
+        List<Object> results = new LinkedList<>();
+        for (Object childElementDataObject : childElementData) {
+            if (childElementDataObject instanceof ElementData cd) {
+                var converted = mapToPOJO(cd, itemClass);
+                results.add(converted);
+            } else {
+                throw new ElementDataConversionException(
+                        "Type mismatch for field %s of class %s: expected ElementData but got %s",
+                        StringUtils.quote(field.getName()),
+                        StringUtils.quote(field.getDeclaringClass().getCanonicalName()),
+                        childElementDataObject.getClass().getSimpleName()
+                );
+            }
+        }
+
+        return results;
+    }
+
+    /**
+     * Extract the value for a field annotated with @InputElementPOJOBinding from the given ElementData.
+     *
+     * @param elementData The ElementData to extract the value from.
+     * @param field       The field to extract the value for.
+     * @return The extracted value for the field.
+     * @throws ElementDataConversionException If there is a type mismatch or other error during extraction.
+     */
+    private static Object extractInputFieldValue(@Nonnull ElementData elementData,
+                                                     @Nonnull Field field) throws ElementDataConversionException {
+        var annotation = field
+                .getAnnotation(InputElementPOJOBinding.class);
+
+        var id = annotation.id();
+        var elementDataObject = elementData
+                .getOpt(id)
+                .orElse(null);
+
+        if (elementDataObject != null && annotation.type() != elementDataObject.getType()) {
+            throw new ElementDataConversionException(
+                    "Type mismatch for field %s of class %s: expected %s but got %s",
+                    StringUtils.quote(field.getName()),
+                    StringUtils.quote(field.getDeclaringClass().getCanonicalName()),
+                    annotation.type().name(),
+                    elementDataObject.getType().name()
+            );
+        }
+
+        return elementDataObject == null ?
+                null :
+                elementDataObject.getValue();
+    }
+
+    public static <T extends LayoutElement<C>, C extends BaseElement, S> T createFromPOJO(Class<S> pojoClass) throws ElementDataConversionException {
+        ElementType targetType;
+        String targetId;
+        ElementPOJOBindingProperty[] targetProperties;
+
+        if (pojoClass.isAnnotationPresent(ReplicatingContainerLayoutElementElementPOJOBinding.class)) {
+            var classAnnotation = pojoClass
+                    .getAnnotation(ReplicatingContainerLayoutElementElementPOJOBinding.class);
+
+            targetType = ElementType.ReplicatingContainer;
+            targetId = classAnnotation.id();
+            targetProperties = classAnnotation.properties();
+        } else if (pojoClass.isAnnotationPresent(LayoutElementPOJOBinding.class)) {
+            var classAnnotation = pojoClass
+                    .getAnnotation(LayoutElementPOJOBinding.class);
+
+            targetType = classAnnotation.type();
+            targetId = classAnnotation.id();
+            targetProperties = classAnnotation.properties();
+        } else {
+            throw new ElementDataConversionException(
+                    "Source class %s is not annotated with any known POJO binding annotation.",
+                    StringUtils.quote(pojoClass.getCanonicalName())
+            );
+        }
+
+        T target;
+        try {
+            target = (T) ElementType
+                    .getElementClass(targetType)
+                    .setType(targetType)
+                    .setId(targetId);
+        } catch (ClassCastException e) {
+            throw new ElementDataConversionException(
+                    "Element type %s is not a layout element.",
+                    StringUtils.quote(targetType.name())
+            );
+        }
+
+        try {
+            applyPropertiesToElement(target, targetProperties);
+        } catch (NoSuchFieldException | InvocationTargetException | IllegalAccessException e) {
+            throw new ElementDataConversionException(
+                    "Failed to apply properties to element %s of class %s: %s",
+                    StringUtils.quote(targetId),
+                    StringUtils.quote(pojoClass.getCanonicalName()),
+                    e.getMessage()
+            );
+        }
+
+        // Get a list of all fields in the target class.
+        var fields = ReflectionUtils.getAllDeclaredFields(pojoClass);
+
+        for (var field : fields) {
+            BaseElement fieldElement;
+            if (field.isAnnotationPresent(InputElementPOJOBinding.class)) {
+                var annotation = field
+                        .getAnnotation(InputElementPOJOBinding.class);
+
+                fieldElement = ElementType
+                        .getElementClass(annotation.type())
+                        .setType(annotation.type())
+                        .setId(annotation.id());
+
+                try {
+                    applyPropertiesToElement(fieldElement, annotation.properties());
+                } catch (NoSuchFieldException | InvocationTargetException | IllegalAccessException e) {
+                    throw new ElementDataConversionException(
+                            "Failed to apply properties to element %s of class %s: %s",
+                            StringUtils.quote(annotation.id()),
+                            StringUtils.quote(pojoClass.getCanonicalName()),
+                            e.getMessage()
+                    );
+                }
+            } else if (List.class.isAssignableFrom(field.getType())) {
+                var genericTypeClass = ReflectionUtils
+                        .getGenericType(field, 0)
+                        .orElse(null);
+
+                if (genericTypeClass == null || !genericTypeClass.isAnnotationPresent(ReplicatingContainerLayoutElementElementPOJOBinding.class)) {
+                    continue;
+                }
+
+                var annotation = genericTypeClass
+                        .getAnnotation(ReplicatingContainerLayoutElementElementPOJOBinding.class);
+
+                fieldElement = createFromPOJO(genericTypeClass);
+
+                try {
+                    applyPropertiesToElement(fieldElement, annotation.properties());
+                } catch (NoSuchFieldException | InvocationTargetException | IllegalAccessException e) {
+                    throw new ElementDataConversionException(
+                            "Failed to apply properties to element %s of class %s: %s",
+                            StringUtils.quote(annotation.id()),
+                            StringUtils.quote(pojoClass.getCanonicalName()),
+                            e.getMessage()
+                    );
+                }
+            } else if (field.getType().isAnnotationPresent(LayoutElementPOJOBinding.class)) {
+                var annotation = field
+                        .getType()
+                        .getAnnotation(LayoutElementPOJOBinding.class);
+
+                var layoutPojoType = field
+                        .getType();
+
+                fieldElement = createFromPOJO(layoutPojoType);
+
+                try {
+                    applyPropertiesToElement(fieldElement, annotation.properties());
+                } catch (NoSuchFieldException | InvocationTargetException | IllegalAccessException e) {
+                    throw new ElementDataConversionException(
+                            "Failed to apply properties to element %s of class %s: %s",
+                            StringUtils.quote(annotation.id()),
+                            StringUtils.quote(pojoClass.getCanonicalName()),
+                            e.getMessage()
+                    );
+                }
+            } else {
+                // No relevant annotation present, skip this field
+                continue;
+            }
+
+            target.addChild((C) fieldElement);
+        }
+
+        return target;
+    }
+
+    private static void applyPropertiesToElement(@Nonnull Object target,
+                                                 @Nonnull ElementPOJOBindingProperty[] properties) throws NoSuchFieldException, ElementDataConversionException, InvocationTargetException, IllegalAccessException {
+        var targetClass = target
+                .getClass();
+
+        for (var property : properties) {
+            var field = ReflectionUtils
+                    .getDeclaredField(targetClass, property.key())
+                    .orElseThrow(() -> new NoSuchFieldException(
+                            String.format(
+                                    "No field %s found in class %s.",
+                                    StringUtils.quote(property.key()),
+                                    StringUtils.quote(targetClass.getCanonicalName())
+                            )
+                    ));
+            var setterMethod = getSetterMethodForField(targetClass, field);
+
+            if (!StringUtils.isNullOrEmpty(property.strValue())) {
+                setterMethod.invoke(
+                        target,
+                        property.strValue()
+                );
+            } else if (property.intValue() != Integer.MIN_VALUE) {
+                setterMethod.invoke(
+                        target,
+                        property.intValue()
+                );
+            } else if (property.boolValue()) {
+                setterMethod.invoke(
+                        target,
+                        property.boolValue()
+                );
+            } else {
+                setterMethod.invoke(target, (Object) null);
+            }
+        }
+    }
+
+    /**
+     * Instantiate the target class using its no-argument constructor.
+     *
+     * @param targetClass The target class to instantiate.
+     * @param <T>         The type of the target class.
+     * @return An instance of the target class.
+     * @throws ElementDataConversionException If there is an error during instantiation.
+     */
+    private static <T> @Nonnull T instantiateTargetClass(Class<T> targetClass) throws ElementDataConversionException {
+        Constructor<T> targetClassConstructor;
+        try {
+            targetClassConstructor = targetClass.getConstructor();
+        } catch (NoSuchMethodException e) {
+            throw new ElementDataConversionException(
+                    "The target class %s must have a public no-argument constructor.",
+                    StringUtils.quote(targetClass.getCanonicalName())
+            );
+        }
+
+        T target;
+        try {
+            target = targetClassConstructor.newInstance();
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            throw new ElementDataConversionException(
+                    "Failed to instantiate target class %s: %s",
+                    StringUtils.quote(targetClass.getCanonicalName()),
+                    e.getMessage()
+            );
+        }
+
+        return target;
+    }
+
+    /**
+     * Retrieve the setter method for a given field in the target class.
+     *
+     * @param targetClass The target class containing the field.
+     * @param field       The field for which to retrieve the setter method.
+     * @param <T>         The type of the target class.
+     * @return The setter method for the field.
+     * @throws ElementDataConversionException If the setter method is not found.
+     */
+    private static <T> Method getSetterMethodForField(Class<T> targetClass, Field field) throws ElementDataConversionException {
+        // Determine the setter method name for the field
+        var setterMethodName = StringUtils
+                .getSetterMethodName(field.getName());
+
+        // Retrieve the setter method for the field
+        Method setterMethod;
+        try {
+            setterMethod = targetClass
+                    .getMethod(setterMethodName, field.getType());
+        } catch (NoSuchMethodException e) {
+            throw new ElementDataConversionException(
+                    "No setter method %s found for field %s of class %s.",
+                    StringUtils.quote(setterMethodName),
+                    StringUtils.quote(field.getName()),
+                    StringUtils.quote(targetClass.getCanonicalName())
+            );
+        }
+
+        return setterMethod;
+    }
+
+}
