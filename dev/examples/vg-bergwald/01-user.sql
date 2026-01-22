@@ -15,8 +15,8 @@ select '00000000-0000-0000-0000-' || lpad((row_number() over ())::text, 12, '0')
        true                                                                      as verified,
        true                                                                      as enabled,
        false                                                                     as deleted_in_idp
-from (values ('Nino', 'Niehda', 'nino.niedah'),
-             ('Vadim', 'Vertreter', 'vadim.verteter'),
+from (values ('Udo', 'Urlaub', 'udo.urlaub'),
+             ('Verona', 'Vertreter', 'verona.vertreter'),
              ('Michael', 'Maus', 'michael.maus'),
              ('Lisa', 'Laus', 'lisa.laus'),
              ('Murat', 'Mango', 'murat.mango'),
@@ -34,7 +34,7 @@ from (values ('Nino', 'Niehda', 'nino.niedah'),
              ('Amina', 'Amaranth', 'anna.amaranth'),
              ('Jana-Lena', 'Jujube', 'jana-lena.jujube'),
              ('Simon', 'Suppengrün', 'simon.suppengruen'),
-             ('Nura', 'Nutria', 'nura.nutria')) as u
+             ('Cem', 'Cembalo', 'cem.cembalo')) as u
 on conflict (id) do update
     set email          = excluded.email,
         first_name     = excluded.first_name,
