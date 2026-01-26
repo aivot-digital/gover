@@ -1,26 +1,26 @@
-import {ProcessNodeEntity} from "../../../../entities/process-node-entity";
-import {useContext, useEffect, useMemo, useState} from "react";
-import {GroupLayout} from "../../../../../../models/elements/form/layout/group-layout";
-import {ProcessNodeApiService} from "../../../../services/process-node-api-service";
-import {Box, Button, IconButton, Skeleton, Tab, Tabs} from "@mui/material";
-import {Link, Outlet, useNavigate, useParams} from "react-router-dom";
-import {ProcessDetailsPageContext} from "../../process-details-page-context";
-import {withDelay} from "../../../../../../utils/with-delay";
-import {ProviderTypeStyles} from "../../../../data/provider-type-styles";
+import {type ProcessNodeEntity} from '../../../../entities/process-node-entity';
+import {useContext, useEffect, useMemo, useState} from 'react';
+import {type GroupLayout} from '../../../../../../models/elements/form/layout/group-layout';
+import {ProcessNodeApiService} from '../../../../services/process-node-api-service';
+import {Box, Button, IconButton, Skeleton, Tab, Tabs} from '@mui/material';
+import {Link, Outlet, useNavigate, useParams} from 'react-router-dom';
+import {ProcessDetailsPageContext} from '../../process-details-page-context';
+import {withDelay} from '../../../../../../utils/with-delay';
+import {ProviderTypeStyles} from '../../../../data/provider-type-styles';
 import {
-    ProcessNodeProvider,
-    ProcessNodeProviderApiService
-} from "../../../../services/process-node-provider-api-service";
-import {ProcessNodeEditorProvider} from "./process-node-editor-context";
-import {useLocation} from "react-router";
-import Typography from "@mui/material/Typography";
-import Chip from "@mui/material/Chip";
-import MoreVert from "@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert";
-import Save from "@aivot/mui-material-symbols-400-outlined/dist/save/Save";
-import {useChangeBlocker} from "../../../../../../hooks/use-change-blocker";
-import {ProcessNodeEditorMenu} from "./components/process-node-editor-menu";
-import {useConfirm} from "../../../../../../providers/confirm-provider";
-import {getNodeName} from "../process-flow-editor/utils/node-utils";
+    type ProcessNodeProvider,
+    ProcessNodeProviderApiService,
+} from '../../../../services/process-node-provider-api-service';
+import {ProcessNodeEditorProvider} from './process-node-editor-context';
+import {useLocation} from 'react-router';
+import Typography from '@mui/material/Typography';
+import Chip from '@mui/material/Chip';
+import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
+import Save from '@aivot/mui-material-symbols-400-outlined/dist/save/Save';
+import {useChangeBlocker} from '../../../../../../hooks/use-change-blocker';
+import {ProcessNodeEditorMenu} from './components/process-node-editor-menu';
+import {useConfirm} from '../../../../../../providers/confirm-provider';
+import {getNodeName} from '../process-flow-editor/utils/node-utils';
 
 export function ProcessNodeEditor() {
     const params = useParams();
@@ -91,12 +91,14 @@ export function ProcessNodeEditor() {
         bgColor: typeBgColor,
         textColor: typeTextColor,
     } = useMemo(() => {
-        return provider == null ? {
-            Icon: () => null,
-            label: '',
-            bgColor: '#ffffff',
-            textColor: '#000000',
-        } : ProviderTypeStyles[provider.type];
+        return provider == null ?
+            {
+                Icon: () => null,
+                label: '',
+                bgColor: '#ffffff',
+                textColor: '#000000',
+            } :
+            ProviderTypeStyles[provider.type];
     }, [provider]);
 
     const currentTab = useMemo(() => {
@@ -139,7 +141,11 @@ export function ProcessNodeEditor() {
 
     if (originalNode == null || layout == null || provider == null) {
         return (
-            <Box>
+            <Box
+                sx={{
+                    px: 2,
+                }}
+            >
                 <Skeleton height={96}/>
                 <Skeleton height={96}/>
                 <Skeleton height={256}/>
@@ -193,15 +199,15 @@ export function ProcessNodeEditor() {
                                 {typeLabel}
                             </Typography>
 
-                            <Typography fontWeight="bold">
+                            <Typography fontWeight="bold" component="div">
                                 {provider.name} <Chip
-                                label={`Version ${provider.version}`}
-                                size="small"
-                                sx={{
-                                    ml: 1,
-                                    fontWeight: 'normal',
-                                }}
-                            />
+                                    label={`Version ${provider.version}`}
+                                    size="small"
+                                    sx={{
+                                        ml: 1,
+                                        fontWeight: 'normal',
+                                    }}
+                                />
                             </Typography>
                         </Box>
 
@@ -249,8 +255,8 @@ export function ProcessNodeEditor() {
                     >
                         <ProcessNodeEditorProvider
                             value={{
-                                provider: provider,
-                                layout: layout,
+                                provider,
+                                layout,
                                 node: editedNode ?? originalNode,
                                 setNode: setEditedNode,
                                 isEditable: true,
@@ -269,7 +275,7 @@ export function ProcessNodeEditor() {
                         pt: 2,
                         pb: 4,
                         display: 'flex',
-                        justifyContent: 'space-between'
+                        justifyContent: 'space-between',
                     }}
                 >
                     <Button
