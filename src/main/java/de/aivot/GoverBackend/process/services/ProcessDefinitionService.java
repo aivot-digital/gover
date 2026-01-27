@@ -67,7 +67,7 @@ public class ProcessDefinitionService implements EntityService<ProcessEntity, In
     public ProcessEntity performUpdate(@Nonnull Integer id,
                                        @Nonnull ProcessEntity entity,
                                        @Nonnull ProcessEntity existingEntity) throws ResponseException {
-        existingEntity.setName(entity.getName());
+        existingEntity.setInternalTitle(entity.getInternalTitle());
         existingEntity.setDepartmentId(entity.getDepartmentId());
         return processDefinitionRepository.save(existingEntity);
     }

@@ -21,6 +21,13 @@ public class StringUtils {
         return truncate(clean(string, pattern), length);
     }
 
+    public static String quote(@Nullable String str) {
+        if (str == null) {
+            return "„“";
+        }
+        return "„" + str + "“";
+    }
+
     public static boolean isNullOrEmpty(@Nullable String str) {
         return str == null || str.trim().isEmpty();
     }
@@ -84,5 +91,21 @@ public class StringUtils {
             result.append(RANDOM_CHARACTERS.charAt(random.nextInt(RANDOM_CHARACTERS.length())));
         }
         return result.toString();
+    }
+
+    public static String capitalize(String key) {
+        if (isNullOrEmpty(key)) {
+            return key;
+        }
+        return key.substring(0, 1).toUpperCase() + key.substring(1);
+    }
+
+    public static String getSetterMethodName(String name) {
+        return "set" + capitalize(name);
+    }
+
+    public static String decodeBase64String(String base64String) {
+        byte[] decodedBytes = java.util.Base64.getDecoder().decode(base64String);
+        return new String(decodedBytes);
     }
 }

@@ -45,4 +45,12 @@ public interface LayoutElement<T extends BaseElement> {
                 .map(Optional::get)
                 .findFirst();
     }
+
+    default <C extends BaseElement> Optional<C> findChild(@Nonnull String childId, @Nonnull Class<C> clazz) {
+        var child = findChild(childId);
+        if (child.isPresent() && clazz.isAssignableFrom(child.get().getClass())) {
+            return Optional.of(clazz.cast(child.get()));
+        }
+        return Optional.empty();
+    }
 }

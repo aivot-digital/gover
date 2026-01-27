@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.process.services;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
-import de.aivot.GoverBackend.process.entities.ProcessInstanceHistoryEventEntity;
+import de.aivot.GoverBackend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
-public class ProcessInstanceHistoryEventService implements EntityService<ProcessInstanceHistoryEventEntity, Long> {
+public class ProcessInstanceHistoryEventService implements EntityService<ProcessInstanceEventEntity, Long> {
 
     private final ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository;
 
@@ -27,28 +27,28 @@ public class ProcessInstanceHistoryEventService implements EntityService<Process
 
     @Nonnull
     @Override
-    public ProcessInstanceHistoryEventEntity create(@Nonnull ProcessInstanceHistoryEventEntity entity) throws ResponseException {
+    public ProcessInstanceEventEntity create(@Nonnull ProcessInstanceEventEntity entity) throws ResponseException {
         entity.setId(null);
         return processInstanceHistoryEventRepository.save(entity);
     }
 
     @Nullable
     @Override
-    public Page<ProcessInstanceHistoryEventEntity> performList(@Nonnull Pageable pageable,
-                                                              @Nullable Specification<ProcessInstanceHistoryEventEntity> specification,
-                                                              @Nullable Filter<ProcessInstanceHistoryEventEntity> filter) throws ResponseException {
+    public Page<ProcessInstanceEventEntity> performList(@Nonnull Pageable pageable,
+                                                        @Nullable Specification<ProcessInstanceEventEntity> specification,
+                                                        @Nullable Filter<ProcessInstanceEventEntity> filter) throws ResponseException {
         return processInstanceHistoryEventRepository.findAll(specification, pageable);
     }
 
     @Nonnull
     @Override
-    public Optional<ProcessInstanceHistoryEventEntity> retrieve(@Nonnull Long id) throws ResponseException {
+    public Optional<ProcessInstanceEventEntity> retrieve(@Nonnull Long id) throws ResponseException {
         return processInstanceHistoryEventRepository.findById(id);
     }
 
     @Nonnull
     @Override
-    public Optional<ProcessInstanceHistoryEventEntity> retrieve(@Nonnull Specification<ProcessInstanceHistoryEventEntity> specification) throws ResponseException {
+    public Optional<ProcessInstanceEventEntity> retrieve(@Nonnull Specification<ProcessInstanceEventEntity> specification) throws ResponseException {
         return processInstanceHistoryEventRepository.findOne(specification);
     }
 
@@ -58,15 +58,15 @@ public class ProcessInstanceHistoryEventService implements EntityService<Process
     }
 
     @Override
-    public boolean exists(@Nonnull Specification<ProcessInstanceHistoryEventEntity> specification) {
+    public boolean exists(@Nonnull Specification<ProcessInstanceEventEntity> specification) {
         return processInstanceHistoryEventRepository.exists(specification);
     }
 
     @Nonnull
     @Override
-    public ProcessInstanceHistoryEventEntity performUpdate(@Nonnull Long id,
-                                                          @Nonnull ProcessInstanceHistoryEventEntity entity,
-                                                          @Nonnull ProcessInstanceHistoryEventEntity existingEntity) throws ResponseException {
+    public ProcessInstanceEventEntity performUpdate(@Nonnull Long id,
+                                                    @Nonnull ProcessInstanceEventEntity entity,
+                                                    @Nonnull ProcessInstanceEventEntity existingEntity) throws ResponseException {
         existingEntity.setTimestamp(entity.getTimestamp());
         existingEntity.setTriggeringUserId(entity.getTriggeringUserId());
         existingEntity.setProcessInstanceId(entity.getProcessInstanceId());
@@ -75,7 +75,7 @@ public class ProcessInstanceHistoryEventService implements EntityService<Process
     }
 
     @Override
-    public void performDelete(@Nonnull ProcessInstanceHistoryEventEntity entity) throws ResponseException {
+    public void performDelete(@Nonnull ProcessInstanceEventEntity entity) throws ResponseException {
         processInstanceHistoryEventRepository.delete(entity);
     }
 }

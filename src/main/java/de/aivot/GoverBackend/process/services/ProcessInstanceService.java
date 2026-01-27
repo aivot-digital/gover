@@ -72,13 +72,11 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
         // Update fields as needed, example:
         existingEntity.setAccessKey(entity.getAccessKey());
         existingEntity.setProcessId(entity.getProcessId());
-        existingEntity.setProcessVersion(entity.getProcessVersion());
         existingEntity.setStatus(entity.getStatus());
         existingEntity.setStatusOverride(entity.getStatusOverride());
         existingEntity.setAssignedUserId(entity.getAssignedUserId());
         existingEntity.setAssignedFileNumbers(entity.getAssignedFileNumbers());
-        existingEntity.setDeliveryChannels(entity.getDeliveryChannels());
-        existingEntity.setTags(entity.getTags());
+        existingEntity.setIdentities(entity.getIdentities());
         existingEntity.setStarted(entity.getStarted());
         existingEntity.setUpdated(entity.getUpdated());
         existingEntity.setFinished(entity.getFinished());

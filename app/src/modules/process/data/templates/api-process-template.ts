@@ -12,7 +12,7 @@ export const ApiProcessTemplate: ProcessExportData = {
     exportTimestamp: new Date().toISOString(),
     process: {
         ...ProcessDefinitionApiService.initialize(),
-        name: "API-gesteuertes Verfahren",
+        internalTitle: "API-gesteuertes Verfahren",
     },
     version: {
         ...ProcessDefinitionVersionApiService.initialize(),

@@ -18,7 +18,7 @@ import {clearLoadingMessage, setLoadingMessage} from "../../../../slices/shell-s
 import TaskAlt from "@aivot/mui-material-symbols-400-outlined/dist/task-alt/TaskAlt";
 import DataObject from "@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject";
 import FactCheck from "@aivot/mui-material-symbols-400-outlined/dist/fact-check/FactCheck";
-import {ProcessDefinitionEntity} from "../../entities/process-definition-entity";
+import {ProcessEntity} from "../../entities/process-entity";
 import {ProcessNodeEntity} from "../../entities/process-node-entity";
 import {ProcessDefinitionApiService} from "../../services/process-definition-api-service";
 import {ProcessNodeApiService} from "../../services/process-node-api-service";
@@ -28,7 +28,7 @@ import {CellLink} from "../../../../components/cell-link/cell-link";
 
 interface ProcessInstanceTaskEntityWithInstance extends ProcessInstanceTaskEntity {
     instance: ProcessInstanceEntity;
-    process: ProcessDefinitionEntity;
+    process: ProcessEntity;
     node: ProcessNodeEntity;
     provider: ProcessNodeProvider;
 }

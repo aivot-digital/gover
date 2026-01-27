@@ -10,6 +10,7 @@ import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
 import de.aivot.GoverBackend.process.filters.ProcessDefinitionNodeFilter;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextConfig;
 import de.aivot.GoverBackend.process.services.ProcessDefinitionNodeService;
 import de.aivot.GoverBackend.process.services.ProcessDefinitionService;
 import de.aivot.GoverBackend.process.services.ProcessDefinitionVersionService;
@@ -200,8 +201,15 @@ public class ProcessNodeController {
                 .retrieve(ProcessVersionEntityId.of(processDefinition.getId(), node.getProcessVersion()))
                 .orElseThrow(ResponseException::badRequest);
 
+        var context = new ProcessNodeDefinitionContextConfig(
+                user,
+                processDefinition,
+                processVersion,
+                node
+        );
+
         return provider
-                .getConfigurationLayout(user, processDefinition, processVersion, node);
+                .getConfigurationLayout(context);
     }
 }
 

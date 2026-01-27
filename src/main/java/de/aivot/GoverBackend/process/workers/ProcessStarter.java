@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.process.workers;
 
-import de.aivot.GoverBackend.process.entities.ProcessInstanceHistoryEventEntity;
+import de.aivot.GoverBackend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.GoverBackend.process.enums.ProcessHistoryEventType;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
@@ -30,7 +30,10 @@ public class ProcessStarter {
     @Autowired
     public ProcessStarter(ProcessInstanceRepository processInstanceRepository,
                           RabbitTemplate rabbitTemplate,
-                          ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository, ProcessRepository processDefinitionRepository, ProcessNodeRepository processDefinitionNodeRepository, ProcessNodeDefinitionService processNodeProviderService) {
+                          ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository,
+                          ProcessRepository processDefinitionRepository,
+                          ProcessNodeRepository processDefinitionNodeRepository,
+                          ProcessNodeDefinitionService processNodeProviderService) {
         this.processInstanceRepository = processInstanceRepository;
         this.rabbitTemplate = rabbitTemplate;
         this.processInstanceHistoryEventRepository = processInstanceHistoryEventRepository;
@@ -71,7 +74,8 @@ public class ProcessStarter {
                     .getProcessNodeDefinition(initialNode.getProcessNodeDefinitionKey(), initialNode.getProcessNodeDefinitionVersion())
                     .orElseThrow(RuntimeException::new);
 
-            processInstanceHistoryEventRepository.save(new ProcessInstanceHistoryEventEntity(
+            /*
+            processInstanceHistoryEventRepository.save(new ProcessInstanceEventEntity(
                     null,
                     ProcessHistoryEventType.Start,
                     "Vorgang gestartet",
@@ -83,6 +87,8 @@ public class ProcessStarter {
                     processInstance.getId(),
                     null
             ));
+
+             */
         }
     }
 }

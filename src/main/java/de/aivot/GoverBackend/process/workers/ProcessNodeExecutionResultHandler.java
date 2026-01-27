@@ -1,13 +1,17 @@
 package de.aivot.GoverBackend.process.workers;
 
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
-import de.aivot.GoverBackend.process.entities.ProcessInstanceHistoryEventEntity;
+import de.aivot.GoverBackend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessHistoryEventType;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
+import de.aivot.GoverBackend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
+import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
+import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionBrokenImplementation;
+import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.repositories.ProcessEdgeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRepository;
@@ -15,7 +19,6 @@ import de.aivot.GoverBackend.process.repositories.ProcessInstanceRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.services.UserService;
-import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -49,38 +52,28 @@ public class ProcessNodeExecutionResultHandler {
         this.userService = userService;
     }
 
-    public void handleResult(@Nullable UserEntity triggeringUser,
+    public void handleResult(@Nonnull ProcessNodeExecutionLogger logger,
+                             @Nullable UserEntity triggeringUser,
                              @Nonnull ProcessNodeDefinition provider,
                              @Nonnull ProcessNodeEntity currentNode,
                              @Nonnull ProcessInstanceEntity processInstance,
                              @Nonnull ProcessInstanceTaskEntity processInstanceTask,
                              @Nullable ProcessInstanceTaskEntity previousTask,
-                             @Nullable ProcessNodeExecutionResult executionResult) {
+                             @Nullable ProcessNodeExecutionResult executionResult) throws ProcessNodeExecutionException {
         if (executionResult == null) {
-            handleError(
-                    triggeringUser,
-                    provider,
-                    currentNode,
-                    processInstance,
-                    processInstanceTask,
-                    ProcessNodeExecutionResultError.of(
-                            "Der Prozesselement-Funktionsanbieter „%s“ des Prozesselementes „%s“ hat ein null-Ergebnis zurückgegeben. Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!"
-                                    .formatted(provider.getName(), currentNode.resolveName(provider))
-                    )
+            throw new ProcessNodeExecutionExceptionBrokenImplementation(
+                    """
+                            Der Prozesselement-Funktionsanbieter „%s“ des Prozesselementes „%s“ hat ein null-Ergebnis zurückgegeben.
+                            Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
+                            """,
+                    provider.getName(),
+                    currentNode.resolveName(provider)
             );
-            return;
         }
 
         switch (executionResult) {
-            case ProcessNodeExecutionResultError err -> handleError(
-                    triggeringUser,
-                    provider,
-                    currentNode,
-                    processInstance,
-                    processInstanceTask,
-                    err
-            );
             case ProcessNodeExecutionResultTaskCompleted taskCompleted -> handleTaskComplete(
+                    logger,
                     triggeringUser,
                     provider,
                     currentNode,
@@ -90,6 +83,7 @@ public class ProcessNodeExecutionResultHandler {
                     taskCompleted
             );
             case ProcessNodeExecutionResultInstanceCompleted instanceCompleted -> handleInstanceComplete(
+                    logger,
                     triggeringUser,
                     provider,
                     currentNode,
@@ -99,6 +93,7 @@ public class ProcessNodeExecutionResultHandler {
                     instanceCompleted
             );
             case ProcessNodeExecutionResultTaskAssigned assigned -> handleAssigned(
+                    logger,
                     triggeringUser,
                     provider,
                     currentNode,
@@ -107,57 +102,54 @@ public class ProcessNodeExecutionResultHandler {
                     previousTask,
                     assigned
             );
-            default -> handleError(
-                    triggeringUser,
-                    provider,
-                    currentNode,
-                    processInstance,
-                    processInstanceTask,
-                    ProcessNodeExecutionResultError.of(
-                            "Der Prozesselement-Funktionsanbieter „%s“ des Prozesselementes „%s“ hat eine unbekanntes Ergebnisklasse erzeugt: „%s“. Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!"
-                                    .formatted(provider.getName(), currentNode.resolveName(provider), executionResult.getClass().getName())
-                    )
+            default -> throw new ProcessNodeExecutionExceptionBrokenImplementation(
+                    """
+                            Der Prozesselement-Funktionsanbieter „%s“ des Prozesselementes „%s“ hat eine unbekanntes Ergebnisklasse erzeugt: „%s“.
+                            Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
+                            """,
+                    provider.getName(),
+                    currentNode.resolveName(provider),
+                    executionResult.getClass().getName()
             );
         }
     }
 
-    private void handleAssigned(@Nullable UserEntity triggeringUser,
+    private void handleAssigned(@Nonnull ProcessNodeExecutionLogger logger,
+                                @Nullable UserEntity triggeringUser,
                                 @Nonnull ProcessNodeDefinition provider,
                                 @Nonnull ProcessNodeEntity currentNode,
                                 @Nonnull ProcessInstanceEntity processInstance,
                                 @Nonnull ProcessInstanceTaskEntity processInstanceTask,
                                 @Nullable ProcessInstanceTaskEntity previousTask,
-                                @Nonnull ProcessNodeExecutionResultTaskAssigned assigned) {
+                                @Nonnull ProcessNodeExecutionResultTaskAssigned assigned) throws ProcessNodeExecutionException {
         UserEntity assignedUser;
         try {
             assignedUser = userService
                     .retrieve(assigned.getAssignedUserId())
                     .orElse(null);
         } catch (ResponseException e) {
-            handleError(
-                    triggeringUser,
-                    provider,
-                    currentNode,
-                    processInstance,
-                    processInstanceTask,
-                    ProcessNodeExecutionResultError.of(e)
+            throw new ProcessNodeExecutionExceptionInvalidAssignment(
+                    e,
+                    """
+                            Der Prozesselement-Funktionsanbieter „%s“ des Prozesselementes „%s“ hat eine ungültige Mitarbeiter:in-ID „%s“ zurückgegeben.
+                            Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
+                            """,
+                    provider.getName(),
+                    currentNode.resolveName(provider),
+                    assigned.getAssignedUserId()
             );
-            return;
         }
 
         if (assignedUser == null) {
-            handleError(
-                    triggeringUser,
-                    provider,
-                    currentNode,
-                    processInstance,
-                    processInstanceTask,
-                    ProcessNodeExecutionResultError.of(
-                            "Die der Aufgabe zugewiesene Mitarbeiter:in mit der ID „%s“ konnte nicht gefunden werden."
-                                    .formatted(assigned.getAssignedUserId())
-                    )
+            throw new ProcessNodeExecutionExceptionInvalidAssignment(
+                    """
+                            Der Prozesselement-Funktionsanbieter „%s“ des Prozesselementes „%s“ hat eine unbekannte Mitarbeiter:in-ID „%s“ zurückgegeben.
+                            Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
+                            """,
+                    provider.getName(),
+                    currentNode.resolveName(provider),
+                    assigned.getAssignedUserId()
             );
-            return;
         }
 
         var newRuntimeData = assigned.getRuntimeData();
@@ -191,24 +183,19 @@ public class ProcessNodeExecutionResultHandler {
         processInstanceTaskRepository.save(processInstanceTask);
 
         if (triggeringUser != null) {
-            processInstanceHistoryEventRepository
-                    .save(new ProcessInstanceHistoryEventEntity(
-                            null,
-                            ProcessHistoryEventType.Update,
-                            "Zuordnung einer Aufgabenbearbeiter:in",
-                            "Die Aufgabe wurde durch „%s“ der Mitarbeiter:in „%s“ zugewiesen".formatted(
-                                    triggeringUser.getFullName(),
-                                    assignedUser.getFullName()
-                            ),
-                            Map.of(),
-                            LocalDateTime.now(),
-                            triggeringUser.getId(),
-                            processInstance.getId(),
-                            processInstanceTask.getId()
-                    ));
+            logger
+                    .logf(
+                            ProcessNodeExecutionLogLevel.Debug,
+                            false,
+                            true,
+                            "Die Aufgabe wurde durch „%s“ der Mitarbeiter:in „%s“ zugewiesen",
+                            triggeringUser.getFullName(),
+                            assignedUser.getFullName()
+                    );
         } else {
+            /*
             processInstanceHistoryEventRepository
-                    .save(new ProcessInstanceHistoryEventEntity(
+                    .save(new ProcessInstanceEventEntity(
                             null,
                             ProcessHistoryEventType.Update,
                             "Zuordnung einer Aufgabenbearbeiter:in",
@@ -221,18 +208,38 @@ public class ProcessNodeExecutionResultHandler {
                             processInstance.getId(),
                             processInstanceTask.getId()
                     ));
+             */
         }
 
         // TODO: send notification
     }
 
-    private void handleTaskComplete(@Nullable UserEntity triggeringUser,
+    private void handleTaskComplete(@Nonnull ProcessNodeExecutionLogger logger,
+                                    @Nullable UserEntity triggeringUser,
                                     @Nonnull ProcessNodeDefinition provider,
                                     @Nonnull ProcessNodeEntity currentNode,
                                     @Nonnull ProcessInstanceEntity processInstance,
                                     @Nonnull ProcessInstanceTaskEntity processInstanceTask,
                                     @Nullable ProcessInstanceTaskEntity previousTask,
-                                    ProcessNodeExecutionResultTaskCompleted taskCompleted) {
+                                    @Nonnull ProcessNodeExecutionResultTaskCompleted taskCompleted) throws ProcessNodeExecutionException {
+        var port = provider
+                .getPorts()
+                .stream()
+                .filter(processNodePort -> processNodePort.key().equals(taskCompleted.getViaPort()))
+                .findFirst();
+
+        if (port.isEmpty()) {
+            throw new ProcessNodeExecutionExceptionBrokenImplementation(
+                    """
+                            Für das Prozesselement „%s“ wird durch den Prozesselement-Funktionsanbieter „%s“ kein ausgehender Port mit dem Schlüssel „%s“ bereitgestellt.
+                            Der Vorgang kann nicht fortgeführt werden. Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters.
+                            """,
+                    currentNode.resolveName(provider),
+                    provider.getName(),
+                    taskCompleted.getViaPort()
+            );
+        }
+
         var outEdge = processDefinitionEdgeRepository
                 .findByFromNodeIdAndViaPort(
                         currentNode.getId(),
@@ -240,39 +247,16 @@ public class ProcessNodeExecutionResultHandler {
                 );
 
         if (outEdge.isEmpty()) {
-            var port = provider
-                    .getPorts()
-                    .stream()
-                    .filter(processNodePort -> processNodePort.key().equals(taskCompleted.getViaPort()))
-                    .findFirst();
-
-            if (port.isEmpty()) {
-                handleError(
-                        triggeringUser,
-                        provider,
-                        currentNode,
-                        processInstance,
-                        processInstanceTask,
-                        ProcessNodeExecutionResultError.of(
-                                "Für das Prozesselement „%s“ wird durch den Prozesselement-Funktionsanbieter „%s“ kein ausgehender Port mit dem Schlüssel „%s“ bereitgestellt. Der Vorgang kann nicht fortgeführt werden. Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters."
-                                        .formatted(currentNode.resolveName(provider), provider.getName(), taskCompleted.getViaPort())
-                        )
-                );
-            } else {
-                handleError(
-                        triggeringUser,
-                        provider,
-                        currentNode,
-                        processInstance,
-                        processInstanceTask,
-                        ProcessNodeExecutionResultError.of(
-                                "Für das Prozesselement „%s“ wurde kein ausgehender Pfad für den Port „%s“ definiert. Der Vorgang kann nicht fortgeführt werden. Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters."
-                                        .formatted(currentNode.resolveName(provider), port.get().label())
-                        )
-                );
-            }
-
-            return;
+            throw new ProcessNodeExecutionExceptionBrokenImplementation(
+                    """
+                            Für das Prozesselement „%s“ wurde kein ausgehender Pfad für den Port „%s“ definiert.
+                            Der Vorgang kann nicht fortgeführt werden. Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters.
+                            Bitte prüfen Sie den Aufbau Ihres Prozessmodells.
+                            """,
+                    currentNode.resolveName(provider),
+                    provider.getName(),
+                    taskCompleted.getViaPort()
+            );
         }
 
         var newRuntimeData = taskCompleted.getRuntimeData();
@@ -320,7 +304,8 @@ public class ProcessNodeExecutionResultHandler {
 
         rabbitTemplate.convertAndSend(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE, nextPayload);
 
-        processInstanceHistoryEventRepository.save(new ProcessInstanceHistoryEventEntity(
+        /*
+        processInstanceHistoryEventRepository.save(new ProcessInstanceEventEntity(
                 null,
                 ProcessHistoryEventType.Complete,
                 "Abschluss des Prozesselements",
@@ -331,9 +316,11 @@ public class ProcessNodeExecutionResultHandler {
                 processInstance.getId(),
                 processInstanceTask.getId()
         ));
+         */
     }
 
-    private void handleInstanceComplete(@Nullable UserEntity triggeringUser,
+    private void handleInstanceComplete(@Nonnull ProcessNodeExecutionLogger logger,
+                                        @Nullable UserEntity triggeringUser,
                                         @Nonnull ProcessNodeDefinition provider,
                                         @Nonnull ProcessNodeEntity currentNode,
                                         @Nonnull ProcessInstanceEntity processInstance,
@@ -381,7 +368,8 @@ public class ProcessNodeExecutionResultHandler {
         processInstance.setFinished(LocalDateTime.now());
         processInstanceRepository.save(processInstance);
 
-        processInstanceHistoryEventRepository.save(new ProcessInstanceHistoryEventEntity(
+        /*
+        processInstanceHistoryEventRepository.save(new ProcessInstanceEventEntity(
                 null,
                 ProcessHistoryEventType.Complete,
                 "Abschluss des Vorgangs",
@@ -392,87 +380,7 @@ public class ProcessNodeExecutionResultHandler {
                 processInstance.getId(),
                 null
         ));
-    }
-
-    private void handleError(@Nullable UserEntity triggeringUser,
-                             @Nonnull ProcessNodeDefinition provider,
-                             @Nonnull ProcessNodeEntity currentNode,
-                             @Nonnull ProcessInstanceEntity processInstance,
-                             @Nonnull ProcessInstanceTaskEntity processInstanceTask,
-                             @Nonnull ProcessNodeExecutionResultError err) {
-        var triggeringUserId = triggeringUser != null ? triggeringUser.getId() : null;
-
-        if (StringUtils.isNotNullOrEmpty(err.getMessage())) {
-            processInstanceHistoryEventRepository
-                    .save(new ProcessInstanceHistoryEventEntity(
-                            null,
-                            ProcessHistoryEventType.Error,
-                            "Fehler im Prozesselement",
-                            err.getMessage(),
-                            Map.of(),
-                            LocalDateTime.now(),
-                            triggeringUserId,
-                            processInstance.getId(),
-                            processInstanceTask.getId()
-                    ));
-        }
-
-        if (err.getThrowable() != null) {
-            processInstanceHistoryEventRepository
-                    .save(ProcessInstanceHistoryEventEntity
-                            .from(
-                                    processInstance.getId(),
-                                    processInstanceTask.getId(),
-                                    triggeringUserId,
-                                    err.getThrowable()
-                            ));
-        }
-
-
-        processEvents(
-                processInstance,
-                processInstanceTask,
-                err,
-                triggeringUserId
-        );
-
-        processInstanceTask.setStatus(ProcessTaskStatus.Failed);
-        processInstanceTask.setFinished(LocalDateTime.now());
-
-        if (err.getTaskStatusOverride() != null) {
-            processInstanceTask.setStatusOverride(err.getTaskStatusOverride());
-        }
-        if (Boolean.TRUE.equals(err.getClearTaskStatusOverride())) {
-            processInstanceTask.setStatusOverride(null);
-        }
-
-        processInstanceTaskRepository.save(processInstanceTask);
-
-        processInstance.setStatus(ProcessInstanceStatus.Failed);
-        processInstance.setFinished(LocalDateTime.now());
-        processInstanceRepository.save(processInstance);
-    }
-
-    private void processEvents(@Nonnull ProcessInstanceEntity processInstance,
-                               @Nonnull ProcessInstanceTaskEntity processInstanceTask,
-                               @Nonnull ProcessNodeExecutionResult res,
-                               @Nullable String triggeringUserId) {
-        if (res.getEvents() == null) {
-            return;
-        }
-
-        for (var event : res.getEvents()) {
-            processInstanceHistoryEventRepository
-                    .save(
-                            ProcessInstanceHistoryEventEntity
-                                    .from(
-                                            processInstance.getId(),
-                                            processInstanceTask.getId(),
-                                            triggeringUserId,
-                                            event
-                                    )
-                    );
-        }
+         */
     }
 
     private static Map<String, Object> applyOutputMappings(@Nonnull ProcessNodeDefinition provider,
@@ -505,7 +413,7 @@ public class ProcessNodeExecutionResultHandler {
                 var pathPart = pathParts[i];
 
                 if (targetObject.containsKey(pathPart)) {
-                    if (targetObject.get(pathPart) instanceof Map<?,?> map) {
+                    if (targetObject.get(pathPart) instanceof Map<?, ?> map) {
                         targetObject = (Map<String, Object>) map;
                     } else {
                         throw new IllegalStateException("Der Pfadteil '%s' im Ausgabe-Mapping '%s' verweist auf ein existierendes Feld, das kein Objekt ist."

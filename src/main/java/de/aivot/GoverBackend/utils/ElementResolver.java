@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.utils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,7 +11,8 @@ public class ElementResolver {
     private static final Logger logger = LoggerFactory.getLogger(ElementResolver.class);
 
     public static BaseElement resolve(Map<String, Object> elementData) {
-        var objectMapper = new ObjectMapper();
+        var objectMapper = ObjectMapperFactory
+                .getInstance();
         try {
             return objectMapper.convertValue(elementData, BaseElement.class);
         } catch (Exception e) {

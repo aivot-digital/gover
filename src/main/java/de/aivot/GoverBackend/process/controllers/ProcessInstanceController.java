@@ -87,8 +87,7 @@ public class ProcessInstanceController {
 
         auditService.logAction(execUser, AuditAction.Create, ProcessInstanceEntity.class, Map.of(
                 "id", result.getId(),
-                "processDefinitionId", result.getProcessId(),
-                "processDefinitionVersion", result.getProcessVersion()
+                "processDefinitionId", result.getProcessId()
         ));
 
         return result;
@@ -132,8 +131,7 @@ public class ProcessInstanceController {
 
         auditService.logAction(execUser, AuditAction.Update, ProcessInstanceEntity.class, Map.of(
                 "id", result.getId(),
-                "processDefinitionId", result.getProcessId(),
-                "processDefinitionVersion", result.getProcessVersion()
+                "processDefinitionId", result.getProcessId()
         ));
 
         return result;
@@ -159,8 +157,7 @@ public class ProcessInstanceController {
 
         auditService.logAction(user, AuditAction.Delete, ProcessInstanceEntity.class, Map.of(
                 "id", deleted.getId(),
-                "processDefinitionId", deleted.getProcessId(),
-                "processDefinitionVersion", deleted.getProcessVersion()
+                "processDefinitionId", deleted.getProcessId()
         ));
     }
 }

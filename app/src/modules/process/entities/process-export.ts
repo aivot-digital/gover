@@ -1,5 +1,5 @@
-import {ProcessDefinitionEntity} from "./process-definition-entity";
-import {ProcessDefinitionVersionEntity} from "./process-definition-version-entity";
+import {ProcessEntity} from "./process-entity";
+import {ProcessVersionEntity} from "./process-version-entity";
 import {ProcessNodeEntity} from "./process-node-entity";
 import {ProcessDefinitionEdgeEntity} from "./process-definition-edge-entity";
 
@@ -12,8 +12,8 @@ export interface ProcessExportData {
     appVersion: string;
     exportTimestamp: string; // ISO date string
     createdByVendor: string;
-    process: ProcessDefinitionEntity;
-    version: ProcessDefinitionVersionEntity;
+    process: ProcessEntity;
+    version: ProcessVersionEntity;
     nodes: ProcessNodeEntity[];
     edges: ProcessDefinitionEdgeEntity[];
 }

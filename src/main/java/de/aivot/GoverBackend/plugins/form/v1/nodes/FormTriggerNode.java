@@ -14,7 +14,8 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class FormTriggerNode implements ProcessNodeDefinition, PluginComponent {
+public class FormTriggerNode /*implements ProcessNodeDefinition, PluginComponent*/ {
+    /*
     @Nonnull
     @Override
     public Integer getVersion() {
@@ -61,4 +62,6 @@ public class FormTriggerNode implements ProcessNodeDefinition, PluginComponent {
     public ProcessNodeExecutionResult init(@Nonnull ProcessInstanceEntity processInstance, @Nonnull ProcessNodeEntity thisNode, @Nonnull Map<String, Object> data) throws Exception {
         return null;
     }
+
+     */
 }

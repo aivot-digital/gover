@@ -9,7 +9,7 @@ export const FormProcessTemplate: ProcessExportData = {
     exportTimestamp: new Date().toISOString(),
     process: {
         id: 0,
-        name: "Formularverfahren",
+        internalTitle: "Formularverfahren",
         departmentId: 0,
         versionCount: 0,
         draftedVersion: null,
@@ -21,8 +21,7 @@ export const FormProcessTemplate: ProcessExportData = {
         processId: 0,
         processVersion: 0,
         status: ProcessStatus.Drafted,
-        retentionTimeUnit: RetentionTimeUnit.Days,
-        retentionTimeAmount: 30,
+        publicTitle: "Neues Verfahren",
         crated: new Date().toISOString(),
         updated: new Date().toISOString(),
         published: null,

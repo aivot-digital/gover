@@ -11,9 +11,11 @@ import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 import java.util.Objects;
 
 public class NoCodeEqualsOperator extends NoCodeOperator {
+    public static final String OPERATOR_ID = "equals";
+
     @Override
     public String getIdentifier() {
-        return "equals";
+        return OPERATOR_ID;
     }
 
     @Override

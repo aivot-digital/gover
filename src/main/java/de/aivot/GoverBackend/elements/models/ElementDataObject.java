@@ -136,6 +136,11 @@ public class ElementDataObject implements Serializable {
         return this;
     }
 
+    public ElementDataObject setComputedError(@Nullable String format, @Nullable Object... args) {
+        String computedError = format == null ? null : String.format(format, args);
+        return setComputedError(computedError);
+    }
+
     public ElementDataObject addComputedError(@Nullable String computedError) {
         if (this.computedErrors == null) {
             this.computedErrors = new LinkedList<>();
@@ -157,6 +162,18 @@ public class ElementDataObject implements Serializable {
     public Optional<Object> getOptionalValue() {
         var value = getValue();
         return value != null ? Optional.of(value) : Optional.empty();
+    }
+
+    @JsonIgnore
+    public <T> Optional<T> getOptionalValue(Class<T> clazz) {
+        var value = getValue();
+        if (value == null) {
+            return Optional.empty();
+        }
+        if (clazz.isAssignableFrom(value.getClass())) {
+            return Optional.of(clazz.cast(value));
+        }
+        return Optional.empty();
     }
 
     @JsonIgnore

@@ -20,7 +20,7 @@ import {Page} from '../../../../models/dtos/page';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 import {DepartmentApiService} from '../../../departments/services/department-api-service';
-import {ProcessDefinitionEntity} from "../../entities/process-definition-entity";
+import {ProcessEntity} from "../../entities/process-entity";
 import {ProcessDefinitionApiService} from "../../services/process-definition-api-service";
 import {NewProcessDialog} from "../../dialogs/new-process-dialog";
 import {ProcessDefinitionVersionApiService} from "../../services/process-definition-version-api-service";
@@ -44,7 +44,7 @@ const availableFilter = [
     },
 ];
 
-interface ProcessListEntry extends ProcessDefinitionEntity {
+interface ProcessListEntry extends ProcessEntity {
     developingDepartmentName?: string;
     lastEditorName?: string;
 }
@@ -95,7 +95,7 @@ const columns: GridColDef<ProcessListEntry>[] = [
                             to={`/processes/${params.row.id}/versions/${params.row.draftedVersion ?? params.row.publishedVersion ?? ''}`}
                             title="Formular bearbeiten"
                         >
-                            {params.row.name}
+                            {params.row.internalTitle}
                         </Link>
                     </Typography>
 
@@ -324,7 +324,7 @@ export function ProcessListPage() {
                             tooltip: 'Optionen',
                         },
                     ]}
-                    defaultSortField="name"
+                    defaultSortField="internalTitle"
                     disableFullWidthToggle={true}
                 />
             </PageWrapper>

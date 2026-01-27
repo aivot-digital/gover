@@ -1,7 +1,17 @@
 package de.aivot.GoverBackend.enums;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.form.content.*;
+import de.aivot.GoverBackend.elements.models.elements.form.input.*;
+import de.aivot.GoverBackend.elements.models.elements.layout.*;
+import de.aivot.GoverBackend.elements.models.elements.steps.IntroductionStepElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.SummaryStepElement;
 import de.aivot.GoverBackend.lib.models.Identifiable;
+import jakarta.annotation.Nonnull;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -96,5 +106,45 @@ public enum ElementType implements Identifiable<Integer> {
                 .stream(ElementType.values())
                 .filter(e -> e.matches(id))
                 .findFirst();
+    }
+
+    @Nonnull
+    public static BaseElement getElementClass(ElementType type) throws ElementDataConversionException {
+        return switch (type) {
+            case FormLayout -> new FormLayoutElement();
+            case Step -> new StepElement();
+            case Alert -> new AlertContentElement();
+            case Group -> new GroupLayoutElement();
+            case Checkbox -> new CheckboxInputElement();
+            case Date -> new DateFieldInputElement();
+            case Headline -> new HeadlineContentElement();
+            case MultiCheckbox -> new MultiCheckboxInputElement();
+            case Number -> new NumberInputElement();
+            case ReplicatingContainer -> new ReplicatingContainerLayoutElement();
+            case RichText -> new RichTextContentElement();
+            case Radio -> new RadioInputElement();
+            case Select -> new SelectInputElement();
+            case Spacer -> new SpacerContentElement();
+            case Table -> new TableInputElement();
+            case Text -> new TextInputElement();
+            case Time -> new TimeInputElement();
+            case IntroductionStep -> new IntroductionStepElement();
+            case SubmitStep -> new SubmitStepElement();
+            case SummaryStep -> new SummaryStepElement();
+            case Image -> new ImageContentElement();
+            case SubmittedStep ->
+                    throw new ElementDataConversionException("Element type SubmittedStep is no longer supported.");
+            case FileUpload -> new FileUploadInputElement();
+            case DialogLayout -> new DialogLayoutElement();
+            case StepperLayout -> new StepperLayoutElement();
+            case ConfigLayout -> new ConfigLayoutElement();
+            case FunctionInput -> new FunctionInputElement();
+            case CodeInput -> new CodeInputElement();
+            case RichTextInput -> new RichTextInputElement();
+            case UiDefinitionInput -> new UiDefinitionInputElement();
+            case IdentityInput -> new IdentityInputElement();
+            case TabLayout -> new TabLayoutElement();
+            default -> throw new ElementDataConversionException("Unsupported element type: %s", type.name());
+        };
     }
 }

@@ -1,4 +1,4 @@
-package de.aivot.GoverBackend.plugins.core.v1.nodes;
+package de.aivot.GoverBackend.plugins.core.v1.nodes.flow;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
@@ -11,6 +11,7 @@ import de.aivot.GoverBackend.process.entities.ProcessVersionEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.enums.ProcessHistoryEventType;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
+import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.services.ProcessDataService;
 import de.aivot.GoverBackend.user.entities.UserEntity;
@@ -53,11 +54,26 @@ public class IfFlowControlNode implements ProcessNodeDefinition, PluginComponent
 
     @Nonnull
     @Override
+    public ProcessNodeType getType() {
+        return ProcessNodeType.FlowControl;
+    }
+
+    @Nonnull
+    @Override
+    public String getName() {
+        return "Konditionelle Verzweigung (Wenn-Dann-Sonst)";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return "Leitet den Vorgang basierend auf einer Bedingung in unterschiedliche Pfade ein.";
+    }
+
+    @Nonnull
+    @Override
     @JsonIgnore
-    public ConfigLayoutElement getConfigurationLayout(@Nonnull UserEntity user,
-                                                      @Nonnull ProcessEntity processDefinition,
-                                                      @Nonnull ProcessVersionEntity processDefinitionVersion,
-                                                      @Nullable ProcessNodeEntity thisNode) {
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionContextConfig context) {
         var layout = new ConfigLayoutElement();
         layout.setId(getKey() + "-config");
 
@@ -69,24 +85,6 @@ public class IfFlowControlNode implements ProcessNodeDefinition, PluginComponent
         layout.addChild(conditionField);
 
         return layout;
-    }
-
-    @Nonnull
-    @Override
-    public ProcessNodeType getType() {
-        return ProcessNodeType.FlowControl;
-    }
-
-    @Nonnull
-    @Override
-    public String getName() {
-        return "Wenn-Dann";
-    }
-
-    @Nonnull
-    @Override
-    public String getDescription() {
-        return "Der Wenn-Dann-Knoten ermöglicht bedingte Verzweigungen im Prozessfluss basierend auf definierten Bedingungen.";
     }
 
     @Nonnull
@@ -107,10 +105,11 @@ public class IfFlowControlNode implements ProcessNodeDefinition, PluginComponent
     }
 
     @Override
-    public ProcessNodeExecutionResult init(@Nonnull ProcessInstanceEntity processInstance,
-                                           @Nonnull ProcessNodeEntity thisNode,
-                                           @Nonnull Map<String, Object> workingData) throws Exception {
-        var configuration = thisNode.getConfiguration();
+    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
+        var configuration = context
+                .getThisNode()
+                .getConfiguration();
+
         var condition = configuration
                 .get(CONDITION_FIELD_KEY)
                 .getOptionalValue()
@@ -118,22 +117,18 @@ public class IfFlowControlNode implements ProcessNodeDefinition, PluginComponent
                 .toString();
 
         var conditionValueStr = processDataService
-                .interpolate(workingData, condition);
+                .interpolate(context.getProcessData(), condition);
 
         var conditionValue = Boolean
                 .parseBoolean(conditionValueStr);
 
         var metadata = new HashMap<String, Object>();
         metadata.put("condition", condition);
+        metadata.put("conditionValueStr", conditionValueStr);
         metadata.put("conditionValue", conditionValue);
 
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(conditionValue ? PORT_NAME_TRUE : PORT_NAME_FALSE)
-                .setNodeData(metadata)
-                .addEvent(ProcessNodeExecutionEvent.of(
-                        ProcessHistoryEventType.Complete,
-                        "Bedingung ausgewertet",
-                        "Die Bedingung '%s' wurde mit dem Wert '%s' ausgewertet.".formatted(condition, conditionValue)
-                ));
+                .setNodeData(metadata);
     }
 }

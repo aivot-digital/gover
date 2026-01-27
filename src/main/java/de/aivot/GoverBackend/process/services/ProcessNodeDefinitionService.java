@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.process.services;
 
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,13 @@ public class ProcessNodeDefinitionService {
             }
         }
         return Optional.empty();
+    }
+
+    public Optional<ProcessNodeDefinition> getProcessNodeDefinition(ProcessNodeEntity entity) {
+        return getProcessNodeDefinition(
+                entity.getProcessNodeDefinitionKey(),
+                entity.getProcessNodeDefinitionVersion()
+        );
     }
 
     public List<ProcessNodeDefinition> getAllProcessNodeDefinitions() {

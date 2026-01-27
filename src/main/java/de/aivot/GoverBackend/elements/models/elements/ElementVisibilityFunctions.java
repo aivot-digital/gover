@@ -25,13 +25,20 @@ public class ElementVisibilityFunctions implements Serializable {
     @Nullable
     private Collection<String> referencedIds;
 
-    public void recalculateReferencedIds() {
+    public ElementVisibilityFunctions recalculateReferencedIds() {
         referencedIds = ElementReferenceUtils
                 .getReferencedIds(
                         javascriptCode,
                         noCode,
                         conditionSet
                 );
+        return this;
+    }
+
+    public static ElementVisibilityFunctions of(NoCodeOperand noCode) {
+        return new ElementVisibilityFunctions()
+                .setType(VisibilityFunctionType.NoCode)
+                .setNoCode(noCode);
     }
 
     // region Hash & Equals

@@ -1,9 +1,9 @@
 package de.aivot.GoverBackend.process.entities;
 
 import de.aivot.GoverBackend.core.converters.JsonObjectConverter;
-import de.aivot.GoverBackend.process.converters.DeliveryChannelConfigsConverter;
+import de.aivot.GoverBackend.process.converters.ProcessIdentityItemsConverter;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
-import de.aivot.GoverBackend.process.models.DeliveryChannelConfig;
+import de.aivot.GoverBackend.process.models.ProcessIdentityItem;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
@@ -14,6 +14,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 @Entity
@@ -36,10 +37,6 @@ public class ProcessInstanceEntity {
     private Integer processId;
 
     @Nonnull
-    @NotNull(message = "Die Prozessdefinitions-Version darf nicht null sein.")
-    private Integer processVersion;
-
-    @Nonnull
     @NotNull(message = "Der Prozessinstanz-Status darf nicht null sein.")
     @Column(columnDefinition = "int2")
     private ProcessInstanceStatus status;
@@ -60,14 +57,9 @@ public class ProcessInstanceEntity {
 
     @Nonnull
     @NotNull(message = "Die Zustellkanalkonfigurationen dürfen nicht null sein.")
-    @Convert(converter = DeliveryChannelConfigsConverter.class)
+    @Convert(converter = ProcessIdentityItemsConverter.class)
     @Column(columnDefinition = "jsonb")
-    private List<DeliveryChannelConfig> deliveryChannels;
-
-    @Nonnull
-    @NotNull(message = "Die Tags dürfen nicht null sein.")
-    @Column(columnDefinition = "varchar(64)[]")
-    private List<String> tags;
+    private Map<String, ProcessIdentityItem> identities;
 
     @Nonnull
     @NotNull(message = "Das Startdatum darf nicht null sein.")
@@ -97,6 +89,9 @@ public class ProcessInstanceEntity {
     @Nullable
     private LocalDateTime keepUntil;
 
+    @Nullable
+    private Integer createdForTestClaimId;
+
     // region Constructors
 
     // Empty constructor for JPA
@@ -106,30 +101,27 @@ public class ProcessInstanceEntity {
     public ProcessInstanceEntity(@Nonnull Long id,
                                  @Nonnull UUID accessKey,
                                  @Nonnull Integer processId,
-                                 @Nonnull Integer processVersion,
                                  @Nonnull ProcessInstanceStatus status,
                                  @Nullable String statusOverride,
                                  @Nullable String assignedUserId,
                                  @Nonnull List<String> assignedFileNumbers,
-                                 @Nonnull List<DeliveryChannelConfig> deliveryChannels,
-                                 @Nonnull List<String> tags,
+                                 @Nonnull Map<String, ProcessIdentityItem> identities,
                                  @Nonnull LocalDateTime started,
                                  @Nonnull LocalDateTime updated,
                                  @Nullable LocalDateTime finished,
                                  @Nullable Duration runtime,
                                  @Nonnull Map<String, Object> initialPayload,
                                  @Nonnull Integer initialNodeId,
-                                 @Nullable LocalDateTime keepUntil) {
+                                 @Nullable LocalDateTime keepUntil,
+                                 @Nullable Integer createdForTestClaimId) {
         this.id = id;
         this.accessKey = accessKey;
         this.processId = processId;
-        this.processVersion = processVersion;
         this.status = status;
         this.statusOverride = statusOverride;
         this.assignedUserId = assignedUserId;
         this.assignedFileNumbers = assignedFileNumbers;
-        this.deliveryChannels = deliveryChannels;
-        this.tags = tags;
+        this.identities = identities;
         this.started = started;
         this.updated = updated;
         this.finished = finished;
@@ -137,6 +129,23 @@ public class ProcessInstanceEntity {
         this.initialPayload = initialPayload;
         this.initialNodeId = initialNodeId;
         this.keepUntil = keepUntil;
+        this.createdForTestClaimId = createdForTestClaimId;
+    }
+
+    // endregion
+
+    // region Hashcode and Equals
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        ProcessInstanceEntity instance = (ProcessInstanceEntity) o;
+        return Objects.equals(id, instance.id) && Objects.equals(accessKey, instance.accessKey) && Objects.equals(processId, instance.processId) && status == instance.status && Objects.equals(statusOverride, instance.statusOverride) && Objects.equals(assignedUserId, instance.assignedUserId) && Objects.equals(assignedFileNumbers, instance.assignedFileNumbers) && Objects.equals(identities, instance.identities) && Objects.equals(started, instance.started) && Objects.equals(updated, instance.updated) && Objects.equals(finished, instance.finished) && Objects.equals(runtime, instance.runtime) && Objects.equals(initialPayload, instance.initialPayload) && Objects.equals(initialNodeId, instance.initialNodeId) && Objects.equals(keepUntil, instance.keepUntil) && Objects.equals(createdForTestClaimId, instance.createdForTestClaimId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, accessKey, processId, status, statusOverride, assignedUserId, assignedFileNumbers, identities, started, updated, finished, runtime, initialPayload, initialNodeId, keepUntil, createdForTestClaimId);
     }
 
     // endregion
@@ -174,16 +183,6 @@ public class ProcessInstanceEntity {
     }
 
     @Nonnull
-    public Integer getProcessVersion() {
-        return processVersion;
-    }
-
-    public ProcessInstanceEntity setProcessVersion(@Nonnull Integer processDefinitionVersion) {
-        this.processVersion = processDefinitionVersion;
-        return this;
-    }
-
-    @Nonnull
     public ProcessInstanceStatus getStatus() {
         return status;
     }
@@ -214,22 +213,12 @@ public class ProcessInstanceEntity {
     }
 
     @Nonnull
-    public List<DeliveryChannelConfig> getDeliveryChannels() {
-        return deliveryChannels;
+    public Map<String, ProcessIdentityItem> getIdentities() {
+        return identities;
     }
 
-    public ProcessInstanceEntity setDeliveryChannels(@Nonnull List<DeliveryChannelConfig> deliveryChannels) {
-        this.deliveryChannels = deliveryChannels;
-        return this;
-    }
-
-    @Nonnull
-    public List<String> getTags() {
-        return tags;
-    }
-
-    public ProcessInstanceEntity setTags(@Nonnull List<String> tags) {
-        this.tags = tags;
+    public ProcessInstanceEntity setIdentities(@Nonnull Map<String, ProcessIdentityItem> identities) {
+        this.identities = identities;
         return this;
     }
 
@@ -310,6 +299,16 @@ public class ProcessInstanceEntity {
 
     public ProcessInstanceEntity setKeepUntil(@Nullable LocalDateTime keepUntil) {
         this.keepUntil = keepUntil;
+        return this;
+    }
+
+    @Nullable
+    public Integer getCreatedForTestClaimId() {
+        return createdForTestClaimId;
+    }
+
+    public ProcessInstanceEntity setCreatedForTestClaimId(@Nullable Integer createdForTestClaimId) {
+        this.createdForTestClaimId = createdForTestClaimId;
         return this;
     }
 

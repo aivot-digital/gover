@@ -6,9 +6,11 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.*;
 
 public class NoCodeOrOperator extends NoCodeOperator {
+    public static final String OPERATOR_ID = "or";
+
     @Override
     public String getIdentifier() {
-        return "or";
+        return OPERATOR_ID;
     }
 
     @Override
@@ -56,25 +58,26 @@ public class NoCodeOrOperator extends NoCodeOperator {
 
     @Override
     public NoCodeSignatur[] getSignatures() {
-        return NoCodeSignatur.of(
-                NoCodeSignatur.of(
+        var signatures = new NoCodeSignatur[9];
+
+        for (int i = 0; i < 9; i++) {
+            NoCodeParameter[] parameters = new NoCodeParameter[i + 2];
+            for (int j = 0; j < i + 2; j++) {
+                parameters[j] = new NoCodeParameter(
                         NoCodeDataType.Boolean,
-                        new NoCodeParameter(
-                                NoCodeDataType.Boolean,
-                                "Bedingung 1",
-                                "Die erste Bedingung für die ODER-Verknüpfung.",
-                                new NoCodeParameterOption("Wahr", "true"),
-                                new NoCodeParameterOption("Falsch", "false")
-                        ),
-                        new NoCodeParameter(
-                                NoCodeDataType.Boolean,
-                                "Bedingung 2",
-                                "Die zweite Bedingung für die ODER-Verknüpfung.",
-                                new NoCodeParameterOption("Wahr", "true"),
-                                new NoCodeParameterOption("Falsch", "false")
-                        )
-                )
-        );
+                        "Bedingung " + (j + 1),
+                        "Die " + (j + 1) + ". Bedingung für die ODER-Verknüpfung.",
+                        new NoCodeParameterOption("Wahr", "true"),
+                        new NoCodeParameterOption("Falsch", "false")
+                );
+            }
+            signatures[i] = NoCodeSignatur.of(
+                    NoCodeDataType.Boolean,
+                    parameters
+            );
+        }
+
+        return signatures;
     }
 
     @Override

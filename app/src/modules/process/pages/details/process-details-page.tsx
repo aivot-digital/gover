@@ -1,51 +1,44 @@
-import {useEffect, useMemo, useState} from "react";
-import {Box, Button, Paper} from "@mui/material";
-import {Outlet, useNavigate, useParams} from "react-router-dom";
-import {ProcessDefinitionEntity} from "../../entities/process-definition-entity";
-import {ProcessDefinitionVersionApiService} from "../../services/process-definition-version-api-service";
-import {ProcessNodeEntity} from "../../entities/process-node-entity";
-import {ProcessDefinitionEdgeEntity} from "../../entities/process-definition-edge-entity";
-import {ProcessDefinitionApiService} from "../../services/process-definition-api-service";
-import {ProcessDefinitionEdgeApiService} from "../../services/process-definition-edge-api-service";
-import {ProcessDefinitionVersionEntity} from "../../entities/process-definition-version-entity";
-import {ProcessNodeApiService} from "../../services/process-node-api-service";
-import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
-import {GenericDetailsSkeleton} from "../../../../components/generic-details-page/generic-details-skeleton";
-import Undo from "@aivot/mui-material-symbols-400-outlined/dist/undo/Undo";
-import Redo from "@aivot/mui-material-symbols-400-outlined/dist/redo/Redo";
-import {ProcessStatus} from "../../enums/process-status";
-import Download from "@aivot/mui-material-symbols-400-outlined/dist/download/Download";
-import {downloadObjectFile} from "../../../../utils/download-utils";
-import {PageWrapper} from "../../../../components/page-wrapper/page-wrapper";
-import {GenericPageHeader} from "../../../../components/generic-page-header/generic-page-header";
+import React, {ReactNode, useEffect, useMemo, useState} from 'react';
+import {Box, Paper} from '@mui/material';
+import {Outlet, useNavigate, useParams} from 'react-router-dom';
+import {ProcessEntity} from '../../entities/process-entity';
+import {ProcessDefinitionVersionApiService} from '../../services/process-definition-version-api-service';
+import {ProcessNodeEntity} from '../../entities/process-node-entity';
+import {ProcessDefinitionEdgeEntity} from '../../entities/process-definition-edge-entity';
+import {ProcessDefinitionApiService} from '../../services/process-definition-api-service';
+import {ProcessDefinitionEdgeApiService} from '../../services/process-definition-edge-api-service';
+import {ProcessVersionEntity} from '../../entities/process-version-entity';
+import {ProcessNodeApiService} from '../../services/process-node-api-service';
+import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
+import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
+import Download from '@aivot/mui-material-symbols-400-outlined/dist/download/Download';
+import {downloadObjectFile} from '../../../../utils/download-utils';
+import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
+import {GenericPageHeader} from '../../../../components/generic-page-header/generic-page-header';
 
-import Add from "@aivot/mui-material-symbols-400-outlined/dist/add/Add";
+import Add from '@aivot/mui-material-symbols-400-outlined/dist/add/Add';
 import {
-    ProcessNodeProvider,
+    type ProcessNodeProvider,
     ProcessNodeProviderApiService,
-    ProcessNodeType
-} from "../../services/process-node-provider-api-service";
-import {generateId} from "../../../../utils/id-utils";
-import {SelectNodeProviderDialog} from "../../dialogs/select-node-provider-dialog";
-import {useAppDispatch} from "../../../../hooks/use-app-dispatch";
-import {clearLoadingMessage, setLoadingMessage} from "../../../../slices/shell-slice";
-import {showApiErrorSnackbar} from "../../../../slices/snackbar-slice";
-import {ProcessFlowEditor} from "./components/process-flow-editor/process-flow-editor";
-import {ElementDerivationContext} from "../../../elements/components/element-derivation-context";
-import {TextFieldComponent} from "../../../../components/text-field/text-field-component";
-import {GroupLayout} from "../../../../models/elements/form/layout/group-layout";
-import {ReactFlowProvider} from "@xyflow/react";
-import ProcessChart from "@aivot/mui-material-symbols-400-outlined/dist/process-chart/ProcessChart";
-import {ProcessDetailsPageContext} from "./process-details-page-context";
+    ProcessNodeType,
+} from '../../services/process-node-provider-api-service';
+import {SelectNodeProviderDialog} from '../../dialogs/select-node-provider-dialog';
+import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
+import {clearLoadingMessage, setLoadingMessage} from '../../../../slices/shell-slice';
+import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {ProcessFlowEditor} from './components/process-flow-editor/process-flow-editor';
+import {ReactFlowProvider} from '@xyflow/react';
+import ProcessChart from '@aivot/mui-material-symbols-400-outlined/dist/process-chart/ProcessChart';
+import {ProcessDetailsPageProvider} from './process-details-page-context';
 
 export interface ProcessFlow {
-    definition: ProcessDefinitionEntity;
-    version: ProcessDefinitionVersionEntity;
+    definition: ProcessEntity;
+    version: ProcessVersionEntity;
     nodes: ProcessNodeEntity[];
     edges: ProcessDefinitionEdgeEntity[];
 }
 
-export function ProcessDetailsPage() {
+export function ProcessDetailsPage(): ReactNode {
     const params = useParams();
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
@@ -62,12 +55,17 @@ export function ProcessDetailsPage() {
     } | null>(null);
     const [newNodeOnEdgeId, setNewNodeOnEdgeId] = useState<number | null>(null);
 
+    // Fetch the available node providers on mount to display them in the add node dialog
     useEffect(() => {
         new ProcessNodeProviderApiService()
             .getNodeProviders()
-            .then(setAvailableNodeProviders);
+            .then(setAvailableNodeProviders)
+            .catch((error) => {
+                dispatch(showApiErrorSnackbar(error, 'Die verfügbaren Prozessknoten konnten nicht geladen werden.'));
+            });
     }, []);
 
+    // Extract the process id and version from the route to load the process flow
     const {
         processId,
         processVersion,
@@ -81,6 +79,7 @@ export function ProcessDetailsPage() {
         };
     }, [params]);
 
+    // Load the process flow whenever the process id or version changes
     useEffect(() => {
         if (processId == null || processVersion == null) {
             setProcessFlow(null);
@@ -104,23 +103,30 @@ export function ProcessDetailsPage() {
         ])
             .then(([definition, version, nodes, edges]) => {
                 setProcessFlow({
-                    definition: definition,
-                    version: version,
+                    definition,
+                    version,
                     nodes: nodes.content,
                     edges: edges.content,
                 });
+            })
+            .catch((error) => {
+                dispatch(showApiErrorSnackbar(error, 'Der Prozessfluss konnte nicht geladen werden.'));
             });
     }, [processId, processVersion]);
 
-    const handleExport = () => {
+
+    const handleExport = (): void => {
         new ProcessDefinitionApiService()
             .export(processId, processVersion)
             .then((exp) => {
-                downloadObjectFile(`${exp.data.process.name} - ${exp.data.version.processVersion}.json`, exp);
+                downloadObjectFile(`${exp.data.process.internalTitle} - ${exp.data.version.processVersion}.json`, exp);
+            })
+            .catch((error) => {
+                dispatch(showApiErrorSnackbar(error, 'Der Prozess konnte nicht exportiert werden.'));
             });
     };
 
-    const handleAddFlowTrigger = (nodeProvider: ProcessNodeProvider) => {
+    const handleAddFlowTrigger = (nodeProvider: ProcessNodeProvider): void => {
         if (processFlow == null) {
             return;
         }
@@ -162,9 +168,9 @@ export function ProcessDetailsPage() {
             .finally(() => {
                 dispatch(clearLoadingMessage());
             });
-    }
+    };
 
-    const handleAddFollowUpNode = async (nodeProvider: ProcessNodeProvider) => {
+    const handleAddFollowUpNode = async (nodeProvider: ProcessNodeProvider): Promise<void> => {
         if (processFlow == null) {
             return;
         }
@@ -193,7 +199,7 @@ export function ProcessDetailsPage() {
                 processNodeDefinitionVersion: nodeProvider.version,
             });
 
-        const edgeApi = new ProcessDefinitionEdgeApiService()
+        const edgeApi = new ProcessDefinitionEdgeApiService();
 
         if (existingEdge != null) {
             await edgeApi.destroy(existingEdge.id);
@@ -216,7 +222,7 @@ export function ProcessDetailsPage() {
                     ...existingEdge,
                     id: 0,
                     fromNodeId: newNode.id,
-                    viaPort: nodeProvider.ports[0].key
+                    viaPort: nodeProvider.ports[0].key,
                 });
         }
 
@@ -236,7 +242,7 @@ export function ProcessDetailsPage() {
         dispatch(clearLoadingMessage());
     };
 
-    const handleAddInbetweenNode = async (nodeProvider: ProcessNodeProvider) => {
+    const handleAddInbetweenNode = async (nodeProvider: ProcessNodeProvider): Promise<void> => {
         if (processFlow == null) {
             return;
         }
@@ -310,7 +316,7 @@ export function ProcessDetailsPage() {
         dispatch(clearLoadingMessage());
     };
 
-    const handleDeleteNode = async (node: ProcessNodeEntity) => {
+    const handleDeleteNode = async (node: ProcessNodeEntity): Promise<void> => {
         if (processFlow == null) {
             return;
         }
@@ -334,28 +340,23 @@ export function ProcessDetailsPage() {
             edges: processFlow.edges.filter((e) => !edgesToRemove.some((er) => er.id === e.id)),
         });
 
-        navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}`);
+        await navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}`);
     };
 
-    const handleSaveNode = async (node: ProcessNodeEntity) => {
+    const handleSaveNode = async (node: ProcessNodeEntity): Promise<void> => {
         if (processFlow == null) {
             return;
         }
 
-        let updated: ProcessNodeEntity;
-        try {
-            updated = await new ProcessNodeApiService()
-                .update(node.id, node);
-        } catch (err) {
-            dispatch(showApiErrorSnackbar(err, 'Der Knoten konnte nicht gespeichert werden.'));
-            return;
-        }
+        const updated = await new ProcessNodeApiService().update(node.id, node);
+
+        dispatch(showSuccessSnackbar('Der Knoten wurde erfolgreich gespeichert.'));
 
         setProcessFlow({
             ...processFlow,
             nodes: processFlow.nodes.map((n) => n.id === updated.id ? updated : n),
         });
-    }
+    };
 
     if (processFlow == null) {
         return (
@@ -386,7 +387,7 @@ export function ProcessDetailsPage() {
                     }}
                 >
                     <GenericPageHeader
-                        title={'Prozess: ' + processFlow.definition.name}
+                        title={'Prozess: ' + processFlow.definition.internalTitle}
                         badge={{
                             color: 'default',
                             label: `Version ${processFlow.version.processVersion}`,
@@ -407,7 +408,9 @@ export function ProcessDetailsPage() {
                             {
                                 tooltip: 'Auslöser hinzufügen',
                                 icon: <Add/>,
-                                onClick: () => setShowAddTriggerDialog(true),
+                                onClick: () => {
+                                    setShowAddTriggerDialog(true);
+                                },
                             },
                             {
                                 tooltip: 'Exportieren',
@@ -506,13 +509,15 @@ export function ProcessDetailsPage() {
                         borderLeft: '1px solid #ccc',
                     }}
                 >
-                    <ProcessDetailsPageContext.Provider value={{
-                        editable: true,
-                        onSave: handleSaveNode,
-                        onDelete: handleDeleteNode,
-                    }}>
+                    <ProcessDetailsPageProvider
+                        value={{
+                            editable: true,
+                            onSave: handleSaveNode,
+                            onDelete: handleDeleteNode,
+                        }}
+                    >
                         <Outlet/>
-                    </ProcessDetailsPageContext.Provider>
+                    </ProcessDetailsPageProvider>
                 </Paper>
             </Box>
 
@@ -520,7 +525,9 @@ export function ProcessDetailsPage() {
                 open={showAddTriggerDialog}
                 nodeProviders={availableNodeProviders}
                 filter={(provider) => provider.type === ProcessNodeType.Trigger}
-                onClose={() => setShowAddTriggerDialog(false)}
+                onClose={() => {
+                    setShowAddTriggerDialog(false);
+                }}
                 onSelect={handleAddFlowTrigger}
             />
 
@@ -528,7 +535,9 @@ export function ProcessDetailsPage() {
                 open={newNodeFor != null}
                 nodeProviders={availableNodeProviders}
                 filter={(provider) => provider.type !== ProcessNodeType.Trigger}
-                onClose={() => setNewNodeFor(null)}
+                onClose={() => {
+                    setNewNodeFor(null);
+                }}
                 onSelect={handleAddFollowUpNode}
             />
 
@@ -536,7 +545,9 @@ export function ProcessDetailsPage() {
                 open={newNodeOnEdgeId != null}
                 nodeProviders={availableNodeProviders}
                 filter={(provider) => provider.type !== ProcessNodeType.Trigger && provider.type !== ProcessNodeType.Termination}
-                onClose={() => setNewNodeOnEdgeId(null)}
+                onClose={() => {
+                    setNewNodeOnEdgeId(null);
+                }}
                 onSelect={handleAddInbetweenNode}
             />
         </PageWrapper>

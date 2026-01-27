@@ -27,9 +27,6 @@ public class ProcessInstanceAccessControlEntity {
     @Nonnull
     private Integer targetProcessInstanceId;
 
-    @Nullable
-    private Integer targetProcessInstanceTaskId;
-
     @Nonnull
     private List<String> permissions;
 
@@ -93,16 +90,6 @@ public class ProcessInstanceAccessControlEntity {
 
     public ProcessInstanceAccessControlEntity setTargetProcessInstanceId(@Nullable Integer targetProcessInstanceId) {
         this.targetProcessInstanceId = targetProcessInstanceId;
-        return this;
-    }
-
-    @Nullable
-    public Integer getTargetProcessInstanceTaskId() {
-        return targetProcessInstanceTaskId;
-    }
-
-    public ProcessInstanceAccessControlEntity setTargetProcessInstanceTaskId(@Nullable Integer targetProcessInstanceTaskId) {
-        this.targetProcessInstanceTaskId = targetProcessInstanceTaskId;
         return this;
     }
 

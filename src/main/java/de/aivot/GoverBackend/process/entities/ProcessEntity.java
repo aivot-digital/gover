@@ -20,14 +20,10 @@ public class ProcessEntity {
     private Integer id;
 
     @Nonnull
-    @NotNull(message = "Der Name der Prozessdefinition darf nicht null sein.")
-    @NotBlank(message = "Der Name der Prozessdefinition darf nicht leer sein.")
-    @Length(min=3, max = 96, message = "Der Name der Prozessdefinition muss zwischen 3 und 96 Zeichen lang sein.")
-    private String name;
-
-    @Nullable
-    @Column(columnDefinition = "TEXT")
-    private String description;
+    @NotNull(message = "Der interne Title der Prozessdefinition darf nicht null sein.")
+    @NotBlank(message = "Der interne Title der Prozessdefinition darf nicht leer sein.")
+    @Length(min=3, max = 96, message = "Der interne Title der Prozessdefinition muss zwischen 3 und 96 Zeichen lang sein.")
+    private String internalTitle;
 
     @Nonnull
     @NotNull(message = "Die ID der Organisationseinheit darf nicht null sein.")
@@ -60,8 +56,7 @@ public class ProcessEntity {
 
     // Full constructor
     public ProcessEntity(@Nonnull Integer id,
-                         @Nonnull String name,
-                         @Nullable String description,
+                         @Nonnull String internalTitle,
                          @Nonnull Integer departmentId,
                          @Nonnull Integer versionCount,
                          @Nullable Integer draftedVersion,
@@ -69,8 +64,7 @@ public class ProcessEntity {
                          @Nonnull LocalDateTime created,
                          @Nonnull LocalDateTime updated) {
         this.id = id;
-        this.name = name;
-        this.description = description;
+        this.internalTitle = internalTitle;
         this.departmentId = departmentId;
         this.versionCount = versionCount;
         this.draftedVersion = draftedVersion;
@@ -109,22 +103,12 @@ public class ProcessEntity {
     }
 
     @Nonnull
-    public String getName() {
-        return name;
+    public String getInternalTitle() {
+        return internalTitle;
     }
 
-    public ProcessEntity setName(@Nonnull String name) {
-        this.name = name;
-        return this;
-    }
-
-    @Nullable
-    public String getDescription() {
-        return description;
-    }
-
-    public ProcessEntity setDescription(@Nullable String description) {
-        this.description = description;
+    public ProcessEntity setInternalTitle(@Nonnull String name) {
+        this.internalTitle = name;
         return this;
     }
 

@@ -29,6 +29,10 @@ public class NoCodeExpression extends NoCodeOperand {
         this.operands = Arrays.stream(operands).toList();
     }
 
+    public static NoCodeExpression of(@Nonnull String operatorIdentifier, @Nonnull NoCodeOperand... operands) {
+        return new NoCodeExpression(operatorIdentifier, operands);
+    }
+
     public boolean isEmpty() {
         return StringUtils.isNullOrEmpty(operatorIdentifier) && (operands == null || operands.isEmpty());
     }

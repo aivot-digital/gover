@@ -1,6 +1,6 @@
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
-import {ProcessDefinitionEntity} from "../entities/process-definition-entity";
+import {ProcessEntity} from "../entities/process-entity";
 import {DialogTitleWithClose} from "../../../components/dialog-title-with-close/dialog-title-with-close";
 import Stepper from "@mui/material/Stepper";
 import {Box, Button, Grid, Step, StepLabel, SvgIconProps, SxProps} from "@mui/material";
@@ -31,7 +31,7 @@ import {ProcessDefinitionApiService} from "../services/process-definition-api-se
 
 interface NewProcessDialogProps {
     open: boolean;
-    onNew: (process: ProcessDefinitionEntity) => void;
+    onNew: (process: ProcessEntity) => void;
     onCancel: () => void;
 }
 
@@ -112,7 +112,7 @@ export function NewProcessDialog(props: NewProcessDialogProps) {
                 ...selectedTemplateData,
                 process: {
                     ...selectedTemplateData.process,
-                    name: nameOverride,
+                    internalTitle: nameOverride,
                     departmentId: departmentOverride,
                 },
             },

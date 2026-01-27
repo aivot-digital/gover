@@ -7,7 +7,7 @@ import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
-import de.aivot.GoverBackend.process.entities.ProcessInstanceHistoryEventEntity;
+import de.aivot.GoverBackend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.GoverBackend.process.filters.ProcessInstanceHistoryEventFilter;
 import de.aivot.GoverBackend.process.services.ProcessDefinitionService;
 import de.aivot.GoverBackend.process.services.ProcessInstanceHistoryEventService;
@@ -57,7 +57,7 @@ public class ProcessInstanceHistoryEventController {
             summary = "List Process Instance History Events",
             description = "List all process instance history events with optional filtering and pagination."
     )
-    public Page<ProcessInstanceHistoryEventEntity> list(
+    public Page<ProcessInstanceEventEntity> list(
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid ProcessInstanceHistoryEventFilter filter
     ) throws ResponseException {
@@ -70,9 +70,9 @@ public class ProcessInstanceHistoryEventController {
             summary = "Create Process Instance History Event",
             description = "Create a new process instance history event. Requires super admin privileges or a user role with create process permissions."
     )
-    public ProcessInstanceHistoryEventEntity create(
+    public ProcessInstanceEventEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @RequestBody @Valid ProcessInstanceHistoryEventEntity newEvent
+            @Nonnull @RequestBody @Valid ProcessInstanceEventEntity newEvent
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
@@ -83,7 +83,7 @@ public class ProcessInstanceHistoryEventController {
         var result = processInstanceHistoryEventService
                 .create(newEvent);
 
-        auditService.logAction(execUser, AuditAction.Create, ProcessInstanceHistoryEventEntity.class, Map.of(
+        auditService.logAction(execUser, AuditAction.Create, ProcessInstanceEventEntity.class, Map.of(
                 "id", result.getId(),
                 "processInstanceId", result.getProcessInstanceId(),
                 "processInstanceTaskId", result.getProcessInstanceTaskId()
@@ -97,7 +97,7 @@ public class ProcessInstanceHistoryEventController {
             summary = "Retrieve Process Instance History Event",
             description = "Retrieve a process instance history event by its ID."
     )
-    public ProcessInstanceHistoryEventEntity retrieve(
+    public ProcessInstanceEventEntity retrieve(
             @Nonnull @PathVariable Long id
     ) throws ResponseException {
         return processInstanceHistoryEventService
@@ -110,10 +110,10 @@ public class ProcessInstanceHistoryEventController {
             summary = "Update Process Instance History Event",
             description = "Update an existing process instance history event. Requires super admin privileges or a user role with edit process permissions."
     )
-    public ProcessInstanceHistoryEventEntity update(
+    public ProcessInstanceEventEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Long id,
-            @Nonnull @RequestBody @Valid ProcessInstanceHistoryEventEntity updateDTO
+            @Nonnull @RequestBody @Valid ProcessInstanceEventEntity updateDTO
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
@@ -130,7 +130,7 @@ public class ProcessInstanceHistoryEventController {
         var result = processInstanceHistoryEventService
                 .update(id, updateDTO);
 
-        auditService.logAction(execUser, AuditAction.Update, ProcessInstanceHistoryEventEntity.class, Map.of(
+        auditService.logAction(execUser, AuditAction.Update, ProcessInstanceEventEntity.class, Map.of(
                 "id", result.getId(),
                 "processInstanceId", result.getProcessInstanceId(),
                 "processInstanceTaskId", result.getProcessInstanceTaskId()
@@ -157,7 +157,7 @@ public class ProcessInstanceHistoryEventController {
         var deleted = processInstanceHistoryEventService
                 .delete(id);
 
-        auditService.logAction(user, AuditAction.Delete, ProcessInstanceHistoryEventEntity.class, Map.of(
+        auditService.logAction(user, AuditAction.Delete, ProcessInstanceEventEntity.class, Map.of(
                 "id", deleted.getId(),
                 "processInstanceId", deleted.getProcessInstanceId(),
                 "processInstanceTaskId", deleted.getProcessInstanceTaskId()

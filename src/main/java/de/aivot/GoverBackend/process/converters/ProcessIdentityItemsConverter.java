@@ -2,23 +2,24 @@ package de.aivot.GoverBackend.process.converters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
-import de.aivot.GoverBackend.models.lib.DiffItem;
-import de.aivot.GoverBackend.process.models.DeliveryChannelConfig;
+import de.aivot.GoverBackend.process.models.ProcessIdentityItem;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 @Converter
-public class DeliveryChannelConfigsConverter implements AttributeConverter<List<DeliveryChannelConfig>, String> {
+public class ProcessIdentityItemsConverter implements AttributeConverter<Map<String, ProcessIdentityItem>, String> {
 
     @Nonnull
     @Override
-    public String convertToDatabaseColumn(@Nullable List<DeliveryChannelConfig> attributes) {
+    public String convertToDatabaseColumn(@Nullable Map<String, ProcessIdentityItem> attributes) {
         if (attributes == null) {
             return "[]";
         }
@@ -38,19 +39,26 @@ public class DeliveryChannelConfigsConverter implements AttributeConverter<List<
 
     @Nonnull
     @Override
-    public List<DeliveryChannelConfig> convertToEntityAttribute(@Nullable String dbData) {
+    public Map<String, ProcessIdentityItem> convertToEntityAttribute(@Nullable String dbData) {
         if (dbData == null) {
-            return new LinkedList<>();
+            return new HashMap<>();
         }
 
         var objectMapper = ObjectMapperFactory
-                .getInstance()
-                .readerForListOf(DeliveryChannelConfig.class);
+                .getInstance();
 
-        List<DeliveryChannelConfig> mappings;
+        Map<String, ProcessIdentityItem> mappings;
         try {
-            mappings = objectMapper
-                    .readValue(dbData);
+            var map = objectMapper
+                    .readValue(dbData, Map.class);
+
+            mappings = new HashMap<>();
+            for (var entry : map.entrySet()) {
+                var key = ((Map.Entry<?, ?>) entry).getKey();
+                var value = objectMapper.convertValue(((Map.Entry<?, ?>) entry).getValue(), ProcessIdentityItem.class);
+                mappings.put(key.toString(), value);
+            }
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

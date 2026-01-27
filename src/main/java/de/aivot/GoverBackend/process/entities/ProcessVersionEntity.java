@@ -4,7 +4,9 @@ import de.aivot.GoverBackend.process.enums.ProcessVersionStatus;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import org.hibernate.validator.constraints.Length;
 
 import java.time.LocalDateTime;
 
@@ -28,6 +30,12 @@ public class ProcessVersionEntity {
     private ProcessVersionStatus status;
 
     @Nonnull
+    @NotNull(message = "Der öffentliche Title der Prozessdefinition-Version darf nicht null sein.")
+    @NotBlank(message = "Der öffentliche Title der Prozessdefinition-Version darf nicht leer sein.")
+    @Length(min=3, max = 96, message = "Der öffentliche Title der Prozessdefinition-Version muss zwischen 3 und 96 Zeichen lang sein.")
+    private String publicTitle;
+
+    @Nonnull
     private LocalDateTime created;
 
     @Nonnull
@@ -49,6 +57,7 @@ public class ProcessVersionEntity {
     public ProcessVersionEntity(@Nonnull Integer processId,
                                 @Nonnull Integer processVersion,
                                 @Nonnull ProcessVersionStatus status,
+                                @Nonnull String publicTitle,
                                 @Nonnull LocalDateTime created,
                                 @Nonnull LocalDateTime updated,
                                 @Nullable LocalDateTime published,
@@ -56,6 +65,7 @@ public class ProcessVersionEntity {
         this.processId = processId;
         this.processVersion = processVersion;
         this.status = status;
+        this.publicTitle = publicTitle;
         this.created = created;
         this.updated = updated;
         this.published = published;
@@ -151,6 +161,15 @@ public class ProcessVersionEntity {
         return this;
     }
 
+    @Nonnull
+    public String getPublicTitle() {
+        return publicTitle;
+    }
+
+    public ProcessVersionEntity setPublicTitle(@Nonnull String publicTitle) {
+        this.publicTitle = publicTitle;
+        return this;
+    }
 
     // endregion
 }

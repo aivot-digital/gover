@@ -10,6 +10,7 @@ import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextConfig;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessVersionRepository;
@@ -121,13 +122,20 @@ public class ProcessDefinitionNodeService implements EntityService<ProcessNodeEn
 
         // Derive configuration
         var derivedObjectItemData = deriveDataObjectItemData(entity, false);
+
+        // If derivation has errors, throw bad request
+        if (derivedObjectItemData.hasAnyError()) {
+            throw ResponseException.badRequest(derivedObjectItemData);
+        }
+
+        // Set derived configuration
         existingEntity.setConfiguration(derivedObjectItemData);
 
+        // Fetch the provider and validate configuration
         var provider = processNodeProviderService
                 .getProcessNodeDefinition(entity.getProcessNodeDefinitionKey(), entity.getProcessNodeDefinitionVersion())
                 .orElseThrow(ResponseException::badRequest);
-
-        provider.validateConfiguration(entity);
+        provider.validateConfiguration(entity, entity.getConfiguration());
 
         return processDefinitionNodeRepository.save(existingEntity);
     }
@@ -161,13 +169,15 @@ public class ProcessDefinitionNodeService implements EntityService<ProcessNodeEn
                 .getProcessNodeDefinition(entity.getProcessNodeDefinitionKey(), entity.getProcessNodeDefinitionVersion())
                 .orElseThrow(ResponseException::badRequest);
 
+        var context = new ProcessNodeDefinitionContextConfig(
+                user,
+                processDefinition,
+                processVersion,
+                entity
+        );
+
         var layout = provider
-                .getConfigurationLayout(
-                        user,
-                        processDefinition,
-                        processVersion,
-                        entity
-                );
+                .getConfigurationLayout(context);
 
         var edo = new ElementDerivationOptions();
 

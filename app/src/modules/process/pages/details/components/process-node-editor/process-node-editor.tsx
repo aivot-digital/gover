@@ -1,10 +1,10 @@
 import {type ProcessNodeEntity} from '../../../../entities/process-node-entity';
-import {useContext, useEffect, useMemo, useState} from 'react';
+import React, {type ReactNode, useEffect, useMemo, useState} from 'react';
 import {type GroupLayout} from '../../../../../../models/elements/form/layout/group-layout';
 import {ProcessNodeApiService} from '../../../../services/process-node-api-service';
 import {Box, Button, IconButton, Skeleton, Tab, Tabs} from '@mui/material';
 import {Link, Outlet, useNavigate, useParams} from 'react-router-dom';
-import {ProcessDetailsPageContext} from '../../process-details-page-context';
+import {useProcessDetailsPageContext} from '../../process-details-page-context';
 import {withDelay} from '../../../../../../utils/with-delay';
 import {ProviderTypeStyles} from '../../../../data/provider-type-styles';
 import {
@@ -21,19 +21,23 @@ import {useChangeBlocker} from '../../../../../../hooks/use-change-blocker';
 import {ProcessNodeEditorMenu} from './components/process-node-editor-menu';
 import {useConfirm} from '../../../../../../providers/confirm-provider';
 import {getNodeName} from '../process-flow-editor/utils/node-utils';
+import {isApiError} from '../../../../../../models/api-error';
+import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../../../slices/snackbar-slice';
+import {useAppDispatch} from '../../../../../../hooks/use-app-dispatch';
 
-export function ProcessNodeEditor() {
+export function ProcessNodeEditor(): ReactNode {
     const params = useParams();
     const navigate = useNavigate();
     const location = useLocation();
     const confirm = useConfirm();
+    const dispatch = useAppDispatch();
 
     const [originalNode, setOriginalNode] = useState<ProcessNodeEntity | null>(null);
 
     const {
         onSave,
         onDelete,
-    } = useContext(ProcessDetailsPageContext);
+    } = useProcessDetailsPageContext();
 
     const [provider, setProvider] = useState<ProcessNodeProvider | null>(null);
 
@@ -42,7 +46,11 @@ export function ProcessNodeEditor() {
     const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
 
     const nodeId = useMemo(() => {
-        return parseInt(params.nodeId!);
+        const nodeId = params.nodeId;
+        if (nodeId == null) {
+            throw new Error('nodeId is required');
+        }
+        return parseInt(nodeId, 10);
     }, [params]);
 
     const {
@@ -60,11 +68,18 @@ export function ProcessNodeEditor() {
             .then((node) => {
                 setOriginalNode(node);
                 setEditedNode(null);
+            })
+            .catch((error) => {
+                dispatch(showApiErrorSnackbar(error, 'Die Details für das Prozesselement konnten nicht geladen werden.'));
             });
 
+        // Fetch the configuration layout
         new ProcessNodeApiService()
             .getConfigurationLayout(nodeId)
-            .then(setLayout);
+            .then(setLayout)
+            .catch((error) => {
+                dispatch(showApiErrorSnackbar(error, 'Die Konfigurationsoberfläche für das Prozesselement konnte nicht geladen werden.'));
+            });
     }, [nodeId]);
 
     useEffect(() => {
@@ -75,9 +90,9 @@ export function ProcessNodeEditor() {
         }
 
         setEditedNode(originalNode);
-        withDelay(
-            new ProcessNodeApiService()
-                .getConfigurationLayout(originalNode.id), 500)
+
+        withDelay(new ProcessNodeApiService()
+            .getConfigurationLayout(originalNode.id), 500)
             .then(setLayout);
 
         new ProcessNodeProviderApiService()
@@ -110,9 +125,19 @@ export function ProcessNodeEditor() {
         return 'configuration';
     }, [location]);
 
-    const handleSaveSelected = () => {
+    const handleSaveSelected = (): void => {
         if (editedNode != null) {
-            onSave(editedNode);
+            onSave(editedNode)
+                .then(() => {
+                    dispatch(showSuccessSnackbar('Der Knoten wurde erfolgreich gespeichert.'));
+                })
+                .catch((err: any) => {
+                    if (isApiError(err) && err.status === 400 && err.displayableToUser) {
+                        dispatch(showErrorSnackbar('Der Knoten konnte nicht gespeichert werden, da die Konfiguration ungültig ist.'));
+                    } else {
+                        dispatch(showApiErrorSnackbar(err, 'Der Knoten konnte nicht gespeichert werden.'));
+                    }
+                });
         }
     };
 
@@ -136,6 +161,10 @@ export function ProcessNodeEditor() {
                 if (confirm) {
                     onDelete(originalNode);
                 }
+            })
+            .catch((err) => {
+                dispatch(showErrorSnackbar('Das Prozesselement konnte nicht gelöscht werden.'));
+                console.error(err);
             });
     };
 
@@ -199,7 +228,10 @@ export function ProcessNodeEditor() {
                                 {typeLabel}
                             </Typography>
 
-                            <Typography fontWeight="bold" component="div">
+                            <Typography
+                                fontWeight="bold"
+                                component="div"
+                            >
                                 {provider.name} <Chip
                                     label={`Version ${provider.version}`}
                                     size="small"
@@ -227,6 +259,9 @@ export function ProcessNodeEditor() {
                         value={currentTab}
                         onChange={(_, value) => {
                             navigate(`/processes/${params.processId}/versions/${params.processVersion}/nodes/${originalNode.id}/tabs/${value}`);
+                        }}
+                        sx={{
+                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
                         }}
                     >
                         <Tab

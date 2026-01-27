@@ -10,6 +10,13 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 public class CheckboxInputElement extends BaseInputElement<Boolean> implements PrintableElement<Boolean> {
+    /**
+     * Variant of the checkbox. Options are:
+     * - "standard": Standard checkbox.
+     * - "switch": Switch style checkbox.
+     */
+    private String variant;
+
     public CheckboxInputElement() {
         super(ElementType.Checkbox);
     }
@@ -54,13 +61,22 @@ public class CheckboxInputElement extends BaseInputElement<Boolean> implements P
         return switch (value) {
             case null -> false;
             case String sValue -> "Ja (True)".equalsIgnoreCase(sValue) ||
-                                  "Ja".equalsIgnoreCase(sValue) ||
-                                  "true".equalsIgnoreCase(sValue) ||
-                                  "wahr".equalsIgnoreCase(sValue) ||
-                                  "1".equals(sValue);
+                    "Ja".equalsIgnoreCase(sValue) ||
+                    "true".equalsIgnoreCase(sValue) ||
+                    "wahr".equalsIgnoreCase(sValue) ||
+                    "1".equals(sValue);
             case Boolean bValue -> bValue;
             default -> false;
         };
 
+    }
+
+    public String getVariant() {
+        return variant;
+    }
+
+    public CheckboxInputElement setVariant(String variant) {
+        this.variant = variant;
+        return this;
     }
 }

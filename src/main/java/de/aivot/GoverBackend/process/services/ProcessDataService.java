@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
+import de.aivot.GoverBackend.process.models.ProcessExecutionData;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
 import jakarta.annotation.Nonnull;
@@ -88,12 +89,11 @@ public class ProcessDataService {
     }
 
     @Nonnull
-    public Map<String, Object> foldProcessInstanceData(@Nonnull ProcessInstanceEntity instance,
-                                                       @Nullable Integer previousNodeId) {
+    public ProcessExecutionData foldProcessInstanceData(@Nonnull ProcessInstanceEntity instance,
+                                                        @Nullable Integer previousNodeId) {
         List<ProcessNodeEntity> nodes = processDefinitionNodeRepository
-                .findAllByProcessIdAndProcessVersion(
-                        instance.getProcessId(),
-                        instance.getProcessVersion()
+                .findAllByProcessId(
+                        instance.getProcessId()
                 );
 
         List<ProcessInstanceTaskEntity> tasks = processInstanceTaskRepository
@@ -107,7 +107,7 @@ public class ProcessDataService {
                         .findFirst()
                         .orElse(null);
 
-        Map<String, Object> allData = new HashMap<>();
+        var allData = new ProcessExecutionData();
         allData.put("$", previousTask != null ? previousTask.getProcessData() : instance.getInitialPayload());
 
         Map<String, Object> instanceData = new HashMap<>();

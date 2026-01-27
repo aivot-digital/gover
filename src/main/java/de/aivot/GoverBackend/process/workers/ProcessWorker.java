@@ -1,17 +1,19 @@
 package de.aivot.GoverBackend.process.workers;
 
-import de.aivot.GoverBackend.process.entities.ProcessInstanceHistoryEventEntity;
+import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
-import de.aivot.GoverBackend.process.enums.ProcessHistoryEventType;
+import de.aivot.GoverBackend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultError;
-import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
-import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRepository;
+import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
+import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
+import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextInit;
+import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
+import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.process.services.ProcessDataService;
 import de.aivot.GoverBackend.process.services.ProcessNodeDefinitionService;
+import de.aivot.GoverBackend.process.services.ProcessNodeExecutionLoggerFactory;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.amqp.core.Queue;
@@ -23,7 +25,6 @@ import org.springframework.stereotype.Service;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 
@@ -37,7 +38,7 @@ public class ProcessWorker {
     private final ProcessInstanceTaskRepository processInstanceTaskRepository;
     private final ProcessNodeExecutionResultHandler processNodeExecutionResultHandler;
     private final ProcessDataService processDataService;
-    private final ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository;
+    private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
 
     @Autowired
     public ProcessWorker(ProcessInstanceRepository processInstanceRepository,
@@ -46,14 +47,14 @@ public class ProcessWorker {
                          ProcessInstanceTaskRepository processInstanceTaskRepository,
                          ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
                          ProcessDataService processDataService,
-                         ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository) {
+                         ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory) {
         this.processInstanceRepository = processInstanceRepository;
         this.processDefinitionNodeRepository = processDefinitionNodeRepository;
         this.processNodeProviderService = processNodeProviderService;
         this.processInstanceTaskRepository = processInstanceTaskRepository;
         this.processNodeExecutionResultHandler = processNodeExecutionResultHandler;
         this.processDataService = processDataService;
-        this.processInstanceHistoryEventRepository = processInstanceHistoryEventRepository;
+        this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
     }
 
     @Bean
@@ -63,41 +64,52 @@ public class ProcessWorker {
 
     @RabbitListener(queues = DO_WORK_ON_INSTANCE_QUEUE)
     public void listen(WorkerPayload payload) {
+        // Fetch the process instance
+        // If this fails, we cannot continue
+        var processInstance = processInstanceRepository
+                .findById(payload.processInstanceId)
+                .orElseThrow(() -> new RuntimeException(
+                        "Der Vorgang mit der ID „%d“ wurde nicht gefunden."
+                                .formatted(payload.processInstanceId)
+                ));
+
+        var logger = processNodeExecutionLoggerFactory
+                .create(processInstance.getId(), null, null, null);
+
         try {
             process(
-                    payload.processInstanceId(),
+                    logger,
+                    processInstance,
                     payload.previousNodeId(),
                     payload.nextNodeId()
             );
-        } catch (Exception error) {
-            processInstanceHistoryEventRepository.save(ProcessInstanceHistoryEventEntity.from(
-                    payload.processInstanceId(),
-                    null,
-                    null,
-                    error
-            ));
-            // TODO: Create notification for failed process execution
+        } catch (ProcessNodeExecutionException exception) {
+            logger.logException(exception);
+        } catch (Exception exception) {
+            logger.logException(exception);
         }
     }
 
-    private void process(@Nonnull Long processInstanceId, @Nullable Integer previousNodeId, @Nonnull Integer nodeId) {
-        var processInstance = processInstanceRepository
-                .findById(processInstanceId)
-                .orElseThrow(() -> new RuntimeException(
-                        "Der Vorgang mit der ID „%d“ wurde nicht gefunden.".formatted(processInstanceId)
-                ));
+    private void process(@Nonnull ProcessNodeExecutionLogger logger,
+                         @Nonnull ProcessInstanceEntity processInstance,
+                         @Nullable Integer previousNodeId,
+                         @Nonnull Integer nodeId) throws ProcessNodeExecutionException {
 
+        // Fetch the current node
         var currentNode = processDefinitionNodeRepository
                 .findById(nodeId)
-                .orElseThrow(() -> new RuntimeException(
-                        "Das Prozesselement mit der ID „%d“ wurde nicht gefunden.".formatted(nodeId)
+                .orElseThrow(() -> new ProcessNodeExecutionExceptionUnknown(
+                        "Das Prozesselement mit der ID „%d“ wurde nicht gefunden.",
+                        nodeId
                 ));
 
+        // Fetch the current node provider
         var currentNodeProvider = processNodeProviderService
-                .getProcessNodeDefinition(currentNode.getProcessNodeDefinitionKey(), currentNode.getProcessNodeDefinitionVersion())
-                .orElseThrow(() -> new RuntimeException(
-                        "Die Prozesselementdefinition mit dem Schlüssel „%s“ und der Version „%d“ wurde nicht gefunden."
-                                .formatted(currentNode.getProcessNodeDefinitionKey(), currentNode.getProcessNodeDefinitionVersion())
+                .getProcessNodeDefinition(currentNode)
+                .orElseThrow(() -> new ProcessNodeExecutionExceptionUnknown(
+                        "Der Prozessknoten-Funktionsanbieter mit dem Schlüssel „%s“ und der Version „%d“ wurde nicht gefunden.",
+                        currentNode.getProcessNodeDefinitionKey(),
+                        currentNode.getProcessNodeDefinitionVersion()
                 ));
 
         var deadline = currentNode.getTimeLimitDays() != null ?
@@ -110,7 +122,7 @@ public class ProcessWorker {
                         UUID.randomUUID(),
                         processInstance.getId(),
                         processInstance.getProcessId(),
-                        processInstance.getProcessVersion(),
+                        currentNode.getProcessVersion(),
                         currentNode.getId(),
                         previousNodeId,
                         ProcessTaskStatus.Running,
@@ -127,77 +139,66 @@ public class ProcessWorker {
                 )
         );
 
-        processInstanceHistoryEventRepository.save(new ProcessInstanceHistoryEventEntity(
-                null,
-                ProcessHistoryEventType.Start,
-                "Aufgabe gestartet",
-                "Die Aufgabe für das Prozesselement „%s“ wurde gestartet.".formatted(currentNode.resolveName(currentNodeProvider)),
-                Map.of(),
-                LocalDateTime.now(),
-                null,
-                processInstance.getId(),
-                taskEntity.getId()
-        ));
+        logger = logger
+                .withTaskId(taskEntity.getId());
 
-        try {
-            var processData = processDataService
-                    .foldProcessInstanceData(
-                            processInstance,
+        logger.logf(
+                ProcessNodeExecutionLogLevel.Debug,
+                true,
+                false,
+                "Aufgabe für das Prozesselement „%s“ (ID: %d) wurde gestartet.",
+                currentNode.resolveName(currentNodeProvider),
+                currentNode.getId()
+        );
+
+        var processData = processDataService
+                .foldProcessInstanceData(
+                        processInstance,
+                        previousNodeId
+                );
+
+        var context = new ProcessNodeExecutionContextInit(
+                logger,
+                currentNode,
+                processInstance,
+                taskEntity,
+                null,
+                processData
+        );
+
+        var res = currentNodeProvider
+                .init(context);
+
+        if (res == null) {
+            throw new ProcessNodeExecutionExceptionUnknown(
+                    "Der Prozessknoten-Funktionsanbieter „%s“ für das Prozesselement „%s“ lieferte kein Ergebnis zurück.",
+                    currentNodeProvider.getName(),
+                    currentNode.resolveName(currentNodeProvider)
+            );
+        }
+
+        ProcessInstanceTaskEntity previousTask;
+        if (previousNodeId != null) {
+            previousTask = processInstanceTaskRepository
+                    .findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(
+                            processInstance.getId(),
                             previousNodeId
                     );
-
-            ProcessNodeExecutionResult res;
-            try {
-                res = currentNodeProvider
-                        .init(
-                                processInstance,
-                                currentNode,
-                                processData
-                        );
-            } catch (Exception e) {
-                throw e;
-            }
-
-            if (res == null) {
-                throw new RuntimeException(
-                        "Der Prozessknoten-Funktionsanbieter „%s“ für das Prozesselement „%s“ lieferte kein Ergebnis zurück."
-                                .formatted(currentNodeProvider.getName(), currentNode.resolveName(currentNodeProvider))
-                );
-            }
-
-            ProcessInstanceTaskEntity previousTask;
-            if (previousNodeId != null) {
-                previousTask = processInstanceTaskRepository
-                        .findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(
-                                processInstance.getId(),
-                                previousNodeId
-                        );
-            } else {
-                previousTask = null;
-            }
-
-            processNodeExecutionResultHandler
-                    .handleResult(
-                            null,
-                            currentNodeProvider,
-                            currentNode,
-                            processInstance,
-                            taskEntity,
-                            previousTask,
-                            res
-                    );
-        } catch (Exception e) {
-            processNodeExecutionResultHandler
-                    .handleResult(
-                            null,
-                            currentNodeProvider,
-                            currentNode,
-                            processInstance,
-                            taskEntity,
-                            null,
-                            ProcessNodeExecutionResultError.of(e)
-                    );
+        } else {
+            previousTask = null;
         }
+
+        processNodeExecutionResultHandler
+                .handleResult(
+                        logger,
+                        null,
+                        currentNodeProvider,
+                        currentNode,
+                        processInstance,
+                        taskEntity,
+                        previousTask,
+                        res
+                );
     }
 
     public record WorkerPayload(

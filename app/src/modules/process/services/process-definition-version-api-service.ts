@@ -1,5 +1,5 @@
 import {BaseCrudApiService} from "../../../services/base-crud-api-service";
-import {ProcessDefinitionVersionEntity} from "../entities/process-definition-version-entity";
+import {ProcessVersionEntity} from "../entities/process-version-entity";
 import {ProcessStatus} from "../enums/process-status";
 import {RetentionTimeUnit} from "../enums/retention-time-unit";
 
@@ -17,10 +17,10 @@ interface ProcessDefinitionVersionEntityId {
 }
 
 export class ProcessDefinitionVersionApiService extends BaseCrudApiService<
-    ProcessDefinitionVersionEntity,
-    ProcessDefinitionVersionEntity,
-    ProcessDefinitionVersionEntity,
-    ProcessDefinitionVersionEntity,
+    ProcessVersionEntity,
+    ProcessVersionEntity,
+    ProcessVersionEntity,
+    ProcessVersionEntity,
     ProcessDefinitionVersionEntityId,
     ProcessDefinitionVersionFilter
 > {
@@ -32,16 +32,15 @@ export class ProcessDefinitionVersionApiService extends BaseCrudApiService<
         return `${this.path}${id.processDefinitionId}/${id.processDefinitionVersion}/`;
     }
 
-    initialize(): ProcessDefinitionVersionEntity {
+    initialize(): ProcessVersionEntity {
         return ProcessDefinitionVersionApiService.initialize();
     }
 
-    public static initialize(): ProcessDefinitionVersionEntity {
+    public static initialize(): ProcessVersionEntity {
         return {
             processId: 0,
             processVersion: 0,
-            retentionTimeAmount: 0,
-            retentionTimeUnit: RetentionTimeUnit.Days,
+            publicTitle: 'Neues Verfahren',
             status: ProcessStatus.Drafted,
             crated: new Date().toISOString(),
             updated: new Date().toISOString(),

@@ -1,5 +1,5 @@
 import {BaseCrudApiService} from "../../../services/base-crud-api-service";
-import {ProcessDefinitionEntity} from "../entities/process-definition-entity";
+import {ProcessEntity} from "../entities/process-entity";
 import {ProcessExport} from "../entities/process-export";
 
 interface ProcessDefinitionFilter {
@@ -10,10 +10,10 @@ interface ProcessDefinitionFilter {
 }
 
 export class ProcessDefinitionApiService extends BaseCrudApiService<
-    ProcessDefinitionEntity,
-    ProcessDefinitionEntity,
-    ProcessDefinitionEntity,
-    ProcessDefinitionEntity,
+    ProcessEntity,
+    ProcessEntity,
+    ProcessEntity,
+    ProcessEntity,
     number,
     ProcessDefinitionFilter
 > {
@@ -21,14 +21,14 @@ export class ProcessDefinitionApiService extends BaseCrudApiService<
         super('/api/processes/');
     }
 
-    initialize(): ProcessDefinitionEntity {
+    initialize(): ProcessEntity {
         return ProcessDefinitionApiService.initialize();
     }
 
-    public static initialize(): ProcessDefinitionEntity {
+    public static initialize(): ProcessEntity {
         return {
             id: 0,
-            name: "",
+            internalTitle: "",
             departmentId: 0,
             versionCount: 0,
             draftedVersion: null,
@@ -42,7 +42,7 @@ export class ProcessDefinitionApiService extends BaseCrudApiService<
         return this.get<ProcessExport>(`/api/processes/${processId}/export/${version}/`)
     }
 
-    public import(processData: ProcessExport): Promise<ProcessDefinitionEntity> {
-        return this.post<ProcessExport, ProcessDefinitionEntity>(`/api/processes/import/`, processData);
+    public import(processData: ProcessExport): Promise<ProcessEntity> {
+        return this.post<ProcessExport, ProcessEntity>(`/api/processes/import/`, processData);
     }
 }

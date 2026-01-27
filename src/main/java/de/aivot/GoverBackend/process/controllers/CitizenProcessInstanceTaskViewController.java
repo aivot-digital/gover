@@ -8,9 +8,12 @@ import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
+import de.aivot.GoverBackend.process.entities.ProcessTestClaimEntity;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
+import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.filters.ProcessInstanceFilter;
 import de.aivot.GoverBackend.process.filters.ProcessInstanceTaskFilter;
+import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextUICustomer;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.models.TaskViewEvent;
@@ -39,19 +42,21 @@ public class CitizenProcessInstanceTaskViewController {
     private final ProcessDefinitionNodeService processDefinitionNodeService;
     private final ProcessNodeExecutionResultHandler processNodeExecutionResultHandler;
     private final ProcessDataService processDataService;
+    private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
 
     public CitizenProcessInstanceTaskViewController(ProcessInstanceService processInstanceService,
                                                     ProcessInstanceTaskService processInstanceTaskService,
                                                     ProcessNodeDefinitionService processNodeProviderService,
                                                     ProcessDefinitionNodeService processDefinitionNodeService,
                                                     ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
-                                                    ProcessDataService processDataService) {
+                                                    ProcessDataService processDataService, ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory) {
         this.processInstanceService = processInstanceService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.processNodeProviderService = processNodeProviderService;
         this.processDefinitionNodeService = processDefinitionNodeService;
         this.processNodeExecutionResultHandler = processNodeExecutionResultHandler;
         this.processDataService = processDataService;
+        this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
     }
 
     @GetMapping("")
@@ -70,32 +75,34 @@ public class CitizenProcessInstanceTaskViewController {
                 taskAccess
         );
 
+        var logger = processNodeExecutionLoggerFactory
+                .create(
+                        taskViewData.instance.getId(),
+                        taskViewData.task.getId(),
+                        null,
+                        identityId
+                );
+
+        var context = new ProcessNodeExecutionContextUICustomer(
+                logger,
+                taskViewData.node,
+                taskViewData.instance,
+                taskViewData.task,
+                new ProcessTestClaimEntity(), // TODO: Get Test Claim
+                identityId
+        );
+
         var layout = taskViewData
                 .provider
-                .getCustomerTaskView(
-                        identityId,
-                        taskViewData.node,
-                        taskViewData.instance,
-                        taskViewData.task
-                );
+                .getCustomerTaskView(context);
 
         var events = taskViewData
                 .provider
-                .getCustomerTaskViewEvents(
-                        identityId,
-                        taskViewData.node,
-                        taskViewData.instance,
-                        taskViewData.task
-                );
+                .getCustomerTaskViewEvents(context);
 
         var elementData = taskViewData
                 .provider
-                .getCustomerTaskViewData(
-                        identityId,
-                        taskViewData.node,
-                        taskViewData.instance,
-                        taskViewData.task
-                );
+                .getCustomerTaskViewData(context);
 
         return new TaskViewResponse(
                 layout,
@@ -122,6 +129,23 @@ public class CitizenProcessInstanceTaskViewController {
                 taskAccess
         );
 
+        var logger = processNodeExecutionLoggerFactory
+                .create(
+                        taskViewData.instance.getId(),
+                        taskViewData.task.getId(),
+                        null,
+                        identityId
+                );
+
+        var context = new ProcessNodeExecutionContextUICustomer(
+                logger,
+                taskViewData.node,
+                taskViewData.instance,
+                taskViewData.task,
+                new ProcessTestClaimEntity(), // TODO: Get Test Claim
+                identityId
+        );
+
         ProcessInstanceTaskEntity previousTask;
         if (taskViewData.task.getPreviousProcessNodeId() != null) {
             previousTask = processInstanceTaskService
@@ -139,21 +163,11 @@ public class CitizenProcessInstanceTaskViewController {
 
         var layout = taskViewData
                 .provider
-                .getCustomerTaskView(
-                        identityId,
-                        taskViewData.node,
-                        taskViewData.instance,
-                        taskViewData.task
-                );
+                .getCustomerTaskView(context);
 
         var events = taskViewData
                 .provider
-                .getCustomerTaskViewEvents(
-                        identityId,
-                        taskViewData.node,
-                        taskViewData.instance,
-                        taskViewData.task
-                );
+                .getCustomerTaskViewEvents(context);
 
         // Test if the event is valid
         events
@@ -175,11 +189,8 @@ public class CitizenProcessInstanceTaskViewController {
         try {
             res = taskViewData
                     .provider
-                    .updateCustomer(
-                            identityId,
-                            taskViewData.instance,
-                            taskViewData.node,
-                            processData,
+                    .onUpdateFromCustomer(
+                            context,
                             valueMap,
                             event
                     );
@@ -197,43 +208,35 @@ public class CitizenProcessInstanceTaskViewController {
             );
         }
 
-        processNodeExecutionResultHandler
-                .handleResult(
-                        null,
-                        taskViewData.provider,
-                        taskViewData.node,
-                        taskViewData.instance,
-                        taskViewData.task,
-                        previousTask,
-                        res.get()
-                );
+        try {
+            processNodeExecutionResultHandler
+                    .handleResult(
+                            logger,
+                            null,
+                            taskViewData.provider,
+                            taskViewData.node,
+                            taskViewData.instance,
+                            taskViewData.task,
+                            previousTask,
+                            res.get()
+                    );
+        } catch (ProcessNodeExecutionException e) {
+            // TODO: Log error
+            throw ResponseException.internalServerError(e);
+        }
+
 
         var updatedLayout = taskViewData
                 .provider
-                .getCustomerTaskView(
-                        identityId,
-                        taskViewData.node,
-                        taskViewData.instance,
-                        taskViewData.task
-                );
+                .getCustomerTaskView(context);
 
         var updatedEvents = taskViewData
                 .provider
-                .getCustomerTaskViewEvents(
-                        identityId,
-                        taskViewData.node,
-                        taskViewData.instance,
-                        taskViewData.task
-                );
+                .getCustomerTaskViewEvents(context);
 
         var updatedElementData = taskViewData
                 .provider
-                .getCustomerTaskViewData(
-                        identityId,
-                        taskViewData.node,
-                        taskViewData.instance,
-                        taskViewData.task
-                );
+                .getCustomerTaskViewData(context);
 
         return new TaskViewResponse(
                 updatedLayout,

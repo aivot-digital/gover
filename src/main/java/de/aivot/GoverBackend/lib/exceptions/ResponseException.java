@@ -65,7 +65,7 @@ public class ResponseException extends Exception {
         super(title, cause);
         this.status = status;
         this.title = title;
-        this.details = null;
+        this.details = cause.getMessage();
     }
 
     public ResponseException(
@@ -197,6 +197,14 @@ public class ResponseException extends Exception {
 
     public static ResponseException notAcceptable(String message) {
         return new ResponseException(HttpStatus.NOT_ACCEPTABLE, "Die angeforderte Ressource ist nicht in dem gewünschten Format verfügbar.");
+    }
+
+    public static ResponseException methodNotAllowed(String message) {
+        return new ResponseException(HttpStatus.METHOD_NOT_ALLOWED, message);
+    }
+
+    public static ResponseException methodNotAllowed(String format, Object... args) {
+        return new ResponseException(HttpStatus.METHOD_NOT_ALLOWED, String.format(format, args));
     }
 
     // endregion

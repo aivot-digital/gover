@@ -1,4 +1,4 @@
-package de.aivot.GoverBackend.plugins.core.v1.nodes;
+package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.elements.models.elements.form.input.CodeInputElement;
@@ -13,6 +13,8 @@ import de.aivot.GoverBackend.process.entities.ProcessVersionEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.enums.ProcessHistoryEventType;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
+import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
+import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.services.ProcessDataService;
 import de.aivot.GoverBackend.user.entities.UserEntity;
@@ -24,13 +26,13 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class JavascriptActionNode implements ProcessNodeDefinition, PluginComponent {
+public class LowCodeActionNode implements ProcessNodeDefinition, PluginComponent {
     private static final String PORT_NAME = "output";
 
     private static final String CODE_FIELD_KEY = "js_code";
     private final JavascriptEngineFactoryService javascriptEngineFactoryService;
 
-    public JavascriptActionNode(JavascriptEngineFactoryService javascriptEngineFactoryService) {
+    public LowCodeActionNode(JavascriptEngineFactoryService javascriptEngineFactoryService) {
         this.javascriptEngineFactoryService = javascriptEngineFactoryService;
     }
 
@@ -53,11 +55,26 @@ public class JavascriptActionNode implements ProcessNodeDefinition, PluginCompon
 
     @Nonnull
     @Override
+    public ProcessNodeType getType() {
+        return ProcessNodeType.Action;
+    }
+
+    @Nonnull
+    @Override
+    public String getName() {
+        return "Low-Code ausführen";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return "Führt benutzerdefinierten JavaScript-Code aus.";
+    }
+
+    @Nonnull
+    @Override
     @JsonIgnore
-    public ConfigLayoutElement getConfigurationLayout(@Nonnull UserEntity user,
-                                                      @Nonnull ProcessEntity processDefinition,
-                                                      @Nonnull ProcessVersionEntity processDefinitionVersion,
-                                                      @Nullable ProcessNodeEntity thisNode) {
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionContextConfig context) {
         var layout = new ConfigLayoutElement();
         layout.setId(getKey() + "-config");
 
@@ -73,24 +90,6 @@ public class JavascriptActionNode implements ProcessNodeDefinition, PluginCompon
 
     @Nonnull
     @Override
-    public ProcessNodeType getType() {
-        return ProcessNodeType.Action;
-    }
-
-    @Nonnull
-    @Override
-    public String getName() {
-        return "Javascript";
-    }
-
-    @Nonnull
-    @Override
-    public String getDescription() {
-        return "Verarbeitet Daten mithilfe von benutzerdefiniertem Javascript-Code.";
-    }
-
-    @Nonnull
-    @Override
     public List<ProcessNodePort> getPorts() {
         return List.of(
                 new ProcessNodePort(
@@ -102,11 +101,11 @@ public class JavascriptActionNode implements ProcessNodeDefinition, PluginCompon
     }
 
     @Override
-    public ProcessNodeExecutionResult init(@Nonnull ProcessInstanceEntity processInstance,
-                                           @Nonnull ProcessNodeEntity thisNode,
-                                           @Nonnull Map<String, Object> workingData) throws Exception {
-        var configuration = thisNode
+    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
+        var configuration = context
+                .getThisNode()
                 .getConfiguration();
+
         var code = configuration
                 .get(CODE_FIELD_KEY)
                 .getOptionalValue()
@@ -118,11 +117,11 @@ public class JavascriptActionNode implements ProcessNodeDefinition, PluginCompon
 
         try (var engine = javascriptEngineFactoryService.getEngine()) {
             ProcessDataService
-                    .fillJsEngineWithData(workingData, engine);
+                    .fillJsEngineWithData(context.getProcessData(), engine);
 
             try {
                 var result = engine
-                        .registerGlobalObject("$", workingData.get("$"))
+                        .registerGlobalObject("$", context.getProcessData().get("$"))
                         .evaluateCode(jsCode);
 
                 return new ProcessNodeExecutionResultTaskCompleted()
@@ -131,19 +130,18 @@ public class JavascriptActionNode implements ProcessNodeDefinition, PluginCompon
                         .setNodeData(Map.of(
                                 "stdout", result.getStdOutput(),
                                 "stderr", result.getErrOutput()
-                        ))
-                        .addEvent(ProcessNodeExecutionEvent.of(
-                                ProcessHistoryEventType.Complete,
-                                "Javascript-Code erfolgreich ausgeführt.",
-                                "Der benutzerdefinierte Javascript-Code wurde erfolgreich ausgeführt."
                         ));
             } catch (Exception e) {
-                return new ProcessNodeExecutionResultError()
-                        .setMessage(e.getLocalizedMessage());
+                throw new ProcessNodeExecutionExceptionUnknown(
+                        e,
+                        "Fehler bei der Ausführung des Low-Code-Skripts."
+                );
             }
         } catch (Exception e) {
-            return new ProcessNodeExecutionResultError()
-                    .setMessage(e.getLocalizedMessage());
+            throw new ProcessNodeExecutionExceptionUnknown(
+                    e,
+                    "Fehler beim Initialisieren der Javascript-Engine."
+            );
         }
     }
 }

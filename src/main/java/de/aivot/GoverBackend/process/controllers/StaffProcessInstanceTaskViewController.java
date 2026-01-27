@@ -1,6 +1,8 @@
 package de.aivot.GoverBackend.process.controllers;
 
 import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.identity.controllers.IdentityController;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -9,7 +11,9 @@ import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
+import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.filters.ProcessInstanceTaskFilter;
+import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextUIStaff;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.models.TaskViewEvent;
@@ -42,6 +46,7 @@ public class StaffProcessInstanceTaskViewController {
     private final ProcessNodeExecutionResultHandler processNodeExecutionResultHandler;
     private final ProcessDataService processDataService;
     private final UserService userService;
+    private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
 
     public StaffProcessInstanceTaskViewController(ProcessInstanceService processInstanceService,
                                                   ProcessInstanceTaskService processInstanceTaskService,
@@ -49,7 +54,7 @@ public class StaffProcessInstanceTaskViewController {
                                                   ProcessDefinitionNodeService processDefinitionNodeService,
                                                   ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
                                                   ProcessDataService processDataService,
-                                                  UserService userService) {
+                                                  UserService userService, ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory) {
         this.processInstanceService = processInstanceService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.processNodeProviderService = processNodeProviderService;
@@ -57,6 +62,7 @@ public class StaffProcessInstanceTaskViewController {
         this.processNodeExecutionResultHandler = processNodeExecutionResultHandler;
         this.processDataService = processDataService;
         this.userService = userService;
+        this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
     }
 
     @GetMapping("")
@@ -68,41 +74,40 @@ public class StaffProcessInstanceTaskViewController {
     public TaskViewResponse retrieve(
             @Nonnull @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Long procId,
-            @Nonnull @PathVariable Long taskId,
-            @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId
+            @Nonnull @PathVariable Long taskId
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var logger = processNodeExecutionLoggerFactory
+                .create(procId, procId, user.getId(), null);
+
         var taskViewData = fetchTaskViewData(
                 jwt,
                 procId,
                 taskId
         );
 
+        var context = new ProcessNodeExecutionContextUIStaff(logger,
+                taskViewData.node(),
+                taskViewData.instance(),
+                taskViewData.task(),
+                null,
+                user
+        );
+
         var layout = taskViewData
                 .provider
-                .getStaffTaskView(
-                        taskViewData.user,
-                        taskViewData.node,
-                        taskViewData.instance,
-                        taskViewData.task
-                );
+                .getStaffTaskView(context);
 
         var events = taskViewData
                 .provider
-                .getStaffTaskViewEvents(
-                        taskViewData.user,
-                        taskViewData.node,
-                        taskViewData.instance,
-                        taskViewData.task
-                );
+                .getStaffTaskViewEvents(context);
 
         var elementData = taskViewData
                 .provider
-                .getStaffTaskViewData(
-                        taskViewData.user,
-                        taskViewData.node,
-                        taskViewData.instance,
-                        taskViewData.task
-                );
+                .getStaffTaskViewData(context);
 
         return new TaskViewResponse(
                 layout,
@@ -125,10 +130,25 @@ public class StaffProcessInstanceTaskViewController {
             @Nullable @RequestParam(value = "event", required = true) String event,
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var logger = processNodeExecutionLoggerFactory
+                .create(procId, procId, user.getId(), null);
+
         var taskViewData = fetchTaskViewData(
                 jwt,
                 procId,
                 taskId
+        );
+
+        var context = new ProcessNodeExecutionContextUIStaff(logger,
+                taskViewData.node(),
+                taskViewData.instance(),
+                taskViewData.task(),
+                null,
+                user
         );
 
         ProcessInstanceTaskEntity previousTask;
@@ -148,21 +168,11 @@ public class StaffProcessInstanceTaskViewController {
 
         var layout = taskViewData
                 .provider
-                .getStaffTaskView(
-                        taskViewData.user,
-                        taskViewData.node,
-                        taskViewData.instance,
-                        taskViewData.task
-                );
+                .getStaffTaskView(context);
 
         var events = taskViewData
                 .provider
-                .getStaffTaskViewEvents(
-                        taskViewData.user,
-                        taskViewData.node,
-                        taskViewData.instance,
-                        taskViewData.task
-                );
+                .getStaffTaskViewEvents(context);
 
         // Test if the event is valid
         events
@@ -172,7 +182,7 @@ public class StaffProcessInstanceTaskViewController {
                 .orElseThrow(() -> ResponseException.badRequest("Invalid event: " + event));
 
         var valueMap = ElementData
-                .toValueMap(layout, elementData);
+                .toValueMap((BaseElement) layout, elementData);
 
         var processData = processDataService
                 .foldProcessInstanceData(
@@ -184,21 +194,14 @@ public class StaffProcessInstanceTaskViewController {
         try {
             res = taskViewData
                     .provider
-                    .updateStaff(
-                            taskViewData.user,
-                            taskViewData.instance,
-                            taskViewData.node,
-                            processData,
-                            valueMap,
-                            event
-                    );
+                    .onUpdateFromStaff(context, valueMap, event);
         } catch (Exception e) {
             throw ResponseException.internalServerError(e);
         }
 
         if (res.isEmpty()) {
             var workingElementData = ElementData
-                    .fromValueMap(layout, taskViewData.task.getProcessData());
+                    .fromValueMap((BaseElement) layout, taskViewData.task.getProcessData());
             return new TaskViewResponse(
                     layout,
                     workingElementData,
@@ -206,43 +209,34 @@ public class StaffProcessInstanceTaskViewController {
             );
         }
 
-        processNodeExecutionResultHandler
-                .handleResult(
-                        null,
-                        taskViewData.provider,
-                        taskViewData.node,
-                        taskViewData.instance,
-                        taskViewData.task,
-                        previousTask,
-                        res.get()
-                );
+        try {
+            processNodeExecutionResultHandler
+                    .handleResult(
+                            logger,
+                            null,
+                            taskViewData.provider,
+                            taskViewData.node,
+                            taskViewData.instance,
+                            taskViewData.task,
+                            previousTask,
+                            res.get()
+                    );
+        } catch (ProcessNodeExecutionException e) {
+            // TODO: Handle properly
+            throw ResponseException.internalServerError(e);
+        }
 
         var updatedLayout = taskViewData
                 .provider
-                .getStaffTaskView(
-                        taskViewData.user,
-                        taskViewData.node,
-                        taskViewData.instance,
-                        taskViewData.task
-                );
+                .getStaffTaskView(context);
 
         var updatedEvents = taskViewData
                 .provider
-                .getStaffTaskViewEvents(
-                        taskViewData.user,
-                        taskViewData.node,
-                        taskViewData.instance,
-                        taskViewData.task
-                );
+                .getStaffTaskViewEvents(context);
 
         var updatedElementData = taskViewData
                 .provider
-                .getStaffTaskViewData(
-                        taskViewData.user,
-                        taskViewData.node,
-                        taskViewData.instance,
-                        taskViewData.task
-                );
+                .getStaffTaskViewData(context);
 
         return new TaskViewResponse(
                 updatedLayout,
@@ -306,7 +300,7 @@ public class StaffProcessInstanceTaskViewController {
 
     public record TaskViewResponse(
             @Nonnull
-            GroupLayoutElement layout,
+            LayoutElement<?> layout,
             @Nonnull
             ElementData data,
             @Nonnull

@@ -78,6 +78,7 @@ public class ProcessDefinitionVersionService implements EntityService<ProcessVer
                                               @Nonnull ProcessVersionEntity entity,
                                               @Nonnull ProcessVersionEntity existingEntity) throws ResponseException {
         existingEntity.setStatus(entity.getStatus());
+        existingEntity.setPublicTitle(entity.getPublicTitle());
         return processDefinitionVersionRepository.save(existingEntity);
     }
 

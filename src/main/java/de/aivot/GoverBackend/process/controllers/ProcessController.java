@@ -122,7 +122,7 @@ public class ProcessController {
 
         auditService.logAction(execUser, AuditAction.Create, ProcessEntity.class, Map.of(
                 "id", result.getId(),
-                "name", result.getName()
+                "name", result.getInternalTitle()
         ));
 
         return result;
@@ -203,7 +203,7 @@ public class ProcessController {
 
         auditService.logAction(execUser, AuditAction.Create, ProcessEntity.class, Map.of(
                 "id", newProcess.getId(),
-                "name", newProcess.getName()
+                "name", newProcess.getInternalTitle()
         ));
 
         return newProcess;
@@ -255,7 +255,7 @@ public class ProcessController {
 
         auditService.logAction(execUser, AuditAction.Update, ProcessEntity.class, Map.of(
                 "id", result.getId(),
-                "name", result.getName()
+                "name", result.getInternalTitle()
         ));
 
         return result;
@@ -282,7 +282,7 @@ public class ProcessController {
 
         auditService.logAction(user, AuditAction.Delete, TeamEntity.class, Map.of(
                 "id", deleted.getId(),
-                "name", deleted.getName()
+                "name", deleted.getInternalTitle()
         ));
     }
 
@@ -335,7 +335,7 @@ public class ProcessController {
 
         auditService.logAction(execUser, AuditAction.Retrieve, ProcessEntity.class, Map.of(
                 "id", existing.getId(),
-                "name", existing.getName(),
+                "name", existing.getInternalTitle(),
                 "export", true
         ));
 

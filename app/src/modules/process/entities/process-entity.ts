@@ -1,6 +1,6 @@
-export interface ProcessDefinitionEntity {
+export interface ProcessEntity {
     id: number;
-    name: string;
+    internalTitle: string;
     departmentId: number;
     versionCount: number;
     draftedVersion: number | null;

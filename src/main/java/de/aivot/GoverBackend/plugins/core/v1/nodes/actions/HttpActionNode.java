@@ -1,6 +1,7 @@
-package de.aivot.GoverBackend.plugins.core.v1.nodes;
+package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.elements.form.input.CheckboxInputElement;
@@ -16,6 +17,9 @@ import de.aivot.GoverBackend.process.entities.ProcessVersionEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.enums.ProcessHistoryEventType;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
+import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
+import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
+import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.services.ProcessDataService;
 import de.aivot.GoverBackend.user.entities.UserEntity;
@@ -69,11 +73,26 @@ public class HttpActionNode implements ProcessNodeDefinition, PluginComponent {
 
     @Nonnull
     @Override
+    public ProcessNodeType getType() {
+        return ProcessNodeType.Action;
+    }
+
+    @Nonnull
+    @Override
+    public String getName() {
+        return "Externer HTTP Aufruf";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return "Führt HTTP-Requests zu externen Systemen durch.";
+    }
+
+    @Nonnull
+    @Override
     @JsonIgnore
-    public ConfigLayoutElement getConfigurationLayout(@Nonnull UserEntity user,
-                                                      @Nonnull ProcessEntity processDefinition,
-                                                      @Nonnull ProcessVersionEntity processDefinitionVersion,
-                                                      @Nullable ProcessNodeEntity thisNode) {
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionContextConfig context) {
         var layout = new ConfigLayoutElement();
         layout.setId(getKey() + "-config");
 
@@ -111,24 +130,6 @@ public class HttpActionNode implements ProcessNodeDefinition, PluginComponent {
 
     @Nonnull
     @Override
-    public ProcessNodeType getType() {
-        return ProcessNodeType.Action;
-    }
-
-    @Nonnull
-    @Override
-    public String getName() {
-        return "HTTP-Anfrage";
-    }
-
-    @Nonnull
-    @Override
-    public String getDescription() {
-        return "Lädt Daten von einer externen HTTP-Quelle.";
-    }
-
-    @Nonnull
-    @Override
     public List<ProcessNodePort> getPorts() {
         return List.of(
                 new ProcessNodePort(
@@ -162,10 +163,8 @@ public class HttpActionNode implements ProcessNodeDefinition, PluginComponent {
     }
 
     @Override
-    public ProcessNodeExecutionResult init(@Nonnull ProcessInstanceEntity processInstance,
-                                           @Nonnull ProcessNodeEntity thisNode,
-                                           @Nonnull Map<String, Object> workingData) throws Exception {
-        var configuration = thisNode.getConfiguration();
+    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
+        var configuration = context.getThisNode().getConfiguration();
 
         var method = configuration
                 .get(METHOD_FIELD_ID)
@@ -175,7 +174,7 @@ public class HttpActionNode implements ProcessNodeDefinition, PluginComponent {
 
         var url = processDataService
                 .interpolate(
-                        workingData,
+                        context.getProcessData(),
                         configuration
                                 .get(URL_FIELD_ID)
                                 .getOptionalValue()
@@ -195,9 +194,25 @@ public class HttpActionNode implements ProcessNodeDefinition, PluginComponent {
 
         HttpResponse<String> response;
         if (method.equals("GET")) {
-            response = httpService.get(uri);
+            try {
+                response = httpService.get(uri);
+            } catch (HttpConnectionException e) {
+                throw new ProcessNodeExecutionExceptionUnknown(
+                        e,
+                        "Fehler beim HTTP-GET-Aufruf: %s",
+                        e.getMessage()
+                );
+            }
         } else {
-            response = httpService.post(uri, "");
+            try {
+                response = httpService.post(uri, "{}");
+            } catch (HttpConnectionException e) {
+                throw new ProcessNodeExecutionExceptionUnknown(
+                        e,
+                        "Fehler beim HTTP-POST-Aufruf: %s",
+                        e.getMessage()
+                );
+            }
         }
 
         var metadata = new HashMap<String, Object>();
@@ -221,11 +236,16 @@ public class HttpActionNode implements ProcessNodeDefinition, PluginComponent {
                             .readValue(bodyStr, List.class);
                     metadata.put(OUTPUT_NAME_BODY, body);
                 } else {
-                    return ProcessNodeExecutionResultError
-                            .of("Die Antwort ist kein gültiges JSON-Objekt oder -Array.");
+                    throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                            "Die Antwort ist kein gültiges JSON-Objekt oder -Array."
+                    );
                 }
             } catch (Exception e) {
-                return ProcessNodeExecutionResultError.of(e);
+                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                        e,
+                        "Fehler beim Verarbeiten der JSON-Antwort: %s",
+                        e.getMessage()
+                );
             }
         } else {
             metadata.put(OUTPUT_NAME_BODY, bodyStr);
@@ -233,11 +253,6 @@ public class HttpActionNode implements ProcessNodeDefinition, PluginComponent {
 
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_NAME)
-                .setNodeData(metadata)
-                .addEvent(ProcessNodeExecutionEvent.of(
-                        ProcessHistoryEventType.Complete,
-                        "HTTP-Anfrage erfolgreich abgeschlossen.",
-                        "Die HTTP-Anfrage an " + url + " wurde erfolgreich ausgeführt. Der Statuscode ist " + response.statusCode() + "."
-                ));
+                .setNodeData(metadata);
     }
 }

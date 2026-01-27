@@ -1,14 +1,13 @@
 package de.aivot.GoverBackend.process.filters;
 
-import de.aivot.GoverBackend.process.entities.ProcessInstanceHistoryEventEntity;
+import de.aivot.GoverBackend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
 import jakarta.annotation.Nonnull;
-import java.time.LocalDateTime;
 
-public class ProcessInstanceHistoryEventFilter implements Filter<ProcessInstanceHistoryEventEntity> {
+public class ProcessInstanceHistoryEventFilter implements Filter<ProcessInstanceEventEntity> {
     private Long id;
     private String triggeringUserId;
     private Long processInstanceId;
@@ -20,9 +19,9 @@ public class ProcessInstanceHistoryEventFilter implements Filter<ProcessInstance
 
     @Nonnull
     @Override
-    public Specification<ProcessInstanceHistoryEventEntity> build() {
+    public Specification<ProcessInstanceEventEntity> build() {
         var builder = SpecificationBuilder
-                .create(ProcessInstanceHistoryEventEntity.class)
+                .create(ProcessInstanceEventEntity.class)
                 .withEquals("id", id)
                 .withEquals("triggeringUserId", triggeringUserId)
                 .withEquals("processInstanceId", processInstanceId)

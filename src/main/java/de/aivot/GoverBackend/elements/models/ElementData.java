@@ -11,10 +11,7 @@ import de.aivot.GoverBackend.enums.ElementType;
 import net.minidev.json.annotate.JsonIgnore;
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 
 public class ElementData extends HashMap<String, ElementDataObject> implements Serializable {
@@ -69,6 +66,10 @@ public class ElementData extends HashMap<String, ElementDataObject> implements S
         var elementDataObject = new ElementDataObject(type);
         elementDataObject.setInputValue(value);
         return put(id, elementDataObject);
+    }
+
+    public Optional<ElementDataObject> getOpt(String key) {
+        return Optional.ofNullable(get(key));
     }
 
     @JsonIgnore

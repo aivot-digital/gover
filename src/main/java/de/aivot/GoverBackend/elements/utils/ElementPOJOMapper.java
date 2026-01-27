@@ -65,25 +65,39 @@ public class ElementPOJOMapper {
                 continue;
             }
 
-            // Set the extracted value to the field using its setter method
-            try {
-                var setterMethod = getSetterMethodForField(pojoClass, field);
-                setterMethod.invoke(target, valueToSet);
-            } catch (IllegalAccessException e) {
-                throw new ElementDataConversionException(
-                        "Setter method %s for field %s of class %s is not accessible.",
-                        StringUtils.quote(StringUtils.getSetterMethodName(field.getName())),
-                        StringUtils.quote(field.getName()),
-                        StringUtils.quote(pojoClass.getCanonicalName())
-                );
-            } catch (InvocationTargetException e) {
-                throw new ElementDataConversionException(
-                        "Setter method %s for field %s of class %s threw an exception: %s",
-                        StringUtils.quote(StringUtils.getSetterMethodName(field.getName())),
-                        StringUtils.quote(field.getName()),
-                        StringUtils.quote(pojoClass.getCanonicalName()),
-                        e.getTargetException().getMessage()
-                );
+            // If the field is public, set the value directly.
+            // If not, use the setter method.
+            if (Modifier.isPublic(field.getModifiers())) {
+                try {
+                    field.set(target, valueToSet);
+                } catch (IllegalAccessException e) {
+                    throw new ElementDataConversionException(
+                            "Field %s of class %s is not accessible.",
+                            StringUtils.quote(field.getName()),
+                            StringUtils.quote(pojoClass.getCanonicalName())
+                    );
+                }
+            } else {
+                // Set the extracted value to the field using its setter method
+                try {
+                    var setterMethod = getSetterMethodForField(pojoClass, field);
+                    setterMethod.invoke(target, valueToSet);
+                } catch (IllegalAccessException e) {
+                    throw new ElementDataConversionException(
+                            "Setter method %s for field %s of class %s is not accessible.",
+                            StringUtils.quote(StringUtils.getSetterMethodName(field.getName())),
+                            StringUtils.quote(field.getName()),
+                            StringUtils.quote(pojoClass.getCanonicalName())
+                    );
+                } catch (InvocationTargetException e) {
+                    throw new ElementDataConversionException(
+                            "Setter method %s for field %s of class %s threw an exception: %s",
+                            StringUtils.quote(StringUtils.getSetterMethodName(field.getName())),
+                            StringUtils.quote(field.getName()),
+                            StringUtils.quote(pojoClass.getCanonicalName()),
+                            e.getTargetException().getMessage()
+                    );
+                }
             }
         }
 
@@ -138,7 +152,7 @@ public class ElementPOJOMapper {
      * @throws ElementDataConversionException If there is a type mismatch or other error during extraction.
      */
     private static Object extractInputFieldValue(@Nonnull ElementData elementData,
-                                                     @Nonnull Field field) throws ElementDataConversionException {
+                                                 @Nonnull Field field) throws ElementDataConversionException {
         var annotation = field
                 .getAnnotation(InputElementPOJOBinding.class);
 
