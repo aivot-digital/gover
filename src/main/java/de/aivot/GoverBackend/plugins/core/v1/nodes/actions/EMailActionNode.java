@@ -1,14 +1,18 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.annotations.ElementPOJOBindingProperty;
+import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
+import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
+import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.elements.ElementVisibilityFunctions;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RichTextInputElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
+import de.aivot.GoverBackend.enums.ElementType;
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
 import de.aivot.GoverBackend.nocode.models.NoCodeReference;
@@ -16,11 +20,6 @@ import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
 import de.aivot.GoverBackend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
-import de.aivot.GoverBackend.process.entities.ProcessEntity;
-import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
-import de.aivot.GoverBackend.process.entities.ProcessVersionEntity;
-import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
-import de.aivot.GoverBackend.process.enums.ProcessHistoryEventType;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
@@ -28,10 +27,8 @@ import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionMis
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.services.ProcessDataService;
-import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import jakarta.mail.MessagingException;
 import org.commonmark.node.Node;
 import org.commonmark.parser.Parser;
@@ -43,18 +40,10 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Component
 public class EMailActionNode implements ProcessNodeDefinition, PluginComponent {
-    private static final String RECIPIENT_FIELD_ID = "to";
-    private static final String BCC_RECIPIENT_FIELD_ID = "bcc";
-    private static final String EXECUTION_TYPE_FIELD_ID = "executionType";
-    private static final String SUBJECT_FIELD_ID = "subject";
-    private static final String CONTENT_FIELD_ID = "content";
-
-    private static final String EXECUTION_TYPE_MANUAL = "manual";
-    private static final String EXECUTION_TYPE_AUTOMATIC = "automatic";
+    public static final String NODE_KEY = "mail";
 
     private static final String SUCCESS_PORT_NAME = "output";
 
@@ -72,7 +61,7 @@ public class EMailActionNode implements ProcessNodeDefinition, PluginComponent {
 
     @Override
     public @Nonnull String getKey() {
-        return "mail";
+        return NODE_KEY;
     }
 
     @Nonnull
@@ -108,116 +97,56 @@ public class EMailActionNode implements ProcessNodeDefinition, PluginComponent {
     @Nonnull
     @Override
     @JsonIgnore
-    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionContextConfig context) {
-        var layout = new ConfigLayoutElement();
-        layout.setId(getKey() + "-config");
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionContextConfig context) throws ResponseException {
+        ConfigLayoutElement layout;
+        try {
+            layout = ElementPOJOMapper
+                    .createFromPOJO(EMailActionNodeConfig.class);
+        } catch (ElementDataConversionException e) {
+            throw ResponseException.internalServerError(
+                    "Fehler beim Erstellen des Konfigurations-Layouts für den E-Mail-Versand: %s",
+                    e.getMessage()
+            );
+        }
 
-        var recipient = new TextInputElement();
-        recipient.setId(RECIPIENT_FIELD_ID);
-        recipient.setLabel("Empfänger:innen");
-        recipient.setHint("Kommaseparierte Angabe der Empfänger:innen");
-        recipient.setRequired(true);
-        layout.addChild(recipient);
+        layout
+                .findChild(EMailActionNodeConfig.EXECUTION_TYPE_FIELD_ID, SelectInputElement.class)
+                .ifPresent(select -> {
+                    select.setOptions(List.of(
+                            RadioInputElementOption.of(EMailActionNodeConfig.EXECUTION_TYPE_AUTOMATIC, "Automatisch versenden"),
+                            RadioInputElementOption.of(EMailActionNodeConfig.EXECUTION_TYPE_MANUAL, "Vor dem Versand bearbeiten")
+                    ));
+                });
 
-        var bccRecipient = new TextInputElement();
-        bccRecipient.setId(BCC_RECIPIENT_FIELD_ID);
-        bccRecipient.setLabel("BCC-Empfänger:innen");
-        bccRecipient.setHint("Angabe weiterer Empfänger:innen als Blind Carbon Copy (BCC)");
-        bccRecipient.setRequired(false);
-        layout.addChild(bccRecipient);
+        layout
+                .findChild(MANUAL_CONTENT_GROUP_ID, GroupLayoutElement.class)
+                .ifPresent(group -> {
+                    var visibilityFunc = ElementVisibilityFunctions
+                            .of(NoCodeExpression.of(
+                                    NoCodeEqualsOperator.OPERATOR_ID,
+                                    new NoCodeReference(EMailActionNodeConfig.EXECUTION_TYPE_FIELD_ID),
+                                    new NoCodeStaticValue(EMailActionNodeConfig.EXECUTION_TYPE_MANUAL)
+                            ))
+                            .recalculateReferencedIds();
+                    group.setVisibility(visibilityFunc);
+                });
 
-        var selectType = new RadioInputElement();
-        selectType.setId(EXECUTION_TYPE_FIELD_ID);
-        selectType
-                .setLabel("Ausführungsart")
-                .setHint("Auswahl, ob Nachricht automatisch versendet oder vorher durch eine Sachbearbeiter:in editiert werden soll")
-                .setRequired(true);
-        selectType.setOptions(List.of(
-                RadioInputElementOption.of(EXECUTION_TYPE_AUTOMATIC, "Automatisch versenden"),
-                RadioInputElementOption.of(EXECUTION_TYPE_MANUAL, "Vor dem Versand bearbeiten")
-        ));
-        layout.addChild(selectType);
-
-        layout.addChild(getAutomaticConfigGroup());
-        layout.addChild(getManualConfiguration());
+        layout
+                .findChild(AUTOMATIC_CONTENT_GROUP_ID, GroupLayoutElement.class)
+                .ifPresent(group -> {
+                    var visibilityFunc = ElementVisibilityFunctions
+                            .of(NoCodeExpression.of(
+                                    NoCodeEqualsOperator.OPERATOR_ID,
+                                    new NoCodeReference(EMailActionNodeConfig.EXECUTION_TYPE_FIELD_ID),
+                                    new NoCodeStaticValue(EMailActionNodeConfig.EXECUTION_TYPE_AUTOMATIC)
+                            ))
+                            .recalculateReferencedIds();
+                    group.setVisibility(visibilityFunc);
+                });
 
         // TODO: Add signature select and attachment select
 
         return layout;
-    }
-
-    private GroupLayoutElement getAutomaticConfigGroup() {
-        var visibilityExpression = new NoCodeExpression(
-                NoCodeEqualsOperator.OPERATOR_ID,
-                new NoCodeReference(EXECUTION_TYPE_FIELD_ID),
-                new NoCodeStaticValue(EXECUTION_TYPE_AUTOMATIC)
-        );
-        var visibilityFunc = new ElementVisibilityFunctions()
-                .setNoCode(visibilityExpression)
-                .setReferencedIds(List.of(
-                        EXECUTION_TYPE_FIELD_ID
-                ));
-
-        var automaticGroup = new GroupLayoutElement();
-        automaticGroup
-                .setId("automatic-group")
-                .setVisibility(visibilityFunc);
-
-        var subject = new TextInputElement();
-        subject.setId(SUBJECT_FIELD_ID);
-        subject
-                .setLabel("Betreff der E-Mail")
-                .setHint("Geben Sie den Betreff der E-Mail ein.")
-                .setRequired(true);
-        automaticGroup.addChild(subject);
-
-        var content = new RichTextInputElement();
-        content.setId(CONTENT_FIELD_ID);
-        content
-                .setLabel("Nachrichtentext")
-                .setHint("Geben Sie den Inhalt der E-Mail ein.")
-                .setRequired(true);
-        automaticGroup.addChild(content);
-
-        return automaticGroup;
-    }
-
-    private GroupLayoutElement getManualConfiguration() {
-        var visibilityExpression = new NoCodeExpression(
-                NoCodeEqualsOperator.OPERATOR_ID,
-                new NoCodeReference(EXECUTION_TYPE_FIELD_ID),
-                new NoCodeStaticValue(EXECUTION_TYPE_MANUAL)
-        );
-        var visibilityFunc = new ElementVisibilityFunctions()
-                .setNoCode(visibilityExpression)
-                .setReferencedIds(List.of(
-                        EXECUTION_TYPE_FIELD_ID
-                ));
-
-        var manualGroup = new GroupLayoutElement();
-        manualGroup
-                .setId("manual-group")
-                .setVisibility(visibilityFunc);
-
-        var subject = new TextInputElement();
-        subject.setId(SUBJECT_FIELD_ID);
-        subject
-                .setLabel("Vorlage Betreff der E-Mail")
-                .setHint("Geben Sie den Betreff der E-Mail ein.")
-                .setRequired(true);
-        manualGroup.addChild(subject);
-
-        var content = new RichTextInputElement();
-        content.setId(CONTENT_FIELD_ID);
-        content
-                .setLabel("Vorlage Nachrichtentext")
-                .setHint("Geben Sie den Inhalt der E-Mail ein.")
-                .setRequired(true);
-        manualGroup.addChild(content);
-
-        // TODO
-
-        return manualGroup;
     }
 
     @Nonnull
@@ -234,44 +163,38 @@ public class EMailActionNode implements ProcessNodeDefinition, PluginComponent {
 
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
-        var configuration = context
-                .getThisNode()
-                .getConfiguration();
+        EMailActionNodeConfig configuration;
+        try {
+            configuration = ElementPOJOMapper
+                    .mapToPOJO(context.getThisNode().getConfiguration(), EMailActionNodeConfig.class);
+        } catch (ElementDataConversionException e) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    e,
+                    "Die Konfiguration des E-Mail-Versand-Knotens ist ungültig: %s",
+                    e.getMessage()
+            );
+        }
 
-        var executionType =
-                configuration
-                        .get(EXECUTION_TYPE_FIELD_ID)
-                        .getOptionalValue()
-                        .orElse(EXECUTION_TYPE_AUTOMATIC)
-                        .toString();
-
-        switch (executionType) {
-            case EXECUTION_TYPE_AUTOMATIC -> {
+        switch (configuration.executionType) {
+            case EMailActionNodeConfig.EXECUTION_TYPE_AUTOMATIC -> {
                 return initAutomatic(context, configuration);
             }
-            case EXECUTION_TYPE_MANUAL -> {
+            case EMailActionNodeConfig.EXECUTION_TYPE_MANUAL -> {
                 return initManual(context, configuration);
             }
             default -> throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     "Ungültige Ausführungsart für den E-Mail-Versand. Erwartet werden entweder %s oder %s. Übergeben wurde: %s",
-                    StringUtils.quote(EXECUTION_TYPE_AUTOMATIC),
-                    StringUtils.quote(EXECUTION_TYPE_MANUAL),
-                    StringUtils.quote(executionType)
+                    StringUtils.quote(EMailActionNodeConfig.EXECUTION_TYPE_AUTOMATIC),
+                    StringUtils.quote(EMailActionNodeConfig.EXECUTION_TYPE_MANUAL),
+                    StringUtils.quote(configuration.executionType)
             );
         }
     }
 
     private ProcessNodeExecutionResult initAutomatic(@Nonnull ProcessNodeExecutionContextInit context,
-                                                     @Nonnull ElementData config) throws ProcessNodeExecutionException {
+                                                     @Nonnull EMailActionNodeConfig config) throws ProcessNodeExecutionException {
         var recipientsStr = processDataService
-                .interpolate(
-                        context.getProcessData(),
-                        config
-                                .get(RECIPIENT_FIELD_ID)
-                                .getOptionalValue()
-                                .orElse("")
-                                .toString()
-                );
+                .interpolate(context.getProcessData(), config.to);
 
         if (StringUtils.isNullOrEmpty(recipientsStr)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
@@ -281,24 +204,14 @@ public class EMailActionNode implements ProcessNodeDefinition, PluginComponent {
         var recipients = recipientsStr.split(",");
 
         var recipientsBccStr = processDataService
-                .interpolate(
-                        context.getProcessData(),
-                        config
-                                .get(BCC_RECIPIENT_FIELD_ID)
-                                .getOptionalValue()
-                                .orElse("")
-                                .toString()
-                );
+                .interpolate(context.getProcessData(), config.bcc);
         var recipientsBCC = StringUtils.isNullOrEmpty(recipientsBccStr) ? null : recipientsBccStr.split(",");
+
 
         var subject = processDataService
                 .interpolate(
                         context.getProcessData(),
-                        config
-                                .get(SUBJECT_FIELD_ID)
-                                .getOptionalValue()
-                                .orElse("")
-                                .toString()
+                        config.automaticContent.subject
                 );
 
         if (StringUtils.isNullOrEmpty(subject)) {
@@ -307,11 +220,7 @@ public class EMailActionNode implements ProcessNodeDefinition, PluginComponent {
             );
         }
 
-        var contentMarkdown = config
-                .get(CONTENT_FIELD_ID)
-                .getOptionalValue()
-                .orElse("")
-                .toString();
+        var contentMarkdown = config.automaticContent.content;
 
         if (StringUtils.isNullOrEmpty(contentMarkdown)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
@@ -379,9 +288,87 @@ public class EMailActionNode implements ProcessNodeDefinition, PluginComponent {
     }
 
     private ProcessNodeExecutionResult initManual(@Nonnull ProcessNodeExecutionContextInit context,
-                                                  @Nonnull ElementData config) throws ProcessNodeExecutionException {
+                                                  @Nonnull EMailActionNodeConfig config) throws ProcessNodeExecutionException {
         throw new ProcessNodeExecutionExceptionUnknown(
                 "This functionality is not yet implemented."
         );
+    }
+
+    @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
+    private static class EMailActionNodeConfig {
+        public static final String RECIPIENT_FIELD_ID = "to";
+        public static final String BCC_RECIPIENT_FIELD_ID = "bcc";
+
+        public static final String EXECUTION_TYPE_FIELD_ID = "executionType";
+        public static final String EXECUTION_TYPE_MANUAL = "manual";
+        public static final String EXECUTION_TYPE_AUTOMATIC = "automatic";
+
+        @InputElementPOJOBinding(id = RECIPIENT_FIELD_ID, type = ElementType.Text, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Empfänger:innen"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Kommaseparierte Angabe der Empfänger:innen"),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true)
+        })
+        public String to;
+
+        @InputElementPOJOBinding(id = BCC_RECIPIENT_FIELD_ID, type = ElementType.Text, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "BCC-Empfänger:innen"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Angabe weiterer Empfänger:innen als Blind Carbon Copy (BCC)"),
+                @ElementPOJOBindingProperty(key = "required", boolValue = false)
+        })
+        public String bcc;
+
+        @InputElementPOJOBinding(id = EXECUTION_TYPE_FIELD_ID, type = ElementType.Radio, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Ausführungsart"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Auswahl, ob Nachricht automatisch versendet oder vorher durch eine Sachbearbeiter:in editiert werden soll"),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true)
+        })
+        public String executionType;
+
+        public EMailActionNodeConfigManualContent manualContent;
+        public EMailActionNodeConfigAutomaticContent automaticContent;
+    }
+
+    public static final String MANUAL_CONTENT_GROUP_ID = "manual-group";
+
+    @LayoutElementPOJOBinding(id = MANUAL_CONTENT_GROUP_ID, type = ElementType.Group)
+    public static class EMailActionNodeConfigManualContent {
+        public static final String SUBJECT_FIELD_ID = "manual_subject";
+        public static final String CONTENT_FIELD_ID = "manual_content";
+
+        @InputElementPOJOBinding(id = SUBJECT_FIELD_ID, type = ElementType.Text, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Vorlage Betreff der E-Mail"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie den Betreff der E-Mail ein."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true)
+        })
+        public String subject;
+
+        @InputElementPOJOBinding(id = CONTENT_FIELD_ID, type = ElementType.RichText, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Vorlage Nachrichtentext"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie den Inhalt der E-Mail ein."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true)
+        })
+        public String content;
+    }
+
+    public static final String AUTOMATIC_CONTENT_GROUP_ID = "automatic-group";
+
+    @LayoutElementPOJOBinding(id = AUTOMATIC_CONTENT_GROUP_ID, type = ElementType.Group)
+    public static class EMailActionNodeConfigAutomaticContent {
+        public static final String SUBJECT_FIELD_ID = "automatic_subject";
+        public static final String CONTENT_FIELD_ID = "automatic_content";
+
+        @InputElementPOJOBinding(id = SUBJECT_FIELD_ID, type = ElementType.Text, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Betreff der E-Mail"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie den Betreff der E-Mail ein."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true)
+        })
+        public String subject;
+
+        @InputElementPOJOBinding(id = CONTENT_FIELD_ID, type = ElementType.RichText, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Nachrichtentext"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie den Inhalt der E-Mail ein."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true)
+        })
+        public String content;
     }
 }
