@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.identity.controllers.IdentityController;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessTestClaimEntity;
@@ -16,15 +17,18 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Query;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.Part;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.support.StandardMultipartHttpServletRequest;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @RestController
 public class WebhookTriggerController {
@@ -44,10 +48,8 @@ public class WebhookTriggerController {
     @RequestMapping(value = "/api/public/webhooks/{slug}/", consumes = {
             MediaType.APPLICATION_JSON_VALUE,
             MediaType.APPLICATION_XML_VALUE,
-            MediaType.APPLICATION_FORM_URLENCODED_VALUE,
-            MediaType.MULTIPART_FORM_DATA_VALUE
     }, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response handleWebhook(
+    public Response handleXmlAndJson(
             @Nonnull HttpServletRequest request,
             @Nonnull @PathVariable String slug,
             @Nonnull @RequestBody Map<String, Object> payload,
@@ -56,6 +58,41 @@ public class WebhookTriggerController {
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) UUID identityId,
             @Nullable @RequestHeader(name = "Authorization", required = false) String authorizationHeader
     ) throws ResponseException {
+        return handleRequest(request, slug, payload, Map.of(), testClaimAccessKey, authToken, authorizationHeader);
+    }
+
+    @RequestMapping(value = "/api/public/webhooks/{slug}/", consumes = {
+            MediaType.MULTIPART_FORM_DATA_VALUE,
+    }, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response handleFormData(
+            @Nonnull StandardMultipartHttpServletRequest request,
+            @Nonnull @PathVariable String slug,
+            @Nullable @RequestParam(value = "test-claim", required = false) String testClaimAccessKey,
+            @Nullable @RequestParam(value = "token", required = false) String authToken,
+            @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) UUID identityId,
+            @Nullable @RequestHeader(name = "Authorization", required = false) String authorizationHeader
+    ) throws ResponseException {
+        var payload = new HashMap<String, Object>();
+        for (var entry : request.getParameterMap().entrySet()) {
+            var key = entry.getKey();
+            var values = entry.getValue();
+            if (values.length > 0) {
+                payload.put(key, values[0]);
+            } else {
+                payload.put(key, null);
+            }
+        }
+        return handleRequest(request, slug, payload, request.getFileMap(), testClaimAccessKey, authToken, authorizationHeader);
+    }
+
+    @Nonnull
+    private Response handleRequest(@Nonnull HttpServletRequest request,
+                                   @Nonnull String slug,
+                                   @Nonnull Map<String, Object> payload,
+                                   @Nonnull Map<String, MultipartFile> files,
+                                   @Nullable String testClaimAccessKey,
+                                   @Nullable String authToken,
+                                   @Nullable String authorizationHeader) throws ResponseException {
         var testClaim = testClaimAccessKey != null ? processTestClaimRepository
                 .findByAccessKey(testClaimAccessKey)
                 .orElse(null) : null;
@@ -88,15 +125,18 @@ public class WebhookTriggerController {
             }
         }
 
-        startProcess(testClaim, nodeEntity, request, payload, authToken, authorizationHeader);
+        startProcess(testClaim, nodeEntity, request, payload, files, authToken, authorizationHeader);
 
         return new Response("Webhook empfangen und verarbeitet.");
     }
+
+
 
     private void startProcess(@Nullable ProcessTestClaimEntity testClaimEntity,
                               @Nonnull ProcessNodeEntity nodeEntity,
                               @Nonnull HttpServletRequest request,
                               @Nonnull Map<String, Object> payload,
+                              @Nonnull Map<String, MultipartFile> files,
                               @Nullable String authToken,
                               @Nullable String authorizationHeader) throws ResponseException {
         var config = getWebhookConfig(nodeEntity);
@@ -134,6 +174,11 @@ public class WebhookTriggerController {
         );
 
         processInstanceService.create(instance);
+
+        for (var fileEntry : files.entrySet()) {
+            var file = fileEntry.getValue();
+            // TODO: Handle Process File Attaching
+        }
     }
 
     @Nonnull
