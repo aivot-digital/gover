@@ -107,6 +107,14 @@ public class SpecificationBuilder<T> {
         return with(new SpecificationBuilderJsonArrayElementFieldEquals<>(field, elementField, value));
     }
 
+    public SpecificationBuilder<T> withArrayContains(@Nonnull String field, @Nullable String value) {
+        if (value == null) {
+            return this;
+        }
+
+        return with(new SpecificationBuilderArrayContains<>(field, value));
+    }
+
     @Nonnull
     private SpecificationBuilder<T> with(@Nonnull SpecificationBuilderItem<T> item) {
         items.add(item);

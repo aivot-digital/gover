@@ -5,6 +5,10 @@ import jakarta.persistence.*;
 
 import java.util.List;
 
+/**
+ * @deprecated use VUserSystemPermissionEntity in permissions package instead
+ */
+@Deprecated
 @Entity
 @Table(name = "v_user_system_permission")
 public class VUserSystemPermissionEntity {

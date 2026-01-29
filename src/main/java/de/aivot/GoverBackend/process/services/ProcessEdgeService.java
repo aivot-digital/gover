@@ -16,12 +16,12 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
-public class ProcessDefinitionEdgeService implements EntityService<ProcessEdgeEntity, Integer> {
+public class ProcessEdgeService implements EntityService<ProcessEdgeEntity, Integer> {
 
     private final ProcessEdgeRepository processDefinitionEdgeRepository;
 
     @Autowired
-    public ProcessDefinitionEdgeService(ProcessEdgeRepository processDefinitionEdgeRepository) {
+    public ProcessEdgeService(ProcessEdgeRepository processDefinitionEdgeRepository) {
         this.processDefinitionEdgeRepository = processDefinitionEdgeRepository;
     }
 

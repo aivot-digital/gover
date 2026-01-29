@@ -17,18 +17,18 @@ import java.util.List;
 
 @Service
 public class ProcessExportService {
-    private final ProcessDefinitionService processDefinitionService;
-    private final ProcessDefinitionVersionService processDefinitionVersionService;
-    private final ProcessDefinitionNodeService processDefinitionNodeService;
-    private final ProcessDefinitionEdgeService processDefinitionEdgeService;
+    private final ProcessService processDefinitionService;
+    private final ProcessVersionService processDefinitionVersionService;
+    private final ProcessNodeService processDefinitionNodeService;
+    private final ProcessEdgeService processDefinitionEdgeService;
     private final ProcessNodeDefinitionService processNodeProviderService;
     private final BuildProperties buildProperties;
     private final SystemConfigService systemConfigService;
 
-    public ProcessExportService(ProcessDefinitionService processDefinitionService,
-                                ProcessDefinitionVersionService processDefinitionVersionService,
-                                ProcessDefinitionNodeService processDefinitionNodeService,
-                                ProcessDefinitionEdgeService processDefinitionEdgeService,
+    public ProcessExportService(ProcessService processDefinitionService,
+                                ProcessVersionService processDefinitionVersionService,
+                                ProcessNodeService processDefinitionNodeService,
+                                ProcessEdgeService processDefinitionEdgeService,
                                 ProcessNodeDefinitionService processNodeProviderService,
                                 BuildProperties buildProperties, SystemConfigService systemConfigService) {
         this.processDefinitionService = processDefinitionService;

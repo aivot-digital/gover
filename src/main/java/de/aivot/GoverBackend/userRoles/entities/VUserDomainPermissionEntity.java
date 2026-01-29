@@ -7,6 +7,10 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * @deprecated use VUserDepartmentPermissionEntity and VUserTeamPermissionEntity instead
+ */
+@Deprecated
 @Entity
 @Table(name = "v_user_domain_permission")
 public class VUserDomainPermissionEntity {

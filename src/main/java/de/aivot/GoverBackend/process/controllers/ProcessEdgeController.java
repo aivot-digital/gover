@@ -8,7 +8,7 @@ import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.process.entities.ProcessEdgeEntity;
 import de.aivot.GoverBackend.process.filters.ProcessDefinitionEdgeFilter;
-import de.aivot.GoverBackend.process.services.ProcessDefinitionEdgeService;
+import de.aivot.GoverBackend.process.services.ProcessEdgeService;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -37,12 +37,12 @@ import java.util.Map;
 public class ProcessEdgeController {
     private final ScopedAuditService auditService;
     private final UserService userService;
-    private final ProcessDefinitionEdgeService processDefinitionEdgeService;
+    private final ProcessEdgeService processDefinitionEdgeService;
 
     @Autowired
     public ProcessEdgeController(AuditService auditService,
                                  UserService userService,
-                                 ProcessDefinitionEdgeService processDefinitionEdgeService) {
+                                 ProcessEdgeService processDefinitionEdgeService) {
         this.auditService = auditService.createScopedAuditService(ProcessEdgeController.class);
         this.userService = userService;
         this.processDefinitionEdgeService = processDefinitionEdgeService;

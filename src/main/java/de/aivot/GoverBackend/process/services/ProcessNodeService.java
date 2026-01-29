@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class ProcessDefinitionNodeService implements EntityService<ProcessNodeEntity, Integer> {
+public class ProcessNodeService implements EntityService<ProcessNodeEntity, Integer> {
 
     private final ProcessNodeRepository processDefinitionNodeRepository;
     private final ProcessNodeDefinitionService processNodeProviderService;
@@ -40,12 +40,12 @@ public class ProcessDefinitionNodeService implements EntityService<ProcessNodeEn
     private final ProcessVersionRepository processDefinitionVersionRepository;
 
     @Autowired
-    public ProcessDefinitionNodeService(ProcessNodeRepository processDefinitionNodeRepository,
-                                        ProcessNodeDefinitionService processNodeProviderService,
-                                        ElementDerivationService elementDerivationService,
-                                        UserService userService,
-                                        ProcessRepository processDefinitionRepository,
-                                        ProcessVersionRepository processDefinitionVersionRepository) {
+    public ProcessNodeService(ProcessNodeRepository processDefinitionNodeRepository,
+                              ProcessNodeDefinitionService processNodeProviderService,
+                              ElementDerivationService elementDerivationService,
+                              UserService userService,
+                              ProcessRepository processDefinitionRepository,
+                              ProcessVersionRepository processDefinitionVersionRepository) {
         this.processDefinitionNodeRepository = processDefinitionNodeRepository;
         this.processNodeProviderService = processNodeProviderService;
         this.elementDerivationService = elementDerivationService;

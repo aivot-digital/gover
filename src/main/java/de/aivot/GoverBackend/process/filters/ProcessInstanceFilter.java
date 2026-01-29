@@ -11,15 +11,13 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class ProcessInstanceFilter implements Filter<ProcessInstanceEntity> {
-    private Long id;
     private UUID accessKey;
-    private Integer processDefinitionId;
-    private Integer processDefinitionVersion;
+    private Integer processId;
     private ProcessInstanceStatus status;
     private ProcessInstanceStatus statusIsNot;
     private String statusOverride;
     private String assignedFileNumber;
-    private String tag;
+    private Integer createdForTestClaimId;
 
     public static ProcessInstanceFilter create() {
         return new ProcessInstanceFilter();
@@ -30,26 +28,15 @@ public class ProcessInstanceFilter implements Filter<ProcessInstanceEntity> {
     public Specification<ProcessInstanceEntity> build() {
         var builder = SpecificationBuilder
                 .create(ProcessInstanceEntity.class)
-                .withEquals("id", id)
                 .withEquals("accessKey", accessKey)
-                .withEquals("processId", processDefinitionId)
-                .withEquals("processVersion", processDefinitionVersion)
+                .withEquals("processId", processId)
                 .withEquals("status", status)
                 .withNotEquals("status", statusIsNot)
                 .withEquals("statusOverride", statusOverride)
-                .withContains("assignedFileNumbers", assignedFileNumber) // TODO: introduce in array filter
-                .withContains("tags", tag); // TODO: introduce in array filter
+                .withArrayContains("assignedFileNumbers", assignedFileNumber)
+                .withEquals("createdForTestClaimId", createdForTestClaimId);
 
         return builder.build();
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public ProcessInstanceFilter setId(Long id) {
-        this.id = id;
-        return this;
     }
 
     public UUID getAccessKey() {
@@ -61,21 +48,12 @@ public class ProcessInstanceFilter implements Filter<ProcessInstanceEntity> {
         return this;
     }
 
-    public Integer getProcessDefinitionId() {
-        return processDefinitionId;
+    public Integer getProcessId() {
+        return processId;
     }
 
-    public ProcessInstanceFilter setProcessDefinitionId(Integer processDefinitionId) {
-        this.processDefinitionId = processDefinitionId;
-        return this;
-    }
-
-    public Integer getProcessDefinitionVersion() {
-        return processDefinitionVersion;
-    }
-
-    public ProcessInstanceFilter setProcessDefinitionVersion(Integer processDefinitionVersion) {
-        this.processDefinitionVersion = processDefinitionVersion;
+    public ProcessInstanceFilter setProcessId(Integer processId) {
+        this.processId = processId;
         return this;
     }
 
@@ -115,12 +93,12 @@ public class ProcessInstanceFilter implements Filter<ProcessInstanceEntity> {
         return this;
     }
 
-    public String getTag() {
-        return tag;
+    public Integer getCreatedForTestClaimId() {
+        return createdForTestClaimId;
     }
 
-    public ProcessInstanceFilter setTag(String tag) {
-        this.tag = tag;
+    public ProcessInstanceFilter setCreatedForTestClaimId(Integer createdForTestClaimId) {
+        this.createdForTestClaimId = createdForTestClaimId;
         return this;
     }
 }

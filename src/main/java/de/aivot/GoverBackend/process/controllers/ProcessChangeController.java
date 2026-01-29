@@ -11,7 +11,7 @@ import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.process.entities.ProcessChangeEntity;
 import de.aivot.GoverBackend.process.filters.ProcessDefinitionChangeFilter;
 import de.aivot.GoverBackend.process.services.ProcessDefinitionChangeService;
-import de.aivot.GoverBackend.process.services.ProcessDefinitionService;
+import de.aivot.GoverBackend.process.services.ProcessService;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
 import io.swagger.v3.oas.annotations.Operation;
@@ -43,7 +43,7 @@ public class ProcessChangeController {
     private final UserService userService;
     private final ProcessDefinitionChangeService processDefinitionChangeService;
     private final DepartmentService departmentService;
-    private final ProcessDefinitionService processDefinitionService;
+    private final ProcessService processDefinitionService;
     private final PermissionService permissionService;
 
     @Autowired
@@ -51,7 +51,7 @@ public class ProcessChangeController {
                                    UserService userService,
                                    ProcessDefinitionChangeService processDefinitionChangeService,
                                    DepartmentService departmentService,
-                                   ProcessDefinitionService processDefinitionService, PermissionService permissionService) {
+                                   ProcessService processDefinitionService, PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(ProcessChangeController.class);
         this.userService = userService;
         this.processDefinitionChangeService = processDefinitionChangeService;

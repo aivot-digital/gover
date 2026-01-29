@@ -10,9 +10,9 @@ import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntity;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
-import de.aivot.GoverBackend.process.filters.ProcessDefinitionVersionFilter;
-import de.aivot.GoverBackend.process.services.ProcessDefinitionService;
-import de.aivot.GoverBackend.process.services.ProcessDefinitionVersionService;
+import de.aivot.GoverBackend.process.filters.ProcessVersionFilter;
+import de.aivot.GoverBackend.process.services.ProcessService;
+import de.aivot.GoverBackend.process.services.ProcessVersionService;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
 import io.swagger.v3.oas.annotations.Operation;
@@ -42,17 +42,17 @@ import java.util.Map;
 public class ProcessVersionController {
     private final ScopedAuditService auditService;
     private final UserService userService;
-    private final ProcessDefinitionVersionService processDefinitionVersionService;
+    private final ProcessVersionService processDefinitionVersionService;
     private final DepartmentService departmentService;
-    private final ProcessDefinitionService processDefinitionService;
+    private final ProcessService processDefinitionService;
     private final PermissionService permissionService;
 
     @Autowired
     public ProcessVersionController(AuditService auditService,
                                     UserService userService,
-                                    ProcessDefinitionVersionService processDefinitionVersionService,
+                                    ProcessVersionService processDefinitionVersionService,
                                     DepartmentService departmentService,
-                                    ProcessDefinitionService processDefinitionService, PermissionService permissionService) {
+                                    ProcessService processDefinitionService, PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(ProcessVersionController.class);
         this.userService = userService;
         this.processDefinitionVersionService = processDefinitionVersionService;
@@ -68,7 +68,7 @@ public class ProcessVersionController {
     )
     public Page<ProcessVersionEntity> list(
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
-            @Nonnull @ParameterObject @Valid ProcessDefinitionVersionFilter filter
+            @Nonnull @ParameterObject @Valid ProcessVersionFilter filter
     ) throws ResponseException {
         return processDefinitionVersionService
                 .list(pageable, filter);

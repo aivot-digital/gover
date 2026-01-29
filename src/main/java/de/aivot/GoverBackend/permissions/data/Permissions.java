@@ -1,4 +1,4 @@
-package de.aivot.GoverBackend.core.data;
+package de.aivot.GoverBackend.permissions.data;
 
 public class Permissions {
         public static final String ASSET_CREATE = "asset.create";

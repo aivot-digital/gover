@@ -122,6 +122,10 @@ public class ResponseException extends Exception {
         return new ResponseException(HttpStatus.FORBIDDEN, message);
     }
 
+    public static ResponseException forbidden(String format, Object... args) {
+        return ResponseException.forbidden(String.format(format, args));
+    }
+
     public static ResponseException noSuperAdminPermission() {
         return ResponseException.forbidden("Sie müssen die Systemrolle „Superadministrator:in“ besitzen, um diese Aktion durchzuführen.");
     }

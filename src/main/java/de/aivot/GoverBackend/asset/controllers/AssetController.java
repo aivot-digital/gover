@@ -9,7 +9,7 @@ import de.aivot.GoverBackend.asset.services.AssetService;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
-import de.aivot.GoverBackend.core.data.Permissions;
+import de.aivot.GoverBackend.permissions.data.Permissions;
 import de.aivot.GoverBackend.core.services.PermissionService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;

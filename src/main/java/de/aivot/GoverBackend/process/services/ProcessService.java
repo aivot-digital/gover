@@ -16,12 +16,12 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
-public class ProcessDefinitionService implements EntityService<ProcessEntity, Integer> {
+public class ProcessService implements EntityService<ProcessEntity, Integer> {
 
     private final ProcessRepository processDefinitionRepository;
 
     @Autowired
-    public ProcessDefinitionService(ProcessRepository processDefinitionRepository) {
+    public ProcessService(ProcessRepository processDefinitionRepository) {
         this.processDefinitionRepository = processDefinitionRepository;
     }
 
@@ -38,6 +38,25 @@ public class ProcessDefinitionService implements EntityService<ProcessEntity, In
                                            @Nullable Specification<ProcessEntity> specification,
                                            @Nullable Filter<ProcessEntity> filter) throws ResponseException {
         return processDefinitionRepository.findAll(specification, pageable);
+    }
+
+    public Page<ProcessEntity> listAllByAccessibleForUser(@Nonnull Pageable pageable,
+                                                          @Nonnull String userId,
+                                                          @Nullable Specification<ProcessEntity> specification) throws ResponseException {
+        Specification<ProcessEntity> userAccessSpec = (root, query, criteriaBuilder) ->
+                criteriaBuilder.or(
+                        criteriaBuilder.isNull(root.get("departmentId")),
+                        root.get("departmentId").in(
+                                criteriaBuilder.subquery(Integer.class)
+                                        .select(criteriaBuilder.literal("departmentId"))
+                                        .from(ProcessEntity.class)
+                                        .where(criteriaBuilder.equal(root.get("id"), userId))
+                        )
+                );
+
+        Specification<ProcessEntity> combinedSpec = (specification == null) ? userAccessSpec : specification.and(userAccessSpec);
+
+        return processDefinitionRepository.findAll(combinedSpec, pageable);
     }
 
     @Nonnull
@@ -77,4 +96,3 @@ public class ProcessDefinitionService implements EntityService<ProcessEntity, In
         processDefinitionRepository.delete(entity);
     }
 }
-

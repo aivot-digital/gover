@@ -12,7 +12,7 @@ import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.filters.ProcessInstanceTaskFilter;
 import de.aivot.GoverBackend.process.services.ProcessInstanceTaskService;
-import de.aivot.GoverBackend.process.services.ProcessDefinitionService;
+import de.aivot.GoverBackend.process.services.ProcessService;
 import de.aivot.GoverBackend.process.workers.ProcessWorker;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
@@ -46,7 +46,7 @@ public class ProcessInstanceTaskController {
     private final UserService userService;
     private final ProcessInstanceTaskService processInstanceTaskService;
     private final DepartmentService departmentService;
-    private final ProcessDefinitionService processDefinitionService;
+    private final ProcessService processDefinitionService;
     private final RabbitTemplate rabbitTemplate;
     private final PermissionService permissionService;
 
@@ -55,7 +55,7 @@ public class ProcessInstanceTaskController {
                                          UserService userService,
                                          ProcessInstanceTaskService processInstanceTaskService,
                                          DepartmentService departmentService,
-                                         ProcessDefinitionService processDefinitionService,
+                                         ProcessService processDefinitionService,
                                          RabbitTemplate rabbitTemplate, PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(ProcessInstanceTaskController.class);
         this.userService = userService;

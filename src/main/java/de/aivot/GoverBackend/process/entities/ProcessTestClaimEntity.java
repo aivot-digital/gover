@@ -3,7 +3,9 @@ package de.aivot.GoverBackend.process.entities;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 
@@ -18,6 +20,9 @@ public class ProcessTestClaimEntity {
     private Integer id;
 
     @Nonnull
+    @NotNull(message = "Der Zugriffsschlüssel darf nicht null sein.")
+    @NotBlank(message = "Der Zugriffsschlüssel darf nicht leer sein.")
+    @Size(min = 64, max = 64, message = "Der Zugriffsschlüssel muss genau 64 Zeichen lang sein.")
     private String accessKey;
 
     @Nullable
@@ -35,6 +40,9 @@ public class ProcessTestClaimEntity {
     private LocalDateTime created;
 
     @Nonnull
+    @NotNull(message = "Die ID des Besitzers darf nicht null sein.")
+    @NotBlank(message = "Die ID des Besitzers darf nicht leer sein.")
+    @Size(min = 36, max = 36, message = "Die ID des Besitzers muss genau 36 Zeichen lang sein.")
     private String owningUserId;
 
     // region Constructors

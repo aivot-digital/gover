@@ -17,12 +17,12 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
-public class ProcessDefinitionVersionService implements EntityService<ProcessVersionEntity, ProcessVersionEntityId> {
+public class ProcessVersionService implements EntityService<ProcessVersionEntity, ProcessVersionEntityId> {
 
     private final ProcessVersionRepository processDefinitionVersionRepository;
 
     @Autowired
-    public ProcessDefinitionVersionService(ProcessVersionRepository processDefinitionVersionRepository) {
+    public ProcessVersionService(ProcessVersionRepository processDefinitionVersionRepository) {
         this.processDefinitionVersionRepository = processDefinitionVersionRepository;
     }
 
@@ -35,8 +35,7 @@ public class ProcessDefinitionVersionService implements EntityService<ProcessVer
                 .orElse(0);
 
         // Set the new version number to be one greater than the latest version number
-        entity
-                .setProcessVersion(latestVersionNumber + 1);
+        entity.setProcessVersion(latestVersionNumber + 1);
 
         return processDefinitionVersionRepository
                 .save(entity);

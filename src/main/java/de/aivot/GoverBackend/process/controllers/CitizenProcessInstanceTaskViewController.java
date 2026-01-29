@@ -39,7 +39,7 @@ public class CitizenProcessInstanceTaskViewController {
     private final ProcessInstanceService processInstanceService;
     private final ProcessInstanceTaskService processInstanceTaskService;
     private final ProcessNodeDefinitionService processNodeProviderService;
-    private final ProcessDefinitionNodeService processDefinitionNodeService;
+    private final ProcessNodeService processDefinitionNodeService;
     private final ProcessNodeExecutionResultHandler processNodeExecutionResultHandler;
     private final ProcessDataService processDataService;
     private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
@@ -47,7 +47,7 @@ public class CitizenProcessInstanceTaskViewController {
     public CitizenProcessInstanceTaskViewController(ProcessInstanceService processInstanceService,
                                                     ProcessInstanceTaskService processInstanceTaskService,
                                                     ProcessNodeDefinitionService processNodeProviderService,
-                                                    ProcessDefinitionNodeService processDefinitionNodeService,
+                                                    ProcessNodeService processDefinitionNodeService,
                                                     ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
                                                     ProcessDataService processDataService, ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory) {
         this.processInstanceService = processInstanceService;

@@ -3,14 +3,14 @@ package de.aivot.GoverBackend.process.controllers;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
-import de.aivot.GoverBackend.core.data.Permissions;
-import de.aivot.GoverBackend.core.services.PermissionService;
+import de.aivot.GoverBackend.permissions.data.Permissions;
+import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.process.entities.ProcessEntity;
-import de.aivot.GoverBackend.process.filters.ProcessDefinitionFilter;
+import de.aivot.GoverBackend.process.filters.ProcessFilter;
 import de.aivot.GoverBackend.process.repositories.ProcessVersionRepository;
 import de.aivot.GoverBackend.process.services.*;
 import de.aivot.GoverBackend.teams.entities.TeamEntity;
@@ -44,27 +44,28 @@ import java.util.Map;
 public class ProcessController {
     private final ScopedAuditService auditService;
     private final UserService userService;
-    private final ProcessDefinitionService processDefinitionService;
+    private final ProcessService processDefinitionService;
     private final DepartmentService departmentService;
     private final PermissionService permissionService;
     private final ProcessExportService processExportService;
     private final ProcessVersionRepository processDefinitionVersionRepository;
-    private final ProcessDefinitionVersionService processDefinitionVersionService;
-    private final ProcessDefinitionNodeService processDefinitionNodeService;
-    private final ProcessDefinitionEdgeService processDefinitionEdgeService;
+    private final ProcessVersionService processDefinitionVersionService;
+    private final ProcessNodeService processDefinitionNodeService;
+    private final ProcessEdgeService processDefinitionEdgeService;
     private final ProcessNodeDefinitionService processNodeProviderService;
 
     @Autowired
     public ProcessController(AuditService auditService,
                              UserService userService,
-                             ProcessDefinitionService processDefinitionService,
+                             ProcessService processDefinitionService,
                              DepartmentService departmentService,
                              PermissionService permissionService,
                              ProcessExportService processExportService,
                              ProcessVersionRepository processDefinitionVersionRepository,
-                             ProcessDefinitionVersionService processDefinitionVersionService,
-                             ProcessDefinitionNodeService processDefinitionNodeService,
-                             ProcessDefinitionEdgeService processDefinitionEdgeService, ProcessNodeDefinitionService processNodeProviderService) {
+                             ProcessVersionService processDefinitionVersionService,
+                             ProcessNodeService processDefinitionNodeService,
+                             ProcessEdgeService processDefinitionEdgeService,
+                             ProcessNodeDefinitionService processNodeProviderService) {
         this.auditService = auditService.createScopedAuditService(ProcessController.class);
 
         this.userService = userService;
@@ -85,11 +86,20 @@ public class ProcessController {
             description = "List all process definitions with optional filtering and pagination."
     )
     public Page<ProcessEntity> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
-            @Nonnull @ParameterObject @Valid ProcessDefinitionFilter filter
+            @Nonnull @ParameterObject @Valid ProcessFilter filter
     ) throws ResponseException {
+        var execUser = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
         return processDefinitionService
-                .list(pageable, filter);
+                .listAllByAccessibleForUser(
+                        pageable,
+                        execUser.getId(),
+                        filter.build()
+                );
     }
 
     @PostMapping("")
@@ -111,7 +121,7 @@ public class ProcessController {
                 .orElseThrow(ResponseException::badRequest);
 
         permissionService
-                .hasDepartmentPermissionThrows(
+                .testDomainPermission(
                         execUser.getId(),
                         department.getId(),
                         Permissions.PROCESS_DEFINITION_CREATE
@@ -148,12 +158,11 @@ public class ProcessController {
                 .retrieve(exportData.process().getDepartmentId())
                 .orElseThrow(ResponseException::badRequest);
 
-        permissionService
-                .hasDepartmentPermissionThrows(
-                        execUser.getId(),
-                        department.getId(),
-                        Permissions.PROCESS_DEFINITION_CREATE
-                );
+        permissionService.testDomainPermission(
+                execUser.getId(),
+                department.getId(),
+                Permissions.PROCESS_DEFINITION_CREATE
+        );
 
         var newProcess = processDefinitionService
                 .create(exportData.process());
@@ -215,11 +224,24 @@ public class ProcessController {
             description = "Retrieve a process definition by its ID."
     )
     public ProcessEntity retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
-        return processDefinitionService
+        var execUser = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var proc = processDefinitionService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
+
+        permissionService.testDomainPermission(
+                execUser.getId(),
+                proc.getDepartmentId(),
+                Permissions.PROCESS_DEFINITION_READ
+        );
+
+        return proc;
     }
 
     @PutMapping("{id}/")
@@ -241,12 +263,11 @@ public class ProcessController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService
-                .hasDepartmentPermissionThrows(
-                        execUser.getId(),
-                        updateDTO.getDepartmentId(),
-                        Permissions.PROCESS_DEFINITION_CREATE
-                );
+        permissionService.testDomainPermission(
+                execUser.getId(),
+                updateDTO.getDepartmentId(),
+                Permissions.PROCESS_DEFINITION_UPDATE
+        );
 
         updateDTO.setId(existing.getId());
 
@@ -323,12 +344,11 @@ public class ProcessController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService
-                .hasDepartmentPermissionThrows(
-                        execUser.getId(),
-                        existing.getDepartmentId(),
-                        Permissions.PROCESS_DEFINITION_READ
-                );
+        permissionService.testDomainPermission(
+                execUser.getId(),
+                existing.getDepartmentId(),
+                Permissions.PROCESS_DEFINITION_READ
+        );
 
         var result = processExportService
                 .export(id, version);

@@ -96,6 +96,15 @@ public class ProcessInstanceTaskEntity {
     @Nullable
     private LocalDateTime deadline;
 
+    @Nullable
+    private LocalDateTime postponedUntil;
+
+    @Nullable
+    private Integer retryCount;
+
+    @Nullable
+    private LocalDateTime nextRetryAt;
+
     // region Constructors
 
     // Empty constructor for JPA
@@ -120,7 +129,10 @@ public class ProcessInstanceTaskEntity {
                                      @Nonnull Map<String, Object> nodeData,
                                      @Nonnull Map<String, Object> processData,
                                      @Nullable String assignedUserId,
-                                     @Nullable LocalDateTime deadline) {
+                                     @Nullable LocalDateTime deadline,
+                                     @Nullable LocalDateTime postponedUntil,
+                                     @Nullable Integer retryCount,
+                                     @Nullable LocalDateTime nextRetryAt) {
         this.id = id;
         this.accessKey = accessKey;
         this.processInstanceId = processInstanceId;
@@ -139,6 +151,9 @@ public class ProcessInstanceTaskEntity {
         this.processData = processData;
         this.assignedUserId = assignedUserId;
         this.deadline = deadline;
+        this.postponedUntil = postponedUntil;
+        this.retryCount = retryCount;
+        this.nextRetryAt = nextRetryAt;
     }
 
     // endregion
@@ -322,6 +337,36 @@ public class ProcessInstanceTaskEntity {
 
     public ProcessInstanceTaskEntity setDeadline(@Nullable LocalDateTime deadline) {
         this.deadline = deadline;
+        return this;
+    }
+
+    @Nullable
+    public LocalDateTime getPostponedUntil() {
+        return postponedUntil;
+    }
+
+    public ProcessInstanceTaskEntity setPostponedUntil(@Nullable LocalDateTime postponedUntil) {
+        this.postponedUntil = postponedUntil;
+        return this;
+    }
+
+    @Nullable
+    public Integer getRetryCount() {
+        return retryCount;
+    }
+
+    public ProcessInstanceTaskEntity setRetryCount(@Nullable Integer retryCount) {
+        this.retryCount = retryCount;
+        return this;
+    }
+
+    @Nullable
+    public LocalDateTime getNextRetryAt() {
+        return nextRetryAt;
+    }
+
+    public ProcessInstanceTaskEntity setNextRetryAt(@Nullable LocalDateTime nextRetryAt) {
+        this.nextRetryAt = nextRetryAt;
         return this;
     }
 

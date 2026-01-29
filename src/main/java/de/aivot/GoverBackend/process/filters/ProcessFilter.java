@@ -7,14 +7,13 @@ import org.springframework.data.jpa.domain.Specification;
 
 import jakarta.annotation.Nonnull;
 
-public class ProcessDefinitionFilter implements Filter<ProcessEntity> {
-    private Integer id;
-    private String name;
+public class ProcessFilter implements Filter<ProcessEntity> {
+    private String internalTitle;
     private Integer departmentId;
     private Integer departmentIdNot;
 
-    public static ProcessDefinitionFilter create() {
-        return new ProcessDefinitionFilter();
+    public static ProcessFilter create() {
+        return new ProcessFilter();
     }
 
     @Nonnull
@@ -22,29 +21,19 @@ public class ProcessDefinitionFilter implements Filter<ProcessEntity> {
     public Specification<ProcessEntity> build() {
         var builder = SpecificationBuilder
                 .create(ProcessEntity.class)
-                .withEquals("id", id)
-                .withContains("name", name)
+                .withContains("internalTitle", internalTitle)
                 .withEquals("departmentId", departmentId)
                 .withNotEquals("departmentId", departmentIdNot);
 
         return builder.build();
     }
 
-    public Integer getId() {
-        return id;
+    public String getInternalTitle() {
+        return internalTitle;
     }
 
-    public ProcessDefinitionFilter setId(Integer id) {
-        this.id = id;
-        return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public ProcessDefinitionFilter setName(String name) {
-        this.name = name;
+    public ProcessFilter setInternalTitle(String internalTitle) {
+        this.internalTitle = internalTitle;
         return this;
     }
 
@@ -52,7 +41,7 @@ public class ProcessDefinitionFilter implements Filter<ProcessEntity> {
         return departmentId;
     }
 
-    public ProcessDefinitionFilter setDepartmentId(Integer departmentId) {
+    public ProcessFilter setDepartmentId(Integer departmentId) {
         this.departmentId = departmentId;
         return this;
     }
@@ -61,7 +50,7 @@ public class ProcessDefinitionFilter implements Filter<ProcessEntity> {
         return departmentIdNot;
     }
 
-    public ProcessDefinitionFilter setDepartmentIdNot(Integer departmentIdNot) {
+    public ProcessFilter setDepartmentIdNot(Integer departmentIdNot) {
         this.departmentIdNot = departmentIdNot;
         return this;
     }

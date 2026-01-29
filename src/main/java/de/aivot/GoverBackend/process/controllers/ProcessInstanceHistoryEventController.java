@@ -9,7 +9,7 @@ import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.GoverBackend.process.filters.ProcessInstanceHistoryEventFilter;
-import de.aivot.GoverBackend.process.services.ProcessDefinitionService;
+import de.aivot.GoverBackend.process.services.ProcessService;
 import de.aivot.GoverBackend.process.services.ProcessInstanceHistoryEventService;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -46,7 +46,7 @@ public class ProcessInstanceHistoryEventController {
                                                  UserService userService,
                                                  ProcessInstanceHistoryEventService processInstanceHistoryEventService,
                                                  DepartmentService departmentService,
-                                                 ProcessDefinitionService processDefinitionService) {
+                                                 ProcessService processDefinitionService) {
         this.auditService = auditService.createScopedAuditService(ProcessInstanceHistoryEventController.class);
         this.userService = userService;
         this.processInstanceHistoryEventService = processInstanceHistoryEventService;

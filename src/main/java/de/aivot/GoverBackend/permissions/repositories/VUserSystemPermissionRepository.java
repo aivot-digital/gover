@@ -1,0 +1,15 @@
+package de.aivot.GoverBackend.permissions.repositories;
+
+import de.aivot.GoverBackend.permissions.entities.VUserSystemPermissionEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+public interface VUserSystemPermissionRepository extends JpaRepository<VUserSystemPermissionEntity, String>, JpaSpecificationExecutor<VUserSystemPermissionEntity> {
+    @Query(
+            "SELECT EXISTS(SELECT 1 FROM v_user_system_permission p WHERE p.user_id = :userId AND p.permissions @> ARRAY[:permission])"
+    )
+    boolean hasPermission(@Param("processDefinitionId") String userId,
+                          @Param("processDefinitionId") String permission);
+}

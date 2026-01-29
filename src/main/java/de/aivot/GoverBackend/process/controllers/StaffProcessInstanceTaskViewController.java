@@ -3,7 +3,6 @@ package de.aivot.GoverBackend.process.controllers;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
-import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.identity.controllers.IdentityController;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
@@ -42,7 +41,7 @@ public class StaffProcessInstanceTaskViewController {
     private final ProcessInstanceService processInstanceService;
     private final ProcessInstanceTaskService processInstanceTaskService;
     private final ProcessNodeDefinitionService processNodeProviderService;
-    private final ProcessDefinitionNodeService processDefinitionNodeService;
+    private final ProcessNodeService processDefinitionNodeService;
     private final ProcessNodeExecutionResultHandler processNodeExecutionResultHandler;
     private final ProcessDataService processDataService;
     private final UserService userService;
@@ -51,7 +50,7 @@ public class StaffProcessInstanceTaskViewController {
     public StaffProcessInstanceTaskViewController(ProcessInstanceService processInstanceService,
                                                   ProcessInstanceTaskService processInstanceTaskService,
                                                   ProcessNodeDefinitionService processNodeProviderService,
-                                                  ProcessDefinitionNodeService processDefinitionNodeService,
+                                                  ProcessNodeService processDefinitionNodeService,
                                                   ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
                                                   ProcessDataService processDataService,
                                                   UserService userService, ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory) {

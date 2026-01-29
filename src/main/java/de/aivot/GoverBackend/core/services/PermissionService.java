@@ -7,6 +7,10 @@ import de.aivot.GoverBackend.userRoles.repositories.VUserSystemPermissionReposit
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+/**
+ * @deprecated use de.aivot.GoverBackend.permissions.services.PermissionService instead
+ */
+@Deprecated
 @Service
 public class PermissionService {
     private final VUserSystemPermissionRepository vUserSystemPermissionEntityRepository;

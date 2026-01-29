@@ -9,11 +9,11 @@ import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
-import de.aivot.GoverBackend.process.filters.ProcessDefinitionNodeFilter;
+import de.aivot.GoverBackend.process.filters.ProcessNodeFilter;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextConfig;
-import de.aivot.GoverBackend.process.services.ProcessDefinitionNodeService;
-import de.aivot.GoverBackend.process.services.ProcessDefinitionService;
-import de.aivot.GoverBackend.process.services.ProcessDefinitionVersionService;
+import de.aivot.GoverBackend.process.services.ProcessNodeService;
+import de.aivot.GoverBackend.process.services.ProcessService;
+import de.aivot.GoverBackend.process.services.ProcessVersionService;
 import de.aivot.GoverBackend.process.services.ProcessNodeDefinitionService;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -43,18 +43,18 @@ import java.util.Map;
 public class ProcessNodeController {
     private final ScopedAuditService auditService;
     private final UserService userService;
-    private final ProcessDefinitionNodeService processDefinitionNodeService;
-    private final ProcessDefinitionService processDefinitionService;
+    private final ProcessNodeService processDefinitionNodeService;
+    private final ProcessService processDefinitionService;
     private final ProcessNodeDefinitionService processNodeProviderService;
-    private final ProcessDefinitionVersionService processDefinitionVersionService;
+    private final ProcessVersionService processDefinitionVersionService;
 
     @Autowired
     public ProcessNodeController(AuditService auditService,
                                  UserService userService,
-                                 ProcessDefinitionNodeService processDefinitionNodeService,
-                                 ProcessDefinitionService processDefinitionService,
+                                 ProcessNodeService processDefinitionNodeService,
+                                 ProcessService processDefinitionService,
                                  ProcessNodeDefinitionService processNodeProviderService,
-                                 ProcessDefinitionVersionService processDefinitionVersionService) {
+                                 ProcessVersionService processDefinitionVersionService) {
         this.auditService = auditService.createScopedAuditService(ProcessNodeController.class);
         this.userService = userService;
         this.processDefinitionNodeService = processDefinitionNodeService;
@@ -70,7 +70,7 @@ public class ProcessNodeController {
     )
     public Page<ProcessNodeEntity> list(
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
-            @Nonnull @ParameterObject @Valid ProcessDefinitionNodeFilter filter
+            @Nonnull @ParameterObject @Valid ProcessNodeFilter filter
     ) throws ResponseException {
         return processDefinitionNodeService
                 .list(pageable, filter);

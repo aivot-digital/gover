@@ -10,7 +10,7 @@ import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.filters.ProcessInstanceFilter;
 import de.aivot.GoverBackend.process.services.ProcessInstanceService;
-import de.aivot.GoverBackend.process.services.ProcessDefinitionService;
+import de.aivot.GoverBackend.process.services.ProcessService;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -41,14 +41,14 @@ public class ProcessInstanceController {
     private final UserService userService;
     private final ProcessInstanceService processInstanceService;
     private final DepartmentService departmentService;
-    private final ProcessDefinitionService processDefinitionService;
+    private final ProcessService processDefinitionService;
 
     @Autowired
     public ProcessInstanceController(AuditService auditService,
                                     UserService userService,
                                     ProcessInstanceService processInstanceService,
                                     DepartmentService departmentService,
-                                    ProcessDefinitionService processDefinitionService) {
+                                    ProcessService processDefinitionService) {
         this.auditService = auditService.createScopedAuditService(ProcessInstanceController.class);
         this.userService = userService;
         this.processInstanceService = processInstanceService;
