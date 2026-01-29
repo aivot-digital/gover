@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.5.5](https://github.com/aivot-digital/gover/compare/v4.5.4...v4.5.5) (2026-01-29)
+
+### Bug Fixes
+* **App:** Fix issue with restricted url patterns for destinations.
+
+
 ## [4.5.4](https://github.com/aivot-digital/gover/compare/v4.5.3...v4.5.4) (2025-11-13)
 
 ### Features
