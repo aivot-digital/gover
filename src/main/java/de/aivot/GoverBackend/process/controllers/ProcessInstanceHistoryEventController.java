@@ -8,9 +8,9 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEventEntity;
-import de.aivot.GoverBackend.process.filters.ProcessInstanceHistoryEventFilter;
+import de.aivot.GoverBackend.process.filters.ProcessInstanceEventFilter;
 import de.aivot.GoverBackend.process.services.ProcessService;
-import de.aivot.GoverBackend.process.services.ProcessInstanceHistoryEventService;
+import de.aivot.GoverBackend.process.services.ProcessInstanceEventService;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -39,12 +39,12 @@ import java.util.Map;
 public class ProcessInstanceHistoryEventController {
     private final ScopedAuditService auditService;
     private final UserService userService;
-    private final ProcessInstanceHistoryEventService processInstanceHistoryEventService;
+    private final ProcessInstanceEventService processInstanceHistoryEventService;
 
     @Autowired
     public ProcessInstanceHistoryEventController(AuditService auditService,
                                                  UserService userService,
-                                                 ProcessInstanceHistoryEventService processInstanceHistoryEventService,
+                                                 ProcessInstanceEventService processInstanceHistoryEventService,
                                                  DepartmentService departmentService,
                                                  ProcessService processDefinitionService) {
         this.auditService = auditService.createScopedAuditService(ProcessInstanceHistoryEventController.class);
@@ -59,7 +59,7 @@ public class ProcessInstanceHistoryEventController {
     )
     public Page<ProcessInstanceEventEntity> list(
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
-            @Nonnull @ParameterObject @Valid ProcessInstanceHistoryEventFilter filter
+            @Nonnull @ParameterObject @Valid ProcessInstanceEventFilter filter
     ) throws ResponseException {
         return processInstanceHistoryEventService
                 .list(pageable, filter);

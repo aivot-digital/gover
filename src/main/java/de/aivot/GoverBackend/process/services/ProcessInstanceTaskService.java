@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
+import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -67,18 +69,29 @@ public class ProcessInstanceTaskService implements EntityService<ProcessInstance
     public ProcessInstanceTaskEntity performUpdate(@Nonnull Long id,
                                                   @Nonnull ProcessInstanceTaskEntity entity,
                                                   @Nonnull ProcessInstanceTaskEntity existingEntity) throws ResponseException {
-        existingEntity.setAccessKey(entity.getAccessKey());
-        existingEntity.setProcessInstanceId(entity.getProcessInstanceId());
-        existingEntity.setProcessId(entity.getProcessId());
-        existingEntity.setProcessVersion(entity.getProcessVersion());
-        existingEntity.setProcessNodeId(entity.getProcessNodeId());
-        existingEntity.setStarted(entity.getStarted());
-        existingEntity.setUpdated(entity.getUpdated());
-        existingEntity.setFinished(entity.getFinished());
-        existingEntity.setRuntime(entity.getRuntime());
+        existingEntity.setStatus(entity.getStatus());
+        existingEntity.setStatusOverride(entity.getStatusOverride());
+
+        if (entity.getStatus() == ProcessTaskStatus.Completed ||
+            entity.getStatus() == ProcessTaskStatus.Failed ||
+            entity.getStatus() == ProcessTaskStatus.Aborted
+        ) {
+            existingEntity.setFinished(LocalDateTime.now());
+        }
+
+        existingEntity.setRuntimeData(entity.getRuntimeData());
         existingEntity.setNodeData(entity.getNodeData());
         existingEntity.setProcessData(entity.getProcessData());
+
         existingEntity.setAssignedUserId(entity.getAssignedUserId());
+
+        existingEntity.setDeadline(entity.getDeadline());
+
+        existingEntity.setPostponedUntil(entity.getPostponedUntil());
+
+        existingEntity.setRetryCount(entity.getRetryCount());
+        existingEntity.setNextRetryAt(entity.getNextRetryAt());
+
         return processInstanceTaskRepository.save(existingEntity);
     }
 

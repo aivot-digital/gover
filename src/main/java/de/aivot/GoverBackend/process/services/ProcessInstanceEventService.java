@@ -16,12 +16,12 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
-public class ProcessInstanceHistoryEventService implements EntityService<ProcessInstanceEventEntity, Long> {
+public class ProcessInstanceEventService implements EntityService<ProcessInstanceEventEntity, Long> {
 
     private final ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository;
 
     @Autowired
-    public ProcessInstanceHistoryEventService(ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository) {
+    public ProcessInstanceEventService(ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository) {
         this.processInstanceHistoryEventRepository = processInstanceHistoryEventRepository;
     }
 
@@ -67,11 +67,8 @@ public class ProcessInstanceHistoryEventService implements EntityService<Process
     public ProcessInstanceEventEntity performUpdate(@Nonnull Long id,
                                                     @Nonnull ProcessInstanceEventEntity entity,
                                                     @Nonnull ProcessInstanceEventEntity existingEntity) throws ResponseException {
-        existingEntity.setTimestamp(entity.getTimestamp());
-        existingEntity.setTriggeringUserId(entity.getTriggeringUserId());
-        existingEntity.setProcessInstanceId(entity.getProcessInstanceId());
-        existingEntity.setProcessInstanceTaskId(entity.getProcessInstanceTaskId());
-        return processInstanceHistoryEventRepository.save(existingEntity);
+        // No updatable fields for now
+        return existingEntity;
     }
 
     @Override

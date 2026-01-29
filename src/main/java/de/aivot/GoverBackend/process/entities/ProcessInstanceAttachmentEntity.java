@@ -6,6 +6,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
@@ -25,6 +26,20 @@ public class ProcessInstanceAttachmentEntity {
 
     @Nullable
     private Long processInstanceTaskId;
+
+    @Nonnull
+    @NotNull(message = "Der Dateiname darf nicht null sein.")
+    @NotBlank(message = "Der Dateiname darf nicht leer sein.")
+    private String filename;
+
+    @Nonnull
+    @NotNull(message = "Der MIME-Typ darf nicht null sein.")
+    @NotBlank(message = "Der MIME-Typ darf nicht leer sein.")
+    private String mimeType;
+
+    @Nonnull
+    @NotNull(message = "Die Dateigröße darf nicht null sein.")
+    private Long sizeBytes;
 
     @Nullable
     private String uploadedByUserId;
@@ -64,6 +79,36 @@ public class ProcessInstanceAttachmentEntity {
         return this;
     }
 
+    @Nonnull
+    public String getFilename() {
+        return filename;
+    }
+
+    public ProcessInstanceAttachmentEntity setFilename(@Nonnull String filename) {
+        this.filename = filename;
+        return this;
+    }
+
+    @Nonnull
+    public String getMimeType() {
+        return mimeType;
+    }
+
+    public ProcessInstanceAttachmentEntity setMimeType(@Nonnull String mimeType) {
+        this.mimeType = mimeType;
+        return this;
+    }
+
+    @Nonnull
+    public Long getSizeBytes() {
+        return sizeBytes;
+    }
+
+    public ProcessInstanceAttachmentEntity setSizeBytes(@Nonnull Long sizeBytes) {
+        this.sizeBytes = sizeBytes;
+        return this;
+    }
+
     @Nullable
     public String getUploadedByUserId() {
         return uploadedByUserId;
@@ -82,7 +127,6 @@ public class ProcessInstanceAttachmentEntity {
         this.uploadedAt = uploadedAt;
         return this;
     }
-
 
     // endregion
 }

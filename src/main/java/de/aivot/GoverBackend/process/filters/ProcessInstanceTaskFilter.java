@@ -1,22 +1,20 @@
 package de.aivot.GoverBackend.process.filters;
 
-import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.lib.models.Filter;
+import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
+import jakarta.annotation.Nonnull;
 import org.springframework.data.jpa.domain.Specification;
 
-import jakarta.annotation.Nonnull;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class ProcessInstanceTaskFilter implements Filter<ProcessInstanceTaskEntity> {
-    private Long id;
     private UUID accessKey;
     private Long processInstanceId;
-    private Integer processDefinitionId;
-    private Integer processDefinitionVersion;
-    private Integer processDefinitionNodeId;
+    private Integer processId;
+    private Integer processVersion;
+    private Integer processNodeId;
     private String assignedUserId;
     private ProcessTaskStatus status;
 
@@ -29,25 +27,15 @@ public class ProcessInstanceTaskFilter implements Filter<ProcessInstanceTaskEnti
     public Specification<ProcessInstanceTaskEntity> build() {
         var builder = SpecificationBuilder
                 .create(ProcessInstanceTaskEntity.class)
-                .withEquals("id", id)
                 .withEquals("accessKey", accessKey)
                 .withEquals("processInstanceId", processInstanceId)
-                .withEquals("processId", processDefinitionId)
-                .withEquals("processVersion", processDefinitionVersion)
-                .withEquals("processNodeId", processDefinitionNodeId)
+                .withEquals("processId", processId)
+                .withEquals("processVersion", processVersion)
+                .withEquals("processNodeId", processNodeId)
                 .withEquals("status", status)
                 .withContains("assignedUserId", assignedUserId);
 
         return builder.build();
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public ProcessInstanceTaskFilter setId(Long id) {
-        this.id = id;
-        return this;
     }
 
     public UUID getAccessKey() {
@@ -68,30 +56,30 @@ public class ProcessInstanceTaskFilter implements Filter<ProcessInstanceTaskEnti
         return this;
     }
 
-    public Integer getProcessDefinitionId() {
-        return processDefinitionId;
+    public Integer getProcessId() {
+        return processId;
     }
 
-    public ProcessInstanceTaskFilter setProcessDefinitionId(Integer processDefinitionId) {
-        this.processDefinitionId = processDefinitionId;
+    public ProcessInstanceTaskFilter setProcessId(Integer processId) {
+        this.processId = processId;
         return this;
     }
 
-    public Integer getProcessDefinitionVersion() {
-        return processDefinitionVersion;
+    public Integer getProcessVersion() {
+        return processVersion;
     }
 
-    public ProcessInstanceTaskFilter setProcessDefinitionVersion(Integer processDefinitionVersion) {
-        this.processDefinitionVersion = processDefinitionVersion;
+    public ProcessInstanceTaskFilter setProcessVersion(Integer processVersion) {
+        this.processVersion = processVersion;
         return this;
     }
 
-    public Integer getProcessDefinitionNodeId() {
-        return processDefinitionNodeId;
+    public Integer getProcessNodeId() {
+        return processNodeId;
     }
 
-    public ProcessInstanceTaskFilter setProcessDefinitionNodeId(Integer processDefinitionNodeId) {
-        this.processDefinitionNodeId = processDefinitionNodeId;
+    public ProcessInstanceTaskFilter setProcessNodeId(Integer processNodeId) {
+        this.processNodeId = processNodeId;
         return this;
     }
 
@@ -102,6 +90,10 @@ public class ProcessInstanceTaskFilter implements Filter<ProcessInstanceTaskEnti
     public ProcessInstanceTaskFilter setAssignedUserId(String assignedUserId) {
         this.assignedUserId = assignedUserId;
         return this;
+    }
+
+    public ProcessTaskStatus getStatus() {
+        return status;
     }
 
     public ProcessInstanceTaskFilter setStatus(ProcessTaskStatus status) {

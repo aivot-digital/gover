@@ -1,20 +1,17 @@
 package de.aivot.GoverBackend.process.filters;
 
-import de.aivot.GoverBackend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.GoverBackend.lib.models.Filter;
+import de.aivot.GoverBackend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
+import jakarta.annotation.Nonnull;
 import org.springframework.data.jpa.domain.Specification;
 
-import jakarta.annotation.Nonnull;
-import java.time.LocalDateTime;
-import java.util.UUID;
-
 public class ProcessInstanceAttachmentFilter implements Filter<ProcessInstanceAttachmentEntity> {
-    private UUID key;
     private Long processInstanceId;
     private Long processInstanceTaskId;
+    private String filename;
+    private String mimeType;
     private String uploadedByUserId;
-    private LocalDateTime uploadedAt;
 
     public static ProcessInstanceAttachmentFilter create() {
         return new ProcessInstanceAttachmentFilter();
@@ -25,22 +22,13 @@ public class ProcessInstanceAttachmentFilter implements Filter<ProcessInstanceAt
     public Specification<ProcessInstanceAttachmentEntity> build() {
         var builder = SpecificationBuilder
                 .create(ProcessInstanceAttachmentEntity.class)
-                .withEquals("key", key)
                 .withEquals("processInstanceId", processInstanceId)
                 .withEquals("processInstanceTaskId", processInstanceTaskId)
-                .withContains("uploadedByUserId", uploadedByUserId)
-                .withEquals("uploadedAt", uploadedAt);
+                .withContains("filename", filename)
+                .withEquals("mimeType", mimeType)
+                .withEquals("uploadedByUserId", uploadedByUserId);
 
         return builder.build();
-    }
-
-    public UUID getKey() {
-        return key;
-    }
-
-    public ProcessInstanceAttachmentFilter setKey(UUID key) {
-        this.key = key;
-        return this;
     }
 
     public Long getProcessInstanceId() {
@@ -61,21 +49,30 @@ public class ProcessInstanceAttachmentFilter implements Filter<ProcessInstanceAt
         return this;
     }
 
+    public String getFilename() {
+        return filename;
+    }
+
+    public ProcessInstanceAttachmentFilter setFilename(String filename) {
+        this.filename = filename;
+        return this;
+    }
+
+    public String getMimeType() {
+        return mimeType;
+    }
+
+    public ProcessInstanceAttachmentFilter setMimeType(String mimeType) {
+        this.mimeType = mimeType;
+        return this;
+    }
+
     public String getUploadedByUserId() {
         return uploadedByUserId;
     }
 
     public ProcessInstanceAttachmentFilter setUploadedByUserId(String uploadedByUserId) {
         this.uploadedByUserId = uploadedByUserId;
-        return this;
-    }
-
-    public LocalDateTime getUploadedAt() {
-        return uploadedAt;
-    }
-
-    public ProcessInstanceAttachmentFilter setUploadedAt(LocalDateTime uploadedAt) {
-        this.uploadedAt = uploadedAt;
         return this;
     }
 }
