@@ -170,7 +170,7 @@ public class DestinationSubmitService {
             };
 
             // 2. Initialize an SSLContext for this specific connection
-            SSLContext sc = null;
+            SSLContext sc;
             try {
                 sc = SSLContext.getInstance("TLS");
             } catch (NoSuchAlgorithmException e) {
