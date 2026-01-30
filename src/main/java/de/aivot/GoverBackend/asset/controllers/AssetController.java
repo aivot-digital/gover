@@ -10,7 +10,7 @@ import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.permissions.data.Permissions;
-import de.aivot.GoverBackend.core.services.PermissionService;
+import de.aivot.GoverBackend.core.services.LegacyPermissionService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
@@ -55,7 +55,7 @@ public class AssetController {
     private final AssetRepository assetRepository;
     private final AVService avService;
     private final UserService userService;
-    private final PermissionService permissionService;
+    private final LegacyPermissionService permissionService;
 
     @Autowired
     public AssetController(AuditService auditService,
@@ -63,7 +63,7 @@ public class AssetController {
                            AssetStorageService assetStorageService,
                            AssetRepository assetRepository,
                            AVService avService,
-                           UserService userService, PermissionService permissionService) {
+                           UserService userService, LegacyPermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(AssetController.class);
 
         this.assetService = assetService;

@@ -12,13 +12,13 @@ import org.springframework.stereotype.Service;
  */
 @Deprecated
 @Service
-public class PermissionService {
+public class LegacyPermissionService {
     private final VUserSystemPermissionRepository vUserSystemPermissionEntityRepository;
     private final VUserDomainPermissionRepository vUserDomainPermissionRepository;
 
     @Autowired
-    public PermissionService(VUserSystemPermissionRepository vUserSystemPermissionEntityRepository,
-                             VUserDomainPermissionRepository vUserDomainPermissionRepository) {
+    public LegacyPermissionService(VUserSystemPermissionRepository vUserSystemPermissionEntityRepository,
+                                   VUserDomainPermissionRepository vUserDomainPermissionRepository) {
         this.vUserSystemPermissionEntityRepository = vUserSystemPermissionEntityRepository;
         this.vUserDomainPermissionRepository = vUserDomainPermissionRepository;
     }

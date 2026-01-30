@@ -4,7 +4,7 @@ import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.permissions.data.Permissions;
-import de.aivot.GoverBackend.core.services.PermissionService;
+import de.aivot.GoverBackend.core.services.LegacyPermissionService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
@@ -43,14 +43,14 @@ public class SystemRoleController {
     private final UserRoleService userRoleService;
     private final UserService userService;
     private final SystemRoleService systemRoleService;
-    private final PermissionService permissionService;
+    private final LegacyPermissionService permissionService;
 
     @Autowired
     public SystemRoleController(AuditService auditService,
                                 UserRoleService userRoleService,
                                 UserService userService,
                                 SystemRoleService systemRoleService,
-                                PermissionService permissionService) {
+                                LegacyPermissionService permissionService) {
         this.auditService = auditService
                 .createScopedAuditService(SystemRoleController.class);
 

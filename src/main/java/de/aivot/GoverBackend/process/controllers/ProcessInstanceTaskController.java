@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.process.controllers;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
-import de.aivot.GoverBackend.core.services.PermissionService;
+import de.aivot.GoverBackend.core.services.LegacyPermissionService;
 import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
@@ -48,7 +48,7 @@ public class ProcessInstanceTaskController {
     private final DepartmentService departmentService;
     private final ProcessService processDefinitionService;
     private final RabbitTemplate rabbitTemplate;
-    private final PermissionService permissionService;
+    private final LegacyPermissionService permissionService;
 
     @Autowired
     public ProcessInstanceTaskController(AuditService auditService,
@@ -56,7 +56,7 @@ public class ProcessInstanceTaskController {
                                          ProcessInstanceTaskService processInstanceTaskService,
                                          DepartmentService departmentService,
                                          ProcessService processDefinitionService,
-                                         RabbitTemplate rabbitTemplate, PermissionService permissionService) {
+                                         RabbitTemplate rabbitTemplate, LegacyPermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(ProcessInstanceTaskController.class);
         this.userService = userService;
         this.processInstanceTaskService = processInstanceTaskService;

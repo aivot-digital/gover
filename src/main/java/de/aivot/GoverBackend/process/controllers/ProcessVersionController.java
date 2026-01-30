@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.process.controllers;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
-import de.aivot.GoverBackend.core.services.PermissionService;
+import de.aivot.GoverBackend.core.services.LegacyPermissionService;
 import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
@@ -45,14 +45,14 @@ public class ProcessVersionController {
     private final ProcessVersionService processDefinitionVersionService;
     private final DepartmentService departmentService;
     private final ProcessService processDefinitionService;
-    private final PermissionService permissionService;
+    private final LegacyPermissionService permissionService;
 
     @Autowired
     public ProcessVersionController(AuditService auditService,
                                     UserService userService,
                                     ProcessVersionService processDefinitionVersionService,
                                     DepartmentService departmentService,
-                                    ProcessService processDefinitionService, PermissionService permissionService) {
+                                    ProcessService processDefinitionService, LegacyPermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(ProcessVersionController.class);
         this.userService = userService;
         this.processDefinitionVersionService = processDefinitionVersionService;
