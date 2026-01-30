@@ -47,10 +47,10 @@ public class ProcessService implements EntityService<ProcessEntity, Integer> {
                 criteriaBuilder.or(
                         criteriaBuilder.isNull(root.get("departmentId")),
                         root.get("departmentId").in(
-                                criteriaBuilder.subquery(Integer.class)
+                                /*criteriaBuilder.subquery(Integer.class)
                                         .select(criteriaBuilder.literal("departmentId"))
                                         .from(ProcessEntity.class)
-                                        .where(criteriaBuilder.equal(root.get("id"), userId))
+                                        .where(criteriaBuilder.equal(root.get("id"), userId))*/
                         )
                 );
 

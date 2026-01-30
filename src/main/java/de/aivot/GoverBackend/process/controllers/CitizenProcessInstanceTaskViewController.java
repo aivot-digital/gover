@@ -153,7 +153,7 @@ public class CitizenProcessInstanceTaskViewController {
                             ProcessInstanceTaskFilter
                                     .create()
                                     .setProcessInstanceId(taskViewData.instance.getId())
-                                    .setProcessDefinitionNodeId(taskViewData.task.getPreviousProcessNodeId())
+                                    .setProcessNodeId(taskViewData.task.getPreviousProcessNodeId())
                                     .build()
                     )
                     .orElse(null);
