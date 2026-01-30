@@ -11,7 +11,7 @@ import java.util.List;
 @Deprecated
 @Entity
 @Table(name = "v_user_system_permission")
-public class VUserSystemPermissionEntity {
+public class LegacyVUserSystemPermissionEntity {
     @Id
     @Nonnull
     private String userId;

@@ -2,7 +2,6 @@ package de.aivot.GoverBackend.userRoles.repositories;
 
 import de.aivot.GoverBackend.core.repositories.ReadOnlyRepository;
 import de.aivot.GoverBackend.userRoles.entities.VUserDomainPermissionEntity;
-import de.aivot.GoverBackend.userRoles.entities.VUserSystemPermissionEntity;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
