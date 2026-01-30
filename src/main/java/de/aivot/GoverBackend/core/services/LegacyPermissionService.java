@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.core.services;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.userRoles.repositories.VUserDomainPermissionRepository;
-import de.aivot.GoverBackend.userRoles.repositories.VUserSystemPermissionRepository;
+import de.aivot.GoverBackend.userRoles.repositories.LegacyVUserSystemPermissionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,11 +13,11 @@ import org.springframework.stereotype.Service;
 @Deprecated
 @Service
 public class LegacyPermissionService {
-    private final VUserSystemPermissionRepository vUserSystemPermissionEntityRepository;
+    private final LegacyVUserSystemPermissionRepository vUserSystemPermissionEntityRepository;
     private final VUserDomainPermissionRepository vUserDomainPermissionRepository;
 
     @Autowired
-    public LegacyPermissionService(VUserSystemPermissionRepository vUserSystemPermissionEntityRepository,
+    public LegacyPermissionService(LegacyVUserSystemPermissionRepository vUserSystemPermissionEntityRepository,
                                    VUserDomainPermissionRepository vUserDomainPermissionRepository) {
         this.vUserSystemPermissionEntityRepository = vUserSystemPermissionEntityRepository;
         this.vUserDomainPermissionRepository = vUserDomainPermissionRepository;

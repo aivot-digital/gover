@@ -8,7 +8,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface VUserSystemPermissionRepository extends JpaRepository<VUserSystemPermissionEntity, String>, JpaSpecificationExecutor<VUserSystemPermissionEntity> {
     @Query(
-            "SELECT EXISTS(SELECT 1 FROM v_user_system_permission p WHERE p.user_id = :userId AND p.permissions @> ARRAY[:permission])"
+            value = "SELECT EXISTS(SELECT 1 FROM v_user_system_permission p WHERE p.user_id = :userId AND p.permissions @> ARRAY[:permission])",
+            nativeQuery = true
     )
     boolean hasPermission(@Param("processDefinitionId") String userId,
                           @Param("processDefinitionId") String permission);

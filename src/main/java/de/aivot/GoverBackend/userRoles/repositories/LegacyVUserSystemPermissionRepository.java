@@ -7,8 +7,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+@Deprecated
+/**
+ * @deprecated Use UserSystemPermissionRepository instead
+ */
 @Repository
-public interface VUserSystemPermissionRepository extends ReadOnlyRepository<LegacyVUserSystemPermissionEntity, String>, JpaSpecificationExecutor<LegacyVUserSystemPermissionEntity> {
+public interface LegacyVUserSystemPermissionRepository extends ReadOnlyRepository<LegacyVUserSystemPermissionEntity, String>, JpaSpecificationExecutor<LegacyVUserSystemPermissionEntity> {
     @Query(
             value = """
                     SELECT exists(select 1 from v_user_domain_permission where user_id = :userId and :permission = any(permissions));
