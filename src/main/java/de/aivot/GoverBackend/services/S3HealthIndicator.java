@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.services;
 
-import de.aivot.GoverBackend.services.storages.StorageService;
+import de.aivot.GoverBackend.services.storages.LegacyStorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,10 +14,10 @@ import org.springframework.stereotype.Component;
 public class S3HealthIndicator implements HealthIndicator {
     private final Logger logger = LoggerFactory.getLogger(S3HealthIndicator.class);
 
-    private final StorageService storageService;
+    private final LegacyStorageService storageService;
 
     @Autowired
-    public S3HealthIndicator(StorageService storageService) {
+    public S3HealthIndicator(LegacyStorageService storageService) {
         this.storageService = storageService;
     }
 

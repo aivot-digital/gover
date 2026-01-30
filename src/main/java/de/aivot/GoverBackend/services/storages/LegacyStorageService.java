@@ -21,15 +21,15 @@ import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
 @Component
-public class StorageService {
-    private final Logger logger = LoggerFactory.getLogger(StorageService.class);
+public class LegacyStorageService {
+    private final Logger logger = LoggerFactory.getLogger(LegacyStorageService.class);
 
     private final StorageConfig storageConfig;
     // This is protected for testing purposes
     protected MinioClient storageClient;
 
     @Autowired
-    public StorageService(StorageConfig storageConfig) {
+    public LegacyStorageService(StorageConfig storageConfig) {
         this.storageConfig = storageConfig;
 
         if (storageConfig.remoteStorageEnabled()) {

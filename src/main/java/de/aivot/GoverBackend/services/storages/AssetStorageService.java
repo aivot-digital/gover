@@ -7,10 +7,10 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class AssetStorageService {
-    private final StorageService storageService;
+    private final LegacyStorageService storageService;
 
     @Autowired
-    public AssetStorageService(StorageService storageService) {
+    public AssetStorageService(LegacyStorageService storageService) {
         this.storageService = storageService;
     }
 
