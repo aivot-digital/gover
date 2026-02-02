@@ -15,10 +15,11 @@ create table storage_providers
 
 create table storage_index_items
 (
-    storage_provider_id integer      not null references storage_providers (id) on delete cascade,
-    path_from_root      text         not null,
-    is_directory        boolean      not null,
-    filename            varchar(255) not null,
-    mime_type           varchar(255) null,
+    storage_provider_id   integer      not null references storage_providers (id) on delete cascade,
+    storage_provider_type smallint     not null,
+    path_from_root        text         not null,
+    is_directory          boolean      not null,
+    filename              varchar(255) not null,
+    mime_type             varchar(255) null,
     primary key (storage_provider_id, path_from_root)
 );

@@ -107,6 +107,7 @@ public class StorageSyncService {
                     if (!folderExists) {
                         var item = new StorageIndexItemEntity(
                                 storageProvider.getId(),
+                                storageProvider.getType(),
                                 folder.getPathFromRoot(),
                                 true,
                                 folder.getName(),
@@ -129,6 +130,7 @@ public class StorageSyncService {
 
                             var item = new StorageIndexItemEntity(
                                     storageProvider.getId(),
+                                    storageProvider.getType(),
                                     document.pathFromRoot(),
                                     false,
                                     document.filename(),

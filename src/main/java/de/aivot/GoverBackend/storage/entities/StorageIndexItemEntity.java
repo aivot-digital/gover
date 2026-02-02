@@ -21,6 +21,11 @@ public class StorageIndexItemEntity {
     @NotNull(message = "Die ID des Speicheranbieters darf nicht null sein.")
     private Integer storageProviderId;
 
+    @Nonnull
+    @NotNull(message = "Der Typ des Speicheranbieters darf nicht null sein.")
+    @Column(columnDefinition = "int2")
+    private StorageProviderType storageProviderType;
+
     @Id
     @Nonnull
     @NotNull(message = "Der Pfad des Speicherobjekts darf nicht null sein.")
@@ -48,11 +53,13 @@ public class StorageIndexItemEntity {
     }
 
     public StorageIndexItemEntity(@Nonnull Integer storageProviderId,
+                                  @Nonnull StorageProviderType storageProviderType,
                                   @Nonnull String pathFromRoot,
                                   @Nonnull Boolean isDirectory,
                                   @Nonnull String filename,
                                   @Nonnull String mimeType) {
         this.storageProviderId = storageProviderId;
+        this.storageProviderType = storageProviderType;
         this.pathFromRoot = pathFromRoot;
         this.isDirectory = isDirectory;
         this.filename = filename;
@@ -66,6 +73,16 @@ public class StorageIndexItemEntity {
 
     public StorageIndexItemEntity setStorageProviderId(@Nonnull Integer storageProviderId) {
         this.storageProviderId = storageProviderId;
+        return this;
+    }
+
+    @Nonnull
+    public StorageProviderType getStorageProviderType() {
+        return storageProviderType;
+    }
+
+    public StorageIndexItemEntity setStorageProviderType(@Nonnull StorageProviderType storageProviderType) {
+        this.storageProviderType = storageProviderType;
         return this;
     }
 

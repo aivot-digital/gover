@@ -311,7 +311,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 </Button>
 
                 {
-                    storageProvider.id === 0 &&
+                    storageProvider.id !== 0 &&
                     item != null &&
                     <Button
                         variant={'outlined'}
