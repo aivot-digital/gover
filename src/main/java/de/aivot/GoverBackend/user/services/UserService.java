@@ -32,6 +32,7 @@ public class UserService implements EntityService<UserEntity, String> {
         this.userRepository = userRepository;
     }
 
+    @Nonnull
     public Optional<UserEntity> fromJWT(
             @Nullable Jwt jwt
     ) throws ResponseException {
@@ -39,7 +40,10 @@ public class UserService implements EntityService<UserEntity, String> {
             return Optional.empty();
         }
 
-        var id = jwt.getClaimAsString("sub");
+        var id = getIdFromJWT(jwt);
+        if (id == null) {
+            return Optional.empty();
+        }
 
         var stored = retrieve(id);
         if (stored.isPresent()) {
@@ -47,6 +51,25 @@ public class UserService implements EntityService<UserEntity, String> {
         }
 
         return importUserFromKeycloak(id);
+    }
+
+    public UserEntity fromJWTOrThrow(
+            @Nullable Jwt jwt
+    ) throws ResponseException {
+        return fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+    }
+
+
+    @Nullable
+    public static String getIdFromJWT(
+            @Nullable Jwt jwt
+    ) {
+        if (jwt == null) {
+            return null;
+        }
+
+        return jwt.getClaimAsString("sub");
     }
 
     @Nonnull

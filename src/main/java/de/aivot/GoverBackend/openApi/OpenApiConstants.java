@@ -6,6 +6,10 @@ public class OpenApiConstants {
         public static final String AssetsDescription = "Assets are files uploaded to the system, such as images or documents. " +
                 "They can be associated with various entities within the application and should be used if you need to provides files to citizens publicly.";
 
+        public static final String PermissionsName = "Permissions";
+        public static final String PermissionsDescription = "Permissions define the access rights for users and roles within the system. " +
+                "They determine what actions can be performed on different entities and resources, ensuring proper access control and security.";
+
         public static final String ProcessAccessControlsName = "Process Access Controls";
         public static final String ProcessAccessControlsDescription =
                 "Process Access Controls define the permissions for teams and departments to access and interact with specific processes. " +
@@ -30,6 +34,10 @@ public class OpenApiConstants {
 
         public static final String SystemRolesName = "System Roles";
         public static final String SystemRolesDescription = "System roles define the permissions and access levels for users across the entire system.";
+
+        public static final String StorageProvidersName = "Storage Providers";
+        public static final String StorageProvidersDescription = "Storage providers are services that handle the storage and retrieval of files and data within the system. " +
+                "They can be configured to use different backends, such as local file systems or cloud storage solutions.";
 
         public static final String UserDeputiesName = "User Deputies";
         public static final String UserDeputiesDescription = "User deputies allow users to delegate their responsibilities to other users for a specified period of time. " +

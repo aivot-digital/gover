@@ -24,4 +24,6 @@ public interface VUserDepartmentPermissionRepository extends JpaRepository<VUser
     )
     List<Integer> getDepartmentsWithPermission(@Param("userId") String userId,
                                                @Param("permission") String permission);
+
+    List<VUserDepartmentPermissionEntity> findAllByUserId(String userId);
 }

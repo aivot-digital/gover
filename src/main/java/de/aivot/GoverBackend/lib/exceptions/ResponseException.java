@@ -183,8 +183,8 @@ public class ResponseException extends Exception {
         return ResponseException.internalServerError(String.format(message, args));
     }
 
-    public static ResponseException internalServerError(Throwable cause, String message, Object... args) {
-        return ResponseException.internalServerError(String.format(message, args), cause);
+    public static ResponseException internalServerError(Throwable cause, String format, Object... args) {
+        return ResponseException.internalServerError(String.format(format, args), cause);
     }
 
     public static ResponseException internalServerError(String message, Throwable cause) {

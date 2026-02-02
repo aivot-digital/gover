@@ -11,7 +11,7 @@ import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
-import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import * as yup from 'yup';
@@ -27,6 +27,7 @@ import {PermissionGroups} from "../../../../data/permissions/permission-groups";
 import {PermissionLabelsDe} from "../../../../data/permissions/permission-labels";
 import {SystemRoleEntity} from "../../entities/system-role-entity";
 import {SystemRolesApiService} from "../../services/system-roles-api-service";
+import {BaseApiService} from '../../../../services/base-api-service';
 
 export const SystemRoleSchema = yup.object({
     name: yup.string()
@@ -41,6 +42,15 @@ export const SystemRoleSchema = yup.object({
         .required('Die Beschreibung ist ein Pflichtfeld.'),
 });
 
+interface PermissionDetails {
+    contextLabel: string;
+    permissions: {
+        permission: string;
+        label: string;
+        description: string;
+    }[];
+}
+
 export function SystemRolesDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
@@ -52,6 +62,8 @@ export function SystemRolesDetailsPageIndex() {
         setIsBusy,
         isEditable,
     } = useContext<GenericDetailsPageContextType<SystemRoleEntity, void>>(GenericDetailsPageContext);
+
+    const [permissions, setPermissions] = useState<PermissionDetails[]>([]);
 
     useEffect(() => {
         if (isEditable) {
@@ -69,6 +81,30 @@ export function SystemRolesDetailsPageIndex() {
             dispatch(removeSnackbarMessage('access-denied-secrets-details'));
         };
     }, [isEditable]);
+
+    useEffect(() => {
+        new BaseApiService()
+            .get<any[]>('/api/permissions/')
+            .then((permissions: any[]) => {
+                setPermissions([
+                    ...PermissionGroups.map((group) => ({
+                        contextLabel: group.label,
+                        permissions: group
+                            .permissions
+                            .map((per) => ({
+                                label: PermissionLabelsDe[per],
+                                permission: per,
+                                description: '',
+                            })),
+                    })),
+                    ...permissions,
+                ]);
+                console.log('Loaded permissions:', permissions);
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Beim Laden der Berechtigungen ist ein Fehler aufgetreten.'));
+            });
+    }, []);
 
     const {
         currentItem: editedSystemRole,
@@ -197,22 +233,21 @@ export function SystemRolesDetailsPageIndex() {
                 <Table size="small">
                     <TableBody>
                         {
-                            PermissionGroups.map((group) => (
-                                <TableRow key={group.label}>
+                            permissions.map((group) => (
+                                <TableRow key={group.contextLabel}>
                                     <TableCell>
-                                        {group.label}
+                                        {group.contextLabel}
                                     </TableCell>
 
                                     <TableCell>
                                         {
-                                            group.permissions.map((permission) => (
+                                            group.permissions.map(({permission, label, description}) => (
                                                 <CheckboxFieldComponent
                                                     key={permission}
-                                                    label={PermissionLabelsDe[permission]}
+                                                    label={label}
+                                                    hint={description}
                                                     value={editedSystemRole.permissions.includes(permission)}
                                                     onChange={(val) => {
-                                                        const patch: Partial<SystemRoleEntity> = {};
-
                                                         let newPermissions = [...editedSystemRole.permissions];
 
                                                         if (val) {
@@ -225,7 +260,9 @@ export function SystemRolesDetailsPageIndex() {
                                                             newPermissions = newPermissions.filter((perm) => perm !== permission);
                                                         }
 
-                                                        handleInputPatch(patch);
+                                                        handleInputPatch({
+                                                            permissions: newPermissions,
+                                                        });
                                                     }}
                                                     sx={{
                                                         m: 0,

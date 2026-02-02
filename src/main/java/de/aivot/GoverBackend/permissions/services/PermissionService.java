@@ -5,8 +5,11 @@ import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.permissions.repositories.VUserDepartmentPermissionRepository;
 import de.aivot.GoverBackend.permissions.repositories.VUserSystemPermissionRepository;
+import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -23,20 +26,33 @@ public class PermissionService {
         this.departmentRepository = departmentRepository;
     }
 
-    public boolean hasSystemPermission(@Nonnull String userId,
+    public boolean hasSystemPermission(@Nullable String userId,
                                        @Nonnull String permission) {
+        if (userId == null) {
+            return false;
+        }
         return vUserSystemPermissionRepository
                 .hasPermission(userId, permission);
     }
 
-    public void testSystemPermission(@Nonnull String userId,
+    public boolean hasSystemPermission(@Nullable Jwt jwt,
+                                       @Nonnull String permission) {
+        return hasSystemPermission(UserService.getIdFromJWT(jwt), permission);
+    }
+
+    public void testSystemPermission(@Nullable String userId,
                                      @Nonnull String permission) throws ResponseException {
-        if (!hasSystemPermission(userId, permission)) {
+        if (userId == null || !hasSystemPermission(userId, permission)) {
             throw ResponseException.forbidden(
                     "Sie benötigen die Berechtigung %s im System.",
                     StringUtils.quote(permission)
             );
         }
+    }
+
+    public void testSystemPermission(@Nullable Jwt jwt,
+                                     @Nonnull String permission) throws ResponseException {
+        testSystemPermission(UserService.getIdFromJWT(jwt), permission);
     }
 
     public boolean hasDomainPermission(@Nonnull String userId,

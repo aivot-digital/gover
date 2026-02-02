@@ -8,6 +8,7 @@ import de.aivot.GoverBackend.core.services.LegacyPermissionService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
+import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.userRoles.entities.SystemRoleEntity;
 import de.aivot.GoverBackend.userRoles.filters.SystemRoleFilter;
 import de.aivot.GoverBackend.userRoles.services.SystemRoleService;
@@ -43,14 +44,14 @@ public class SystemRoleController {
     private final UserRoleService userRoleService;
     private final UserService userService;
     private final SystemRoleService systemRoleService;
-    private final LegacyPermissionService permissionService;
+    private final PermissionService permissionService;
 
     @Autowired
     public SystemRoleController(AuditService auditService,
                                 UserRoleService userRoleService,
                                 UserService userService,
                                 SystemRoleService systemRoleService,
-                                LegacyPermissionService permissionService) {
+                                PermissionService permissionService) {
         this.auditService = auditService
                 .createScopedAuditService(SystemRoleController.class);
 
@@ -76,7 +77,7 @@ public class SystemRoleController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermissionThrows(execUser.getId(), Permissions.SYSTEM_ROLE_READ);
+                .testSystemPermission(execUser.getId(), Permissions.SYSTEM_ROLE_READ);
 
         return systemRoleService
                 .list(pageable, filter);
@@ -97,7 +98,7 @@ public class SystemRoleController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermissionThrows(execUser.getId(), Permissions.SYSTEM_ROLE_CREATE);
+                .testSystemPermission(execUser.getId(), Permissions.SYSTEM_ROLE_CREATE);
 
         var createdEntity = systemRoleService
                 .create(newEntity);
@@ -126,7 +127,7 @@ public class SystemRoleController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermissionThrows(execUser.getId(), Permissions.SYSTEM_ROLE_READ);
+                .testSystemPermission(execUser.getId(), Permissions.SYSTEM_ROLE_READ);
 
         return systemRoleService
                 .retrieve(id)
@@ -151,7 +152,7 @@ public class SystemRoleController {
                 .orElseThrow(ResponseException::noSuperAdminPermission);
 
         permissionService
-                .hasSystemPermissionThrows(execUser.getId(), Permissions.SYSTEM_ROLE_UPDATE);
+                .testSystemPermission(execUser.getId(), Permissions.SYSTEM_ROLE_UPDATE);
 
         var updatedEntity = systemRoleService
                 .update(id, patchedEntity);
@@ -182,7 +183,7 @@ public class SystemRoleController {
                 .orElseThrow(ResponseException::noSuperAdminPermission);
 
         permissionService
-                .hasSystemPermissionThrows(execUser.getId(), Permissions.SYSTEM_ROLE_DELETE);
+                .testSystemPermission(execUser.getId(), Permissions.SYSTEM_ROLE_DELETE);
 
         var entity = userRoleService
                 .retrieve(id)

@@ -21,6 +21,7 @@ import org.springframework.data.redis.repository.configuration.EnableRedisReposi
         "de.aivot.GoverBackend.providerLink.repositories",
         "de.aivot.GoverBackend.search.repositories",
         "de.aivot.GoverBackend.secrets.repositories",
+        "de.aivot.GoverBackend.storage.repositories",
         "de.aivot.GoverBackend.submission.repositories",
         "de.aivot.GoverBackend.teams.repositories",
         "de.aivot.GoverBackend.theme.repositories",

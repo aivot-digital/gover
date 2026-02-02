@@ -1,3 +1,4 @@
+import React from 'react';
 import Build from '@aivot/mui-material-symbols-400-outlined/dist/build/Build';
 import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
 import Description from '@aivot/mui-material-symbols-400-outlined/dist/description/Description';
@@ -22,6 +23,7 @@ import FolderData from '@aivot/mui-material-symbols-400-outlined/dist/folder-dat
 import Storefront from '@aivot/mui-material-symbols-400-outlined/dist/storefront/Storefront';
 import Groups3 from '@aivot/mui-material-symbols-400-outlined/dist/groups-3/Groups3';
 import Rule from '@aivot/mui-material-symbols-400-outlined/dist/rule/Rule';
+import HardDrive2 from '@aivot/mui-material-symbols-400-outlined/dist/hard-drive-2/HardDrive2';
 
 export const ModuleIcons = {
     dashboard: <Dashboard />,
@@ -48,4 +50,5 @@ export const ModuleIcons = {
     teams: <Groups3 />,
     roles: <Rule />,
     extensions: <Extension />,
+    storage: <HardDrive2/>,
 };
