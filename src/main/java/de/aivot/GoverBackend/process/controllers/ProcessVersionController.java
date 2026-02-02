@@ -3,11 +3,11 @@ package de.aivot.GoverBackend.process.controllers;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
-import de.aivot.GoverBackend.core.services.LegacyPermissionService;
 import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
+import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntity;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
 import de.aivot.GoverBackend.process.filters.ProcessVersionFilter;
@@ -45,14 +45,15 @@ public class ProcessVersionController {
     private final ProcessVersionService processDefinitionVersionService;
     private final DepartmentService departmentService;
     private final ProcessService processDefinitionService;
-    private final LegacyPermissionService permissionService;
+    private final PermissionService permissionService;
 
     @Autowired
     public ProcessVersionController(AuditService auditService,
                                     UserService userService,
                                     ProcessVersionService processDefinitionVersionService,
                                     DepartmentService departmentService,
-                                    ProcessService processDefinitionService, LegacyPermissionService permissionService) {
+                                    ProcessService processDefinitionService,
+                                    PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(ProcessVersionController.class);
         this.userService = userService;
         this.processDefinitionVersionService = processDefinitionVersionService;
@@ -98,7 +99,7 @@ public class ProcessVersionController {
                 .orElseThrow(ResponseException::badRequest);
 
         permissionService
-                .hasDepartmentPermissionThrows(
+                .testDepartmentPermission(
                         execUser.getId(),
                         department.getId(),
                         PermissionLabels.ProcessPermissionCreate
@@ -158,7 +159,7 @@ public class ProcessVersionController {
                 .orElseThrow(ResponseException::badRequest);
 
         permissionService
-                .hasDepartmentPermissionThrows(
+                .testDepartmentPermission(
                         execUser.getId(),
                         department.getId(),
                         PermissionLabels.ProcessPermissionCreate

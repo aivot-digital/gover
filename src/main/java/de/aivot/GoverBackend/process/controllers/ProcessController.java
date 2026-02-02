@@ -121,7 +121,7 @@ public class ProcessController {
                 .orElseThrow(ResponseException::badRequest);
 
         permissionService
-                .testDomainPermission(
+                .testDepartmentPermission(
                         execUser.getId(),
                         department.getId(),
                         Permissions.PROCESS_DEFINITION_CREATE
@@ -158,7 +158,7 @@ public class ProcessController {
                 .retrieve(exportData.process().getDepartmentId())
                 .orElseThrow(ResponseException::badRequest);
 
-        permissionService.testDomainPermission(
+        permissionService.testDepartmentPermission(
                 execUser.getId(),
                 department.getId(),
                 Permissions.PROCESS_DEFINITION_CREATE
@@ -235,7 +235,7 @@ public class ProcessController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.testDomainPermission(
+        permissionService.testDepartmentPermission(
                 execUser.getId(),
                 proc.getDepartmentId(),
                 Permissions.PROCESS_DEFINITION_READ
@@ -263,7 +263,7 @@ public class ProcessController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.testDomainPermission(
+        permissionService.testDepartmentPermission(
                 execUser.getId(),
                 updateDTO.getDepartmentId(),
                 Permissions.PROCESS_DEFINITION_UPDATE
@@ -344,7 +344,7 @@ public class ProcessController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.testDomainPermission(
+        permissionService.testDepartmentPermission(
                 execUser.getId(),
                 existing.getDepartmentId(),
                 Permissions.PROCESS_DEFINITION_READ

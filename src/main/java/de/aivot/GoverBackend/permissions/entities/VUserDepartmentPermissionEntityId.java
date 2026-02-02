@@ -8,7 +8,8 @@ public class VUserDepartmentPermissionEntityId {
     private Integer userId;
     private Integer departmentId;
 
-    public static VUserDepartmentPermissionEntityId of(@Nonnull Integer userId, @Nonnull Integer departmentId) {
+    public static VUserDepartmentPermissionEntityId of(@Nonnull Integer userId,
+                                                       @Nonnull Integer departmentId) {
         VUserDepartmentPermissionEntityId id = new VUserDepartmentPermissionEntityId();
         id.userId = userId;
         id.departmentId = departmentId;

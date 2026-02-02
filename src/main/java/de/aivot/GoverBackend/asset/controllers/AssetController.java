@@ -9,17 +9,19 @@ import de.aivot.GoverBackend.asset.services.AssetService;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
-import de.aivot.GoverBackend.permissions.data.Permissions;
-import de.aivot.GoverBackend.core.services.LegacyPermissionService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
+import de.aivot.GoverBackend.permissions.data.Permissions;
+import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.services.AVService;
 import de.aivot.GoverBackend.services.storages.AssetStorageService;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,9 +33,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -55,7 +54,7 @@ public class AssetController {
     private final AssetRepository assetRepository;
     private final AVService avService;
     private final UserService userService;
-    private final LegacyPermissionService permissionService;
+    private final PermissionService permissionService;
 
     @Autowired
     public AssetController(AuditService auditService,
@@ -63,7 +62,8 @@ public class AssetController {
                            AssetStorageService assetStorageService,
                            AssetRepository assetRepository,
                            AVService avService,
-                           UserService userService, LegacyPermissionService permissionService) {
+                           UserService userService,
+                           PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(AssetController.class);
 
         this.assetService = assetService;

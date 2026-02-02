@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.process.services;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
+import de.aivot.GoverBackend.permissions.entities.VUserDepartmentPermissionEntity;
 import de.aivot.GoverBackend.process.entities.ProcessEntity;
 import de.aivot.GoverBackend.process.repositories.ProcessRepository;
 import jakarta.annotation.Nonnull;
@@ -47,10 +48,13 @@ public class ProcessService implements EntityService<ProcessEntity, Integer> {
                 criteriaBuilder.or(
                         criteriaBuilder.isNull(root.get("departmentId")),
                         root.get("departmentId").in(
-                                /*criteriaBuilder.subquery(Integer.class)
-                                        .select(criteriaBuilder.literal("departmentId"))
-                                        .from(ProcessEntity.class)
-                                        .where(criteriaBuilder.equal(root.get("id"), userId))*/
+                                /*query
+                                        .subquery(Integer.class)
+                                        .select(criteriaBuilder.("departmentId"))
+                                        .from(VUserDepartmentPermissionEntity.class)
+                                        .where(criteriaBuilder.equal(root.get("id"), userId))
+
+                                 */
                         )
                 );
 

@@ -11,7 +11,7 @@ import java.util.List;
 
 public interface VUserDepartmentPermissionRepository extends JpaRepository<VUserDepartmentPermissionEntity, VUserDepartmentPermissionEntityId>, JpaSpecificationExecutor<VUserDepartmentPermissionEntity> {
     @Query(
-            value = "SELECT EXISTS(SELECT 1 FROM v_user_department_permissions p WHERE p.user_id = :userId AND p.department_id = :departmentId AND p.permissions @> ARRAY[:permission])",
+            value = "SELECT EXISTS(SELECT 1 FROM v_user_department_permissions p WHERE p.user_id = :userId AND p.department_id = :departmentId AND p.permissions::text[] @> ARRAY[:permission])",
             nativeQuery = true
     )
     boolean hasPermission(@Param("userId") String userId,
@@ -19,7 +19,7 @@ public interface VUserDepartmentPermissionRepository extends JpaRepository<VUser
                           @Param("permission") String permission);
 
     @Query(
-            value = "SELECT p.department_id FROM v_user_department_permissions p WHERE p.user_id = :userId AND p.permissions @> ARRAY[:permission]",
+            value = "SELECT p.department_id FROM v_user_department_permissions p WHERE p.user_id = :userId AND p.permissions::text[]  @> ARRAY[:permission]",
             nativeQuery = true
     )
     List<Integer> getDepartmentsWithPermission(@Param("userId") String userId,
