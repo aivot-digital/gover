@@ -229,6 +229,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         options={definitions.map((def) => ({
                             value: def.key,
                             label: def.name,
+                            subLabel: def.description,
                         }))}
                         error={errors.storageProviderDefinitionKey}
                         hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsdienstleisters eingeblendet wird. Der Name des Anbieters ist gegenüber antragstellenden Personen sichtbar."
