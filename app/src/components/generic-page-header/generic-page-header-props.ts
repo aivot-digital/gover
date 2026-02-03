@@ -1,10 +1,10 @@
-import {ReactNode} from 'react';
-import {Action} from '../actions/actions-props';
-import {BadgeProps} from '../badge/badge-props';
+import {type ReactNode} from 'react';
+import {type Action} from '../actions/actions-props';
+import {type BadgeProps} from '../badge/badge-props';
 
 export interface GenericPageHeaderProps {
     icon: ReactNode;
-    badge?: BadgeProps;
+    badge?: BadgeProps | ReactNode;
     title: string;
     actions?: Action[];
     helpDialog?: GenericPageHeaderPropsHelpDialog;

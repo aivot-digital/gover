@@ -6,6 +6,7 @@ import {Badge} from '../badge/badge';
 import {InfoDialog} from '../../dialogs/info-dialog/info-dialog';
 import {Action} from '../actions/actions-props';
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
+import {isBadgeProps} from '../badge/badge-props';
 
 export function GenericPageHeader(props: GenericPageHeaderProps) {
     const [isHelpDialogOpen, toggleIsHelpDialogOpen] = useReducer((isHelpDialogOpen) => !isHelpDialogOpen, false);
@@ -57,8 +58,16 @@ export function GenericPageHeader(props: GenericPageHeaderProps) {
                 </Typography>
 
                 {
-                    props.badge &&
+                    isBadgeProps(props.badge) &&
                     <Badge {...props.badge} sx={{ml: 1}}/>
+                }
+
+                {
+                    props.badge != null &&
+                    !isBadgeProps(props.badge) &&
+                    <Box sx={{ml: 1}}>
+                        {props.badge}
+                    </Box>
                 }
 
                 <Actions
