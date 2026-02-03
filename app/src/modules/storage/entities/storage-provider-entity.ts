@@ -1,5 +1,6 @@
 import {type ElementData} from '../../../models/element-data';
-import {StorageProviderStatus} from '../enums/storage-provider-status';
+import {type StorageProviderStatus} from '../enums/storage-provider-status';
+import {type StorageProviderType} from '../enums/storage-provider-type';
 
 export interface StorageProviderEntity {
     id: number;
@@ -14,9 +15,3 @@ export interface StorageProviderEntity {
     created: string; // ISO date string
     updated: string; // ISO date string
 }
-
-export enum StorageProviderType {
-    Assets = 'Assets',
-    Attachments = 'Attachments',
-}
-

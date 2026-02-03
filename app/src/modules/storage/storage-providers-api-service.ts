@@ -2,9 +2,9 @@ import type {StorageProviderDefinition} from './entities/storage-provider-defini
 import {BaseCrudApiService} from '../../services/base-crud-api-service';
 import {
     type StorageProviderEntity,
-    StorageProviderType,
 } from './entities/storage-provider-entity';
 import {StorageProviderStatus} from './enums/storage-provider-status';
+import {StorageProviderType} from './enums/storage-provider-type';
 
 export interface StorageProviderFilter {
     name: string;

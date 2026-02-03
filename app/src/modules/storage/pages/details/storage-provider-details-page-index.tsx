@@ -25,23 +25,27 @@ import {
 import {type StorageProviderDefinition} from '../../entities/storage-provider-definition';
 import {type StorageProviderEntity} from '../../entities/storage-provider-entity';
 import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
+import {StorageProviderType, StorageProviderTypeLabels, StorageProviderTypes} from '../../enums/storage-provider-type';
 
 export const _StorageProviderSchema = {
     name: yup.string()
         .trim()
-        .min(3, 'Der Name des Zahlungsdienstleisters muss mindestens 3 Zeichen lang sein.')
-        .max(96, 'Der Name des Zahlungsdienstleisters darf maximal 96 Zeichen lang sein.')
-        .required('Der Name des Zahlungsdienstleisters ist ein Pflichtfeld.'),
+        .min(3, 'Der Name des Speicheranbieters muss mindestens 3 Zeichen lang sein.')
+        .max(96, 'Der Name des Speicheranbieters darf maximal 96 Zeichen lang sein.')
+        .required('Der Name des Speicheranbieters ist ein Pflichtfeld.'),
     description: yup.string()
         .trim()
         .min(10, 'Die Beschreibung muss mindestens 10 Zeichen lang sein.')
         .max(500, 'Die Beschreibung darf maximal 500 Zeichen lang sein.')
-        .required('Die Beschreibung des Zahlungsdienstleisters ist ein Pflichtfeld.'),
+        .required('Die Beschreibung des Speicheranbieters ist ein Pflichtfeld.'),
     storageProviderDefinitionKey: yup.string()
         .trim()
-        .required('Der Anbieter des Zahlungsdienstleisters ist ein Pflichtfeld.'),
+        .required('Der Anbieter des Speicheranbieters ist ein Pflichtfeld.'),
     storageProviderDefinitionVersion: yup.number()
-        .required('Die Version des Zahlungsdienstleisters ist ein Pflichtfeld.'),
+        .required('Die Version des Speicheranbieters ist ein Pflichtfeld.'),
+    type: yup.string()
+        .trim()
+        .required('Der Typ des Speicheranbieters ist ein Pflichtfeld.'),
 };
 
 export function StorageProviderDetailsPageIndex(): ReactNode {
@@ -57,7 +61,6 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         additionalData,
         isBusy,
         setIsBusy,
-        setAdditionalData,
         isEditable,
     } = useGenericDetailsPageContext<StorageProviderEntity, StorageProviderAdditionalData>();
 
@@ -259,6 +262,25 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     />
                 </Grid>
             </Grid>
+
+            <SelectFieldComponent
+                label="Typ"
+                required={true}
+                value={storageProvider.type}
+                onChange={(val) => {
+                    if (val == null) {
+                        handleInputChange('type')(StorageProviderType.Assets);
+                    } else {
+                        handleInputChange('type')(val as StorageProviderType);
+                    }
+                }}
+                options={StorageProviderTypes.map((type) => ({
+                    value: type,
+                    label: StorageProviderTypeLabels[type],
+                }))}
+                error={errors.storageProviderDefinitionVersion}
+                hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsdienstleisters eingeblendet wird. Der Name des Anbieters ist gegenüber antragstellenden Personen sichtbar."
+            />
 
             <TextFieldComponent
                 label="Name"
