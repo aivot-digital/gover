@@ -32,6 +32,8 @@ public interface StorageProviderDefinition<T> {
 
     boolean shouldResync(@Nullable T oldConfig, @Nonnull T newConfig);
 
+    void testConnection(@Nonnull T config) throws StorageException;
+
     @Nonnull
     default StorageFolder rootFolder(@Nonnull T config) throws StorageException {
         return rootFolder(config, false);

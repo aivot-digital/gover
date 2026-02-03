@@ -94,6 +94,18 @@ public class LocalDiskStorageProviderDefinition implements StorageProviderDefini
         return !oldConfig.getRealRootPath().equals(newConfig.getRealRootPath());
     }
 
+    @Override
+    public void testConnection(@Nonnull Config config) throws StorageException {
+        var rootPathReal = config.getRealRootPath();
+        if (!Files.exists(rootPathReal) || !Files.isDirectory(rootPathReal) || !Files.isWritable(rootPathReal)) {
+            throw new StorageException(
+                    "Die Verbindung zum lokalen Dateisystem konnte nicht hergestellt werden. " +
+                            "Das Stammverzeichnis %s existiert nicht oder ist nicht beschreibbar.",
+                    StringUtils.quote(rootPathReal.toString())
+            );
+        }
+    }
+
     @Nonnull
     @Override
     public StorageFolder rootFolder(@Nonnull Config config, boolean recursive) throws StorageException {
@@ -113,7 +125,7 @@ public class LocalDiskStorageProviderDefinition implements StorageProviderDefini
 
     @Nonnull
     @Override
-    public StorageFolder createFolder(@Nonnull Config config, @Nonnull String pathFromRoot) {
+    public StorageFolder createFolder(@Nonnull Config config, @Nonnull String pathFromRoot) throws StorageException {
         var folderToCreatePathReal = getSecurePath(config.getRealRootPath(), pathFromRoot);
 
         try {
