@@ -1,16 +1,11 @@
 package de.aivot.GoverBackend.storage.entities;
 
-import de.aivot.GoverBackend.core.converters.ElementDataConverter;
-import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.storage.enums.StorageProviderType;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-
-import java.time.LocalDateTime;
-import java.util.Objects;
 
 @Entity
 @Table(name = "storage_index_items")
@@ -97,11 +92,11 @@ public class StorageIndexItemEntity {
     }
 
     @Nonnull
-    public Boolean getDirectory() {
+    public Boolean getIsDirectory() {
         return isDirectory;
     }
 
-    public StorageIndexItemEntity setDirectory(@Nonnull Boolean directory) {
+    public StorageIndexItemEntity setIsDirectory(@Nonnull Boolean directory) {
         isDirectory = directory;
         return this;
     }

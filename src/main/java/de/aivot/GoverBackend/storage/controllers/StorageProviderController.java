@@ -3,22 +3,30 @@ package de.aivot.GoverBackend.storage.controllers;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
+import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
+import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.permissions.services.PermissionService;
+import de.aivot.GoverBackend.storage.entities.StorageIndexItemEntity;
 import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
 import de.aivot.GoverBackend.storage.enums.StorageProviderStatus;
 import de.aivot.GoverBackend.storage.filters.StorageProviderFilter;
+import de.aivot.GoverBackend.storage.models.StorageFolder;
+import de.aivot.GoverBackend.storage.models.StorageProviderDefinition;
 import de.aivot.GoverBackend.storage.permissions.StoragePermissionProvider;
+import de.aivot.GoverBackend.storage.repositories.StorageIndexItemRepository;
 import de.aivot.GoverBackend.storage.services.StorageProviderService;
 import de.aivot.GoverBackend.storage.services.StorageSyncWorker;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -30,7 +38,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/storage-providers/")
@@ -46,18 +56,21 @@ public class StorageProviderController {
     private final StorageProviderService storageProviderService;
     private final PermissionService permissionService;
     private final RabbitTemplate rabbitTemplate;
+    private final StorageIndexItemRepository storageIndexItemRepository;
 
     @Autowired
     public StorageProviderController(AuditService auditService,
                                      UserService userService,
                                      StorageProviderService storageProviderService,
                                      PermissionService permissionService,
-                                     RabbitTemplate rabbitTemplate) {
+                                     RabbitTemplate rabbitTemplate,
+                                     StorageIndexItemRepository storageIndexItemRepository) {
         this.auditService = auditService.createScopedAuditService(StorageProviderController.class);
         this.userService = userService;
         this.storageProviderService = storageProviderService;
         this.permissionService = permissionService;
         this.rabbitTemplate = rabbitTemplate;
+        this.storageIndexItemRepository = storageIndexItemRepository;
     }
 
     @GetMapping("")
@@ -204,5 +217,84 @@ public class StorageProviderController {
                 ));
 
         return updated;
+    }
+
+    @GetMapping(value = {
+            "{id}/files/",
+            "{id}/files/**",
+    })
+    @Operation(
+            summary = "Get Folder from Storage Provider",
+            description = "Retrieve a folder from the specified storage provider. Requires the permission " + StoragePermissionProvider.STORAGE_PROVIDER_READ + "."
+    )
+    public List<StorageIndexItemEntity> getFolder(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Integer id,
+            HttpServletRequest request
+    ) throws ResponseException {
+        permissionService
+                .testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+
+        var pathParts = request
+                .getRequestURL()
+                .toString()
+                .split("/files/");
+
+        String normalizedPath = "/";
+        if (pathParts.length > 1) {
+            normalizedPath = pathParts[1];
+
+            if (!normalizedPath.startsWith("/")) {
+                normalizedPath = "/" + normalizedPath;
+            }
+
+            if (!normalizedPath.endsWith("/")) {
+                normalizedPath = normalizedPath + "/";
+            }
+        }
+
+        return storageIndexItemRepository
+                .listAllInFolder(id, "^" + normalizedPath + "[^/]+$");
+
+        /*
+        var provider = storageProviderService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        var definition = storageProviderDefinitionService
+                .retrieveProviderDefinition(
+                        provider.getStorageProviderDefinitionKey(),
+                        provider.getStorageProviderDefinitionVersion()
+                )
+                .orElseThrow(ResponseException::internalServerError);
+
+        return getFolder(provider, definition, path);
+
+         */
+    }
+
+    private static <T> StorageFolder getFolder(StorageProviderEntity provider,
+                                               StorageProviderDefinition<T> definition,
+                                               String path) throws ResponseException {
+        T config;
+        try {
+            config = ElementPOJOMapper
+                    .mapToPOJO(provider.getConfiguration(), definition.getConfigClass());
+        } catch (ElementDataConversionException e) {
+            throw ResponseException.internalServerError(
+                    e,
+                    "Fehler beim Verarbeiten der Konfiguration des Speicheranbieters %s (%d)",
+                    StringUtils.quote(provider.getName()),
+                    provider.getId()
+            );
+        }
+
+        return definition.retrieveFolder(config, path, true)
+                .orElseThrow(() -> ResponseException.notFound(
+                        "Der Ordner mit dem Pfad %s im Speicheranbieter %s (%d) wurde nicht gefunden.",
+                        StringUtils.quote(path),
+                        StringUtils.quote(provider.getName()),
+                        provider.getId()
+                ));
     }
 }

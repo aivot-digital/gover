@@ -7,19 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public class StorageFolder {
-    /**
-     * The pathFromRoot to this folder, based on the storage provider's root.
-     */
-    @Nonnull
-    private String pathFromRoot;
-
-    /**
-     * The name of this folder.
-     */
-    @Nonnull
-    private String name;
-
+public class StorageFolder extends StorageItem {
     /**
      * Optional metadata associated with this folder.
      */
@@ -49,8 +37,7 @@ public class StorageFolder {
                          @Nonnull List<StorageFolder> subfolders,
                          @Nonnull List<StorageDocument> documents,
                          boolean recursive) {
-        this.pathFromRoot = pathFromRoot;
-        this.name = name;
+        super(pathFromRoot, name, true);
         this.metadata = metadata;
         this.subfolders = subfolders;
         this.documents = documents;
@@ -73,16 +60,6 @@ public class StorageFolder {
         for (var subfolder : subfolders) {
             subfolder.apply(folderConsumer);
         }
-    }
-
-    @Nonnull
-    public String getPathFromRoot() {
-        return pathFromRoot;
-    }
-
-    public StorageFolder setPathFromRoot(@Nonnull String pathFromRoot) {
-        this.pathFromRoot = pathFromRoot;
-        return this;
     }
 
     @Nullable
@@ -121,16 +98,6 @@ public class StorageFolder {
 
     public StorageFolder setRecursive(boolean recursive) {
         this.recursive = recursive;
-        return this;
-    }
-
-    @Nonnull
-    public String getName() {
-        return name;
-    }
-
-    public StorageFolder setName(@Nonnull String name) {
-        this.name = name;
         return this;
     }
 }

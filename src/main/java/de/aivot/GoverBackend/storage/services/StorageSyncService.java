@@ -14,7 +14,6 @@ import jakarta.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
-import org.springframework.http.MediaTypeFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
@@ -24,11 +23,16 @@ import java.util.Set;
 public class StorageSyncService {
     private static final Logger logger = LoggerFactory.getLogger(StorageSyncService.class);
 
+    private final KnownExtensionsService knownExtensions;
     private final StorageProviderRepository storageProviderRepository;
     private final StorageProviderDefinitionService storageProviderDefinitionService;
     private final StorageIndexItemRepository storageIndexItemRepository;
 
-    public StorageSyncService(StorageProviderRepository storageProviderRepository, StorageProviderDefinitionService storageProviderDefinitionService, StorageIndexItemRepository storageIndexItemRepository) {
+    public StorageSyncService(KnownExtensionsService knownExtensions,
+                              StorageProviderRepository storageProviderRepository,
+                              StorageProviderDefinitionService storageProviderDefinitionService,
+                              StorageIndexItemRepository storageIndexItemRepository) {
+        this.knownExtensions = knownExtensions;
         this.storageProviderRepository = storageProviderRepository;
         this.storageProviderDefinitionService = storageProviderDefinitionService;
         this.storageIndexItemRepository = storageIndexItemRepository;
@@ -101,11 +105,12 @@ public class StorageSyncService {
                             .addArgument(folder::getPathFromRoot)
                             .log();
 
-                    var folderExists = storageIndexItemRepository
-                            .existsById(StorageIndexItemEntityId.of(storageProvider.getId(), folder.getPathFromRoot()));
+                    var folderItem = storageIndexItemRepository
+                            .findById(StorageIndexItemEntityId.of(storageProvider.getId(), folder.getPathFromRoot()))
+                            .orElse(null);
 
-                    if (!folderExists) {
-                        var item = new StorageIndexItemEntity(
+                    if (folderItem == null) {
+                        folderItem = new StorageIndexItemEntity(
                                 storageProvider.getId(),
                                 storageProvider.getType(),
                                 folder.getPathFromRoot(),
@@ -113,33 +118,47 @@ public class StorageSyncService {
                                 folder.getName(),
                                 "inode/directory"
                         );
-                        storageIndexItemRepository.save(item);
                     }
+
+                    folderItem
+                            .setStorageProviderType(storageProvider.getType())
+                            .setMimeType("inode/directory")
+                            .setIsDirectory(true)
+                            .setFilename(folder.getName());
+
+                    storageIndexItemRepository.save(folderItem);
 
                     syncedPaths.add(folder.getPathFromRoot());
 
                     for (var document : folder.getDocuments()) {
-                        var documentExists = storageIndexItemRepository
-                                .existsById(StorageIndexItemEntityId.of(storageProvider.getId(), document.pathFromRoot()));
+                        var docItem = storageIndexItemRepository
+                                .findById(StorageIndexItemEntityId.of(storageProvider.getId(), document.getPathFromRoot()))
+                                .orElse(null);
 
-                        if (!documentExists) {
-                            var mimeType = MediaTypeFactory
-                                    .getMediaType(document.filename())
-                                    .orElse(MediaType.APPLICATION_OCTET_STREAM)
-                                    .getType();
-
-                            var item = new StorageIndexItemEntity(
+                        if (docItem == null) {
+                            docItem = new StorageIndexItemEntity(
                                     storageProvider.getId(),
                                     storageProvider.getType(),
-                                    document.pathFromRoot(),
+                                    document.getPathFromRoot(),
                                     false,
-                                    document.filename(),
-                                    mimeType
+                                    document.getName(),
+                                    "application/octet-stream"
                             );
-                            storageIndexItemRepository.save(item);
-
-                            syncedPaths.add(document.pathFromRoot());
                         }
+
+                        var mimeType = knownExtensions
+                                .determineMimeType(document.getName())
+                                .orElse(MediaType.APPLICATION_OCTET_STREAM_VALUE);
+
+                        docItem
+                                .setStorageProviderType(storageProvider.getType())
+                                .setMimeType(mimeType)
+                                .setIsDirectory(false)
+                                .setFilename(document.getName());
+
+                        storageIndexItemRepository.save(docItem);
+
+                        syncedPaths.add(docItem.getPathFromRoot());
                     }
                 }
         );

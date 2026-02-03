@@ -5,19 +5,13 @@ import {Typography} from '@mui/material';
 import {EditOutlined} from '@mui/icons-material';
 import {StorageProvidersApiService} from '../../storage-providers-api-service';
 import React, {type ReactNode, useEffect, useState} from 'react';
-import Chip from '@mui/material/Chip';
-import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
-import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 import {type StorageProviderDefinition} from '../../entities/storage-provider-definition';
 import {type StorageProviderEntity} from '../../entities/storage-provider-entity';
-import {
-    type StorageProviderStatus,
-    StorageProviderStatusColors,
-    StorageProviderStatusLabels,
-} from '../../enums/storage-provider-status';
+import {type StorageProviderStatus} from '../../enums/storage-provider-status';
+import {StorageStatusChip} from '../../components/storage-status-chip';
 
 export function StorageProvidersListPage(): ReactNode {
     const [definitions, setDefinitions] = useState<StorageProviderDefinition[]>([]);
@@ -88,11 +82,8 @@ export function StorageProvidersListPage(): ReactNode {
                             renderCell: (params) => {
                                 return (
                                     <CellContentWrapper>
-                                        <Chip
-                                            label={StorageProviderStatusLabels[params.value as StorageProviderStatus]}
-                                            color={StorageProviderStatusColors[params.value as StorageProviderStatus]}
-                                            size="small"
-                                            icon={<Visibility fontSize="small"/>}
+                                        <StorageStatusChip
+                                            status={params.value as StorageProviderStatus}
                                         />
                                     </CellContentWrapper>
                                 );

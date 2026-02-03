@@ -12,29 +12,36 @@ import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.secrets.entities.SecretEntity;
 import de.aivot.GoverBackend.secrets.repositories.SecretRepository;
+import de.aivot.GoverBackend.secrets.services.SecretService;
 import de.aivot.GoverBackend.storage.exceptions.StorageException;
 import de.aivot.GoverBackend.storage.models.StorageDocument;
 import de.aivot.GoverBackend.storage.models.StorageFolder;
 import de.aivot.GoverBackend.storage.models.StorageProviderDefinition;
-import de.aivot.GoverBackend.utils.StringUtils;
+import io.minio.BucketExistsArgs;
+import io.minio.ListObjectsArgs;
+import io.minio.MinioClient;
+import io.minio.errors.*;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.LinkedList;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
+import java.util.UUID;
 
 @Component
 public class S3StorageProviderDefinition implements StorageProviderDefinition<S3StorageProviderDefinition.Config>, PluginComponent {
     private final SecretRepository secretRepository;
+    private final SecretService secretService;
 
-    public S3StorageProviderDefinition(SecretRepository secretRepository) {
+    public S3StorageProviderDefinition(SecretRepository secretRepository, SecretService secretService) {
         this.secretRepository = secretRepository;
+        this.secretService = secretService;
     }
 
     @Nonnull
@@ -116,6 +123,29 @@ public class S3StorageProviderDefinition implements StorageProviderDefinition<S3
                 || !oldConfig.secretKeySecret.equals(newConfig.secretKeySecret);
     }
 
+    @Override
+    public void testConnection(@Nonnull Config config) throws StorageException {
+        var client = getClient(config);
+
+        var bucketTestRequest = BucketExistsArgs
+                .builder()
+                .bucket(config.bucket)
+                .build();
+
+        boolean bucketExists;
+        try {
+            bucketExists = client
+                    .bucketExists(bucketTestRequest);
+        } catch (ErrorResponseException | InsufficientDataException | XmlParserException | ServerException |
+                 NoSuchAlgorithmException | IOException | InvalidResponseException | InvalidKeyException | InternalException e) {
+            throw new StorageException(e, "Die Verbindung zum S3-kompatiblen Speicher konnte nicht hergestellt werden.");
+        }
+
+        if (!bucketExists) {
+            throw new StorageException("Der angegebene Bucket '%s' existiert nicht.", config.bucket);
+        }
+    }
+
     @Nonnull
     @Override
     public StorageFolder rootFolder(@Nonnull Config config, boolean recursive) throws StorageException {
@@ -123,14 +153,24 @@ public class S3StorageProviderDefinition implements StorageProviderDefinition<S3
                 .orElseThrow(() -> new StorageException("Das Stammverzeichnis existiert nicht."));
     }
 
-    /**
-     * Ensures the given path is prefixed with a single '/'.
-     */
-    private static String toPrefixWithSlash(String path) {
-        if (path == null || path.isEmpty()) {
-            return "/";
-        }
-        return path.startsWith("/") ? path : "/" + path;
+    @Nonnull
+    @Override
+    public Optional<StorageFolder> retrieveFolder(@Nonnull Config config, @Nonnull String pathFromRoot, boolean recursive) {
+        var client = getClient(config);
+
+        var listObjectsArgs = ListObjectsArgs
+                .builder()
+                .bucket(config.bucket)
+                .prefix(pathFromRoot)
+                .recursive(recursive)
+                .build();
+
+        var objects = client.listObjects(listObjectsArgs);
+
+
+
+        // TODO
+        throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     @Nonnull
@@ -138,128 +178,6 @@ public class S3StorageProviderDefinition implements StorageProviderDefinition<S3
     public StorageFolder createFolder(@Nonnull Config config, @Nonnull String pathFromRoot) {
         // TODO
         throw new UnsupportedOperationException("Not implemented yet.");
-    }
-
-    @Nonnull
-    @Override
-    public Optional<StorageFolder> retrieveFolder(@Nonnull Config config, @Nonnull String pathFromRoot, boolean recursive) {
-        // TODO
-        throw new UnsupportedOperationException("Not implemented yet.");
-    }
-
-    private StorageFolder retrieveFolderRecursive(@Nonnull Path rootPathReal,
-                                                  @Nonnull Path folderToRetrievePathReal,
-                                                  @Nonnull String pathFromRoot) {
-        // Extract the name of this folder based on the real path
-        var folderToRetrieveName = folderToRetrievePathReal
-                .getFileName()
-                .toString();
-
-        // Create the folder object, which will be returned
-        var folderObject = new StorageFolder(
-                toPrefixWithSlash(pathFromRoot),
-                folderToRetrieveName,
-                null,
-                new LinkedList<>(),
-                new LinkedList<>(),
-                false
-        );
-
-        try (var files = Files.list(folderToRetrievePathReal)) {
-            files.forEach(childPathReal -> {
-                var pathFromRootToChild = rootPathReal.relativize(childPathReal).toString();
-                pathFromRootToChild = toPrefixWithSlash(pathFromRootToChild);
-                var filename = childPathReal.getFileName().toString();
-
-                if (Files.isDirectory(childPathReal)) {
-                    var subfolder = retrieveFolderRecursive(rootPathReal, childPathReal, pathFromRootToChild);
-                    folderObject.addSubfolder(subfolder);
-                } else if (Files.isRegularFile(childPathReal)) {
-                    var document = new StorageDocument(pathFromRootToChild, filename);
-                    folderObject.addDocument(document);
-                }
-            });
-        } catch (IOException e) {
-            throw new StorageException(e,
-                    "Fehler beim Lesen des Verzeichnisses %s: %s.",
-                    StringUtils.quote(folderToRetrievePathReal.toString()),
-                    e.getMessage());
-        }
-
-        return folderObject;
-    }
-
-    /**
-     * Retrieve a folder non-recursively, only listing its immediate subfolders and documents.
-     *
-     * @param rootPathReal             The real root path on the filesystem.
-     * @param folderToRetrievePathReal The real folder path to retrieve on the filesystem.
-     * @param pathFromRoot             The path from the root to the folder to retrieve.
-     * @return The retrieved folder with its immediate subfolders and documents.
-     */
-    private StorageFolder retrieveFolderFlat(@Nonnull Path rootPathReal,
-                                             @Nonnull Path folderToRetrievePathReal,
-                                             @Nonnull String pathFromRoot) {
-        // Extract the name of this folder based on the real path
-        var folderToRetrieveName = folderToRetrievePathReal
-                .getFileName()
-                .toString();
-
-        // Create the folder object, which will be returned
-        var folderObject = new StorageFolder(
-                toPrefixWithSlash(pathFromRoot),
-                folderToRetrieveName,
-                null,
-                new LinkedList<>(),
-                new LinkedList<>(),
-                false
-        );
-
-        // Extract the name from the folderToRetrievePath
-        var folderName = folderToRetrievePathReal.getFileName().toString();
-        folderObject.setName(folderName);
-
-        // List all files and directories in the folder
-        var dirFiles = folderToRetrievePathReal
-                .toFile()
-                .listFiles();
-
-        // If there are no files, return the empty folder object
-        if (dirFiles == null) {
-            return folderObject;
-        }
-
-        // Iterate over all files and directories
-        for (var file : dirFiles) {
-            // Build the absolute pathFromRoot of this file, relative to the root pathFromRoot
-            var pathFromTheRootToThisFile = rootPathReal
-                    .relativize(file.toPath())
-                    .toString();
-            pathFromTheRootToThisFile = toPrefixWithSlash(pathFromTheRootToThisFile);
-            // Extract the filename
-            var filename =
-                    file.getName();
-
-            if (file.isDirectory()) {
-                var subfolder = new StorageFolder(
-                        pathFromTheRootToThisFile,
-                        filename,
-                        null,
-                        new LinkedList<>(),
-                        new LinkedList<>(),
-                        false
-                );
-                folderObject.addSubfolder(subfolder);
-            } else if (file.isFile()) {
-                var document = new StorageDocument(
-                        pathFromTheRootToThisFile,
-                        filename
-                );
-                folderObject.addDocument(document);
-            }
-        }
-
-        return folderObject;
     }
 
     @Override
@@ -304,6 +222,47 @@ public class S3StorageProviderDefinition implements StorageProviderDefinition<S3
     public void deleteDocument(@Nonnull Config config, @Nonnull String path) {
         // TODO
     }
+
+
+    private MinioClient getClient(@Nonnull Config config) {
+        UUID secretUUID;
+        try {
+            secretUUID = UUID
+                    .fromString(config.secretKeySecret);
+        } catch (Exception e) {
+            throw new StorageException("Der Secret Key ist ungültig.");
+        }
+
+        SecretEntity secret = secretService
+                .retrieve(secretUUID)
+                .orElseThrow(() -> new StorageException("Das Geheimnis für den Secret Key wurde nicht gefunden."));
+
+        String storageSecretKey;
+        try {
+            storageSecretKey = secretService
+                    .decrypt(secret);
+        } catch (Exception e) {
+            throw new StorageException(e, "Fehler beim Entschlüsseln des Geheimnisses für den Secret Key.");
+        }
+
+        return MinioClient
+                .builder()
+                .endpoint(config.endpoint)
+                .credentials(config.accessKey, storageSecretKey)
+                .build();
+    }
+
+
+    /**
+     * Ensures the given path is prefixed with a single '/'.
+     */
+    private static String toPrefixWithSlash(String path) {
+        if (path == null || path.isEmpty()) {
+            return "/";
+        }
+        return path.startsWith("/") ? path : "/" + path;
+    }
+
 
     @LayoutElementPOJOBinding(id = "config", type = ElementType.ConfigLayout)
     public static class Config {

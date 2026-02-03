@@ -28,7 +28,6 @@ import {ElementDerivationContext} from '../../../elements/components/element-der
 import {StorageProviderType, StorageProviderTypeLabels, StorageProviderTypes} from '../../enums/storage-provider-type';
 import Tooltip from '@mui/material/Tooltip';
 import HelpIconOutlined from '@mui/icons-material/HelpOutline';
-import {PaymentProvidersApiService} from '../../../payment/payment-providers-api-service';
 
 export const _StorageProviderSchema = {
     name: yup.string()

@@ -121,7 +121,6 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
 
         existingEntity.setName(entity.getName());
         existingEntity.setDescription(entity.getDescription());
-        existingEntity.setConfiguration(entity.getConfiguration());
 
         var shouldResync = shouldResync(def,
                 existingEntity.getConfiguration(),
@@ -130,6 +129,9 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
         if (shouldResync) {
             existingEntity.setStatus(StorageProviderStatus.SyncPending);
         }
+
+        // Assign this here to prevent resync check failing due to overwritten data
+        existingEntity.setConfiguration(entity.getConfiguration());
 
         var res = storageProviderRepository
                 .save(existingEntity);
@@ -169,7 +171,6 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
         }
 
         return def.shouldResync(existingConfig, updatedConfig);
-
     }
 
     @Override

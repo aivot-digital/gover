@@ -5,6 +5,7 @@ import {
 } from './entities/storage-provider-entity';
 import {StorageProviderStatus} from './enums/storage-provider-status';
 import {StorageProviderType} from './enums/storage-provider-type';
+import {type StorageIndexItem} from './entities/storage-index-item-entity';
 
 export interface StorageProviderFilter {
     name: string;
@@ -37,5 +38,9 @@ export class StorageProvidersApiService extends BaseCrudApiService<StorageProvid
 
     public async resync(id: number): Promise<StorageProviderEntity> {
         return await this.put<any, StorageProviderEntity>(`${this.buildPath(id)}resync/`, {});
+    }
+
+    public async getFolder(id: number, path: string): Promise<StorageIndexItem[]> {
+        return await this.get<StorageIndexItem[]>(`${this.buildPath(id)}files${path}`, {});
     }
 }
