@@ -26,6 +26,9 @@ import {type StorageProviderDefinition} from '../../entities/storage-provider-de
 import {type StorageProviderEntity} from '../../entities/storage-provider-entity';
 import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
 import {StorageProviderType, StorageProviderTypeLabels, StorageProviderTypes} from '../../enums/storage-provider-type';
+import Tooltip from '@mui/material/Tooltip';
+import HelpIconOutlined from '@mui/icons-material/HelpOutline';
+import {PaymentProvidersApiService} from '../../../payment/payment-providers-api-service';
 
 export const _StorageProviderSchema = {
     name: yup.string()
@@ -59,6 +62,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         item,
         setItem,
         additionalData,
+        setAdditionalData,
         isBusy,
         setIsBusy,
         isEditable,
@@ -209,6 +213,23 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         dispatch(showSuccessSnackbar('Der Speicheranbieter wurde erfolgreich gelöscht.'));
     };
 
+    const handleRefreshDefinitions = async () => {
+        setIsBusy(true);
+        try {
+            const updatedDefinitions = await new StorageProvidersApiService().listDefinitions();
+            setAdditionalData({
+                ...additionalData,
+                definitions: updatedDefinitions,
+            });
+            dispatch(showSuccessSnackbar('Auswahllisten wurden erfolgreich neu geladen.'));
+        } catch (error) {
+            console.error('Fehler beim Aktualisieren der Auswahllisten', error);
+            dispatch(showErrorSnackbar('Fehler beim Aktualisieren der Auswahllisten.'));
+        } finally {
+            setIsBusy(false);
+        }
+    };
+
     return (
         <Box>
             <Grid
@@ -332,6 +353,18 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 >
                     Speichern
                 </Button>
+
+                <Tooltip title={'Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'}>
+                    <Button
+                        onClick={handleRefreshDefinitions}
+                        disabled={isBusy || !isEditable}
+                    >
+                        Auswahllisten neu laden <HelpIconOutlined
+                        fontSize="small"
+                        sx={{ml: 1}}
+                    />
+                    </Button>
+                </Tooltip>
 
                 {
                     storageProvider.id !== 0 &&
