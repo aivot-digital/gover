@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.storage.exceptions;
 
+// TODO: Transform to checked exception?
 public class StorageException extends RuntimeException {
     public StorageException(String message) {
         super(message);
