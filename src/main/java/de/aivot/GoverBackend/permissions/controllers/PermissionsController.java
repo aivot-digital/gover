@@ -4,8 +4,14 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.permissions.entities.VUserDepartmentPermissionEntity;
+import de.aivot.GoverBackend.permissions.entities.VUserDomainPermissionEntity;
+import de.aivot.GoverBackend.permissions.entities.VUserSystemPermissionEntity;
+import de.aivot.GoverBackend.permissions.entities.VUserTeamPermissionEntity;
 import de.aivot.GoverBackend.permissions.models.PermissionProvider;
 import de.aivot.GoverBackend.permissions.repositories.VUserDepartmentPermissionRepository;
+import de.aivot.GoverBackend.permissions.repositories.VUserDomainPermissionRepository;
+import de.aivot.GoverBackend.permissions.repositories.VUserSystemPermissionRepository;
+import de.aivot.GoverBackend.permissions.repositories.VUserTeamPermissionRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,12 +36,20 @@ import java.util.List;
 public class PermissionsController {
     private final List<PermissionProvider> permissionProviders;
     private final VUserDepartmentPermissionRepository vUserDepartmentPermissionRepository;
+    private final VUserTeamPermissionRepository vUserTeamPermissionRepository;
+    private final VUserDomainPermissionRepository vUserDomainPermissionRepository;
+    private final VUserSystemPermissionRepository vUserSystemPermissionRepository;
 
     @Autowired
     public PermissionsController(List<PermissionProvider> permissionProviders,
-                                 VUserDepartmentPermissionRepository vUserDepartmentPermissionRepository) {
+                                 VUserDepartmentPermissionRepository vUserDepartmentPermissionRepository,
+                                 VUserTeamPermissionRepository vUserTeamPermissionRepository,
+                                 VUserDomainPermissionRepository vUserDomainPermissionRepository, VUserSystemPermissionRepository vUserSystemPermissionRepository) {
         this.permissionProviders = permissionProviders;
         this.vUserDepartmentPermissionRepository = vUserDepartmentPermissionRepository;
+        this.vUserTeamPermissionRepository = vUserTeamPermissionRepository;
+        this.vUserDomainPermissionRepository = vUserDomainPermissionRepository;
+        this.vUserSystemPermissionRepository = vUserSystemPermissionRepository;
     }
 
     @GetMapping("")
@@ -47,15 +61,40 @@ public class PermissionsController {
         return permissionProviders;
     }
 
-    @GetMapping("/user/{userId}/")
+    @GetMapping("/users/{userId}/")
     @Operation(
             summary = "List Permissions for User",
             description = "Retrieve a list of all granted permissions of a user."
     )
-    public List<VUserDepartmentPermissionEntity> listForUser(
+    public PermissionSet listForUser(
             @Nonnull @PathVariable String userId
     ) throws ResponseException {
-        return vUserDepartmentPermissionRepository
+        // TODO: Define access control!
+
+        var teamPermissions = vUserTeamPermissionRepository
                 .findAllByUserId(userId);
+
+        var departmentPermissions = vUserDepartmentPermissionRepository
+                .findAllByUserId(userId);
+
+        var domainPermissions = vUserDomainPermissionRepository
+                .findAllByUserId(userId);
+
+        var systemPermissions = vUserSystemPermissionRepository
+                .findAllByUserId(userId);
+
+        return new PermissionSet(
+                departmentPermissions,
+                teamPermissions,
+                domainPermissions,
+                systemPermissions
+        );
     }
+
+    public record PermissionSet(
+            List<VUserDepartmentPermissionEntity> departmentPermissions,
+            List<VUserTeamPermissionEntity> teamPermissions,
+            List<VUserDomainPermissionEntity> domainPermissions,
+            List<VUserSystemPermissionEntity> systemPermissions
+    ) { }
 }

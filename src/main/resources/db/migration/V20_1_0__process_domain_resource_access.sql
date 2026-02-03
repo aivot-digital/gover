@@ -14,16 +14,6 @@ from v_user_domain_permissions udp
 create view v_user_process_with_details as
 select pd.*,
 
-       u.id                          as user_id,
-       u.email                       as user_email,
-       u.first_name                  as user_first_name,
-       u.last_name                   as user_last_name,
-       u.enabled                     as user_enabled,
-       u.verified                    as user_verified,
-       u.deleted_in_idp              as user_deleted_in_idp,
-       u.system_role_id              as user_system_role_id,
-       u.full_name                   as user_full_name,
-
        vds.name                      as department_name,
        vds.address                   as department_address,
        vds.imprint                   as department_imprint,

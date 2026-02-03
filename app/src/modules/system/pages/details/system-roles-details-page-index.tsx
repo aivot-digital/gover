@@ -1,8 +1,8 @@
 import {Box, Button, Table, TableBody, TableCell, TableContainer, TableRow, Typography} from '@mui/material';
-import React, {useContext, useEffect, useMemo, useState} from 'react';
+import React, {type ReactNode, useContext, useEffect, useMemo, useState} from 'react';
 import {
     GenericDetailsPageContext,
-    GenericDetailsPageContextType
+    type GenericDetailsPageContextType,
 } from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useNavigate} from 'react-router-dom';
@@ -20,14 +20,14 @@ import {
     addSnackbarMessage,
     removeSnackbarMessage,
     SnackbarSeverity,
-    SnackbarType
+    SnackbarType,
 } from '../../../../slices/shell-slice';
 import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
-import {PermissionGroups} from "../../../../data/permissions/permission-groups";
-import {PermissionLabelsDe} from "../../../../data/permissions/permission-labels";
-import {SystemRoleEntity} from "../../entities/system-role-entity";
-import {SystemRolesApiService} from "../../services/system-roles-api-service";
-import {BaseApiService} from '../../../../services/base-api-service';
+import {PermissionGroups} from '../../../../data/permissions/permission-groups';
+import {PermissionLabelsDe} from '../../../../data/permissions/permission-labels';
+import {type SystemRoleEntity} from '../../entities/system-role-entity';
+import {SystemRolesApiService} from '../../services/system-roles-api-service';
+import {PermissionApiService} from '../../../permissions/permission-api-service';
 
 export const SystemRoleSchema = yup.object({
     name: yup.string()
@@ -44,14 +44,14 @@ export const SystemRoleSchema = yup.object({
 
 interface PermissionDetails {
     contextLabel: string;
-    permissions: {
+    permissions: Array<{
         permission: string;
         label: string;
         description: string;
-    }[];
+    }>;
 }
 
-export function SystemRolesDetailsPageIndex() {
+export function SystemRolesDetailsPageIndex(): ReactNode {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
@@ -83,8 +83,8 @@ export function SystemRolesDetailsPageIndex() {
     }, [isEditable]);
 
     useEffect(() => {
-        new BaseApiService()
-            .get<any[]>('/api/permissions/')
+        new PermissionApiService()
+            .listPermissions()
             .then((permissions: any[]) => {
                 setPermissions([
                     ...PermissionGroups.map((group) => ({
@@ -99,7 +99,6 @@ export function SystemRolesDetailsPageIndex() {
                     })),
                     ...permissions,
                 ]);
-                console.log('Loaded permissions:', permissions);
             })
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Beim Laden der Berechtigungen ist ein Fehler aufgetreten.'));
@@ -128,9 +127,8 @@ export function SystemRolesDetailsPageIndex() {
         );
     }
 
-    const handleSave = () => {
+    const handleSave = (): void => {
         if (editedSystemRole != null) {
-
             const validationResult = validate();
 
             if (!validationResult) {
@@ -151,10 +149,12 @@ export function SystemRolesDetailsPageIndex() {
 
                         // use setTimeout instead of useEffect to prevent unnecessary rerender
                         setTimeout(() => {
-                            navigate(`/user-roles/${newSecret.id}`, {replace: true});
+                            navigate(`/user-roles/${newSecret.id}`, {
+                                replace: true,
+                            })?.catch(console.error);
                         }, 0);
                     })
-                    .catch(err => {
+                    .catch((err) => {
                         console.error(err);
                         dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
                     })
@@ -170,7 +170,7 @@ export function SystemRolesDetailsPageIndex() {
 
                         dispatch(showSuccessSnackbar('Änderungen an Geheimnis erfolgreich gespeichert.'));
                     })
-                    .catch(err => {
+                    .catch((err) => {
                         console.error(err);
                         dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
                     })
@@ -181,7 +181,7 @@ export function SystemRolesDetailsPageIndex() {
         }
     };
 
-    const handleDelete = () => {
+    const handleDelete = (): void => {
         if (editedSystemRole.id !== 0) {
             setIsBusy(true);
 
@@ -191,10 +191,10 @@ export function SystemRolesDetailsPageIndex() {
                     reset(); // prevent change blocker by resetting unsaved changes
                     navigate('/secrets', {
                         replace: true,
-                    });
+                    })?.catch(console.error);
                     dispatch(showSuccessSnackbar('Das Geheimnis wurde erfolgreich gelöscht.'));
                 })
-                .catch(err => {
+                .catch((err) => {
                     console.error(err);
                     dispatch(showErrorSnackbar('Beim Löschen des Geheimnisses ist ein Fehler aufgetreten.'));
                     setIsBusy(false);
@@ -313,7 +313,9 @@ export function SystemRolesDetailsPageIndex() {
                     editedSystemRole.id !== 0 &&
                     <Button
                         variant="outlined"
-                        onClick={() => setShowConfirmDialog(true)}
+                        onClick={() => {
+                            setShowConfirmDialog(true);
+                        }}
                         disabled={isBusy || !isEditable}
                         color="error"
                         sx={{
@@ -330,7 +332,9 @@ export function SystemRolesDetailsPageIndex() {
 
             <ConfirmDialog
                 title="Geheimnis löschen"
-                onCancel={() => setShowConfirmDialog(false)}
+                onCancel={() => {
+                    setShowConfirmDialog(false);
+                }}
                 onConfirm={showConfirmDialog ? handleDelete : undefined}
                 confirmationText={editedSystemRole.name ?? ''}
                 isDestructive

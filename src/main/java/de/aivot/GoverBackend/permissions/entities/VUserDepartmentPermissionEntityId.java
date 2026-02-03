@@ -5,10 +5,10 @@ import jakarta.annotation.Nonnull;
 import java.util.Objects;
 
 public class VUserDepartmentPermissionEntityId {
-    private Integer userId;
+    private String userId;
     private Integer departmentId;
 
-    public static VUserDepartmentPermissionEntityId of(@Nonnull Integer userId,
+    public static VUserDepartmentPermissionEntityId of(@Nonnull String userId,
                                                        @Nonnull Integer departmentId) {
         VUserDepartmentPermissionEntityId id = new VUserDepartmentPermissionEntityId();
         id.userId = userId;
@@ -28,11 +28,11 @@ public class VUserDepartmentPermissionEntityId {
         return Objects.hash(userId, departmentId);
     }
 
-    public Integer getUserId() {
+    public String getUserId() {
         return userId;
     }
 
-    public VUserDepartmentPermissionEntityId setUserId(Integer userId) {
+    public VUserDepartmentPermissionEntityId setUserId(String userId) {
         this.userId = userId;
         return this;
     }
