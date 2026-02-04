@@ -319,11 +319,11 @@ public class StorageProviderController {
         var pathParts = request
                 .getRequestURL()
                 .toString()
-                .split("/files/");
+                .split(isDirectory ? "/folders/" : "/files/");
 
         String normalizedPath = "/";
         if (pathParts.length > 1) {
-            normalizedPath = pathParts[1];chrome://vivaldi-webui/startpage?section=Speed-dials&background-color=#f7f7f7
+            normalizedPath = pathParts[1];
 
             if (!normalizedPath.startsWith("/")) {
                 normalizedPath = "/" + normalizedPath;
@@ -333,7 +333,6 @@ public class StorageProviderController {
                 normalizedPath = normalizedPath + "/";
             }
         }
-
 
         try {
             return URLDecoder.decode(normalizedPath, StandardCharsets.UTF_8.name());
