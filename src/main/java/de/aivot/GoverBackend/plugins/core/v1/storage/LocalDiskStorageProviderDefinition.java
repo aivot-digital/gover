@@ -106,13 +106,6 @@ public class LocalDiskStorageProviderDefinition implements StorageProviderDefini
         }
     }
 
-    @Nonnull
-    @Override
-    public StorageFolder rootFolder(@Nonnull Config config, boolean recursive) throws StorageException {
-        return retrieveFolder(config, "/", recursive)
-                .orElseThrow(() -> new StorageException("Das Stammverzeichnis existiert nicht."));
-    }
-
     /**
      * Ensures the given path is prefixed with a single '/'.
      */
@@ -123,6 +116,13 @@ public class LocalDiskStorageProviderDefinition implements StorageProviderDefini
         return path.startsWith("/") ? path : "/" + path;
     }
 
+    private static String toSuffixWithSlash(String path) {
+        if (path == null || path.isEmpty()) {
+            return "/";
+        }
+        return path.endsWith("/") ? path : path + "/";
+    }
+
     @Nonnull
     @Override
     public StorageFolder createFolder(@Nonnull Config config, @Nonnull String pathFromRoot) throws StorageException {
@@ -131,7 +131,7 @@ public class LocalDiskStorageProviderDefinition implements StorageProviderDefini
         try {
             Files.createDirectories(folderToCreatePathReal);
             return new StorageFolder(
-                    toPrefixWithSlash(pathFromRoot),
+                    toSuffixWithSlash(toPrefixWithSlash(pathFromRoot)),
                     folderToCreatePathReal.getFileName().toString(),
                     null,
                     new LinkedList<>(),
@@ -180,7 +180,7 @@ public class LocalDiskStorageProviderDefinition implements StorageProviderDefini
 
         // Create the folder object, which will be returned
         var folderObject = new StorageFolder(
-                toPrefixWithSlash(pathFromRoot),
+                toSuffixWithSlash(toPrefixWithSlash(pathFromRoot)),
                 folderToRetrieveName,
                 null,
                 new LinkedList<>(),
@@ -230,7 +230,7 @@ public class LocalDiskStorageProviderDefinition implements StorageProviderDefini
 
         // Create the folder object, which will be returned
         var folderObject = new StorageFolder(
-                toPrefixWithSlash(pathFromRoot),
+                toSuffixWithSlash(toPrefixWithSlash(pathFromRoot)),
                 folderToRetrieveName,
                 null,
                 new LinkedList<>(),

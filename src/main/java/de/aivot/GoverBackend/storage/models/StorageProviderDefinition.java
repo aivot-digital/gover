@@ -40,7 +40,10 @@ public interface StorageProviderDefinition<T> {
     }
 
     @Nonnull
-    StorageFolder rootFolder(@Nonnull T config, boolean recursive) throws StorageException;
+    default StorageFolder rootFolder(@Nonnull T config, boolean recursive) throws StorageException {
+        return retrieveFolder(config, "/", recursive)
+                .orElseThrow(() -> new StorageException("Das Stammverzeichnis existiert nicht."));
+    }
 
     @Nonnull
     StorageFolder createFolder(@Nonnull T config, @Nonnull String pathFromRoot) throws StorageException;

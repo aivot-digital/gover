@@ -251,7 +251,7 @@ public class StorageProviderController {
         var normalizedPath = getNormalizedPath(request, true);
 
         return storageIndexItemRepository
-                .listAllInFolder(id, "^" + normalizedPath + "[^/]+$");
+                .listAllInFolder(id, "^" + normalizedPath + "([^/]+$|[^/]+/$)");
     }
 
     @GetMapping(value = {
@@ -334,10 +334,6 @@ public class StorageProviderController {
             }
         }
 
-        try {
-            return URLDecoder.decode(normalizedPath, StandardCharsets.UTF_8.name());
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
+        return URLDecoder.decode(normalizedPath, StandardCharsets.UTF_8);
     }
 }

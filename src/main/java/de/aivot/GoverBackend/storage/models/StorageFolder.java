@@ -42,6 +42,10 @@ public class StorageFolder extends StorageItem {
         this.subfolders = subfolders;
         this.documents = documents;
         this.recursive = recursive;
+
+        if (!(this.getPathFromRoot().startsWith("/") && this.getPathFromRoot().endsWith("/"))) {
+            throw new IllegalArgumentException("Folder pathFromRoot must start and end with '/'");
+        }
     }
 
     public StorageFolder addSubfolder(@Nonnull StorageFolder subfolder) {
