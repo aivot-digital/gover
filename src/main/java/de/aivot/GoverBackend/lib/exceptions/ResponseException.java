@@ -179,8 +179,8 @@ public class ResponseException extends Exception {
         return new ResponseException(HttpStatus.INTERNAL_SERVER_ERROR, message, details);
     }
 
-    public static ResponseException internalServerError(String message, Object... args) {
-        return ResponseException.internalServerError(String.format(message, args));
+    public static ResponseException internalServerError(String format, Object... args) {
+        return ResponseException.internalServerError(String.format(format, args));
     }
 
     public static ResponseException internalServerError(Throwable cause, String format, Object... args) {

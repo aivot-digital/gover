@@ -41,6 +41,10 @@ export class StorageProvidersApiService extends BaseCrudApiService<StorageProvid
     }
 
     public async getFolder(id: number, path: string): Promise<StorageIndexItem[]> {
-        return await this.get<StorageIndexItem[]>(`${this.buildPath(id)}files${path}`, {});
+        return await this.get<StorageIndexItem[]>(`${this.buildPath(id)}folders${path}`, {});
+    }
+
+    public async downloadFile(id: number, path: string): Promise<Blob> {
+        return await this.getBlob(`${this.buildPath(id)}files${path}`, {});
     }
 }

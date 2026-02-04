@@ -5,8 +5,8 @@ import {type StorageIndexItem} from '../entities/storage-index-item-entity';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
 import {getFileTypeIcon} from '../../../utils/file-type-icon';
-import {Link} from 'react-router-dom';
 import {type StorageProviderEntity} from '../entities/storage-provider-entity';
+import {downloadBlobFile} from '../../../utils/download-utils';
 
 interface StorageExplorerProps {
     providerId: number;
@@ -130,7 +130,11 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                             setCurrentPath(item.pathFromRoot);
                                             console.log('Moving to', item.pathFromRoot);
                                         } else {
-                                            // TODO: Download file
+                                            new StorageProvidersApiService()
+                                                .downloadFile(providerId, item.pathFromRoot)
+                                                .then((blob) => {
+                                                    downloadBlobFile(item.filename, blob);
+                                                });
                                         }
                                     }}
                                 >

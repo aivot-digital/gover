@@ -60,7 +60,7 @@ public class ProcessService implements EntityService<ProcessEntity, Integer> {
 
         Specification<ProcessEntity> combinedSpec = (specification == null) ? userAccessSpec : specification.and(userAccessSpec);
 
-        return processDefinitionRepository.findAll(combinedSpec, pageable);
+        return processDefinitionRepository.findAll(specification, pageable);
     }
 
     @Nonnull

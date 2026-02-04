@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.utils;
 
 
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.util.Random;
@@ -107,5 +108,18 @@ public class StringUtils {
     public static String decodeBase64String(String base64String) {
         byte[] decodedBytes = java.util.Base64.getDecoder().decode(base64String);
         return new String(decodedBytes);
+    }
+
+    @Nonnull
+    public static String getLastPathSegment(@Nullable String path) {
+        if (isNullOrEmpty(path)) {
+            return "";
+        }
+        String normalizedPath = path.replaceAll("/+$", "");
+        int lastSlashIndex = normalizedPath.lastIndexOf('/');
+        if (lastSlashIndex == -1) {
+            return normalizedPath;
+        }
+        return normalizedPath.substring(lastSlashIndex + 1);
     }
 }

@@ -10,6 +10,7 @@ import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.storage.entities.StorageIndexItemEntity;
+import de.aivot.GoverBackend.storage.entities.StorageIndexItemEntityId;
 import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
 import de.aivot.GoverBackend.storage.enums.StorageProviderStatus;
 import de.aivot.GoverBackend.storage.filters.StorageProviderFilter;
@@ -18,6 +19,7 @@ import de.aivot.GoverBackend.storage.models.StorageProviderDefinition;
 import de.aivot.GoverBackend.storage.permissions.StoragePermissionProvider;
 import de.aivot.GoverBackend.storage.repositories.StorageIndexItemRepository;
 import de.aivot.GoverBackend.storage.services.StorageProviderService;
+import de.aivot.GoverBackend.storage.services.StorageService;
 import de.aivot.GoverBackend.storage.services.StorageSyncWorker;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.utils.StringUtils;
@@ -31,13 +33,22 @@ import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.InvalidMediaTypeException;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -57,6 +68,7 @@ public class StorageProviderController {
     private final PermissionService permissionService;
     private final RabbitTemplate rabbitTemplate;
     private final StorageIndexItemRepository storageIndexItemRepository;
+    private final StorageService storageService;
 
     @Autowired
     public StorageProviderController(AuditService auditService,
@@ -64,13 +76,14 @@ public class StorageProviderController {
                                      StorageProviderService storageProviderService,
                                      PermissionService permissionService,
                                      RabbitTemplate rabbitTemplate,
-                                     StorageIndexItemRepository storageIndexItemRepository) {
+                                     StorageIndexItemRepository storageIndexItemRepository, StorageService storageService) {
         this.auditService = auditService.createScopedAuditService(StorageProviderController.class);
         this.userService = userService;
         this.storageProviderService = storageProviderService;
         this.permissionService = permissionService;
         this.rabbitTemplate = rabbitTemplate;
         this.storageIndexItemRepository = storageIndexItemRepository;
+        this.storageService = storageService;
     }
 
     @GetMapping("")
@@ -220,8 +233,8 @@ public class StorageProviderController {
     }
 
     @GetMapping(value = {
-            "{id}/files/",
-            "{id}/files/**",
+            "{id}/folders/",
+            "{id}/folders/**",
     })
     @Operation(
             summary = "Get Folder from Storage Provider",
@@ -235,6 +248,74 @@ public class StorageProviderController {
         permissionService
                 .testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
 
+        var normalizedPath = getNormalizedPath(request, true);
+
+        return storageIndexItemRepository
+                .listAllInFolder(id, "^" + normalizedPath + "[^/]+$");
+    }
+
+    @GetMapping(value = {
+            "{id}/files/",
+            "{id}/files/**",
+    })
+    @Operation(
+            summary = "Get Folder from Storage Provider",
+            description = "Retrieve a folder from the specified storage provider. Requires the permission " + StoragePermissionProvider.STORAGE_PROVIDER_READ + "."
+    )
+    public ResponseEntity<Resource> getDocument(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Integer id,
+            @RequestParam(defaultValue = "false") boolean download,
+            @Nonnull HttpServletRequest request
+    ) throws ResponseException {
+        permissionService
+                .testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+
+        var normalizedPath = getNormalizedPath(request, false);
+
+        var storageItem = storageIndexItemRepository
+                .findByStorageProviderIdAndPathFromRootAndIsDirectoryIsFalse(
+                        id,
+                        normalizedPath
+                )
+                .orElseThrow(ResponseException::notFound);
+
+        var is = storageService
+                .getDocumentContent(id, storageItem.getPathFromRoot());
+
+        byte[] bytes;
+        try {
+            bytes = is.readAllBytes();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        Resource resource = new ByteArrayResource(bytes);
+
+        MediaType mediaType;
+        try {
+            mediaType = MediaType.parseMediaType(storageItem.getMimeType());
+        } catch (InvalidMediaTypeException e) {
+            mediaType = MediaType.APPLICATION_OCTET_STREAM;
+        }
+
+        if (resource.exists() && resource.isReadable()) {
+            ResponseEntity.BodyBuilder responseBuilder = ResponseEntity
+                    .ok()
+                    .contentType(mediaType);
+
+            if (download) {
+                responseBuilder.header("Content-Disposition", "attachment; filename=\"" + storageItem.getFilename() + "\"");
+            }
+
+            return responseBuilder.body(resource);
+        }
+
+        throw ResponseException.notFound();
+    }
+
+    @Nonnull
+    private static String getNormalizedPath(HttpServletRequest request, boolean isDirectory) {
         var pathParts = request
                 .getRequestURL()
                 .toString()
@@ -242,59 +323,22 @@ public class StorageProviderController {
 
         String normalizedPath = "/";
         if (pathParts.length > 1) {
-            normalizedPath = pathParts[1];
+            normalizedPath = pathParts[1];chrome://vivaldi-webui/startpage?section=Speed-dials&background-color=#f7f7f7
 
             if (!normalizedPath.startsWith("/")) {
                 normalizedPath = "/" + normalizedPath;
             }
 
-            if (!normalizedPath.endsWith("/")) {
+            if (isDirectory && !normalizedPath.endsWith("/")) {
                 normalizedPath = normalizedPath + "/";
             }
         }
 
-        return storageIndexItemRepository
-                .listAllInFolder(id, "^" + normalizedPath + "[^/]+$");
 
-        /*
-        var provider = storageProviderService
-                .retrieve(id)
-                .orElseThrow(ResponseException::notFound);
-
-        var definition = storageProviderDefinitionService
-                .retrieveProviderDefinition(
-                        provider.getStorageProviderDefinitionKey(),
-                        provider.getStorageProviderDefinitionVersion()
-                )
-                .orElseThrow(ResponseException::internalServerError);
-
-        return getFolder(provider, definition, path);
-
-         */
-    }
-
-    private static <T> StorageFolder getFolder(StorageProviderEntity provider,
-                                               StorageProviderDefinition<T> definition,
-                                               String path) throws ResponseException {
-        T config;
         try {
-            config = ElementPOJOMapper
-                    .mapToPOJO(provider.getConfiguration(), definition.getConfigClass());
-        } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(
-                    e,
-                    "Fehler beim Verarbeiten der Konfiguration des Speicheranbieters %s (%d)",
-                    StringUtils.quote(provider.getName()),
-                    provider.getId()
-            );
+            return URLDecoder.decode(normalizedPath, StandardCharsets.UTF_8.name());
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
         }
-
-        return definition.retrieveFolder(config, path, true)
-                .orElseThrow(() -> ResponseException.notFound(
-                        "Der Ordner mit dem Pfad %s im Speicheranbieter %s (%d) wurde nicht gefunden.",
-                        StringUtils.quote(path),
-                        StringUtils.quote(provider.getName()),
-                        provider.getId()
-                ));
     }
 }

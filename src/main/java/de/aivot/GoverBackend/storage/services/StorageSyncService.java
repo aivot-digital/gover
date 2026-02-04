@@ -64,6 +64,7 @@ public class StorageSyncService {
                     .addArgument(storageProvider::getName)
                     .addArgument(storageProvider::getId)
                     .addArgument(e::getMessage)
+                    .setCause(e)
                     .log();
 
             storageProvider
@@ -116,13 +117,13 @@ public class StorageSyncService {
                                 folder.getPathFromRoot(),
                                 true,
                                 folder.getName(),
-                                "inode/directory"
+                                StorageService.FOLDER_MIME_TYPE
                         );
                     }
 
                     folderItem
                             .setStorageProviderType(storageProvider.getType())
-                            .setMimeType("inode/directory")
+                            .setMimeType(StorageService.FOLDER_MIME_TYPE)
                             .setIsDirectory(true)
                             .setFilename(folder.getName());
 
@@ -142,7 +143,7 @@ public class StorageSyncService {
                                     document.getPathFromRoot(),
                                     false,
                                     document.getName(),
-                                    "application/octet-stream"
+                                    StorageService.UNKNOWN_MIME_TYPE
                             );
                         }
 

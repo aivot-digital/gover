@@ -28,6 +28,8 @@ import {ElementDerivationContext} from '../../../elements/components/element-der
 import {StorageProviderType, StorageProviderTypeLabels, StorageProviderTypes} from '../../enums/storage-provider-type';
 import Tooltip from '@mui/material/Tooltip';
 import HelpIconOutlined from '@mui/icons-material/HelpOutline';
+import {AlertComponent} from '../../../../components/alert/alert-component';
+import {ExpandableCodeBlock} from '../../../../components/expandable-code-block/expandable-code-block';
 
 export const _StorageProviderSchema = {
     name: yup.string()
@@ -231,6 +233,28 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
 
     return (
         <Box>
+            {
+                storageProvider.statusMessage != null &&
+                <AlertComponent
+                    color="error"
+                    title="Fehler bei der Synchronisation des Speicheranbieters"
+                    sx={{
+                        mt: 0,
+                        mb: 2,
+                    }}
+                >
+                    Während der Synchronisation mit dem Speicheranbieter ist ein Fehler aufgetreten.
+                    Die folgende Fehlermeldung wurde protokolliert:
+
+                    <ExpandableCodeBlock
+                        value={storageProvider.statusMessage}
+                        sx={{
+                            mt: 2,
+                        }}
+                    />
+                </AlertComponent>
+            }
+
             <Grid
                 container={true}
                 spacing={2}

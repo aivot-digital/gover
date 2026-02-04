@@ -23,6 +23,7 @@ import io.minio.BucketExistsArgs;
 import io.minio.ListObjectsArgs;
 import io.minio.MinioClient;
 import io.minio.errors.*;
+import io.minio.messages.Item;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
@@ -31,6 +32,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -39,7 +42,8 @@ public class S3StorageProviderDefinition implements StorageProviderDefinition<S3
     private final SecretRepository secretRepository;
     private final SecretService secretService;
 
-    public S3StorageProviderDefinition(SecretRepository secretRepository, SecretService secretService) {
+    public S3StorageProviderDefinition(SecretRepository secretRepository,
+                                       SecretService secretService) {
         this.secretRepository = secretRepository;
         this.secretService = secretService;
     }
@@ -137,7 +141,8 @@ public class S3StorageProviderDefinition implements StorageProviderDefinition<S3
             bucketExists = client
                     .bucketExists(bucketTestRequest);
         } catch (ErrorResponseException | InsufficientDataException | XmlParserException | ServerException |
-                 NoSuchAlgorithmException | IOException | InvalidResponseException | InvalidKeyException | InternalException e) {
+                 NoSuchAlgorithmException | IOException | InvalidResponseException | InvalidKeyException |
+                 InternalException e) {
             throw new StorageException(e, "Die Verbindung zum S3-kompatiblen Speicher konnte nicht hergestellt werden.");
         }
 
@@ -161,16 +166,43 @@ public class S3StorageProviderDefinition implements StorageProviderDefinition<S3
         var listObjectsArgs = ListObjectsArgs
                 .builder()
                 .bucket(config.bucket)
-                .prefix(pathFromRoot)
+                .prefix(pathFromRoot.substring(1))
                 .recursive(recursive)
                 .build();
 
-        var objects = client.listObjects(listObjectsArgs);
+        var objects = client
+                .listObjects(listObjectsArgs);
 
+        var folder = new StorageFolder(
+                pathFromRoot,
+                "Root",
+                new HashMap<>(),
+                new LinkedList<>(),
+                new LinkedList<>(),
+                recursive
+        );
 
+        objects.forEach(object -> {
+            Item item;
+            try {
+                item = object.get();
+            } catch (ErrorResponseException | InsufficientDataException | XmlParserException | ServerException |
+                     NoSuchAlgorithmException | IOException | InvalidResponseException | InvalidKeyException |
+                     InternalException e) {
+                throw new RuntimeException(e);
+            }
 
-        // TODO
-        throw new UnsupportedOperationException("Not implemented yet.");
+            folder.addDocument(new StorageDocument(
+                    "/" + item.objectName(),
+                    item.objectName()
+            ));
+        });
+
+        if (folder.getDocuments().isEmpty()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(folder);
     }
 
     @Nonnull

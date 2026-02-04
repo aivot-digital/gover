@@ -342,7 +342,7 @@ public class EMailActionNode implements ProcessNodeDefinition, PluginComponent {
         })
         public String subject;
 
-        @InputElementPOJOBinding(id = CONTENT_FIELD_ID, type = ElementType.RichText, properties = {
+        @InputElementPOJOBinding(id = CONTENT_FIELD_ID, type = ElementType.RichTextInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Vorlage Nachrichtentext"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie den Inhalt der E-Mail ein."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
@@ -364,7 +364,7 @@ public class EMailActionNode implements ProcessNodeDefinition, PluginComponent {
         })
         public String subject;
 
-        @InputElementPOJOBinding(id = CONTENT_FIELD_ID, type = ElementType.RichText, properties = {
+        @InputElementPOJOBinding(id = CONTENT_FIELD_ID, type = ElementType.RichTextInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Nachrichtentext"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie den Inhalt der E-Mail ein."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
