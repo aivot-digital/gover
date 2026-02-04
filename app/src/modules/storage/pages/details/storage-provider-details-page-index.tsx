@@ -67,6 +67,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         isBusy,
         setIsBusy,
         isEditable,
+        isExistingItem,
     } = useGenericDetailsPageContext<StorageProviderEntity, StorageProviderAdditionalData>();
 
     useEffect(() => {
@@ -275,6 +276,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                             label: def.name,
                             subLabel: def.description,
                         }))}
+                        disabled={isExistingItem}
                         error={errors.storageProviderDefinitionKey}
                         hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsdienstleisters eingeblendet wird. Der Name des Anbieters ist gegenüber antragstellenden Personen sichtbar."
                     />
@@ -323,8 +325,9 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     value: type,
                     label: StorageProviderTypeLabels[type],
                 }))}
+                disabled={isExistingItem}
                 error={errors.storageProviderDefinitionVersion}
-                hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsdienstleisters eingeblendet wird. Der Name des Anbieters ist gegenüber antragstellenden Personen sichtbar."
+                hint="Bestimmt die Art der gespeicherten Daten. Dies kann nach der Erstellung nicht mehr geändert werden."
             />
 
             <TextFieldComponent

@@ -11,4 +11,6 @@ public @interface ElementPOJOBindingProperty {
     int intValue() default Integer.MIN_VALUE;
 
     boolean boolValue() default false;
+
+    double doubleValue() default Double.MIN_VALUE;
 }

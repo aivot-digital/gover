@@ -327,6 +327,11 @@ public class ElementPOJOMapper {
                         target,
                         property.strValue()
                 );
+            } else if (property.doubleValue() != Double.MIN_VALUE) {
+                setterMethod.invoke(
+                        target,
+                        property.doubleValue()
+                );
             } else if (property.intValue() != Integer.MIN_VALUE) {
                 setterMethod.invoke(
                         target,

@@ -434,28 +434,32 @@ public class S3StorageProviderDefinition implements StorageProviderDefinition<S3
         @InputElementPOJOBinding(id = "endpoint", type = ElementType.Text, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Endpoint"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Die URL des S3-kompatiblen Speichers."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 8)
         })
         public String endpoint;
 
         @InputElementPOJOBinding(id = "bucket", type = ElementType.Text, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Bucket"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Der Name des Buckets, in dem die Dateien gespeichert werden."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 4)
         })
         public String bucket;
 
         @InputElementPOJOBinding(id = "access_key", type = ElementType.Text, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Access Key"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Der Access Key für den Zugriff auf den S3-kompatiblen Speicher."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6)
         })
         public String accessKey;
 
         @InputElementPOJOBinding(id = "secret_key_secret", type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Secret Key"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Das Geheimnis des Secret Keys für den Zugriff auf den S3-kompatiblen Speicher."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6)
         })
         public String secretKeySecret;
     }
