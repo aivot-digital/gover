@@ -1,9 +1,9 @@
-import {Action, ActionColor, ActionsProps, ActionTooltipPlacement} from './actions-props';
+import {type Action, type ActionColor, type ActionsProps, type ActionTooltipPlacement} from './actions-props';
 import {Box, Button, IconButton, Tooltip} from '@mui/material';
-import React from 'react';
+import React, {type ReactNode} from 'react';
 import {Link} from 'react-router-dom';
 
-export function Actions(props: ActionsProps) {
+export function Actions(props: ActionsProps): ReactNode {
     return (
         <Box
             sx={{
@@ -12,14 +12,14 @@ export function Actions(props: ActionsProps) {
                 alignItems: 'center',
                 height: props.direction == null || props.direction === 'row' || props.direction === 'row-reverse' ? '100%' : undefined,
                 width: props.direction === 'column' || props.direction === 'column-reverse' ? '100%' : undefined,
-                gap: props.dense ? 1 : 2,
+                gap: (props.dense === true) ? 1 : 2,
                 ...props.sx,
             }}
         >
             {
-                props.actions != null &&
-                props.actions
-                    .map((action, index) => (
+                props
+                    .actions
+                    ?.map((action, index) => (
                         <ToolbarActionDispatcher
                             key={action === 'separator' ? index : (action.label ?? action.tooltip ?? index)}
                             action={action}
@@ -48,7 +48,7 @@ interface ToolbarActionDispatcherProps {
     size: 'small' | 'medium' | 'large';
 }
 
-function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps) {
+function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps): ReactNode {
     const {
         action,
         color,
@@ -63,7 +63,7 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps) {
     if (action === 'separator') {
         return (
             <Box
-                key={action + index}
+                key={action + index.toString()}
                 sx={{
                     width: '1px',
                     height: '2em',
@@ -136,11 +136,11 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps) {
         );
     }
 
-    if (action.tooltip) {
+    if (action.tooltip != null || (shouldDisable === true && action.disabledTooltip != null)) {
         return (
             <Tooltip
                 key={index}
-                title={action.tooltip}
+                title={shouldDisable === true && action.disabledTooltip != null ? action.disabledTooltip : action.tooltip}
                 arrow
                 placement={tooltipPlacement}
             >
