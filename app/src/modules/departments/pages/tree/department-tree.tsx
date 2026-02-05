@@ -118,18 +118,21 @@ function DepartmentTreeItem(props: DepartmentTreeItemProps) {
                     }
 
                     <Box
+                        component={Link}
+                        to={`/departments/${department.id}`}
                         sx={{
-
                             display: 'flex',
                             flexDirection: 'column',
+                            textDecoration: 'none',
                         }}
                     >
 
-                        <Link
-                            to={`/departments/${department.id}`}
+                        <Typography
+                            variant="body1"
+                            color="textPrimary"
                         >
                             {department.name}
-                        </Link>
+                        </Typography>
 
                         <Typography
                             variant="caption"
