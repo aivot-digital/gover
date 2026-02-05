@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.elements.ElementVisibilityFunctions;
+import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
@@ -110,7 +111,7 @@ public class EMailActionNode implements ProcessNodeDefinition, PluginComponent {
         }
 
         layout
-                .findChild(EMailActionNodeConfig.EXECUTION_TYPE_FIELD_ID, SelectInputElement.class)
+                .findChild(EMailActionNodeConfig.EXECUTION_TYPE_FIELD_ID, RadioInputElement.class)
                 .ifPresent(select -> {
                     select.setOptions(List.of(
                             RadioInputElementOption.of(EMailActionNodeConfig.EXECUTION_TYPE_AUTOMATIC, "Automatisch versenden"),
@@ -299,7 +300,7 @@ public class EMailActionNode implements ProcessNodeDefinition, PluginComponent {
         public static final String RECIPIENT_FIELD_ID = "to";
         public static final String BCC_RECIPIENT_FIELD_ID = "bcc";
 
-        public static final String EXECUTION_TYPE_FIELD_ID = "executionType";
+        public static final String EXECUTION_TYPE_FIELD_ID = "execution_type";
         public static final String EXECUTION_TYPE_MANUAL = "manual";
         public static final String EXECUTION_TYPE_AUTOMATIC = "automatic";
 
@@ -328,7 +329,7 @@ public class EMailActionNode implements ProcessNodeDefinition, PluginComponent {
         public EMailActionNodeConfigAutomaticContent automaticContent;
     }
 
-    public static final String MANUAL_CONTENT_GROUP_ID = "manual-group";
+    public static final String MANUAL_CONTENT_GROUP_ID = "manual_group";
 
     @LayoutElementPOJOBinding(id = MANUAL_CONTENT_GROUP_ID, type = ElementType.Group)
     public static class EMailActionNodeConfigManualContent {
@@ -350,7 +351,7 @@ public class EMailActionNode implements ProcessNodeDefinition, PluginComponent {
         public String content;
     }
 
-    public static final String AUTOMATIC_CONTENT_GROUP_ID = "automatic-group";
+    public static final String AUTOMATIC_CONTENT_GROUP_ID = "automatic_group";
 
     @LayoutElementPOJOBinding(id = AUTOMATIC_CONTENT_GROUP_ID, type = ElementType.Group)
     public static class EMailActionNodeConfigAutomaticContent {
