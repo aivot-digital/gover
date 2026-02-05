@@ -4,6 +4,7 @@ package de.aivot.GoverBackend.utils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
@@ -140,5 +141,14 @@ public class StringUtils {
             return Optional.empty();
         }
         return Optional.of(fileName.substring(lastDotIndex + 1).toLowerCase());
+    }
+
+    public static List<String> getPathSegments(String pathFromRoot) {
+        if (isNullOrEmpty(pathFromRoot)) {
+            return List.of();
+        }
+        String normalizedPath = pathFromRoot.replaceAll("/+", "/");
+        String[] segments = normalizedPath.split("/");
+        return List.of(segments);
     }
 }

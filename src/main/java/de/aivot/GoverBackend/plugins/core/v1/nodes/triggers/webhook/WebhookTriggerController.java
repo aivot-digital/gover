@@ -253,10 +253,6 @@ public class WebhookTriggerController {
         }
     }
 
-    private static Map<String, Object> extractPayload() {
-        return Map.of();
-    }
-
     public record Response(String message) {
 
     }

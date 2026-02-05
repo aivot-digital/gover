@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.storage.services;
 
+import com.beust.jcommander.Strings;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.storage.entities.StorageIndexItemEntity;
@@ -46,21 +47,35 @@ public class StorageService {
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
 
-        var createdFolder = definition.createFolder(config, path);
+        var createdFolder = definition
+                .createFolder(config, path);
 
-        var indexItem = new StorageIndexItemEntity(
-                provider.getId(),
-                provider.getType(),
-                path,
-                true,
-                StringUtils.getLastPathSegment(path),
-                FOLDER_MIME_TYPE,
-                false,
-                LocalDateTime.now(),
-                LocalDateTime.now()
-        );
-        storageIndexItemRepository
-                .save(indexItem);
+        var createdFolderPathParts = StringUtils
+                .getPathSegments(createdFolder.getPathFromRoot());
+
+        for (int i = 0; i < createdFolderPathParts.size(); i++) {
+            var createdFolderPath = Strings
+                    .join("/", createdFolderPathParts.subList(0, i + 1)) + "/";
+
+            var exists = storageIndexItemRepository
+                    .existsById(StorageIndexItemEntityId.of(provider.getId(), createdFolderPath));
+
+            if (!exists) {
+                var indexItem = new StorageIndexItemEntity(
+                        provider.getId(),
+                        provider.getType(),
+                        createdFolderPath,
+                        true,
+                        StringUtils.getLastPathSegment(createdFolderPath),
+                        FOLDER_MIME_TYPE,
+                        false,
+                        LocalDateTime.now(),
+                        LocalDateTime.now()
+                );
+                storageIndexItemRepository
+                        .save(indexItem);
+            }
+        }
 
         return createdFolder;
     }
@@ -79,6 +94,9 @@ public class StorageService {
         var config = createConfig(provider, definition);
 
         definition.deleteFolder(config, path);
+
+        // TODO: Find all subfolders and documents and delete them as well
+
 
         storageIndexItemRepository
                 .deleteById(StorageIndexItemEntityId.of(

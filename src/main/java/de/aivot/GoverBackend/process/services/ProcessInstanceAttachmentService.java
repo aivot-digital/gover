@@ -79,8 +79,9 @@ public class ProcessInstanceAttachmentService implements EntityService<ProcessIn
                 .orElse("dat");
 
         var folderPath = String.format(
-                "/instances/%d/attachments",
-                processInstance.getId()
+                "/proc-%d/%s/attachments",
+                processInstance.getProcessId(),
+                processInstance.getAccessKey()
         );
 
         var folder = storageService
