@@ -8,7 +8,7 @@ export const SystemConfigKeys = {
             customListingPageLink: 'ProviderListingPageCustomLink',
             disableListingPageLink: 'ProviderListingPageDisableLink',
             disableGoverListingPage: 'ProviderListingPageDisablePublicListingPage',
-        }
+        },
     },
     system: {
         theme: 'SystemTheme',
@@ -17,5 +17,10 @@ export const SystemConfigKeys = {
     },
     gover: {
         storeKey: 'GoverStoreKey',
+    },
+    storage: {
+        attachments: {
+            default_storage_provider: 'storage.attachments.default_storage_provider',
+        },
     },
 };
