@@ -15,11 +15,18 @@ public interface StorageIndexItemRepository extends JpaRepository<StorageIndexIt
     List<StorageIndexItemEntity> findAllByStorageProviderId(Integer storageProviderId);
 
     @Query(
-            value = "SELECT * FROM storage_index_items WHERE storage_provider_id = :storageProviderId AND path_from_root ~ :path ORDER BY is_directory DESC",
+            value = """
+                        SELECT * FROM storage_index_items
+                        WHERE storage_provider_id = :storageProviderId AND
+                              path_from_root ~ :path AND
+                              (is_missing = false OR :includeMissing = true)
+                        ORDER BY is_directory DESC
+            """,
             nativeQuery = true
     )
     List<StorageIndexItemEntity> listAllInFolder(@Param("storageProviderId") Integer id,
-                                                 @Param("path") String path);
+                                                 @Param("path") String path,
+                                                 @Param("includeMissing") boolean includeMissing);
 
     Optional<StorageIndexItemEntity> findByStorageProviderIdAndPathFromRootAndIsDirectoryIsFalse(
             @Nonnull Integer storageProviderId,

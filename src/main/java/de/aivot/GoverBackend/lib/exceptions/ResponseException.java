@@ -98,6 +98,11 @@ public class ResponseException extends Exception {
         return new ResponseException(HttpStatus.BAD_REQUEST, message);
     }
 
+    public static ResponseException badRequest(String format, Object... args) {
+        String message = String.format(format, args);
+        return ResponseException.badRequest(message);
+    }
+
     public static ResponseException badRequest(String message, Throwable cause) {
         return new ResponseException(HttpStatus.BAD_REQUEST, message, cause);
     }

@@ -21,5 +21,8 @@ create table storage_index_items
     is_directory          boolean      not null,
     filename              varchar(255) not null,
     mime_type             varchar(255) null,
+    is_missing            boolean      not null default false,
+    created               timestamp    not null default now(),
+    updated               timestamp    not null default now(),
     primary key (storage_provider_id, path_from_root)
 );

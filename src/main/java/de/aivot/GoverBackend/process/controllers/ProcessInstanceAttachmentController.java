@@ -97,8 +97,7 @@ public class ProcessInstanceAttachmentController {
                 .setKey(UUID.randomUUID())
                 .setProcessInstanceId(processInstanceId)
                 .setProcessInstanceTaskId(processInstanceTaskId)
-                .setUploadedByUserId(execUser.getId())
-                .setUploadedAt(LocalDateTime.now());
+                .setUploadedByUserId(execUser.getId());
 
         // TODO: Store the file bytes somewhere, e.g. in a storage service
 

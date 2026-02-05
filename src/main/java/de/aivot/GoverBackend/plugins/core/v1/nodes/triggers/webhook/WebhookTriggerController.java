@@ -11,6 +11,7 @@ import de.aivot.GoverBackend.process.entities.ProcessTestClaimEntity;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessVersionStatus;
 import de.aivot.GoverBackend.process.repositories.ProcessTestClaimRepository;
+import de.aivot.GoverBackend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.GoverBackend.process.services.ProcessInstanceService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -35,14 +36,17 @@ public class WebhookTriggerController {
     private final ProcessInstanceService processInstanceService;
     private final ProcessTestClaimRepository processTestClaimRepository;
     private final EntityManagerFactory entityManagerFactory;
+    private final ProcessInstanceAttachmentService processInstanceAttachmentService;
 
     @Autowired
     public WebhookTriggerController(ProcessInstanceService processInstanceService,
                                     ProcessTestClaimRepository processTestClaimRepository,
-                                    EntityManagerFactory entityManagerFactory) {
+                                    EntityManagerFactory entityManagerFactory,
+                                    ProcessInstanceAttachmentService processInstanceAttachmentService) {
         this.processInstanceService = processInstanceService;
         this.processTestClaimRepository = processTestClaimRepository;
         this.entityManagerFactory = entityManagerFactory;
+        this.processInstanceAttachmentService = processInstanceAttachmentService;
     }
 
     @RequestMapping(value = "/api/public/webhooks/{slug}/", consumes = {
@@ -175,8 +179,26 @@ public class WebhookTriggerController {
         for (var fileEntry : files.entrySet()) {
             var file = fileEntry.getValue();
 
+            byte[] bytes;
+            try {
+                bytes = file.getBytes();
+            } catch (IOException e) {
+                throw ResponseException.internalServerError(e, "Fehler beim Lesen der hochgeladenen Datei.");
+            }
 
-            // TODO: Handle Process File Attaching
+            var attachment = new ProcessInstanceAttachmentEntity(
+                    null,
+                    file.getOriginalFilename() != null ? file.getOriginalFilename() : "Unbenannte Datei.dat",
+                    instance.getId(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    bytes
+            );
+
+            processInstanceAttachmentService
+                    .create(attachment);
         }
     }
 

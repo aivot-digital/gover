@@ -3,26 +3,20 @@ package de.aivot.GoverBackend.storage.controllers;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
-import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
-import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.storage.entities.StorageIndexItemEntity;
-import de.aivot.GoverBackend.storage.entities.StorageIndexItemEntityId;
 import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
 import de.aivot.GoverBackend.storage.enums.StorageProviderStatus;
 import de.aivot.GoverBackend.storage.filters.StorageProviderFilter;
-import de.aivot.GoverBackend.storage.models.StorageFolder;
-import de.aivot.GoverBackend.storage.models.StorageProviderDefinition;
 import de.aivot.GoverBackend.storage.permissions.StoragePermissionProvider;
 import de.aivot.GoverBackend.storage.repositories.StorageIndexItemRepository;
 import de.aivot.GoverBackend.storage.services.StorageProviderService;
 import de.aivot.GoverBackend.storage.services.StorageService;
 import de.aivot.GoverBackend.storage.services.StorageSyncWorker;
 import de.aivot.GoverBackend.user.services.UserService;
-import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -46,12 +40,10 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/storage-providers/")
@@ -76,7 +68,8 @@ public class StorageProviderController {
                                      StorageProviderService storageProviderService,
                                      PermissionService permissionService,
                                      RabbitTemplate rabbitTemplate,
-                                     StorageIndexItemRepository storageIndexItemRepository, StorageService storageService) {
+                                     StorageIndexItemRepository storageIndexItemRepository,
+                                     StorageService storageService) {
         this.auditService = auditService.createScopedAuditService(StorageProviderController.class);
         this.userService = userService;
         this.storageProviderService = storageProviderService;
@@ -251,7 +244,7 @@ public class StorageProviderController {
         var normalizedPath = getNormalizedPath(request, true);
 
         return storageIndexItemRepository
-                .listAllInFolder(id, "^" + normalizedPath + "([^/]+$|[^/]+/$)");
+                .listAllInFolder(id, "^" + normalizedPath + "([^/]+$|[^/]+/$)", false);
     }
 
     @GetMapping(value = {

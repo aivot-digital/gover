@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -53,7 +54,10 @@ public class StorageService {
                 path,
                 true,
                 StringUtils.getLastPathSegment(path),
-                FOLDER_MIME_TYPE
+                FOLDER_MIME_TYPE,
+                false,
+                LocalDateTime.now(),
+                LocalDateTime.now()
         );
         storageIndexItemRepository
                 .save(indexItem);
@@ -114,7 +118,10 @@ public class StorageService {
                 createdDocument.getName(),
                 knownExtensionsService
                         .determineMimeType(createdDocument.getName())
-                        .orElse(UNKNOWN_MIME_TYPE)
+                        .orElse(UNKNOWN_MIME_TYPE),
+                false,
+                LocalDateTime.now(),
+                LocalDateTime.now()
         );
         storageIndexItemRepository
                 .save(indexItem);

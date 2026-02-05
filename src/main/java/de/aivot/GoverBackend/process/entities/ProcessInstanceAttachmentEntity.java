@@ -1,13 +1,12 @@
 package de.aivot.GoverBackend.process.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -21,6 +20,12 @@ public class ProcessInstanceAttachmentEntity {
     private UUID key;
 
     @Nonnull
+    @NotNull(message = "Der Dateiname darf nicht null sein.")
+    @NotBlank(message = "Der Dateiname darf nicht leer sein sein.")
+    @Size(max = 255, message = "Der Dateiname darf maximal 255 Zeichen lang sein.")
+    private String fileName;
+
+    @Nonnull
     @NotNull(message = "Die ID der Prozessinstanz darf nicht null sein.")
     private Long processInstanceId;
 
@@ -28,24 +33,51 @@ public class ProcessInstanceAttachmentEntity {
     private Long processInstanceTaskId;
 
     @Nonnull
-    @NotNull(message = "Der Dateiname darf nicht null sein.")
-    @NotBlank(message = "Der Dateiname darf nicht leer sein.")
-    private String filename;
+    @NotNull(message = "Die ID des Speicherindex-Items darf nicht null sein.")
+    private Integer storageProviderId;
 
     @Nonnull
-    @NotNull(message = "Der MIME-Typ darf nicht null sein.")
-    @NotBlank(message = "Der MIME-Typ darf nicht leer sein.")
-    private String mimeType;
-
-    @Nonnull
-    @NotNull(message = "Die Dateigröße darf nicht null sein.")
-    private Long sizeBytes;
+    @NotNull(message = "Der Pfad des Speicherindex-Items darf nicht null sein.")
+    @NotBlank(message = "Der Pfad des Speicherindex-Items darf nicht leer sein sein.")
+    private String storagePathFromRoot;
 
     @Nullable
     private String uploadedByUserId;
 
-    @NotNull(message = "Das Hochladedatum darf nicht null sein.")
-    private LocalDateTime uploadedAt;
+    /**
+     * Ignore this field in database mapping and JSON serialization.
+     * This is only used when creating the file and saving it to the database.
+     */
+    @Transient
+    @JsonIgnore
+    private byte[] fileBytes;
+
+    // region Constructors
+
+    // Empty constructor is required by JPA
+    public ProcessInstanceAttachmentEntity() {
+    }
+
+    // Full constructor for easier creation of the entity
+    public ProcessInstanceAttachmentEntity(@Nonnull UUID key,
+                                           @Nonnull String fileName,
+                                           @Nonnull Long processInstanceId,
+                                           @Nullable Long processInstanceTaskId,
+                                           @Nonnull Integer storageProviderId,
+                                           @Nonnull String storagePathFromRoot,
+                                           @Nullable String uploadedByUserId,
+                                           byte[] fileBytes) {
+        this.key = key;
+        this.fileName = fileName;
+        this.processInstanceId = processInstanceId;
+        this.processInstanceTaskId = processInstanceTaskId;
+        this.storageProviderId = storageProviderId;
+        this.storagePathFromRoot = storagePathFromRoot;
+        this.uploadedByUserId = uploadedByUserId;
+        this.fileBytes = fileBytes;
+    }
+
+    // endregion
 
     // region Getters and Setters
 
@@ -56,6 +88,16 @@ public class ProcessInstanceAttachmentEntity {
 
     public ProcessInstanceAttachmentEntity setKey(@Nonnull UUID key) {
         this.key = key;
+        return this;
+    }
+
+    @Nonnull
+    public String getFileName() {
+        return fileName;
+    }
+
+    public ProcessInstanceAttachmentEntity setFileName(@Nonnull String fileName) {
+        this.fileName = fileName;
         return this;
     }
 
@@ -80,32 +122,22 @@ public class ProcessInstanceAttachmentEntity {
     }
 
     @Nonnull
-    public String getFilename() {
-        return filename;
+    public Integer getStorageProviderId() {
+        return storageProviderId;
     }
 
-    public ProcessInstanceAttachmentEntity setFilename(@Nonnull String filename) {
-        this.filename = filename;
+    public ProcessInstanceAttachmentEntity setStorageProviderId(@Nonnull Integer storageProviderId) {
+        this.storageProviderId = storageProviderId;
         return this;
     }
 
     @Nonnull
-    public String getMimeType() {
-        return mimeType;
+    public String getStoragePathFromRoot() {
+        return storagePathFromRoot;
     }
 
-    public ProcessInstanceAttachmentEntity setMimeType(@Nonnull String mimeType) {
-        this.mimeType = mimeType;
-        return this;
-    }
-
-    @Nonnull
-    public Long getSizeBytes() {
-        return sizeBytes;
-    }
-
-    public ProcessInstanceAttachmentEntity setSizeBytes(@Nonnull Long sizeBytes) {
-        this.sizeBytes = sizeBytes;
+    public ProcessInstanceAttachmentEntity setStoragePathFromRoot(@Nonnull String storagePathFromRoot) {
+        this.storagePathFromRoot = storagePathFromRoot;
         return this;
     }
 
@@ -119,12 +151,12 @@ public class ProcessInstanceAttachmentEntity {
         return this;
     }
 
-    public LocalDateTime getUploadedAt() {
-        return uploadedAt;
+    public byte[] getFileBytes() {
+        return fileBytes;
     }
 
-    public ProcessInstanceAttachmentEntity setUploadedAt(LocalDateTime uploadedAt) {
-        this.uploadedAt = uploadedAt;
+    public ProcessInstanceAttachmentEntity setFileBytes(byte[] fileBytes) {
+        this.fileBytes = fileBytes;
         return this;
     }
 

@@ -4,6 +4,7 @@ package de.aivot.GoverBackend.utils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.util.Optional;
 import java.util.Random;
 
 public class StringUtils {
@@ -121,5 +122,23 @@ public class StringUtils {
             return normalizedPath;
         }
         return normalizedPath.substring(lastSlashIndex + 1);
+    }
+
+    /**
+     * Extracts the file extension from the given file name.
+     * If the file name is null, empty, or does not contain a valid extension, an empty Optional is returned.
+     *
+     * @param fileName the file name to extract the extension from
+     * @return an Optional containing the file extension in lowercase, or an empty Optional if no valid extension is found
+     */
+    public static Optional<String> extractExtensionFromFileName(@Nullable String fileName) {
+        if (isNullOrEmpty(fileName)) {
+            return Optional.empty();
+        }
+        int lastDotIndex = fileName.lastIndexOf('.');
+        if (lastDotIndex == -1 || lastDotIndex == fileName.length() - 1) {
+            return Optional.empty();
+        }
+        return Optional.of(fileName.substring(lastDotIndex + 1).toLowerCase());
     }
 }

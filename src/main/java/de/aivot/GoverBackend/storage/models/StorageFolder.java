@@ -66,6 +66,14 @@ public class StorageFolder extends StorageItem {
         }
     }
 
+    public String resolvePath(@Nonnull String relativePath) {
+        if (relativePath.startsWith("/")) {
+            relativePath = relativePath.substring(1);
+        }
+
+        return this.getPathFromRoot() + relativePath;
+    }
+
     @Nullable
     public Map<String, Object> getMetadata() {
         return metadata;

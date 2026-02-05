@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -117,7 +118,10 @@ public class StorageSyncService {
                                 folder.getPathFromRoot(),
                                 true,
                                 folder.getName(),
-                                StorageService.FOLDER_MIME_TYPE
+                                StorageService.FOLDER_MIME_TYPE,
+                                false,
+                                LocalDateTime.now(),
+                                LocalDateTime.now()
                         );
                     }
 
@@ -143,7 +147,10 @@ public class StorageSyncService {
                                     document.getPathFromRoot(),
                                     false,
                                     document.getName(),
-                                    StorageService.UNKNOWN_MIME_TYPE
+                                    StorageService.UNKNOWN_MIME_TYPE,
+                                    false,
+                                    LocalDateTime.now(),
+                                    LocalDateTime.now()
                             );
                         }
 
@@ -164,8 +171,10 @@ public class StorageSyncService {
                 }
         );
 
-        // Cleanup old entries
-        var allItems = storageIndexItemRepository.findAllByStorageProviderId(storageProvider.getId());
+        // Mark old entries as missing
+        var allItems = storageIndexItemRepository.
+                findAllByStorageProviderId(storageProvider.getId());
+
         for (var item : allItems) {
             if (!syncedPaths.contains(item.getPathFromRoot())) {
                 logger
@@ -176,7 +185,9 @@ public class StorageSyncService {
                         .addArgument(storageProvider::getId)
                         .log();
 
-                storageIndexItemRepository.delete(item);
+                storageIndexItemRepository.save(item
+                        .setIsMissing(true)
+                        .setUpdated(LocalDateTime.now()));
             }
         }
     }
