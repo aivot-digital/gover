@@ -138,7 +138,7 @@ public class WebhookTriggerNode implements ProcessNodeDefinition, PluginComponen
                 .ifPresent(field -> {
                     var options = List.of(
                             RadioInputElementOption.of(WebhookTriggerConfig.REQUEST_BODY_TYPE_OPTION_JSON, "JSON"),
-                            RadioInputElementOption.of(WebhookTriggerConfig.REQUEST_BODY_TYPE_OPTION_FORM, "Formulardaten"),
+                            RadioInputElementOption.of(WebhookTriggerConfig.REQUEST_BODY_TYPE_OPTION_FORM, "Multipart/Form-Data"),
                             RadioInputElementOption.of(WebhookTriggerConfig.REQUEST_BODY_TYPE_OPTION_XML, "XML")
                     );
 
