@@ -218,3 +218,10 @@ on conflict (id) do update
 -- fix id sequence for departments
 select setval('departments_id_seq',
               (select max(id) from departments));
+
+-- assign the default vendor name
+insert into system_configs (key,
+                            value)
+values ('ProviderName', 'Verwaltungsstelle soziale Hilfen')
+on conflict (key) do update
+    set value = excluded.value;
