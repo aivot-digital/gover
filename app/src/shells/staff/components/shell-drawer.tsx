@@ -27,7 +27,7 @@ import {AboutGoverDialog} from './about-gover-dialog';
 import {ShellNotificationsMenu} from './shell-notifications-menu';
 import Api from '@aivot/mui-material-symbols-400-outlined/dist/api/Api';
 import ReadinessScore from '@aivot/mui-material-symbols-400-outlined/dist/readiness-score/ReadinessScore';
-import FamilyHistory from "@aivot/mui-material-symbols-400-outlined/dist/family-history/FamilyHistory";
+import FamilyHistory from '@aivot/mui-material-symbols-400-outlined/dist/family-history/FamilyHistory';
 
 /* -----------------------------
  * Types & Navigation Structure
@@ -69,7 +69,7 @@ const DrawerGroups: DrawerGroup[] = [
             {
                 icon: ModuleIcons.submissions,
                 label: 'Vorgänge',
-                disabled: true,
+                to: '/process-instances',
             },
             {
                 icon: ModuleIcons.forms,

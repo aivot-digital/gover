@@ -34,12 +34,12 @@ import {ReactFlowProvider} from '@xyflow/react';
 import ProcessChart from '@aivot/mui-material-symbols-400-outlined/dist/process-chart/ProcessChart';
 import {ProcessDetailsPageProvider} from './process-details-page-context';
 import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
-import {ProcessDetailsPageMoreMenu, ProcessDetailsPageMoreMenuEvent} from './components/process-details-page-more-menu';
+import {ProcessDetailsPageMoreMenu, type ProcessDetailsPageMoreMenuEvent} from './components/process-details-page-more-menu';
 import {downloadObjectFile} from '../../../../utils/download-utils';
 import {ProcessTestClaimApiService} from '../../services/process-test-claim-api-service';
 import {useConfirm} from '../../../../providers/confirm-provider';
-import {ProcessTestClaimEntity} from '../../entities/process-test-claim-entity';
-import {User} from '../../../users/models/user';
+import {type ProcessTestClaimEntity} from '../../entities/process-test-claim-entity';
+import {type User} from '../../../users/models/user';
 import {UsersApiService} from '../../../users/users-api-service';
 import {useUser} from '../../../../hooks/use-admin-guard';
 import {resolveUserName} from '../../../users/utils/resolve-user-name';
@@ -527,15 +527,12 @@ export function ProcessDetailsPage(): ReactNode {
                              */
                             {
                                 tooltip: 'Auslöser hinzufügen',
+                                disabledTooltip: 'Während des Tests können keine Auslöser hinzugefügt werden.',
                                 icon: <Add/>,
                                 onClick: () => {
                                     setShowAddTriggerDialog(true);
                                 },
-                            },
-                            {
-                                tooltip: 'Vorgänge',
-                                icon: <ProcessChart/>,
-                                to: `/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}/instances`,
+                                disabled: currentTestClaim != null,
                             },
                             {
                                 tooltip: 'Mehr',

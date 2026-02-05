@@ -1,12 +1,12 @@
-import {BaseCrudApiService} from "../../../services/base-crud-api-service";
-import {ProcessInstanceEntity} from "../entities/process-instance-entity";
-import {ProcessInstanceStatus} from "../enums/process-instance-status";
+import {BaseCrudApiService} from '../../../services/base-crud-api-service';
+import {type ProcessInstanceEntity} from '../entities/process-instance-entity';
+import {ProcessInstanceStatus} from '../enums/process-instance-status';
 
 interface ProcessInstanceFilter {
     id: number;
     accessKey: string;
-    processDefinitionId: number;
-    processDefinitionVersion: number;
+    processId: number;
+    processVersion: number;
     status: ProcessInstanceStatus;
     statusIsNot: ProcessInstanceStatus;
     statusOverride: string;
@@ -15,12 +15,12 @@ interface ProcessInstanceFilter {
 }
 
 export class ProcessInstanceApiService extends BaseCrudApiService<
-    ProcessInstanceEntity,
-    ProcessInstanceEntity,
-    ProcessInstanceEntity,
-    ProcessInstanceEntity,
-    number,
-    ProcessInstanceFilter
+ProcessInstanceEntity,
+ProcessInstanceEntity,
+ProcessInstanceEntity,
+ProcessInstanceEntity,
+number,
+ProcessInstanceFilter
 > {
     constructor() {
         super('/api/process-instances/');
@@ -28,7 +28,7 @@ export class ProcessInstanceApiService extends BaseCrudApiService<
 
     initialize(): ProcessInstanceEntity {
         return {
-            accessKey: "",
+            accessKey: '',
             assignedFileNumbers: [],
             deliveryChannels: [],
             finished: null,
@@ -42,7 +42,7 @@ export class ProcessInstanceApiService extends BaseCrudApiService<
             statusOverride: null,
             tags: [],
             updated: new Date().toISOString(),
-            id: 0
+            id: 0,
         };
     }
 }

@@ -2,43 +2,66 @@ import {GenericListPage} from '../../../../components/generic-list-page/generic-
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {Typography} from '@mui/material';
 import {CellLink} from '../../../../components/cell-link/cell-link';
-import {useAccessGuard} from '../../../../hooks/use-admin-guard';
-import {ProcessInstanceEntity} from "../../entities/process-instance-entity";
-import {ProcessInstanceApiService} from "../../services/process-instance-api-service";
-import {useParams} from "react-router-dom";
-import {ProcessInstanceStatus, ProcessInstanceStatusLabels} from "../../enums/process-instance-status";
-import Refresh from "@aivot/mui-material-symbols-400-outlined/dist/refresh/Refresh";
-import React, {useRef} from "react";
-import {ListControlRef} from "../../../../components/generic-list/generic-list-props";
-import Delete from "@aivot/mui-material-symbols-400-outlined/dist/delete/Delete";
-import ProcessChart from "@aivot/mui-material-symbols-400-outlined/dist/process-chart/ProcessChart";
-import {ProcessInstanceHistoryEventDialog} from "../../dialogs/process-instance-history-event-dialog";
-import News from "@aivot/mui-material-symbols-400-outlined/dist/news/News";
+import {type ProcessInstanceEntity} from '../../entities/process-instance-entity';
+import {ProcessInstanceApiService} from '../../services/process-instance-api-service';
+import {useSearchParams} from 'react-router-dom';
+import {ProcessInstanceStatus, ProcessInstanceStatusLabels} from '../../enums/process-instance-status';
+import Refresh from '@aivot/mui-material-symbols-400-outlined/dist/refresh/Refresh';
+import React, {type ReactNode, useMemo, useRef} from 'react';
+import {type ListControlRef} from '../../../../components/generic-list/generic-list-props';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import ProcessChart from '@aivot/mui-material-symbols-400-outlined/dist/process-chart/ProcessChart';
+import {ProcessInstanceHistoryEventDialog} from '../../dialogs/process-instance-history-event-dialog';
+import News from '@aivot/mui-material-symbols-400-outlined/dist/news/News';
+import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
+import {showApiErrorSnackbar} from '../../../../slices/snackbar-slice';
 
-export function ProcessInstanceListPage() {
-    const params = useParams();
-
-    const hasAccess = useAccessGuard({
-        onlyGlobalAdmin: true,
-        messageType: 'snackbar',
-    });
+export function ProcessInstanceListPage(): ReactNode {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const dispatch = useAppDispatch();
 
     const listRef = useRef<ListControlRef | null>(null);
 
-    const handleListRefresh = () => {
+    const handleListRefresh = (): void => {
         if (listRef.current != null) {
             listRef.current.refresh();
         }
     };
 
-    const handleDelete = (item: ProcessInstanceEntity) => {
+    const {
+        processId,
+        processVersion,
+    } = useMemo(() => {
+        let processId: number | undefined;
+        let processVersion: number | undefined;
+
+        const processIdStr = searchParams.get('processId');
+        if (processIdStr != null) {
+            processId = parseInt(processIdStr);
+        }
+
+        const processVersionStr = searchParams.get('processVersion');
+        if (processVersionStr != null) {
+            processVersion = parseInt(processVersionStr);
+        }
+
+        return {
+            processId,
+            processVersion,
+        };
+    }, [searchParams]);
+
+    const handleDelete = (item: ProcessInstanceEntity): void => {
         const apiService = new ProcessInstanceApiService();
         apiService
             .destroy(item.id)
             .then(() => {
                 handleListRefresh();
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Vorgang konnte nicht gelöscht werden'));
             });
-    }
+    };
 
     const [showEventsForInstanceId, setShowEventsForInstanceId] = React.useState<number | null>(null);
 
@@ -105,8 +128,8 @@ export function ProcessInstanceListPage() {
                                 options.sort,
                                 options.order,
                                 {
-                                    processDefinitionId: parseInt(params.processId!),
-                                    processDefinitionVersion: parseInt(params.processVersion!),
+                                    processId,
+                                    processVersion,
                                     statusIsNot: options.filter === 'notCompleted' ? ProcessInstanceStatus.Completed : undefined,
                                 },
                             );
@@ -141,7 +164,7 @@ export function ProcessInstanceListPage() {
                                     minute: '2-digit',
                                     hour12: false,
                                 }).format(date).replace(',', ' –') + ' Uhr';
-                            }
+                            },
                         },
                         {
                             field: 'status',
@@ -155,7 +178,7 @@ export function ProcessInstanceListPage() {
                             },
                         },
                     ]}
-                    getRowIdentifier={row => row.id.toString()}
+                    getRowIdentifier={(row) => row.id.toString()}
                     noDataPlaceholder="Keine Team angelegt"
                     noSearchResultsPlaceholder="Keine Teams gefunden"
                     rowActionsCount={3}
@@ -182,7 +205,9 @@ export function ProcessInstanceListPage() {
 
             <ProcessInstanceHistoryEventDialog
                 open={showEventsForInstanceId != null}
-                onClose={() => setShowEventsForInstanceId(null)}
+                onClose={() => {
+                    setShowEventsForInstanceId(null);
+                }}
                 instanceId={showEventsForInstanceId ?? 0}
                 taskId={null}
             />

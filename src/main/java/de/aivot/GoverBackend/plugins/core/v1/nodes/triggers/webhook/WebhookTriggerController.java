@@ -153,8 +153,6 @@ public class WebhookTriggerController {
         // Check if authentication is required and valid
         checkAuthentication(config, authToken, authorizationHeader);
 
-        //var payload = extractPayload();
-
         var instance = new ProcessInstanceEntity(
                 null,
                 null,
