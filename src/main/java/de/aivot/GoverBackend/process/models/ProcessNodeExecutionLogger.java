@@ -5,8 +5,12 @@ import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ProcessNodeExecutionLogger {
+    private static final Logger logger = LoggerFactory.getLogger(ProcessNodeExecutionLogger.class);
+
     @Nonnull
     private final Long processInstanceId;
     @Nullable
@@ -51,10 +55,22 @@ public class ProcessNodeExecutionLogger {
     }
 
     public void logException(ProcessNodeExecutionException exception) {
-        // TODO
+        logger
+                .atError()
+                .setMessage(exception.getMessage())
+                .setCause(exception)
+                .log();
+
+        // TODO: Save
     }
 
     public void logException(Exception exception) {
+        logger
+                .atError()
+                .setMessage(exception.getMessage())
+                .setCause(exception)
+                .log();
+
         // TODO
     }
 }

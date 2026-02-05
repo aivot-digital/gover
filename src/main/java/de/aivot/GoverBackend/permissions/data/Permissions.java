@@ -83,23 +83,23 @@ public class Permissions {
         public static final String DOMAIN_RESOURCE_PERMISSION_READ = "domain_resource_permission.read";
         public static final String DOMAIN_RESOURCE_PERMISSION_UPDATE = "domain_resource_permission.update";
         public static final String DOMAIN_RESOURCE_PERMISSION_DELETE = "domain_resource_permission.delete";
-        public static final String PROCESS_DEFINITION_CREATE = "process_definition.create";
-        public static final String PROCESS_DEFINITION_READ = "process_definition.read";
-        public static final String PROCESS_DEFINITION_UPDATE = "process_definition.update";
-        public static final String PROCESS_DEFINITION_DELETE = "process_definition.delete";
-        public static final String PROCESS_DEFINITION_AUDIT = "process_definition.audit";
-        public static final String PROCESS_DEFINITION_PUBLISH_TEST = "process_definition.publish.test";
-        public static final String PROCESS_DEFINITION_PUBLISH_LOCAL = "process_definition.publish.local";
-        public static final String PROCESS_DEFINITION_PUBLISH_STORE = "process_definition.publish.store";
-        public static final String PROCESS_INSTANCE_TRIGGER = "process_instance.trigger";
-        public static final String PROCESS_INSTANCE_READ = "process_instance.read";
-        public static final String PROCESS_INSTANCE_UPDATE = "process_instance.update";
-        public static final String PROCESS_INSTANCE_DELETE = "process_instance.delete";
-        public static final String PROCESS_INSTANCE_PAUSE_RESUME = "process_instance.pause_resume";
-        public static final String PROCESS_INSTANCE_EDIT_DATA = "process_instance.edit_data";
-        public static final String PROCESS_INSTANCE_REASSIGN = "process_instance.reassign";
-        public static final String PROCESS_INSTANCE_COMMUNICATION_INTERNAL = "process_instance.communication.internal";
-        public static final String PROCESS_INSTANCE_COMMUNICATION_EXTERNAL = "process_instance.communication.external";
-        public static final String PROCESS_INSTANCE_EDIT_TASK = "process_instance.edit_task";
-        public static final String PROCESS_INSTANCE_MIGRATE = "process_instance.migrate";
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

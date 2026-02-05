@@ -90,6 +90,26 @@ public class PermissionService {
         }
     }
 
+    public boolean hasInAnyDepartmentPermission(@Nonnull String userId,
+                                                @Nonnull String permission) {
+        return vUserDepartmentPermissionRepository
+                .hasPermissionInAnyDepartment(userId, permission);
+    }
+
+    public void testInAnyDepartmentPermission(@Nonnull String userId,
+                                               @Nonnull String permission) throws ResponseException {
+        if (!hasInAnyDepartmentPermission(userId, permission)) {
+            throw ResponseException.forbidden(
+                    "Sie benötigen die Berechtigung %s in mindestens einer Organisationseinheit.",
+                    StringUtils.quote(permission)
+            );
+        }
+    }
+
+    /**
+     * @deprecated use testDepartmentPermission instead
+     */
+    @Deprecated
     public void hasDepartmentPermissionThrows(@Nonnull String userId,
                                               @Nonnull Integer departmentId,
                                               @Nonnull String permission) throws ResponseException {

@@ -15,6 +15,12 @@ public class OpenApiConstants {
                 "Process Access Controls define the permissions for teams and departments to access and interact with specific processes. " +
                         "They specify which actions can be performed on a process by members of a team or department, ensuring proper access management and security within the workflow system.";
 
+        public static final String ProcessTestClaimsName = "Process Test Claims";
+        public static final String ProcessTestClaimsDescription =
+                "Process Test Claims are used to allow process instantiation without the need to publish the process, as well as testing already published processes. " +
+                        "They allow developers and testers to validate the behavior and functionality of processes without affecting real data or users. " +
+                        "A process needs a test claim in order to be tested.";
+
         public static final String ProcessesDefinitionsName = "Processes";
         public static final String ProcessesDefinitionsDescription =
                 "Processes are used to define and manage workflows within the system. " +

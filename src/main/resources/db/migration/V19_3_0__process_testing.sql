@@ -22,7 +22,7 @@ create table process_test_claims
     process_id             int         not null,
     process_version        int         not null,
     created                timestamp   not null default now(),
-    owning_user_id         varchar(36) null,
+    owning_user_id         varchar(36) not null,
     foreign key (process_test_config_id) references process_test_configs (id) on delete cascade,
     foreign key (owning_user_id) references users (id) on delete restrict,
     foreign key (process_id, process_version) references process_versions (process_id, process_version) on delete cascade,

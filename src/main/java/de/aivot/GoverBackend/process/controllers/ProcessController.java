@@ -11,6 +11,7 @@ import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.process.entities.ProcessEntity;
 import de.aivot.GoverBackend.process.filters.ProcessFilter;
+import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.repositories.ProcessVersionRepository;
 import de.aivot.GoverBackend.process.services.*;
 import de.aivot.GoverBackend.teams.entities.TeamEntity;
@@ -124,7 +125,7 @@ public class ProcessController {
                 .testDepartmentPermission(
                         execUser.getId(),
                         department.getId(),
-                        Permissions.PROCESS_DEFINITION_CREATE
+                        ProcessPermissionProvider.PROCESS_DEFINITION_CREATE
                 );
 
         var result = processDefinitionService
@@ -161,7 +162,7 @@ public class ProcessController {
         permissionService.testDepartmentPermission(
                 execUser.getId(),
                 department.getId(),
-                Permissions.PROCESS_DEFINITION_CREATE
+                ProcessPermissionProvider.PROCESS_DEFINITION_CREATE
         );
 
         var newProcess = processDefinitionService
@@ -238,7 +239,7 @@ public class ProcessController {
         permissionService.testDepartmentPermission(
                 execUser.getId(),
                 proc.getDepartmentId(),
-                Permissions.PROCESS_DEFINITION_READ
+                ProcessPermissionProvider.PROCESS_DEFINITION_READ
         );
 
         return proc;
@@ -266,7 +267,7 @@ public class ProcessController {
         permissionService.testDepartmentPermission(
                 execUser.getId(),
                 updateDTO.getDepartmentId(),
-                Permissions.PROCESS_DEFINITION_UPDATE
+                ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
         );
 
         updateDTO.setId(existing.getId());
@@ -347,7 +348,7 @@ public class ProcessController {
         permissionService.testDepartmentPermission(
                 execUser.getId(),
                 existing.getDepartmentId(),
-                Permissions.PROCESS_DEFINITION_READ
+                ProcessPermissionProvider.PROCESS_DEFINITION_READ
         );
 
         var result = processExportService

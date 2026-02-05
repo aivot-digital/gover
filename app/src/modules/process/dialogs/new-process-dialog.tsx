@@ -1,33 +1,33 @@
-import Dialog from "@mui/material/Dialog";
-import DialogContent from "@mui/material/DialogContent";
-import {ProcessEntity} from "../entities/process-entity";
-import {DialogTitleWithClose} from "../../../components/dialog-title-with-close/dialog-title-with-close";
-import Stepper from "@mui/material/Stepper";
-import {Box, Button, Grid, Step, StepLabel, SvgIconProps, SxProps} from "@mui/material";
-import {FC, useEffect, useState} from "react";
-import Typography from "@mui/material/Typography";
-import UploadFile from "@aivot/mui-material-symbols-400-outlined/dist/upload-file/UploadFile";
-import {ProcessTemplates} from "../data/templates";
-import {uploadObjectFile} from "../../../utils/download-utils";
-import {ProcessExport, ProcessExportData} from "../entities/process-export";
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import {type ProcessEntity} from '../entities/process-entity';
+import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
+import Stepper from '@mui/material/Stepper';
+import {Box, Button, Grid, Step, StepLabel, type SvgIconProps, type SxProps} from '@mui/material';
+import React, {type FC, type ReactNode, useEffect, useState} from 'react';
+import Typography from '@mui/material/Typography';
+import UploadFile from '@aivot/mui-material-symbols-400-outlined/dist/upload-file/UploadFile';
+import {ProcessTemplates} from '../data/templates';
+import {uploadObjectFile} from '../../../utils/download-utils';
+import {type ProcessExport, type ProcessExportData} from '../entities/process-export';
 import {
-    VDepartmentMembershipWithDetailsService
-} from "../../departments/services/v-department-membership-with-details-service";
+    VDepartmentMembershipWithDetailsService,
+} from '../../departments/services/v-department-membership-with-details-service';
 import {
     SelectFieldComponent,
-    SelectFieldComponentOption
-} from "../../../components/select-field-2/select-field-component";
-import {getDepartmentTypeIcons, getDepartmentTypeLabel} from "../../departments/utils/department-utils";
-import {showApiErrorSnackbar} from "../../../slices/snackbar-slice";
-import {useAppSelector} from "../../../hooks/use-app-selector";
-import {selectUser} from "../../../slices/user-slice";
-import {useAppDispatch} from "../../../hooks/use-app-dispatch";
-import {TextFieldComponent} from "../../../components/text-field/text-field-component";
-import ArrowBack from "@aivot/mui-material-symbols-400-outlined/dist/arrow-back/ArrowBack";
-import ArrowForward from "@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward";
-import {isStringNotNullOrEmpty} from "../../../utils/string-utils";
-import Save from "@aivot/mui-material-symbols-400-outlined/dist/save/Save";
-import {ProcessDefinitionApiService} from "../services/process-definition-api-service";
+    type SelectFieldComponentOption,
+} from '../../../components/select-field-2/select-field-component';
+import {getDepartmentTypeIcons, getDepartmentTypeLabel} from '../../departments/utils/department-utils';
+import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
+import {useAppSelector} from '../../../hooks/use-app-selector';
+import {selectUser} from '../../../slices/user-slice';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {TextFieldComponent} from '../../../components/text-field/text-field-component';
+import ArrowBack from '@aivot/mui-material-symbols-400-outlined/dist/arrow-back/ArrowBack';
+import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
+import {isStringNotNullOrEmpty, quoteString} from '../../../utils/string-utils';
+import Save from '@aivot/mui-material-symbols-400-outlined/dist/save/Save';
+import {ProcessDefinitionApiService} from '../services/process-definition-api-service';
 
 interface NewProcessDialogProps {
     open: boolean;
@@ -35,20 +35,22 @@ interface NewProcessDialogProps {
     onCancel: () => void;
 }
 
-export function NewProcessDialog(props: NewProcessDialogProps) {
+export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
     const dispatch = useAppDispatch();
 
     const {
         open,
         onNew,
-        onCancel
+        onCancel,
     } = props;
 
     const user = useAppSelector(selectUser);
 
-    const [availableDepartments, setAvailableDepartments] = useState<SelectFieldComponentOption<number>[]>([]);
+    const [availableDepartments, setAvailableDepartments] = useState<Array<SelectFieldComponentOption<number>>>([]);
     const [nameOverride, setNameOverride] = useState<string | null>(null);
     const [departmentOverride, setDepartmentOverride] = useState<number | null>(null);
+
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (user == null) {
@@ -61,7 +63,7 @@ export function NewProcessDialog(props: NewProcessDialogProps) {
                 userId: user.id,
             })
             .then(({content}) => {
-                const options: SelectFieldComponentOption<number>[] = content
+                const options: Array<SelectFieldComponentOption<number>> = content
                     .map((membership) => ({
                         value: membership.departmentId,
                         label: membership.departmentName,
@@ -70,7 +72,7 @@ export function NewProcessDialog(props: NewProcessDialogProps) {
                     }));
                 setAvailableDepartments(options);
             })
-            .catch(err => {
+            .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Die Organisationseinheiten konnten nicht geladen werden. Bitte versuchen Sie es erneut.'));
             });
     }, [user]);
@@ -78,7 +80,7 @@ export function NewProcessDialog(props: NewProcessDialogProps) {
     const [activeStep, setActiveStep] = useState(0);
     const [selectedTemplateData, setSelectedTemplateData] = useState<ProcessExportData | null>(null);
 
-    const handleClose = () => {
+    const handleClose = (): void => {
         onCancel();
         setTimeout(() => {
             setActiveStep(0);
@@ -87,7 +89,7 @@ export function NewProcessDialog(props: NewProcessDialogProps) {
         }, 300);
     };
 
-    const handleImport = () => {
+    const handleImport = (): void => {
         uploadObjectFile<ProcessExport>('application/json')
             .then((importedProcessExport) => {
                 if (importedProcessExport == null) {
@@ -95,10 +97,13 @@ export function NewProcessDialog(props: NewProcessDialogProps) {
                 }
                 setSelectedTemplateData(importedProcessExport.data);
                 setActiveStep(1);
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Die Datei konnte nicht importiert werden. Bitte versuchen Sie es erneut.'));
             });
     };
 
-    const handleSave = () => {
+    const handleSave = (): void => {
         if (selectedTemplateData == null) {
             return;
         }
@@ -106,6 +111,8 @@ export function NewProcessDialog(props: NewProcessDialogProps) {
         if (nameOverride == null || departmentOverride == null) {
             return;
         }
+
+        setIsLoading(true);
 
         const data: ProcessExport = {
             data: {
@@ -125,12 +132,13 @@ export function NewProcessDialog(props: NewProcessDialogProps) {
                 onNew(createdProcess);
                 handleClose();
             })
-            .catch(err => {
+            .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Das Verfahren konnte nicht erstellt werden. Bitte versuchen Sie es erneut.'));
+            })
+            .finally(() => {
+                setIsLoading(false);
             });
     };
-
-    console.log('Looping Check Dialog');
 
     return (
         <Dialog
@@ -220,7 +228,7 @@ export function NewProcessDialog(props: NewProcessDialogProps) {
                                     description="Importieren Sie ein Verfahren aus einer Datei."
                                     onClick={handleImport}
                                     sx={{
-                                        borderStyle: "dashed",
+                                        borderStyle: 'dashed',
                                     }}
                                 />
                             </Grid>
@@ -292,7 +300,7 @@ export function NewProcessDialog(props: NewProcessDialogProps) {
                             }}
                         >
                             <Typography>
-                                Klicken Sie auf "Erstellen", um das neue Verfahren anzulegen.
+                                Klicken Sie auf {quoteString('Erstellen')}, um das neue Verfahren anzulegen.
                             </Typography>
 
                             <Box
@@ -316,6 +324,7 @@ export function NewProcessDialog(props: NewProcessDialogProps) {
                                         handleSave();
                                     }}
                                     endIcon={<Save/>}
+                                    disabled={isLoading}
                                 >
                                     Erstellen
                                 </Button>
@@ -336,7 +345,7 @@ interface ProcessTemplateCardProps {
     sx?: SxProps;
 }
 
-function ProcessTemplateCard(props: ProcessTemplateCardProps) {
+function ProcessTemplateCard(props: ProcessTemplateCardProps): ReactNode {
     const {
         Icon,
         title,
@@ -359,12 +368,12 @@ function ProcessTemplateCard(props: ProcessTemplateCardProps) {
                 fullWidth
                 sx={{
                     ...sx,
-                    display: "flex",
-                    flexDirection: "column",
+                    display: 'flex',
+                    flexDirection: 'column',
                     px: 1,
                     py: 2,
-                    height: "12em",
-                    width: "100%",
+                    height: '12em',
+                    width: '100%',
                 }}
                 onClick={onClick}
             >

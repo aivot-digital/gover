@@ -29,7 +29,10 @@ public class StorageService {
     private final KnownExtensionsService knownExtensionsService;
 
     @Autowired
-    public StorageService(StorageProviderRepository storageProviderRepository, StorageProviderDefinitionService storageProviderDefinitionService, StorageIndexItemRepository storageIndexItemRepository, KnownExtensionsService knownExtensionsService) {
+    public StorageService(StorageProviderRepository storageProviderRepository,
+                          StorageProviderDefinitionService storageProviderDefinitionService,
+                          StorageIndexItemRepository storageIndexItemRepository,
+                          KnownExtensionsService knownExtensionsService) {
         this.storageProviderRepository = storageProviderRepository;
         this.storageProviderDefinitionService = storageProviderDefinitionService;
         this.storageIndexItemRepository = storageIndexItemRepository;
@@ -58,7 +61,7 @@ public class StorageService {
         return createdFolder;
     }
 
-    public Optional<StorageFolder> getFolder(Integer providerId, String path) throws ResponseException {
+    public Optional<StorageFolder> getFolder(@Nonnull Integer providerId, @Nonnull String path) throws ResponseException {
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
@@ -66,7 +69,7 @@ public class StorageService {
         return definition.retrieveFolder(config, path);
     }
 
-    public void deleteFolder(Integer providerId, String path) throws ResponseException {
+    public void deleteFolder(@Nonnull Integer providerId, @Nonnull String path) throws ResponseException {
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
@@ -80,7 +83,7 @@ public class StorageService {
                 ));
     }
 
-    public Optional<StorageDocument> getDocument(Integer providerId, String path) throws ResponseException {
+    public Optional<StorageDocument> getDocument(@Nonnull Integer providerId, @Nonnull String path) throws ResponseException {
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
@@ -88,7 +91,7 @@ public class StorageService {
         return definition.retrieveDocument(config, path);
     }
 
-    public InputStream getDocumentContent(Integer providerId, String path) throws ResponseException {
+    public InputStream getDocumentContent(@Nonnull Integer providerId, @Nonnull String path) throws ResponseException {
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
@@ -96,7 +99,7 @@ public class StorageService {
         return definition.retrieveDocumentContent(config, path);
     }
 
-    public StorageDocument storeDocument(Integer providerId, String path, byte[] content) throws ResponseException {
+    public StorageDocument storeDocument(@Nonnull Integer providerId, @Nonnull String path, @Nonnull byte[] content) throws ResponseException {
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
@@ -119,7 +122,7 @@ public class StorageService {
         return createdDocument;
     }
 
-    public void deleteDocument(Integer providerId, String path) throws ResponseException {
+    public void deleteDocument(@Nonnull Integer providerId, @Nonnull String path) throws ResponseException {
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
@@ -133,7 +136,7 @@ public class StorageService {
                 ));
     }
 
-    private StorageProviderEntity retrieveProvider(Integer providerId) throws ResponseException {
+    private StorageProviderEntity retrieveProvider(@Nonnull Integer providerId) throws ResponseException {
         return storageProviderRepository
                 .findById(providerId)
                 .orElseThrow(() -> ResponseException
@@ -143,7 +146,7 @@ public class StorageService {
                         ));
     }
 
-    private <T> StorageProviderDefinition<T> retrieveDefinition(StorageProviderEntity provider) throws ResponseException {
+    private <T> StorageProviderDefinition<T> retrieveDefinition(@Nonnull StorageProviderEntity provider) throws ResponseException {
         var definition = storageProviderDefinitionService
                 .retrieveProviderDefinition(provider.getStorageProviderDefinitionKey(), provider.getStorageProviderDefinitionVersion())
                 .orElseThrow(() -> ResponseException
@@ -158,7 +161,7 @@ public class StorageService {
         return (StorageProviderDefinition<T>) definition;
     }
 
-    private <T> T createConfig(StorageProviderEntity provider, StorageProviderDefinition<T> definition) throws ResponseException {
+    private <T> T createConfig(@Nonnull StorageProviderEntity provider, @Nonnull StorageProviderDefinition<T> definition) throws ResponseException {
         try {
             return ElementPOJOMapper
                     .mapToPOJO(provider.getConfiguration(), definition.getConfigClass());

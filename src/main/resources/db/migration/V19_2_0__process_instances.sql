@@ -109,7 +109,7 @@ create table process_instance_tasks
     postponed_until          timestamp   null,
 
     -- The number of retries already attempted for this task
-    retry_count              int         not null default 0,
+    retry_count              int         null     default 0,
     -- The next retry timestamp for this task, if any
     next_retry_at            timestamp   null,
 
@@ -168,11 +168,11 @@ create table process_instance_events
 create table process_instance_attachments
 (
     -- The unique key of this attachment
-    key                      uuid        not null,
+    key                      uuid         not null,
     -- The process instance this attachment belongs to
-    process_instance_id      bigint      not null,
+    process_instance_id      bigint       not null,
     -- The process instance task this attachment belongs to, if any
-    process_instance_task_id bigint      null,
+    process_instance_task_id bigint       null,
 
     -- The filename of this attachment
     filename                 varchar(256) not null,
@@ -183,10 +183,10 @@ create table process_instance_attachments
 
     -- The id of the user, who uploaded this attachment, if it was explicitly uploaded by a user
     -- If this is null, the attachment was added automatically by the system
-    uploaded_by_user_id      varchar(36) null,
+    uploaded_by_user_id      varchar(36)  null,
 
     -- The timestamp when this attachment was uploaded
-    uploaded_at              timestamp   not null default now(),
+    uploaded_at              timestamp    not null default now(),
 
     primary key (key),
     foreign key (process_instance_id) references process_instances (id) on delete cascade,

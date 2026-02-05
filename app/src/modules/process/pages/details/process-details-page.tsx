@@ -1,21 +1,18 @@
-import React, {ReactNode, useEffect, useMemo, useState} from 'react';
-import {Box, Paper} from '@mui/material';
+import React, {type ReactNode, useEffect, useMemo, useState} from 'react';
+import {Box, Paper, Typography} from '@mui/material';
 import {Outlet, useNavigate, useParams} from 'react-router-dom';
-import {ProcessEntity} from '../../entities/process-entity';
+import {type ProcessEntity} from '../../entities/process-entity';
 import {ProcessDefinitionVersionApiService} from '../../services/process-definition-version-api-service';
-import {ProcessNodeEntity} from '../../entities/process-node-entity';
-import {ProcessDefinitionEdgeEntity} from '../../entities/process-definition-edge-entity';
+import {type ProcessNodeEntity} from '../../entities/process-node-entity';
+import {type ProcessDefinitionEdgeEntity} from '../../entities/process-definition-edge-entity';
 import {ProcessDefinitionApiService} from '../../services/process-definition-api-service';
 import {ProcessDefinitionEdgeApiService} from '../../services/process-definition-edge-api-service';
-import {ProcessVersionEntity} from '../../entities/process-version-entity';
+import {type ProcessVersionEntity} from '../../entities/process-version-entity';
 import {ProcessNodeApiService} from '../../services/process-node-api-service';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
-import Download from '@aivot/mui-material-symbols-400-outlined/dist/download/Download';
-import {downloadObjectFile} from '../../../../utils/download-utils';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {GenericPageHeader} from '../../../../components/generic-page-header/generic-page-header';
-
 import Add from '@aivot/mui-material-symbols-400-outlined/dist/add/Add';
 import {
     type ProcessNodeProvider,
@@ -24,12 +21,28 @@ import {
 } from '../../services/process-node-provider-api-service';
 import {SelectNodeProviderDialog} from '../../dialogs/select-node-provider-dialog';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
-import {clearLoadingMessage, setLoadingMessage} from '../../../../slices/shell-slice';
+import {
+    addSnackbarMessage,
+    clearLoadingMessage,
+    setLoadingMessage,
+    SnackbarSeverity,
+    SnackbarType,
+} from '../../../../slices/shell-slice';
 import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {ProcessFlowEditor} from './components/process-flow-editor/process-flow-editor';
 import {ReactFlowProvider} from '@xyflow/react';
 import ProcessChart from '@aivot/mui-material-symbols-400-outlined/dist/process-chart/ProcessChart';
 import {ProcessDetailsPageProvider} from './process-details-page-context';
+import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
+import {ProcessDetailsPageMoreMenu, ProcessDetailsPageMoreMenuEvent} from './components/process-details-page-more-menu';
+import {downloadObjectFile} from '../../../../utils/download-utils';
+import {ProcessTestClaimApiService} from '../../services/process-test-claim-api-service';
+import {useConfirm} from '../../../../providers/confirm-provider';
+import {ProcessTestClaimEntity} from '../../entities/process-test-claim-entity';
+import {User} from '../../../users/models/user';
+import {UsersApiService} from '../../../users/users-api-service';
+import {useUser} from '../../../../hooks/use-admin-guard';
+import {resolveUserName} from '../../../users/utils/resolve-user-name';
 
 export interface ProcessFlow {
     definition: ProcessEntity;
@@ -42,6 +55,8 @@ export function ProcessDetailsPage(): ReactNode {
     const params = useParams();
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
+    const confirm = useConfirm();
+    const user = useUser();
 
     const [processFlow, setProcessFlow] = useState<ProcessFlow | null>(null);
 
@@ -54,6 +69,13 @@ export function ProcessDetailsPage(): ReactNode {
         viaPort: string;
     } | null>(null);
     const [newNodeOnEdgeId, setNewNodeOnEdgeId] = useState<number | null>(null);
+
+    const [currentTestClaim, setCurrentTestClaim] = useState<{
+        claim: ProcessTestClaimEntity;
+        user: User;
+    } | null>(null);
+
+    const [showMenuAtEl, setShowMenuAtEl] = useState<HTMLElement | null>(null);
 
     // Fetch the available node providers on mount to display them in the add node dialog
     useEffect(() => {
@@ -112,19 +134,34 @@ export function ProcessDetailsPage(): ReactNode {
             .catch((error) => {
                 dispatch(showApiErrorSnackbar(error, 'Der Prozessfluss konnte nicht geladen werden.'));
             });
-    }, [processId, processVersion]);
 
-
-    const handleExport = (): void => {
-        new ProcessDefinitionApiService()
-            .export(processId, processVersion)
-            .then((exp) => {
-                downloadObjectFile(`${exp.data.process.internalTitle} - ${exp.data.version.processVersion}.json`, exp);
+        new ProcessTestClaimApiService()
+            .listAll({
+                processId,
+                processVersion,
             })
-            .catch((error) => {
-                dispatch(showApiErrorSnackbar(error, 'Der Prozess konnte nicht exportiert werden.'));
+            .then(({content}) => {
+                if (content.length > 0) {
+                    const claim = content[0];
+                    new UsersApiService()
+                        .retrieve(claim.owningUserId)
+                        .then((user) => {
+                            setCurrentTestClaim({
+                                claim,
+                                user,
+                            });
+                        })
+                        .catch((err) => {
+                            dispatch(showApiErrorSnackbar(err, 'Der Testanspruch konnte nicht geladen werden.'));
+                        });
+                } else {
+                    setCurrentTestClaim(null);
+                }
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Die Testansprüche konnten nicht geladen werden.'));
             });
-    };
+    }, [processId, processVersion]);
 
     const handleAddFlowTrigger = (nodeProvider: ProcessNodeProvider): void => {
         if (processFlow == null) {
@@ -358,6 +395,76 @@ export function ProcessDetailsPage(): ReactNode {
         });
     };
 
+    const handleExport = (): void => {
+        new ProcessDefinitionApiService()
+            .export(processId, processVersion)
+            .then((exp) => {
+                downloadObjectFile(`${exp.data.process.internalTitle} - ${exp.data.version.processVersion}.gp`, exp);
+            })
+            .catch((error) => {
+                dispatch(showApiErrorSnackbar(error, 'Der Prozess konnte nicht exportiert werden.'));
+            });
+    };
+
+    const handleTest = (): void => {
+        confirm({
+            title: 'Prozessmodellierung testen',
+            children: (
+                <Typography>
+                    Möchten Sie die Prozessmodellierung testen?
+                    Dabei wird die weitere Bearbeitung des Prozesses gesperrt, bis der Test abgeschlossen ist.
+                    Sie können den Test jederzeit abbrechen.
+                    Alle gestarteten Vorgänge werden dabei beendet und gelöscht.
+                </Typography>
+            ),
+            confirmButtonText: 'Test starten',
+        })
+            .then((confirm) => {
+                if (!confirm) {
+                    return;
+                }
+
+                return new ProcessTestClaimApiService()
+                    .create({
+                        ...ProcessTestClaimApiService.initialize(),
+                        processId,
+                        processVersion,
+                    });
+            })
+            .then((res) => {
+                if (res == null || user == null) {
+                    return;
+                }
+                setCurrentTestClaim({
+                    claim: res,
+                    user,
+                });
+                dispatch(showSuccessSnackbar('Der Test wurde gestartet. Der Prozess ist nun für die Bearbeitung gesperrt.'));
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Der Test konnte nicht gestartet werden.'));
+            });
+    };
+
+    const handleMenuEvent = (event: ProcessDetailsPageMoreMenuEvent): void => {
+        switch (event) {
+            case 'export':
+                handleExport();
+                break;
+            case 'test':
+                handleTest();
+                break;
+            default:
+                dispatch(addSnackbarMessage({
+                    key: 'unknown-process-details-event',
+                    type: SnackbarType.AutoHiding,
+                    severity: SnackbarSeverity.Info,
+                    message: 'Diese Funktion ist noch nicht implementiert.',
+                }));
+                break;
+        }
+    };
+
     if (processFlow == null) {
         return (
             <GenericDetailsSkeleton/>
@@ -388,10 +495,23 @@ export function ProcessDetailsPage(): ReactNode {
                 >
                     <GenericPageHeader
                         title={'Prozess: ' + processFlow.definition.internalTitle}
-                        badge={{
-                            color: 'default',
-                            label: `Version ${processFlow.version.processVersion}`,
-                        }}
+                        badge={
+                            currentTestClaim != null ?
+                                [
+                                    {
+                                        color: 'default',
+                                        label: `Version ${processFlow.version.processVersion}`,
+                                    },
+                                    {
+                                        color: 'warning',
+                                        label: `Im Test durch ${resolveUserName(currentTestClaim.user)}`,
+                                    },
+                                ] :
+                                {
+                                    color: 'default',
+                                    label: `Version ${processFlow.version.processVersion}`,
+                                }
+                        }
                         icon={ModuleIcons.processes}
                         actions={[
                             'separator',
@@ -413,14 +533,16 @@ export function ProcessDetailsPage(): ReactNode {
                                 },
                             },
                             {
-                                tooltip: 'Exportieren',
-                                icon: <Download/>,
-                                onClick: handleExport,
-                            },
-                            {
                                 tooltip: 'Vorgänge',
                                 icon: <ProcessChart/>,
                                 to: `/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}/instances`,
+                            },
+                            {
+                                tooltip: 'Mehr',
+                                icon: <MoreVert/>,
+                                onClick: (event) => {
+                                    setShowMenuAtEl(event.target as HTMLElement);
+                                },
                             },
                         ]}
                     />
@@ -448,8 +570,8 @@ export function ProcessDetailsPage(): ReactNode {
                                 }}
                                 onAddFollowUpNode={(fromNodeId, viaPort) => {
                                     setNewNodeFor({
-                                        fromNodeId: fromNodeId,
-                                        viaPort: viaPort,
+                                        fromNodeId,
+                                        viaPort,
                                     });
                                 }}
                                 onAddInbetweenNode={(forEdgeId) => {
@@ -461,8 +583,8 @@ export function ProcessDetailsPage(): ReactNode {
                                             id: 0,
                                             processId: processFlow.definition.id,
                                             processVersion: processFlow.version.processVersion,
-                                            fromNodeId: fromNodeId,
-                                            toNodeId: toNodeId,
+                                            fromNodeId,
+                                            toNodeId,
                                             viaPort: viaPortKey,
                                         })
                                         .then((newEdge) => {
@@ -549,6 +671,14 @@ export function ProcessDetailsPage(): ReactNode {
                     setNewNodeOnEdgeId(null);
                 }}
                 onSelect={handleAddInbetweenNode}
+            />
+
+            <ProcessDetailsPageMoreMenu
+                anchorEl={showMenuAtEl}
+                onClose={() => {
+                    setShowMenuAtEl(null);
+                }}
+                onMenuEvent={handleMenuEvent}
             />
         </PageWrapper>
     );

@@ -115,7 +115,6 @@ public class WebhookTriggerController {
                     .setParameter("slug", slug)
                     .setParameter("testClaimAccessKey", testClaim != null ? testClaim.getAccessKey() : null)
                     .setParameter("statusPublished", ProcessVersionStatus.Published);
-
             try {
                 nodeEntity = (ProcessNodeEntity) query.getSingleResult();
             } catch (ClassCastException e) {
@@ -129,8 +128,6 @@ public class WebhookTriggerController {
 
         return new Response("Webhook empfangen und verarbeitet.");
     }
-
-
 
     private void startProcess(@Nullable ProcessTestClaimEntity testClaimEntity,
                               @Nonnull ProcessNodeEntity nodeEntity,
@@ -177,6 +174,8 @@ public class WebhookTriggerController {
 
         for (var fileEntry : files.entrySet()) {
             var file = fileEntry.getValue();
+
+
             // TODO: Handle Process File Attaching
         }
     }

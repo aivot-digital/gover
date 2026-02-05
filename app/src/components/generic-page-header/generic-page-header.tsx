@@ -63,8 +63,22 @@ export function GenericPageHeader(props: GenericPageHeaderProps) {
                 }
 
                 {
+                    Array.isArray(props.badge) &&
+                    <>
+                        {
+                            props.badge.map((b, index) => (
+                                <Box key={index} sx={{ml: 1}}>
+                                    {isBadgeProps(b) ? <Badge {...b} /> : b}
+                                </Box>
+                            ))
+                        }
+                    </>
+                }
+
+                {
                     props.badge != null &&
                     !isBadgeProps(props.badge) &&
+                    !Array.isArray(props.badge) &&
                     <Box sx={{ml: 1}}>
                         {props.badge}
                     </Box>

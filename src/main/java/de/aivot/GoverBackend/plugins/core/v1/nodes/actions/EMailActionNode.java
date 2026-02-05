@@ -296,7 +296,7 @@ public class EMailActionNode implements ProcessNodeDefinition, PluginComponent {
     }
 
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
-    private static class EMailActionNodeConfig {
+    public static class EMailActionNodeConfig {
         public static final String RECIPIENT_FIELD_ID = "to";
         public static final String BCC_RECIPIENT_FIELD_ID = "bcc";
 

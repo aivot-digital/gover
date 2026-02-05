@@ -2,12 +2,14 @@ package de.aivot.GoverBackend.process.workers;
 
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
+import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextInit;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
+import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
@@ -87,6 +89,9 @@ public class ProcessWorker {
             logger.logException(exception);
         } catch (Exception exception) {
             logger.logException(exception);
+
+            processInstance.setStatus(ProcessInstanceStatus.Failed);
+            processInstanceRepository.save(processInstance);
         }
     }
 
@@ -169,10 +174,20 @@ public class ProcessWorker {
                 processData
         );
 
-        var res = currentNodeProvider
-                .init(context);
+        ProcessNodeExecutionResult initResult;
+        try {
+            initResult = currentNodeProvider
+                    .init(context);
+        } catch (Exception e) {
+            taskEntity.setStatus(ProcessTaskStatus.Failed);
+            processInstanceTaskRepository.save(taskEntity);
+            throw e;
+        }
 
-        if (res == null) {
+        if (initResult == null) {
+            taskEntity.setStatus(ProcessTaskStatus.Failed);
+            processInstanceTaskRepository.save(taskEntity);
+
             throw new ProcessNodeExecutionExceptionUnknown(
                     "Der Prozessknoten-Funktionsanbieter „%s“ für das Prozesselement „%s“ lieferte kein Ergebnis zurück.",
                     currentNodeProvider.getName(),
@@ -200,7 +215,7 @@ public class ProcessWorker {
                         processInstance,
                         taskEntity,
                         previousTask,
-                        res
+                        initResult
                 );
     }
 

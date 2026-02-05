@@ -13,16 +13,20 @@ import java.time.LocalDateTime;
 @Table(name = "process_test_claims")
 public class ProcessTestClaimEntity {
     private static final String ID_SEQUENCE_NAME = "process_test_claims_id_seq";
+
+    /**
+     * Must be filled from the database
+     */
     @Id
     @Nonnull
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = ID_SEQUENCE_NAME)
     @SequenceGenerator(name = ID_SEQUENCE_NAME, allocationSize = 1)
     private Integer id;
 
+    /**
+     * Must be filled from the server
+     */
     @Nonnull
-    @NotNull(message = "Der Zugriffsschlüssel darf nicht null sein.")
-    @NotBlank(message = "Der Zugriffsschlüssel darf nicht leer sein.")
-    @Size(min = 64, max = 64, message = "Der Zugriffsschlüssel muss genau 64 Zeichen lang sein.")
     private String accessKey;
 
     @Nullable
@@ -39,10 +43,10 @@ public class ProcessTestClaimEntity {
     @Nonnull
     private LocalDateTime created;
 
+    /**
+     * Must be filled from the server
+     */
     @Nonnull
-    @NotNull(message = "Die ID des Besitzers darf nicht null sein.")
-    @NotBlank(message = "Die ID des Besitzers darf nicht leer sein.")
-    @Size(min = 36, max = 36, message = "Die ID des Besitzers muss genau 36 Zeichen lang sein.")
     private String owningUserId;
 
     // region Constructors
