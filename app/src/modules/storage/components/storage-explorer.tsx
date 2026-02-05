@@ -94,67 +94,84 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                 }
             </Breadcrumbs>
 
-            <Grid
-                container={true}
-                spacing={2}
+            <Box
                 sx={{
                     mt: 2,
                 }}
             >
                 {
-                    currentFolder
-                        .map((item) => (
-                            <Grid
-                                key={item.pathFromRoot}
-                                size={{
-                                    xs: 12,
-                                    sm: 8,
-                                    md: 4,
-                                    lg: 2,
-                                    xl: 1,
-                                }}
-                            >
-                                <Button
-                                    sx={{
-                                        width: '100%',
-                                        height: '100%',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        justifyContent: 'flex-start',
-                                        wordBreak: 'break-all',
-                                        p: 2,
-                                    }}
-                                    onClick={() => {
-                                        if (item.isDirectory) {
-                                            setCurrentPath(item.pathFromRoot);
-                                            console.log('Moving to', item.pathFromRoot);
-                                        } else {
-                                            new StorageProvidersApiService()
-                                                .downloadFile(providerId, item.pathFromRoot)
-                                                .then((blob) => {
-                                                    downloadBlobFile(item.filename, blob);
-                                                });
-                                        }
+                    currentFolder.length === 0 && (
+                        <Typography
+                            color="textSecondary"
+                        >
+                            Dieser Ordner ist leer.
+                        </Typography>
+                    )
+                }
+
+                <Grid
+                    container={true}
+                    spacing={2}
+                >
+
+                    {
+                        currentFolder
+                            .map((item) => (
+                                <Grid
+                                    key={item.pathFromRoot}
+                                    size={{
+                                        xs: 12,
+                                        sm: 8,
+                                        md: 4,
+                                        lg: 2,
+                                        xl: 1,
                                     }}
                                 >
-                                    {getFileTypeIcon(item.mimeType, {
-                                        fontSize: 'large',
-                                    })}
-
-                                    <Typography
-                                        textAlign="center"
+                                    <Button
                                         sx={{
-                                            mt: 1,
+                                            width: '100%',
+                                            height: '100%',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            justifyContent: 'flex-start',
+                                            wordBreak: 'break-all',
+                                            p: 2,
+                                        }}
+                                        onClick={() => {
+                                            if (item.isDirectory) {
+                                                setCurrentPath(item.pathFromRoot);
+                                            } else {
+                                                new StorageProvidersApiService()
+                                                    .downloadFile(providerId, item.pathFromRoot)
+                                                    .then((blob) => {
+                                                        downloadBlobFile(item.filename, blob);
+                                                    })
+                                                    .catch((err) => {
+                                                        dispatch(showApiErrorSnackbar(err, 'Die Datei konnte nicht heruntergeladen werden.'));
+                                                    });
+                                            }
                                         }}
                                     >
-                                        {item.filename}
-                                    </Typography>
-                                </Button>
-                            </Grid>
-                        ))
-                }
-            </Grid>
+                                        {getFileTypeIcon(item.mimeType, {
+                                            fontSize: 'large',
+                                        })}
+
+                                        <Typography
+                                            textAlign="center"
+                                            sx={{
+                                                mt: 1,
+                                            }}
+                                        >
+                                            {item.filename}
+                                        </Typography>
+                                    </Button>
+                                </Grid>
+                            ))
+                    }
+                </Grid>
+
+            </Box>
 
             <Box
                 sx={{
