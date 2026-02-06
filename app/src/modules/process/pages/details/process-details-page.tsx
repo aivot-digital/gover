@@ -34,7 +34,10 @@ import {ReactFlowProvider} from '@xyflow/react';
 import ProcessChart from '@aivot/mui-material-symbols-400-outlined/dist/process-chart/ProcessChart';
 import {ProcessDetailsPageProvider} from './process-details-page-context';
 import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
-import {ProcessDetailsPageMoreMenu, type ProcessDetailsPageMoreMenuEvent} from './components/process-details-page-more-menu';
+import {
+    ProcessDetailsPageMoreMenu,
+    type ProcessDetailsPageMoreMenuEvent,
+} from './components/process-details-page-more-menu';
 import {downloadObjectFile} from '../../../../utils/download-utils';
 import {ProcessTestClaimApiService} from '../../services/process-test-claim-api-service';
 import {useConfirm} from '../../../../providers/confirm-provider';
@@ -508,6 +511,38 @@ export function ProcessDetailsPage(): ReactNode {
                                     {
                                         color: 'warning',
                                         label: `Im Test durch ${resolveUserName(currentTestClaim.user)}`,
+                                        onDelete: () => {
+                                            confirm({
+                                                title: 'Testanspruch löschen',
+                                                children: (
+                                                    <Typography>
+                                                        Möchten Sie den Testanspruch wirklich löschen? Dadurch wird der
+                                                        Test für diesen Prozess sofort beendet und die Bearbeitung des
+                                                        Prozesses wieder freigegeben.
+                                                        Alle gestarteten Vorgänge werden dabei beendet und gelöscht.
+                                                    </Typography>
+                                                ),
+                                                confirmButtonText: 'Testanspruch löschen',
+                                            })
+                                                .then((confirmed) => {
+                                                    if (!confirmed) {
+                                                        return;
+                                                    }
+
+                                                    new ProcessTestClaimApiService()
+                                                        .destroy(currentTestClaim.claim.id)
+                                                        .then(() => {
+                                                            setCurrentTestClaim(null);
+                                                            dispatch(showSuccessSnackbar('Testanspruch wurde gelöscht.'));
+                                                        })
+                                                        .catch((err) => {
+                                                            dispatch(showApiErrorSnackbar(err, 'Der Testanspruch konnte nicht gelöscht werden.'));
+                                                        });
+                                                })
+                                                .catch((err) => {
+                                                    dispatch(showApiErrorSnackbar(err, 'Der Testanspruch konnte nicht gelöscht werden.'));
+                                                });
+                                        },
                                     },
                                 ] :
                                 {

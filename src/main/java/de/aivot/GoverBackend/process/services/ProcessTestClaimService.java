@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
 import de.aivot.GoverBackend.process.entities.ProcessTestClaimEntity;
+import de.aivot.GoverBackend.process.repositories.ProcessInstanceRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessTestClaimRepository;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -20,10 +21,16 @@ import java.util.Optional;
 public class ProcessTestClaimService implements EntityService<ProcessTestClaimEntity, Integer> {
 
     private final ProcessTestClaimRepository repository;
+    private final ProcessInstanceRepository processInstanceRepository;
+    private final ProcessInstanceService processInstanceService;
 
     @Autowired
-    public ProcessTestClaimService(ProcessTestClaimRepository repository) {
+    public ProcessTestClaimService(ProcessTestClaimRepository repository,
+                                   ProcessInstanceRepository processInstanceRepository,
+                                   ProcessInstanceService processInstanceService) {
         this.repository = repository;
+        this.processInstanceRepository = processInstanceRepository;
+        this.processInstanceService = processInstanceService;
     }
 
     @Nonnull
@@ -74,6 +81,14 @@ public class ProcessTestClaimService implements EntityService<ProcessTestClaimEn
 
     @Override
     public void performDelete(@Nonnull ProcessTestClaimEntity entity) throws ResponseException {
+        var allInstances = processInstanceRepository
+                .findAllByCreatedForTestClaimId(entity.getId());
+
+        for (var instance : allInstances) {
+            processInstanceService
+                    .deleteEntity(instance);
+        }
+
         repository.delete(entity);
     }
 }

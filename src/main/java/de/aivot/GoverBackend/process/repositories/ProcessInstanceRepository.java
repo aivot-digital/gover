@@ -9,4 +9,6 @@ import java.util.List;
 
 public interface ProcessInstanceRepository extends JpaRepository<ProcessInstanceEntity, Long>, JpaSpecificationExecutor<ProcessInstanceEntity> {
     List<ProcessInstanceEntity> findAllByStatus(ProcessInstanceStatus status);
+
+    List<ProcessInstanceEntity> findAllByCreatedForTestClaimId(Integer createdForTestClaimId);
 }

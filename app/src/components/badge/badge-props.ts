@@ -6,6 +6,7 @@ export interface BadgeProps {
     color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
     tooltip?: TooltipProps;
     sx?: SxProps;
+    onDelete?: () => void;
 }
 
 export function isBadgeProps(badge: any): badge is BadgeProps {

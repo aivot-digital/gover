@@ -382,6 +382,11 @@ public class LocalDiskStorageProviderDefinition implements StorageProviderDefini
         try {
             Files.delete(documentPathReal);
         } catch (IOException e) {
+            if (e instanceof java.nio.file.NoSuchFileException) {
+                // If the file does not exist, we can consider it as already deleted, so we ignore this exception
+                return;
+            }
+
             throw new StorageException(e,
                     "Fehler beim Löschen des Dokuments %s: %s.",
                     StringUtils.quote(path),

@@ -147,11 +147,11 @@ public class ProcessInstanceAttachmentService implements EntityService<ProcessIn
 
     @Override
     public void performDelete(@Nonnull ProcessInstanceAttachmentEntity entity) throws ResponseException {
-        // Delete the attachment from the storage provider
-        storageService.deleteDocument(entity.getStorageProviderId(), entity.getStoragePathFromRoot());
-
         // Delete the attachment from the database
         processInstanceAttachmentRepository.delete(entity);
+
+        // Delete the attachment from the storage provider
+        storageService
+                .deleteDocument(entity.getStorageProviderId(), entity.getStoragePathFromRoot());
     }
 }
-
