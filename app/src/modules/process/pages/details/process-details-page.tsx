@@ -553,7 +553,7 @@ export function ProcessDetailsPage(): ReactNode {
                     >
                         <ReactFlowProvider>
                             <ProcessFlowEditor
-                                editable={true}
+                                editable={currentTestClaim == null}
                                 processFlow={processFlow}
                                 nodeProviders={availableNodeProviders}
                                 selectedNode={selectedNode}

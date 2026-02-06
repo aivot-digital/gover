@@ -1,18 +1,18 @@
-import {Handle, NodeProps, Position} from "@xyflow/react";
-import {Box, Divider, Paper, useTheme} from "@mui/material";
-import {useContext, useMemo} from "react";
-import Typography from "@mui/material/Typography";
-import {ProcessNodeType} from "../../../../services/process-node-provider-api-service";
-import Assignment from "@aivot/mui-material-symbols-400-outlined/dist/assignment/Assignment";
-import {ProviderTypeStyles} from "../../../../data/provider-type-styles";
-import {KnownProviderIcons} from "../../../../data/known-provider-icons";
-import {ProcessFlowEditorNodeHandle} from "./process-flow-editor-node-handle";
-import {ProcessFlowEditorContext} from "./process-flow-editor-context";
-import {HANDLE_SIZE, NODE_WIDTH} from "./data/process-flow-constants";
-import {FlowNode} from "./utils/layout-utils";
-import {getNodeDescription, getNodeName} from "./utils/node-utils";
+import {Handle, type NodeProps, Position} from '@xyflow/react';
+import {Box, Divider, Paper, useTheme} from '@mui/material';
+import React, {type ReactNode, useContext, useMemo} from 'react';
+import Typography from '@mui/material/Typography';
+import {ProcessNodeType} from '../../../../services/process-node-provider-api-service';
+import Assignment from '@aivot/mui-material-symbols-400-outlined/dist/assignment/Assignment';
+import {ProviderTypeStyles} from '../../../../data/provider-type-styles';
+import {KnownProviderIcons} from '../../../../data/known-provider-icons';
+import {ProcessFlowEditorNodeHandle} from './process-flow-editor-node-handle';
+import {ProcessFlowEditorContext} from './process-flow-editor-context';
+import {HANDLE_SIZE, NODE_WIDTH} from './data/process-flow-constants';
+import {type FlowNode} from './utils/layout-utils';
+import {getNodeDescription, getNodeName} from './utils/node-utils';
 
-export function ProcessFlowEditorNode(props: NodeProps<FlowNode>) {
+export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
     const theme = useTheme();
 
     const {
@@ -20,6 +20,7 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>) {
     } = props;
 
     const {
+        editable,
         selectedNode,
         onAddFollowUpNode,
         onDeleteEdge,
@@ -182,6 +183,7 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>) {
                             .map((port) => (
                                 <ProcessFlowEditorNodeHandle
                                     key={port.key}
+                                    editable={editable}
                                     isConnected={data.treeNode.children.some((c) => c.port.key === port.key)}
                                     port={port}
                                     onClick={() => {

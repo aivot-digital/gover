@@ -1,29 +1,32 @@
-import {Handle, Position} from "@xyflow/react";
-import {Box, IconButton} from "@mui/material";
-import Typography from "@mui/material/Typography";
-import {ProcessNodePort} from "../../../../services/process-node-provider-api-service";
-import Chip from "@mui/material/Chip";
-import {useConfirm} from "../../../../../../providers/confirm-provider";
-import {Add} from "@mui/icons-material";
-import Close from "@aivot/mui-material-symbols-400-outlined/dist/close/Close";
+import React, {type ReactNode} from 'react';
+import {Handle, Position} from '@xyflow/react';
+import {Box, IconButton} from '@mui/material';
+import Typography from '@mui/material/Typography';
+import {type ProcessNodePort} from '../../../../services/process-node-provider-api-service';
+import Chip from '@mui/material/Chip';
+import {useConfirm} from '../../../../../../providers/confirm-provider';
+import {Add} from '@mui/icons-material';
+import Close from '@aivot/mui-material-symbols-400-outlined/dist/close/Close';
 import {
     ADD_BUTTON_DISTANCE,
     ADD_BUTTON_SIZE,
     HANDLE_COLOR,
     HANDLE_SIZE,
-    HANDLE_WIDTH
-} from "./data/process-flow-constants";
+    HANDLE_WIDTH,
+} from './data/process-flow-constants';
 
 
 interface ProcessFlowEditorNodeHandleProps {
+    editable: boolean;
     isConnected: boolean;
     port: ProcessNodePort;
     onClick: () => void;
     onDeleteEdge: (port: ProcessNodePort) => void;
 }
 
-export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandleProps) {
+export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandleProps): ReactNode {
     const {
+        editable,
         isConnected,
         port,
         onClick,
@@ -32,7 +35,7 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
 
     const confirm = useConfirm();
 
-    const handleDeleteEdge = () => {
+    const handleDeleteEdge = (): void => {
         confirm({
             title: 'Verbindung aufheben',
             children: (
@@ -78,8 +81,8 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
                         bgcolor: 'background.paper',
                         borderColor: HANDLE_COLOR,
                     }}
-                    deleteIcon={<Close/>}
-                    onDelete={isConnected ? handleDeleteEdge : undefined}
+                    deleteIcon={editable ? <Close/> : undefined}
+                    onDelete={isConnected && editable ? handleDeleteEdge : undefined}
                 />
 
                 <Box
@@ -107,6 +110,7 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
 
                             onClick();
                         }}
+                        disabled={!editable}
                     >
                         <Add
                             sx={{

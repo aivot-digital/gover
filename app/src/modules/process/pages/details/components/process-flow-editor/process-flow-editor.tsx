@@ -1,18 +1,18 @@
-import {ProcessFlow} from "../../process-details-page";
-import {ProcessNodeProvider} from "../../../../services/process-node-provider-api-service";
-import {useCallback, useEffect, useState} from "react";
+import {type ProcessFlow} from '../../process-details-page';
+import {type ProcessNodeProvider} from '../../../../services/process-node-provider-api-service';
+import React, {type ReactNode, useCallback, useEffect, useState} from 'react';
 import '@xyflow/react/dist/style.css';
-import {Background, BackgroundVariant, ReactFlow, useEdgesState, useNodesState, useReactFlow} from "@xyflow/react";
-import {ProcessNodeEntity} from "../../../../entities/process-node-entity";
-import {ProcessFlowEditorNode} from "./process-flow-editor-node";
-import {ProcessFlowEditorEdge} from "./process-flow-editor-edge";
-import {ProcessFlowEditorContext} from "./process-flow-editor-context";
-import {DEFAULT_FLOW_EDGE_TYPE, DEFAULT_FLOW_NODE_TYPE} from "./data/process-flow-constants";
-import {FlowEdge, FlowNode, layoutElements} from "./utils/layout-utils";
-import {Box} from "@mui/material";
-import {Actions} from "../../../../../../components/actions/actions";
-import MobileLayout from "@aivot/mui-material-symbols-400-outlined/dist/mobile-layout/MobileLayout";
-import FitScreen from "@aivot/mui-material-symbols-400-outlined/dist/fit-screen/FitScreen";
+import {Background, BackgroundVariant, ReactFlow, useEdgesState, useNodesState, useReactFlow} from '@xyflow/react';
+import {type ProcessNodeEntity} from '../../../../entities/process-node-entity';
+import {ProcessFlowEditorNode} from './process-flow-editor-node';
+import {ProcessFlowEditorEdge} from './process-flow-editor-edge';
+import {ProcessFlowEditorContext} from './process-flow-editor-context';
+import {DEFAULT_FLOW_EDGE_TYPE, DEFAULT_FLOW_NODE_TYPE} from './data/process-flow-constants';
+import {type FlowEdge, type FlowNode, layoutElements} from './utils/layout-utils';
+import {Box} from '@mui/material';
+import {Actions} from '../../../../../../components/actions/actions';
+import MobileLayout from '@aivot/mui-material-symbols-400-outlined/dist/mobile-layout/MobileLayout';
+import FitScreen from '@aivot/mui-material-symbols-400-outlined/dist/fit-screen/FitScreen';
 
 interface ProcessFlowEditorProps {
     editable: boolean;
@@ -35,9 +35,9 @@ const NodeTypes = {
 };
 const EdgeTypes = {
     [DEFAULT_FLOW_EDGE_TYPE]: ProcessFlowEditorEdge,
-}
+};
 
-export function ProcessFlowEditor(props: ProcessFlowEditorProps) {
+export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const {
         editable,
 
@@ -82,8 +82,8 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps) {
     return (
         <ProcessFlowEditorContext.Provider
             value={{
-                editable: editable,
-                showTargetHandles: showTargetHandles,
+                editable,
+                showTargetHandles,
 
                 selectedNode: selectedNode ?? null,
                 onSelectedNode: onSelectNode ?? (() => {

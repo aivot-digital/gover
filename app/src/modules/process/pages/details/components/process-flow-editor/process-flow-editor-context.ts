@@ -1,5 +1,5 @@
 import {createContext} from 'react';
-import {ProcessNodeEntity} from "../../../../entities/process-node-entity";
+import {type ProcessNodeEntity} from '../../../../entities/process-node-entity';
 
 export interface ProcessFlowEditorContext {
     editable: boolean;
