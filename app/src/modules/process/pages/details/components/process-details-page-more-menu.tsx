@@ -7,8 +7,8 @@ import FileExport from '@aivot/mui-material-symbols-400-outlined/dist/file-expor
 import Science from '@aivot/mui-material-symbols-400-outlined/dist/science/Science';
 import BugReport from '@aivot/mui-material-symbols-400-outlined/dist/bug-report/BugReport';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
-import {addSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../../slices/shell-slice';
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
+import {addSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../../slices/shell-slice';
 
 export type ProcessDetailsPageMoreMenuEvent = 'export' | 'test';
 
@@ -38,7 +38,12 @@ export function ProcessDetailsPageMoreMenu(props: ProcessDetailsPageMoreMenuProp
         if (event != null) {
             onMenuEvent(event);
         } else {
-
+            dispatch(addSnackbarMessage({
+                type: SnackbarType.AutoHiding,
+                severity: SnackbarSeverity.Info,
+                key: 'not-implemented',
+                message: 'Diese Funktion ist noch nicht implementiert.',
+            }));
         }
         onClose();
     };
@@ -97,7 +102,7 @@ const entries: Array<{
     'separator',
     {
         icon: <FileExport/>,
-        label: 'Prozess exportieren (.gp)',
+        label: 'Prozess exportieren (.json)',
         event: 'export',
     },
     'separator',
