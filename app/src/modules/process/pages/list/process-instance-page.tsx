@@ -4,20 +4,54 @@ import {Typography} from '@mui/material';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {type ProcessInstanceEntity} from '../../entities/process-instance-entity';
 import {ProcessInstanceApiService} from '../../services/process-instance-api-service';
-import {useSearchParams} from 'react-router-dom';
 import {ProcessInstanceStatus, ProcessInstanceStatusLabels} from '../../enums/process-instance-status';
 import Refresh from '@aivot/mui-material-symbols-400-outlined/dist/refresh/Refresh';
-import React, {type ReactNode, useMemo, useRef} from 'react';
-import {type ListControlRef} from '../../../../components/generic-list/generic-list-props';
+import React, {type ReactNode, useRef} from 'react';
+import {
+    type GenericListPropsFetchOptions,
+    type ListControlRef,
+} from '../../../../components/generic-list/generic-list-props';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import ProcessChart from '@aivot/mui-material-symbols-400-outlined/dist/process-chart/ProcessChart';
 import {ProcessInstanceHistoryEventDialog} from '../../dialogs/process-instance-history-event-dialog';
 import News from '@aivot/mui-material-symbols-400-outlined/dist/news/News';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../../slices/snackbar-slice';
+import {ProcessDefinitionApiService} from '../../services/process-definition-api-service';
+import {type Page} from '../../../../models/dtos/page';
+
+interface ProcessInstanceEntityWithProcessInfo extends ProcessInstanceEntity {
+    processName: string;
+}
+
+async function fetchData(options: GenericListPropsFetchOptions<ProcessInstanceEntityWithProcessInfo>): Promise<Page<ProcessInstanceEntityWithProcessInfo>> {
+    const allProcesses = await new ProcessDefinitionApiService()
+        .listAll();
+
+    const instances = await new ProcessInstanceApiService()
+        .list(
+            options.page,
+            options.size,
+            options.sort !== 'processName' ? options.sort : 'processId',
+            options.order,
+            {
+                statusIsNot: options.filter === 'notCompleted' ? ProcessInstanceStatus.Completed : undefined,
+            },
+        );
+
+    return {
+        ...instances,
+        content: instances.content.map((instance) => {
+            const process = allProcesses.content.find((p) => p.id === instance.processId);
+            return {
+                ...instance,
+                processName: process != null ? process.internalTitle : `Prozess #${instance.processId}`,
+            };
+        }),
+    };
+}
 
 export function ProcessInstanceListPage(): ReactNode {
-    const [searchParams, setSearchParams] = useSearchParams();
     const dispatch = useAppDispatch();
 
     const listRef = useRef<ListControlRef | null>(null);
@@ -27,29 +61,6 @@ export function ProcessInstanceListPage(): ReactNode {
             listRef.current.refresh();
         }
     };
-
-    const {
-        processId,
-        processVersion,
-    } = useMemo(() => {
-        let processId: number | undefined;
-        let processVersion: number | undefined;
-
-        const processIdStr = searchParams.get('processId');
-        if (processIdStr != null) {
-            processId = parseInt(processIdStr);
-        }
-
-        const processVersionStr = searchParams.get('processVersion');
-        if (processVersionStr != null) {
-            processVersion = parseInt(processVersionStr);
-        }
-
-        return {
-            processId,
-            processVersion,
-        };
-    }, [searchParams]);
 
     const handleDelete = (item: ProcessInstanceEntity): void => {
         const apiService = new ProcessInstanceApiService();
@@ -72,7 +83,7 @@ export function ProcessInstanceListPage(): ReactNode {
                 fullWidth
                 background
             >
-                <GenericListPage<ProcessInstanceEntity>
+                <GenericListPage<ProcessInstanceEntityWithProcessInfo>
                     controlRef={listRef}
                     defaultFilter="notCompleted"
                     filters={[
@@ -118,24 +129,24 @@ export function ProcessInstanceListPage(): ReactNode {
                             ),
                         },
                     }}
-                    searchLabel="Team suchen"
-                    searchPlaceholder="Name des Teams eingeben…"
-                    fetch={(options) => {
-                        return new ProcessInstanceApiService()
-                            .list(
-                                options.page,
-                                options.size,
-                                options.sort,
-                                options.order,
-                                {
-                                    processId,
-                                    processVersion,
-                                    statusIsNot: options.filter === 'notCompleted' ? ProcessInstanceStatus.Completed : undefined,
-                                },
-                            );
-                    }}
+                    searchLabel="Vorgang suchen"
+                    searchPlaceholder="Schlüssel des Vorgangs eingeben…"
+                    fetch={fetchData}
                     columnIcon={<ProcessChart/>}
                     columnDefinitions={[
+                        {
+                            field: 'processName',
+                            headerName: 'Prozess',
+                            flex: 1,
+                            renderCell: (params) => (
+                                <CellLink
+                                    to={`/processes/${params.row.processId}/versions/${params.row.processVersion}/instances/${params.row.id}/tasks`}
+                                    title="Aufrufen"
+                                >
+                                    {String(params.value)}
+                                </CellLink>
+                            ),
+                        },
                         {
                             field: 'accessKey',
                             headerName: 'Schlüssel',
@@ -179,8 +190,8 @@ export function ProcessInstanceListPage(): ReactNode {
                         },
                     ]}
                     getRowIdentifier={(row) => row.id.toString()}
-                    noDataPlaceholder="Keine Team angelegt"
-                    noSearchResultsPlaceholder="Keine Teams gefunden"
+                    noDataPlaceholder="Keine Vorgänge gestartet"
+                    noSearchResultsPlaceholder="Keine Vorgänge gefunden"
                     rowActionsCount={3}
                     rowActions={(item) => [
                         {
@@ -192,7 +203,7 @@ export function ProcessInstanceListPage(): ReactNode {
                         },
                         {
                             icon: <News/>,
-                            tooltip: 'Events Einsehen',
+                            tooltip: 'Aufgaben Einsehen',
                             onClick: () => {
                                 setShowEventsForInstanceId(item.id);
                             },

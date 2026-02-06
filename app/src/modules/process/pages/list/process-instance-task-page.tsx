@@ -236,16 +236,17 @@ export function ProcessInstanceTaskListPage() {
                             onClick: () => {
                                 confirm({
                                     title: 'Daten der Aufgabe',
+                                    width: 'md',
                                     children: (
                                         <>
                                             <Typography variant="h6">
-                                                Arbeitsdaten der Aufgabe:
+                                                Die von dieser Aufgabe weitergegebene Vorgangsdatenebene
                                             </Typography>
                                             <ExpandableCodeBlock
                                                 value={JSON.stringify(item.processData, null, 2)}
                                             />
                                             <Typography variant="h6">
-                                                Metadaten der Aufgabe:
+                                                Die von dieser Aufgabe erzeugten Prozesselementdatenebene
                                             </Typography>
                                             <ExpandableCodeBlock
                                                 value={JSON.stringify(item.nodeData, null, 2)}

@@ -1,6 +1,6 @@
-import React, {createContext, ReactNode, useContext, useState} from 'react';
+import React, {createContext, type ReactNode, useContext, useState} from 'react';
 import {ConfirmDialog} from '../dialogs/confirm-dialog/confirm-dialog';
-import {Theme, ThemeProvider, useTheme} from '@mui/material';
+import {type Theme, ThemeProvider, useTheme} from '@mui/material';
 
 interface ConfirmDialogOptions {
     title: string;
@@ -12,6 +12,7 @@ interface ConfirmDialogOptions {
     hideCancelButton?: boolean;
     children?: React.ReactNode;
     theme?: Theme;
+    width?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
 interface ConfirmContextProps {
@@ -22,18 +23,18 @@ const ConfirmContext = createContext<ConfirmContextProps | null>(null);
 
 export const useConfirm = () => {
     const context = useContext(ConfirmContext);
-    if (!context) {
+    if (context == null) {
         throw new Error('useConfirm must be used within a ConfirmProvider');
     }
     return context.showConfirm;
 };
 
-export const ConfirmProvider = ({children}: { children: ReactNode }) => {
+export const ConfirmProvider = ({children}: { children: ReactNode }): ReactNode => {
     const baseTheme = useTheme();
     const [dialogOptions, setDialogOptions] = useState<ConfirmDialogOptions | null>(null);
     const [resolveFn, setResolveFn] = useState<(value: boolean) => void>();
 
-    const showConfirm = (options: ConfirmDialogOptions) => {
+    const showConfirm = (options: ConfirmDialogOptions): Promise<boolean> => {
         return new Promise<boolean>((resolve) => {
             setDialogOptions({
                 ...options,
@@ -42,20 +43,24 @@ export const ConfirmProvider = ({children}: { children: ReactNode }) => {
         });
     };
 
-    const handleConfirm = () => {
-        if (resolveFn) resolveFn(true);
+    const handleConfirm = (): void => {
+        if (resolveFn != null) {
+            resolveFn(true);
+        }
         setDialogOptions(null);
     };
 
-    const handleCancel = () => {
-        if (resolveFn) resolveFn(false);
+    const handleCancel = (): void => {
+        if (resolveFn != null) {
+            resolveFn(false);
+        }
         setDialogOptions(null);
     };
 
     return (
         <ConfirmContext.Provider value={{showConfirm}}>
             {children}
-            {dialogOptions && (
+            {(dialogOptions != null) && (
                 <ThemeProvider theme={dialogOptions.theme ?? baseTheme}>
                     <ConfirmDialog
                         {...dialogOptions}

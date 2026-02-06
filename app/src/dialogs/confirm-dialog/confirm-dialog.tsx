@@ -1,4 +1,4 @@
-import {PropsWithChildren, useState} from 'react';
+import React, {type PropsWithChildren, type ReactNode, useState} from 'react';
 import {Button, Dialog, DialogActions, DialogContent, Typography} from '@mui/material';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
@@ -14,9 +14,10 @@ interface ConfirmDialogProps {
     isDestructive?: boolean;
     confirmButtonText?: string;
     hideCancelButton?: boolean;
+    width?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
-export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>) {
+export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>): ReactNode {
     const [inputValue, setInputValue] = useState('');
 
     const requiresInput = !!props.confirmationText;
@@ -26,6 +27,8 @@ export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>) {
         <Dialog
             open={props.onConfirm != null}
             onClose={props.onCancel}
+            fullWidth={true}
+            maxWidth={props.width || 'sm'}
         >
             <DialogTitleWithClose onClose={props.onCancel}>
                 {props.title}
@@ -43,7 +46,7 @@ export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>) {
                             <Typography
                                 component="pre"
                                 variant="body2"
-                                sx={{fontFamily: 'monospace', fontSize: 14, fontWeight: 'bold', backgroundColor: '#f0f0f0', py: .5, px: 1, borderRadius: 2, mt: 1}}
+                                sx={{fontFamily: 'monospace', fontSize: 14, fontWeight: 'bold', backgroundColor: '#f0f0f0', py: 0.5, px: 1, borderRadius: 2, mt: 1}}
                             >
                                 {props.confirmationText}
                             </Typography>
@@ -53,7 +56,7 @@ export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>) {
                             sx={{mt: 2}}
                             label={props.inputLabel || 'Eingabe zur Bestätigung'}
                             value={inputValue}
-                            onChange={(val) => setInputValue(val ?? '')}
+                            onChange={(val) => {setInputValue(val ?? '');}}
                         />
                     </>
                 )}

@@ -23,6 +23,7 @@ import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
+import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.utils.StringUtils;
@@ -32,11 +33,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class WebhookTriggerNode implements ProcessNodeDefinition, PluginComponent {
     public static final String NODE_KEY = "webhook";
     private static final String PORT_NAME = "input";
+
+    public static final String DATA_KEY_PAYLOAD = "payload";
+    public static final String DATA_KEY_ATTACHMENTS = "attachments";
+    public static final String DATA_KEY_REQUEST = "request";
 
     private final ProcessNodeRepository processDefinitionNodeRepository;
 
@@ -304,15 +310,37 @@ public class WebhookTriggerNode implements ProcessNodeDefinition, PluginComponen
             );
         }
 
+
         // Determine the result of this init execution
         var result = new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_NAME)
                 .setNodeData(context.getThisProcessInstance().getInitialPayload());
 
         // Copy the initial payload to the process data if configured
-        if (config.requestBodyConfig.copyToProcessData) {
-            result.setProcessData(context.getThisProcessInstance().getInitialPayload());
+        if (Boolean.TRUE.equals(config.requestBodyConfig.copyToProcessData)) {
+            Object payloadObj = context.getThisProcessInstance().getInitialPayload().get(DATA_KEY_PAYLOAD);
+
+            if (payloadObj == null) {
+                // If there is no payload, we can just set an empty map as process data
+                result.setProcessData(Map.of());
+            } else {
+                Map<String, Object> payload;
+                try {
+                    payload = (Map<String, Object>) payloadObj;
+                } catch (ClassCastException e) {
+                    throw new ProcessNodeExecutionExceptionUnknown(
+                            e,
+                            "Die Daten, die über den Webhook empfangen wurden, haben nicht das erwartete Format und können daher nicht verarbeitet werden. Erwartet wurde eon Objekt, aber es wurde %s empfangen.",
+                            StringUtils.quote(payloadObj.getClass().getName())
+                    );
+                }
+                result.setProcessData(payload);
+            }
+        } else {
+            result.setProcessData(Map.of());
         }
+
+        result.setNodeData(context.getThisProcessInstance().getInitialPayload());
 
         return result;
     }
