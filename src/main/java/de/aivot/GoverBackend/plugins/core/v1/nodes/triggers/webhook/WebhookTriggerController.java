@@ -16,7 +16,7 @@ import de.aivot.GoverBackend.process.services.ProcessInstanceService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,17 +34,17 @@ import java.util.stream.Collectors;
 public class WebhookTriggerController {
     private final ProcessInstanceService processInstanceService;
     private final ProcessTestClaimRepository processTestClaimRepository;
-    private final EntityManagerFactory entityManagerFactory;
+    private final EntityManager entityManager;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
 
     @Autowired
     public WebhookTriggerController(ProcessInstanceService processInstanceService,
                                     ProcessTestClaimRepository processTestClaimRepository,
-                                    EntityManagerFactory entityManagerFactory,
+                                    EntityManager entityManager,
                                     ProcessInstanceAttachmentService processInstanceAttachmentService) {
         this.processInstanceService = processInstanceService;
         this.processTestClaimRepository = processTestClaimRepository;
-        this.entityManagerFactory = entityManagerFactory;
+        this.entityManager = entityManager;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
     }
 
@@ -101,30 +101,28 @@ public class WebhookTriggerController {
                 .orElse(null) : null;
 
         ProcessNodeEntity nodeEntity;
-        try (var em = entityManagerFactory.createEntityManager()) {
-            Query query = em
-                    .createNativeQuery("""
-                            SELECT nod.* FROM process_nodes nod
-                                INNER JOIN process_versions ver ON nod.process_id = ver.process_id AND
-                                                                   nod.process_version = ver.process_version
-                                LEFT JOIN process_test_claims clm ON ver.process_id = clm.process_id AND
-                                                                     ver.process_version = clm.process_version AND
-                                                                     clm.access_key = :testClaimAccessKey
-                            WHERE process_node_definition_key = :processNodeDefinitionKey AND
-                                  configuration->'slug'->>'inputValue' = :slug AND
-                                  (clm.access_key IS NOT NULL OR ver.status = :statusPublished)
-                            """, ProcessNodeEntity.class)
-                    .setParameter("processNodeDefinitionKey", WebhookTriggerNode.NODE_KEY)
-                    .setParameter("slug", slug)
-                    .setParameter("testClaimAccessKey", testClaim != null ? testClaim.getAccessKey() : null)
-                    .setParameter("statusPublished", ProcessVersionStatus.Published);
-            try {
-                nodeEntity = (ProcessNodeEntity) query.getSingleResult();
-            } catch (ClassCastException e) {
-                throw ResponseException.internalServerError(e, "Der Webhook-Trigger-Knoten konnte nicht geladen werden.");
-            } catch (jakarta.persistence.NoResultException e) {
-                throw ResponseException.notFound("Kein Webhook-Knoten mit dem angegebenen Slug gefunden.");
-            }
+        Query query = entityManager
+                .createNativeQuery("""
+                        SELECT nod.* FROM process_nodes nod
+                            INNER JOIN process_versions ver ON nod.process_id = ver.process_id AND
+                                                               nod.process_version = ver.process_version
+                            LEFT JOIN process_test_claims clm ON ver.process_id = clm.process_id AND
+                                                                 ver.process_version = clm.process_version AND
+                                                                 clm.access_key = :testClaimAccessKey
+                        WHERE process_node_definition_key = :processNodeDefinitionKey AND
+                              configuration->'slug'->>'inputValue' = :slug AND
+                              (clm.access_key IS NOT NULL OR ver.status = :statusPublished)
+                        """, ProcessNodeEntity.class)
+                .setParameter("processNodeDefinitionKey", WebhookTriggerNode.NODE_KEY)
+                .setParameter("slug", slug)
+                .setParameter("testClaimAccessKey", testClaim != null ? testClaim.getAccessKey() : null)
+                .setParameter("statusPublished", ProcessVersionStatus.Published);
+        try {
+            nodeEntity = (ProcessNodeEntity) query.getSingleResult();
+        } catch (ClassCastException e) {
+            throw ResponseException.internalServerError(e, "Der Webhook-Trigger-Knoten konnte nicht geladen werden.");
+        } catch (jakarta.persistence.NoResultException e) {
+            throw ResponseException.notFound("Kein Webhook-Knoten mit dem angegebenen Slug gefunden.");
         }
 
         startProcess(testClaim, nodeEntity, request, payload, files, authToken, authorizationHeader);
