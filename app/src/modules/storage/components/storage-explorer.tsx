@@ -124,7 +124,6 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                         sm: 8,
                                         md: 4,
                                         lg: 2,
-                                        xl: 1,
                                     }}
                                 >
                                     <Button
