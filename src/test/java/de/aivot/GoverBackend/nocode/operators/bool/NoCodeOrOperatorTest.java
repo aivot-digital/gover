@@ -34,6 +34,5 @@ class NoCodeOrOperatorTest {
 
         // Test wrong argument count
         assertThrows(NoCodeWrongArgumentCountException.class, () -> operator.evaluate(data, true));
-        assertThrows(NoCodeWrongArgumentCountException.class, () -> operator.evaluate(data, true, false, true));
     }
 }

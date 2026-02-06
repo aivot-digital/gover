@@ -265,7 +265,7 @@ public class LocalDiskStorageProviderDefinition implements StorageProviderDefini
 
             if (file.isDirectory()) {
                 var subfolder = new StorageFolder(
-                        pathFromTheRootToThisFile,
+                        toSuffixWithSlash(pathFromTheRootToThisFile),
                         filename,
                         null,
                         new LinkedList<>(),

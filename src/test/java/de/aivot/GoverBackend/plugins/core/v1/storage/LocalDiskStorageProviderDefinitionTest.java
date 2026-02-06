@@ -15,7 +15,7 @@ class LocalDiskStorageProviderDefinitionTest {
     private LocalDiskStorageProviderDefinition.Config config;
 
     private static final String testRoot = ".storage-test/";
-    private static final String documentsFolder = "documents/";
+    private static final String documentsFolder = "/documents/";
 
     @BeforeEach
     void setUp() throws IOException {
@@ -58,7 +58,7 @@ class LocalDiskStorageProviderDefinitionTest {
         // Test returned folder object
         assertNotNull(target);
         assertEquals("new-folder", target.getName());
-        assertEquals("/new-folder", target.getPathFromRoot());
+        assertEquals("/new-folder/", target.getPathFromRoot());
 
         // Test folder exists in filesystem
         assertTrue(Files.isDirectory(Path.of(config.root, "new-folder")));
@@ -113,9 +113,9 @@ class LocalDiskStorageProviderDefinitionTest {
         var documentData = "This is a test document.".getBytes();
         var document = provider.storeDocument(config, documentPath, documentData);
         assertNotNull(document);
-        assertEquals("test-document.txt", document.filename());
-        assertEquals("/documents/test-document.txt", document.pathFromRoot());
-        assertEquals("txt", document.extension());
+        assertEquals("test-document.txt", document.getName());
+        assertEquals("/documents/test-document.txt", document.getPathFromRoot());
+        assertEquals("txt", document.getExtension());
     }
 
     @Test
@@ -131,9 +131,9 @@ class LocalDiskStorageProviderDefinitionTest {
         var retrievedDocumentOpt = provider.retrieveDocument(config, documentPath);
         assertTrue(retrievedDocumentOpt.isPresent());
         var retrievedDocument = retrievedDocumentOpt.get();
-        assertEquals("test-document.txt", retrievedDocument.filename());
-        assertEquals("/documents/test-document.txt", retrievedDocument.pathFromRoot());
-        assertEquals("txt", retrievedDocument.extension());
+        assertEquals("test-document.txt", retrievedDocument.getName());
+        assertEquals("/documents/test-document.txt", retrievedDocument.getPathFromRoot());
+        assertEquals("txt", retrievedDocument.getExtension());
     }
 
      @Test
