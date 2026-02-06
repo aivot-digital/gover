@@ -6,7 +6,7 @@ import {type ProcessInstanceEntity} from '../../entities/process-instance-entity
 import {ProcessInstanceApiService} from '../../services/process-instance-api-service';
 import {ProcessInstanceStatus, ProcessInstanceStatusLabels} from '../../enums/process-instance-status';
 import Refresh from '@aivot/mui-material-symbols-400-outlined/dist/refresh/Refresh';
-import React, {type ReactNode, useRef} from 'react';
+import React, {type ReactNode, useEffect, useRef, useState} from 'react';
 import {
     type GenericListPropsFetchOptions,
     type ListControlRef,
@@ -19,40 +19,46 @@ import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {ProcessDefinitionApiService} from '../../services/process-definition-api-service';
 import {type Page} from '../../../../models/dtos/page';
+import {useSearchParams} from 'react-router-dom';
 
 interface ProcessInstanceEntityWithProcessInfo extends ProcessInstanceEntity {
     processName: string;
 }
 
-async function fetchData(options: GenericListPropsFetchOptions<ProcessInstanceEntityWithProcessInfo>): Promise<Page<ProcessInstanceEntityWithProcessInfo>> {
-    const allProcesses = await new ProcessDefinitionApiService()
-        .listAll();
-
-    const instances = await new ProcessInstanceApiService()
-        .list(
-            options.page,
-            options.size,
-            options.sort !== 'processName' ? options.sort : 'processId',
-            options.order,
-            {
-                statusIsNot: options.filter === 'notCompleted' ? ProcessInstanceStatus.Completed : undefined,
-            },
-        );
-
-    return {
-        ...instances,
-        content: instances.content.map((instance) => {
-            const process = allProcesses.content.find((p) => p.id === instance.processId);
-            return {
-                ...instance,
-                processName: process != null ? process.internalTitle : `Prozess #${instance.processId}`,
-            };
-        }),
-    };
-}
-
 export function ProcessInstanceListPage(): ReactNode {
     const dispatch = useAppDispatch();
+    const [searchParams] = useSearchParams();
+    const processIdParam = searchParams.get('processId');
+    const processVersionParam = searchParams.get('processVersion');
+    const processId = processIdParam !== null && processIdParam !== '' ? Number(processIdParam) : undefined;
+    const processVersion = processVersionParam !== null && processVersionParam !== '' ? Number(processVersionParam) : undefined;
+
+    // State for the process definition for the badge
+    const [processDefinition, setProcessDefinition] = useState<any | null>(null);
+
+    useEffect((): () => void => {
+        let cancelled = false;
+
+        async function fetchProcessDefinition(): Promise<void> {
+            if (processId !== undefined) {
+                const allProcesses = await new ProcessDefinitionApiService().listAll();
+                const found = allProcesses.content.find(
+                    (p) => p.id === processId,
+                );
+                if (!cancelled) {
+                    setProcessDefinition(found ?? null);
+                }
+            } else {
+                setProcessDefinition(null);
+            }
+        }
+
+        void fetchProcessDefinition();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [processId]);
 
     const listRef = useRef<ListControlRef | null>(null);
 
@@ -75,6 +81,37 @@ export function ProcessInstanceListPage(): ReactNode {
     };
 
     const [showEventsForInstanceId, setShowEventsForInstanceId] = React.useState<number | null>(null);
+
+    // Wrap fetchData to inject processId and processVersion
+    const fetchDataWithParams = async (options: GenericListPropsFetchOptions<ProcessInstanceEntityWithProcessInfo>): Promise<Page<ProcessInstanceEntityWithProcessInfo>> => {
+        const allProcesses = await new ProcessDefinitionApiService().listAll();
+        const filter: any = {
+            statusIsNot: options.filter === 'notCompleted' ? ProcessInstanceStatus.Completed : undefined,
+        };
+        if (processId !== undefined) {
+            filter.processId = processId;
+        }
+        if (processVersion !== undefined) {
+            filter.processVersion = processVersion;
+        }
+        const instances = await new ProcessInstanceApiService().list(
+            options.page,
+            options.size,
+            options.sort !== 'processName' ? options.sort : 'processId',
+            options.order,
+            filter,
+        );
+        return {
+            ...instances,
+            content: instances.content.map((instance) => {
+                const process = allProcesses.content.find((p) => p.id === instance.processId);
+                return {
+                    ...instance,
+                    processName: process != null ? process.internalTitle : `Prozess #${instance.processId}`,
+                };
+            }),
+        };
+    };
 
     return (
         <>
@@ -99,6 +136,13 @@ export function ProcessInstanceListPage(): ReactNode {
                     header={{
                         icon: <ProcessChart/>,
                         title: 'Vorgänge',
+                        badge:
+                            (processDefinition !== null && processVersion !== undefined) ?
+                                {
+                                    label: `${String(processDefinition.internalTitle)} (Version ${processVersion})`,
+                                    color: 'primary',
+                                } :
+                                undefined,
                         actions: [
                             {
                                 tooltip: 'Refresh',
@@ -131,7 +175,7 @@ export function ProcessInstanceListPage(): ReactNode {
                     }}
                     searchLabel="Vorgang suchen"
                     searchPlaceholder="Schlüssel des Vorgangs eingeben…"
-                    fetch={fetchData}
+                    fetch={fetchDataWithParams}
                     columnIcon={<ProcessChart/>}
                     columnDefinitions={[
                         {
@@ -165,7 +209,7 @@ export function ProcessInstanceListPage(): ReactNode {
                             headerName: 'Gestartet am',
                             flex: 1,
                             renderCell: (params) => {
-                                if (!params.row.started) return '—';
+                                if (params.row.started === undefined || params.row.started === null || params.row.started === '') return '—';
                                 const date = new Date(params.row.started);
                                 return new Intl.DateTimeFormat('de-DE', {
                                     day: '2-digit',

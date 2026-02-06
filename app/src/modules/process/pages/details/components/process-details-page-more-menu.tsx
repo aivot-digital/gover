@@ -9,8 +9,9 @@ import BugReport from '@aivot/mui-material-symbols-400-outlined/dist/bug-report/
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {addSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../../slices/shell-slice';
+import {ModuleIcons} from '../../../../../shells/staff/data/module-icons';
 
-export type ProcessDetailsPageMoreMenuEvent = 'export' | 'test';
+export type ProcessDetailsPageMoreMenuEvent = 'export' | 'test' | 'instances';
 
 interface ProcessDetailsPageMoreMenuProps {
     anchorEl: null | HTMLElement;
@@ -106,6 +107,11 @@ const entries: Array<{
         event: 'export',
     },
     'separator',
+    {
+        icon: ModuleIcons.submissions,
+        label: 'Vorgänge anzeigen',
+        event: 'instances',
+    },
     {
         icon: <Science/>,
         label: 'Prozessmodellierung testen',

@@ -454,6 +454,9 @@ export function ProcessDetailsPage(): ReactNode {
             case 'test':
                 handleTest();
                 break;
+            case 'instances':
+                navigate(`/process-instances?processId=${processFlow?.definition.id}&processVersion=${processFlow?.version.processVersion}`);
+                break;
             default:
                 dispatch(addSnackbarMessage({
                     key: 'unknown-process-details-event',
