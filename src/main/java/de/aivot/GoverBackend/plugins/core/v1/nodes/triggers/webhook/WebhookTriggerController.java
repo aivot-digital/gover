@@ -4,20 +4,19 @@ import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.identity.controllers.IdentityController;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.process.entities.ProcessInstanceAttachmentEntity;
-import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
-import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
-import de.aivot.GoverBackend.process.entities.ProcessTestClaimEntity;
+import de.aivot.GoverBackend.process.entities.*;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessVersionStatus;
 import de.aivot.GoverBackend.process.repositories.ProcessTestClaimRepository;
 import de.aivot.GoverBackend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.GoverBackend.process.services.ProcessInstanceService;
+import de.aivot.GoverBackend.process.services.ProcessNodeService;
 import de.aivot.GoverBackend.utils.StringUtils;
+import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.Query;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -38,18 +37,18 @@ public class WebhookTriggerController {
 
     private final ProcessInstanceService processInstanceService;
     private final ProcessTestClaimRepository processTestClaimRepository;
-    private final EntityManager entityManager;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
+    private final ProcessNodeService processNodeService;
 
     @Autowired
     public WebhookTriggerController(ProcessInstanceService processInstanceService,
                                     ProcessTestClaimRepository processTestClaimRepository,
-                                    EntityManager entityManager,
-                                    ProcessInstanceAttachmentService processInstanceAttachmentService) {
+                                    ProcessInstanceAttachmentService processInstanceAttachmentService,
+                                    ProcessNodeService processNodeService) {
         this.processInstanceService = processInstanceService;
         this.processTestClaimRepository = processTestClaimRepository;
-        this.entityManager = entityManager;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
+        this.processNodeService = processNodeService;
     }
 
     @RequestMapping(value = "/api/public/webhooks/{slug}/", consumes = {
@@ -104,6 +103,37 @@ public class WebhookTriggerController {
                 .findByAccessKey(testClaimAccessKey)
                 .orElse(null) : null;
 
+        var specBuilder = SpecificationBuilder
+                .create(ProcessNodeEntity.class)
+                .withJsonEquals("configuration", List.of("slug", "inputValue"), slug);
+
+        if (testClaim != null) {
+            specBuilder = specBuilder
+                    .withEquals("processId", testClaim.getProcessId())
+                    .withEquals("processVersion", testClaim.getProcessVersion());
+        } else {
+            specBuilder.withSpecification((root, query, builder) -> {
+                Subquery<ProcessVersionEntity> subquery = query
+                        .subquery(ProcessVersionEntity.class);
+
+                Root<ProcessVersionEntity> versionRoot = subquery
+                        .from(ProcessVersionEntity.class);
+
+                subquery.select(versionRoot).where(
+                        builder.equal(versionRoot.get("processId"), root.get("processId")),
+                        builder.equal(versionRoot.get("processVersion"), root.get("processVersion")),
+                        builder.equal(versionRoot.get("status"), ProcessVersionStatus.Published)
+                );
+
+                return builder.exists(subquery);
+            });
+        }
+
+        var nodeEntity = processNodeService
+                .retrieve(specBuilder.build())
+                .orElseThrow(() -> ResponseException.notFound("Kein Webhook-Knoten mit dem angegebenen Slug gefunden."));
+
+/*
         ProcessNodeEntity nodeEntity;
         Query query = entityManager
                 .createNativeQuery("""
@@ -127,7 +157,11 @@ public class WebhookTriggerController {
             throw ResponseException.internalServerError(e, "Der Webhook-Trigger-Knoten konnte nicht geladen werden.");
         } catch (jakarta.persistence.NoResultException e) {
             throw ResponseException.notFound("Kein Webhook-Knoten mit dem angegebenen Slug gefunden.");
+        } finally {
+            entityManager.close();
         }
+
+ */
 
         startProcess(testClaim, nodeEntity, request, payload, files, authToken, authorizationHeader);
 
