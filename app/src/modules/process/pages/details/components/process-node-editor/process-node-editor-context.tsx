@@ -1,11 +1,13 @@
-import React, {createContext, useContext} from 'react';
+import {createContext, useContext} from 'react';
 import {type ProcessNodeEntity} from '../../../../entities/process-node-entity';
 import {type ProcessNodeProvider} from '../../../../services/process-node-provider-api-service';
 import {type GroupLayout} from '../../../../../../models/elements/form/layout/group-layout';
+import {type ProcessTestClaimEntity} from '../../../../entities/process-test-claim-entity';
 
 interface ProcessNodeEditorContextType {
     provider: ProcessNodeProvider;
     layout: GroupLayout;
+    testClaim: ProcessTestClaimEntity | null;
 
     node: ProcessNodeEntity;
     setNode: (node: ProcessNodeEntity) => void;

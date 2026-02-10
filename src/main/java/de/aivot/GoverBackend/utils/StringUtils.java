@@ -107,6 +107,10 @@ public class StringUtils {
         return "set" + capitalize(name);
     }
 
+    public static String encodeBase64String(String base64String) {
+        return java.util.Base64.getEncoder().encodeToString(base64String.getBytes());
+    }
+
     public static String decodeBase64String(String base64String) {
         byte[] decodedBytes = java.util.Base64.getDecoder().decode(base64String);
         return new String(decodedBytes);

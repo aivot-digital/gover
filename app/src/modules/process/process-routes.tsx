@@ -16,6 +16,9 @@ import {
 import {
     ProcessNodeEditorOutputsTab,
 } from './pages/details/components/process-node-editor/tabs/process-node-editor-outputs-tab';
+import {
+    ProcessNodeEditorTestingTab,
+} from './pages/details/components/process-node-editor/tabs/process-node-editor-testing-tab';
 
 export const processRoutes: RouteObject[] = [
     {
@@ -49,6 +52,10 @@ export const processRoutes: RouteObject[] = [
                     {
                         path: '/processes/:processId/versions/:processVersion/nodes/:nodeId/tabs/more',
                         element: <ProcessNodeEditorMoreTab/>,
+                    },
+                    {
+                        path: '/processes/:processId/versions/:processVersion/nodes/:nodeId/tabs/testing',
+                        element: <ProcessNodeEditorTestingTab/>,
                     },
                 ],
             },

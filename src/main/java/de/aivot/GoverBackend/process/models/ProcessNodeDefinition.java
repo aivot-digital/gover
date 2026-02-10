@@ -5,9 +5,9 @@ import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
+import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -93,6 +93,19 @@ public interface ProcessNodeDefinition {
         var layout = new ConfigLayoutElement();
         layout.setId(getKey() + "-config");
         return layout;
+    }
+
+    /**
+     * Get the testing layout for nodes of this provider type.
+     * This layout is used to display the node during testing of process definitions.
+     *
+     * @param context The testing context.
+     * @return The testing layout, or null if not provided.
+     * @throws ResponseException If an error occurs while generating the layout.
+     */
+    @Nullable
+    default GroupLayoutElement getTestingLayout(@Nonnull ProcessNodeDefinitionContextTesting context) throws ResponseException {
+        return null;
     }
 
     /**
@@ -196,7 +209,7 @@ public interface ProcessNodeDefinition {
      * @param update  The update data passed to this node.
      * @param event   The event that triggered the update.
      * @return An Optional containing the result of the node execution, or empty if the task was not updated.
-     * @throws ResponseException    If an error occurs during execution.
+     * @throws ResponseException             If an error occurs during execution.
      * @throws ProcessNodeExecutionException If an error occurs during execution.
      */
     default Optional<ProcessNodeExecutionResult> onUpdateFromStaff(@Nonnull ProcessNodeExecutionContextUIStaff context,
@@ -251,7 +264,7 @@ public interface ProcessNodeDefinition {
      * @param update  The update data passed to this node.
      * @param event   The event that triggered the update.
      * @return An Optional containing the result of the node execution, or empty if the task was not updated.
-     * @throws ResponseException    If an error occurs during execution.
+     * @throws ResponseException             If an error occurs during execution.
      * @throws ProcessNodeExecutionException If an error occurs during execution.
      */
     default Optional<ProcessNodeExecutionResult> onUpdateFromCustomer(@Nonnull ProcessNodeExecutionContextUICustomer context,

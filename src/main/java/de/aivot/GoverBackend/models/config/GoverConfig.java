@@ -55,6 +55,14 @@ public class GoverConfig {
         }
     }
 
+    public String createUrlWithTrailingSlash(String base, Object... parts) {
+        var url = createUrl(base, parts);
+        if (!url.endsWith("/")) {
+            url += "/";
+        }
+        return url;
+    }
+
     // region Getters & Setters
 
     public String getFromMail() {

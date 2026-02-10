@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
@@ -11,6 +12,8 @@ import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
 import de.aivot.GoverBackend.process.filters.ProcessNodeFilter;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextConfig;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextTesting;
+import de.aivot.GoverBackend.process.repositories.ProcessTestClaimRepository;
 import de.aivot.GoverBackend.process.services.ProcessNodeService;
 import de.aivot.GoverBackend.process.services.ProcessService;
 import de.aivot.GoverBackend.process.services.ProcessVersionService;
@@ -47,6 +50,7 @@ public class ProcessNodeController {
     private final ProcessService processDefinitionService;
     private final ProcessNodeDefinitionService processNodeProviderService;
     private final ProcessVersionService processDefinitionVersionService;
+    private final ProcessTestClaimRepository processTestClaimRepository;
 
     @Autowired
     public ProcessNodeController(AuditService auditService,
@@ -54,13 +58,14 @@ public class ProcessNodeController {
                                  ProcessNodeService processDefinitionNodeService,
                                  ProcessService processDefinitionService,
                                  ProcessNodeDefinitionService processNodeProviderService,
-                                 ProcessVersionService processDefinitionVersionService) {
+                                 ProcessVersionService processDefinitionVersionService, ProcessTestClaimRepository processTestClaimRepository) {
         this.auditService = auditService.createScopedAuditService(ProcessNodeController.class);
         this.userService = userService;
         this.processDefinitionNodeService = processDefinitionNodeService;
         this.processDefinitionService = processDefinitionService;
         this.processNodeProviderService = processNodeProviderService;
         this.processDefinitionVersionService = processDefinitionVersionService;
+        this.processTestClaimRepository = processTestClaimRepository;
     }
 
     @GetMapping("")
@@ -210,6 +215,51 @@ public class ProcessNodeController {
 
         return provider
                 .getConfigurationLayout(context);
+    }
+
+    @GetMapping("{id}/testing/")
+    @Operation(
+            summary = "Retrieve Process Definition Node Testing Layout",
+            description = "Retrieve the testing layout of a process definition node by its ID."
+    )
+    public GroupLayoutElement testing(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer id
+    ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var node = processDefinitionNodeService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        var provider = processNodeProviderService
+                .getProcessNodeDefinition(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
+                .orElseThrow(ResponseException::badRequest);
+
+        var processDefinition = processDefinitionService
+                .retrieve(node.getProcessId())
+                .orElseThrow(ResponseException::badRequest);
+
+        var processVersion = processDefinitionVersionService
+                .retrieve(ProcessVersionEntityId.of(processDefinition.getId(), node.getProcessVersion()))
+                .orElseThrow(ResponseException::badRequest);
+
+        var testClaim = processTestClaimRepository
+                .findByProcessIdAndProcessVersion(node.getProcessId(), node.getProcessVersion())
+                .orElseThrow(ResponseException::badRequest);
+
+        var context = new ProcessNodeDefinitionContextTesting(
+                user,
+                processDefinition,
+                processVersion,
+                node,
+                testClaim
+        );
+
+        return provider
+                .getTestingLayout(context);
     }
 }
 

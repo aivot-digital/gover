@@ -1,10 +1,12 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.triggers.webhook;
 
+import com.beust.jcommander.Strings;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.elements.models.elements.ElementVisibilityFunctions;
+import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
@@ -12,6 +14,7 @@ import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
 import de.aivot.GoverBackend.nocode.models.NoCodeReference;
 import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
@@ -26,12 +29,15 @@ import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInv
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
+import de.aivot.GoverBackend.utils.FormattedStringBuilder;
 import de.aivot.GoverBackend.utils.StringUtils;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -44,10 +50,13 @@ public class WebhookTriggerNode implements ProcessNodeDefinition, PluginComponen
     public static final String DATA_KEY_ATTACHMENTS = "attachments";
     public static final String DATA_KEY_REQUEST = "request";
 
+    private final GoverConfig goverConfig;
     private final ProcessNodeRepository processDefinitionNodeRepository;
 
     @Autowired
-    public WebhookTriggerNode(ProcessNodeRepository processDefinitionNodeRepository) {
+    public WebhookTriggerNode(GoverConfig goverConfig,
+                              ProcessNodeRepository processDefinitionNodeRepository) {
+        this.goverConfig = goverConfig;
         this.processDefinitionNodeRepository = processDefinitionNodeRepository;
     }
 
@@ -262,6 +271,138 @@ public class WebhookTriggerNode implements ProcessNodeDefinition, PluginComponen
         return configLayout;
     }
 
+    @Nullable
+    @Override
+    public GroupLayoutElement getTestingLayout(@Nonnull ProcessNodeDefinitionContextTesting context) throws ResponseException {
+        WebhookTriggerConfig config;
+        try {
+            config = getWebhookTriggerConfig(context.thisNode().getConfiguration());
+        } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
+            throw ResponseException.internalServerError(
+                    e,
+                    "Beim Abrufen der Webhook-Trigger-Konfiguration ist ein Fehler aufgetreten. Bitte überprüfen Sie die Knotenkonfiguration."
+            );
+        }
+
+        var layout = new GroupLayoutElement();
+        layout.setId("layout");
+        layout.setChildren(new LinkedList<>());
+
+        var triggerUrl = String.format(
+                "%s?%s=%s",
+                goverConfig.createUrlWithTrailingSlash("/api/public/webhooks", config.slug),
+                WebhookTriggerController.TEST_CLAIM_QUERY_PARAM,
+                context.testClaim().getAccessKey()
+        );
+
+        if (config.authRequired && WebhookTriggerConfig.AUTH_METHOD_OPTION_QUERY_PARAM.equals(config.authConfig.authMethod)) {
+            triggerUrl += String.format("&%s=%s", WebhookTriggerController.AUTH_TOKEN_QUERY_PARAM, config.authConfig.authToken);
+        }
+
+        var requestAllowsBody = WebhookTriggerConfig.REQUEST_METHOD_OPTION_POST.equals(config.requestMethod) ||
+                WebhookTriggerConfig.REQUEST_METHOD_OPTION_PATCH.equals(config.requestMethod) ||
+                WebhookTriggerConfig.REQUEST_METHOD_OPTION_PUT.equals(config.requestMethod);
+
+        var requestContentType = requestAllowsBody ? (WebhookTriggerConfig.REQUEST_BODY_TYPE_OPTION_JSON.equals(config.requestBodyConfig.requestBodyType) ?
+                "application/json" :
+                WebhookTriggerConfig.REQUEST_BODY_TYPE_OPTION_FORM.equals(config.requestBodyConfig.requestBodyType) ?
+                        "multipart/form-data" :
+                        "application/xml") : null;
+
+        var sb = new FormattedStringBuilder();
+
+        sb.append(
+                "<p>Um den Webhook-Trigger zu testen, können Sie einen HTTP-Request an die folgende URL senden:</p>" +
+                        "<p><a href=\"%s\">%s</a></p>",
+                triggerUrl,
+                triggerUrl
+        );
+
+        sb.append(
+                "<p>Stellen Sie sicher, dass Sie die HTTP-Methode <span class=\"inline-code\">%s</span> verwenden und " +
+                        "fügen Sie den Test-Schlüssel <span class=\"inline-code\">%s</span> als Query-Parameter " +
+                        "<span class=\"inline-code\">%s</span> hinzu, damit der Request authentifiziert ist.</p>",
+                config.requestMethod,
+                context.testClaim().getAccessKey(),
+                WebhookTriggerController.TEST_CLAIM_QUERY_PARAM
+        );
+
+        if (requestAllowsBody) {
+            sb.append(
+                    "<p>Da die HTTP-Methode <span class=\"inline-code\">%s</span> verwendet wird, können Sie zusätzlich " +
+                            "einen Request-Body mit den Daten senden, die im Testprozess verwendet werden sollen. " +
+                            "Wenn Sie keinen Request-Body senden, wird der Testprozess mit einem leeren Payload gestartet. " +
+                            "Sie müssen die Daten als <span class=\"inline-code\">%s</span> übertragen.</p>",
+                    config.requestMethod,
+                    requestContentType
+            );
+        }
+
+        if (config.authRequired) {
+            if (WebhookTriggerConfig.AUTH_METHOD_OPTION_QUERY_PARAM.equals(config.authConfig.authMethod)) {
+                sb.append(
+                        "<p>Da in der Knotenkonfiguration die Authentifizierung über einen Query-Parameter aktiviert ist, " +
+                                "müssen Sie zusätzlich den Authentifizierungs-Token als Query-Parameter " +
+                                "<span class=\"inline-code\">%s</span> hinzufügen.</p>",
+                        WebhookTriggerController.AUTH_TOKEN_QUERY_PARAM
+                );
+            } else if (WebhookTriggerConfig.AUTH_METHOD_OPTION_BASIC.equals(config.authConfig.authMethod)) {
+                sb.append(
+                        "<p>Da in der Knotenkonfiguration die Authentifizierung über Basic Auth aktiviert ist, " +
+                                "müssen Sie zusätzlich den Benutzernamen " +
+                                "<span class=\"inline-code\">%s</span> und das Passwort " +
+                                "<span class=\"inline-code\">%s</span> verwenden.",
+                        config.authConfig.authUsername,
+                        config.authConfig.authPassword
+                );
+            } else if (WebhookTriggerConfig.AUTH_METHOD_OPTION_BEARER.equals(config.authConfig.authMethod)) {
+                sb.append(
+                        "<p>Da in der Knotenkonfiguration die Authentifizierung über eine Bearer Token aktiviert ist, " +
+                                "müssen Sie zusätzlich den Authentifizierungs-Token <span class=\"inline-code\">%s</span> im " +
+                                "Authorization-Header mit dem Präfix <span>Bearer</span> hinzufügen.</p>",
+                        config.authConfig.authToken
+                );
+            }
+        }
+
+        var curlLines = new LinkedList<String>();
+        curlLines.add("--request " + config.requestMethod);
+        curlLines.add("--url '" + triggerUrl + "'");
+
+        if (requestAllowsBody) {
+            curlLines.add("--header 'Content-Type: " + requestContentType + "'");
+
+            if (WebhookTriggerConfig.REQUEST_BODY_TYPE_OPTION_FORM.equals(config.requestBodyConfig.requestBodyType)) {
+                curlLines.add("--form 'key=value'");
+                curlLines.add("--form 'file=@/path/to/file'");
+            } else if (WebhookTriggerConfig.REQUEST_BODY_TYPE_OPTION_JSON.equals(config.requestBodyConfig.requestBodyType)) {
+                curlLines.add("--data '{\"key\": \"value\"}'");
+            } else if (WebhookTriggerConfig.REQUEST_BODY_TYPE_OPTION_XML.equals(config.requestBodyConfig.requestBodyType)) {
+                curlLines.add("--data '<root><key>value</key></root>'");
+            }
+        }
+
+        if (config.authRequired) {
+            if (WebhookTriggerConfig.AUTH_METHOD_OPTION_BASIC.equals(config.authConfig.authMethod)) {
+                curlLines.add("--header 'Authorization: Basic " + StringUtils.encodeBase64String(config.authConfig.authUsername + ":" + config.authConfig.authPassword) + "'");
+            } else if (WebhookTriggerConfig.AUTH_METHOD_OPTION_BEARER.equals(config.authConfig.authMethod)) {
+                curlLines.add("--header 'Authorization: Bearer " + config.authConfig.authToken + "'");
+            }
+        }
+
+        sb.append("<p>Sie können den folgenden Shell-Befehl verwenden, um den Webhook-Trigger mit einem Test-Request zu testen:</p>");
+        sb.append("<pre class=\"code-block\">curl \\\n");
+        sb.append(Strings.join(" \\\n", curlLines.stream().map(l -> "  " + l).toList()));
+        sb.append("</pre>");
+
+        var rtx = new RichTextContentElement();
+        rtx.setId("text");
+        rtx.setContent(sb.toString());
+        layout.addChild(rtx);
+
+        return layout;
+    }
+
     @Override
     public void validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
                                       @Nonnull ElementData configuration) throws ResponseException {
@@ -299,17 +440,7 @@ public class WebhookTriggerNode implements ProcessNodeDefinition, PluginComponen
 
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
-        WebhookTriggerConfig config;
-        try {
-            config = ElementPOJOMapper
-                    .mapToPOJO(context.getThisNode().getConfiguration(), WebhookTriggerConfig.class);
-        } catch (ElementDataConversionException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    e,
-                    "Die Konfiguration des Webhook-Trigger-Knotens ist ungültig."
-            );
-        }
-
+        var config = getWebhookTriggerConfig(context.getThisNode().getConfiguration());
 
         // Determine the result of this init execution
         var result = new ProcessNodeExecutionResultTaskCompleted()
@@ -343,5 +474,20 @@ public class WebhookTriggerNode implements ProcessNodeDefinition, PluginComponen
         result.setNodeData(context.getThisProcessInstance().getInitialPayload());
 
         return result;
+    }
+
+    @Nonnull
+    private static WebhookTriggerConfig getWebhookTriggerConfig(@Nonnull ElementData configuration) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        WebhookTriggerConfig config;
+        try {
+            config = ElementPOJOMapper
+                    .mapToPOJO(configuration, WebhookTriggerConfig.class);
+        } catch (ElementDataConversionException e) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    e,
+                    "Die Konfiguration des Webhook-Trigger-Knotens ist ungültig."
+            );
+        }
+        return config;
     }
 }

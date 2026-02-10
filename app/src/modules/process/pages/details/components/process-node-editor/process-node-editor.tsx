@@ -24,6 +24,8 @@ import {getNodeName} from '../process-flow-editor/utils/node-utils';
 import {isApiError} from '../../../../../../models/api-error';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../../../slices/snackbar-slice';
 import {useAppDispatch} from '../../../../../../hooks/use-app-dispatch';
+import {type ProcessTestClaimEntity} from '../../../../entities/process-test-claim-entity';
+import {ProcessTestClaimApiService} from '../../../../services/process-test-claim-api-service';
 
 export function ProcessNodeEditor(): ReactNode {
     const params = useParams();
@@ -40,8 +42,8 @@ export function ProcessNodeEditor(): ReactNode {
     } = useProcessDetailsPageContext();
 
     const [provider, setProvider] = useState<ProcessNodeProvider | null>(null);
-
     const [editedNode, setEditedNode] = useState<ProcessNodeEntity | null>(null);
+    const [testClaim, setTestClaim] = useState<ProcessTestClaimEntity | null>(null);
     const [layout, setLayout] = useState<GroupLayout | null>(null);
     const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
 
@@ -52,6 +54,29 @@ export function ProcessNodeEditor(): ReactNode {
         }
         return parseInt(nodeId, 10);
     }, [params]);
+
+    useEffect(() => {
+        if (originalNode == null) {
+            setTestClaim(null);
+            return;
+        }
+
+        new ProcessTestClaimApiService()
+            .listAll({
+                processId: originalNode.processId,
+                processVersion: originalNode.processVersion,
+            })
+            .then((claims) => {
+                if (claims.content.length > 0) {
+                    setTestClaim(claims.content[0]);
+                } else {
+                    setTestClaim(null);
+                }
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Die Testansprüche für das Prozesselement konnten nicht geladen werden.'));
+            });
+    }, [originalNode]);
 
     const {
         dialog: changeBlockerDialog,
@@ -93,11 +118,17 @@ export function ProcessNodeEditor(): ReactNode {
 
         withDelay(new ProcessNodeApiService()
             .getConfigurationLayout(originalNode.id), 500)
-            .then(setLayout);
+            .then(setLayout)
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Die Konfigurationsoberfläche für das Prozesselement konnte nicht geladen werden.'));
+            });
 
         new ProcessNodeProviderApiService()
             .getNodeProvider(originalNode.processNodeDefinitionKey, originalNode.processNodeDefinitionVersion)
-            .then(setProvider);
+            .then(setProvider)
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Der Anbietertyp für das Prozesselement konnte nicht geladen werden.'));
+            });
     }, [originalNode]);
 
     const {
@@ -121,6 +152,8 @@ export function ProcessNodeEditor(): ReactNode {
             return 'outputs';
         } else if (location.pathname.endsWith('/tabs/more')) {
             return 'more';
+        } else if (location.pathname.endsWith('/tabs/testing')) {
+            return 'testing';
         }
         return 'configuration';
     }, [location]);
@@ -141,7 +174,7 @@ export function ProcessNodeEditor(): ReactNode {
         }
     };
 
-    const handleDeleteSelected = () => {
+    const handleDeleteSelected = (): void => {
         if (originalNode == null || provider == null) {
             return;
         }
@@ -278,6 +311,14 @@ export function ProcessNodeEditor(): ReactNode {
                             label="Weiteres"
                             value="more"
                         />
+
+                        {
+                            testClaim != null &&
+                            <Tab
+                                label="Testen"
+                                value="testing"
+                            />
+                        }
                     </Tabs>
 
                     <Box
@@ -292,6 +333,7 @@ export function ProcessNodeEditor(): ReactNode {
                             value={{
                                 provider,
                                 layout,
+                                testClaim,
                                 node: editedNode ?? originalNode,
                                 setNode: setEditedNode,
                                 isEditable: true,

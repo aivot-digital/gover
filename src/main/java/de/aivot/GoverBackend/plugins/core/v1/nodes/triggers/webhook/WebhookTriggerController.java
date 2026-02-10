@@ -32,6 +32,10 @@ import java.util.stream.Collectors;
 
 @RestController
 public class WebhookTriggerController {
+    public static final String TEST_CLAIM_QUERY_PARAM = "test-claim";
+    public static final String AUTH_TOKEN_QUERY_PARAM = "token";
+    public static final String AUTH_HEADER_NAME = "Authorization";
+
     private final ProcessInstanceService processInstanceService;
     private final ProcessTestClaimRepository processTestClaimRepository;
     private final EntityManager entityManager;
@@ -56,10 +60,10 @@ public class WebhookTriggerController {
             @Nonnull HttpServletRequest request,
             @Nonnull @PathVariable String slug,
             @Nonnull @RequestBody Map<String, Object> payload,
-            @Nullable @RequestParam(value = "test-claim", required = false) String testClaimAccessKey,
-            @Nullable @RequestParam(value = "token", required = false) String authToken,
+            @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
+            @Nullable @RequestParam(value = AUTH_TOKEN_QUERY_PARAM, required = false) String authToken,
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) UUID identityId,
-            @Nullable @RequestHeader(name = "Authorization", required = false) String authorizationHeader
+            @Nullable @RequestHeader(name = AUTH_HEADER_NAME, required = false) String authorizationHeader
     ) throws ResponseException {
         return handleRequest(request, slug, payload, Map.of(), testClaimAccessKey, authToken, authorizationHeader);
     }
@@ -70,10 +74,10 @@ public class WebhookTriggerController {
     public Response handleFormData(
             @Nonnull StandardMultipartHttpServletRequest request,
             @Nonnull @PathVariable String slug,
-            @Nullable @RequestParam(value = "test-claim", required = false) String testClaimAccessKey,
-            @Nullable @RequestParam(value = "token", required = false) String authToken,
+            @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
+            @Nullable @RequestParam(value = AUTH_TOKEN_QUERY_PARAM, required = false) String authToken,
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) UUID identityId,
-            @Nullable @RequestHeader(name = "Authorization", required = false) String authorizationHeader
+            @Nullable @RequestHeader(name = AUTH_HEADER_NAME, required = false) String authorizationHeader
     ) throws ResponseException {
         var payload = new HashMap<String, Object>();
         for (var entry : request.getParameterMap().entrySet()) {
