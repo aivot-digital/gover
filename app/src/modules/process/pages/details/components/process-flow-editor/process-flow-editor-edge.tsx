@@ -141,6 +141,9 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
                                 borderColor: HANDLE_COLOR,
                                 width: ADD_BUTTON_SIZE,
                                 height: ADD_BUTTON_SIZE,
+                                '&:hover': {
+                                    bgcolor: '#efefef',
+                                },
                             }}
                             onClick={() => {
                                 onAddInbetweenNode(treeEdge.edge.id);
@@ -164,6 +167,9 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
                                 borderColor: theme.palette.primary.main,
                                 width: ADD_BUTTON_SIZE,
                                 height: ADD_BUTTON_SIZE,
+                                '&:hover': {
+                                    bgcolor: '#efefef',
+                                },
                             }}
                             onClick={() => {
                                 confirm({

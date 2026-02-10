@@ -199,6 +199,10 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
                                 right: '-1rem',
                                 padding: 0.5,
                                 bgcolor: 'white',
+                                border: `2px solid ${theme.palette.primary.main}`,
+                                '&:hover': {
+                                    bgcolor: '#efefef',
+                                },
                             }}
                             size="small"
                             onClick={(event) => {
@@ -223,7 +227,7 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
                                 });
                             }}
                         >
-                            <DataObject/>
+                            <DataObject color="primary"/>
                         </IconButton>
                     }
                 </Paper>
