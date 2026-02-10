@@ -1,0 +1,5 @@
+@keyframes active-edge-dash-scroll {
+    to {
+        stroke-dashoffset: -20;
+    }
+}

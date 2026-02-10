@@ -1,6 +1,6 @@
 import React, {type ReactNode, useEffect, useMemo, useState} from 'react';
 import {Box, Paper, Typography} from '@mui/material';
-import {Outlet, useNavigate, useParams} from 'react-router-dom';
+import {Outlet, useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {type ProcessEntity} from '../../entities/process-entity';
 import {ProcessDefinitionVersionApiService} from '../../services/process-definition-version-api-service';
 import {type ProcessNodeEntity} from '../../entities/process-node-entity';
@@ -31,7 +31,6 @@ import {
 import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {ProcessFlowEditor} from './components/process-flow-editor/process-flow-editor';
 import {ReactFlowProvider} from '@xyflow/react';
-import ProcessChart from '@aivot/mui-material-symbols-400-outlined/dist/process-chart/ProcessChart';
 import {ProcessDetailsPageProvider} from './process-details-page-context';
 import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
 import {
@@ -46,6 +45,11 @@ import {type User} from '../../../users/models/user';
 import {UsersApiService} from '../../../users/users-api-service';
 import {useUser} from '../../../../hooks/use-admin-guard';
 import {resolveUserName} from '../../../users/utils/resolve-user-name';
+import {type ProcessInstanceEntity} from '../../entities/process-instance-entity';
+import {type ProcessInstanceTaskEntity} from '../../entities/process-instance-task-entity';
+import {type ProcessInstanceEventEntity} from '../../entities/process-instance-event-entity';
+import {ProcessInstanceApiService} from '../../services/process-instance-api-service';
+import {ProcessInstanceTaskApiService} from '../../services/process-instance-task-api-service';
 
 export interface ProcessFlow {
     definition: ProcessEntity;
@@ -56,13 +60,18 @@ export interface ProcessFlow {
 
 export function ProcessDetailsPage(): ReactNode {
     const params = useParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const confirm = useConfirm();
     const user = useUser();
 
     const [processFlow, setProcessFlow] = useState<ProcessFlow | null>(null);
-
+    const [runtimeData, setRuntimeData] = useState<{
+        instance: ProcessInstanceEntity;
+        tasks: ProcessInstanceTaskEntity[];
+        events: ProcessInstanceEventEntity[];
+    } | null>(null);
     const [availableNodeProviders, setAvailableNodeProviders] = useState<ProcessNodeProvider[]>([]);
 
     const [showAddTriggerDialog, setShowAddTriggerDialog] = useState(false);
@@ -103,6 +112,14 @@ export function ProcessDetailsPage(): ReactNode {
             processVersion: parseInt(processVersion ?? '0'),
         };
     }, [params]);
+
+    const instanceId = useMemo(() => {
+        const instanceIdParam = searchParams.get('instanceId');
+        if (instanceIdParam == null) {
+            return null;
+        }
+        return parseInt(instanceIdParam);
+    }, [searchParams]);
 
     // Load the process flow whenever the process id or version changes
     useEffect(() => {
@@ -165,6 +182,37 @@ export function ProcessDetailsPage(): ReactNode {
                 dispatch(showApiErrorSnackbar(err, 'Die Testansprüche konnten nicht geladen werden.'));
             });
     }, [processId, processVersion]);
+
+    useEffect(() => {
+        if (instanceId == null) {
+            setRuntimeData(null);
+            return;
+        }
+
+        new ProcessInstanceApiService()
+            .retrieve(instanceId)
+            .then((instance) => {
+                return Promise.all([
+                    Promise.resolve(instance),
+                    new ProcessInstanceTaskApiService().listAll({
+                        processInstanceId: instanceId,
+                    }),
+                    /* new ProcessInstanceEventApiService().listAll({
+                        processInstanceId: instanceId,
+                    })*/Promise.resolve([]),
+                ]);
+            })
+            .then(([instance, tasks, events]) => {
+                setRuntimeData({
+                    instance,
+                    tasks: tasks.content,
+                    events: [],
+                });
+            })
+            .catch((error) => {
+                dispatch(showApiErrorSnackbar(error, 'Die Prozessinstanz konnte nicht geladen werden.'));
+            });
+    }, [instanceId]);
 
     const handleAddFlowTrigger = (nodeProvider: ProcessNodeProvider): void => {
         if (processFlow == null) {
@@ -601,7 +649,7 @@ export function ProcessDetailsPage(): ReactNode {
                                         return;
                                     }
                                     setSelectedNode(node);
-                                    navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}/nodes/${node.id}`);
+                                    navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}/nodes/${node.id}?${searchParams.toString()}`);
                                 }}
                                 onAddFollowUpNode={(fromNodeId, viaPort) => {
                                     setNewNodeFor({
@@ -654,6 +702,7 @@ export function ProcessDetailsPage(): ReactNode {
                                             });
                                         });
                                 }}
+                                runtimeData={runtimeData}
                             />
                         </ReactFlowProvider>
                     </Box>
@@ -661,7 +710,7 @@ export function ProcessDetailsPage(): ReactNode {
 
                 <Paper
                     sx={{
-                        width: 680,
+                        width: 480,
                         height: '100vh',
                         borderLeft: '1px solid #ccc',
                     }}

@@ -3,7 +3,7 @@ import React, {type ReactNode, useEffect, useMemo, useState} from 'react';
 import {type GroupLayout} from '../../../../../../models/elements/form/layout/group-layout';
 import {ProcessNodeApiService} from '../../../../services/process-node-api-service';
 import {Box, Button, IconButton, Skeleton, Tab, Tabs} from '@mui/material';
-import {Link, Outlet, useNavigate, useParams} from 'react-router-dom';
+import {Link, Outlet, useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {useProcessDetailsPageContext} from '../../process-details-page-context';
 import {withDelay} from '../../../../../../utils/with-delay';
 import {ProviderTypeStyles} from '../../../../data/provider-type-styles';
@@ -29,6 +29,7 @@ import {ProcessTestClaimApiService} from '../../../../services/process-test-clai
 
 export function ProcessNodeEditor(): ReactNode {
     const params = useParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
     const location = useLocation();
     const confirm = useConfirm();
@@ -291,7 +292,7 @@ export function ProcessNodeEditor(): ReactNode {
                     <Tabs
                         value={currentTab}
                         onChange={(_, value) => {
-                            navigate(`/processes/${params.processId}/versions/${params.processVersion}/nodes/${originalNode.id}/tabs/${value}`);
+                            navigate(`/processes/${params.processId}/versions/${params.processVersion}/nodes/${originalNode.id}/tabs/${value}?${searchParams.toString()}`);
                         }}
                         sx={{
                             boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',

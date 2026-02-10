@@ -37,6 +37,10 @@ public class ProcessInstanceEntity {
     private Integer processId;
 
     @Nonnull
+    @NotNull(message = "Die Initial-Prozessversion darf nicht null sein.")
+    private Integer initialProcessVersion;
+
+    @Nonnull
     @NotNull(message = "Der Prozessinstanz-Status darf nicht null sein.")
     @Column(columnDefinition = "int2")
     private ProcessInstanceStatus status;
@@ -101,6 +105,7 @@ public class ProcessInstanceEntity {
     public ProcessInstanceEntity(@Nonnull Long id,
                                  @Nonnull UUID accessKey,
                                  @Nonnull Integer processId,
+                                 @Nonnull Integer initialProcessVersion,
                                  @Nonnull ProcessInstanceStatus status,
                                  @Nullable String statusOverride,
                                  @Nullable String assignedUserId,
@@ -117,6 +122,7 @@ public class ProcessInstanceEntity {
         this.id = id;
         this.accessKey = accessKey;
         this.processId = processId;
+        this.initialProcessVersion = initialProcessVersion;
         this.status = status;
         this.statusOverride = statusOverride;
         this.assignedUserId = assignedUserId;
@@ -140,12 +146,12 @@ public class ProcessInstanceEntity {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         ProcessInstanceEntity instance = (ProcessInstanceEntity) o;
-        return Objects.equals(id, instance.id) && Objects.equals(accessKey, instance.accessKey) && Objects.equals(processId, instance.processId) && status == instance.status && Objects.equals(statusOverride, instance.statusOverride) && Objects.equals(assignedUserId, instance.assignedUserId) && Objects.equals(assignedFileNumbers, instance.assignedFileNumbers) && Objects.equals(identities, instance.identities) && Objects.equals(started, instance.started) && Objects.equals(updated, instance.updated) && Objects.equals(finished, instance.finished) && Objects.equals(runtime, instance.runtime) && Objects.equals(initialPayload, instance.initialPayload) && Objects.equals(initialNodeId, instance.initialNodeId) && Objects.equals(keepUntil, instance.keepUntil) && Objects.equals(createdForTestClaimId, instance.createdForTestClaimId);
+        return Objects.equals(id, instance.id) && Objects.equals(accessKey, instance.accessKey) && Objects.equals(processId, instance.processId) && Objects.equals(initialProcessVersion, instance.initialProcessVersion) && status == instance.status && Objects.equals(statusOverride, instance.statusOverride) && Objects.equals(assignedUserId, instance.assignedUserId) && Objects.equals(assignedFileNumbers, instance.assignedFileNumbers) && Objects.equals(identities, instance.identities) && Objects.equals(started, instance.started) && Objects.equals(updated, instance.updated) && Objects.equals(finished, instance.finished) && Objects.equals(runtime, instance.runtime) && Objects.equals(initialPayload, instance.initialPayload) && Objects.equals(initialNodeId, instance.initialNodeId) && Objects.equals(keepUntil, instance.keepUntil) && Objects.equals(createdForTestClaimId, instance.createdForTestClaimId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, accessKey, processId, status, statusOverride, assignedUserId, assignedFileNumbers, identities, started, updated, finished, runtime, initialPayload, initialNodeId, keepUntil, createdForTestClaimId);
+        return Objects.hash(id, accessKey, processId, initialProcessVersion, status, statusOverride, assignedUserId, assignedFileNumbers, identities, started, updated, finished, runtime, initialPayload, initialNodeId, keepUntil, createdForTestClaimId);
     }
 
     // endregion
@@ -179,6 +185,16 @@ public class ProcessInstanceEntity {
 
     public ProcessInstanceEntity setProcessId(@Nonnull Integer processDefinitionId) {
         this.processId = processDefinitionId;
+        return this;
+    }
+
+    @Nonnull
+    public Integer getInitialProcessVersion() {
+        return initialProcessVersion;
+    }
+
+    public ProcessInstanceEntity setInitialProcessVersion(@Nonnull Integer initialProcessVersion) {
+        this.initialProcessVersion = initialProcessVersion;
         return this;
     }
 

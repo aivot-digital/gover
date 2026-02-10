@@ -192,6 +192,7 @@ public class WebhookTriggerController {
                 null,
                 null,
                 nodeEntity.getProcessId(),
+                nodeEntity.getProcessVersion(),
                 ProcessInstanceStatus.Paused, // Start paused to prevent the ProcessStarter from picking it up before we have added the attachments and initial payload
                 null,
                 null,
@@ -209,60 +210,67 @@ public class WebhookTriggerController {
 
         var createdInstance = processInstanceService.create(instance);
 
-        var attachments = new LinkedList<ProcessInstanceAttachmentEntity>();
-        for (var fileEntry : files.entrySet()) {
-            var file = fileEntry.getValue();
+        try {
+            var attachments = new LinkedList<ProcessInstanceAttachmentEntity>();
+            for (var fileEntry : files.entrySet()) {
+                var file = fileEntry.getValue();
 
-            byte[] bytes;
-            try {
-                bytes = file.getBytes();
-            } catch (IOException e) {
-                throw ResponseException.internalServerError(e, "Fehler beim Lesen der hochgeladenen Datei.");
+                byte[] bytes;
+                try {
+                    bytes = file.getBytes();
+                } catch (IOException e) {
+                    throw ResponseException.internalServerError(e, "Fehler beim Lesen der hochgeladenen Datei.");
+                }
+
+                var attachment = new ProcessInstanceAttachmentEntity(
+                        null,
+                        file.getOriginalFilename() != null ? file.getOriginalFilename() : "Unbenannte Datei.dat",
+                        createdInstance.getId(),
+                        null,
+                        null,
+                        null,
+                        null,
+                        bytes
+                );
+
+                var createdAttachment = processInstanceAttachmentService
+                        .create(attachment);
+
+                attachments.add(createdAttachment);
             }
 
-            var attachment = new ProcessInstanceAttachmentEntity(
-                    null,
-                    file.getOriginalFilename() != null ? file.getOriginalFilename() : "Unbenannte Datei.dat",
-                    createdInstance.getId(),
-                    null,
-                    null,
-                    null,
-                    null,
-                    bytes
-            );
+            var initialPayload = new HashMap<String, Object>();
+            initialPayload.put(WebhookTriggerNode.DATA_KEY_PAYLOAD, payload);
+            initialPayload.put(WebhookTriggerNode.DATA_KEY_ATTACHMENTS, attachments.stream().map((a) -> Map.<String, Object>of(
+                    "key", a.getKey(),
+                    "filename", a.getFileName(),
+                    "storageProviderId", a.getStorageProviderId(),
+                    "storagePathFromRoot", a.getStoragePathFromRoot()
+            )).toList());
 
-            var createdAttachment = processInstanceAttachmentService
-                    .create(attachment);
+            var requestData = new HashMap<String, Object>();
+            requestData.put("method", request.getMethod());
+            requestData.put("headers", Collections
+                    .list(request.getHeaderNames())
+                    .stream()
+                    .collect(Collectors.toMap(
+                            headerName -> headerName,
+                            headerName -> Collections.list(request.getHeaders(headerName))
+                    )));
+            requestData.put("queryParameters", request.getParameterMap());
+            initialPayload.put(WebhookTriggerNode.DATA_KEY_REQUEST, requestData);
 
-            attachments.add(createdAttachment);
+            createdInstance
+                    .setInitialPayload(initialPayload)
+                    .setStatus(ProcessInstanceStatus.Created);
+
+            processInstanceService.update(createdInstance.getId(), createdInstance);
+        } catch (Exception e) {
+            // TODO: Log the exception
+            createdInstance.setStatus(ProcessInstanceStatus.Failed);
+            processInstanceService.update(createdInstance.getId(), createdInstance);
+            throw e;
         }
-
-        var initialPayload = new HashMap<String, Object>();
-        initialPayload.put(WebhookTriggerNode.DATA_KEY_PAYLOAD, payload);
-        initialPayload.put(WebhookTriggerNode.DATA_KEY_ATTACHMENTS, attachments.stream().map((a) -> Map.<String, Object>of(
-                "key", a.getKey(),
-                "filename", a.getFileName(),
-                "storageProviderId", a.getStorageProviderId(),
-                "storagePathFromRoot", a.getStoragePathFromRoot()
-        )).toList());
-
-        var requestData = new HashMap<String, Object>();
-        requestData.put("method", request.getMethod());
-        requestData.put("headers", Collections
-                .list(request.getHeaderNames())
-                .stream()
-                .collect(Collectors.toMap(
-                        headerName -> headerName,
-                        headerName -> Collections.list(request.getHeaders(headerName))
-                )));
-        requestData.put("queryParameters", request.getParameterMap());
-        initialPayload.put(WebhookTriggerNode.DATA_KEY_REQUEST, requestData);
-
-        createdInstance
-                .setInitialPayload(initialPayload)
-                .setStatus(ProcessInstanceStatus.Created);
-
-        processInstanceService.update(createdInstance.getId(), createdInstance);
     }
 
     @Nonnull

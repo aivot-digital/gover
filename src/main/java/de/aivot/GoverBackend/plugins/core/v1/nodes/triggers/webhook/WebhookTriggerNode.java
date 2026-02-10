@@ -359,7 +359,7 @@ public class WebhookTriggerNode implements ProcessNodeDefinition, PluginComponen
                 sb.append(
                         "<p>Da in der Knotenkonfiguration die Authentifizierung über eine Bearer Token aktiviert ist, " +
                                 "müssen Sie zusätzlich den Authentifizierungs-Token <span class=\"inline-code\">%s</span> im " +
-                                "Authorization-Header mit dem Präfix <span>Bearer</span> hinzufügen.</p>",
+                                "Authorization-Header mit dem Präfix <span class=\"inline-code\">Bearer</span> hinzufügen.</p>",
                         config.authConfig.authToken
                 );
             }
@@ -378,7 +378,7 @@ public class WebhookTriggerNode implements ProcessNodeDefinition, PluginComponen
             } else if (WebhookTriggerConfig.REQUEST_BODY_TYPE_OPTION_JSON.equals(config.requestBodyConfig.requestBodyType)) {
                 curlLines.add("--data '{\"key\": \"value\"}'");
             } else if (WebhookTriggerConfig.REQUEST_BODY_TYPE_OPTION_XML.equals(config.requestBodyConfig.requestBodyType)) {
-                curlLines.add("--data '<root><key>value</key></root>'");
+                curlLines.add("--data '&lt;root&gt;&lt;key&gt;value&lt;/key&gt;&lt;/root&gt;'");
             }
         }
 

@@ -1,16 +1,18 @@
 import {Handle, type NodeProps, Position} from '@xyflow/react';
 import {Box, Divider, Paper, useTheme} from '@mui/material';
-import React, {type ReactNode, useContext, useMemo} from 'react';
+import React, {type ReactNode, useMemo} from 'react';
 import Typography from '@mui/material/Typography';
 import {ProcessNodeType} from '../../../../services/process-node-provider-api-service';
 import Assignment from '@aivot/mui-material-symbols-400-outlined/dist/assignment/Assignment';
 import {ProviderTypeStyles} from '../../../../data/provider-type-styles';
 import {KnownProviderIcons} from '../../../../data/known-provider-icons';
 import {ProcessFlowEditorNodeHandle} from './process-flow-editor-node-handle';
-import {ProcessFlowEditorContext} from './process-flow-editor-context';
+import {useProcessFlowEditorContext} from './process-flow-editor-context';
 import {HANDLE_SIZE, NODE_WIDTH} from './data/process-flow-constants';
 import {type FlowNode} from './utils/layout-utils';
 import {getNodeDescription, getNodeName} from './utils/node-utils';
+import {ProcessTaskStatus} from '../../../../enums/process-task-status';
+import {ProcessInstanceTaskStatusIcon} from '../../../../components/process-instance-task-status-icon';
 
 export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
     const theme = useTheme();
@@ -25,7 +27,8 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
         onAddFollowUpNode,
         onDeleteEdge,
         showTargetHandles,
-    } = useContext(ProcessFlowEditorContext);
+        runtimeData,
+    } = useProcessFlowEditorContext();
 
     const {
         treeNode,
@@ -35,6 +38,25 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
         node,
         provider,
     } = treeNode;
+
+    const associatedTask = useMemo(() => {
+        if (runtimeData == null) {
+            return null;
+        }
+
+        const treeNode = data?.treeNode;
+        if (treeNode == null) {
+            return null;
+        }
+
+        return runtimeData
+            .tasks
+            .find((task) => (
+                task.processNodeId === treeNode.node.id
+            )) ?? null;
+    }, [runtimeData]);
+
+    const wasPerformed = associatedTask != null;
 
     const {
         Icon: TypeIcon,
@@ -115,6 +137,7 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
                             display: 'flex',
                             alignItems: 'center',
                             padding: 1,
+                            width: '100%',
                         }}
                     >
                         <ProviderIcon
@@ -126,6 +149,20 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
                         <Typography>
                             {getNodeName(node, provider)}
                         </Typography>
+
+                        {
+                            associatedTask != null &&
+                            <Box
+                                sx={{
+                                    ml: 'auto',
+                                }}
+                            >
+                                <ProcessInstanceTaskStatusIcon
+                                    status={associatedTask.status}
+                                    statusOverride={associatedTask.statusOverride}
+                                />
+                            </Box>
+                        }
                     </Box>
 
                     {/* Divider */}
@@ -184,6 +221,7 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
                                 <ProcessFlowEditorNodeHandle
                                     key={port.key}
                                     editable={editable}
+                                    wasPerformed={wasPerformed}
                                     isConnected={data.treeNode.children.some((c) => c.port.key === port.key)}
                                     port={port}
                                     onClick={() => {

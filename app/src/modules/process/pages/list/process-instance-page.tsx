@@ -20,6 +20,7 @@ import {showApiErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {ProcessDefinitionApiService} from '../../services/process-definition-api-service';
 import {type Page} from '../../../../models/dtos/page';
 import {useSearchParams} from 'react-router-dom';
+import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 
 interface ProcessInstanceEntityWithProcessInfo extends ProcessInstanceEntity {
     processName: string;
@@ -184,7 +185,7 @@ export function ProcessInstanceListPage(): ReactNode {
                             flex: 1,
                             renderCell: (params) => (
                                 <CellLink
-                                    to={`/processes/${params.row.processId}/versions/${params.row.processVersion}/instances/${params.row.id}/tasks`}
+                                    to={`/processes/${params.row.processId}/versions/${params.row.initialProcessVersion}/instances/${params.row.id}/tasks`}
                                     title="Aufrufen"
                                 >
                                     {String(params.value)}
@@ -197,7 +198,7 @@ export function ProcessInstanceListPage(): ReactNode {
                             flex: 1,
                             renderCell: (params) => (
                                 <CellLink
-                                    to={`/processes/${params.row.processId}/versions/${params.row.processVersion}/instances/${params.row.id}/tasks`}
+                                    to={`/processes/${params.row.processId}/versions/${params.row.initialProcessVersion}/instances/${params.row.id}/tasks`}
                                     title="Aufrufen"
                                 >
                                     {String(params.value)}
@@ -251,6 +252,11 @@ export function ProcessInstanceListPage(): ReactNode {
                             onClick: () => {
                                 setShowEventsForInstanceId(item.id);
                             },
+                        },
+                        {
+                            icon: ModuleIcons.processes,
+                            tooltip: 'Prozessverlauf Einsehen',
+                            to: `/processes/${item.processId}/versions/${item.initialProcessVersion}/?instanceId=${item.id}`,
                         },
                     ]}
                     defaultSortField="started"

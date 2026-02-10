@@ -2,13 +2,17 @@
 create table process_instances
 (
     -- The unique ID of this process instance
-    id                    bigserial     not null,
+    id                      bigserial     not null,
     -- The key of this process instance.
     -- Public access to this process instance is done via this key.
-    access_key            uuid          not null,
+    access_key              uuid          not null,
 
     -- The process definition version this instance is based on
-    process_id            int           not null,
+    process_id              int           not null,
+
+    -- The version of the process definition this instance is initially based on.
+    -- This is not necessarily the same version as all nodes of this process instance reference, because the process definition version might have been updated after this process instance was started.
+    initial_process_version int           not null,
 
     -- The status of this process instance
     -- Options are:
@@ -18,38 +22,38 @@ create table process_instances
     --   3 - Completed (all nodes reached an end state)
     --   4 - Aborted (by user)
     --   5 - Failed
-    status                smallint      not null default 0,
+    status                  smallint      not null default 0,
     -- The status override triggered by nodes
-    status_override       varchar(96)   null,
+    status_override         varchar(96)   null,
 
     -- The user assigned to this process instance, if any
-    assigned_user_id      varchar(36)   null,
+    assigned_user_id        varchar(36)   null,
 
     -- A list of assigned file numbers for this process instance
-    assigned_file_numbers varchar(96)[] not null default '{}',
+    assigned_file_numbers   varchar(96)[] not null default '{}',
 
     -- A list of identities, assigned to this process instance
-    identities            jsonb         not null default '{}',
+    identities              jsonb         not null default '{}',
 
     -- The timestamp when this process instance was started
-    started               timestamp     not null default now(),
+    started                 timestamp     not null default now(),
 
     -- The timestamp when this process instance was last updated
-    updated               timestamp     not null default now(),
+    updated                 timestamp     not null default now(),
 
     -- The timestamp when this process instance was finished either by completion, failure or abortion
-    finished              timestamp     null,
+    finished                timestamp     null,
 
     -- The total runtime of this process instance
-    runtime               interval generated always as (finished - started) stored,
+    runtime                 interval generated always as (finished - started) stored,
 
     -- The initial payload provided when starting this process instance
-    initial_payload       jsonb         not null default '{}',
+    initial_payload         jsonb         not null default '{}',
     -- The ID of the initial node where this process instance started
-    initial_node_id       int           not null,
+    initial_node_id         int           not null,
 
     -- Keep until timestamp
-    keep_until            timestamp     null,
+    keep_until              timestamp     null,
 
     primary key (id),
     unique (access_key),

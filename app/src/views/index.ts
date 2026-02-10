@@ -1,5 +1,5 @@
 import {ElementType} from '../data/element-type/element-type';
-import {BaseView} from './base-view';
+import {type BaseView} from './base-view';
 import {TextFieldView} from './text-field-view';
 import {CheckboxFieldView} from './checkbox-field-view';
 import {NumberFieldView} from './number-field-view';
@@ -22,9 +22,9 @@ import {GeneralInformationComponentView} from '../components/general-information
 import {SummaryComponentView} from '../components/summary/summary.component.view';
 import {SubmitComponentView} from '../components/submit/submit.component.view';
 import {FileUploadView} from '../components/file-upload-field/file-upload.view';
-import {CodeInputView} from "./code-input-view";
-import {FunctionInputView} from "./function-input-view";
-import {RichTextView} from "./rich-text-input-view";
+import {CodeInputView} from './code-input-view';
+import {FunctionInputView} from './function-input-view';
+import {RichTextView} from './rich-text-input-view';
 
 export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.FormLayout]: RootComponentView,

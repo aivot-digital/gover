@@ -173,8 +173,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     dispatch(showSuccessSnackbar('Änderungen am Speicheranbieter erfolgreich gespeichert.'));
                 }
             } catch (err) {
-                console.error(err);
-                dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
             } finally {
                 setIsBusy(false);
             }

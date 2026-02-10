@@ -6,13 +6,16 @@ import {Background, BackgroundVariant, ReactFlow, useEdgesState, useNodesState, 
 import {type ProcessNodeEntity} from '../../../../entities/process-node-entity';
 import {ProcessFlowEditorNode} from './process-flow-editor-node';
 import {ProcessFlowEditorEdge} from './process-flow-editor-edge';
-import {ProcessFlowEditorContext} from './process-flow-editor-context';
+import {ProcessFlowEditorProvider} from './process-flow-editor-context';
 import {DEFAULT_FLOW_EDGE_TYPE, DEFAULT_FLOW_NODE_TYPE} from './data/process-flow-constants';
 import {type FlowEdge, type FlowNode, layoutElements} from './utils/layout-utils';
 import {Box} from '@mui/material';
 import {Actions} from '../../../../../../components/actions/actions';
 import MobileLayout from '@aivot/mui-material-symbols-400-outlined/dist/mobile-layout/MobileLayout';
 import FitScreen from '@aivot/mui-material-symbols-400-outlined/dist/fit-screen/FitScreen';
+import {type ProcessInstanceEntity} from '../../../../entities/process-instance-entity';
+import {type ProcessInstanceTaskEntity} from '../../../../entities/process-instance-task-entity';
+import {type ProcessInstanceEventEntity} from '../../../../entities/process-instance-event-entity';
 
 interface ProcessFlowEditorProps {
     editable: boolean;
@@ -28,6 +31,12 @@ interface ProcessFlowEditorProps {
 
     onAddFollowUpNode?: (fromNodeId: number, viaPortKey: string) => void;
     onAddInbetweenNode?: (forEdgeId: number) => void;
+
+    runtimeData: {
+        instance: ProcessInstanceEntity;
+        tasks: ProcessInstanceTaskEntity[];
+        events: ProcessInstanceEventEntity[];
+    } | null;
 }
 
 const NodeTypes = {
@@ -52,6 +61,8 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
 
         onAddFollowUpNode,
         onAddInbetweenNode,
+
+        runtimeData,
     } = props;
 
     const {
@@ -80,9 +91,10 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     }, [processFlow]);
 
     return (
-        <ProcessFlowEditorContext.Provider
+        // TODO: Move the provider upward to avoid unnecessary re-renders of the whole graph when only the context values change
+        <ProcessFlowEditorProvider
             value={{
-                editable,
+                editable: runtimeData == null && editable,
                 showTargetHandles,
 
                 selectedNode: selectedNode ?? null,
@@ -98,6 +110,8 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                 }),
                 onAddInbetweenNode: onAddInbetweenNode ?? (() => {
                 }),
+
+                runtimeData,
             }}
         >
             <Box
@@ -167,7 +181,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                     variant={BackgroundVariant.Dots}
                 />
             </ReactFlow>
-        </ProcessFlowEditorContext.Provider>
+        </ProcessFlowEditorProvider>
     );
 }
 

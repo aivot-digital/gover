@@ -12,6 +12,7 @@ export function RichtextComponentView({element}: BaseViewProps<RichtextElement, 
             sx={{
                 my: '1rem',
                 maxWidth: '660px',
+                wordBreak: 'break-word',
                 '& .inline-code': {
                     fontFamily: 'Monaco, monospace',
                     backgroundColor: '#f5f5f5',
