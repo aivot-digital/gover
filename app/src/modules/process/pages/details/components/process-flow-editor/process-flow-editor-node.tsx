@@ -1,5 +1,5 @@
 import {Handle, type NodeProps, Position} from '@xyflow/react';
-import {Box, Divider, Paper, useTheme} from '@mui/material';
+import {Box, Divider, IconButton, Paper, useTheme} from '@mui/material';
 import React, {type ReactNode, useMemo} from 'react';
 import Typography from '@mui/material/Typography';
 import {ProcessNodeType} from '../../../../services/process-node-provider-api-service';
@@ -13,9 +13,13 @@ import {type FlowNode} from './utils/layout-utils';
 import {getNodeDescription, getNodeName} from './utils/node-utils';
 import {ProcessTaskStatus} from '../../../../enums/process-task-status';
 import {ProcessInstanceTaskStatusIcon} from '../../../../components/process-instance-task-status-icon';
+import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
+import {useConfirm} from '../../../../../../providers/confirm-provider';
+import {ExpandableCodeBlock} from '../../../../../../components/expandable-code-block/expandable-code-block';
 
 export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
     const theme = useTheme();
+    const confirm = useConfirm();
 
     const {
         data,
@@ -123,6 +127,7 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
                 {/* Content Card */}
                 <Paper
                     sx={{
+                        position: 'relative',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'flex-start',
@@ -184,8 +189,44 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
                             {getNodeDescription(node, provider)}
                         </Typography>
                     </Box>
-                </Paper>
 
+                    {
+                        associatedTask != null &&
+                        <IconButton
+                            sx={{
+                                position: 'absolute',
+                                bottom: '-1rem',
+                                right: '-1rem',
+                                padding: 0.5,
+                                bgcolor: 'white',
+                            }}
+                            size="small"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                event.preventDefault();
+
+                                confirm({
+                                    title: 'Prozesselementdaten',
+                                    width: 'md',
+                                    hideCancelButton: true,
+                                    confirmButtonText: 'Schließen',
+                                    children: (
+                                        <>
+                                            <Typography variant="h6">
+                                                Die erzeugten Prozesselementdaten
+                                            </Typography>
+                                            <ExpandableCodeBlock
+                                                value={JSON.stringify(associatedTask?.nodeData, null, 2)}
+                                            />
+                                        </>
+                                    ),
+                                });
+                            }}
+                        >
+                            <DataObject/>
+                        </IconButton>
+                    }
+                </Paper>
             </Box>
 
             {
