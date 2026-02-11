@@ -11,7 +11,8 @@ select dmp.user_id                 as user_id,
        dmp.domain_role_permissions as domain_role_permissions,
        dmp.domain_role_names       as domain_role_names,
        dmp.domain_role_ids         as domain_role_ids,
-       dmp.permissions             as permissions
+       dmp.permissions             as permissions,
+       dmp.deputy_for_user_ids     as deputy_for_user_ids
 from v_user_department_permissions as dmp
 
 union
@@ -25,5 +26,6 @@ select tmp.user_id                 as user_id,
        tmp.domain_role_permissions as domain_role_permissions,
        tmp.domain_role_names       as domain_role_names,
        tmp.domain_role_ids         as domain_role_ids,
-       tmp.permissions             as permissions
+       tmp.permissions             as permissions,
+       tmp.deputy_for_user_ids     as deputy_for_user_ids
 from v_user_team_permissions as tmp
