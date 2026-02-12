@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.elements.models.form.layout;
 
+import de.aivot.GoverBackend.elements.models.BaseElement;
 import de.aivot.GoverBackend.enums.ConditionOperator;
 import de.aivot.GoverBackend.exceptions.RequiredValidationException;
 import de.aivot.GoverBackend.exceptions.ValidationException;
@@ -16,6 +17,7 @@ import de.aivot.GoverBackend.utils.MapUtils;
 import javax.annotation.Nonnull;
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.function.Predicate;
 
 public class ReplicatingContainerLayout extends BaseInputElement<Collection<String>> {
     private Integer minimumRequiredSets;
@@ -127,6 +129,32 @@ public class ReplicatingContainerLayout extends BaseInputElement<Collection<Stri
                         res = groupLayout.findChild(id);
                     } else if (c instanceof ReplicatingContainerLayout replicatingContainerLayout) {
                         res = replicatingContainerLayout.findChild(id);
+                    }
+                    return res;
+                })
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .findFirst();
+    }
+
+    public Optional<BaseFormElement> findChild(@Nonnull Predicate<BaseElement> pred) {
+        Optional<BaseFormElement> matchingChild = children
+                .stream()
+                .filter(pred)
+                .findFirst();
+
+        if (matchingChild.isPresent()) {
+            return matchingChild;
+        }
+
+        return children
+                .stream()
+                .map(c -> {
+                    Optional<BaseFormElement> res = Optional.empty();
+                    if (c instanceof GroupLayout groupLayout) {
+                        res = groupLayout.findChild(pred);
+                    } else if (c instanceof ReplicatingContainerLayout replicatingContainerLayout) {
+                        res = replicatingContainerLayout.findChild(pred);
                     }
                     return res;
                 })
