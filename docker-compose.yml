@@ -15,7 +15,7 @@ services:
 
 
   gover_database:
-    image: postgres:15.7
+    image: postgres:15.15
     restart: always
     environment:
       POSTGRES_PASSWORD: "{{ GOVER_DB_PASSWORD }}" # Setzen Sie das Passwort für die Gover-Datenbank. Passen Sie dieses Passwort unbedingt an.
@@ -29,7 +29,7 @@ services:
 
 
   keycloak_database:
-    image: postgres:15.7
+    image: postgres:15.15
     restart: always
     environment:
       POSTGRES_PASSWORD: "{{ KEYCLOAK_DB_PASSWORD }}" # Setzen Sie das Passwort für die Keycloak-Datenbank. Passen Sie dieses Passwort unbedingt an.
@@ -43,14 +43,14 @@ services:
 
 
   clamav:
-    image: clamav/clamav-debian:1.3.1
+    image: clamav/clamav-debian:1.5.1
     restart: always
     networks:
       - gover
 
 
   redis:
-    image: redis:7.2.5
+    image: redis:7.4.7
     restart: always
     networks:
       - gover
@@ -64,7 +64,7 @@ services:
 
 
   keycloak:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.2.4.1
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.5.3.0
     restart: always
     depends_on:
       - keycloak_database
@@ -214,7 +214,7 @@ services:
 
 
   traefik:
-    image: traefik:2.11.7
+    image: traefik:2.11.37
     restart: always
     command:
       - --providers.docker
