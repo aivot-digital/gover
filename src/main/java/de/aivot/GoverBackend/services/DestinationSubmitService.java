@@ -97,6 +97,7 @@ public class DestinationSubmitService {
                     }
                 }
                 case HTTP -> sendHttp(destination, form, submission, attachments);
+                case OZGCloud -> throw new RuntimeException("Not implemented yet");
             };
         } catch (Exception e) {
             response = new DestinationResponse(false, "Die Übermittlung an das Ziel konnte nicht durchgeführt werden. Fehler: " + e.getMessage(), null, null);
