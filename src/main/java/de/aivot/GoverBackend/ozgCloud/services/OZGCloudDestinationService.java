@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.ozgCloud.services;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.elements.models.BaseElement;
 import de.aivot.GoverBackend.elements.models.RootElement;
@@ -87,6 +88,8 @@ public class OZGCloudDestinationService {
             case SelectField selectField -> List.of(buildSelectField(selectField, elementData, idPrefix));
             case RadioField radioField -> List.of(buildRadioField(radioField, elementData, idPrefix));
             case TableField tableField -> List.of(buildTableField(tableField, elementData, idPrefix));
+            case TextField textField -> List.of(buildTextField(textField, elementData, idPrefix));
+            case TimeField timeField -> List.of(buildTimeField(timeField, elementData, idPrefix));
             default -> List.of();
         };
     }
@@ -445,6 +448,7 @@ public class OZGCloudDestinationService {
             @Nonnull List<Resource> attachments
     ) throws IOException {
         var payloadJSON = new ObjectMapper()
+                .setSerializationInclusion(JsonInclude.Include.NON_NULL)
                 .writeValueAsString(payload);
 
         var body = new MultipartBodyPublisher()

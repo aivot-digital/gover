@@ -31,6 +31,8 @@ import de.aivot.GoverBackend.submission.repositories.SubmissionAttachmentReposit
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.mail.MessagingException;
 import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -48,6 +50,8 @@ import java.util.*;
 
 @Component
 public class DestinationSubmitService {
+    private static final Logger logger = LoggerFactory.getLogger(DestinationSubmitService.class);
+
     private final SubmissionMailService mailService;
     private final SubmissionStorageService submissionStorageService;
     private final PdfService pdfService;
@@ -309,31 +313,39 @@ public class DestinationSubmitService {
         OZGCloudServiceKontoData serviceKontoData = null;
 
         if (idDataObj instanceof Map<?, ?> idData) {
-            var idValue = IdentityValue.fromMap(idData);
+            IdentityValue idValue;
+            try {
+                idValue = IdentityValue.fromMap(idData);
+            } catch (Exception e) {
+                logger.warn("Die Identitätsdaten konnten nicht verarbeitet werden. Es wird versucht, ohne diese Daten an OZG Cloud zu übermitteln. Fehler: " + e.getMessage(), e);
+                idValue = null;
+            }
 
-            var providerType = identityProviderService
-                    .retrieve(idValue.identityProviderKey())
-                    .map(IdentityProviderEntity::getType)
-                    .orElse(IdentityProviderType.Custom);
+            if (idValue != null) {
+                var providerType = identityProviderService
+                        .retrieve(idValue.identityProviderKey())
+                        .map(IdentityProviderEntity::getType)
+                        .orElse(IdentityProviderType.Custom);
 
-            if (providerType == IdentityProviderType.ShId) {
-                serviceKontoData = new OZGCloudServiceKontoData(
-                        OZGCloudServiceKontoType.OSI,
-                        idValue.userInfo().getOrDefault("trust_level_authentication", "Keine Angaben"),
-                        new OZGCloudPostfachAdresse(
-                                idValue.userInfo().getOrDefault("dataport_inbox_id", "Keine Angaben"),
-                                OZGCloudPostfachAdresseType.Citizen
-                        )
-                );
-            } else if (providerType == IdentityProviderType.BayernId) {
-                serviceKontoData = new OZGCloudServiceKontoData(
-                        OZGCloudServiceKontoType.BAYERN_ID,
-                        idValue.userInfo().getOrDefault("trust_level_authentication", "Keine Angaben"),
-                        new OZGCloudPostfachAdresse(
-                                idValue.userInfo().getOrDefault("legacy_postkorb_handle", "Keine Angaben"),
-                                OZGCloudPostfachAdresseType.Citizen
-                        )
-                );
+                if (providerType == IdentityProviderType.ShId) {
+                    serviceKontoData = new OZGCloudServiceKontoData(
+                            OZGCloudServiceKontoType.OSI,
+                            idValue.userInfo().getOrDefault("trust_level_authentication", "Keine Angaben"),
+                            new OZGCloudPostfachAdresse(
+                                    idValue.userInfo().getOrDefault("dataport_inbox_id", "Keine Angaben"),
+                                    OZGCloudPostfachAdresseType.Citizen
+                            )
+                    );
+                } else if (providerType == IdentityProviderType.BayernId) {
+                    serviceKontoData = new OZGCloudServiceKontoData(
+                            OZGCloudServiceKontoType.BAYERN_ID,
+                            idValue.userInfo().getOrDefault("trust_level_authentication", "Keine Angaben"),
+                            new OZGCloudPostfachAdresse(
+                                    idValue.userInfo().getOrDefault("legacy_postkorb_handle", "Keine Angaben"),
+                                    OZGCloudPostfachAdresseType.Citizen
+                            )
+                    );
+                }
             }
         }
 
