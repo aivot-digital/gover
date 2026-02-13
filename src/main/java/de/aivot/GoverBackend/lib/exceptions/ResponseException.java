@@ -2,8 +2,8 @@ package de.aivot.GoverBackend.lib.exceptions;
 
 import org.springframework.http.HttpStatus;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 public class ResponseException extends Exception {
     @Nonnull

@@ -5,7 +5,7 @@ import de.aivot.GoverBackend.secrets.entities.SecretEntity;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 public class SecretFilter implements Filter<SecretEntity> {
     private String name;

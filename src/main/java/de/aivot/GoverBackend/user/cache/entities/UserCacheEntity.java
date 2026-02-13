@@ -4,7 +4,7 @@ import de.aivot.GoverBackend.user.entities.UserEntity;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 

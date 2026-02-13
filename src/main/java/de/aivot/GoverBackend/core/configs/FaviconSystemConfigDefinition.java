@@ -4,48 +4,48 @@ import de.aivot.GoverBackend.config.enums.ConfigType;
 import de.aivot.GoverBackend.config.models.SystemConfigDefinition;
 import de.aivot.GoverBackend.data.SystemConfigKey;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import org.jetbrains.annotations.NotNull;
+import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 @Component
 public class FaviconSystemConfigDefinition implements SystemConfigDefinition {
     // TODO: Remove SystemConfigKey.SYSTEM__FAVICON and use the key directly
     public static final String KEY = SystemConfigKey.SYSTEM__FAVICON.getKey();
 
-    @NotNull
+    @Nonnull
     @Override
     public String getKey() {
         return KEY;
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public ConfigType getType() {
         return ConfigType.ASSET;
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public String getCategory() {
         return "Oberfläche";
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public String getLabel() {
         return "Browser-Tab-Icon";
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public String getDescription() {
         return "Das Icon, welches im Browser-Tab angezeigt wird.";
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public Boolean isPublicConfig() {
         return true;

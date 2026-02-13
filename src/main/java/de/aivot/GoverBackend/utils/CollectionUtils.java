@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.utils;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.util.Collection;
 
 public class CollectionUtils {

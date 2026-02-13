@@ -7,7 +7,7 @@ import de.aivot.GoverBackend.submission.entities.SubmissionWithMembership;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 public class SubmissionWithMembershipFilter implements Filter<SubmissionWithMembership> {
     private String id;
