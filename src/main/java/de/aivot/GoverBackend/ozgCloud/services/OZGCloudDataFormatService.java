@@ -2,7 +2,6 @@ package de.aivot.GoverBackend.ozgCloud.services;
 
 import de.aivot.GoverBackend.elements.models.BaseElement;
 import de.aivot.GoverBackend.elements.models.RootElement;
-import de.aivot.GoverBackend.elements.models.form.BaseInputElement;
 import de.aivot.GoverBackend.elements.models.form.content.Headline;
 import de.aivot.GoverBackend.elements.models.form.input.*;
 import de.aivot.GoverBackend.elements.models.form.layout.GroupLayout;
@@ -27,12 +26,6 @@ public class OZGCloudDataFormatService {
             @Nonnull Map<String, Object> elementData,
             @Nullable String idPrefix
     ) {
-       if (currentElement instanceof BaseInputElement<?> in) {
-           if (Boolean.TRUE.equals(in.getTechnical())) {
-               return List.of();
-           }
-       }
-
         return switch (currentElement) {
             case RootElement rootElement -> buildRoot(rootElement, elementData, idPrefix);
             case StepElement stepElement -> List.of(buildStep(stepElement, elementData, idPrefix));
