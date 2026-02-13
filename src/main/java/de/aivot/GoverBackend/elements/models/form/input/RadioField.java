@@ -155,4 +155,27 @@ public class RadioField extends BaseInputElement<String> {
         this.displayInline = displayInline;
         return this;
     }
+
+    public String toDisplayValue(Object orDefault) {
+        var value = formatValue(orDefault);
+
+        if (value == null) {
+            return "Keine Angabe";
+        }
+
+        for (Object opt : options) {
+            if (opt instanceof String sOpt) {
+                if (sOpt.equals(value)) {
+                    return sOpt;
+                }
+            } else if (opt instanceof Map<?,?> mOpt) {
+                var optValue = mOpt.get("value");
+                if (optValue != null && optValue.equals(value)) {
+                    return (String) mOpt.get("label");
+                }
+            }
+        }
+
+        return "Keine Angabe";
+    }
 }

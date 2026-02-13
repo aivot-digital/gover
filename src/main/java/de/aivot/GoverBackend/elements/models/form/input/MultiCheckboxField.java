@@ -206,4 +206,29 @@ public class MultiCheckboxField extends BaseInputElement<Collection<String>> {
         this.displayInline = displayInline;
         return this;
     }
+
+    public String toDisplayValue(Object orDefault) {
+        if (orDefault instanceof Collection<?> cValue) {
+            List<String> displayValues = new LinkedList<>();
+            for (Object val : cValue) {
+                for (Object opt : options) {
+                    if (opt instanceof String sOpt) {
+                        if (sOpt.equals(val)) {
+                            displayValues.add(sOpt);
+                            break;
+                        }
+                    } else if (opt instanceof Map<?,?> mOpt) {
+                        var optValue = mOpt.get("value");
+                        if (optValue != null && optValue.equals(val)) {
+                            displayValues.add((String) mOpt.get("label"));
+                            break;
+                        }
+                    }
+                }
+            }
+            return String.join(", ", displayValues);
+        }
+
+        return orDefault != null ? orDefault.toString() : null;
+    }
 }
