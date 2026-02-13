@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.theme.filters;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.theme.entities.Theme;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
-import org.jetbrains.annotations.NotNull;
+import jakarta.annotation.Nonnull;
 import org.springframework.data.jpa.domain.Specification;
 
 public class ThemeFilter implements Filter<Theme> {
@@ -18,7 +18,7 @@ public class ThemeFilter implements Filter<Theme> {
         return this;
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public Specification<Theme> build() {
         return SpecificationBuilder

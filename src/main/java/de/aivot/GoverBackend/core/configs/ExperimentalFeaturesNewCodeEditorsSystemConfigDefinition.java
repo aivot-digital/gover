@@ -3,12 +3,12 @@ package de.aivot.GoverBackend.core.configs;
 import de.aivot.GoverBackend.config.enums.ConfigType;
 import de.aivot.GoverBackend.config.models.SystemConfigDefinition;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import org.jetbrains.annotations.NotNull;
+import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 @Component
 public class ExperimentalFeaturesNewCodeEditorsSystemConfigDefinition implements SystemConfigDefinition {
@@ -17,43 +17,43 @@ public class ExperimentalFeaturesNewCodeEditorsSystemConfigDefinition implements
     @Value("${GOVER_FEATURES_NEW_CODE_EDITORS:false}")
     private String featureFlagValue;
 
-    @NotNull
+    @Nonnull
     @Override
     public String getKey() {
         return KEY;
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public ConfigType getType() {
         return ConfigType.FLAG;
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public String getCategory() {
         return "Oberfläche";
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public String getLabel() {
         return "Feature Flag: Neue Code-Editoren";
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public String getDescription() {
         return "Aktiviert die Vorschau-Version der neuen Code-Editoren.";
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public Boolean isPublicConfig() {
         return false;
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public Boolean getDefaultValue() {
         return Boolean.parseBoolean(featureFlagValue);
