@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.mail.dtos;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 public record TestMailResponseDTO(
         @Nonnull

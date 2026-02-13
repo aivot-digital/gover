@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.ColumnDefault;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.util.Objects;
 import java.util.Optional;
 

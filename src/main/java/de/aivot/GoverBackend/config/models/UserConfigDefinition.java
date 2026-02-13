@@ -4,8 +4,8 @@ import de.aivot.GoverBackend.config.entities.UserConfigEntity;
 import de.aivot.GoverBackend.config.enums.ConfigType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.List;
 
 public interface UserConfigDefinition {

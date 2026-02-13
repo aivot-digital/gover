@@ -7,7 +7,7 @@ import de.aivot.GoverBackend.elements.models.BaseElementDerivationContext;
 import de.aivot.GoverBackend.elements.models.BaseElement;
 import de.aivot.GoverBackend.utils.MapUtils;
 import de.aivot.GoverBackend.utils.StringUtils;
-import org.jetbrains.annotations.NotNull;
+import jakarta.annotation.Nonnull;
 
 import javax.script.ScriptException;
 import java.util.HashSet;
@@ -108,7 +108,7 @@ public class FunctionCode extends Function {
         return StringUtils.isNullOrEmpty(code);
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public Set<String> getReferencedIds() {
         if (code == null || StringUtils.isNullOrEmpty(code)) {

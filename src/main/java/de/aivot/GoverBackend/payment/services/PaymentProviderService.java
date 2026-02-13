@@ -10,7 +10,7 @@ import de.aivot.GoverBackend.payment.filters.PaymentTransactionFilter;
 import de.aivot.GoverBackend.payment.models.PaymentProviderDefinition;
 import de.aivot.GoverBackend.payment.repositories.PaymentProviderRepository;
 import de.aivot.GoverBackend.payment.repositories.PaymentTransactionRepository;
-import org.jetbrains.annotations.NotNull;
+import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,8 +18,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.*;
 
 @Service
@@ -65,7 +65,7 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
         return paymentProviderRepository.save(paymentProviderEntity);
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public Page<PaymentProviderEntity> performList(
             @Nonnull Pageable pageable,

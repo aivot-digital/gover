@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.nocode.models;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.util.Objects;
 
 /**

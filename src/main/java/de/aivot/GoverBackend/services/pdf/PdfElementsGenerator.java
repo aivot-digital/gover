@@ -10,8 +10,8 @@ import de.aivot.GoverBackend.elements.models.form.layout.GroupLayout;
 import de.aivot.GoverBackend.elements.models.form.layout.ReplicatingContainerLayout;
 import de.aivot.GoverBackend.elements.models.steps.StepElement;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.*;
 
 public class PdfElementsGenerator {

@@ -9,7 +9,7 @@ import jakarta.persistence.Table;
 import org.hibernate.annotations.ColumnDefault;
 import org.springframework.security.oauth2.jwt.Jwt;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.List;
 import java.util.Optional;
 

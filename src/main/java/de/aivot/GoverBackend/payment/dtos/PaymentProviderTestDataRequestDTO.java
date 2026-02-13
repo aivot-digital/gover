@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.payment.dtos;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.math.BigDecimal;
 
 public record PaymentProviderTestDataRequestDTO(

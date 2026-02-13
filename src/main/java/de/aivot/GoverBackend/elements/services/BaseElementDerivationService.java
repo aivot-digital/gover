@@ -7,12 +7,12 @@ import de.aivot.GoverBackend.elements.models.form.BaseInputElement;
 import de.aivot.GoverBackend.elements.models.form.layout.GroupLayout;
 import de.aivot.GoverBackend.elements.models.form.layout.ReplicatingContainerLayout;
 import de.aivot.GoverBackend.elements.models.steps.StepElement;
-import org.jetbrains.annotations.NotNull;
+import jakarta.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 
@@ -267,7 +267,7 @@ public abstract class BaseElementDerivationService<Ctx extends BaseElementDeriva
         }
     }
 
-    private static <Ctx extends BaseElementDerivationContext> void cleanInputValue(@NotNull Ctx context, BaseElement baseElement, String resolvedId) {
+    private static <Ctx extends BaseElementDerivationContext> void cleanInputValue(@Nonnull Ctx context, BaseElement baseElement, String resolvedId) {
         // Check if the element is disabled or technical, and clean the input value if necessary.
         // This is important to prevent overwriting values which are not supposed to be set by users.
         if (baseElement instanceof BaseInputElement<?> inputElement) {
