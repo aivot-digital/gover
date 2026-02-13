@@ -317,7 +317,7 @@ public class OZGCloudDataFormatService {
         return new OZGCloudFormDataItem(
                 resolvedId,
                 cbx.getLabel(),
-                val == null ? "Keine Angaben" : null,
+                val == null ? "Keine Angabe" : null,
                 val != null ? (Number) val : null,
                 null,
                 null,
@@ -337,7 +337,7 @@ public class OZGCloudDataFormatService {
             return new OZGCloudFormDataItem(
                     resolvedId,
                     dateField.getLabel(),
-                    "Keine Angaben",
+                    "Keine Angabe",
                     null,
                     null,
                     null,
@@ -351,7 +351,7 @@ public class OZGCloudDataFormatService {
         var displayValue = date
                 .format(
                         DateTimeFormatter
-                                .ofPattern("YYYY-MM-DD")
+                                .ofPattern("yyyy-MM-dd")
                                 .withZone(DateField.zoneId)
                 );
 
@@ -381,6 +381,8 @@ public class OZGCloudDataFormatService {
             for (var itemObj : list) {
                 if (itemObj instanceof FileUploadFieldItem fileItem) {
                     items.add(fileItem);
+                } else if (itemObj instanceof Map<?, ?> itemMap) {
+                    items.add(new FileUploadFieldItem((Map<String, Object>) itemMap));
                 }
             }
         }

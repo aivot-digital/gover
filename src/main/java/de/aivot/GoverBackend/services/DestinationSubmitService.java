@@ -368,7 +368,7 @@ public class DestinationSubmitService {
         ByteArrayResource pdfRes = new ByteArrayResource(pdfBytes) {
             @Override
             public String getFilename() {
-                return form.getFormTitle() + ".pdf";
+                return form.getFormTitle().replace("\\W+", "_") + ".pdf";
             }
         };
 
@@ -378,7 +378,13 @@ public class DestinationSubmitService {
             var res = new ByteArrayResource(bytes) {
                 @Override
                 public String getFilename() {
-                    return attachment.getFilename();
+                    var name = attachment
+                            .getFilename()
+                            .split("\\.");
+
+                    var baseName = String.join(".", Arrays.copyOf(name, name.length - 1));
+                    var extension = name[name.length - 1];
+                    return baseName.replaceAll("\\W+", "_") + "." + extension;
                 }
             };
             attRes.add(res);
