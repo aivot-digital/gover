@@ -18,7 +18,7 @@ services:
       - "5432:5432"
 
   clamav:
-    image: clamav/clamav-debian:1.4.1
+    image: clamav/clamav-debian:1.5.1
     restart: always
     ports:
       - "3310:3310"
