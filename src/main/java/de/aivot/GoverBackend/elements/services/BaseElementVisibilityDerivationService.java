@@ -5,12 +5,12 @@ import de.aivot.GoverBackend.elements.models.BaseElementDerivationContext;
 import de.aivot.GoverBackend.models.functions.FunctionCode;
 import de.aivot.GoverBackend.models.functions.FunctionNoCode;
 import de.aivot.GoverBackend.utils.StringUtils;
-import org.jetbrains.annotations.NotNull;
+import jakarta.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 public class BaseElementVisibilityDerivationService<Ctx extends BaseElementDerivationContext> {
     private final Logger logger = LoggerFactory.getLogger(BaseElementVisibilityDerivationService.class);
@@ -25,9 +25,9 @@ public class BaseElementVisibilityDerivationService<Ctx extends BaseElementDeriv
      * @param baseElement The base element for which the visibility should be derived.
      */
     public void deriveVisibilityForElement(
-            @NotNull Ctx context,
+            @Nonnull Ctx context,
             @Nullable String idPrefix,
-            @NotNull BaseElement baseElement,
+            @Nonnull BaseElement baseElement,
             @Nonnull Boolean isParentVisible
     ) {
         // If the parent is not visible, the element itself is not visible

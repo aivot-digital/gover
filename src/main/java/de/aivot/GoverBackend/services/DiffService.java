@@ -1,11 +1,11 @@
 package de.aivot.GoverBackend.services;
 
 import de.aivot.GoverBackend.models.lib.DiffItem;
-import org.jetbrains.annotations.NotNull;
+import jakarta.annotation.Nonnull;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.util.*;
 
 public class DiffService {

@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.payment.dtos;
 
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.Map;
 
 public record PaymentProviderResponseDTO(

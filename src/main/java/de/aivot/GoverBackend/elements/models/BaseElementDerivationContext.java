@@ -3,8 +3,8 @@ package de.aivot.GoverBackend.elements.models;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
 import de.aivot.GoverBackend.nocode.services.NoCodeEvaluationService;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import javax.script.ScriptEngine;
 import java.util.*;
 

@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.identity.models;
 
 import de.aivot.GoverBackend.utils.StringUtils;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.Map;
 

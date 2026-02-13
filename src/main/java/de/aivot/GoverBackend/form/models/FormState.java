@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.form.models;
 
 import de.aivot.GoverBackend.elements.models.BaseElement;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.Map;
 
 public record FormState(

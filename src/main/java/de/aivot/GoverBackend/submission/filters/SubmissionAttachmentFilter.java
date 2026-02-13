@@ -5,7 +5,7 @@ import de.aivot.GoverBackend.submission.entities.SubmissionAttachment;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 public class SubmissionAttachmentFilter implements Filter<SubmissionAttachment> {
     private String submissionId;

@@ -4,8 +4,8 @@ import de.aivot.GoverBackend.config.enums.ConfigType;
 import de.aivot.GoverBackend.config.models.ConfigDefinitionOption;
 import de.aivot.GoverBackend.config.models.UserConfigDefinition;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.List;
 
 public record UserConfigDefinitionResponseDTO(

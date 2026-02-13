@@ -9,7 +9,7 @@ import de.aivot.GoverBackend.elements.models.steps.SummaryStepElement;
 import de.aivot.GoverBackend.models.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.utils.MapUtils;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.*;
 
 public class RootElement extends BaseElement {

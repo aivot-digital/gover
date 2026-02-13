@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.secrets.dtos;
 
 import de.aivot.GoverBackend.secrets.entities.SecretEntity;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 /**
  * This class represents the response data for a secret entity.

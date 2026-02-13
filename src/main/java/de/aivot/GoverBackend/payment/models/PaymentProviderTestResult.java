@@ -2,8 +2,8 @@ package de.aivot.GoverBackend.payment.models;
 
 import de.aivot.GoverBackend.payment.exceptions.PaymentException;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 public record PaymentProviderTestResult(
         @Nonnull Boolean ok,

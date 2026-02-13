@@ -13,7 +13,7 @@ import de.aivot.GoverBackend.models.pdf.ValuePdfRowDto;
 import de.aivot.GoverBackend.utils.ElementResolver;
 import de.aivot.GoverBackend.utils.MapUtils;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.math.BigDecimal;
 import java.util.*;
 
