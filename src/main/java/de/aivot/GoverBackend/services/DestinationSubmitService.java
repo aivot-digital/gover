@@ -365,10 +365,12 @@ public class DestinationSubmitService {
             throw new RuntimeException(e);
         }
 
-        ByteArrayResource pdfRes = new ByteArrayResource(pdfBytes) {
+        var pdfRes = new ByteArrayResource(pdfBytes) {
             @Override
             public String getFilename() {
-                return form.getFormTitle().replace("\\W+", "_") + ".pdf";
+                return form
+                        .getFormTitle()
+                        .replaceAll("\\W+", "_") + ".pdf";
             }
         };
 
