@@ -93,6 +93,18 @@ export const DestinationSchema = yup.object({
                 )
                 .required('Die API-Adresse ist erforderlich.'),
             otherwise: (schema) => schema.notRequired().nullable(),
+        })
+        .when('type', {
+            is: DestinationType.OZGCloud,
+            then: (schema) => schema
+                .trim()
+                .max(255, 'Der Endpunkt darf maximal 255 Zeichen lang sein.')
+                .matches(
+                    /^https?:\/\/[\w.-]+(:\d+)?(\/[\w./-]*)?$/,
+                    'Bitte einen gültigen Endpunkt eingeben (z. B. https://example.com/api).',
+                )
+                .required('Der Endpunkt ist erforderlich.'),
+            otherwise: (schema) => schema.notRequired().nullable(),
         }),
     authorizationHeader: yup.string()
         .when('type', {
