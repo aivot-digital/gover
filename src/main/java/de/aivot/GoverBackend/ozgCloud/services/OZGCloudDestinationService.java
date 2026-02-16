@@ -9,6 +9,7 @@ import de.aivot.GoverBackend.elements.models.form.layout.GroupLayout;
 import de.aivot.GoverBackend.elements.models.form.layout.ReplicatingContainerLayout;
 import de.aivot.GoverBackend.elements.models.steps.StepElement;
 import de.aivot.GoverBackend.enums.TableColumnDataType;
+import de.aivot.GoverBackend.form.models.FormState;
 import de.aivot.GoverBackend.ozgCloud.models.OZGCloudControlData;
 import de.aivot.GoverBackend.ozgCloud.models.OZGCloudFormDataItem;
 import de.aivot.GoverBackend.ozgCloud.models.OZGCloudPayload;
@@ -49,12 +50,13 @@ public class OZGCloudDestinationService {
             @Nonnull BaseElement rootElement,
             @Nonnull Map<String, Object> elementData,
             @Nonnull Resource representation,
-            @Nonnull List<Resource> attachments
+            @Nonnull List<Resource> attachments,
+            @Nonnull FormState formState
     ) {
         var destinationUri = URI.create(destinationUrl);
 
         var formData = new OZGCloudDataFormatService()
-                .buildFormData(rootElement, elementData, null);
+                .buildFormData(rootElement, elementData, null, formState);
 
         var payload = new OZGCloudPayload(
                 controlData,

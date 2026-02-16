@@ -8,6 +8,9 @@ import de.aivot.GoverBackend.elements.models.form.input.TextField;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.exceptions.ConflictException;
 import de.aivot.GoverBackend.form.entities.Form;
+import de.aivot.GoverBackend.form.models.FormState;
+import de.aivot.GoverBackend.form.services.FormDerivationService;
+import de.aivot.GoverBackend.form.services.FormDerivationServiceFactory;
 import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
 import de.aivot.GoverBackend.identity.entities.IdentityProviderEntity;
 import de.aivot.GoverBackend.identity.enums.IdentityProviderType;
@@ -29,6 +32,7 @@ import de.aivot.GoverBackend.submission.entities.Submission;
 import de.aivot.GoverBackend.submission.entities.SubmissionAttachment;
 import de.aivot.GoverBackend.submission.repositories.SubmissionAttachmentRepository;
 import de.aivot.GoverBackend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
 import jakarta.mail.MessagingException;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
@@ -60,6 +64,7 @@ public class DestinationSubmitService {
     private final PaymentProviderRepository paymentProviderRepository;
     private final OZGCloudDestinationService oZGCloudDestinationService;
     private final IdentityProviderService identityProviderService;
+    private final FormDerivationServiceFactory formDerivationServiceFactory;
 
     @Autowired
     public DestinationSubmitService(
@@ -70,7 +75,7 @@ public class DestinationSubmitService {
             PaymentTransactionRepository paymentTransactionRepository,
             PaymentProviderRepository paymentProviderRepository,
             OZGCloudDestinationService oZGCloudDestinationService,
-            IdentityProviderService identityProviderService) {
+            IdentityProviderService identityProviderService, FormDerivationServiceFactory formDerivationServiceFactory) {
         this.mailService = mailService;
         this.submissionStorageService = submissionStorageService;
         this.pdfService = pdfService;
@@ -79,6 +84,7 @@ public class DestinationSubmitService {
         this.paymentProviderRepository = paymentProviderRepository;
         this.oZGCloudDestinationService = oZGCloudDestinationService;
         this.identityProviderService = identityProviderService;
+        this.formDerivationServiceFactory = formDerivationServiceFactory;
     }
 
     public void testDestinationAttachmentSize(Destination destination, MultipartFile[] files) {
@@ -284,7 +290,30 @@ public class DestinationSubmitService {
 
     private static final String INTERNAL_NAME_ZUSTAENDIGE_STELLE = "OZG_CLOUD_ZUSTAENDIGE_STELLE";
 
-    private DestinationResponse sendOzg(Destination destination, Form form, Submission submission, Collection<SubmissionAttachment> attachments) throws ResponseException {
+    private DestinationResponse sendOzg(@Nonnull Destination destination,
+                                        @Nonnull Form form,
+                                        @Nonnull Submission submission,
+                                        @Nonnull Collection<SubmissionAttachment> attachments) {
+        var derivationService = formDerivationServiceFactory
+                .create(
+                        form,
+                        List.of(FormDerivationService.FORM_STEP_LIMIT_NONE_IDENTIFIER),
+                        List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER),
+                        List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER),
+                        List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER)
+                );
+
+        FormState formState;
+        try (var derivationContext = derivationService
+                .derive(form.getRoot(), submission.getCustomerInput())) {
+            formState = derivationContext.getFormState();
+        } catch (Exception e) {
+            return new DestinationResponse(false,
+                    "Die Daten des Formulars konnten nicht verarbeitet werden, um die zuständige Stelle für die Übermittlung an OZG Cloud zu bestimmen. Fehler: " + e.getMessage(),
+                    null,
+                    null);
+        }
+
         var zustandigeStelle = form
                 .getRoot()
                 .findChild((c) -> (
@@ -322,10 +351,20 @@ public class DestinationSubmitService {
             }
 
             if (idValue != null) {
-                var providerType = identityProviderService
-                        .retrieve(idValue.identityProviderKey())
-                        .map(IdentityProviderEntity::getType)
-                        .orElse(IdentityProviderType.Custom);
+                IdentityProviderType providerType;
+                try {
+                    providerType = identityProviderService
+                            .retrieve(idValue.identityProviderKey())
+                            .map(IdentityProviderEntity::getType)
+                            .orElse(IdentityProviderType.Custom);
+                } catch (ResponseException e) {
+                    return new DestinationResponse(
+                            false,
+                            "Die Identitätsdaten konnten nicht verarbeitet werden, da die zugehörigen Identitätsanbieterinformationen nicht abgerufen werden konnten. Es wird versucht, ohne diese Daten an OZG Cloud zu übermitteln. Fehler: " + e.getMessage(),
+                            null,
+                            null
+                    );
+                }
 
                 if (providerType == IdentityProviderType.ShId) {
                     serviceKontoData = new OZGCloudServiceKontoData(
@@ -376,7 +415,18 @@ public class DestinationSubmitService {
 
         List<Resource> attRes = new LinkedList<>();
         for (var attachment : attachments) {
-            var bytes = submissionStorageService.getAttachmentData(submission, attachment);
+            byte[] bytes;
+            try {
+                bytes = submissionStorageService
+                        .getAttachmentData(submission, attachment);
+            } catch (ResponseException e) {
+                return new DestinationResponse(
+                        false,
+                        "Die Anhangsdaten konnten nicht abgerufen werden. Fehler: " + e.getMessage(),
+                        null,
+                        null
+                );
+            }
             var res = new ByteArrayResource(bytes) {
                 @Override
                 public String getFilename() {
@@ -399,7 +449,8 @@ public class DestinationSubmitService {
                         form.getRoot(),
                         submission.getCustomerInput(),
                         pdfRes,
-                        attRes
+                        attRes,
+                        formState
                 );
 
         return new DestinationResponse(true, null, null, List.of());
