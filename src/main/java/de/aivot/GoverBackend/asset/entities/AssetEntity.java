@@ -1,11 +1,13 @@
 package de.aivot.GoverBackend.asset.entities;
 
+import jakarta.annotation.Nonnull;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import org.hibernate.validator.constraints.Length;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -14,75 +16,98 @@ import java.util.UUID;
 @Table(name = "assets")
 public class AssetEntity {
     @Id
-    @NotNull
+    @Nonnull
+    @NotNull(message = "Der Key darf nicht null sein.")
     private UUID key;
 
-    @NotNull
+    @Nonnull
     @Column(length = 255)
-    @Length(min = 3, max = 255)
+    @NotNull(message = "Der Dateiname darf nicht null sein.")
+    @NotBlank(message = "Der Dateiname darf nicht leer sein.")
+    @Size(min = 3, max = 255, message = "Der Dateiname muss zwischen 3 und 255 Zeichen lang sein.")
     private String filename;
 
-    @NotNull
-    private LocalDateTime created;
-
-    @NotNull
+    @Nonnull
+    @NotNull(message = "Die Uploader ID darf nicht null sein.")
+    @Size(min = 36, max = 364, message = "Die Uploader ID muss zwischen 36 und 64 Zeichen lang sein.")
     @Column(length = 64)
     private String uploaderId;
 
+    @Nonnull
     @Column(length = 255)
+    @NotNull(message = "Der Content Type darf nicht null sein.")
+    @NotBlank(message = "Der Content Type darf nicht leer sein.")
+    @Size(min = 3, max = 255, message = "Der Content Type muss zwischen 3 und 255 Zeichen lang sein.")
     private String contentType;
 
-    @NotNull
+    @Nonnull
+    @NotNull(message = "Das Attribut isPrivate darf nicht null sein.")
     private Boolean isPrivate;
+
+    @Nonnull
+    @NotNull(message = "Das Erstellungsdatum darf nicht null sein.")
+    private LocalDateTime created;
 
     // region Getters & Setters
 
+    @Nonnull
     public UUID getKey() {
         return key;
     }
 
-    public void setKey(UUID key) {
+    public AssetEntity setKey(@Nonnull UUID key) {
         this.key = key;
+        return this;
     }
 
+    @Nonnull
     public String getFilename() {
         return filename;
     }
 
-    public void setFilename(String filename) {
+    public AssetEntity setFilename(@Nonnull String filename) {
         this.filename = filename;
+        return this;
     }
 
-    public LocalDateTime getCreated() {
-        return created;
-    }
-
-    public void setCreated(LocalDateTime created) {
-        this.created = created;
-    }
-
+    @Nonnull
     public String getUploaderId() {
         return uploaderId;
     }
 
-    public void setUploaderId(String uploaderId) {
+    public AssetEntity setUploaderId(@Nonnull String uploaderId) {
         this.uploaderId = uploaderId;
+        return this;
     }
 
+    @Nonnull
     public String getContentType() {
         return contentType;
     }
 
-    public void setContentType(String contentType) {
+    public AssetEntity setContentType(@Nonnull String contentType) {
         this.contentType = contentType;
+        return this;
     }
 
+    @Nonnull
     public Boolean getPrivate() {
         return isPrivate;
     }
 
-    public void setPrivate(Boolean isPrivate) {
-        this.isPrivate = isPrivate;
+    public AssetEntity setPrivate(@Nonnull Boolean aPrivate) {
+        isPrivate = aPrivate;
+        return this;
+    }
+
+    @Nonnull
+    public LocalDateTime getCreated() {
+        return created;
+    }
+
+    public AssetEntity setCreated(@Nonnull LocalDateTime created) {
+        this.created = created;
+        return this;
     }
 
     // endregion

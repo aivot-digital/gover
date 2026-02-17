@@ -2,17 +2,15 @@ import React, {useEffect, useState} from 'react';
 import {Box, Button, Card, Dialog, DialogContent, DialogContentText, Grid, Skeleton, Typography} from '@mui/material';
 import {User} from '../../users/models/user';
 import {DiffItem} from '../../../models/entities/form-revision';
-import {Form, isForm} from '../../../models/entities/form';
 import {AnyElement, AnyElementType} from '../../../models/elements/any-element';
 import {DeletedElementReference, isDeletedElementReference, resolveElementPath} from '../../../utils/resolve-element-path';
 import {Api, useApi} from '../../../hooks/use-api';
 import {Page} from '../../../models/dtos/page';
-import {FormsApiService} from '../forms-api-service';
 import {UsersApiService} from '../../users/users-api-service';
 import {generateComponentTitle} from '../../../utils/generate-component-title';
 import {parseISO} from 'date-fns/parseISO';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {clearLoadedFormHistory, selectLoadedForm, updateLoadedForm} from '../../../slices/app-slice';
+import {clearLoadedFormHistory, isLoadedForm, LoadedForm, selectLoadedForm, updateLoadedForm} from '../../../slices/app-slice';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../slices/loading-overlay-slice';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
@@ -26,7 +24,8 @@ import {RestoreOutlined} from '@mui/icons-material';
 import {ExpandableCodeBlock} from '../../../components/expandable-code-block/expandable-code-block';
 import {FormStatus} from '../enums/form-status';
 import {ElementType} from '../../../data/element-type/element-type';
-import {RootElement} from '../../../models/elements/root-element';
+import {FormApiService} from '../services/form-api-service';
+import {FormVersionEntity, isFormVersionEntity} from '../entities/form-version-entity';
 
 
 export interface FormRevisionsDialogProps {
@@ -43,19 +42,17 @@ interface Revision {
 }
 
 interface RevisionDiff extends DiffItem {
-    elementPath: (Form | AnyElement | DeletedElementReference)[];
-    element: (Form | AnyElement | DeletedElementReference);
+    elementPath: (FormVersionEntity | AnyElement | DeletedElementReference)[];
+    element: (FormVersionEntity | AnyElement | DeletedElementReference);
     title: string;
     path: string;
     field: string;
 }
 
-async function fetchRevisions(form: Form, api: Api, lastPage: Page<Revision> | undefined): Promise<Page<Revision>> {
-    const formsApiService = new FormsApiService(api);
-
-    const revisionsPage = await formsApiService.listRevisions({
-        id: form.id,
-        version: form.version,
+async function fetchRevisions(form: LoadedForm, lastPage: Page<Revision> | undefined): Promise<Page<Revision>> {
+    const revisionsPage = await new FormApiService().listRevisions({
+        formId: form.form.id,
+        version: form.version.version,
     }, {
         queryParams: {
             limit: 10,
@@ -85,11 +82,11 @@ async function fetchRevisions(form: Form, api: Api, lastPage: Page<Revision> | u
 
     const items: Revision[] = [];
 
-    const resolveElementLabel = (e: Form | AnyElement | DeletedElementReference) => {
+    const resolveElementLabel = (e: FormVersionEntity | AnyElement | DeletedElementReference) => {
         if (isDeletedElementReference(e)) {
             return `Gelöschtes Element (Index: ${e.id})`;
-        } else if (isForm(e)) {
-            return e.internalTitle;
+        } else if (isFormVersionEntity(e)) {
+            return 'Formular';
         } else {
             return generateComponentTitle(e);
         }
@@ -98,7 +95,7 @@ async function fetchRevisions(form: Form, api: Api, lastPage: Page<Revision> | u
     for (const rev of revisionsPage.content) {
         const diffs = [];
         for (const diff of rev.diff) {
-            const elementPath = resolveElementPath(form, diff.field);
+            const elementPath = resolveElementPath(form.version, diff.field);
             const element = elementPath[elementPath.length - 1];
             const revDiff = {
                 elementPath: elementPath,
@@ -147,14 +144,17 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps) {
         }
 
         dispatch(showLoadingOverlay('Änderung wird rückgängig gemacht…'));
-        new FormsApiService(api)
+        new FormApiService()
             .rollbackRevision({
-                id: form.id,
-                version: form.version,
+                formId: form.form.id,
+                version: form.version.version,
             }, id)
-            .then(form => {
+            .then((rolledBack) => {
                 dispatch(showSuccessSnackbar('Änderung rückgängig gemacht.'));
-                dispatch(updateLoadedForm(form));
+                dispatch(updateLoadedForm({
+                    ...form,
+                    version: rolledBack,
+                }));
                 dispatch(clearLoadedFormHistory());
                 setHandleRollback(undefined);
                 props.onClose();
@@ -171,7 +171,7 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps) {
     useEffect(() => {
         if (props.open && form != null && api != null) {
             setIsLoadingRevisions(true);
-            delayPromise(fetchRevisions(form, api, undefined), 1000)
+            delayPromise(fetchRevisions(form, undefined), 1000)
                 .then((revisionsPage) => {
                     setRevisions(revisionsPage.content);
                     setCurrentRevisionsPage(revisionsPage);
@@ -191,7 +191,7 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps) {
     const loadMoreRevisions = () => {
         if (props.open && form != null && api != null) {
             setIsLoadingRevisions(true);
-            fetchRevisions(form, api, currentRevisionsPage)
+            fetchRevisions(form, currentRevisionsPage)
                 .then((revisionsPage) => {
                     setRevisions([
                         ...revisions,
@@ -228,7 +228,7 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps) {
                     }
                     {
                         form != null &&
-                        `Historie für das Formular „${form.internalTitle}“`
+                        `Historie für das Formular „${form.form.internalTitle}“`
                     }
                 </DialogTitleWithClose>
 
@@ -360,7 +360,7 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps) {
                                         {
                                             (currentRevisionsPage?.last !== true ||
                                                 index < revisions.length - 1) &&
-                                            (form?.status === FormStatus.Drafted) &&
+                                            (form?.version.status === FormStatus.Drafted) &&
                                             <Box
                                                 sx={{
                                                     display: 'flex',
@@ -443,8 +443,8 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps) {
 function getFieldLabel(diff: RevisionDiff): string {
     const elem = diff.element;
 
-    if (isForm(elem)) {
-        return formFieldLabelMap[diff.field as keyof Form] ?? diff.field;
+    if (isFormVersionEntity(elem)) {
+        return formFieldLabelMap[diff.field as keyof FormVersionEntity] ?? diff.field;
     }
 
     if (isDeletedElementReference(diff)) {
@@ -464,11 +464,9 @@ function getFieldLabel(diff: RevisionDiff): string {
     return diff.field;
 }
 
-const formFieldLabelMap: Partial<Record<keyof Form, string>> = {
-    internalTitle: 'Interner Titel',
+const formFieldLabelMap: Partial<Record<keyof FormVersionEntity, string>> = {
     publicTitle: 'Öffentlicher Titel',
     type: 'Formular-Typ',
-    developingDepartmentId: 'Entwickelnder Fachbereich',
     responsibleDepartmentId: 'Verantwortlicher Fachbereich',
     managingDepartmentId: 'Bewirtschaftender Fachbereich',
     accessibilityDepartmentId: 'Text für die Erklärung der Barrierefreiheit',
@@ -476,7 +474,7 @@ const formFieldLabelMap: Partial<Record<keyof Form, string>> = {
     imprintDepartmentId: 'Text für das Impressum',
     customerAccessHours: 'Zugriffsfrist in Stunden',
     submissionRetentionWeeks: 'Löschfrist in Wochen',
-}
+};
 
 // Map element types to records of
 type ElementFieldLabelMap = {
@@ -484,9 +482,9 @@ type ElementFieldLabelMap = {
 };
 
 const et: ElementFieldLabelMap = {
-    [ElementType.Root]: {
+    [ElementType.FormLayout]: {
         headline: 'Überschrift',
         tabTitle: 'Tab-Titel',
         expiring: 'Ablaufdatum',
-    }
-}
+    },
+};

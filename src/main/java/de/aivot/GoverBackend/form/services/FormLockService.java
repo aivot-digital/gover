@@ -5,14 +5,15 @@ import de.aivot.GoverBackend.form.cache.repositories.FormLockCacheRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
+import de.aivot.GoverBackend.user.entities.UserEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.Optional;
 
 @Service
@@ -67,5 +68,16 @@ public class FormLockService implements EntityService<FormLockCacheEntity, Integ
     @Override
     public FormLockCacheEntity performUpdate(@Nonnull Integer id, @Nonnull FormLockCacheEntity entity, @Nonnull FormLockCacheEntity existingEntity) throws ResponseException {
         return formLockCacheRepository.save(entity);
+    }
+
+    public void checkFormLock(@Nonnull Integer formId, @Nonnull UserEntity accessingUser) throws ResponseException {
+        var existingFormLock = retrieve(formId);
+        if (existingFormLock.isPresent()) {
+            var formLockedByUserId = existingFormLock.get().getUserId();
+            if (!accessingUser.hasId(formLockedByUserId)) {
+                throw ResponseException
+                        .locked("Das Formular ist von einer anderen Mitarbeiter:in gesperrt.");
+            }
+        }
     }
 }

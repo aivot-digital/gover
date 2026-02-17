@@ -7,7 +7,7 @@ import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.UUID;
 
 public class FormVersionFilter implements Filter<FormVersionEntity> {
@@ -40,11 +40,11 @@ public class FormVersionFilter implements Filter<FormVersionEntity> {
                 .withEquals("version", version)
                 .withEquals("status", status)
                 .withEquals("type", type)
-                .withEquals("legalSupportDepartmentId", legalSupportDepartmentId)
-                .withEquals("technicalSupportDepartmentId", technicalSupportDepartmentId)
-                .withEquals("imprintDepartmentId", imprintDepartmentId)
-                .withEquals("privacyDepartmentId", privacyDepartmentId)
-                .withEquals("accessibilityDepartmentId", accessibilityDepartmentId)
+                .withEquals("legalSupportOrganizationalUnitId", legalSupportDepartmentId)
+                .withEquals("technicalSupportOrganizationalUnitId", technicalSupportDepartmentId)
+                .withEquals("imprintOrganizationalUnitId", imprintDepartmentId)
+                .withEquals("privacyOrganizationalUnitId", privacyDepartmentId)
+                .withEquals("accessibilityOrganizationalUnitId", accessibilityDepartmentId)
                 .withEquals("destinationId", destinationId)
                 .withEquals("themeId", themeId)
                 .withEquals("pdfTemplateKey", pdfTemplateKey)

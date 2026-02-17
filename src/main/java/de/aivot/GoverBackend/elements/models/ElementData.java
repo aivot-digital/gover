@@ -2,20 +2,16 @@ package de.aivot.GoverBackend.elements.models;
 
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
-import de.aivot.GoverBackend.elements.models.elements.ElementWithChildren;
-import de.aivot.GoverBackend.elements.models.elements.RootElement;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.ReplicatingContainerLayout;
+import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
 import de.aivot.GoverBackend.enums.ElementType;
-import jakarta.annotation.Nullable;
 import net.minidev.json.annotate.JsonIgnore;
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 
 public class ElementData extends HashMap<String, ElementDataObject> implements Serializable {
@@ -72,6 +68,10 @@ public class ElementData extends HashMap<String, ElementDataObject> implements S
         return put(id, elementDataObject);
     }
 
+    public Optional<ElementDataObject> getOpt(String key) {
+        return Optional.ofNullable(get(key));
+    }
+
     @JsonIgnore
     public boolean hasAnyError() {
         return values()
@@ -100,7 +100,7 @@ public class ElementData extends HashMap<String, ElementDataObject> implements S
         // Replicating container layouts are excluded here, because they are handled separately.
         if (
                 element instanceof BaseInputElement<?> &&
-                !(element instanceof ReplicatingContainerLayout) &&
+                !(element instanceof ReplicatingContainerLayoutElement) &&
                 valueMap.containsKey(element.getId())
         ) {
             elementDataObject.setInputValue(valueMap.get(element.getId()));
@@ -114,7 +114,7 @@ public class ElementData extends HashMap<String, ElementDataObject> implements S
             // RootElements are special elements that can contain multiple, additional steps,
             // which are held in the root element itself.
             // These steps are the introduction step, summary step and submit step.
-            case RootElement _rootElement -> {
+            case FormLayoutElement _rootElement -> {
                 if (_rootElement.getIntroductionStep() != null) {
                     var introductionStepValue = valueMap.get(_rootElement.getIntroductionStep().getId());
                     elementData.putInputValue(
@@ -150,7 +150,7 @@ public class ElementData extends HashMap<String, ElementDataObject> implements S
             // ReplicatingContainerLayouts are special elements that can contain multiple child elements.
             // These child elements are replicated for each value in this container.
             // A value in this container is a scope for all child elements.
-            case ReplicatingContainerLayout replicatingContainerLayout -> {
+            case ReplicatingContainerLayoutElement replicatingContainerLayout -> {
                 // Extract the context in the source map for the replicating container layout.
                 var rawReplicatingContainerContextsInSourceMap = valueMap
                         .get(replicatingContainerLayout.getId());
@@ -192,7 +192,7 @@ public class ElementData extends HashMap<String, ElementDataObject> implements S
             // ElementWithChildren are elements that can contain multiple child elements.
             // These child elements are handled recursively.
             // If the element has children, iterate over them and call this function recursively.
-            case ElementWithChildren<?> elementWithChildren -> {
+            case LayoutElement<?> elementWithChildren -> {
                 if (elementWithChildren.getChildren() != null) {
                     for (var child : elementWithChildren.getChildren()) {
                         var childElementData = ElementData.fromValueMap(child, valueMap);
@@ -238,7 +238,7 @@ public class ElementData extends HashMap<String, ElementDataObject> implements S
         }
 
         switch (element) {
-            case RootElement _rootElement -> {
+            case FormLayoutElement _rootElement -> {
                 addValueToMap.accept(_rootElement.getIntroductionStep());
                 addValueToMap.accept(_rootElement.getSummaryStep());
                 addValueToMap.accept(_rootElement.getSubmitStep());
@@ -256,14 +256,14 @@ public class ElementData extends HashMap<String, ElementDataObject> implements S
                     }
                 }
             }
-            case GroupLayout _groupLayout -> {
+            case GroupLayoutElement _groupLayout -> {
                 if (_groupLayout.getChildren() != null) {
                     for (var child : _groupLayout.getChildren()) {
                         map.putAll(toValueMap(child, elementData));
                     }
                 }
             }
-            case ReplicatingContainerLayout repl -> {
+            case ReplicatingContainerLayoutElement repl -> {
                 var childDataObject = elementData
                         .get(repl.getId());
 

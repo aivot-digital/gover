@@ -3,14 +3,19 @@ package de.aivot.GoverBackend.secrets.controllers;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
+import de.aivot.GoverBackend.exceptions.BadRequestException;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.user.services.UserService;
-import de.aivot.GoverBackend.exceptions.*;
 import de.aivot.GoverBackend.secrets.dtos.SecretEntityRequestDTO;
 import de.aivot.GoverBackend.secrets.dtos.SecretEntityResponseDTO;
 import de.aivot.GoverBackend.secrets.entities.SecretEntity;
-import de.aivot.GoverBackend.secrets.services.SecretService;
 import de.aivot.GoverBackend.secrets.filters.SecretFilter;
+import de.aivot.GoverBackend.secrets.services.SecretService;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
+import de.aivot.GoverBackend.user.services.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nonnull;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -20,8 +25,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.UUID;
 
@@ -31,29 +34,35 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/secrets/")
+@Tag(
+        name = "Secrets",
+        description = "Secrets are used to store sensitive information like passwords, API keys, etc. " +
+                      "They are encrypted and can be retrieved securely."
+)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class SecretController {
     private final ScopedAuditService auditService;
     private final SecretService secretService;
+    private final UserService userService;
 
     @Autowired
-    public SecretController(
-            AuditService auditService,
-            SecretService secretService
-    ) {
+    public SecretController(AuditService auditService,
+                            SecretService secretService, UserService userService) {
         this.auditService = auditService.createScopedAuditService(SecretController.class);
         this.secretService = secretService;
+        this.userService = userService;
     }
 
     @GetMapping("")
+    @Operation(
+            summary = "List Secrets",
+            description = "Retrieve a paginated list of secrets. " +
+                          "Supports filtering by various criteria."
+    )
     public Page<SecretEntityResponseDTO> list(
-            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PageableDefault Pageable pageable,
             @Nonnull @Valid SecretFilter filter
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
         return secretService
                 .list(pageable, filter)
                 .map(SecretEntityResponseDTO::fromEntity);
@@ -69,15 +78,21 @@ public class SecretController {
      * @return The response containing the key of the created secret.
      */
     @PostMapping("")
+    @Operation(
+            summary = "Create Secret",
+            description = "Create a new secret. The secret is encrypted and stored securely. " +
+                          "The response contains the key of the created secret. " +
+                          "Requires system administrator privileges."
+    )
     public SecretEntityResponseDTO create(
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody @Valid SecretEntityRequestDTO secretDTO
     ) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
-                .orElseThrow(ResponseException::forbidden);
+                .asSystemAdmin()
+                .orElseThrow(ResponseException::noSystemAdminPermission);
 
         // Save the secret with the authenticated user
         SecretEntity result = null;
@@ -106,13 +121,15 @@ public class SecretController {
      * @return The response containing the secret data.
      */
     @GetMapping("{key}/")
+    @Operation(
+            summary = "Retrieve Secret",
+            description = "Retrieve a secret by its unique key. " +
+                          "The response contains the secret data excluding the encrypted value. " +
+                          "Requires appropriate permissions."
+    )
     public SecretEntityResponseDTO retrieve(
-            @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID key
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
 
         return secretService
                 .retrieve(key)
@@ -134,16 +151,22 @@ public class SecretController {
      * @return The response containing the updated secret data.
      */
     @PutMapping("{key}/")
+    @Operation(
+            summary = "Update Secret",
+            description = "Update an existing secret identified by its unique key. " +
+                          "To preserve the old value, set the new value to a string of asterisks. " +
+                          "Requires system administrator privileges."
+    )
     public SecretEntityResponseDTO update(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID key,
             @RequestBody @Valid SecretEntityRequestDTO secretDTO
     ) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
-                .orElseThrow(ResponseException::forbidden);
+                .asSystemAdmin()
+                .orElseThrow(ResponseException::noSystemAdminPermission);
 
         // Save the updated secret
         var result = secretService
@@ -157,15 +180,20 @@ public class SecretController {
     }
 
     @DeleteMapping("{key}/")
+    @Operation(
+            summary = "Delete Secret",
+            description = "Delete an existing secret identified by its unique key. " +
+                          "Requires super administrator privileges."
+    )
     public void delete(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID key
     ) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
-                .orElseThrow(ResponseException::forbidden);
+                .asSystemAdmin()
+                .orElseThrow(ResponseException::noSystemAdminPermission);
 
         var entity = secretService
                 .delete(key);
@@ -176,6 +204,5 @@ public class SecretController {
                 "name", entity.getName(),
                 "description", entity.getDescription()
         ));
-
     }
 }

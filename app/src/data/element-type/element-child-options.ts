@@ -2,14 +2,14 @@ import {ElementType} from './element-type';
 
 const BaseComponents = [
     ElementType.Image,
-    ElementType.Container,
+    ElementType.GroupLayout,
 
     ElementType.Checkbox,
     ElementType.Date,
     ElementType.Headline,
     ElementType.Text,
     ElementType.Number,
-    ElementType.Richtext,
+    ElementType.RichText,
     ElementType.Radio,
     ElementType.Select,
     ElementType.MultiCheckbox,
@@ -25,9 +25,9 @@ const BaseComponents = [
 export const ElementChildOptions: Record<ElementType, ElementType[] | null> = {
     [ElementType.Alert]: null,
     [ElementType.Image]: null,
-    [ElementType.Container]: BaseComponents,
+    [ElementType.GroupLayout]: BaseComponents,
     [ElementType.Step]: BaseComponents,
-    [ElementType.Root]: [
+    [ElementType.FormLayout]: [
         ElementType.Step,
     ],
     [ElementType.Checkbox]: null,
@@ -36,7 +36,7 @@ export const ElementChildOptions: Record<ElementType, ElementType[] | null> = {
     [ElementType.MultiCheckbox]: null,
     [ElementType.Number]: null,
     [ElementType.ReplicatingContainer]: BaseComponents,
-    [ElementType.Richtext]: null,
+    [ElementType.RichText]: null,
     [ElementType.Radio]: null,
     [ElementType.Select]: null,
     [ElementType.Spacer]: null,
@@ -48,4 +48,13 @@ export const ElementChildOptions: Record<ElementType, ElementType[] | null> = {
     [ElementType.SubmitStep]: null,
     [ElementType.SubmittedStep]: null,
     [ElementType.FileUpload]: null,
+    [ElementType.DialogLayout]: null,
+    [ElementType.StepperLayout]: null,
+    [ElementType.ConfigLayout]: null,
+    [ElementType.FunctionInput]: null,
+    [ElementType.CodeInput]: null,
+    [ElementType.RichTextInput]: null,
+    [ElementType.UiDefinitionInput]: null,
+    [ElementType.IdentityInput]: null,
+    [ElementType.TabLayout]: null,
 };

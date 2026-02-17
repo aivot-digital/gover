@@ -18,7 +18,7 @@ export function isAnyContentElement(obj: any): obj is AnyInputElement {
         ElementType.Alert,
         ElementType.Headline,
         ElementType.Image,
-        ElementType.Richtext,
+        ElementType.RichText,
         ElementType.Spacer,
     ].includes(obj.type);
 }

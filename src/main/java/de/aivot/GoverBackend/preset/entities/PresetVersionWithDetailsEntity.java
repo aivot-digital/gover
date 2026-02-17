@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.preset.entities;
 
 import de.aivot.GoverBackend.core.converters.GroupLayoutConverter;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -49,7 +49,7 @@ public class PresetVersionWithDetailsEntity {
     @Nonnull
     @Convert(converter = GroupLayoutConverter.class)
     @Column(columnDefinition = "jsonb")
-    private GroupLayout rootElement;
+    private GroupLayoutElement rootElement;
 
     @Nonnull
     private FormStatus status;
@@ -160,11 +160,11 @@ public class PresetVersionWithDetailsEntity {
     }
 
     @Nonnull
-    public GroupLayout getRootElement() {
+    public GroupLayoutElement getRootElement() {
         return rootElement;
     }
 
-    public PresetVersionWithDetailsEntity setRootElement(@Nonnull GroupLayout rootElement) {
+    public PresetVersionWithDetailsEntity setRootElement(@Nonnull GroupLayoutElement rootElement) {
         this.rootElement = rootElement;
         return this;
     }

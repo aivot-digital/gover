@@ -5,8 +5,8 @@ import de.aivot.GoverBackend.payment.entities.PaymentTransactionEntity;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentInformation;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentRequest;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.UUID;
 

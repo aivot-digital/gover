@@ -12,4 +12,6 @@ export enum ServerEntityType {
     Secrets = 'secrets',
     Submissions = 'submissions',
     Themes = 'themes',
+    UserRoles = 'user_roles',
+    SystemRoles = 'system_roles',
 }

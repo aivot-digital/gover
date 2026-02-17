@@ -13,7 +13,6 @@ import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackba
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../../hooks/use-form-manager';
-import {FormsApiService} from '../../../forms/forms-api-service';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {ConstraintDialog} from '../../../../dialogs/constraint-dialog/constraint-dialog';
 import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constraint-link-props';
@@ -26,6 +25,7 @@ import {SelectFieldComponent} from '../../../../components/select-field/select-f
 import {MailProcessingNotice} from '../../../../components/mail-processing-notice/mail-processing-notice';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {CodeEditor} from '../../../../components/code-editor/code-editor';
+import {VFormVersionWithDetailsService} from '../../../forms/services/v-form-version-with-details-api-service';
 
 export const DestinationSchema = yup.object({
     name: yup.string()
@@ -204,8 +204,8 @@ export function DestinationDetailsPageIndex() {
 
         setIsBusy(true);
         try {
-            const uniqueForms = await new FormsApiService(api)
-                .listAllVersions({destinationId: destination.id});
+            const uniqueForms = await new VFormVersionWithDetailsService()
+                .listAll({destinationId: destination.id});
 
             if (uniqueForms.content.length > 0) {
                 const maxVisibleLinks = 5;

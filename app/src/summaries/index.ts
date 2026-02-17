@@ -4,7 +4,9 @@ import {BaseSummary} from './base-summary';
 import {TextFieldSummary} from './text-field-summary';
 import {CheckboxFieldSummary} from './checkbox-field-summary';
 import {DateFieldSummary} from './date-field-summary';
-import {MultiCheckboxFieldComponentSummary} from '../components/multi-checkbox-field/multi-checkbox-field.component.summary';
+import {
+    MultiCheckboxFieldComponentSummary
+} from '../components/multi-checkbox-field/multi-checkbox-field.component.summary';
 import {NumberSummary} from './number-summary';
 import {SelectFieldSummary} from './select-field-summary';
 import {ReplicationContainerSummary} from '../components/replicating-container/replication-container.summary';
@@ -17,18 +19,18 @@ import {GroupSummary} from './group-summary';
 import {RootSummary} from './root-summary';
 
 export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
-    [ElementType.Root]: RootSummary,
+    [ElementType.FormLayout]: RootSummary,
     [ElementType.Step]: StepComponentSummary,
     [ElementType.Alert]: null,
     [ElementType.Image]: null,
-    [ElementType.Container]: GroupSummary,
+    [ElementType.GroupLayout]: GroupSummary,
     [ElementType.Checkbox]: CheckboxFieldSummary,
     [ElementType.Date]: DateFieldSummary,
     [ElementType.Headline]: null,
     [ElementType.MultiCheckbox]: MultiCheckboxFieldComponentSummary,
     [ElementType.Number]: NumberSummary,
     [ElementType.ReplicatingContainer]: ReplicationContainerSummary,
-    [ElementType.Richtext]: null,
+    [ElementType.RichText]: null,
     [ElementType.Radio]: RadioFieldComponentSummary,
     [ElementType.Select]: SelectFieldSummary,
     [ElementType.Spacer]: null,
@@ -40,5 +42,14 @@ export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.SubmitStep]: null,
     [ElementType.SubmittedStep]: null,
     [ElementType.FileUpload]: FileUploadSummary,
+    [ElementType.DialogLayout]: null,
+    [ElementType.StepperLayout]: null,
+    [ElementType.ConfigLayout]: null,
+    [ElementType.FunctionInput]: null,
+    [ElementType.CodeInput]: null,
+    [ElementType.RichTextInput]: null,
+    [ElementType.UiDefinitionInput]: null,
+    [ElementType.IdentityInput]: null,
+    [ElementType.TabLayout]: null,
 };
 

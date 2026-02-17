@@ -27,6 +27,7 @@ import {AboutGoverDialog} from './about-gover-dialog';
 import {ShellNotificationsMenu} from './shell-notifications-menu';
 import Api from '@aivot/mui-material-symbols-400-outlined/dist/api/Api';
 import ReadinessScore from '@aivot/mui-material-symbols-400-outlined/dist/readiness-score/ReadinessScore';
+import FamilyHistory from '@aivot/mui-material-symbols-400-outlined/dist/family-history/FamilyHistory';
 
 /* -----------------------------
  * Types & Navigation Structure
@@ -62,13 +63,13 @@ const DrawerGroups: DrawerGroup[] = [
             {
                 icon: ModuleIcons.tasks,
                 label: 'Aufgaben',
-                disabled: true,
                 chipContent: 26,
+                to: '/tasks',
             },
             {
                 icon: ModuleIcons.submissions,
                 label: 'Vorgänge',
-                to: '/submissions',
+                to: '/process-instances',
             },
             {
                 icon: ModuleIcons.forms,
@@ -78,7 +79,7 @@ const DrawerGroups: DrawerGroup[] = [
             {
                 icon: ModuleIcons.processes,
                 label: 'Prozesse',
-                disabled: true,
+                to: '/processes',
             },
             {
                 icon: ModuleIcons.dataObjects,
@@ -113,7 +114,12 @@ const DrawerGroups: DrawerGroup[] = [
                 label: 'Organisation',
                 children: [
                     {icon: ModuleIcons.departments, label: 'Fachbereiche', to: '/departments'},
+                    {icon: ModuleIcons.departments, label: 'Fachbereiche (Baum)', to: '/departments-tree'},
                     {icon: ModuleIcons.users, label: 'Mitarbeiter:innen', to: '/users'},
+                    {icon: ModuleIcons.teams, label: 'Teams', to: '/teams'},
+                    {icon: ModuleIcons.roles, label: 'Domänenrollen', to: '/user-roles'},
+                    {icon: ModuleIcons.roles, label: 'Systemrollen', to: '/system-roles'},
+                    {icon: <FamilyHistory/>, label: 'Organigramm', to: '/organigram'},
                 ],
             },
             {icon: ModuleIcons.assets, label: 'Dateien & Medien', to: '/assets'},
@@ -136,6 +142,7 @@ const DrawerGroups: DrawerGroup[] = [
                         children: [
                             {icon: ModuleIcons.identity, label: 'Identitätsanbieter', to: '/identity-providers'},
                             {icon: ModuleIcons.payment, label: 'Zahlungsanbieter', to: '/payment-providers'},
+                            {icon: ModuleIcons.storage, label: 'Speicheranbieter', to: '/storage-providers'},
                         ],
                     },
                     {icon: ModuleIcons.extensions, label: 'Erweiterungen', to: '/settings/extensions'},

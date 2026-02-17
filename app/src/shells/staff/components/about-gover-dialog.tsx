@@ -5,6 +5,7 @@ import CodeIcon from '@mui/icons-material/Code';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import React from 'react';
 import {AppInfo} from '../../../app-info';
+import {createApiPath} from '../../../utils/url-path-utils';
 
 interface AboutGoverDialogProps {
     open: boolean;
@@ -144,6 +145,15 @@ export function AboutGoverDialog({ open, onClose }: AboutGoverDialogProps) {
                         startIcon={<ListAltIcon />}
                     >
                         Changelog ansehen
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        href={createApiPath('/api/public/docs/swagger.html')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        startIcon={<ListAltIcon />}
+                    >
+                        API-Dokumentation ansehen
                     </Button>
                 </Stack>
             </Box>

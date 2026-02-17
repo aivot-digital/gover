@@ -1,14 +1,25 @@
-import {useEffect, useMemo} from 'react';
-import {User} from '../../modules/users/models/user';
-import {DepartmentMembership} from '../../modules/departments/models/department-membership';
-import {Page} from '../../models/dtos/page';
+import React, {type ReactNode, useEffect, useMemo} from 'react';
+import {type User} from '../../modules/users/models/user';
+import {type Page} from '../../models/dtos/page';
 import {setMemberships, setUser} from '../../slices/user-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {SystemConfigResponseDto} from '../../modules/configs/dtos/system-config-response-dto';
+import {type SystemConfigResponseDto} from '../../modules/configs/dtos/system-config-response-dto';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {addSnackbarMessage, ErrorMessage, selectErrorMessage, selectSetup, selectStatus, setErrorMessage, setSetup, setStatus, ShellStatus, SnackbarSeverity, SnackbarType} from '../../slices/shell-slice';
+import {
+    addSnackbarMessage,
+    type ErrorMessage,
+    selectErrorMessage,
+    selectSetup,
+    selectStatus,
+    setErrorMessage,
+    setSetup,
+    setStatus,
+    ShellStatus,
+    SnackbarSeverity,
+    SnackbarType,
+} from '../../slices/shell-slice';
 import {SystemApiService} from '../../modules/system/system-api-service';
-import {SystemSetupDTO} from '../../modules/system/dtos/system-setup-dto';
+import {type SystemSetupDTO} from '../../modules/system/dtos/system-setup-dto';
 import {setSystemConfigs, setSystemConfigsFromMap} from '../../slices/system-config-slice';
 import {Login} from '../../pages/staff-pages/login/login';
 import Box from '@mui/material/Box';
@@ -26,8 +37,17 @@ import {ShellOffline} from './components/shell-offline';
 import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 import {ShellResolutionOverlay} from './components/shell-resolution-overlay';
 import {StaffShellError} from './staff-shell-error';
+import {
+    VDepartmentMembershipWithDetailsService,
+} from '../../modules/departments/services/v-department-membership-with-details-service';
+import {
+    type VDepartmentMembershipWithDetailsEntity,
+} from '../../modules/departments/entities/v-department-membership-with-details-entity';
+import {UsersApiService} from '../../modules/users/users-api-service';
+import {PermissionApiService} from '../../modules/permissions/permission-api-service';
+import {PermissionSet} from '../../modules/permissions/models/permission-set';
 
-export function StaffShell() {
+export function StaffShell(): ReactNode {
     const routerError = useRouteError();
     const dispatch = useAppDispatch();
     const setup = useAppSelector(selectSetup);
@@ -38,7 +58,7 @@ export function StaffShell() {
 
     // Display a message if the API becomes unreachable.
     useEffect(() => {
-        window.addEventListener(API_EVENT_UNREACHABLE, function () {
+        window.addEventListener(API_EVENT_UNREACHABLE, function() {
             dispatch(addSnackbarMessage({
                 key: 'api-unreachable',
                 message: 'Die Verbindung zum Server wurde unterbrochen. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.',
@@ -131,7 +151,7 @@ export function StaffShell() {
 
     if (status === ShellStatus.Offline) {
         return (
-            <ShellOffline />
+            <ShellOffline/>
         );
     }
 
@@ -143,11 +163,11 @@ export function StaffShell() {
         <>
             {
                 status === ShellStatus.Loading &&
-                <ShellLoader />
+                <ShellLoader/>
             }
             {
                 status === ShellStatus.Login &&
-                <Login />
+                <Login/>
             }
             {
                 status === ShellStatus.Ready &&
@@ -159,7 +179,7 @@ export function StaffShell() {
                             height: '100vh',
                         }}
                     >
-                        <ShellDrawer />
+                        <ShellDrawer/>
 
                         <Box
                             sx={{
@@ -168,23 +188,23 @@ export function StaffShell() {
                                 overflowY: 'auto',
                             }}
                         >
-                            <ShellProgress />
+                            <ShellProgress/>
 
                             {
                                 error != null &&
-                                <StaffShellError error={error} />
+                                <StaffShellError error={error}/>
                             }
                             {
                                 error == null &&
-                                <Outlet />
+                                <Outlet/>
                             }
                         </Box>
                     </Box>
 
-                    <ShellSearchDialog />
-                    <ShellSessionEndWarnPopup />
-                    <ShellSessionExpiredDialog />
-                    <ShellResolutionOverlay />
+                    <ShellSearchDialog/>
+                    <ShellSessionEndWarnPopup/>
+                    <ShellSessionExpiredDialog/>
+                    <ShellResolutionOverlay/>
                 </>
             }
         </>
@@ -192,14 +212,15 @@ export function StaffShell() {
 }
 
 async function fetchSetup(): Promise<SystemSetupDTO> {
-    return new SystemApiService()
+    return await new SystemApiService()
         .fetchSetup();
 }
 
 async function authenticateWithOidcCode(searchParams: URLSearchParams): Promise<{
     user: User;
-    memberships: DepartmentMembership[];
+    memberships: VDepartmentMembershipWithDetailsEntity[];
     configs: SystemConfigResponseDto[];
+    permissionSet: PermissionSet;
 } | undefined> {
     const authService = new AuthService();
     const apiService = new BaseApiService();
@@ -218,16 +239,19 @@ async function authenticateWithOidcCode(searchParams: URLSearchParams): Promise<
         window.location.search = '';
     }
 
-    const user = await apiService
-        .get<User>('/api/users/self/');
+    const user = await new UsersApiService()
+        .retrieveSelf();
 
-    const membershipsPage = await apiService
-        .get<Page<DepartmentMembership>>('/api/department-memberships/', {
-            query: new URLSearchParams({
-                userId: user.id,
-            }),
+    const membershipsPage = await new VDepartmentMembershipWithDetailsService()
+        .listAll({
+            userId: user.id,
         });
     const memberships = membershipsPage.content;
+
+    const permissionSet = await new PermissionApiService()
+        .getPermissionSetForUser(user.id);
+
+    console.log(permissionSet);
 
     const configsPage = await apiService
         .get<Page<SystemConfigResponseDto>>('/api/system-configs/');
@@ -238,5 +262,6 @@ async function authenticateWithOidcCode(searchParams: URLSearchParams): Promise<
         user,
         memberships,
         configs,
+        permissionSet,
     };
 }

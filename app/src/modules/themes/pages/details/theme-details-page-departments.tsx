@@ -6,10 +6,10 @@ import {EditOutlined} from '@mui/icons-material';
 import {Box, Typography} from '@mui/material';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import type {Theme} from '../../models/theme';
-import {DepartmentResponseDTO} from '../../../departments/dtos/department-response-dto';
-import {DepartmentsApiService} from '../../../departments/departments-api-service';
+import {DepartmentEntity} from '../../../departments/entities/department-entity';
+import {DepartmentApiService} from '../../../departments/services/department-api-service';
 
-const columns: GridColDef<DepartmentResponseDTO>[] = [
+const columns: GridColDef<DepartmentEntity>[] = [
     {
         field: 'name',
         headerName: 'Name des Fachbereichs',
@@ -47,7 +47,7 @@ export function ThemeDetailsPageDepartments() {
                 Eine Liste aller Fachbereiche, die dieses Farbschema für ihr optisches Erscheinungsbild verwenden.
             </Typography>
 
-            <GenericList<DepartmentResponseDTO>
+            <GenericList<DepartmentEntity>
                 disableFullWidthToggle={true}
                 sx={{
                     mx: '-16px',
@@ -56,7 +56,7 @@ export function ThemeDetailsPageDepartments() {
                 columnDefinitions={columns}
                 defaultFilter="dev"
                 fetch={(options) => {
-                    return new DepartmentsApiService()
+                    return new DepartmentApiService()
                         .list(
                             options.page,
                             options.size,
@@ -75,7 +75,7 @@ export function ThemeDetailsPageDepartments() {
                 noDataPlaceholder="Keine Formulare vorhanden"
                 loadingPlaceholder="Lade Formulare…"
                 noSearchResultsPlaceholder="Keine Formulare gefunden"
-                rowActions={(item: DepartmentResponseDTO) => [{
+                rowActions={(item) => [{
                     icon: <EditOutlined />,
                     to: `/departments/${item.id}`,
                     tooltip: 'Fachbereich anzeigen',

@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.payment.dtos;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.UUID;
 
 public record PaymentProviderResponseDTO(
@@ -31,7 +31,7 @@ public record PaymentProviderResponseDTO(
                 entity.getKey(),
                 entity.getName(),
                 entity.getDescription(),
-                entity.getProviderKey(),
+                entity.getPaymentProviderDefinitionKey(),
                 entity.getTestProvider(),
                 entity.getIsEnabled(),
                 entity.getConfig()

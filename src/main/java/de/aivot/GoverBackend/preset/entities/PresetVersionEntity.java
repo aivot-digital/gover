@@ -1,12 +1,12 @@
 package de.aivot.GoverBackend.preset.entities;
 
 import de.aivot.GoverBackend.core.converters.GroupLayoutConverter;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.form.enums.FormStatus;
-import jakarta.persistence.*;
-
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
@@ -28,7 +28,7 @@ public class PresetVersionEntity {
     @Nonnull
     @Convert(converter = GroupLayoutConverter.class)
     @Column(columnDefinition = "jsonb")
-    private GroupLayout rootElement;
+    private GroupLayoutElement rootElement;
 
     @Nonnull
     private FormStatus status;
@@ -49,7 +49,7 @@ public class PresetVersionEntity {
 
     public PresetVersionEntity(@Nonnull UUID presetKey,
                                @Nonnull Integer version,
-                               @Nonnull GroupLayout rootElement,
+                               @Nonnull GroupLayoutElement rootElement,
                                @Nonnull FormStatus status,
                                @Nullable LocalDateTime created,
                                @Nullable LocalDateTime updated,
@@ -124,11 +124,11 @@ public class PresetVersionEntity {
     }
 
     @Nonnull
-    public GroupLayout getRootElement() {
+    public GroupLayoutElement getRootElement() {
         return rootElement;
     }
 
-    public PresetVersionEntity setRootElement(@Nonnull GroupLayout rootElement) {
+    public PresetVersionEntity setRootElement(@Nonnull GroupLayoutElement rootElement) {
         this.rootElement = rootElement;
         return this;
     }

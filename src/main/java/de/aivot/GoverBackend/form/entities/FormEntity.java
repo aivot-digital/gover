@@ -1,9 +1,10 @@
 package de.aivot.GoverBackend.form.entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import org.hibernate.validator.constraints.Length;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -12,26 +13,25 @@ import java.util.Objects;
 @Table(name = "forms")
 public class FormEntity {
     @Id
-    @Nonnull
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Nonnull@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "applications_id_seq")
+    @SequenceGenerator(name = "applications_id_seq", allocationSize = 1)
     private Integer id;
 
     @Nonnull
     @Column(length = 255)
+    @NotNull(message = "Die Slug darf nicht null sein.")
+    @Length(min = 3, max = 255, message = "Die Slug muss zwischen 3 und 255 Zeichen lang sein.")
     private String slug;
 
     @Nonnull
     @Column(length = 96)
+    @NotNull(message = "Der interne Titel darf nicht null sein.")
+    @Length(min = 3, max = 96, message = "Der interne Titel muss zwischen 3 und 96 Zeichen lang sein.")
     private String internalTitle;
 
     @Nonnull
+    @NotNull(message = "Die ID der entwickelnden Abteilung darf nicht null sein.")
     private Integer developingDepartmentId;
-
-    @Nonnull
-    private LocalDateTime created;
-
-    @Nonnull
-    private LocalDateTime updated;
 
     @Nullable
     @Column(columnDefinition = "int2")
@@ -43,6 +43,12 @@ public class FormEntity {
 
     @Nonnull
     private Integer versionCount;
+
+    @Nonnull
+    private LocalDateTime created;
+
+    @Nonnull
+    private LocalDateTime updated;
 
     // region constructors
 
@@ -69,20 +75,6 @@ public class FormEntity {
         this.publishedVersion = publishedVersion;
         this.draftedVersion = draftedVersion;
         this.versionCount = versionCount;
-    }
-
-    public static FormEntity from(FormVersionWithDetailsEntity formVersionWithDetailsEntity) {
-        return new FormEntity(
-                formVersionWithDetailsEntity.getId(),
-                formVersionWithDetailsEntity.getSlug(),
-                formVersionWithDetailsEntity.getInternalTitle(),
-                formVersionWithDetailsEntity.getDevelopingDepartmentId(),
-                formVersionWithDetailsEntity.getCreated(),
-                formVersionWithDetailsEntity.getUpdated(),
-                formVersionWithDetailsEntity.getPublishedVersion(),
-                formVersionWithDetailsEntity.getDraftedVersion(),
-                formVersionWithDetailsEntity.getVersionCount()
-        );
     }
 
     // endregion

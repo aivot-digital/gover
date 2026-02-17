@@ -4,7 +4,6 @@ import {LoadingPlaceholder} from '../../components/loading-placeholder/loading-p
 import {Box, ThemeProvider, useTheme} from '@mui/material';
 import {createAppTheme} from '../../theming/themes';
 import {ViewDispatcherComponent} from '../../components/view-dispatcher.component';
-import {NotFoundPage} from '../../components/not-found-page/not-found-page';
 import {MetaElement} from '../../components/meta-element/meta-element';
 import {selectLoadedForm, showDialog, updateLoadedForm} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
@@ -18,14 +17,14 @@ import {Theme} from '../../modules/themes/models/theme';
 import {useApi} from '../../hooks/use-api';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
-import {FormsApiService as FormsApiServiceV2} from '../../modules/forms/forms-api-service-v2';
 import {SnackbarProvider} from '../../providers/snackbar-provider';
 import {selectIdentityId} from '../../slices/identity-slice';
 import {ElementData} from '../../models/element-data';
 import {CustomerInputService} from '../../services/customer-input-service';
-import {formCitizenDetailsResponseDTO} from '../../modules/forms/dtos/form-details-response-dto';
 import {setErrorMessage} from '../../slices/shell-slice';
 import {isApiError} from '../../models/api-error';
+import {FormApiService} from '../../modules/forms/services/form-api-service';
+import {formCitizenDetailsResponseDTO} from '../../modules/forms/dtos/form-citizen-details-response-dto';
 
 export const DialogSearchParam = 'dialog';
 
@@ -57,7 +56,7 @@ export function CustomerFormPage() {
 
         if (storeData && form != null) {
             CustomerInputService
-                .storeCustomerInput(form, data);
+                .storeCustomerInput(form.form.slug, form.version.version, form.version.rootElement, data);
         }
     };
 
@@ -70,7 +69,7 @@ export function CustomerFormPage() {
             return;
         }
 
-        new FormsApiServiceV2()
+        new FormApiService()
             .retrieveBySlugAndVersion(slug, version, identityId)
             .then((application) => {
                 const form = formCitizenDetailsResponseDTO(application);
@@ -102,8 +101,8 @@ export function CustomerFormPage() {
             return;
         }
 
-        new FormsApiServiceV2()
-            .getFormTheme(slug, version)
+        new FormApiService()
+            .getFormTheme(slug, version != null ? parseInt(version) : undefined)
             .then(setTheme)
             .catch(() => {
                 // Ignore theme loading errors
@@ -119,14 +118,14 @@ export function CustomerFormPage() {
             <LoadingPlaceholder />
         );
     } else {
-        const allElements = flattenElements(form.rootElement);
+        const allElements = flattenElements(form.version.rootElement);
 
         return (
             <ThemeProvider theme={_theme}>
                 <SnackbarProvider>
                     <MetaElement
-                        faviconUrl={new FormsApiServiceV2().getFormFaviconLink(form.slug, form.version)}
-                        title={form.rootElement.tabTitle ?? form.rootElement.headline ?? ''}
+                        faviconUrl={new FormApiService().getFormFaviconLink(form.form.slug, form.version.version)}
+                        title={form.version.rootElement.tabTitle ?? form.version.rootElement.headline ?? ''}
                         titlePrefix={provider}
                     />
 
@@ -136,9 +135,9 @@ export function CustomerFormPage() {
                         }}
                     >
                         <ViewDispatcherComponent
-                            rootElement={form.rootElement}
+                            rootElement={form.version.rootElement}
                             allElements={allElements}
-                            element={form.rootElement}
+                            element={form.version.rootElement}
                             isBusy={false}
                             isDeriving={false}
                             mode="viewer"

@@ -15,6 +15,8 @@ interface ElementDerivationContextProps {
     elementData: ElementData;
     onElementDataChange: (newData: ElementData) => void;
     disabled?: boolean;
+    onDerivationStarted?: () => void;
+    onDerivationFinished?: () => void;
 }
 
 export function ElementDerivationContext(props: ElementDerivationContextProps) {
@@ -23,6 +25,8 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         elementData,
         onElementDataChange,
         disabled,
+        onDerivationStarted,
+        onDerivationFinished,
     } = props;
 
     const api = useApi();
@@ -81,6 +85,10 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
 
     const derive = async (elementData: ElementData) => {
         try {
+            if (onDerivationStarted != null) {
+                onDerivationStarted();
+            }
+
             const res = await new ElementsApiService(api)
                 .derive({
                     element: element,
@@ -92,7 +100,12 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
                         skipValuesForElementIds: [],
                     },
                 });
+
             onElementDataChange(res.elementData);
+
+            if (onDerivationFinished != null) {
+                onDerivationFinished();
+            }
         } catch (error) {
             if (isApiError(error) && error.displayableToUser) {
                 dispatch(showErrorSnackbar(error.message));

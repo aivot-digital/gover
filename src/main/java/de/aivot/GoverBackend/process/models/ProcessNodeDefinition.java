@@ -1,0 +1,275 @@
+package de.aivot.GoverBackend.process.models;
+
+import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
+import de.aivot.GoverBackend.process.enums.ProcessNodeType;
+import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+public interface ProcessNodeDefinition {
+    /**
+     * Get the unique key of the process node provider.
+     * Providers are identified by this key, when they are assigned to process definition nodes.
+     *
+     * @return The unique key of the process node provider.
+     */
+    @Nonnull
+    String getKey();
+
+    /**
+     * Get the version of the process node provider.
+     * This allows multiple versions of the same provider to coexist.
+     *
+     * @return The version of the process node provider.
+     */
+    @Nonnull
+    Integer getVersion();
+
+    /**
+     * Get the type of the process node.
+     * This type specifies the behavior of the node in the process execution and if and how other nodes can be connected to it.
+     *
+     * @return The type of the process node.
+     */
+    @Nonnull
+    ProcessNodeType getType();
+
+    /**
+     * Get the name of the process node.
+     * This is displayed in the UI when a node of this type is used in a process definition.
+     *
+     * @return The name of the process node.
+     */
+    @Nonnull
+    String getName();
+
+    /**
+     * Get the description of the process node.
+     * This is displayed in the UI when a node of this type is used in a process definition.
+     *
+     * @return The description of the process node.
+     */
+    @Nonnull
+    String getDescription();
+
+    /**
+     * Get the ports of the process node.
+     * The ports are outgoing connections that can be used to connect this node to other nodes in the process definition.
+     *
+     * @return The ports of the process node.
+     */
+    @Nonnull
+    List<ProcessNodePort> getPorts();
+
+    /**
+     * Get the outputs of the process node.
+     * The outputs are data produced by this node that can be mapped in the node configuration.
+     *
+     * @return The outputs of the process node.
+     */
+    @Nonnull
+    default List<ProcessNodeOutput> getOutputs() {
+        return List.of();
+    }
+
+    /**
+     * Get the configuration layout for nodes of this provider type.
+     *
+     * @param context The configuration context.
+     * @return The configuration layout.
+     * @throws ResponseException If an error occurs while generating the layout.
+     */
+    @Nonnull
+    default ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionContextConfig context) throws ResponseException {
+        var layout = new ConfigLayoutElement();
+        layout.setId(getKey() + "-config");
+        return layout;
+    }
+
+    /**
+     * Get the testing layout for nodes of this provider type.
+     * This layout is used to display the node during testing of process definitions.
+     *
+     * @param context The testing context.
+     * @return The testing layout, or null if not provided.
+     * @throws ResponseException If an error occurs while generating the layout.
+     */
+    @Nullable
+    default GroupLayoutElement getTestingLayout(@Nonnull ProcessNodeDefinitionContextTesting context) throws ResponseException {
+        return null;
+    }
+
+    /**
+     * Cleans the configuration data for export.
+     *
+     * @param configuration The configuration data to be cleaned.
+     * @return The cleaned configuration data.
+     */
+    @Nonnull
+    default ElementData cleanConfigurationForExport(@Nonnull ElementData configuration) {
+        return configuration;
+    }
+
+    /**
+     * Prefills the configuration data on import.
+     *
+     * @param configuration The configuration data to be prefilled.
+     * @return The prefilled configuration data.
+     */
+    @Nonnull
+    default ElementData prefillConfigurationOnImport(@Nonnull ElementData configuration) {
+        return configuration;
+    }
+
+    /**
+     * Validates the configuration of a process definition node entity.
+     *
+     * @param processNodeEntity The process definition node entity to be validated.
+     * @throws ResponseException If the configuration is invalid.
+     */
+    default void validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
+                                       @Nonnull ElementData configuration) throws ResponseException {
+    }
+
+    /**
+     * Initialize a task by this node provider during process instance execution.
+     *
+     * @param context The initialization context.
+     * @return The result of the node execution.
+     * @throws ProcessNodeExecutionException If an error occurs during execution.
+     */
+    ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException;
+
+    /**
+     * Get the task status layout for nodes of this provider type.
+     * This layout is used to display the status of the task in task lists and overviews.
+     * It is optional and can be null.
+     *
+     * @param context The context to build the layout for.
+     * @return The task status layout, or null if not provided.
+     * @throws ResponseException If an error occurs while generating the layout.
+     */
+    @Nullable
+    default LayoutElement<?> getTaskStatusLayout(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+        return null;
+    }
+
+    /**
+     * Get the staff task view layout for nodes of this provider type.
+     *
+     * @param context The context to build the layout for.
+     * @return The task view layout.
+     * @throws ResponseException If an error occurs while generating the layout.
+     */
+    @Nonnull
+    default LayoutElement<?> getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+        var layout = new GroupLayoutElement();
+        layout.setId(getKey() + "-staff-task-view");
+        return layout;
+    }
+
+    /**
+     * Get the task view events for nodes of this provider type.
+     * These events can be used to trigger actions in the task view UI.
+     *
+     * @param context The context to build the events for.
+     * @return The task view events.
+     * @throws ResponseException If an error occurs while generating the events.
+     */
+    @Nonnull
+    default List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+        return List.of();
+    }
+
+    /**
+     * Get the staff task view data for nodes of this provider type.
+     *
+     * @param context The context to build the data for.
+     * @return The task view data.
+     * @throws ResponseException If an error occurs while generating the data.
+     */
+    default ElementData getStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+        return new ElementData();
+    }
+
+    /**
+     * Update an existing task by this node provider during process instance execution.
+     * If this returns an empty Optional, the task is considered not updated.
+     *
+     * @param context The context for the update.
+     * @param update  The update data passed to this node.
+     * @param event   The event that triggered the update.
+     * @return An Optional containing the result of the node execution, or empty if the task was not updated.
+     * @throws ResponseException             If an error occurs during execution.
+     * @throws ProcessNodeExecutionException If an error occurs during execution.
+     */
+    default Optional<ProcessNodeExecutionResult> onUpdateFromStaff(@Nonnull ProcessNodeExecutionContextUIStaff context,
+                                                                   @Nonnull Map<String, Object> update,
+                                                                   @Nonnull String event) throws ResponseException, ProcessNodeExecutionException {
+        return Optional.empty();
+    }
+
+
+    /**
+     * Get the customer task view layout for nodes of this provider type.
+     *
+     * @param context The context to build the layout for.
+     * @return The task view layout.
+     * @throws ResponseException If an error occurs while generating the layout.
+     */
+    @Nonnull
+    default GroupLayoutElement getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer context) throws ResponseException {
+        var layout = new GroupLayoutElement();
+        layout.setId(getKey() + "-customer-task-view");
+        return layout;
+    }
+
+    /**
+     * Get the customer task view events for nodes of this provider type.
+     *
+     * @param context The context to build the events for.
+     * @return The task view events.
+     * @throws ResponseException If an error occurs while generating the events.
+     */
+    @Nonnull
+    default List<TaskViewEvent> getCustomerTaskViewEvents(@Nonnull ProcessNodeExecutionContextUICustomer context) throws ResponseException {
+        return List.of();
+    }
+
+    /**
+     * Get the customer task view data for nodes of this provider type.
+     *
+     * @param context The context to build the data for.
+     * @return The task view data.
+     * @throws ResponseException If an error occurs while generating the data.
+     */
+    default ElementData getCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer context) throws ResponseException {
+        return new ElementData();
+    }
+
+    /**
+     * Update an existing task by this node provider during process instance execution.
+     * If this returns an empty Optional, the task is considered not updated.
+     *
+     * @param context The context for the update.
+     * @param update  The update data passed to this node.
+     * @param event   The event that triggered the update.
+     * @return An Optional containing the result of the node execution, or empty if the task was not updated.
+     * @throws ResponseException             If an error occurs during execution.
+     * @throws ProcessNodeExecutionException If an error occurs during execution.
+     */
+    default Optional<ProcessNodeExecutionResult> onUpdateFromCustomer(@Nonnull ProcessNodeExecutionContextUICustomer context,
+                                                                      @Nonnull Map<String, Object> update,
+                                                                      @Nonnull String event) throws ResponseException, ProcessNodeExecutionException {
+        return Optional.empty();
+    }
+}

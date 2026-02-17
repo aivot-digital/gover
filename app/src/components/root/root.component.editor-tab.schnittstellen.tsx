@@ -8,7 +8,6 @@ import {SelectFieldComponent} from '../select-field/select-field-component';
 import {AlertComponent} from '../alert/alert-component';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {DestinationType} from '../../data/destination-type';
-import {Form, Form as Application} from '../../models/entities/form';
 import {useApi} from '../../hooks/use-api';
 import {DestinationsApiService} from '../../modules/destination/destinations-api-service';
 import {IdentityProviderListDTO} from '../../modules/identity/models/identity-provider-list-dto';
@@ -29,8 +28,10 @@ import Tooltip from '@mui/material/Tooltip';
 import Chip from '@mui/material/Chip';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 import {withDelay} from '../../utils/with-delay';
+import {LoadedForm} from '../../slices/app-slice';
+import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
 
-export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<RootElement, Application>) {
+export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<RootElement, LoadedForm>) {
     const api = useApi();
     const dispatch = useAppDispatch();
     const user = useAppSelector(selectUser);
@@ -118,10 +119,13 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                     destinations.length > 0 &&
                     <SelectFieldComponent
                         label="Auswahl der Schnittstelle"
-                        value={props.entity.destinationId?.toString() ?? undefined}
+                        value={props.entity.version.destinationId?.toString() ?? undefined}
                         onChange={(val) => {
                             props.onPatchEntity({
-                                destinationId: val != null ? parseInt(val) : undefined,
+                                version: {
+                                    ...props.entity.version,
+                                    destinationId: val != null ? parseInt(val) : null,
+                                },
                             });
                         }}
                         options={destinations.map((destination) => ({
@@ -134,7 +138,7 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
 
                 {
                     destinations.length > 0 &&
-                    props.entity.destinationId == null &&
+                    props.entity.version.destinationId == null &&
                     <AlertComponent
                         title="Keine Schnittstelle ausgewählt"
                         color="info"
@@ -150,8 +154,8 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
 
                 {
                     destinations.length > 0 &&
-                    props.entity.destinationId != null &&
-                    destinations.find((dest) => dest.id === props.entity.destinationId)?.type === DestinationType.Mail &&
+                    props.entity.version.destinationId != null &&
+                    destinations.find((dest) => dest.id === props.entity.version.destinationId)?.type === DestinationType.Mail &&
                     <AlertComponent
                         title="Hinweis zur E-Mail Schnittstelle"
                         color="warning"
@@ -218,18 +222,21 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                             variant="switch"
                             label="Authentifizierung erforderlich"
                             hint="Aktivieren Sie diese Option, wenn Sie eine Authentifizierung der antragstellenden Person über einen der bereitgestellten Nutzerkontenanbieter benötigen."
-                            value={props.entity.identityVerificationRequired}
+                            value={props.entity.version.identityVerificationRequired}
                             onChange={(checked) => {
                                 props.onPatchEntity({
-                                    identityVerificationRequired: checked,
+                                    version: {
+                                        ...props.entity.version,
+                                        identityVerificationRequired: checked,
+                                    },
                                 });
                             }}
                             disabled={!props.editable}
                         />
 
                         {
-                            props.entity.identityVerificationRequired &&
-                            props.entity.identityProviders.length === 0 &&
+                            props.entity.version.identityVerificationRequired &&
+                            props.entity.version.identityProviders.length === 0 &&
                             <AlertComponent
                                 color="warning"
                                 title="Keine Nutzerkontenanbieter aktiviert"
@@ -247,8 +254,15 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                                     <IdentityProviderItem
                                         key={idp.key}
                                         provider={idp}
-                                        form={props.entity}
-                                        onFormPatch={props.onPatchEntity}
+                                        version={props.entity.version}
+                                        onVersionPatch={(version) => {
+                                            props.onPatchEntity({
+                                                version: {
+                                                    ...props.entity.version,
+                                                    ...version,
+                                                },
+                                            });
+                                        }}
                                         disabled={!props.editable}
                                     />
                                 ))
@@ -263,20 +277,20 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
 
 interface IdentityProviderItemProps {
     provider: IdentityProviderListDTO;
-    form: Form;
-    onFormPatch: (form: Partial<Form>) => void;
+    version: FormVersionEntity;
+    onVersionPatch: (form: Partial<FormVersionEntity>) => void;
     disabled?: boolean;
 }
 
 function IdentityProviderItem(props: IdentityProviderItemProps) {
     const {
         provider,
-        form,
+        version,
     } = props;
 
     const link: IdentityProviderLink | undefined = useMemo(() => {
-        return form.identityProviders.find((idp) => idp.identityProviderKey === provider.key);
-    }, [form, provider]);
+        return version.identityProviders.find((idp) => idp.identityProviderKey === provider.key);
+    }, [version, provider]);
 
     const isActive = useMemo(() => {
         return link != null;
@@ -301,23 +315,23 @@ function IdentityProviderItem(props: IdentityProviderItemProps) {
                     break;
             }
 
-            props.onFormPatch({
+            props.onVersionPatch({
                 identityProviders: [
-                    ...form.identityProviders,
+                    ...version.identityProviders,
                     newIdp,
                 ],
             });
         } else {
-            props.onFormPatch({
-                identityProviders: form.identityProviders
+            props.onVersionPatch({
+                identityProviders: version.identityProviders
                     .filter((idp) => idp.identityProviderKey !== provider.key),
             });
         }
     };
 
     const handleScopeChange = (val: string | undefined) => {
-        props.onFormPatch({
-            identityProviders: form.identityProviders.map((idp) => {
+        props.onVersionPatch({
+            identityProviders: version.identityProviders.map((idp) => {
                 if (idp.identityProviderKey === provider.key) {
                     return {
                         ...idp,
@@ -360,7 +374,14 @@ function IdentityProviderItem(props: IdentityProviderItemProps) {
                                 title="Es handelt sich um einen Test-Nutzerkontenanbieter für z.B. ein Vorproduktionssystem."
                                 arrow={true}
                             >
-                                <Chip sx={{ml: 1, mt: -0.25}} label="Testumgebung" color="info" variant="outlined" size={"small"} icon={<ScienceOutlinedIcon/>}/>
+                                <Chip
+                                    sx={{ml: 1, mt: -0.25}}
+                                    label="Testumgebung"
+                                    color="info"
+                                    variant="outlined"
+                                    size={'small'}
+                                    icon={<ScienceOutlinedIcon />}
+                                />
                             </Tooltip>
                         }
 
@@ -370,7 +391,14 @@ function IdentityProviderItem(props: IdentityProviderItemProps) {
                                 title="Dieser Nutzerkontenanbieter wurde global deaktiviert. Sie können ihn im Formular konfigurieren, Nutzer:innen können sich damit aber nicht authentifizieren."
                                 arrow={true}
                             >
-                                <Chip sx={{ml: 1, mt: -0.25}} label="Global Deaktiviert" color="warning" variant="outlined" size={"small"} icon={<NotInterestedOutlinedIcon/>}/>
+                                <Chip
+                                    sx={{ml: 1, mt: -0.25}}
+                                    label="Global Deaktiviert"
+                                    color="warning"
+                                    variant="outlined"
+                                    size={'small'}
+                                    icon={<NotInterestedOutlinedIcon />}
+                                />
                             </Tooltip>
                         }
                     </Box>

@@ -8,8 +8,6 @@ import {TextFieldComponent} from '../text-field/text-field-component';
 import {AnyInputElement, isAnyInputElement} from '../../models/elements/form/input/any-input-element';
 import type {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {ElementType} from '../../data/element-type/element-type';
-import {FormsApiService} from '../../modules/forms/forms-api-service';
-import {isForm} from '../../models/entities/form';
 import {IdentityProviderListDTO} from '../../modules/identity/models/identity-provider-list-dto';
 import {IdentityProvidersApiService} from '../../modules/identity/identity-providers-api-service';
 import {useApi} from '../../hooks/use-api';
@@ -27,6 +25,8 @@ import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {Link} from 'react-router-dom';
 import {DefaultTabs} from '../element-editor/default-tabs';
 import {createElementEditorNavigationLink} from '../../hooks/use-element-editor-navigation';
+import {FormApiService} from '../../modules/forms/services/form-api-service';
+import {isLoadedForm} from '../../slices/app-slice';
 
 export function ElementEditorMetadataTab<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorMetadataTabProps<T, E>) {
     const api = useApi();
@@ -40,9 +40,9 @@ export function ElementEditorMetadataTab<T extends AnyElement, E extends Element
     const [linkedIdentityProviders, setLinkedIdentityProviders] = useState<IdentityProviderListDTO[]>();
 
     useEffect(() => {
-        if (isForm(entity)) {
-            new FormsApiService(api)
-                .getIdentityProviders(entity.slug, entity.version)
+        if (isLoadedForm(entity)) {
+            new FormApiService()
+                .getIdentityProviders(entity.form.slug, entity.version.version)
                 .then((linkedIdentityProvidersPage) => {
                     return linkedIdentityProvidersPage.content;
                 })
@@ -299,7 +299,8 @@ function collectHttpMappingProblems(element: AnyInputElement, allElements: Eleme
             problems.push(
                 <>
                     <Typography>
-                        Der HTTP-Schnittstellen-Schlüssel <strong>„{element.destinationKey}”</strong> wird bereits von dem Formularelement <Link to={createElementEditorNavigationLink(otherElement.id, DefaultTabs.metadata)}>„{otherElementPath} &gt; {otherElementLabel}”</Link> verwendet.
+                        Der HTTP-Schnittstellen-Schlüssel <strong>„{element.destinationKey}”</strong> wird bereits von dem
+                        Formularelement <Link to={createElementEditorNavigationLink(otherElement.id, DefaultTabs.metadata)}>„{otherElementPath} &gt; {otherElementLabel}”</Link> verwendet.
                         Dies führt dazu, dass die Daten gegebenenfalls überschrieben werden. Stellen Sie sicher, dass dies ein beabsichtigtes Verhalten ist.
                     </Typography>
                 </>,

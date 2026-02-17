@@ -1,8 +1,7 @@
 package de.aivot.GoverBackend.nocode.operators.bool;
 
-import de.aivot.GoverBackend.core.operators.bool.NoCodeOrOperator;
+import de.aivot.GoverBackend.plugins.core.v1.operators.bool.NoCodeOrOperator;
 import de.aivot.GoverBackend.elements.models.ElementData;
-import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException;
 import org.junit.jupiter.api.Test;
@@ -35,6 +34,5 @@ class NoCodeOrOperatorTest {
 
         // Test wrong argument count
         assertThrows(NoCodeWrongArgumentCountException.class, () -> operator.evaluate(data, true));
-        assertThrows(NoCodeWrongArgumentCountException.class, () -> operator.evaluate(data, true, false, true));
     }
 }

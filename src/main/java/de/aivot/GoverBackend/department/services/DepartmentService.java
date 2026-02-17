@@ -3,7 +3,6 @@ package de.aivot.GoverBackend.department.services;
 import de.aivot.GoverBackend.department.entities.DepartmentEntity;
 import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
 import de.aivot.GoverBackend.form.filters.FormFilter;
-import de.aivot.GoverBackend.form.filters.FormVersionWithDetailsFilter;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
@@ -11,7 +10,6 @@ import de.aivot.GoverBackend.lib.services.EntityService;
 import de.aivot.GoverBackend.system.services.SystemService;
 import de.aivot.GoverBackend.theme.entities.ThemeEntity;
 import de.aivot.GoverBackend.theme.repositories.ThemeRepository;
-import de.aivot.GoverBackend.theme.services.ThemeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,8 +17,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -45,6 +43,18 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
     @Override
     public DepartmentEntity create(@Nonnull DepartmentEntity entity) throws ResponseException {
         entity.setId(null);
+
+        // Check theme existence and set to null if not exists
+        var themeId = entity.getThemeId();
+        if (themeId != null) {
+            var themeExists = themeRepository
+                    .existsById(themeId);
+
+            if (!themeExists) {
+                entity.setThemeId(null);
+            }
+        }
+
         return departmentRepository
                 .save(entity);
     }
@@ -93,13 +103,18 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
             @Nonnull DepartmentEntity entity,
             @Nonnull DepartmentEntity existingDepartment
     ) throws ResponseException {
+        // Copy static fields
         entity.setId(existingDepartment.getId());
         entity.setCreated(existingDepartment.getCreated());
         entity.setUpdated(LocalDateTime.now());
+        entity.setParentDepartmentId(existingDepartment.getParentDepartmentId());
 
+        // Check theme existence and set to null if not exists
         var themeId = entity.getThemeId();
         if (themeId != null) {
-            var themeExists = themeRepository.existsById(themeId);
+            var themeExists = themeRepository
+                    .existsById(themeId);
+
             if (!themeExists) {
                 entity.setThemeId(null);
             }
@@ -116,21 +131,7 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
                 .setDevelopingDepartmentId(department.getId())
                 .build();
 
-        var specManDepartment = FormFilter
-                .create()
-                .setManagingDepartmentId(department.getId())
-                .build();
-
-        var specRespDepartment = FormFilter
-                .create()
-                .setResponsibleDepartmentId(department.getId())
-                .build();
-
-        var spec = specDevDepartment
-                .or(specManDepartment)
-                .or(specRespDepartment);
-
-        if (formRepository.exists(spec)) {
+        if (formRepository.exists(specDevDepartment)) {
             throw new ResponseException(HttpStatus.CONFLICT, "Der Fachbereich kann nicht gelöscht werden, da noch Formulare zugewiesen sind.");
         }
 
@@ -138,6 +139,9 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
                 .delete(department);
     }
 
+    /**
+     * @deprecated Use shadowed departments
+     */
     public ThemeEntity getDepartmentTheme(DepartmentEntity department) {
         if (department.getThemeId() != null) {
             var departmentTheme =  themeRepository

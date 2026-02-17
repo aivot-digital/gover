@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.utils;
 
 import de.aivot.GoverBackend.lib.models.Identifiable;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collection;

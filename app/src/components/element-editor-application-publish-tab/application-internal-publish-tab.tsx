@@ -1,20 +1,17 @@
 import {type ElementEditorContentProps} from '../element-editor-content/element-editor-content-props';
 import {Alert, AlertTitle, Box, Button, Divider, Paper, Skeleton, Tooltip} from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
-import {Form as Application} from '../../models/entities/form';
 import {type RootElement} from '../../models/elements/root-element';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {selectMemberships} from '../../slices/user-slice';
-import {UserRole} from '../../data/user-role';
+import {selectHasMemberships} from '../../slices/user-slice';
 import {Checklist} from '../checklist/checklist';
 import PauseCircleOutlineOutlinedIcon from '@mui/icons-material/PauseCircleOutlineOutlined';
-import {updateLoadedForm} from '../../slices/app-slice';
+import {LoadedForm, updateLoadedForm} from '../../slices/app-slice';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {AlertComponent} from '../alert/alert-component';
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import {useApi} from '../../hooks/use-api';
-import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {FormPublishChecklistItem} from '../../modules/forms/dtos/form-publish-checklist-item';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../slices/loading-overlay-slice';
 import {useConfirm} from '../../providers/confirm-provider';
@@ -23,34 +20,34 @@ import {SxProps} from '@mui/material/styles';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 import {FormStatus} from '../../modules/forms/enums/form-status';
 import {withDelay} from '../../utils/with-delay';
+import {FormApiService} from '../../modules/forms/services/form-api-service';
+import {Permission} from "../../data/permissions/permission";
 
-export function ApplicationInternalPublishTab<T extends RootElement, E extends Application>(props: ElementEditorContentProps<T, E>) {
+export function ApplicationInternalPublishTab<T extends RootElement, E extends LoadedForm>(props: ElementEditorContentProps<T, E>) {
     const api = useApi();
     const dispatch = useAppDispatch();
     const showConfirm = useConfirm();
 
-    const [isLoading, setIsLoading] = useState(true);
-
     const [checklist, setChecklist] = useState<FormPublishChecklistItem[] | null>(null);
-    const memberships = useAppSelector(selectMemberships);
+    const canPublish = useAppSelector(selectHasMemberships(props.entity.form.developingDepartmentId, Permission.PRESET_PUBLISH_LOCAL));
 
-    const [isPublished, setIsPublished] = useState(props.entity.status === FormStatus.Published);
-    const [isRevoked, setIsRevoked] = useState(props.entity.status === FormStatus.Revoked);
-    const [isIdentityRequired, setIsIdentityRequired] = useState(props.entity.identityVerificationRequired);
-    const [isInternal, setIsInternal] = useState(props.entity.type === FormType.Internal);
+    const [isPublished, setIsPublished] = useState(props.entity.version.status === FormStatus.Published);
+    const [isRevoked, setIsRevoked] = useState(props.entity.version.status === FormStatus.Revoked);
+    const [isIdentityRequired, setIsIdentityRequired] = useState(props.entity.version.identityVerificationRequired);
+    const [isInternal, setIsInternal] = useState(props.entity.version.type === FormType.Internal);
 
     useEffect(() => {
-        withDelay(new FormsApiService(api)
+        withDelay(new FormApiService()
             .checkPublish({
-                id: props.entity.id,
-                version: props.entity.version,
+                formId: props.entity.form.id,
+                version: props.entity.version.version,
             }), 600)
             .then(setChecklist)
             .catch((err) => {
                 console.error(err);
                 dispatch(showErrorSnackbar('Die Veröffentlichungskriterien konnten nicht geladen werden.'));
             });
-    }, [props.entity.id, api]);
+    }, [props.entity, api]);
 
     const allChecksDone = useMemo(() => {
         return checklist != null && checklist.every((item) => item.done);
@@ -65,8 +62,10 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
                 >
                     <AlertTitle>Internes Formular mit erzwungener Authentifizierung</AlertTitle>
                     <Box sx={{maxWidth: 940}}>
-                        Dieses Formular erscheint nicht auf der öffentlichen Formularübersicht (Index-Liste), ist aber über den direkten Link zugänglich.
-                        Ohne Authentifizierung sind die allgemeinen Informationen und Titel der Abschnitte öffentlich einsehbar.
+                        Dieses Formular erscheint nicht auf der öffentlichen Formularübersicht (Index-Liste), ist aber
+                        über den direkten Link zugänglich.
+                        Ohne Authentifizierung sind die allgemeinen Informationen und Titel der Abschnitte öffentlich
+                        einsehbar.
                     </Box>
                 </AlertComponent>
             );
@@ -80,7 +79,8 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
                 >
                     <AlertTitle>Internes Formular</AlertTitle>
                     <Box sx={{maxWidth: 940}}>
-                        Dieses Formular erscheint nicht auf der öffentlichen Formularliste (Index-Liste), ist aber über den direkten Link zugänglich.
+                        Dieses Formular erscheint nicht auf der öffentlichen Formularliste (Index-Liste), ist aber über
+                        den direkten Link zugänglich.
                         Alle Inhalte sind öffentlich einsehbar.
                     </Box>
                 </AlertComponent>
@@ -90,19 +90,6 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
         return null;
     };
 
-    const canPublish = useMemo(() => {
-        if (memberships == null) {
-            return false;
-        }
-
-        return memberships
-            .some((mem) => (
-                    mem.departmentId === props.entity.developingDepartmentId &&
-                    (mem.role === UserRole.Admin || mem.role === UserRole.Publisher)
-                ),
-            );
-    }, [memberships]);
-
     const handlePublish = async (): Promise<void> => {
         const confirmed = await showConfirm({
             title: 'Formular veröffentlichen?',
@@ -110,10 +97,12 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
             children: (
                 <>
                     <Box>
-                        Möchten Sie dieses Formular wirklich veröffentlichen? Dieses Formular bzw. diese Version steht ab diesem Zeitpunkt online zur Verfügung und kann ausgefüllt werden.
+                        Möchten Sie dieses Formular wirklich veröffentlichen? Dieses Formular bzw. diese Version steht
+                        ab diesem Zeitpunkt online zur Verfügung und kann ausgefüllt werden.
                     </Box>
                     <Box sx={{mt: 2}}>
-                        Wenn Sie das Formular veröffentlichen, können Sie die Inhalte dieser Version nicht mehr bearbeiten und müssen für Änderungen am Formular eine neue Version erstellen.
+                        Wenn Sie das Formular veröffentlichen, können Sie die Inhalte dieser Version nicht mehr
+                        bearbeiten und müssen für Änderungen am Formular eine neue Version erstellen.
                     </Box>
                     {
                         isInternal && renderInternalAlert({mt: 4, mb: 0})
@@ -125,15 +114,22 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
         if (confirmed) {
             dispatch(showLoadingOverlay('Formular wird veröffentlicht'));
 
-            new FormsApiService(api)
+            new FormApiService()
                 .publish({
-                    id: props.entity.id,
-                    version: props.entity.version,
+                    formId: props.entity.form.id,
+                    version: props.entity.version.version,
                 })
                 .then((updatedForm) => {
                     setIsPublished(true);
                     setIsRevoked(false);
-                    dispatch(updateLoadedForm(updatedForm));
+                    dispatch(updateLoadedForm({
+                        ...props.entity,
+                        form: {
+                            ...props.entity.form,
+                            publishedVersion: updatedForm.version,
+                        },
+                        version: updatedForm,
+                    }));
                 })
                 .catch((err) => {
                     if (err.status === 403) {
@@ -159,7 +155,8 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
             isDestructive: true,
             children: (
                 <div>
-                    Möchten Sie dieses Formular wirklich zurückziehen? Dieses Formular bzw. diese Version ist ab diesem Zeitpunkt nicht mehr online verfügbar und kann nicht mehr ausgefüllt werden.
+                    Möchten Sie dieses Formular wirklich zurückziehen? Dieses Formular bzw. diese Version ist ab diesem
+                    Zeitpunkt nicht mehr online verfügbar und kann nicht mehr ausgefüllt werden.
                 </div>
             ),
         });
@@ -167,15 +164,22 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
         if (confirmed) {
             dispatch(showLoadingOverlay('Formular wird zurückgezogen'));
 
-            new FormsApiService(api)
+            new FormApiService()
                 .revoke({
-                    id: props.entity.id,
-                    version: props.entity.version,
+                    formId: props.entity.form.id,
+                    version: props.entity.version.version,
                 })
                 .then((updatedForm) => {
                     setIsRevoked(true);
                     setIsPublished(false);
-                    dispatch(updateLoadedForm(updatedForm));
+                    dispatch(updateLoadedForm({
+                        ...props.entity,
+                        form: {
+                            ...props.entity.form,
+                            publishedVersion: null,
+                        },
+                        version: updatedForm,
+                    }));
                 })
                 .catch((err) => {
                     if (err.status === 403) {
@@ -209,10 +213,12 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
                 <Paper variant="outlined">
                     {
                         checklist == null &&
-                        <Box sx={{
-                            px: 2,
-                            py: 1,
-                        }}>
+                        <Box
+                            sx={{
+                                px: 2,
+                                py: 1,
+                            }}
+                        >
                             {
                                 new Array(8).fill(null).map((_, idx) => (
                                     <Skeleton
@@ -279,7 +285,7 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
                         <Button
                             variant="outlined"
                             endIcon={
-                                <PauseCircleOutlineOutlinedIcon />
+                                <PauseCircleOutlineOutlinedIcon/>
                             }
                             color="warning"
                             onClick={handleRevoke}
@@ -348,7 +354,7 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
                     <Button
                         variant="contained"
                         endIcon={
-                            <SendOutlinedIcon />
+                            <SendOutlinedIcon/>
                         }
                         onClick={handlePublish}
                     >

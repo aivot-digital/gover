@@ -4,7 +4,7 @@ package de.aivot.GoverBackend.destination.dtos;
 import de.aivot.GoverBackend.destination.entities.Destination;
 import de.aivot.GoverBackend.destination.enums.DestinationType;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 public record DestinationResponseDTO(
         @Nonnull

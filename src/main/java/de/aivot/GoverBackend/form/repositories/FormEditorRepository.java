@@ -1,13 +1,13 @@
 package de.aivot.GoverBackend.form.repositories;
 
-import de.aivot.GoverBackend.form.entities.FormEditorEntity;
+import de.aivot.GoverBackend.form.entities.projections.FormEditorProjection;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface FormEditorRepository extends Repository<FormEditorEntity, Integer> {
+public interface FormEditorRepository extends Repository<FormEditorProjection, Integer> {
     @Query(value = """
                 select distinct on (form_id) form_id, form_version, full_name, timestamp
                 from form_revisions
@@ -17,7 +17,7 @@ public interface FormEditorRepository extends Repository<FormEditorEntity, Integ
             """,
             nativeQuery = true
     )
-    List<FormEditorEntity> findAllByFormIdIn(@Param("formIds") List<Integer> formId);
+    List<FormEditorProjection> findAllByFormIdIn(@Param("formIds") List<Integer> formId);
 
     @Query(value = """
                 select distinct on (form_id, form_version) form_id, form_version, full_name, timestamp
@@ -28,5 +28,5 @@ public interface FormEditorRepository extends Repository<FormEditorEntity, Integ
             """,
             nativeQuery = true
     )
-    List<FormEditorEntity> findAllByFormId(@Param("formId") Integer formId);
+    List<FormEditorProjection> findAllByFormId(@Param("formId") Integer formId);
 }

@@ -6,8 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.Length;
 
-import javax.annotation.Nonnull;
-import java.util.Map;
+import jakarta.annotation.Nonnull;
 
 public record PaymentProviderRequestDTO(
         @Nonnull
@@ -43,7 +42,7 @@ public record PaymentProviderRequestDTO(
         var entity = new PaymentProviderEntity();
         entity.setName(name);
         entity.setDescription(description);
-        entity.setProviderKey(providerKey);
+        entity.setPaymentProviderDefinitionKey(providerKey);
         entity.setTestProvider(isTestProvider);
         entity.setIsEnabled(isEnabled);
         entity.setConfig(config);

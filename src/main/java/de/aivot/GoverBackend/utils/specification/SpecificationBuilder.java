@@ -4,14 +4,15 @@ import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
 public class SpecificationBuilder<T> {
     private final List<SpecificationBuilderItem<T>> items = new LinkedList<>();
+    private final List<Specification<T>> specifications = new LinkedList<>();
 
     private SpecificationBuilder() {
     }
@@ -33,6 +34,15 @@ public class SpecificationBuilder<T> {
         }
 
         return with(new SpecificationBuilderEquals<>(field, value));
+    }
+
+    @Nonnull
+    public SpecificationBuilder<T> withGreaterThan(@Nonnull String field, @Nullable Number value) {
+        if (value == null) {
+            return this;
+        }
+
+        return with(new SpecificationBuilderGreaterThan<>(field, value));
     }
 
     @Nonnull
@@ -98,6 +108,19 @@ public class SpecificationBuilder<T> {
         return with(new SpecificationBuilderJsonArrayElementFieldEquals<>(field, elementField, value));
     }
 
+    public SpecificationBuilder<T> withArrayContains(@Nonnull String field, @Nullable String value) {
+        if (value == null) {
+            return this;
+        }
+
+        return with(new SpecificationBuilderArrayContains<>(field, value));
+    }
+
+    public SpecificationBuilder<T> withSpecification(@Nonnull Specification<T> specification) {
+        specifications.add(specification);
+        return this;
+    }
+
     @Nonnull
     private SpecificationBuilder<T> with(@Nonnull SpecificationBuilderItem<T> item) {
         items.add(item);
@@ -112,7 +135,16 @@ public class SpecificationBuilder<T> {
                     .map(entry -> entry.toPredicate(root, query, builder))
                     .toArray(Predicate[]::new);
 
-            return builder.and(predicates);
+            var specs = specifications
+                    .stream()
+                    .map(spec -> spec.toPredicate(root, query, builder))
+                    .toArray(Predicate[]::new);
+
+            var allPredicates = new Predicate[predicates.length + specs.length];
+            System.arraycopy(predicates, 0, allPredicates, 0, predicates.length);
+            System.arraycopy(specs, 0, allPredicates, predicates.length, specs.length);
+
+            return builder.and(allPredicates);
         };
     }
 

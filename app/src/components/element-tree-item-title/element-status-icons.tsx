@@ -89,7 +89,7 @@ export function ElementStatusIcons(props: ElementStatusIconsProps) {
         }
 
         if (warnDuplicateIds && form != null) {
-            const msg = checkId(form.rootElement, element.id);
+            const msg = checkId(form.version.rootElement, element.id);
             if (msg != null) {
                 icons.push({
                     icon: <ReportOutlinedIcon color="error" />,

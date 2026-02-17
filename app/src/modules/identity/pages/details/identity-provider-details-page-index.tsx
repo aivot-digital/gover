@@ -20,7 +20,6 @@ import * as yup from 'yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {IdentityProvidersApiService} from '../../identity-providers-api-service';
 import {IdentityProviderDetailsDTO} from '../../models/identity-provider-details-dto';
-import {FormsApiService} from '../../../forms/forms-api-service';
 import {SecretEntityResponseDTO} from '../../../secrets/dtos/secret-entity-response-dto';
 import {SecretsApiService} from '../../../secrets/secrets-api-service';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
@@ -38,6 +37,7 @@ import {useConfirm} from '../../../../providers/confirm-provider';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../../slices/loading-overlay-slice';
 import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
+import {VFormVersionWithDetailsService} from '../../../forms/services/v-form-version-with-details-api-service';
 
 // allows absolute and relative URLs
 const urlRegex = /^(https?:\/\/[^\s]+|\/[^\s]*)$/;
@@ -96,21 +96,21 @@ export const formSchema = yup.object({
             }).test('row-completeness', 'Bitte füllen Sie alle Felder aus oder löschen Sie die Zeile.', function (row) {
                 if (!row) return true;
 
-                const { label, description, keyInData } = row;
+                const {label, description, keyInData} = row;
 
                 const isAnyFilled = !!label?.trim() || !!description?.trim() || !!keyInData?.trim();
                 const areAllFilled = !!label?.trim() && !!description?.trim() && !!keyInData?.trim();
 
                 if (!isAnyFilled) {
-                    return this.createError({ message: 'Bitte füllen Sie alle Felder aus oder löschen Sie die Zeile.' });
+                    return this.createError({message: 'Bitte füllen Sie alle Felder aus oder löschen Sie die Zeile.'});
                 }
 
                 if (!areAllFilled) {
-                    return this.createError({ message: 'Bitte füllen Sie alle Felder vollständig aus.' });
+                    return this.createError({message: 'Bitte füllen Sie alle Felder vollständig aus.'});
                 }
 
                 return true;
-            })
+            }),
         ),
     defaultScopes: yup.array()
         .of(
@@ -118,7 +118,7 @@ export const formSchema = yup.object({
                 .trim()
                 .test('not-empty-if-present', 'Ein Scope darf nicht leer sein.', val => {
                     return val == null || val.trim().length > 0;
-                })
+                }),
         ),
     additionalParams: yup.array()
         .of(
@@ -128,28 +128,28 @@ export const formSchema = yup.object({
             }).test('row-completeness', 'Bitte füllen Sie Schlüssel und Wert aus oder löschen Sie die Zeile.', function (row) {
                 if (!row) return true;
 
-                const { key, value } = row;
+                const {key, value} = row;
 
                 const isAnyFilled = !!key?.trim() || !!value?.trim();
                 const areAllFilled = !!key?.trim() && !!value?.trim();
 
                 if (!isAnyFilled) {
-                    return this.createError({ message: 'Bitte füllen Sie Schlüssel und Wert aus oder löschen Sie die Zeile.' });
+                    return this.createError({message: 'Bitte füllen Sie Schlüssel und Wert aus oder löschen Sie die Zeile.'});
                 }
 
                 if (!areAllFilled) {
-                    return this.createError({ message: 'Bitte füllen Sie Schlüssel und Wert vollständig aus.' });
+                    return this.createError({message: 'Bitte füllen Sie Schlüssel und Wert vollständig aus.'});
                 }
 
                 return true;
-            })
-        )
+            }),
+        ),
 });
 
 function getIndexedFieldError(
     errors: Record<string, any> | undefined,
     fieldName: string,
-    message: string
+    message: string,
 ): string | undefined {
     if (!errors) return undefined;
 
@@ -376,8 +376,8 @@ export function IdentityProviderDetailsPageIndex() {
         setIsBusy(true);
 
         try {
-            const relatedForms = await new FormsApiService(api)
-                .listAllVersions({
+            const relatedForms = await new VFormVersionWithDetailsService()
+                .listAll({
                     identityProviderKey: identityProvider.key,
                 });
 
@@ -483,19 +483,19 @@ export function IdentityProviderDetailsPageIndex() {
     const defaultScopesError = getIndexedFieldError(
         errors,
         'defaultScopes',
-        'Bitte entfernen Sie leere Scopes.'
+        'Bitte entfernen Sie leere Scopes.',
     );
 
     const attributesError = getIndexedFieldError(
         errors,
         'attributes',
-        'Bitte füllen Sie alle Attributszuweisungen vollständig aus.'
+        'Bitte füllen Sie alle Attributszuweisungen vollständig aus.',
     );
 
     const additionalParamsError = getIndexedFieldError(
         errors,
         'additionalParams',
-        'Bitte füllen Sie alle Schlüssel/Wert-Paare vollständig aus.'
+        'Bitte füllen Sie alle Schlüssel/Wert-Paare vollständig aus.',
     );
 
     return (
@@ -561,8 +561,9 @@ export function IdentityProviderDetailsPageIndex() {
                 <Grid
                     size={{
                         xs: 12,
-                        md: 6
-                    }}>
+                        md: 6,
+                    }}
+                >
                     <TextFieldComponent
                         label="Name"
                         placeholder="z.B. Keycloak"
@@ -585,8 +586,9 @@ export function IdentityProviderDetailsPageIndex() {
                     }}
                     size={{
                         xs: 12,
-                        md: 6
-                    }}>
+                        md: 6,
+                    }}
+                >
                     {
                         identityProvider.iconAssetKey &&
                         <Box
@@ -610,8 +612,9 @@ export function IdentityProviderDetailsPageIndex() {
                 <Grid
                     size={{
                         xs: 12,
-                        md: 6
-                    }}>
+                        md: 6,
+                    }}
+                >
                     <TextFieldComponent
                         label="Interne Beschreibung"
                         placeholder="z.B. Keycloak für Testumgebung"
@@ -629,15 +632,17 @@ export function IdentityProviderDetailsPageIndex() {
                 <Grid
                     size={{
                         xs: 12,
-                        md: 6
-                    }}>
+                        md: 6,
+                    }}
+                >
                     {
                         identityProvider.type != IdentityProviderType.Custom &&
                         <AlertComponent
                             color="info"
                             sx={{mt: 2}}
                         >
-                            <strong>Hinweis:</strong> Die Konfigurationen für die offiziellen Nutzerkonten von Bund und Ländern werden von Gover bereitgestellt und sind nicht veränderbar.
+                            <strong>Hinweis:</strong>
+                            Die Konfigurationen für die offiziellen Nutzerkonten von Bund und Ländern werden von Gover bereitgestellt und sind nicht veränderbar.
                         </AlertComponent>
                     }
                 </Grid>
@@ -645,8 +650,9 @@ export function IdentityProviderDetailsPageIndex() {
                 <Grid
                     size={{
                         xs: 12,
-                        md: 6
-                    }}>
+                        md: 6,
+                    }}
+                >
                     <SelectFieldComponent
                         label="Logo-Grafik"
                         value={identityProvider.iconAssetKey ?? undefined}
@@ -674,14 +680,16 @@ export function IdentityProviderDetailsPageIndex() {
                 <Grid
                     size={{
                         xs: 12,
-                        md: 6
-                    }} />
+                        md: 6,
+                    }}
+                />
 
                 <Grid
                     size={{
                         xs: 12,
-                        md: 6
-                    }}>
+                        md: 6,
+                    }}
+                >
                     <CheckboxFieldComponent
                         label="Aktiv (kann in konfigurierten Formularen genutzt werden)"
                         value={identityProvider.isEnabled}
@@ -695,8 +703,9 @@ export function IdentityProviderDetailsPageIndex() {
                 <Grid
                     size={{
                         xs: 12,
-                        md: 6
-                    }}>
+                        md: 6,
+                    }}
+                >
                     <CheckboxFieldComponent
                         label="Es handelt sich um eine vorproduktive Konfiguration"
                         value={identityProvider.isTestProvider}
@@ -710,8 +719,9 @@ export function IdentityProviderDetailsPageIndex() {
                 <Grid
                     size={{
                         xs: 12,
-                        md: 6
-                    }}>
+                        md: 6,
+                    }}
+                >
                     <CheckboxFieldComponent
                         label="PKCE S256 (Proof Key for Code Exchange) verwenden"
                         value={identityProvider.pkceMethod === 'S256'}
@@ -807,8 +817,9 @@ export function IdentityProviderDetailsPageIndex() {
                 <Grid
                     size={{
                         xs: 12,
-                        md: 6
-                    }}>
+                        md: 6,
+                    }}
+                >
                     <TextFieldComponent
                         label="Client ID"
                         required
@@ -824,8 +835,9 @@ export function IdentityProviderDetailsPageIndex() {
                 <Grid
                     size={{
                         xs: 12,
-                        md: 6
-                    }}>
+                        md: 6,
+                    }}
+                >
                     <SelectFieldComponent
                         label="Client Secret"
                         value={identityProvider.clientSecretKey ?? undefined}
@@ -947,22 +959,28 @@ export function IdentityProviderDetailsPageIndex() {
                             </Typography>
                             <ul style={{marginTop: '1rem', paddingLeft: '1.1rem'}}>
                                 <li>
-                                    <strong>Titel</strong> – Anzeigename, der später in der Gover-Oberfläche
+                                    <strong>Titel</strong>
+                                    – Anzeigename, der später in der Gover-Oberfläche
                                     erscheint (z.&nbsp;B. „E-Mail“ oder „Nachname“).
                                 </li>
 
                                 <li>
-                                    <strong>Beschreibung</strong> – Kurze Erklärung, wofür das Attribut
+                                    <strong>Beschreibung</strong>
+                                    – Kurze Erklärung, wofür das Attribut
                                     verwendet wird bzw. welche Daten es enthält.
                                 </li>
 
                                 <li>
-                                    <strong>Feldname</strong> – Schlüssel in den Daten / Claim-Name
-                                    (<code>email</code>, <code>given_name</code>, …), so wie er im <em>userinfo</em>-Response bzw. ID-Token vorkommt.
+                                    <strong>Feldname</strong>
+                                    – Schlüssel in den Daten / Claim-Name
+                                    (
+                                    <code>email</code>
+                                    , <code>given_name</code>, …), so wie er im <em>userinfo</em>-Response bzw. ID-Token vorkommt.
                                 </li>
 
                                 <li>
-                                    <strong>Anzeigeattribut</strong> – Steuert, ob der Wert später
+                                    <strong>Anzeigeattribut</strong>
+                                    – Steuert, ob der Wert später
                                     zur Identifikation in Übersichten von Gover (z. B. in Anträgen) angezeigt wird.
                                 </li>
                             </ul>

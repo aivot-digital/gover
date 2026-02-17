@@ -2,7 +2,6 @@ import React, {useEffect, useMemo, useReducer, useState} from 'react';
 import {Box, Button, Grid, IconButton, Skeleton, Typography} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
-import {Form, Form as Application, isForm} from '../../models/entities/form';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {PaymentProduct, PaymentType} from '../../models/payment/payment-product';
 import {NumberFieldComponent} from '../number-field/number-field-component';
@@ -31,12 +30,16 @@ import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import {ElementWithParents, flattenElementsWithParents} from '../../utils/flatten-elements';
 import {withDelay} from '../../utils/with-delay';
+import {isLoadedForm, LoadedForm} from '../../slices/app-slice';
+import {FormEntity} from '../../modules/forms/entities/form-entity';
+import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
 
 interface PaymentPositionItemProps {
     allElements: ElementWithParents[];
     index: number;
     product: PaymentProduct;
-    form: Form;
+    form: FormEntity;
+    version: FormVersionEntity;
     onDelete: () => void;
     onPatch: (patch: Partial<PaymentProduct>) => void;
     disabled?: boolean;
@@ -461,7 +464,7 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                             ]}
                             typeHints={[{
                                 name: 'ctx',
-                                content: createLowCodeContextType(props.form.rootElement),
+                                content: createLowCodeContextType(props.version.rootElement),
                             }]}
                             onChange={val => {
                                 props.onPatch({
@@ -499,19 +502,19 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
     );
 }
 
-export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement, Application>) {
+export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement, LoadedForm>) {
     const api = useApi();
     const dispatch = useAppDispatch();
 
     const [availablePaymentProviders, setAvailablePaymentProviders] = useState<Page<PaymentProviderResponseDTO>>();
     const selectedPaymentProvider = availablePaymentProviders?.content.find(
-        provider => provider.key === props.entity.paymentProviderKey,
+        provider => provider.key === props.entity.version.paymentProviderKey,
     );
     const isTestPaymentProvider = selectedPaymentProvider?.isTestProvider ?? false;
 
     const allElements = useMemo(() => {
-        if (isForm(props.entity)) {
-            return flattenElementsWithParents(props.entity.rootElement, [], true);
+        if (isLoadedForm(props.entity)) {
+            return flattenElementsWithParents(props.entity.version.rootElement, [], true);
         }
         return [];
     }, [props.entity]);
@@ -532,15 +535,18 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
     }, [api]);
 
     const handleProductPatch = (index: number, patch: Partial<PaymentProduct>) => {
-        if (props.entity.paymentProducts != null) {
-            const products = [...props.entity.paymentProducts];
+        if (props.entity.version.paymentProducts != null) {
+            const products = [...props.entity.version.paymentProducts];
             products[index] = {
                 ...products[index],
                 ...patch,
             };
             props.onPatchEntity({
                 ...props.entity,
-                paymentProducts: products,
+                version: {
+                    ...props.entity.version,
+                    paymentProducts: products,
+                },
             });
         }
     };
@@ -600,11 +606,14 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
 
                     <SelectFieldComponent
                         label="Zahlungsdienstleister"
-                        value={props.entity.paymentProviderKey ?? undefined}
+                        value={props.entity.version.paymentProviderKey ?? undefined}
                         onChange={val => {
                             props.onPatchEntity({
                                 ...props.entity,
-                                paymentProviderKey: val,
+                                version: {
+                                    ...props.entity.version,
+                                    paymentProviderKey: val ?? null,
+                                },
                             });
                         }}
                         disabled={!props.editable}
@@ -631,7 +640,7 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
                 </Grid>
             </Grid>
             {
-                isStringNotNullOrEmpty(props.entity.paymentProviderKey) &&
+                isStringNotNullOrEmpty(props.entity.version.paymentProviderKey) &&
                 <>
                     <Grid
                         container
@@ -645,11 +654,14 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
                         >
                             <TextFieldComponent
                                 label="Buchungstext"
-                                value={props.entity.paymentPurpose}
+                                value={props.entity.version.paymentPurpose}
                                 onChange={val => {
                                     props.onPatchEntity({
                                         ...props.entity,
-                                        paymentPurpose: val,
+                                        version: {
+                                            ...props.entity.version,
+                                            paymentPurpose: val ?? '',
+                                        },
                                     });
                                 }}
                                 disabled={!props.editable}
@@ -665,11 +677,14 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
 
                             <TextFieldComponent
                                 label="Beschreibung"
-                                value={props.entity.paymentDescription}
+                                value={props.entity.version.paymentDescription}
                                 onChange={val => {
                                     props.onPatchEntity({
                                         ...props.entity,
-                                        paymentDescription: val,
+                                        version: {
+                                            ...props.entity.version,
+                                            paymentDescription: val ?? '',
+                                        },
                                     });
                                 }}
                                 disabled={!props.editable}
@@ -708,20 +723,23 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
                                 onClick={() => {
                                     props.onPatchEntity({
                                         ...props.entity,
-                                        paymentProducts: [
-                                            ...(props.entity.paymentProducts ?? []),
-                                            {
-                                                id: uuid4(),
-                                                reference: '',
-                                                description: '',
-                                                type: PaymentType.UPFRONT_FIXED,
-                                                netPrice: 1,
-                                                taxRate: 19,
-                                                upfrontFixedQuantity: 1,
-                                                bookingData: [],
-                                                taxInformation: '',
-                                            },
-                                        ],
+                                        version: {
+                                            ...props.entity.version,
+                                            paymentProducts: [
+                                                ...(props.entity.version.paymentProducts ?? []),
+                                                {
+                                                    id: uuid4(),
+                                                    reference: '',
+                                                    description: '',
+                                                    type: PaymentType.UPFRONT_FIXED,
+                                                    netPrice: 1,
+                                                    taxRate: 19,
+                                                    upfrontFixedQuantity: 1,
+                                                    bookingData: [],
+                                                    taxInformation: '',
+                                                },
+                                            ],
+                                        }
                                     });
                                 }}
                             >
@@ -732,28 +750,32 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
 
                     <Box>
                         {
-                            (props.entity.paymentProducts == null ||
-                                props.entity.paymentProducts.length === 0) &&
+                            (props.entity.version.paymentProducts == null ||
+                                props.entity.version.paymentProducts.length === 0) &&
                             <AlertComponent color="info">
                                 Es sind noch keine Zahlungspositionen konfiguriert.
                                 Fügen Sie mindestens eine Zahlungsposition hinzu.
                             </AlertComponent>
                         }
                         {
-                            props.entity.paymentProducts != null &&
-                            props.entity.paymentProducts.map((product, index) => (
+                            props.entity.version.paymentProducts != null &&
+                            props.entity.version.paymentProducts.map((product, index) => (
                                 <PaymentPositionItem
                                     key={index}
                                     allElements={allElements}
                                     index={index}
                                     product={product}
-                                    form={props.entity}
+                                    form={props.entity.form}
+                                    version={props.entity.version}
                                     onDelete={() => {
-                                        const products = [...(props.entity.paymentProducts ?? [])];
+                                        const products = [...(props.entity.version.paymentProducts ?? [])];
                                         products.splice(index, 1);
                                         props.onPatchEntity({
                                             ...props.entity,
-                                            paymentProducts: products,
+                                            version: {
+                                                ...props.entity.version,
+                                                paymentProducts: products,
+                                            }
                                         });
                                     }}
                                     onPatch={patch => {

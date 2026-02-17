@@ -1,25 +1,35 @@
 import {Box, Button, Grid, Typography} from '@mui/material';
 import React, {type FormEvent, useEffect, useState} from 'react';
-import {selectSystemConfig, setSystemConfigs, setSystemConfigsFromMap, type SystemConfigMap} from '../../../../../slices/system-config-slice';
+import {selectSystemConfig, setSystemConfigs, type SystemConfigMap} from '../../../../../slices/system-config-slice';
 import {useAppSelector} from '../../../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {TextFieldComponent} from '../../../../../components/text-field/text-field-component';
 import {SystemConfigKeys} from '../../../../../data/system-config-keys';
-import {showErrorSnackbar, showSuccessSnackbar} from '../../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../../slices/snackbar-slice';
 import {SelectFieldComponent} from '../../../../../components/select-field/select-field-component';
 import {type SelectFieldComponentOption} from '../../../../../components/select-field/select-field-component-option';
 import {useApi} from '../../../../../hooks/use-api';
-import type {Department} from '../../../../../modules/departments/models/department';
 import {CheckboxFieldComponent} from '../../../../../components/checkbox-field/checkbox-field-component';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
-import {DepartmentsApiService} from '../../../../../modules/departments/departments-api-service';
 import {ThemesApiService} from '../../../../../modules/themes/themes-api-service';
 import {SystemConfigsApiService} from '../../../../../modules/configs/system-configs-api-service';
 import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
-import {addSnackbarMessage, removeSnackbarMessage, setSetup, setStatus, ShellStatus, SnackbarSeverity, SnackbarType} from '../../../../../slices/shell-slice';
+import {
+    addSnackbarMessage,
+    removeSnackbarMessage,
+    setSetup,
+    setStatus,
+    ShellStatus,
+    SnackbarSeverity,
+    SnackbarType,
+} from '../../../../../slices/shell-slice';
 import {isApiError} from '../../../../../models/api-error';
 import {SystemSetupDTO} from '../../../../../modules/system/dtos/system-setup-dto';
 import {SystemApiService} from '../../../../../modules/system/system-api-service';
+import {DepartmentApiService} from '../../../../../modules/departments/services/department-api-service';
+import {DepartmentEntity} from '../../../../../modules/departments/entities/department-entity';
+import {StorageProvidersApiService} from '../../../../../modules/storage/storage-providers-api-service';
+import {StorageProviderType} from '../../../../../modules/storage/enums/storage-provider-type';
 
 async function fetchSetup(): Promise<SystemSetupDTO> {
     return new SystemApiService()
@@ -54,8 +64,10 @@ export function ApplicationSettings() {
     const config = useAppSelector(selectSystemConfig);
     const [editedConfig, setEditedConfig] = useState<SystemConfigMap>({});
 
-    const [departments, setDepartments] = useState<Department[]>([]);
+    const [departments, setDepartments] = useState<DepartmentEntity[]>([]);
     const [themes, setThemes] = useState<SelectFieldComponentOption[]>([]);
+
+    const [attStorageProviders, setAttStorageProviders] = useState<SelectFieldComponentOption[]>([]);
 
     const hasNotChanged = Object.keys(editedConfig).length === 0;
 
@@ -71,6 +83,21 @@ export function ApplicationSettings() {
             .catch((err) => {
                 console.error(err);
                 dispatch(showErrorSnackbar('Farbschemata konnten nicht geladen werden'));
+            });
+
+        new StorageProvidersApiService()
+            .listAll({
+                type: StorageProviderType.Attachments,
+            })
+            .then(({content: providers}) => {
+                setAttStorageProviders(providers.map((prv) => ({
+                    value: prv.id.toString(),
+                    label: prv.name,
+                    subLabel: prv.description,
+                })));
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Die Liste der Speicheranbieter konnte nicht geladen werden'));
             });
     }, []);
 
@@ -102,7 +129,7 @@ export function ApplicationSettings() {
 
                     const oldThemeId = config[SystemConfigKeys.system.theme];
 
-                    console.log("theme", {newThemeId, oldThemeId});
+                    console.log('theme', {newThemeId, oldThemeId});
 
                     if (newThemeId != null && newThemeId !== oldThemeId) {
                         // refetch system setup including theme information
@@ -131,7 +158,7 @@ export function ApplicationSettings() {
     };
 
     useEffect(() => {
-        new DepartmentsApiService()
+        new DepartmentApiService()
             .listAll()
             .then(deps => setDepartments(deps.content))
             .catch((err) => {
@@ -209,6 +236,7 @@ export function ApplicationSettings() {
                     />
                 </>
             }
+
             <Typography
                 variant="subtitle1"
                 sx={{
@@ -238,6 +266,40 @@ export function ApplicationSettings() {
                 }}
                 disabled={!hasAccess}
             />
+
+            <Typography
+                variant="subtitle1"
+                sx={{
+                    mt: 4,
+                }}
+            >
+                Zentraler Speicheranbieter für Vorgangsanlagen
+            </Typography>
+            <Typography
+                sx={{
+                    maxWidth: 900,
+                    mb: 1.6,
+                }}
+            >
+                Dieser Speicheranbieter wird verwendet, um Vorgangsanlagen zu speichern, wenn kein spezifischer Speicheranbieter innerhalb eines Prozesselementes konfiguriert ist.
+                Bitte beachten Sie, dass die Änderung dieses Schlüssels Auswirkungen auf alle Vorgänge hat, die den zentralen Speicheranbieter verwenden.
+            </Typography>
+            <SelectFieldComponent
+                label="Zentraler Speicheranbieter für Vorgangsanlagen"
+                hint="Geben Sie den Speicheranbieter an, der standardmäßig für Vorgangsanlagen verwendet werden soll."
+                value={editedConfig[SystemConfigKeys.storage.attachments.default_storage_provider] ?? config[SystemConfigKeys.storage.attachments.default_storage_provider]}
+                onChange={(val) => {
+                    setEditedConfig({
+                        ...editedConfig,
+                        [SystemConfigKeys.storage.attachments.default_storage_provider]: val ?? '',
+                    });
+                }}
+                disabled={!hasAccess}
+                options={attStorageProviders}
+            />
+
+
+
             <Typography
                 variant="h6"
                 sx={{

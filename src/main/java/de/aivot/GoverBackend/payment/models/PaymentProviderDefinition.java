@@ -1,14 +1,14 @@
 package de.aivot.GoverBackend.payment.models;
 
 import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
 import de.aivot.GoverBackend.payment.exceptions.PaymentException;
 import de.aivot.GoverBackend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.util.LinkedList;
 import java.util.List;
@@ -25,7 +25,7 @@ public interface PaymentProviderDefinition {
     String getProviderDescription();
 
     @Nullable
-    GroupLayout getPaymentConfigLayout() throws ResponseException;
+    GroupLayoutElement getPaymentConfigLayout() throws ResponseException;
 
     @Nonnull
     default XBezahldienstePaymentRequest createPaymentRequest(

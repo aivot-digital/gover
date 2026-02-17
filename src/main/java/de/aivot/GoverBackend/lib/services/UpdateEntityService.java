@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.lib.services;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import org.springframework.http.HttpStatus;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 public interface UpdateEntityService<T, I> extends RetrieveEntityService<T, I> {
     default T update(

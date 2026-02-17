@@ -9,7 +9,8 @@ import CodeOutlinedIcon from '@mui/icons-material/CodeOutlined';
 import TextSnippetOutlinedIcon from '@mui/icons-material/TextSnippetOutlined';
 import StorageOutlinedIcon from '@mui/icons-material/StorageOutlined';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import {SvgIconProps} from '@mui/material';
+import Folder from '@aivot/mui-material-symbols-400-outlined/dist/folder/Folder';
+import {type SvgIconProps} from '@mui/material';
 
 /**
  * Returns the appropriate icon for a given content type.
@@ -71,6 +72,9 @@ export function getFileTypeIcon(contentType: string, props?: SvgIconProps) {
         'application/octet-stream': InsertDriveFileOutlinedIcon,
         'application/x-sqlite3': StorageOutlinedIcon,
         'application/x-msaccess': StorageOutlinedIcon,
+
+        // Folders
+        'inode/directory': Folder,
     };
 
     // Retrieve the corresponding icon or use the default fallback icon

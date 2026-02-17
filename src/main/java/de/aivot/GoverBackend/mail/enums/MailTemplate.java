@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.mail.enums;
 import de.aivot.GoverBackend.lib.models.Identifiable;
 import de.aivot.GoverBackend.mail.config.*;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 public enum MailTemplate implements Identifiable<String> {
     CustomerSubmissionCopy("customer-submission-copy", null),

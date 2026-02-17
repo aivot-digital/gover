@@ -5,7 +5,7 @@ import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 public class PaymentProviderFilter implements Filter<PaymentProviderEntity> {
     private String name;

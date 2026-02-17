@@ -1,63 +1,104 @@
 package de.aivot.GoverBackend.department.entities;
 
-import de.aivot.GoverBackend.enums.UserRole;
-import org.hibernate.annotations.ColumnDefault;
-
+import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "department_memberships", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"departmentId", "userId"})
+        @UniqueConstraint(columnNames = {
+                "departmentId",
+                "userId",
+        })
 })
 public class DepartmentMembershipEntity {
     @Id
+    @Nonnull
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "department_memberships_id_seq")
     @SequenceGenerator(name = "department_memberships_id_seq", allocationSize = 1)
     private Integer id;
 
-    @NotNull
+    @Nonnull
+    @NotNull(message = "Die ID der Organisationseinheit darf nicht null sein")
     private Integer departmentId;
 
-    @NotNull
+    @Nonnull
+    @NotNull(message = "Die ID des Benutzers darf nicht null sein")
     private String userId;
 
-    @NotNull
-    @ColumnDefault("0")
-    private UserRole role;
+    @Nonnull
+    private LocalDateTime created;
+
+    @Nonnull
+    private LocalDateTime updated;
+
+    // region Signales
+
+    @PrePersist
+    public void prePersist() {
+        created = LocalDateTime.now();
+        updated = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updated = LocalDateTime.now();
+    }
+
+    // endregion
 
     // region Getters & Setters
 
+    @Nonnull
     public Integer getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public DepartmentMembershipEntity setId(@Nonnull Integer id) {
         this.id = id;
+        return this;
     }
 
+    @Nonnull
     public Integer getDepartmentId() {
         return departmentId;
     }
 
-    public void setDepartmentId(Integer departmentId) {
-        this.departmentId = departmentId;
+    public DepartmentMembershipEntity setDepartmentId(@Nonnull Integer organizationalUnitId) {
+        this.departmentId = organizationalUnitId;
+        return this;
     }
 
+    @Nonnull
     public String getUserId() {
         return userId;
     }
 
-    public void setUserId(String userId) {
+    public DepartmentMembershipEntity setUserId(@Nonnull String userId) {
         this.userId = userId;
+        return this;
     }
 
-    public UserRole getRole() {
-        return role;
+    @Nonnull
+    public LocalDateTime getCreated() {
+        return created;
     }
 
-    public void setRole(UserRole role) {
-        this.role = role;
+    public DepartmentMembershipEntity setCreated(@Nonnull LocalDateTime created) {
+        this.created = created;
+        return this;
+    }
+
+    @Nonnull
+    public LocalDateTime getUpdated() {
+        return updated;
+    }
+
+    public DepartmentMembershipEntity setUpdated(@Nonnull LocalDateTime updated) {
+        this.updated = updated;
+        return this;
     }
 
     // endregion

@@ -1,6 +1,6 @@
 import {useNavigate, useParams} from 'react-router-dom';
 import {useEffect} from 'react';
-import {FormsApiService} from '../../forms-api-service-v2';
+import {FormVersionApiService} from '../../services/form-version-api-service';
 
 export function LatestFormDetailsPage() {
     const formId = useParams().id;
@@ -13,13 +13,16 @@ export function LatestFormDetailsPage() {
 
         const formIdNum = parseInt(formId);
 
-        new FormsApiService()
-            .retrieveLatest(formIdNum)
+        new FormVersionApiService()
+            .retrieve({
+                formId: formIdNum,
+                version: 'latest',
+            })
             .then(res => {
-                navigate(`/forms/${res.id}/${res.version}`, {
+                navigate(`/forms/${res.formId}/${res.version}`, {
                     replace: true,
                 });
-            })
+            });
     }, [formId]);
 
     return null;

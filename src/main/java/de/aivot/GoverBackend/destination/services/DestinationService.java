@@ -2,8 +2,8 @@ package de.aivot.GoverBackend.destination.services;
 
 import de.aivot.GoverBackend.destination.entities.Destination;
 import de.aivot.GoverBackend.destination.repositories.DestinationRepository;
-import de.aivot.GoverBackend.form.filters.FormVersionWithDetailsFilter;
-import de.aivot.GoverBackend.form.repositories.FormVersionWithDetailsRepository;
+import de.aivot.GoverBackend.form.filters.VFormVersionWithDetailsFilter;
+import de.aivot.GoverBackend.form.repositories.VFormVersionWithDetailsRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
@@ -14,18 +14,18 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.Optional;
 
 @Service
 public class DestinationService implements EntityService<Destination, Integer> {
     private final DestinationRepository destinationRepository;
-    private final FormVersionWithDetailsRepository formVersionWithDetailsRepository;
+    private final VFormVersionWithDetailsRepository formVersionWithDetailsRepository;
 
     @Autowired
     public DestinationService(DestinationRepository destinationRepository,
-                              FormVersionWithDetailsRepository formVersionWithDetailsRepository) {
+                              VFormVersionWithDetailsRepository formVersionWithDetailsRepository) {
         this.destinationRepository = destinationRepository;
         this.formVersionWithDetailsRepository = formVersionWithDetailsRepository;
     }
@@ -89,7 +89,7 @@ public class DestinationService implements EntityService<Destination, Integer> {
 
     @Override
     public void performDelete(@Nonnull Destination entity) throws ResponseException {
-        var spec = new FormVersionWithDetailsFilter()
+        var spec = new VFormVersionWithDetailsFilter()
                 .setDestinationId(entity.getId())
                 .build();
 

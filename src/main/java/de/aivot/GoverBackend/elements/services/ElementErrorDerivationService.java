@@ -5,7 +5,7 @@ import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
-import de.aivot.GoverBackend.elements.models.elements.ElementWithChildren;
+import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.javascript.exceptions.JavascriptException;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
@@ -95,7 +95,7 @@ public class ElementErrorDerivationService {
             }
         }
 
-        if (validation.getConditionSet() != null && rootElement instanceof ElementWithChildren<?> elementWithChildren) {
+        if (validation.getConditionSet() != null && rootElement instanceof LayoutElement<?> elementWithChildren) {
             return validation
                     .getConditionSet()
                     .evaluate(

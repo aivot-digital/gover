@@ -1,19 +1,16 @@
 import {Box, Button, Grid, Typography} from '@mui/material';
-import React, {useContext, useEffect, useMemo, useState} from 'react';
+import React, {ComponentType, useContext, useEffect, useMemo, useState} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
-import {useNavigate} from 'react-router-dom';
-import {Department} from '../../models/department';
-import {DepartmentsApiService} from '../../departments-api-service';
+import {useNavigate, useSearchParams} from 'react-router-dom';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
-import {RichTextEditorComponentView} from '../../../../components/richt-text-editor/rich-text-editor.component.view';
+import {RichTextEditorComponentView, RichTextEditorComponentViewProps} from '../../../../components/richt-text-editor/rich-text-editor.component.view';
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../../hooks/use-form-manager';
-import {FormsApiService} from '../../../forms/forms-api-service';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {ConstraintDialog} from '../../../../dialogs/constraint-dialog/constraint-dialog';
 import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constraint-link-props';
@@ -23,6 +20,15 @@ import {ThemeResponseDTO} from '../../../themes/models/theme';
 import {ThemesApiService} from '../../../themes/themes-api-service';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
+import {DepartmentsDetailsPageAdditionalData, NewParentIdQueryParam} from './departments-details-page';
+import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
+import {TextFieldComponentProps} from '../../../../components/text-field/text-field-component-props';
+import {SelectFieldComponentProps} from '../../../../components/select-field/select-field-component-props';
+import {DepartmentEntity} from '../../entities/department-entity';
+import {DepartmentApiService} from '../../services/department-api-service';
+import {getDepartmentTypeLabelGenitiv} from '../../utils/department-utils';
+import {FormApiService} from '../../../forms/services/form-api-service';
+
 
 export const DepartmentSchema = yup.object({
     name: yup.string()
@@ -34,29 +40,41 @@ export const DepartmentSchema = yup.object({
         .trim()
         .min(3, 'Die Adresse muss mindestens 3 Zeichen lang sein.')
         .max(255, 'Die Adresse darf maximal 255 Zeichen lang sein.')
-        .required('Die Adresse ist ein Pflichtfeld.'),
+        .optional()
+        .nullable(),
+    //.required('Die Adresse ist ein Pflichtfeld.'),
     specialSupportAddress: yup.string()
         .trim()
         .email('Bitte eine gültige E-Mail-Adresse eingeben.')
         .max(255, 'Die E-Mail-Adresse darf maximal 255 Zeichen lang sein.')
-        .required('Die E-Mail-Adresse für fachliche Unterstützung ist ein Pflichtfeld.'),
+        .optional()
+        .nullable(),
+    //.required('Die E-Mail-Adresse für fachliche Unterstützung ist ein Pflichtfeld.'),
     technicalSupportAddress: yup.string()
         .trim()
         .email('Bitte eine gültige E-Mail-Adresse eingeben.')
         .max(255, 'Die E-Mail-Adresse darf maximal 255 Zeichen lang sein.')
-        .required('Die E-Mail-Adresse für technische Unterstützung ist ein Pflichtfeld.'),
+        .optional()
+        .nullable(),
+    //.required('Die E-Mail-Adresse für technische Unterstützung ist ein Pflichtfeld.'),
     imprint: yup.string()
         .trim()
         .min(10, 'Das Impressum muss mindestens 10 Zeichen lang sein.')
-        .required('Das Impressum ist ein Pflichtfeld.'),
-    privacy: yup.string()
+        .optional()
+        .nullable(),
+    //.required('Das Impressum ist ein Pflichtfeld.'),
+    commonPrivacy: yup.string()
         .trim()
         .min(10, 'Die Datenschutzerklärung muss mindestens 10 Zeichen lang sein.')
-        .required('Die Datenschutzerklärung ist ein Pflichtfeld.'),
-    accessibility: yup.string()
+        .optional()
+        .nullable(),
+    //.required('Die Datenschutzerklärung ist ein Pflichtfeld.'),
+    commonAccessibility: yup.string()
         .trim()
         .min(10, 'Die Barrierefreiheitserklärung muss mindestens 10 Zeichen lang sein.')
-        .required('Die Barrierefreiheitserklärung ist ein Pflichtfeld.'),
+        .optional()
+        .nullable(),
+    //.required('Die Barrierefreiheitserklärung ist ein Pflichtfeld.'),
     departmentMail: yup.string()
         .optional()
         .nullable()
@@ -69,6 +87,15 @@ export const DepartmentSchema = yup.object({
 export function DepartmentsDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
+    const [searchParams, _] = useSearchParams();
+
+    const parentOrgUnitId = useMemo(() => {
+        const parentId = searchParams.get(NewParentIdQueryParam);
+        if (parentId != null && !isNaN(Number(parentId))) {
+            return parseInt(parentId);
+        }
+        return undefined;
+    }, [searchParams]);
 
     const api = useApi();
     const {
@@ -77,7 +104,8 @@ export function DepartmentsDetailsPageIndex() {
         isBusy,
         setIsBusy,
         isEditable,
-    } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<Department, undefined>;
+        additionalData,
+    } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<DepartmentEntity, DepartmentsDetailsPageAdditionalData>;
 
     useEffect(() => {
         if (isEditable) {
@@ -93,7 +121,7 @@ export function DepartmentsDetailsPageIndex() {
 
         return () => {
             dispatch(removeSnackbarMessage('no-edit-permission-department'));
-        }
+        };
     }, [isEditable]);
 
     const {
@@ -104,9 +132,9 @@ export function DepartmentsDetailsPageIndex() {
         handleInputChange,
         validate,
         reset,
-    } = useFormManager<Department>(item, DepartmentSchema as any);
+    } = useFormManager<DepartmentEntity>(item, DepartmentSchema as any);
 
-    const apiService = useMemo(() => new DepartmentsApiService(), []);
+    const apiService = useMemo(() => new DepartmentApiService(), []);
     const department = currentItem;
     const changeBlocker = useChangeBlocker(item, currentItem);
 
@@ -134,74 +162,82 @@ export function DepartmentsDetailsPageIndex() {
     }
 
     const handleSave = () => {
-        if (department != null) {
+        // Do not save if department is null
+        if (department == null) {
+            return;
+        }
 
-            const validationResult = validate();
+        // Validate form
+        const validationResult = validate();
 
-            if (!validationResult) {
-                dispatch(showErrorSnackbar('Bitte überprüfen Sie Ihre Eingaben.'));
-                return;
-            }
+        // If validation fails, show error snackbar and do not proceed
+        if (!validationResult) {
+            dispatch(showErrorSnackbar('Bitte überprüfen Sie Ihre Eingaben.'));
+            return;
+        }
 
-            setIsBusy(true);
+        setIsBusy(true);
 
-            if (department.id === 0) {
-                apiService
-                    .create(department)
-                    .then((newDepartment) => {
-                        setItem(newDepartment);
-                        reset();
+        if (department.id === 0) {
+            const parentId = parseInt(searchParams.get(NewParentIdQueryParam) ?? '');
 
-                        dispatch(showSuccessSnackbar('Neuer Fachbereich erfolgreich angelegt.'));
+            apiService
+                .create({
+                    ...department,
+                    parentDepartmentId: isNaN(parentId) ? undefined : parentId,
+                })
+                .then((newDepartment) => {
+                    setItem(newDepartment);
+                    reset();
 
-                        // use setTimeout instead of useEffect to prevent unnecessary rerender
-                        setTimeout(() => {
-                            navigate(`/departments/${newDepartment.id}`, {replace: true});
-                        }, 0);
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
-                    })
-                    .finally(() => {
-                        setIsBusy(false);
-                    });
-            } else {
-                apiService
-                    .update(department.id, department)
-                    .then((updatedDepartment) => {
-                        setItem(updatedDepartment);
-                        reset();
+                    dispatch(showSuccessSnackbar('Neuer Fachbereich erfolgreich angelegt.'));
 
-                        dispatch(showSuccessSnackbar('Änderungen an Fachbereich erfolgreich gespeichert.'));
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
-                    })
-                    .finally(() => {
-                        setIsBusy(false);
-                    });
-            }
+                    // use setTimeout instead of useEffect to prevent unnecessary rerender
+                    setTimeout(() => {
+                        navigate(`/departments/${newDepartment.id}`, {
+                            replace: true,
+                        });
+                    }, 0);
+                })
+                .catch(err => {
+                    console.error(err);
+                    dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                })
+                .finally(() => {
+                    setIsBusy(false);
+                });
+        } else {
+            apiService
+                .update(department.id, department)
+                .then((updatedDepartment) => {
+                    setItem(updatedDepartment);
+                    reset();
+
+                    dispatch(showSuccessSnackbar('Änderungen an Fachbereich erfolgreich gespeichert.'));
+                })
+                .catch(err => {
+                    console.error(err);
+                    dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                })
+                .finally(() => {
+                    setIsBusy(false);
+                });
         }
     };
 
     const checkAndHandleDelete = async () => {
-        if (department.id === 0) return;
+        if (department.id === 0) {
+            return;
+        }
 
         setIsBusy(true);
         try {
-            const formsApi = new FormsApiService(api);
-            const developingForms = await formsApi.list(0, 999, undefined, undefined, {developingDepartmentId: department.id});
-            const managingForms = await formsApi.list(0, 999, undefined, undefined, {managingDepartmentId: department.id});
-            const responsibleForms = await formsApi.list(0, 999, undefined, undefined, {responsibleDepartmentId: department.id});
+            const formsApi = new FormApiService();
+            const developingForms = await formsApi.listAll({
+                developingDepartmentId: department.id,
+            });
 
-            const uniqueForms = Array.from(
-                new Map(
-                    [...developingForms.content, ...managingForms.content, ...responsibleForms.content]
-                        .map(form => [form.id, form]),
-                ).values(),
-            );
+            const uniqueForms = developingForms.content;
 
             if (uniqueForms.length > 0) {
                 const maxVisibleLinks = 5;
@@ -246,6 +282,8 @@ export function DepartmentsDetailsPageIndex() {
             .finally(() => setIsBusy(false));
     };
 
+    const doNotShadow = department.depth === 0 && parentOrgUnitId == null;
+
     return (
         <Box>
             <Typography
@@ -255,7 +293,7 @@ export function DepartmentsDetailsPageIndex() {
                     mb: 1,
                 }}
             >
-                Öffentliche Informationen des Fachbereichs
+                Öffentliche Informationen {getDepartmentTypeLabelGenitiv(department.depth)}
             </Typography>
             <Typography
                 sx={{
@@ -299,7 +337,21 @@ export function DepartmentsDetailsPageIndex() {
                         lg: 6,
                     }}
                 >
-                    <TextFieldComponent
+                    <ShadowedInput<TextFieldComponentProps, typeof TextFieldComponent>
+                        doNotShadow={doNotShadow}
+                        Component={TextFieldComponent}
+                        override={department.address != null}
+                        onSetOverride={(override) => {
+                            if (override) {
+                                handleInputChange('address')('');
+                            } else {
+                                handleInputChange('address')(null);
+                            }
+                        }}
+                        shadowedProps={{
+                            value: additionalData?.shadowedDepartment.address ?? '',
+                            disabled: true,
+                        }}
                         label="Adresse des Fachbereichs"
                         value={department.address}
                         onChange={handleInputChange('address')}
@@ -338,7 +390,21 @@ export function DepartmentsDetailsPageIndex() {
                         lg: 6,
                     }}
                 >
-                    <SelectFieldComponent
+                    <ShadowedInput<SelectFieldComponentProps, typeof SelectFieldComponent>
+                        doNotShadow={doNotShadow}
+                        Component={SelectFieldComponent}
+                        override={department.themeId != null}
+                        onSetOverride={(override) => {
+                            if (override) {
+                                handleInputChange('themeId')(0);
+                            } else {
+                                handleInputChange('themeId')(null);
+                            }
+                        }}
+                        shadowedProps={{
+                            value: additionalData?.shadowedDepartment.themeId?.toString() ?? undefined,
+                            disabled: true,
+                        }}
                         label="Farbschema des Fachbereichs"
                         value={department.themeId?.toString()}
                         onChange={(val) => {
@@ -388,7 +454,21 @@ export function DepartmentsDetailsPageIndex() {
                         lg: 6,
                     }}
                 >
-                    <TextFieldComponent
+                    <ShadowedInput<TextFieldComponentProps, typeof TextFieldComponent>
+                        doNotShadow={doNotShadow}
+                        Component={TextFieldComponent}
+                        override={department.specialSupportAddress != null}
+                        onSetOverride={(override) => {
+                            if (override) {
+                                handleInputChange('specialSupportAddress')('');
+                            } else {
+                                handleInputChange('specialSupportAddress')(null);
+                            }
+                        }}
+                        shadowedProps={{
+                            value: additionalData?.shadowedDepartment.specialSupportAddress ?? '',
+                            disabled: true,
+                        }}
                         label="Kontakt-E-Mail-Adresse fachliche Unterstützung"
                         type="email"
                         value={department.specialSupportAddress}
@@ -399,6 +479,60 @@ export function DepartmentsDetailsPageIndex() {
                         error={errors.specialSupportAddress}
                         disabled={!isEditable}
                     />
+
+                    <ShadowedInput<TextFieldComponentProps, typeof TextFieldComponent>
+                        doNotShadow={doNotShadow}
+                        Component={TextFieldComponent}
+                        override={department.specialSupportPhone != null}
+                        onSetOverride={(override) => {
+                            if (override) {
+                                handleInputChange('specialSupportPhone')('');
+                            } else {
+                                handleInputChange('specialSupportPhone')(null);
+                            }
+                        }}
+                        shadowedProps={{
+                            value: additionalData?.shadowedDepartment.specialSupportPhone ?? '',
+                            disabled: true,
+                        }}
+                        label="Kontakt-Telefonnummer fachliche Unterstützung"
+                        type="tel"
+                        value={department.specialSupportPhone}
+                        onChange={handleInputChange('specialSupportPhone')}
+                        onBlur={handleInputBlur('specialSupportPhone')}
+                        required
+                        maxCharacters={255}
+                        error={errors.specialSupportPhone}
+                        disabled={!isEditable}
+                    />
+
+                    <ShadowedInput<TextFieldComponentProps, typeof TextFieldComponent>
+                        doNotShadow={doNotShadow}
+                        Component={TextFieldComponent}
+                        override={department.specialSupportInfo != null}
+                        onSetOverride={(override) => {
+                            if (override) {
+                                handleInputChange('specialSupportInfo')('');
+                            } else {
+                                handleInputChange('specialSupportInfo')(null);
+                            }
+                        }}
+                        shadowedProps={{
+                            value: additionalData?.shadowedDepartment.specialSupportInfo ?? '',
+                            disabled: true,
+                        }}
+                        label="Informationen zur fachliche Unterstützung"
+                        value={department.specialSupportInfo}
+                        onChange={handleInputChange('specialSupportInfo')}
+                        onBlur={handleInputBlur('specialSupportInfo')}
+                        required
+                        multiline={true}
+                        rows={5}
+                        maxCharacters={1024}
+                        error={errors.specialSupportInfo}
+                        disabled={!isEditable}
+                        hint="Zusätzliche Informationen, z.B. zu Erreichbarkeiten oder Supportzeiten."
+                    />
                 </Grid>
                 <Grid
                     size={{
@@ -406,7 +540,21 @@ export function DepartmentsDetailsPageIndex() {
                         lg: 6,
                     }}
                 >
-                    <TextFieldComponent
+                    <ShadowedInput<TextFieldComponentProps, typeof TextFieldComponent>
+                        doNotShadow={doNotShadow}
+                        Component={TextFieldComponent}
+                        override={department.technicalSupportAddress != null}
+                        onSetOverride={(override) => {
+                            if (override) {
+                                handleInputChange('technicalSupportAddress')('');
+                            } else {
+                                handleInputChange('technicalSupportAddress')(null);
+                            }
+                        }}
+                        shadowedProps={{
+                            value: additionalData?.shadowedDepartment.technicalSupportAddress ?? '',
+                            disabled: true,
+                        }}
                         label="Kontakt-E-Mail-Adresse technische Unterstützung"
                         type="email"
                         value={department.technicalSupportAddress}
@@ -416,6 +564,60 @@ export function DepartmentsDetailsPageIndex() {
                         maxCharacters={255}
                         error={errors.technicalSupportAddress}
                         disabled={!isEditable}
+                    />
+
+                    <ShadowedInput<TextFieldComponentProps, typeof TextFieldComponent>
+                        doNotShadow={doNotShadow}
+                        Component={TextFieldComponent}
+                        override={department.technicalSupportPhone != null}
+                        onSetOverride={(override) => {
+                            if (override) {
+                                handleInputChange('technicalSupportPhone')('');
+                            } else {
+                                handleInputChange('technicalSupportPhone')(null);
+                            }
+                        }}
+                        shadowedProps={{
+                            value: additionalData?.shadowedDepartment.technicalSupportPhone ?? '',
+                            disabled: true,
+                        }}
+                        label="Kontakt-Telefonnummer technische Unterstützung"
+                        type="tel"
+                        value={department.technicalSupportPhone}
+                        onChange={handleInputChange('technicalSupportPhone')}
+                        onBlur={handleInputBlur('technicalSupportPhone')}
+                        required
+                        maxCharacters={255}
+                        error={errors.technicalSupportPhone}
+                        disabled={!isEditable}
+                    />
+
+                    <ShadowedInput<TextFieldComponentProps, typeof TextFieldComponent>
+                        doNotShadow={doNotShadow}
+                        Component={TextFieldComponent}
+                        override={department.technicalSupportInfo != null}
+                        onSetOverride={(override) => {
+                            if (override) {
+                                handleInputChange('technicalSupportInfo')('');
+                            } else {
+                                handleInputChange('technicalSupportInfo')(null);
+                            }
+                        }}
+                        shadowedProps={{
+                            value: additionalData?.shadowedDepartment.technicalSupportInfo ?? '',
+                            disabled: true,
+                        }}
+                        label="Informationen zur technischen Unterstützung"
+                        value={department.technicalSupportInfo}
+                        onChange={handleInputChange('technicalSupportInfo')}
+                        onBlur={handleInputBlur('technicalSupportInfo')}
+                        required
+                        multiline={true}
+                        rows={5}
+                        maxCharacters={1024}
+                        error={errors.technicalSupportInfo}
+                        disabled={!isEditable}
+                        hint="Zusätzliche Informationen, z.B. zu Erreichbarkeiten oder Supportzeiten."
                     />
                 </Grid>
             </Grid>
@@ -429,7 +631,21 @@ export function DepartmentsDetailsPageIndex() {
                 Die folgenden rechtlichen Angaben und Texte können in Formularen referenziert werden.
             </Typography>
             <Box sx={{mb: 3}}>
-                <RichTextEditorComponentView
+                <ShadowedInput<RichTextEditorComponentViewProps, typeof RichTextEditorComponentView>
+                    doNotShadow={doNotShadow}
+                    Component={RichTextEditorComponentView}
+                    override={department.imprint != null}
+                    onSetOverride={(override) => {
+                        if (override) {
+                            handleInputChange('imprint')('');
+                        } else {
+                            handleInputChange('imprint')(null);
+                        }
+                    }}
+                    shadowedProps={{
+                        value: additionalData?.shadowedDepartment.imprint ?? '',
+                        disabled: true,
+                    }}
                     label="Impressum"
                     value={department.imprint}
                     onChange={handleInputChange('imprint')}
@@ -439,25 +655,54 @@ export function DepartmentsDetailsPageIndex() {
                 />
             </Box>
             <Box sx={{mb: 3}}>
-                <RichTextEditorComponentView
+                <ShadowedInput<RichTextEditorComponentViewProps, typeof RichTextEditorComponentView>
+                    doNotShadow={doNotShadow}
+                    Component={RichTextEditorComponentView}
+                    override={department.commonPrivacy != null}
+                    onSetOverride={(override) => {
+                        if (override) {
+                            handleInputChange('commonPrivacy')('');
+                        } else {
+                            handleInputChange('commonPrivacy')(null);
+                        }
+                    }}
+                    shadowedProps={{
+                        value: additionalData?.shadowedDepartment.commonPrivacy ?? '',
+                        disabled: true,
+                    }}
                     label="Datenschutzerklärung"
-                    value={department.privacy}
-                    onChange={handleInputChange('privacy')}
+                    value={department.commonPrivacy}
+                    onChange={handleInputChange('commonPrivacy')}
                     required
-                    error={errors.privacy}
+                    error={errors.commonPrivacy}
                     disabled={!isEditable}
                 />
             </Box>
             <Box sx={{mb: 3}}>
-                <RichTextEditorComponentView
+                <ShadowedInput<RichTextEditorComponentViewProps, typeof RichTextEditorComponentView>
+                    doNotShadow={doNotShadow}
+                    Component={RichTextEditorComponentView}
+                    override={department.commonAccessibility != null}
+                    onSetOverride={(override) => {
+                        if (override) {
+                            handleInputChange('commonAccessibility')('');
+                        } else {
+                            handleInputChange('commonAccessibility')(null);
+                        }
+                    }}
+                    shadowedProps={{
+                        value: additionalData?.shadowedDepartment.commonAccessibility ?? '',
+                        disabled: true,
+                    }}
                     label="Barrierefreiheitserklärung"
-                    value={department.accessibility}
-                    onChange={handleInputChange('accessibility')}
+                    value={department.commonAccessibility}
+                    onChange={handleInputChange('commonAccessibility')}
                     required
-                    error={errors.accessibility}
+                    error={errors.commonAccessibility}
                     disabled={!isEditable}
                 />
             </Box>
+
             <Typography
                 variant="h5"
                 sx={{
@@ -467,11 +712,27 @@ export function DepartmentsDetailsPageIndex() {
             >
                 Zentrale E-Mail-Adressen für Systembenachrichtigungen
             </Typography>
+
             <Typography sx={{mb: 2, maxWidth: 900}}>
                 Systembenachrichtigungen (wie z.B. Eingang eines neuen Antrags) werden grundsätzlich an jede Mitarbeiter:in im Fachbereich gesendet.
                 Wenn Sie hier eine oder mehrere zentrale E-Mail-Adressen hinterlegen, erhalten nur noch diese die Systembenachrichtigungen.
             </Typography>
-            <TextFieldComponent
+
+            <ShadowedInput<TextFieldComponentProps, typeof TextFieldComponent>
+                doNotShadow={doNotShadow}
+                Component={TextFieldComponent}
+                override={department.departmentMail != null}
+                onSetOverride={(override) => {
+                    if (override) {
+                        handleInputChange('departmentMail')('');
+                    } else {
+                        handleInputChange('departmentMail')(null);
+                    }
+                }}
+                shadowedProps={{
+                    value: additionalData?.shadowedDepartment.departmentMail ?? '',
+                    disabled: true,
+                }}
                 label="Zentrale E-Mail-Adressen für Systembenachrichtigungen"
                 value={department.departmentMail ?? undefined}
                 onChange={handleInputChange('departmentMail')}
@@ -481,6 +742,7 @@ export function DepartmentsDetailsPageIndex() {
                 hint="Sie können mehrere E-Mail-Adressen durch ein Komma getrennt eingeben."
                 disabled={!isEditable}
             />
+
             <Box
                 sx={{
                     display: 'flex',
@@ -550,6 +812,69 @@ export function DepartmentsDetailsPageIndex() {
                 solutionText="Bitte übertragen Sie die Formulare an einen anderen Fachbereich und versuchen Sie es erneut:"
                 links={relatedApplications}
             />
+        </Box>
+    );
+}
+
+interface ShadowedInputProps<P, C extends ComponentType<P>> {
+    doNotShadow: boolean;
+    override: boolean;
+    onSetOverride: (override: boolean) => void;
+    Component: C;
+    shadowedProps: Partial<P>;
+}
+
+function ShadowedInput<P, C extends ComponentType<P>>(props: ShadowedInputProps<P, C> & P) {
+    const {
+        override,
+        onSetOverride,
+        doNotShadow,
+
+        Component,
+        shadowedProps,
+
+        ...rest
+    } = props;
+
+    const propsToPass: any = useMemo(() => {
+        if (override) {
+            return {
+                ...rest as P,
+            };
+        }
+
+        return {
+            ...rest as P,
+            ...shadowedProps,
+        };
+    }, [override, rest, shadowedProps]);
+
+    if (doNotShadow) {
+        return <Component {...(rest as any)} />;
+    }
+
+    return (
+        <Box
+            sx={{
+                display: 'flex',
+                gap: 1,
+                flexDirection: 'column',
+            }}
+        >
+            <Box>
+                <CheckboxFieldComponent
+                    label="Überschreiben"
+                    onChange={onSetOverride}
+                    value={override}
+                />
+            </Box>
+            <Box
+                sx={{
+                    flex: 1,
+                }}
+            >
+                <Component {...propsToPass} />
+            </Box>
         </Box>
     );
 }

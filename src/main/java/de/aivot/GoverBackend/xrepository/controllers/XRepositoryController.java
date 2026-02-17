@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 
@@ -32,10 +32,6 @@ public class XRepositoryController {
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable String urn
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
         return xRepositoryCodeListService
                 .getCodeList(urn);
     }
@@ -45,10 +41,6 @@ public class XRepositoryController {
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable String urn
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
         return xRepositoryCodeListService
                 .getReducedCodeList(urn);
     }

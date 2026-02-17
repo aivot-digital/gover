@@ -16,17 +16,17 @@ export function generateComponentTitle(component: AnyElement | null | undefined)
     const defaultElementDescriptor = getElementNameForType(component.type);
 
     switch (component.type) {
-        case ElementType.Root:
+        case ElementType.FormLayout:
             return 'Formular';
         case ElementType.Step:
             return stringOrDefault(component.title, 'Unbenannter Abschnitt');
         case ElementType.Alert:
             return stringOrDefault(component.title, defaultElementDescriptor);
-        case ElementType.Container:
+        case ElementType.GroupLayout:
             return defaultElementDescriptor;
         case ElementType.Headline:
             return stringOrDefault(component.content, defaultElementDescriptor);
-        case ElementType.Richtext:
+        case ElementType.RichText:
             return defaultElementDescriptor;
         case ElementType.Image:
             return stringOrDefault(component.alt, defaultElementDescriptor);

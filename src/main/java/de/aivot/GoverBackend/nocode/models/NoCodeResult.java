@@ -2,8 +2,8 @@ package de.aivot.GoverBackend.nocode.models;
 
 import org.json.JSONObject;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.Collection;
 
 /**

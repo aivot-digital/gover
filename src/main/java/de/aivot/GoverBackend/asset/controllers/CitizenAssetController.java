@@ -5,7 +5,10 @@ import de.aivot.GoverBackend.asset.repositories.AssetRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.models.config.StorageConfig;
+import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.services.storages.AssetStorageService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
@@ -22,6 +25,10 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/public/assets/")
+@Tag(
+        name = OpenApiConstants.Tags.AssetsName,
+        description = OpenApiConstants.Tags.AssetsDescription
+)
 public class CitizenAssetController {
     private final AssetStorageService assetStorageService;
     private final AssetRepository assetRepository;
@@ -29,12 +36,10 @@ public class CitizenAssetController {
     private final StorageConfig storageConfig;
 
     @Autowired
-    public CitizenAssetController(
-            AssetStorageService assetStorageService,
-            AssetRepository assetRepository,
-            GoverConfig goverConfig,
-            StorageConfig storageConfig
-    ) {
+    public CitizenAssetController(AssetStorageService assetStorageService,
+                                  AssetRepository assetRepository,
+                                  GoverConfig goverConfig,
+                                  StorageConfig storageConfig) {
         this.assetStorageService = assetStorageService;
         this.assetRepository = assetRepository;
         this.goverConfig = goverConfig;
@@ -47,6 +52,10 @@ public class CitizenAssetController {
      * @param assetId The id of the asset to retrieve.
      */
     @GetMapping("{assetId}")
+    @Operation(
+            summary = "Retrieve Public Asset by ID",
+            description = "Retrieves a public asset by its ID. Redirects to the actual file location."
+    )
     public void retrievePublicById(
             @PathVariable String assetId,
             @RequestParam(defaultValue = "false") boolean download,
@@ -65,6 +74,10 @@ public class CitizenAssetController {
     }
 
     @GetMapping("{assetId}/{filename}")
+    @Operation(
+            summary = "Retrieve Public Asset File",
+            description = "Retrieves the actual file of a public asset by its ID and filename. Redirects to the storage location or serves the file directly if local storage is enabled."
+    )
     public void retrievePublicFile(
             @PathVariable String assetId,
             @PathVariable String filename,
@@ -91,6 +104,10 @@ public class CitizenAssetController {
 
 
     @GetMapping("local/{assetId}/{filename}")
+    @Operation(
+            summary = "Retrieve Public Asset File from Local Storage",
+            description = "Retrieves the actual file of a public asset stored in local storage by its ID and filename."
+    )
     public ResponseEntity<Resource> retrievePublicLocalFile(
             @PathVariable String assetId,
             @PathVariable String filename,

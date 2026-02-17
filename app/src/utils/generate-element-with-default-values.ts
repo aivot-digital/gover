@@ -2,7 +2,7 @@ import {ElementType} from '../data/element-type/element-type';
 import {type IntroductionStepElement} from '../models/elements/steps/introduction-step-element';
 import {type SummaryStepElement} from '../models/elements/steps/summary-step-element';
 import {type SubmitStepElement} from '../models/elements/steps/submit-step-element';
-import {type AnyElement} from '../models/elements/any-element';
+import {type AnyElement, AnyElementType} from '../models/elements/any-element';
 import {generateElementIdForType} from './id-utils';
 import {DateFieldComponentModelMode, DateFieldElement} from '../models/elements/form/input/date-field-element';
 import {RootElement} from '../models/elements/root-element';
@@ -62,17 +62,17 @@ function makeInputBase<T extends ElementType>(t: T, id: string): Omit<BaseInputE
 }
 
 const elementConstructors: {
-    [ElementType.Root]: (id: string) => RootElement;
+    [ElementType.FormLayout]: (id: string) => RootElement;
     [ElementType.Step]: (id: string) => StepElement;
     [ElementType.Alert]: (id: string) => AlertElement;
-    [ElementType.Container]: (id: string) => GroupLayout;
+    [ElementType.GroupLayout]: (id: string) => GroupLayout;
     [ElementType.Checkbox]: (id: string) => CheckboxFieldElement;
     [ElementType.Date]: (id: string) => DateFieldElement;
     [ElementType.Headline]: (id: string) => HeadlineElement;
     [ElementType.MultiCheckbox]: (id: string) => MultiCheckboxFieldElement;
     [ElementType.Number]: (id: string) => NumberFieldElement;
     [ElementType.ReplicatingContainer]: (id: string) => ReplicatingContainerLayout;
-    [ElementType.Richtext]: (id: string) => RichtextElement;
+    [ElementType.RichText]: (id: string) => RichtextElement;
     [ElementType.Radio]: (id: string) => RadioFieldElement;
     [ElementType.Select]: (id: string) => SelectFieldElement;
     [ElementType.Spacer]: (id: string) => SpacerElement;
@@ -85,9 +85,18 @@ const elementConstructors: {
     [ElementType.Image]: (id: string) => ImageElement;
     [ElementType.SubmittedStep]: (id: string) => SubmittedStepElement;
     [ElementType.FileUpload]: (id: string) => FileUploadElement;
+    [ElementType.DialogLayout]: (id: string) => void;
+    [ElementType.StepperLayout]: (id: string) => void;
+    [ElementType.ConfigLayout]: (id: string) => void;
+    [ElementType.FunctionInput]: (id: string) => void;
+    [ElementType.CodeInput]: (id: string) => void;
+    [ElementType.RichTextInput]: (id: string) => void;
+    [ElementType.UiDefinitionInput]: (id: string) => void;
+    [ElementType.IdentityInput]: (id: string) => void;
+    [ElementType.TabLayout]: (id: string) => void;
 } = {
-    [ElementType.Root]: (id) => ({
-        ...makeBase(ElementType.Root, id),
+    [ElementType.FormLayout]: (id) => ({
+        ...makeBase(ElementType.FormLayout, id),
         headline: 'Ihr Neues\nOnline-Formular',
         tabTitle: undefined,
         children: [],
@@ -111,8 +120,8 @@ const elementConstructors: {
         text: '<p class="MuiTypography-root MuiTypography-body2">Nutzen Sie diesen Hinweis, um Antragsstellenden zusätzliche Informationen hervorgehoben bereitzustellen.</p>',
         alertType: 'info',
     }),
-    [ElementType.Container]: (id) => ({
-        ...makeFormBase(ElementType.Container, id),
+    [ElementType.GroupLayout]: (id) => ({
+        ...makeFormBase(ElementType.GroupLayout, id),
         children: [],
         storeLink: null,
     }),
@@ -170,8 +179,8 @@ const elementConstructors: {
         addLabel: undefined,
         removeLabel: undefined,
     }),
-    [ElementType.Richtext]: (id) => ({
-        ...makeFormBase(ElementType.Richtext, id),
+    [ElementType.RichText]: (id) => ({
+        ...makeFormBase(ElementType.RichText, id),
         content: '<p class="MuiTypography-root MuiTypography-body2">Fließtext</p>',
     }),
     [ElementType.Radio]: (id) => ({
@@ -299,9 +308,18 @@ const elementConstructors: {
         maxFiles: undefined,
         minFiles: undefined,
     }),
+    [ElementType.DialogLayout]: (id) => ({}),
+    [ElementType.StepperLayout]: (id) => ({}),
+    [ElementType.ConfigLayout]: (id) => ({}),
+    [ElementType.FunctionInput]: (id) => ({}),
+    [ElementType.CodeInput]: (id) => ({}),
+    [ElementType.RichTextInput]: (id) => ({}),
+    [ElementType.UiDefinitionInput]: (id) => ({}),
+    [ElementType.IdentityInput]: (id) => ({}),
+    [ElementType.TabLayout]: (id) => ({}),
 };
 
-export function generateElementWithDefaultValues<T extends ElementType>(type: T): AnyElement | undefined {
+export function generateElementWithDefaultValues<T extends ElementType>(type: T): AnyElementType<T> {
     const id = generateElementIdForType(type);
-    return elementConstructors[type](id);
+    return elementConstructors[type](id) as AnyElementType<T>;
 }

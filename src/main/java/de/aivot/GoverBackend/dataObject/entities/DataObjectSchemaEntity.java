@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.dataObject.entities;
 
 import de.aivot.GoverBackend.core.converters.GroupLayoutConverter;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
 
@@ -31,7 +31,7 @@ public class DataObjectSchemaEntity {
     @Nonnull
     @Convert(converter = GroupLayoutConverter.class)
     @Column(columnDefinition = "jsonb")
-    private GroupLayout schema;
+    private GroupLayoutElement schema;
 
     @Nonnull
     private LocalDateTime created;
@@ -123,11 +123,11 @@ public class DataObjectSchemaEntity {
     }
 
     @Nonnull
-    public GroupLayout getSchema() {
+    public GroupLayoutElement getSchema() {
         return schema;
     }
 
-    public DataObjectSchemaEntity setSchema(@Nonnull GroupLayout schema) {
+    public DataObjectSchemaEntity setSchema(@Nonnull GroupLayoutElement schema) {
         this.schema = schema;
         return this;
     }

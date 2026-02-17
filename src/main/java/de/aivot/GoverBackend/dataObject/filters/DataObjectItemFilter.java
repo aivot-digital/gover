@@ -11,11 +11,8 @@ import java.io.Serializable;
 import java.util.List;
 
 public class DataObjectItemFilter implements Filter<DataObjectItemEntity>, Serializable {
-    @Nullable
     private String schemaKey;
-    @Nullable
     private String id;
-    @Nullable
     private List<DataObjectFilterField> dataFields;
 
     public static DataObjectItemFilter create() {
@@ -43,32 +40,29 @@ public class DataObjectItemFilter implements Filter<DataObjectItemEntity>, Seria
         return filter.build();
     }
 
-    @Nullable
     public String getSchemaKey() {
         return schemaKey;
     }
 
-    public DataObjectItemFilter setSchemaKey(@Nullable String schemaKey) {
+    public DataObjectItemFilter setSchemaKey(String schemaKey) {
         this.schemaKey = schemaKey;
         return this;
     }
 
-    @Nullable
     public String getId() {
         return id;
     }
 
-    public DataObjectItemFilter setId(@Nullable String id) {
+    public DataObjectItemFilter setId(String id) {
         this.id = id;
         return this;
     }
 
-    @Nullable
     public List<DataObjectFilterField> getDataFields() {
         return dataFields;
     }
 
-    public DataObjectItemFilter setDataFields(@Nullable List<DataObjectFilterField> dataFields) {
+    public DataObjectItemFilter setDataFields(List<DataObjectFilterField> dataFields) {
         this.dataFields = dataFields;
         return this;
     }

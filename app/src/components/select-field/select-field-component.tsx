@@ -1,28 +1,29 @@
 import React, {useMemo} from 'react';
-import {IconButton, InputAdornment, MenuItem, TextField, Typography} from '@mui/material';
+import {InputAdornment, ListItemIcon, ListItemText, MenuItem, TextField, Typography} from '@mui/material';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {type SelectFieldComponentProps} from './select-field-component-props';
-import Tooltip from '@mui/material/Tooltip';
 import {renderIconButton} from '../text-field/text-field-component';
 
-export function SelectFieldComponent({
-                                         label,
-                                         autocomplete,
-                                         placeholder,
-                                         hint,
-                                         disabled,
-                                         readOnly,
-                                         required,
-                                         error,
-                                         value,
-                                         onChange,
-                                         options,
-                                         emptyStatePlaceholder,
-                                         startIcon,
-                                         endAction,
-                                         sx,
-                                         muiPassTroughProps,
-                                     }: SelectFieldComponentProps) {
+export function SelectFieldComponent(props: SelectFieldComponentProps) {
+    const {
+        label,
+            autocomplete,
+            placeholder,
+            hint,
+            disabled,
+            readOnly,
+            required,
+            error,
+            value,
+            onChange,
+            options,
+            emptyStatePlaceholder,
+            startIcon,
+            endAction,
+            sx,
+            muiPassTroughProps,
+    } = props;
+
     const val = value ?? '';
 
     const optionElements = useMemo(() => {
@@ -31,23 +32,18 @@ export function SelectFieldComponent({
                 <MenuItem
                     key={option.value}
                     value={option.value}
-                    sx={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-start',
-                    }}
                 >
-                    <Typography>
-                        {option.label}
-                    </Typography>
                     {
-                        option.subLabel != null &&
-                        <Typography
-                            variant="caption"
-                        >
-                            {option.subLabel}
-                        </Typography>
+                        option.icon != null &&
+                        <ListItemIcon>
+                            {option.icon}
+                        </ListItemIcon>
                     }
+
+                    <ListItemText
+                        primary={option.label}
+                        secondary={option.subLabel}
+                    />
                 </MenuItem>
             ));
     }, [options]);
@@ -81,9 +77,12 @@ export function SelectFieldComponent({
                     <InputAdornment position="start">{startIcon}</InputAdornment>
                 ),
                 endAdornment: endAction && (
-                    <InputAdornment position="end" sx={{
-                        mr: 2,
-                    }}>
+                    <InputAdornment
+                        position="end"
+                        sx={{
+                            mr: 2,
+                        }}
+                    >
                         {Array.isArray(endAction)
                             ? endAction.map(renderIconButton)
                             : renderIconButton(endAction)}

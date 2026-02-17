@@ -69,7 +69,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
             return '';
         }
 
-        const versionedLink = `${window.location.protocol}//${window.location.host}/${form.slug}/${form.version}`;
+        const versionedLink = `${window.location.protocol}//${window.location.host}/${form.form.slug}/${form.version.version}`;
 
         const inputs: Record<string, any> = {};
         for (const key of Object.keys(elementData)) {
@@ -98,11 +98,11 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
         step: StepElement,
         elements: AnyElement[],
     }[] = useMemo(() => {
-        if (form == null || form.rootElement == null || form.rootElement.children == null) {
+        if (form == null || form.version.rootElement == null || form.version.rootElement.children == null) {
             return [];
         }
 
-        return form.rootElement.children
+        return form.version.rootElement.children
             .map((s) => {
                 const stepElements = flattenElements(s, true)
                     .filter(canPrefillElement);
@@ -136,7 +136,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
         }
 
         try {
-            await downloadQrCode(link, `${form.slug}-${form.version}-prefill.png`);
+            await downloadQrCode(link, `${form.form.slug}-${form.version.version}-prefill.png`);
             dispatch(showSuccessSnackbar('QR-Code wurde als PNG heruntergeladen!'));
         } catch {
             dispatch(showErrorSnackbar('Fehler beim Herunterladen des QR-Codes!'));
@@ -148,7 +148,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
             return;
         }
 
-        downloadObjectFile(`prefill-${form.slug}-${form.version}.json`, elementData);
+        downloadObjectFile(`prefill-${form.form.slug}-${form.version.version}.json`, elementData);
     };
 
     const handleImport = () => {

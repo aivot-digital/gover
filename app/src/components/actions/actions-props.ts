@@ -1,13 +1,14 @@
-import {SxProps} from '@mui/material';
-import {MouseEventHandler, ReactNode} from 'react';
+import {type SxProps} from '@mui/material';
+import {type MouseEventHandler, type ReactNode} from 'react';
 
 // A separator for the actions
 type ActionSeparator = 'separator';
 
 // Base type for all actions
-type ActionBase = {
+interface ActionBase {
     label?: string;
     tooltip?: string;
+    disabledTooltip?: string;
     icon: ReactNode;
     disabled?: boolean;
     visible?: boolean;
@@ -19,17 +20,17 @@ type ActionBase = {
 // Action with a click handler
 type ClickAction = ActionBase & {
     onClick: MouseEventHandler;
-}
+};
 
 // Action with a link
 type LinkAction = ActionBase & {
     href: string;
-}
+};
 
 // Action with a internal link
 type InternalLinkAction = ActionBase & {
     to: string;
-}
+};
 
 // All available actions
 export type Action = ActionSeparator | ClickAction | LinkAction | InternalLinkAction;

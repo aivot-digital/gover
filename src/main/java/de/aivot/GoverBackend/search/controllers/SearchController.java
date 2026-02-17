@@ -3,7 +3,10 @@ package de.aivot.GoverBackend.search.controllers;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.search.entities.SearchItemEntity;
 import de.aivot.GoverBackend.search.repositories.SearchEntityRepository;
-import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,8 +18,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 /**
  * This controller is responsible for handling requests to the secrets API.
@@ -24,6 +27,11 @@ import javax.annotation.Nullable;
  */
 @RestController
 @RequestMapping("/api/search/")
+@Tag(
+        name = "Search",
+        description = "Endpoints for searching various entities within the application."
+)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class SearchController {
 
     private final SearchEntityRepository searchEntityRepository;
@@ -34,15 +42,15 @@ public class SearchController {
     }
 
     @GetMapping("")
+    @Operation(
+            summary = "Search Entities",
+            description = "Search various entities within the application."
+    )
     public Page<SearchItemEntity> search(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PageableDefault Pageable pageable,
             @Nonnull @RequestParam(defaultValue = "") String search
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
         return searchEntityRepository
                 .search(search, pageable);
     }

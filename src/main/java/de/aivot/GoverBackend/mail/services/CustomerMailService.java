@@ -3,9 +3,8 @@ package de.aivot.GoverBackend.mail.services;
 import de.aivot.GoverBackend.department.entities.DepartmentEntity;
 import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
 import de.aivot.GoverBackend.department.services.DepartmentService;
-import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
-import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntityId;
-import de.aivot.GoverBackend.form.repositories.FormVersionWithDetailsRepository;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntityId;
+import de.aivot.GoverBackend.form.repositories.VFormVersionWithDetailsRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.enums.MailTemplate;
 import de.aivot.GoverBackend.models.lib.MailAttachmentBytes;
@@ -29,26 +28,26 @@ public class CustomerMailService {
     private final MailService mailService;
     private final DepartmentRepository departmentRepository;
     private final PdfService pdfService;
-    private final FormVersionWithDetailsRepository formVersionWithDetailsRepository;
     private final DepartmentService departmentService;
+    private final VFormVersionWithDetailsRepository vFormVersionWithDetailsRepository;
 
     @Autowired
     public CustomerMailService(MailService mailService,
                                DepartmentRepository departmentRepository,
                                PdfService pdfService,
-                               FormVersionWithDetailsRepository formVersionWithDetailsRepository, DepartmentService departmentService) {
+                               DepartmentService departmentService,
+                               VFormVersionWithDetailsRepository vFormVersionWithDetailsRepository) {
         this.mailService = mailService;
         this.departmentRepository = departmentRepository;
         this.pdfService = pdfService;
-        this.formVersionWithDetailsRepository = formVersionWithDetailsRepository;
         this.departmentService = departmentService;
+        this.vFormVersionWithDetailsRepository = vFormVersionWithDetailsRepository;
     }
 
     public void sendSubmissionCopy(String to, Submission submission) throws MessagingException, IOException, ResponseException {
-        var id = FormVersionWithDetailsEntityId
-                .of(submission.getFormId(), submission.getFormVersion());
+        var id = new VFormVersionWithDetailsEntityId(submission.getFormId(), submission.getFormVersion());
 
-        FormVersionWithDetailsEntity form = formVersionWithDetailsRepository
+        var form = vFormVersionWithDetailsRepository
                 .findById(id)
                 .orElseThrow(() -> new RuntimeException("No form " + submission.getFormId() + " found for submission " + submission.getId()));
 

@@ -17,12 +17,16 @@ import {secretsRoutes} from '../../modules/secrets/secrets-routes';
 import {usersRoutes} from '../../modules/users/users-routes';
 import {accountRoutes} from '../../modules/users/account-routes';
 import {presetsRoutes} from '../../modules/presets/presets-routes';
-import {submissionsRoutes} from '../../modules/submissions/submissions-routes';
 import {themesRoutes} from '../../modules/themes/themes-routes';
 import {Dashboard} from '../../modules/dashboard/dashboard';
 import {configsRoutes} from '../../modules/configs/configs-routes';
-import {UnderConstructionPage} from '../../pages/shared/under-construction-page';
 import {Testinghall} from '../../modules/testinghall/testinghall';
+import {userRolesRoutes} from '../../modules/user-roles/user-roles-routes';
+import {teamsRoutes} from '../../modules/teams/teams-routes';
+import {Organigram} from "../../modules/system/pages/organigram";
+import {processRoutes} from "../../modules/process/process-routes";
+import {systemRolesRoutes} from "../../modules/system/system-roles-routes";
+import {storageRoutes} from '../../modules/storage/storage-routes';
 
 const sentryCreateBrowserRouter = Sentry.wrapCreateBrowserRouterV7(
     createBrowserRouter,
@@ -48,20 +52,24 @@ const router = sentryCreateBrowserRouter(
                 ...identityRoutes,
                 ...paymentRoutes,
                 ...presetsRoutes,
+                ...processRoutes,
                 ...providerLinksRoutes,
                 ...secretsRoutes,
-                ...submissionsRoutes,
+                ...storageRoutes,
+                ...teamsRoutes,
                 ...themesRoutes,
+                ...userRolesRoutes,
                 ...usersRoutes,
                 ...accountRoutes,
+                ...systemRolesRoutes,
 
-                {
-                    path: '/processes',
-                    element: <UnderConstructionPage />,
-                },
                 {
                     path: '/testinghall',
                     element: <Testinghall />,
+                },
+                {
+                    path: '/organigram',
+                    element: <Organigram />,
                 },
             ],
         },

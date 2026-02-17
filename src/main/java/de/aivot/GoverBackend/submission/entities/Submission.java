@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.core.converters.ElementDataConverter;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
-import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -286,7 +286,7 @@ public class Submission {
     // endregion
 
     @JsonIgnore
-    public boolean hasExternalAccessExpired(FormVersionWithDetailsEntity form) {
+    public boolean hasExternalAccessExpired(VFormVersionWithDetailsEntity form) {
         int accessHours = form.getCustomerAccessHours() != null ? form.getCustomerAccessHours() : 4;
 
         LocalDateTime expirationTimestamp = created.plusHours(accessHours);

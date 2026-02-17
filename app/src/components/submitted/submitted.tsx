@@ -1,8 +1,7 @@
 import {Box, Button, Divider, Grid, Link, Typography} from '@mui/material';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Preamble} from '../preamble/preamble';
-import {useSelector} from 'react-redux';
-import {selectLoadedForm, showDialog} from '../../slices/app-slice';
+import {showDialog} from '../../slices/app-slice';
 import {validateEmail} from '../../utils/validate-email';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {InfoDialog} from '../../dialogs/info-dialog/info-dialog';
@@ -17,21 +16,23 @@ import {Rating} from '../rating/rating';
 import {useApi} from '../../hooks/use-api';
 import {AlertComponent} from '../alert/alert-component';
 import qrcode from 'qrcode';
-import {Form} from '../../models/entities/form';
 import {HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
-import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {SubmissionStatusResponseDTO} from '../../modules/submissions/dtos/submission-status-response-dto';
 import {SubmissionsApiService} from '../../modules/submissions/submissions-api-service';
 import {SubmissionListResponseDTO} from '../../modules/submissions/dtos/submission-list-response-dto';
 import {createApiPath} from '../../utils/url-path-utils';
 import confetti from 'canvas-confetti';
+import {FormEntity} from '../../modules/forms/entities/form-entity';
+import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
+import {FormApiService} from '../../modules/forms/services/form-api-service';
 
 const animationStartDelay = 200;
 const animationDuration = 2000;
 
 interface SubmittedProps {
     submission: SubmissionListResponseDTO;
-    form: Form;
+    form: FormEntity;
+    version: FormVersionEntity;
 }
 
 const useSetMailErrorWithSnackbar = (setMailError: (message: string) => void) => {
@@ -54,8 +55,7 @@ const useSetPrivacyErrorWithSnackbar = (setPrivacyError: (message: string) => vo
 
 export function Submitted(props: SubmittedProps) {
     const api = useApi();
-    const application = useSelector(selectLoadedForm);
-    const submitStep = application?.rootElement.submitStep;
+    const submitStep = props.version.rootElement.submitStep;
 
     const [status, setStatus] = useState<SubmissionStatusResponseDTO>();
 
@@ -131,7 +131,7 @@ export function Submitted(props: SubmittedProps) {
     }, []);
 
     useEffect(() => {
-        new SubmissionsApiService(api)
+        new SubmissionsApiService()
             .getStatus(props.submission.id)
             .then(setStatus);
     }, [api, props.submission]);
@@ -168,7 +168,7 @@ export function Submitted(props: SubmittedProps) {
                     setPrivacyError(undefined);
                     setMailError(undefined);
 
-                    new FormsApiService(api)
+                    new FormApiService()
                         .sendApplicationCopy(status.submissionId, email)
                         .then(() => {
                             setShowMailSentDialog(true);
@@ -214,8 +214,9 @@ export function Submitted(props: SubmittedProps) {
                         <Grid
                             size={{
                                 xs: 12,
-                                md: 8
-                            }}>
+                                md: 8,
+                            }}
+                        >
                             <AlertComponent
                                 color="warning"
                                 title="Bitte bezahlen Sie die für Ihren Antrag anfallenden Gebühren"
@@ -241,8 +242,9 @@ export function Submitted(props: SubmittedProps) {
                             }}
                             size={{
                                 xs: 12,
-                                md: 4
-                            }}>
+                                md: 4,
+                            }}
+                        >
                             <Box
                                 sx={{
                                     mt: {
@@ -324,8 +326,8 @@ export function Submitted(props: SubmittedProps) {
                 !isStringNullOrEmpty(submitStep?.textPostSubmit) &&
                 <Preamble
                     text={submitStep?.textPostSubmit}
-                    logoLink={application?.rootElement.introductionStep?.initiativeLogoLink ?? undefined}
-                    logoAlt={application?.rootElement.introductionStep?.initiativeName ?? undefined}
+                    logoLink={props.version.rootElement.introductionStep?.initiativeLogoLink ?? undefined}
+                    logoAlt={props.version.rootElement.introductionStep?.initiativeName ?? undefined}
                 />
             }
             {
@@ -340,8 +342,9 @@ export function Submitted(props: SubmittedProps) {
                 >
                     <Grid
                         size={{
-                            md: 6
-                        }}>
+                            md: 6,
+                        }}
+                    >
                         <Typography
                             component="h3"
                             variant="h5"
@@ -375,8 +378,9 @@ export function Submitted(props: SubmittedProps) {
                     </Grid>
                     <Grid
                         size={{
-                            md: 6
-                        }}>
+                            md: 6,
+                        }}
+                    >
                         <Typography
                             component="h3"
                             variant="h5"
@@ -467,7 +471,7 @@ export function Submitted(props: SubmittedProps) {
                     textAlign: 'center',
                     mt: 1,
                     maxWidth: 500,
-                    mx: "auto",
+                    mx: 'auto',
                 }}
                 variant={'body2'}
             >
@@ -484,7 +488,7 @@ export function Submitted(props: SubmittedProps) {
                 <Rating
                     onChange={(newValue) => {
                         if (status != null && newValue != null) {
-                            new FormsApiService(api)
+                            new FormApiService()
                                 .rateApplication(status.submissionId, newValue);
                         }
                     }}

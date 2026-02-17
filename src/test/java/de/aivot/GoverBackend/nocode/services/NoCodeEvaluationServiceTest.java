@@ -5,7 +5,7 @@ import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.*;
-import de.aivot.GoverBackend.nocode.providers.NoCodeOperatorServiceProvider;
+import de.aivot.GoverBackend.nocode.providers.NoCodeOperatorsProvider;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -25,7 +25,7 @@ class NoCodeEvaluationServiceTest {
 
         var res = evalService.evaluate(
                 new NoCodeExpression(
-                        "de.aivot.gover.test.and",
+                        "and",
                         new NoCodeStaticValue(true),
                         new NoCodeStaticValue(true)
                 ),
@@ -40,7 +40,7 @@ class NoCodeEvaluationServiceTest {
 
         var result = evalService.evaluate(
                 new NoCodeExpression(
-                        "de.aivot.gover.test.and",
+                        "and",
                         new NoCodeReference("a"),
                         new NoCodeReference("a")
                 ),
@@ -51,7 +51,7 @@ class NoCodeEvaluationServiceTest {
 
         result = evalService.evaluate(
                 new NoCodeExpression(
-                        "de.aivot.gover.test.and",
+                        "and",
                         new NoCodeReference("a"),
                         new NoCodeReference("b")
                 ),
@@ -62,7 +62,7 @@ class NoCodeEvaluationServiceTest {
 
         result = evalService.evaluate(
                 new NoCodeExpression(
-                        "de.aivot.gover.test.and",
+                        "and",
                         new NoCodeReference("a"),
                         new NoCodeReference("c")
                 ),
@@ -73,13 +73,13 @@ class NoCodeEvaluationServiceTest {
 
         result = evalService.evaluate(
                 new NoCodeExpression(
-                        "de.aivot.gover.test.and",
+                        "and",
                         new NoCodeStaticValue(true),
                         new NoCodeExpression(
-                                "de.aivot.gover.test.and",
+                                "and",
                                 new NoCodeStaticValue(true),
                                 new NoCodeExpression(
-                                        "de.aivot.gover.test.and",
+                                        "and",
                                         new NoCodeStaticValue(true),
                                         new NoCodeReference("a")
                                 )
@@ -91,7 +91,7 @@ class NoCodeEvaluationServiceTest {
         assertEquals(true, result.getValue());
     }
 
-    private static NoCodeOperatorServiceProvider getNoCodeOperatorSPI() {
+    private static NoCodeOperatorsProvider getNoCodeOperatorSPI() {
         var testOperator = new NoCodeOperator() {
             @Override
             public String getIdentifier() {
@@ -130,22 +130,7 @@ class NoCodeEvaluationServiceTest {
             }
         };
 
-        return new NoCodeOperatorServiceProvider() {
-            @Override
-            public String getPackageName() {
-                return "de.aivot.gover.test";
-            }
-
-            @Override
-            public String getLabel() {
-                return "test";
-            }
-
-            @Override
-            public String getDescription() {
-                return "test";
-            }
-
+        return new NoCodeOperatorsProvider() {
             @Override
             public NoCodeOperator[] getOperators() {
                 return new NoCodeOperator[]{

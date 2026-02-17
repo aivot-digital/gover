@@ -8,20 +8,23 @@ import AccessibilityNewOutlinedIcon from '@mui/icons-material/AccessibilityNewOu
 import {AccessibilityDialogId} from '../../dialogs/accessibility-dialog/accessibility-dialog';
 import {HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
 import Balancer from 'react-wrap-balancer';
-import {FormDetailsResponseDTO} from '../../modules/forms/dtos/form-details-response-dto';
-import {FormsApiService} from '../../modules/forms/forms-api-service-v2';
 import DeleteForever from '@aivot/mui-material-symbols-400-outlined/dist/delete-forever/DeleteForever';
 import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
 import {useConfirm} from '../../providers/confirm-provider';
+import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
+import {FormEntity} from '../../modules/forms/entities/form-entity';
+import {FormApiService} from '../../modules/forms/services/form-api-service';
 
 interface RootComponentHeaderProps {
-    form: FormDetailsResponseDTO;
+    form: FormEntity;
+    version: FormVersionEntity;
     onDeleteFormData: () => void;
 }
 
 export function RootComponentHeader(props: RootComponentHeaderProps) {
     const {
         form,
+        version,
         onDeleteFormData,
     } = props;
 
@@ -33,7 +36,7 @@ export function RootComponentHeader(props: RootComponentHeaderProps) {
 
     const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement>();
 
-    const formTitle = (form?.publicTitle ?? '');
+    const formTitle = (version?.publicTitle ?? '');
 
     const hasManualLineBreaks = formTitle.includes('\n');
 
@@ -73,9 +76,9 @@ export function RootComponentHeader(props: RootComponentHeaderProps) {
                             }}
                         >
                             <Logo
-                                key={'logo-' + (form.themeId ?? 'default')}
-                                updated={form.updated}
-                                src={new FormsApiService().getFormLogoLink(form.slug, form.version)}
+                                key={'logo-' + (version.themeId ?? 'default')}
+                                updated={version.updated}
+                                src={new FormApiService().getFormLogoLink(form.slug, version.version)}
                                 width={200}
                                 height={100}
                                 onStatusChange={setLogoStatus}

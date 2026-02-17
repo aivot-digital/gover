@@ -15,18 +15,22 @@ import org.springframework.data.redis.repository.configuration.EnableRedisReposi
         "de.aivot.GoverBackend.form.repositories",
         "de.aivot.GoverBackend.identity.repositories",
         "de.aivot.GoverBackend.payment.repositories",
+        "de.aivot.GoverBackend.permissions.repositories",
         "de.aivot.GoverBackend.preset.repositories",
+        "de.aivot.GoverBackend.process.repositories",
         "de.aivot.GoverBackend.providerLink.repositories",
         "de.aivot.GoverBackend.search.repositories",
         "de.aivot.GoverBackend.secrets.repositories",
+        "de.aivot.GoverBackend.storage.repositories",
         "de.aivot.GoverBackend.submission.repositories",
+        "de.aivot.GoverBackend.teams.repositories",
         "de.aivot.GoverBackend.theme.repositories",
         "de.aivot.GoverBackend.user.repositories",
+        "de.aivot.GoverBackend.userRoles.repositories",
 })
 @EnableRedisRepositories(basePackages = {
         "de.aivot.GoverBackend.form.cache.repositories",
         "de.aivot.GoverBackend.identity.cache.repositories",
-        "de.aivot.GoverBackend.user.cache.repositories",
 })
 public class GoverBackendApplication {
     public static void main(String[] args) {

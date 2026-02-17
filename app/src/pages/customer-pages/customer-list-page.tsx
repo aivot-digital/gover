@@ -18,11 +18,11 @@ import {AccessibilityDialog, AccessibilityDialogId} from '../../dialogs/accessib
 import {FormCitizenListResponseDTO} from '../../modules/forms/dtos/form-citizen-list-response-dto';
 import {setIdentityId} from '../../slices/identity-slice';
 import {PublicFormListItem} from '../../components/public-form-list-item/public-form-list-item';
-import {FormsApiService} from '../../modules/forms/forms-api-service-v2';
 import {CustomerListPageHeader} from './customer-list-page-header';
 import {CustomerListPageFooter} from './customer-list-page-footer';
 import {isApiError} from '../../models/api-error';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
+import {FormApiService} from '../../modules/forms/services/form-api-service';
 
 export function CustomerListPage() {
     const dispatch = useAppDispatch();
@@ -36,8 +36,8 @@ export function CustomerListPage() {
     const metaDialog = useAppSelector((state) => state.app.showDialog);
 
     useEffect(() => {
-        new FormsApiService()
-            .listPublicAll()
+        new FormApiService()
+            .listAllCitizenForms()
             .then(setForms)
             .catch((err) => {
                 if (isApiError(err) && err.displayableToUser) {

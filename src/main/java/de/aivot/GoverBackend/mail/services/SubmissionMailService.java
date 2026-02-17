@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.destination.entities.Destination;
 import de.aivot.GoverBackend.exceptions.InvalidUserEMailException;
 import de.aivot.GoverBackend.exceptions.NoValidUserEMailsInDepartmentException;
-import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.form.services.FormVersionService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.enums.MailTemplate;
@@ -27,7 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
@@ -59,7 +59,7 @@ public class SubmissionMailService {
         this.formVersionService = formVersionService;
     }
 
-    public void sendToDestination(FormVersionWithDetailsEntity form, Submission submission, Destination destination, Collection<SubmissionAttachment> attachments) throws MessagingException, IOException, ResponseException {
+    public void sendToDestination(VFormVersionWithDetailsEntity form, Submission submission, Destination destination, Collection<SubmissionAttachment> attachments) throws MessagingException, IOException, ResponseException {
         byte[] pdfBytes;
         try {
             pdfBytes = pdfService.generateCustomerSummary(form, submission, FormPdfScope.Staff);
@@ -106,7 +106,7 @@ public class SubmissionMailService {
         attachmentsData.add(new MailAttachmentBytes("Antrag.json", MediaType.APPLICATION_JSON, destinationDataBytes));
 
         var departmentTheme = formVersionService
-                .getFormThemesInOrderOfImportance(form);
+                .getFormThemesInOrderOfImportance(form.getFormId(), form.getVersion());
 
         mailService.sendMail(
                 departmentTheme.getFirst(),
@@ -121,7 +121,7 @@ public class SubmissionMailService {
         );
     }
 
-    public void sendDestinationFailed(FormVersionWithDetailsEntity form, Submission submission, Destination destination) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
+    public void sendDestinationFailed(VFormVersionWithDetailsEntity form, Submission submission, Destination destination) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
         var title = "Übertragung an Schnittstelle fehlgeschlagen";
         var mailData = new HashMap<String, Object>();
         mailData.put("title", title);
@@ -138,7 +138,7 @@ public class SubmissionMailService {
         );
     }
 
-    public void sendPaymentFailed(FormVersionWithDetailsEntity form, Submission submission, PaymentTransactionEntity paymentTransactionEntity, PaymentProviderEntity paymentProviderEntity) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
+    public void sendPaymentFailed(VFormVersionWithDetailsEntity form, Submission submission, PaymentTransactionEntity paymentTransactionEntity, PaymentProviderEntity paymentProviderEntity) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
         Integer departmentToNotify;
         if (form.getManagingDepartmentId() != null) {
             departmentToNotify = form.getManagingDepartmentId();
@@ -165,7 +165,7 @@ public class SubmissionMailService {
         );
     }
 
-    public void sendReceived(FormVersionWithDetailsEntity form, Submission submission) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
+    public void sendReceived(VFormVersionWithDetailsEntity form, Submission submission) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
         Integer departmentToNotify;
         if (form.getManagingDepartmentId() != null) {
             departmentToNotify = form.getManagingDepartmentId();
@@ -190,7 +190,7 @@ public class SubmissionMailService {
         );
     }
 
-    public void sendArchived(UserEntity triggeringUser, FormVersionWithDetailsEntity form, Submission submission) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException, InvalidUserEMailException {
+    public void sendArchived(UserEntity triggeringUser, VFormVersionWithDetailsEntity form, Submission submission) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException, InvalidUserEMailException {
         String title = "Ein Antrag wurde abgeschlossen";
         String fileNumber = getFileNumber(submission);
 
@@ -214,7 +214,7 @@ public class SubmissionMailService {
         mailData.put("assignee", assignee);
 
         var formTheme = formVersionService
-                .getFormThemesInOrderOfImportance(form)
+                .getFormThemesInOrderOfImportance(form.getFormId(), form.getVersion())
                 .getFirst();
 
         if (assignee != null) {
@@ -251,7 +251,7 @@ public class SubmissionMailService {
     public void sendAssigned(
             UserEntity triggeringUser,
             UserEntity newAssignee,
-            FormVersionWithDetailsEntity form,
+            VFormVersionWithDetailsEntity form,
             Submission submission,
             boolean isReassignment,
             @Nullable UserEntity previousAssignee
@@ -282,7 +282,7 @@ public class SubmissionMailService {
         }
 
         var formTheme = formVersionService
-                .getFormThemesInOrderOfImportance(form)
+                .getFormThemesInOrderOfImportance(form.getFormId(), form.getVersion())
                 .getFirst();
 
         for (UserEntity recipient : recipients) {

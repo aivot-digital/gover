@@ -4,12 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
 import de.aivot.GoverBackend.elements.models.elements.ElementValidationFunctions;
-import de.aivot.GoverBackend.elements.models.elements.RootElement;
-import de.aivot.GoverBackend.elements.models.elements.form.content.Alert;
-import de.aivot.GoverBackend.elements.models.elements.form.content.Headline;
+import de.aivot.GoverBackend.elements.models.elements.form.content.AlertContentElement;
+import de.aivot.GoverBackend.elements.models.elements.form.content.HeadlineContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.*;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.ReplicatingContainerLayout;
+import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.IntroductionStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
@@ -18,7 +18,7 @@ import de.aivot.GoverBackend.enums.AlertType;
 import de.aivot.GoverBackend.enums.ConditionOperator;
 import de.aivot.GoverBackend.enums.ConditionSetOperator;
 import de.aivot.GoverBackend.enums.DateType;
-import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -49,7 +49,7 @@ public class XdfTransformService {
     }
 
     @Nullable
-    public FormVersionWithDetailsEntity transformToGover(@Nonnull XdfStammdatenschema0102 xdfStammdatenschema0102) {
+    public VFormVersionWithDetailsEntity transformToGover(@Nonnull XdfStammdatenschema0102 xdfStammdatenschema0102) {
         var sd = xdfStammdatenschema0102
                 .getStammdatenschema();
 
@@ -62,7 +62,7 @@ public class XdfTransformService {
         return stammdatenschemaToRootElement(idCounter, sd);
     }
 
-    private FormVersionWithDetailsEntity stammdatenschemaToRootElement(@Nonnull XdfIdCounter idCounter,
+    private VFormVersionWithDetailsEntity stammdatenschemaToRootElement(@Nonnull XdfIdCounter idCounter,
                                                                        @Nullable XdfStammdatenschema stammdatenschema) {
         if (stammdatenschema == null) {
             return null;
@@ -109,14 +109,14 @@ public class XdfTransformService {
             steps.add(step);
         }
 
-        var root = new RootElement()
+        var root = new FormLayoutElement()
                 .setIntroductionStep(new IntroductionStepElement().setTeaserText(teaserText))
                 .setChildren(steps)
                 .setSummaryStep(new SummaryStepElement())
                 .setSubmitStep(new SubmitStepElement());
         root.setId("root");
 
-        return new FormVersionWithDetailsEntity()
+        return new VFormVersionWithDetailsEntity()
                 .setSlug(slug)
                 .setInternalTitle(internalTitle)
                 .setPublicTitle(publicTitle)
@@ -191,7 +191,7 @@ public class XdfTransformService {
 
         var firstElement = fields.isEmpty() ? null : fields.getFirst();
 
-        if (firstElement instanceof FileUploadField fileUploadField) {
+        if (firstElement instanceof FileUploadInputElement fileUploadField) {
             fileUploadField.setIsMultifile(minAnzahl > 0 || maxAnzahl > 1 || maxAnzahl == -1);
             if (minAnzahl > 0) {
                 fileUploadField.setMinFiles(minAnzahl);
@@ -203,7 +203,7 @@ public class XdfTransformService {
             }
         } else if (isReplicating) {
             var label = switch (firstElement) {
-                case Headline headline -> headline.getContent();
+                case HeadlineContentElement headline -> headline.getContent();
                 case BaseInputElement<?> baseInputElement -> baseInputElement.getLabel();
                 case null, default -> "Eintrag";
             };
@@ -213,7 +213,7 @@ public class XdfTransformService {
                 case null, default -> null;
             };
 
-            var replicatingContainer = new ReplicatingContainerLayout();
+            var replicatingContainer = new ReplicatingContainerLayoutElement();
             replicatingContainer.setId(idCounter.countId("replicating_container"));
             replicatingContainer.setChildren(fields);
             replicatingContainer.setRequired(isRequired || minAnzahl > 0);
@@ -237,14 +237,14 @@ public class XdfTransformService {
         return fields;
     }
 
-    private GroupLayout datenfeldGruppeToElements(@Nonnull XdfIdCounter idCounter,
-                                                  @Nonnull XdfDatenfeldgruppe datenfeldgruppe,
-                                                  boolean isRequired, // TODO: use isRequired?
-                                                  int depth) {
+    private GroupLayoutElement datenfeldGruppeToElements(@Nonnull XdfIdCounter idCounter,
+                                                         @Nonnull XdfDatenfeldgruppe datenfeldgruppe,
+                                                         boolean isRequired, // TODO: use isRequired?
+                                                         int depth) {
         var elements = new LinkedList<BaseFormElement>();
 
         if (depth >= 1) {
-            var headline = new Headline()
+            var headline = new HeadlineContentElement()
                     .setContent(XdfStringUtils.cleanString(datenfeldgruppe.getName()));
             elements.add(headline);
         }
@@ -254,7 +254,7 @@ public class XdfTransformService {
             elements.addAll(fields);
         }
 
-        var group = new GroupLayout();
+        var group = new GroupLayoutElement();
         group.setId(idCounter.countId("gruppe"));
         group.setName(XdfStringUtils.idfToName(datenfeldgruppe.getIdentifikation()));
         group.setChildren(elements);
@@ -301,7 +301,7 @@ public class XdfTransformService {
 
                 switch (datentyp) {
                     case XdfFieldType.TEXT:
-                        var textField = new TextField();
+                        var textField = new TextInputElement();
 
                         textField.setId(id);
                         textField.setName(name);
@@ -326,7 +326,7 @@ public class XdfTransformService {
 
                             if (praezisierung.getPattern() != null) {
                                 textField.setPattern(
-                                        TextPattern.of(
+                                        TextInputElementPattern.of(
                                                 praezisierung.getPattern(),
                                                 String.format("Bitte geben Sie einen Wert an, der dem Muster \"%s\" entspricht.", praezisierung.getPattern())
                                         )
@@ -336,11 +336,11 @@ public class XdfTransformService {
                         fields.add(textField);
                         break;
                     case XdfFieldType.BOOL:
-                        var radioField = new RadioField();
+                        var radioField = new RadioInputElement();
 
                         radioField.setOptions(List.of(
-                                RadioFieldOption.of("Ja", "ja"),
-                                RadioFieldOption.of("Nein", "nein")
+                                RadioInputElementOption.of("Ja", "ja"),
+                                RadioInputElementOption.of("Nein", "nein")
                         ));
                         radioField.setHint(hint);
                         radioField.setId(id);
@@ -349,7 +349,7 @@ public class XdfTransformService {
                         fields.add(radioField);
                         break;
                     case XdfFieldType.NUMBER:
-                        var floatNumberField = new NumberField();
+                        var floatNumberField = new NumberInputElement();
 
                         floatNumberField.setId(id);
                         floatNumberField.setName(name);
@@ -362,7 +362,7 @@ public class XdfTransformService {
                         fields.add(floatNumberField);
                         break;
                     case XdfFieldType.INTEGER:
-                        var intNumberField = new NumberField();
+                        var intNumberField = new NumberInputElement();
 
                         intNumberField.setId(id);
                         intNumberField.setName(name);
@@ -375,7 +375,7 @@ public class XdfTransformService {
                         fields.add(intNumberField);
                         break;
                     case XdfFieldType.CURRENCY:
-                        var currencyNumberField = new NumberField();
+                        var currencyNumberField = new NumberInputElement();
 
                         currencyNumberField.setId(id);
                         currencyNumberField.setName(name);
@@ -389,7 +389,7 @@ public class XdfTransformService {
                         fields.add(currencyNumberField);
                         break;
                     case XdfFieldType.FILE:
-                        var uploadField = new FileUploadField();
+                        var uploadField = new FileUploadInputElement();
 
                         uploadField.setId(id);
                         uploadField.setName(name);
@@ -400,7 +400,7 @@ public class XdfTransformService {
                         fields.add(uploadField);
                         break;
                     case XdfFieldType.DATE:
-                        var dateField = new DateField();
+                        var dateField = new DateFieldInputElement();
 
                         dateField.setId(id);
                         dateField.setName(name);
@@ -429,7 +429,7 @@ public class XdfTransformService {
                         .cleanString(datenfeld.getHilfetextEingabe());
 
 
-                var selectField = new SelectField();
+                var selectField = new SelectInputElement();
 
                 selectField.setId(id);
                 selectField.setName(name);
@@ -461,7 +461,7 @@ public class XdfTransformService {
                 fields.add(selectField);
                 break;
             case XdfFieldType.LABEL:
-                var alert = new Alert();
+                var alert = new AlertContentElement();
 
                 alert.setId(id);
                 alert.setName(name);
@@ -484,9 +484,9 @@ public class XdfTransformService {
         return fields;
     }
 
-    private Alert createErrorAlert(String title, String message, Object... args) {
+    private AlertContentElement createErrorAlert(String title, String message, Object... args) {
         var msg = String.format(message, args);
-        return new Alert()
+        return new AlertContentElement()
                 .setTitle(title)
                 .setText(msg)
                 .setAlertType(AlertType.Error);

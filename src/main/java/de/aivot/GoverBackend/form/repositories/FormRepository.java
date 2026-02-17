@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.form.repositories;
 
-import de.aivot.GoverBackend.form.entities.FormEditorEntity;
+import de.aivot.GoverBackend.form.entities.projections.FormEditorProjection;
 import de.aivot.GoverBackend.form.entities.FormEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -25,7 +25,7 @@ public interface FormRepository extends JpaRepository<FormEntity, Integer>, JpaS
             """,
             nativeQuery = true
     )
-    List<FormEditorEntity> findAllByFormIdIn(@Param("formIds") List<Integer> formId);
+    List<FormEditorProjection> findAllByFormIdIn(@Param("formIds") List<Integer> formId);
 
     @Query(value = """
                 select distinct on (form_id, form_version) form_id, form_version, full_name, timestamp
@@ -36,5 +36,5 @@ public interface FormRepository extends JpaRepository<FormEntity, Integer>, JpaS
             """,
             nativeQuery = true
     )
-    List<FormEditorEntity> findAllByFormId(@Param("formId") Integer formId);
+    List<FormEditorProjection> findAllByFormId(@Param("formId") Integer formId);
 }

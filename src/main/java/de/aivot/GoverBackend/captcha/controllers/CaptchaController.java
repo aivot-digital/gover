@@ -6,12 +6,19 @@ import de.aivot.GoverBackend.captcha.filters.ChallengeRateLimitFilter;
 import de.aivot.GoverBackend.captcha.services.AltchaService;
 import de.aivot.GoverBackend.captcha.services.RedisCaptchaReplayGuard;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.altcha.altcha.Altcha;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 /*
  * This controller handles the Altcha captcha verification process.
@@ -20,6 +27,11 @@ import org.springframework.web.bind.annotation.*;
  * before sending the solution back to the server.
  */
 @RestController
+@Tag(
+        name = "Captcha",
+        description = "Captcha challenges are used to prevent automated abuse of the system. " +
+                      "They require clients to solve a proof-of-work challenge before performing certain actions."
+)
 public class CaptchaController {
 
     private final AltchaService altchaService;
@@ -31,6 +43,11 @@ public class CaptchaController {
     }
 
     @GetMapping("/api/public/captcha/challenge/")
+    @Operation(
+            summary = "Create Captcha Challenge",
+            description = "Creates a new captcha challenge that clients must solve. " +
+                          "This challenge is used to prevent automated abuse of the system."
+    )
     public Altcha.Challenge challenge() throws ResponseException {
         try {
             return altchaService.createChallenge();
@@ -43,9 +60,15 @@ public class CaptchaController {
 
     /* verification for forms is handled in the Submit endpoint, this authenticated verification endpoint is only used for debugging */
     @PostMapping("/api/captcha/verify/")
+    @Operation(
+            summary = "Verify Captcha Solution",
+            description = "Verifies the captcha solution provided by the client. " +
+                          "This endpoint requires authentication and is mainly for debugging purposes."
+    )
+    @SecurityRequirement(name = OpenApiConfiguration.Security)
     public ResponseEntity<CaptchaVerificationResponseDTO> verify(
-            @RequestBody CaptchaVerificationRequestDTO request) throws Exception {
-
+            @RequestBody CaptchaVerificationRequestDTO request
+    ) throws Exception {
         if (replayGuard.isUsed(request.payload())) {
             return ResponseEntity.status(400)
                     .body(new CaptchaVerificationResponseDTO(false));

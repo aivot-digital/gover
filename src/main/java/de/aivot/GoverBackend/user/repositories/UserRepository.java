@@ -7,7 +7,9 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import java.util.Collection;
 
 public interface UserRepository extends JpaRepository<UserEntity, String>, JpaSpecificationExecutor<UserEntity> {
-    Collection<UserEntity> findAllByDeletedInIdpIsFalse();
-
     Integer countAllByDeletedInIdpIsFalseAndEnabledIsTrue();
+
+    Boolean existsBySystemRoleId(Integer globalRole);
+
+    boolean existsByEmail(String email);
 }

@@ -2,14 +2,15 @@ import React, {useEffect, useState} from 'react';
 import {Box, Card, CardContent, CardHeader, Grid, Typography} from '@mui/material';
 import {ServiceProviderApiService} from '../../../../../services/service-provider-api-service';
 import {ServiceProviderDTO} from '../../../../../models/dtos/service-provider-dto';
+import {PluginDTO, PluginsApiService} from "../../../../../services/plugins-api-service";
 
 export function Extensions() {
-    const [serviceProviders, setServiceProviders] = useState<ServiceProviderDTO[]>([]);
+    const [plugins, setPlugins] = useState<PluginDTO[]>([]);
 
     useEffect(() => {
-        new ServiceProviderApiService()
-            .getServiceProviders()
-            .then(setServiceProviders);
+        new PluginsApiService()
+            .getPlugins()
+            .then(setPlugins);
     }, []);
 
     return (
@@ -29,9 +30,9 @@ export function Extensions() {
                 container
                 spacing={3}
             >
-                {serviceProviders.map((serviceProvider) => (
+                {plugins.map((serviceProvider) => (
                     <Grid
-                        key={serviceProvider.packageName}
+                        key={serviceProvider.name}
                         size={{
                             xs: 12,
                             sm: 6,
@@ -43,8 +44,7 @@ export function Extensions() {
                             sx={{display: 'flex', flexDirection: 'column', height: '100%'}}
                         >
                             <CardHeader
-                                title={serviceProvider.label}
-                                subheader={serviceProvider.packageName}
+                                title={serviceProvider.name}
                                 titleTypographyProps={{variant: 'h6'}}
                                 subheaderTypographyProps={{variant: 'body2', color: 'text.secondary', fontSize: '0.875rem'}}
                             />
@@ -55,6 +55,18 @@ export function Extensions() {
                                 >
                                     {serviceProvider.description}
                                 </Typography>
+
+                                <ul>
+                                    {
+                                        serviceProvider
+                                            .components
+                                            .map((component) => (
+                                                <li key={component.name}>
+                                                    <strong>{component.name}</strong>: {component.description}
+                                                </li>
+                                            ))
+                                    }
+                                </ul>
                             </CardContent>
                         </Card>
                     </Grid>

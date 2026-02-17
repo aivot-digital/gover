@@ -1,5 +1,4 @@
-import {type Form as Application} from '../models/entities/form';
-import {stripDataFromForm} from './strip-data-from-form';
+import {FormExport} from '../modules/forms/entities/form-export';
 
 export function downloadTextFile(filename: string, content: string, mimetype: string): void {
     const file = new Blob([content], {type: mimetype});
@@ -20,11 +19,8 @@ export function downloadObjectFile(filename: string, obj: any): void {
     downloadTextFile(filename, JSON.stringify(obj), 'application/json');
 }
 
-export function downloadConfigFile(application?: Application): void {
-    if (application != null) {
-        const app = stripDataFromForm(application);
-        downloadObjectFile(`${app.slug} - ${app.version}.gov`, app);
-    }
+export function downloadFormExportFile(exp: FormExport): void {
+    downloadObjectFile(`${exp.form.slug} - ${exp.version.version}.json`, exp);
 }
 
 export function uploadTextFile(accepts: string): Promise<string | null> {

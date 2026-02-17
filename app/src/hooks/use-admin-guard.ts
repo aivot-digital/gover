@@ -5,6 +5,7 @@ import {isAdmin} from '../utils/is-admin';
 import {addSnackbarMessage, removeSnackbarMessage, selectErrorMessage, setErrorMessage, SnackbarSeverity, SnackbarType} from '../slices/shell-slice';
 import {UserRole} from '../data/user-role';
 import {useAppSelector} from './use-app-selector';
+import {Permission} from "../data/permissions/permission";
 
 
 export function useUser() {
@@ -18,11 +19,6 @@ export function useUserIsAdmin(): boolean {
 
 export function useMemberships() {
     return useAppSelector(selectMemberships);
-}
-
-export function useUserIsMemberOfDepartment(departmentId: number): boolean {
-    const memberships = useMemberships();
-    return memberships?.some(dept => dept.id === departmentId) ?? false;
 }
 
 interface Options {
@@ -59,8 +55,8 @@ export function useAccessGuard(options: Options): boolean {
 
             return memberships
                 .some(dept => (
-                    dept.id === onlyAdminOfDepartmentId &&
-                    dept.role === UserRole.Admin
+                    dept.departmentId === onlyAdminOfDepartmentId &&
+                    dept.domainRolePermissions.some(role => role === Permission.DEPARTMENT_UPDATE)
                 )) ?? false;
         }
 

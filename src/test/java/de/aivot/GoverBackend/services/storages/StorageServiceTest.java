@@ -1,6 +1,5 @@
 package de.aivot.GoverBackend.services.storages;
 
-import de.aivot.GoverBackend.exceptions.NotFoundException;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.StorageConfig;
 import io.minio.*;
@@ -33,7 +32,7 @@ class StorageServiceTest {
     private MinioClient storageClient;
 
     @InjectMocks
-    private StorageService storageService;
+    private LegacyStorageService storageService;
 
     @BeforeEach
     void setUp() {

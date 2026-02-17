@@ -6,7 +6,7 @@ import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.enums.PaymentType;
-import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.javascript.exceptions.JavascriptException;
 import de.aivot.GoverBackend.javascript.models.JavascriptResult;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
@@ -22,7 +22,7 @@ import de.aivot.GoverBackend.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.math.BigDecimal;
 import java.util.LinkedList;
 import java.util.List;
@@ -47,7 +47,7 @@ public class FormPaymentService {
     }
 
     public Optional<PaymentTransactionEntity> createTransaction(
-            @Nonnull FormVersionWithDetailsEntity form,
+            @Nonnull VFormVersionWithDetailsEntity form,
             @Nonnull String submissionId,
             @Nonnull ElementData elementData
     ) throws PaymentException, ResponseException {
@@ -77,7 +77,7 @@ public class FormPaymentService {
     }
 
     public List<PaymentItem> createPaymentItems(
-            @Nonnull FormVersionWithDetailsEntity form,
+            @Nonnull VFormVersionWithDetailsEntity form,
             @Nonnull ElementData elementData
     ) throws PaymentException {
         var derivationRequest = new ElementDerivationRequest()
@@ -157,7 +157,7 @@ public class FormPaymentService {
     @Nonnull
     private Long calculateProductQuantity(
             @Nonnull JavascriptEngine javascriptEngine,
-            @Nonnull FormVersionWithDetailsEntity form,
+            @Nonnull VFormVersionWithDetailsEntity form,
             @Nonnull ElementData context,
             @Nonnull PaymentProduct product
     ) throws PaymentException {

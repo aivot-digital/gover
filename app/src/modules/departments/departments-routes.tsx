@@ -5,11 +5,16 @@ import React from 'react';
 import {DepartmentsListPage} from './pages/list/departments-list-page';
 import {DepartmentsDetailsPageMembers} from './pages/details/departments-details-page-members';
 import {DepartmentsDetailsPageForms} from './pages/details/departments-details-page-forms';
+import {DepartmentTree} from './pages/tree/department-tree';
 
 export const departmentsRoutes: RouteObject[] = [
     {
         path: '/departments',
         element: <DepartmentsListPage />,
+    },
+    {
+        path: '/departments-tree',
+        element: <DepartmentTree />,
     },
     {
         path: '/departments/:id',

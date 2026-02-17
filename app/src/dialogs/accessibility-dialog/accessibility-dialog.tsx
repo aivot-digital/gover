@@ -1,31 +1,31 @@
 import {Alert, Box, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
 import React, {useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
-import {type Department} from '../../modules/departments/models/department';
 import {useSelector} from 'react-redux';
 import {type AccessibilityDialogProps} from './accessibility-dialog-props';
 import {selectLoadedForm} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
-import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
+import {VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
+import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
 
 export const AccessibilityDialogId = 'accessibility';
 
 export function AccessibilityDialog(props: AccessibilityDialogProps) {
     const application = useSelector(selectLoadedForm);
 
-    const [department, setDepartment] = useState<Department>();
+    const [department, setDepartment] = useState<VDepartmentShadowedEntity>();
     const accessibilityDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.accessibilityDepartmentId));
 
     useEffect(() => {
         if (
             !props.isListingPage &&
-            application?.accessibilityDepartmentId != null &&
-            (department == null || department.id !== application.accessibilityDepartmentId)
+            application?.version.accessibilityDepartmentId != null &&
+            (department == null || department.id !== application.version.accessibilityDepartmentId)
         ) {
-            new DepartmentsApiService()
-                .retrievePublic(application.accessibilityDepartmentId)
+            new DepartmentApiService()
+                .retrievePublic(application.version.accessibilityDepartmentId)
                 .then(setDepartment);
         } else if (
             props.isListingPage &&
@@ -33,7 +33,7 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
             accessibilityDepartmentId != '' &&
             (department == null || department.id !== parseInt(accessibilityDepartmentId))
         ) {
-            new DepartmentsApiService()
+            new DepartmentApiService()
                 .retrievePublic(parseInt(accessibilityDepartmentId))
                 .then(setDepartment);
         }
@@ -54,9 +54,9 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
                 Informationen zur Barrierefreiheit
             </DialogTitleWithClose>
             {
-                department?.accessibility ?
+                department?.commonAccessibility ?
                     <DialogContent
-                        dangerouslySetInnerHTML={{__html: department?.accessibility}}
+                        dangerouslySetInnerHTML={{__html: department?.commonAccessibility}}
                     />
                     :
                     <DialogContent tabIndex={0}>

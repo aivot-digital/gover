@@ -1,8 +1,9 @@
-import {BadgeProps} from './badge-props';
+import {type BadgeProps} from './badge-props';
 import {Chip, Tooltip} from '@mui/material';
+import React, {type ReactNode} from 'react';
 
-export function Badge(props: BadgeProps) {
-    if (props.tooltip) {
+export function Badge(props: BadgeProps): ReactNode {
+    if (props.tooltip != null) {
         return (
             <Tooltip {...props.tooltip}>
                 <Chip
@@ -10,6 +11,7 @@ export function Badge(props: BadgeProps) {
                     sx={props.sx}
                     label={props.label}
                     size="small"
+                    onDelete={props.onDelete}
                 />
             </Tooltip>
         );
@@ -21,6 +23,7 @@ export function Badge(props: BadgeProps) {
             sx={props.sx}
             label={props.label}
             size="small"
+            onDelete={props.onDelete}
         />
     );
 }

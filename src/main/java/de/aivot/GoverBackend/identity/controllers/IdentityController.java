@@ -6,13 +6,16 @@ import de.aivot.GoverBackend.identity.models.IdentityData;
 import de.aivot.GoverBackend.identity.services.IdentityService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
@@ -20,25 +23,28 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/public/identity/")
+@Tag(
+        name = "Identity",
+        description = "These endpoints are used for authentication with external identity providers and retrieving identity data."
+)
 public class IdentityController {
     public static final String IDENTITY_HEADER_NAME = "gover-identity-id";
 
-    private final GoverConfig goverConfig;
     private final IdentityCacheRepository identityCacheRepository;
     private final IdentityService identityService;
 
     @Autowired
-    public IdentityController(
-            GoverConfig goverConfig,
-            IdentityCacheRepository identityCacheRepository,
-            IdentityService identityService
-    ) {
-        this.goverConfig = goverConfig;
+    public IdentityController(IdentityCacheRepository identityCacheRepository,
+                              IdentityService identityService) {
         this.identityCacheRepository = identityCacheRepository;
         this.identityService = identityService;
     }
 
     @GetMapping("{providerKey}/start/")
+    @Operation(
+            summary = "Start Identity Provider Authentication",
+            description = "Initiates the authentication process with the specified identity provider."
+    )
     public void start(
             @Nonnull @PathVariable UUID providerKey,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.ORIGIN, required = true) String origin,
@@ -58,6 +64,10 @@ public class IdentityController {
     }
 
     @GetMapping("{providerKey}/callback/{identitySessionId}/")
+    @Operation(
+            summary = "Handle Identity Provider Callback",
+            description = "Processes the callback from the identity provider after authentication."
+    )
     public void callback(
             @Nonnull @PathVariable UUID providerKey,
             @Nonnull @PathVariable UUID identitySessionId,
@@ -90,6 +100,10 @@ public class IdentityController {
     }
 
     @GetMapping("get/")
+    @Operation(
+            summary = "Get Identity Data",
+            description = "Retrieves the identity data associated with the provided identity session ID."
+    )
     public IdentityData get(
             @Nullable @RequestHeader(name = IDENTITY_HEADER_NAME, required = true) UUID identitySessionId
     ) throws ResponseException {

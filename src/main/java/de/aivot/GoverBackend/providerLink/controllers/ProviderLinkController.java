@@ -9,8 +9,13 @@ import de.aivot.GoverBackend.providerLink.dtos.ProviderLinkResponseDTO;
 import de.aivot.GoverBackend.providerLink.entities.ProviderLink;
 import de.aivot.GoverBackend.providerLink.filters.ProviderLinkFilter;
 import de.aivot.GoverBackend.providerLink.services.ProviderLinkService;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,50 +25,61 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/provider-links/")
+@Tag(
+        name = "Provider Links",
+        description = "Provider links can be used to link to external resources from within Gover. " +
+                      "They can be managed by system administrators and are often used to provide links to documentation, support pages, or other relevant external sites."
+)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ProviderLinkController {
     private final ScopedAuditService auditService;
     private final ProviderLinkService providerLinkService;
+    private final UserService userService;
 
     @Autowired
     public ProviderLinkController(
             AuditService auditService,
-            ProviderLinkService providerLinkService
-    ) {
+            ProviderLinkService providerLinkService,
+            UserService userService) {
         this.auditService = auditService.createScopedAuditService(ProviderLinkController.class);
         this.providerLinkService = providerLinkService;
+        this.userService = userService;
     }
 
     @GetMapping("")
+    @Operation(
+            summary = "List Provider Links",
+            description = "List provider links with pagination and filtering."
+    )
     public Page<ProviderLinkResponseDTO> list(
-            @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PageableDefault Pageable pageable,
-            @Nonnull @Valid ProviderLinkFilter filter
+            @Nonnull @ParameterObject @PageableDefault Pageable pageable,
+            @Nonnull @ParameterObject @Valid ProviderLinkFilter filter
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
         return providerLinkService
                 .list(pageable, filter)
                 .map(ProviderLinkResponseDTO::fromEntity);
     }
 
     @PostMapping("")
+    @Operation(
+            summary = "Create Provider Link",
+            description = "Create a new provider link. Requires system admin permissions."
+    )
     public ProviderLinkResponseDTO create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @Valid @RequestBody ProviderLinkRequestDTO requestDTO
     ) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
-                .orElseThrow(ResponseException::forbidden);
+                .asSystemAdmin()
+                .orElseThrow(ResponseException::noSystemAdminPermission);
 
         var entity = providerLinkService
                 .create(requestDTO.toEntity());
@@ -85,14 +101,14 @@ public class ProviderLinkController {
     }
 
     @GetMapping("{id}/")
+    @Operation(
+            summary = "Retrieve Provider Link",
+            description = "Retrieve a provider link by its ID."
+    )
     public ProviderLinkResponseDTO retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
         return providerLinkService
                 .retrieve(id)
                 .map(ProviderLinkResponseDTO::fromEntity)
@@ -100,16 +116,20 @@ public class ProviderLinkController {
     }
 
     @PutMapping("{id}/")
+    @Operation(
+            summary = "Update Provider Link",
+            description = "Update an existing provider link. Requires system admin permissions."
+    )
     public ProviderLinkResponseDTO update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id,
             @Nonnull @Valid @RequestBody ProviderLinkRequestDTO requestDTO
     ) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
-                .orElseThrow(ResponseException::forbidden);
+                .asSystemAdmin()
+                .orElseThrow(ResponseException::noSystemAdminPermission);
 
         var entity = providerLinkService
                 .update(id, requestDTO.toEntity());
@@ -130,15 +150,19 @@ public class ProviderLinkController {
     }
 
     @DeleteMapping("{id}/")
+    @Operation(
+            summary = "Delete Provider Link",
+            description = "Delete a provider link by its ID. Requires system admin permissions."
+    )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
-                .orElseThrow(ResponseException::forbidden);
+                .asSystemAdmin()
+                .orElseThrow(ResponseException::noSystemAdminPermission);
 
         var link = providerLinkService
                 .delete(id);

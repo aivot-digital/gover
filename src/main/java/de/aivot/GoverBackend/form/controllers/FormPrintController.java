@@ -1,8 +1,14 @@
 package de.aivot.GoverBackend.form.controllers;
 
-import de.aivot.GoverBackend.form.services.FormVersionWithDetailsService;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntityId;
+import de.aivot.GoverBackend.form.services.VFormVersionWithDetailsService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.services.PdfService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -16,22 +22,23 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.thymeleaf.exceptions.TemplateProcessingException;
 
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 
-/**
- * Controller for generating and serving printable PDF versions of forms.
- * <p>
- * This controller provides an endpoint to retrieve a PDF representation of a form version.
- * It uses {@link PdfService} to generate the PDF and {@link FormVersionWithDetailsService} to retrieve form details.
- */
+
 @RestController
 @RequestMapping("/api/forms/{formId}/{formVersion}/print/")
+@Tag(
+        name = "Forms",
+        description = "Forms are built for collecting data from users. " +
+                      "They can be designed with various elements and configurations to suit different data collection needs. " +
+                      "Forms can be published, managed, and analyzed within the system."
+)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class FormPrintController {
     private final PdfService pdfService;
-    private final FormVersionWithDetailsService formVersionWithDetailsService;
+    private final VFormVersionWithDetailsService formVersionWithDetailsService;
 
     /**
      * Constructs a new FormPrintController with required services.
@@ -41,7 +48,7 @@ public class FormPrintController {
      */
     @Autowired
     public FormPrintController(PdfService pdfService,
-                               FormVersionWithDetailsService formVersionWithDetailsService) {
+                               VFormVersionWithDetailsService formVersionWithDetailsService) {
         this.pdfService = pdfService;
         this.formVersionWithDetailsService = formVersionWithDetailsService;
     }
@@ -55,20 +62,22 @@ public class FormPrintController {
      * @throws ResponseException If the form is not found or PDF generation fails.
      */
     @GetMapping("")
+    @Operation(
+            summary = "Print Form as PDF",
+            description = "Generate and retrieve a printable PDF version of the specified form and version."
+    )
     public ResponseEntity<Resource> print(
             @Nonnull @PathVariable Integer formId,
             @Nonnull @PathVariable Integer formVersion
     ) throws ResponseException {
         var form = formVersionWithDetailsService
-                .retrieve(formId, formVersion)
+                .retrieve(new VFormVersionWithDetailsEntityId(formId, formVersion))
                 .orElseThrow(ResponseException::notFound);
 
         byte[] bytes;
         try {
             bytes = pdfService.generatePrintableForm(form);
-        } catch (IOException | URISyntaxException | InterruptedException e) {
-            throw ResponseException.internalServerError("Fehler beim Erzeugen der PDF-Datei. Bitte versuchen Sie es später erneut.", e);
-        } catch (TemplateProcessingException e) {
+        } catch (IOException | URISyntaxException | InterruptedException | TemplateProcessingException e) {
             throw ResponseException.internalServerError("Fehler beim Erzeugen der PDF-Datei. Bitte versuchen Sie es später erneut.", e);
         }
 

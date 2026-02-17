@@ -1,31 +1,31 @@
 import {Alert, Box, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
 import React, {useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
-import {type Department} from '../../modules/departments/models/department';
 import {useSelector} from 'react-redux';
 import {selectLoadedForm} from '../../slices/app-slice';
 import {type PrivacyDialogProps} from './privacy-dialog-props';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
-import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
+import {VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
+import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
 
 export const PrivacyDialogId = 'privacy';
 
 export function PrivacyDialog(props: PrivacyDialogProps) {
     const application = useSelector(selectLoadedForm);
 
-    const [department, setDepartment] = useState<Department>();
+    const [department, setDepartment] = useState<VDepartmentShadowedEntity>();
     const privacyDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.privacyDepartmentId));
 
     useEffect(() => {
         if (
             !props.isListingPage &&
-            application?.privacyDepartmentId != null &&
-            (department == null || department.id !== application.privacyDepartmentId)
+            application?.version.privacyDepartmentId != null &&
+            (department == null || department.id !== application.version.privacyDepartmentId)
         ) {
-            new DepartmentsApiService()
-                .retrievePublic(application.privacyDepartmentId)
+            new DepartmentApiService()
+                .retrievePublic(application.version.privacyDepartmentId)
                 .then(setDepartment);
         } else if (
             props.isListingPage &&
@@ -33,7 +33,7 @@ export function PrivacyDialog(props: PrivacyDialogProps) {
             privacyDepartmentId != '' &&
             (department == null || department.id !== parseInt(privacyDepartmentId))
         ){
-            new DepartmentsApiService()
+            new DepartmentApiService()
                 .retrievePublic(parseInt(privacyDepartmentId))
                 .then(setDepartment);
         }
@@ -53,9 +53,9 @@ export function PrivacyDialog(props: PrivacyDialogProps) {
                 Datenschutzerklärung
             </DialogTitleWithClose>
             {
-                department?.privacy ?
+                department?.commonPrivacy?
                 <DialogContent
-                    dangerouslySetInnerHTML={{__html: department?.privacy}}
+                    dangerouslySetInnerHTML={{__html: department?.commonPrivacy}}
                 />
                 :
                 <DialogContent tabIndex={0}>

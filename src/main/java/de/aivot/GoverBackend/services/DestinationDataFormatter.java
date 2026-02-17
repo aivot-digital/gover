@@ -5,22 +5,22 @@ import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
-import de.aivot.GoverBackend.elements.models.elements.RootElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.FileUploadField;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.ReplicatingContainerLayout;
+import de.aivot.GoverBackend.elements.models.elements.form.input.FileUploadInputElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
-import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
 import de.aivot.GoverBackend.identity.models.IdentityData;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
 import de.aivot.GoverBackend.payment.entities.PaymentTransactionEntity;
 import de.aivot.GoverBackend.submission.entities.Submission;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.HashMap;
@@ -35,7 +35,7 @@ public class DestinationDataFormatter {
     private final Map<String, Object> data;
     private static final String destinationSkipKey = "#";
 
-    private final FormVersionWithDetailsEntity form;
+    private final VFormVersionWithDetailsEntity form;
     private final Submission submission;
     private final PaymentTransactionEntity paymentTransaction;
     private final PaymentProviderEntity paymentProvider;
@@ -44,7 +44,7 @@ public class DestinationDataFormatter {
 
     private DestinationDataFormatter(
             @Nonnull
-            FormVersionWithDetailsEntity form,
+            VFormVersionWithDetailsEntity form,
             @Nonnull
             Submission submission,
             @Nullable
@@ -67,7 +67,7 @@ public class DestinationDataFormatter {
 
     public static DestinationDataFormatter createDataWithoutFiles(
             @Nonnull
-            FormVersionWithDetailsEntity form,
+            VFormVersionWithDetailsEntity form,
             @Nonnull
             Submission submission,
             @Nullable
@@ -86,7 +86,7 @@ public class DestinationDataFormatter {
 
     public static DestinationDataFormatter create(
             @Nonnull
-            FormVersionWithDetailsEntity form,
+            VFormVersionWithDetailsEntity form,
             @Nonnull
             Submission submission,
             @Nullable
@@ -199,7 +199,7 @@ public class DestinationDataFormatter {
             if (paymentProvider != null) {
                 insertValue("payment.provider.key", paymentProvider.getKey());
                 insertValue("payment.provider.name", paymentProvider.getName());
-                insertValue("payment.provider.provider_identifier", paymentProvider.getProviderKey());
+                insertValue("payment.provider.provider_identifier", paymentProvider.getPaymentProviderDefinitionKey());
                 insertValue("payment.provider.is_test_provider", paymentProvider.getTestProvider());
             }
         }
@@ -211,11 +211,11 @@ public class DestinationDataFormatter {
         switch (element) {
             case BaseFormElement formElement -> {
                 switch (formElement) {
-                    case GroupLayout groupLayout -> {
+                    case GroupLayoutElement groupLayout -> {
                         groupLayout.getChildren().forEach(extractChildData);
                     }
-                    case ReplicatingContainerLayout replicatingContainerLayout -> extractReplicatingContainer(resultContainer, replicatingContainerLayout, idPrefix);
-                    case FileUploadField fileUploadField -> extractFileUploadField(resultContainer, fileUploadField, idPrefix);
+                    case ReplicatingContainerLayoutElement replicatingContainerLayout -> extractReplicatingContainer(resultContainer, replicatingContainerLayout, idPrefix);
+                    case FileUploadInputElement fileUploadField -> extractFileUploadField(resultContainer, fileUploadField, idPrefix);
                     case BaseInputElement<?> baseInputElement -> {
                         extractBaseInput(resultContainer, baseInputElement, idPrefix);
                     }
@@ -224,7 +224,7 @@ public class DestinationDataFormatter {
                     }
                 }
             }
-            case RootElement rootElement -> rootElement.getChildren().forEach(extractChildData);
+            case FormLayoutElement rootElement -> rootElement.getChildren().forEach(extractChildData);
             case StepElement stepElement -> stepElement.getChildren().forEach(extractChildData);
             case null, default -> {
                 // Do nothing
@@ -232,7 +232,7 @@ public class DestinationDataFormatter {
         }
     }
 
-    private void extractReplicatingContainer(Map<String, Object> resultContainer, ReplicatingContainerLayout element, String idPrefix) {
+    private void extractReplicatingContainer(Map<String, Object> resultContainer, ReplicatingContainerLayoutElement element, String idPrefix) {
         var resolvedElementId = getResolvedElementId(idPrefix, element.getId());
         var rawChildIds = submission.getCustomerInput().get(resolvedElementId);
 
@@ -261,7 +261,7 @@ public class DestinationDataFormatter {
         insertValue(resultContainer, elementDestinationKey, extractedChildDataList);
     }
 
-    private void extractFileUploadField(Map<String, Object> resultContainer, FileUploadField element, String idPrefix) {
+    private void extractFileUploadField(Map<String, Object> resultContainer, FileUploadInputElement element, String idPrefix) {
         if (!includeAttachments()) {
             return;
         }

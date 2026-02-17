@@ -1,4 +1,3 @@
-import {type AppToolbarAction} from '../app-toolbar/app-toolbar-props';
 import {type LoadingWrapperProps} from '../loading-wrapper/loading-wrapper-props';
 
 export interface PageWrapperProps extends LoadingWrapperProps {

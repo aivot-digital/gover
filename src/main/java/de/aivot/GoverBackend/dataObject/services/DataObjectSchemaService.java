@@ -2,18 +2,18 @@ package de.aivot.GoverBackend.dataObject.services;
 
 import de.aivot.GoverBackend.dataObject.entities.DataObjectSchemaEntity;
 import de.aivot.GoverBackend.dataObject.repositories.DataObjectSchemaRepository;
-import de.aivot.GoverBackend.elements.models.elements.form.input.TextField;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.Optional;
 
 @Service
@@ -106,7 +106,7 @@ public class DataObjectSchemaService implements EntityService<DataObjectSchemaEn
                 }
 
                 var idChildElement = idChild.get();
-                if (idChildElement instanceof TextField textField) {
+                if (idChildElement instanceof TextInputElement textField) {
                     if (!Boolean.TRUE.equals(textField.getRequired())) {
                         throw ResponseException.badRequest("Der gewählte ID-Typ setzt voraus, dass das Element mit der ID „" + DataObjectItemService.ID_FIELD_NAME + "“ ein Pflichtfeld ist.");
                     }

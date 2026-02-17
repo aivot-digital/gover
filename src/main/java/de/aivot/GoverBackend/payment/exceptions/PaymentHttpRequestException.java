@@ -15,7 +15,7 @@ public class PaymentHttpRequestException extends PaymentException {
 
     public PaymentHttpRequestException(int status, PaymentProviderEntity paymentProviderEntity, String requestBody, String responseBody) {
         super(
-                "Failed to send request for payment provider %s (%s). Endpoint returned status %d Request body was %s. Request body was %s",
+                "Failed to send request for payment provider %s (%s). Endpoint returned status %d Request body was %s. Response body was %s",
                 paymentProviderEntity.getName(),
                 paymentProviderEntity.getKey(),
                 status,

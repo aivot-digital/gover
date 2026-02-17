@@ -41,8 +41,8 @@ export function SummaryComponentView(props: BaseViewProps<SummaryStepElement, an
             </Typography>
 
             <SummaryDispatcherComponent
-                key={form.rootElement.id}
-                element={form.rootElement}
+                key={form.version.rootElement.id}
+                element={form.version.rootElement}
                 showTechnical={false}
                 allowStepNavigation={true}
                 elementData={elementData}

@@ -96,6 +96,10 @@ const shellSlice = createSlice({
                 state.lastLoadingStartedAt = undefined;
             }
         },
+        clearLoadingMessage(state) {
+            state.loading = undefined;
+            state.lastLoadingStartedAt = undefined;
+        },
         setErrorMessage(state, action: PayloadAction<ErrorMessage | undefined>) {
             state.error = action.payload;
         },
@@ -121,6 +125,7 @@ export const {
     setShowSearchDialog,
     setShowAboutGoverDialog,
     setLoadingMessage,
+    clearLoadingMessage,
     setErrorMessage,
     addSnackbarMessage,
     removeSnackbarMessage,
@@ -133,6 +138,7 @@ export const selectMinimizeDrawer = (state: RootState) => state.shell.minimizeDr
 export const selectShowSearchDialog = (state: RootState) => state.shell.showSearchDialog;
 export const selectShowAboutGoverDialog = (state: RootState) => state.shell.showAboutGoverDialog;
 export const selectLoadingMessage = (state: RootState) => state.shell.loading;
+export const selectIsLoading = (state: RootState) => state.shell.loading != null;
 export const selectErrorMessage = (state: RootState) => state.shell.error;
 export const selectSnackbarMessages = (state: RootState) => state.shell.snackbars;
 

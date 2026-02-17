@@ -71,15 +71,6 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
     @Nullable
     public abstract T formatValue(@Nullable Object value);
 
-    @Nonnull
-    public String display(Object value) {
-        var formattedValue = formatValue(value);
-        return toDisplayValue(formattedValue);
-    }
-
-    @Nonnull
-    public abstract String toDisplayValue(@Nullable T value);
-
     @Override
     public void recalculateReferencedIds() {
         super.recalculateReferencedIds();

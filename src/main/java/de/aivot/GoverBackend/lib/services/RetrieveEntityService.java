@@ -4,7 +4,7 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import org.springframework.data.jpa.domain.Specification;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.Optional;
 
 public interface RetrieveEntityService<T, I> {

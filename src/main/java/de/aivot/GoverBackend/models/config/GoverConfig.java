@@ -23,6 +23,7 @@ public class GoverConfig {
     private List<String> contentTypes;
     private String goverHostname;
     private Integer maxSubmissionCopyRetryCount;
+    private List<String> bootstrapAdminMail;
 
     public String getDefaultLogoUrl() {
         return createUrl("/assets/default-logo.png");
@@ -52,6 +53,14 @@ public class GoverConfig {
         } else {
             return uri.resolve(base + "/" + resolvedParts).toString();
         }
+    }
+
+    public String createUrlWithTrailingSlash(String base, Object... parts) {
+        var url = createUrl(base, parts);
+        if (!url.endsWith("/")) {
+            url += "/";
+        }
+        return url;
     }
 
     // region Getters & Setters
@@ -126,6 +135,14 @@ public class GoverConfig {
 
     public void setMaxSubmissionCopyRetryCount(Integer maxSubmissionCopyRetryCount) {
         this.maxSubmissionCopyRetryCount = maxSubmissionCopyRetryCount;
+    }
+
+    public List<String> getBootstrapAdminMail() {
+        return bootstrapAdminMail;
+    }
+
+    public void setBootstrapAdminMail(List<String> bootstrapAdminMail) {
+        this.bootstrapAdminMail = bootstrapAdminMail;
     }
 
     // endregion

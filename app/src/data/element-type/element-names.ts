@@ -5,15 +5,15 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.Alert]: 'Hinweis',
     [ElementType.Checkbox]: 'Bestätigung (Ja/Nein)',
     [ElementType.Image]: 'Bild',
-    [ElementType.Container]: 'Gruppierung',
+    [ElementType.GroupLayout]: 'Gruppierung',
     [ElementType.Date]: 'Datum',
     [ElementType.Step]: 'Abschnitt',
-    [ElementType.Root]: 'Formular',
+    [ElementType.FormLayout]: 'Formular',
     [ElementType.Headline]: 'Überschrift',
     [ElementType.MultiCheckbox]: 'Mehrfachauswahl',
     [ElementType.Number]: 'Zahl',
     [ElementType.ReplicatingContainer]: 'Strukturierte Listeneingabe',
-    [ElementType.Richtext]: 'Fließtext',
+    [ElementType.RichText]: 'Fließtext',
     [ElementType.Radio]: 'Einzelauswahl (Optionsfelder)',
     [ElementType.Select]: 'Einzelauswahl (Auswahlmenü)',
     [ElementType.Spacer]: 'Abstand',
@@ -25,10 +25,19 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.SubmitStep]: 'Absenden des Antrages',
     [ElementType.SubmittedStep]: 'Antrag abgesendet',
     [ElementType.FileUpload]: 'Anlage(n)',
+    [ElementType.DialogLayout]: 'Dialog',
+    [ElementType.StepperLayout]: 'Abschnitte',
+    [ElementType.ConfigLayout]: 'Konfigurationsbereich',
+    [ElementType.FunctionInput]: 'Funktionseingabe',
+    [ElementType.CodeInput]: 'Codeeingabe',
+    [ElementType.RichTextInput]: 'Markdown-Eingabe',
+    [ElementType.UiDefinitionInput]: 'UI-Definition Eingabe',
+    [ElementType.IdentityInput]: 'Identitätseingabe',
+    [ElementType.TabLayout]: 'Tabs',
 };
 
 export function getElementName(element: AnyElement): string {
-    if (element.type === ElementType.Container && element.storeLink != null) {
+    if (element.type === ElementType.GroupLayout && element.storeLink != null) {
         return 'Store-Baustein';
     }
 

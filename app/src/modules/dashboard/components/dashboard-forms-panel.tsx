@@ -3,28 +3,27 @@ import {Box, Button, Card, CardContent, Divider, List, ListItem, ListItemButton,
 import ChevronRight from '@aivot/mui-material-symbols-400-outlined/dist/chevron-right/ChevronRight';
 import {useApi} from '../../../hooks/use-api';
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
-import {FormsApiService} from '../../forms/forms-api-service';
-import {FormListResponseDTO} from '../../forms/dtos/form-list-response-dto';
 import {Page} from '../../../models/dtos/page';
 import {Link} from 'react-router-dom';
 import {format} from 'date-fns';
 import {getFormStatus} from '../../forms/components/form-status-chip-group';
 import {ModuleIcons} from '../../../shells/staff/data/module-icons';
+import {FormEntity} from '../../forms/entities/form-entity';
+import {FormApiService} from '../../forms/services/form-api-service';
 
 const fetchSize = 4;
 
 export function DashboardFormsPanel() {
-    const [forms, setForms] = useState<FormListResponseDTO[] | null>(null);
+    const [forms, setForms] = useState<FormEntity[] | null>(null);
     const [loading, setLoading] = useState(true);
     const api = useApi();
 
     useEffect(() => {
-        withAsyncWrapper<void, Page<FormListResponseDTO>>({
+        withAsyncWrapper<void, Page<FormEntity>>({
             main: () =>
-                new FormsApiService(api)
+                new FormApiService()
                     .list(0, fetchSize, 'updated', 'DESC', {
-                        isDeveloper: true,
-                        isCurrentlyDraftedVersion: true,
+                        isDrafted: true,
                     }),
             desiredMinRuntime: 600,
         }).then((page) => {
@@ -33,7 +32,7 @@ export function DashboardFormsPanel() {
         });
     }, []);
 
-    const renderFormStatus = (form: FormListResponseDTO): string => {
+    const renderFormStatus = (form: FormEntity): string => {
         const {isDrafted, isPublished, isRevoked} = getFormStatus(form);
 
         if (isPublished) return 'Veröffentlicht';

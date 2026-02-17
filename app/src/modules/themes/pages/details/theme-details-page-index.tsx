@@ -10,7 +10,6 @@ import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackba
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../../hooks/use-form-manager';
-import {FormsApiService} from '../../../forms/forms-api-service';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {ConstraintDialog} from '../../../../dialogs/constraint-dialog/constraint-dialog';
 import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constraint-link-props';
@@ -30,6 +29,7 @@ import {GenericDetailsSkeleton} from '../../../../components/generic-details-pag
 import {ImageSelector} from '../../../assets/components/image-selector';
 import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
+import {VFormVersionWithDetailsService} from '../../../forms/services/v-form-version-with-details-api-service';
 
 export const ThemeSchema = yup.object({
     name: yup.string()
@@ -156,8 +156,8 @@ export function ThemeDetailsPageIndex() {
 
         setIsBusy(true);
         try {
-            const uniqueForms = await new FormsApiService(api)
-                .listAllVersions({
+            const uniqueForms = await new VFormVersionWithDetailsService()
+                .listAll({
                     themeId: theme.id,
                 });
 

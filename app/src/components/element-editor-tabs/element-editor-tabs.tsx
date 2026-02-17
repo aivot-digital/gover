@@ -55,7 +55,7 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
 
             {
                 (props.scope === 'application' || props.scope === 'preset') &&
-                props.component.type !== ElementType.Root &&
+                props.component.type !== ElementType.FormLayout &&
                 props.component.type !== ElementType.IntroductionStep &&
                 props.component.type !== ElementType.SummaryStep &&
                 props.component.type !== ElementType.SubmitStep &&
@@ -82,7 +82,7 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
             }
 
             {
-                props.component.type !== ElementType.Root &&
+                props.component.type !== ElementType.FormLayout &&
                 props.component.type !== ElementType.IntroductionStep &&
                 props.component.type !== ElementType.SummaryStep &&
                 props.component.type !== ElementType.SubmitStep &&
@@ -94,7 +94,7 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
 
             {
                 (props.scope === 'application' || props.scope === 'preset') &&
-                props.component.type !== ElementType.Root &&
+                props.component.type !== ElementType.FormLayout &&
                 <Tab
                     label="Referenzen"
                     value={DefaultTabs.references}
@@ -120,6 +120,7 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
             }
 
             {
+                /* TODO: Check permissions for formAnnotate */
                 (props.scope === 'application' || props.scope === 'preset') &&
                 <Tab
                     label="Prüfung"
@@ -128,6 +129,7 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
             }
 
             {
+                /* TODO: Check permissions for formPublish */
                 (props.scope === 'application' || props.scope === 'preset') &&
                 props.rootEditor &&
                 <Tab

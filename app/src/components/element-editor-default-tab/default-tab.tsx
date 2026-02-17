@@ -23,7 +23,7 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
 
     const tabDescription = (() => {
         switch (props.element.type) {
-            case ElementType.Root:
+            case ElementType.FormLayout:
                 return {
                     title: 'Eigenschaften des Formulars',
                     description: 'Hier konfigurieren Sie allgemeine Eigenschaften des gesamten Formulars, z. B. Titel oder technische Einstellungen.',
@@ -94,7 +94,7 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
             >
 
                 {
-                    props.element.type !== ElementType.Root &&
+                    props.element.type !== ElementType.FormLayout &&
                     props.element.type !== ElementType.IntroductionStep &&
                     props.element.type !== ElementType.SummaryStep &&
                     props.element.type !== ElementType.SubmitStep &&
@@ -121,7 +121,7 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                 }
 
                 {
-                    props.element.type !== ElementType.Root &&
+                    props.element.type !== ElementType.FormLayout &&
                     props.element.type !== ElementType.IntroductionStep &&
                     props.element.type !== ElementType.Step &&
                     props.element.type !== ElementType.SummaryStep &&

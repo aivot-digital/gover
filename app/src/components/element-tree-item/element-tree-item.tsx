@@ -42,7 +42,7 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
     const [showAddDialog, toggleShowAddDialog] = useReducer((p) => !p, false);
 
     const isLayoutElement = isAnyElementWithChildren(props.element);
-    const isNotStoreModule = !(props.element.type === ElementType.Container && props.element.storeLink != null);
+    const isNotStoreModule = !(props.element.type === ElementType.GroupLayout && props.element.storeLink != null);
 
     useEffect(() => {
         if (isLayoutElement) {

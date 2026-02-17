@@ -10,6 +10,9 @@ import {TimeFieldElement} from './time-field-element';
 import {ReplicatingContainerLayout} from '../layout/replicating-container-layout';
 import {FileUploadElement} from './file-upload-element';
 import {ElementType} from '../../../../data/element-type/element-type';
+import {CodeInputElement} from "./code-input-element";
+import {FunctionInputElement} from "./function-input-element";
+import {RichTextInputElement} from "./rich-text-input-element";
 
 export type AnyInputElement = (
     CheckboxFieldElement |
@@ -22,6 +25,10 @@ export type AnyInputElement = (
     TextFieldElement |
     TimeFieldElement |
     FileUploadElement |
+
+    CodeInputElement |
+    FunctionInputElement |
+    RichTextInputElement |
 
     ReplicatingContainerLayout
     );
@@ -38,6 +45,9 @@ export function isAnyInputElement(obj: any): obj is AnyInputElement {
         ElementType.Text,
         ElementType.Time,
         ElementType.FileUpload,
+        ElementType.CodeInput,
+        ElementType.FunctionInput,
+        ElementType.RichTextInput,
         ElementType.ReplicatingContainer,
     ].includes(obj.type);
 }

@@ -7,7 +7,6 @@ import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {type SelectFieldComponentOption} from '../select-field/select-field-component-option';
-import {Form as Application} from '../../models/entities/form';
 import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined';
 import {useApi} from '../../hooks/use-api';
 import {Link} from 'react-router-dom';
@@ -15,7 +14,6 @@ import {Hint} from '../hint/hint';
 import {RichTextEditorComponentView} from '../richt-text-editor/rich-text-editor.component.view';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 import {AssetsApiService} from '../../modules/assets/assets-api-service';
-import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
 import {ThemesApiService} from '../../modules/themes/themes-api-service';
 import QrCode2OutlinedIcon from '@mui/icons-material/QrCode2Outlined';
 import {downloadQrCode} from '../../utils/download-qrcode';
@@ -23,8 +21,10 @@ import {FormType, FormTypeDescriptions, FormTypeLabels, FormTypes} from '../../m
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 import {createCustomerPath} from '../../utils/url-path-utils';
 import {withDelay} from '../../utils/with-delay';
+import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
+import {LoadedForm} from '../../slices/app-slice';
 
-export function RootComponentEditor(props: BaseEditorProps<RootElement, Application>) {
+export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedForm>) {
     const dispatch = useAppDispatch();
     const api = useApi();
 
@@ -42,10 +42,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
     };
 
     useEffect(() => {
-        withDelay(new DepartmentsApiService()
-            .listAll({
-                ignoreMemberships: true,
-            }), 600)
+        withDelay(
+            new DepartmentApiService().listAll(),
+            600,
+        )
             .then((deps) => deps.content.map((department) => ({
                 value: department.id.toString(),
                 label: department.name,
@@ -81,8 +81,8 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
             });
     }, []);
 
-    const generalLink = createCustomerPath(`${props.entity?.slug ?? ''}`);
-    const versionedLink = createCustomerPath(`${props.entity?.slug ?? ''}/${props.entity?.version ?? ''}`);
+    const generalLink = createCustomerPath(`${props.entity?.form.slug ?? ''}`);
+    const versionedLink = createCustomerPath(`${props.entity?.form.slug ?? ''}/${props.entity?.version ?? ''}`);
 
     return (
         <>
@@ -97,12 +97,15 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     }}
                 >
                     <TextFieldComponent
-                        value={props.entity?.internalTitle}
+                        value={props.entity?.form.internalTitle}
                         label="Interner Titel des Formulars"
                         hint="Dieser Titel wird intern in Gover verwendet und ist nicht öffentlich sichtbar."
                         onChange={(val) => {
                             props.onPatchEntity({
-                                internalTitle: val,
+                                form: {
+                                    ...props.entity!.form,
+                                    internalTitle: val ?? '',
+                                },
                             });
                         }}
                         minCharacters={1}
@@ -110,9 +113,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                         disabled={!props.editable}
                         required={true}
                         error={
-                            !props.entity?.internalTitle || props.entity.internalTitle.length < 1
+                            !props.entity?.form.internalTitle || props.entity.form.internalTitle.length < 1
                                 ? 'Der Titel muss mindestens 1 Zeichen lang sein.'
-                                : props.entity.internalTitle.length > 96
+                                : props.entity.form.internalTitle.length > 96
                                     ? 'Der Titel darf maximal 96 Zeichen lang sein.'
                                     : undefined
                         }
@@ -144,13 +147,16 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     }}
                 >
                     <TextFieldComponent
-                        value={props.entity.publicTitle}
+                        value={props.entity.version.publicTitle}
                         label="Öffentlicher Titel & Überschrift des Formulars"
                         multiline
                         hint="Dieser Titel wird öffentlich für das Formular verwendet und ggü. Anstragstellenden angezeigt."
                         onChange={(val) => {
                             props.onPatchEntity({
-                                publicTitle: val,
+                                version: {
+                                    ...props.entity!.version,
+                                    publicTitle: val ?? '',
+                                },
                             });
                         }}
                         rows={3}
@@ -199,7 +205,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                                     icon: <QrCode2OutlinedIcon />,
                                     tooltip: 'QR-Code herunterladen',
                                     onClick: async () => {
-                                        await handleDownloadQrCode(generalLink, `qr-code-${props.entity?.slug ?? ''}.png`);
+                                        await handleDownloadQrCode(generalLink, `qr-code-${props.entity?.form.slug ?? ''}.png`);
                                     },
                                 },
                             ]
@@ -242,7 +248,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                                     icon: <QrCode2OutlinedIcon />,
                                     tooltip: 'QR-Code herunterladen',
                                     onClick: async () => {
-                                        await handleDownloadQrCode(versionedLink, `qr-code-${props.entity?.slug ?? ''}-${(props.entity?.version ?? '')}.png`);
+                                        await handleDownloadQrCode(versionedLink, `qr-code-${props.entity?.form.slug ?? ''}-${(props.entity?.version.version ?? '')}.png`);
                                     },
                                 },
                             ]
@@ -258,11 +264,14 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     <SelectFieldComponent
                         label="Art des Formulars"
                         hint="Öffentliche Formulare werden auf der Übersichtsseite angezeigt und können von Bürger:innen ausgefüllt werden. Interne Formulare werden nicht auf der Übersichtsseite angezeigt, können aber über den Link geteilt werden."
-                        value={(props.entity.type ?? FormType.Public).toString()}
+                        value={(props.entity.version.type ?? FormType.Public).toString()}
                         required={true}
                         onChange={(val) => {
                             props.onPatchEntity({
-                                type: val != null ? parseInt(val) : FormType.Public,
+                                version: {
+                                    ...props.entity!.version,
+                                    type: val != null ? parseInt(val) : FormType.Public,
+                                },
                             });
                         }}
                         options={FormTypes.map((type) => ({
@@ -302,15 +311,12 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                         departments != null &&
                         <SelectFieldComponent
                             label="Entwickelnder Fachbereich"
-                            value={props.entity?.developingDepartmentId?.toString() ?? undefined}
+                            value={props.entity?.form.developingDepartmentId?.toString() ?? undefined}
                             onChange={(val) => {
-                                props.onPatchEntity({
-                                    developingDepartmentId: val != null ? parseInt(val) : undefined,
-                                });
+                                // Do nothing, this field is disabled
                             }}
                             options={departments}
                             required
-                            /*disabled={!props.editable}*/
                             disabled
                             hint="Dieser Fachbereich wurde bei der Erstellung des Formulars festgelegt."
                         />
@@ -333,10 +339,13 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                         departments != null &&
                         <SelectFieldComponent
                             label="Zuständiger Fachbereich"
-                            value={props.entity?.responsibleDepartmentId?.toString() ?? undefined}
+                            value={props.entity?.version.responsibleDepartmentId?.toString() ?? undefined}
                             onChange={(val) => {
                                 props.onPatchEntity({
-                                    responsibleDepartmentId: val != null ? parseInt(val) : undefined,
+                                    version: {
+                                        ...props.entity!.version,
+                                        responsibleDepartmentId: val != null ? parseInt(val) : null,
+                                    },
                                 });
                             }}
                             options={departments}
@@ -361,10 +370,13 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                         departments != null &&
                         <SelectFieldComponent
                             label="Bewirtschaftender Fachbereich"
-                            value={props.entity?.managingDepartmentId?.toString() ?? undefined}
+                            value={props.entity?.version.managingDepartmentId?.toString() ?? undefined}
                             onChange={(val) => {
                                 props.onPatchEntity({
-                                    managingDepartmentId: val != null ? parseInt(val) : undefined,
+                                    version: {
+                                        ...props.entity!.version,
+                                        managingDepartmentId: val != null ? parseInt(val) : null,
+                                    },
                                 });
                             }}
                             options={departments}
@@ -404,10 +416,13 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                             themes != null &&
                             <SelectFieldComponent
                                 label="Farbschema (Visuelles Erscheinungsbild)"
-                                value={props.entity?.themeId?.toString() ?? undefined}
+                                value={props.entity?.version.themeId?.toString() ?? undefined}
                                 onChange={(val) => {
                                     props.onPatchEntity({
-                                        themeId: val != null ? parseInt(val) : undefined,
+                                        version: {
+                                            ...props.entity!.version,
+                                            themeId: val != null ? parseInt(val) : null,
+                                        },
                                     });
                                 }}
                                 options={themes}
@@ -464,10 +479,13 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                             templateOptions != null &&
                             <SelectFieldComponent
                                 label="PDF-Vorlage"
-                                value={props.entity?.pdfTemplateKey ?? undefined}
+                                value={props.entity?.version.pdfTemplateKey ?? undefined}
                                 onChange={(val) => {
                                     props.onPatchEntity({
-                                        pdfTemplateKey: val,
+                                        version: {
+                                            ...props.entity!.version,
+                                            pdfTemplateKey: val ?? null,
+                                        },
                                     });
                                 }}
                                 options={templateOptions}
@@ -554,10 +572,13 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                         departments != null &&
                         <SelectFieldComponent
                             label="Fachlicher Support"
-                            value={props.entity?.legalSupportDepartmentId?.toString() ?? undefined}
+                            value={props.entity?.version.legalSupportDepartmentId?.toString() ?? undefined}
                             onChange={(val) => {
                                 props.onPatchEntity({
-                                    legalSupportDepartmentId: val != null ? parseInt(val) : undefined,
+                                    version: {
+                                        ...props.entity!.version,
+                                        legalSupportDepartmentId: val != null ? parseInt(val) : null,
+                                    },
                                 });
                             }}
                             options={departments}
@@ -582,10 +603,13 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                         departments != null &&
                         <SelectFieldComponent
                             label="Technischer Support"
-                            value={props.entity?.technicalSupportDepartmentId?.toString() ?? undefined}
+                            value={props.entity?.version.technicalSupportDepartmentId?.toString() ?? undefined}
                             onChange={(val) => {
                                 props.onPatchEntity({
-                                    technicalSupportDepartmentId: val != null ? parseInt(val) : undefined,
+                                    version: {
+                                        ...props.entity!.version,
+                                        technicalSupportDepartmentId: val != null ? parseInt(val) : null,
+                                    },
                                 });
                             }}
                             options={departments}

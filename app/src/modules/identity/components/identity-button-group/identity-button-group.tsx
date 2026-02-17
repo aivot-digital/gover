@@ -3,7 +3,6 @@ import {Box, Typography} from '@mui/material';
 import {IdentityCustomerInputKey} from '../../constants/identity-customer-input-key';
 import {IdentityProviderLink} from '../../models/identity-provider-link';
 import {IdentityProviderInfo} from '../../models/identity-provider-info';
-import {FormsApiService} from '../../../forms/forms-api-service';
 import {IdentityButton} from '../identity-button/identity-button';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
@@ -11,7 +10,9 @@ import {IdentityData} from '../../models/identity-data';
 import {ElementData} from '../../../../models/element-data';
 import {AnyElement} from '../../../../models/elements/any-element';
 import {Api, useApi} from '../../../../hooks/use-api';
-import {FormDetailsResponseDTO} from '../../../forms/dtos/form-details-response-dto';
+import {FormVersionEntity} from '../../../forms/entities/form-version-entity';
+import {FormEntity} from '../../../forms/entities/form-entity';
+import {FormApiService} from '../../../forms/services/form-api-service';
 
 interface IdentityButtonGroupProps {
     rootElement: AnyElement;
@@ -19,7 +20,8 @@ interface IdentityButtonGroupProps {
     isDeriving: boolean;
     elementData: ElementData;
     onElementDataChange: (elementData: ElementData) => void;
-    form: FormDetailsResponseDTO;
+    form: FormEntity;
+    version: FormVersionEntity;
 }
 
 export interface CombinedIdentityProviderLink {
@@ -32,6 +34,7 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
         isBusy,
         elementData,
         form,
+        version,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -43,15 +46,15 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
     const [identityLinks, setIdentityLinks] = useState<CombinedIdentityProviderLink[]>();
 
     useEffect(() => {
-        getIdentityProviderLinks(api, form)
+        getIdentityProviderLinks(form, version)
             .then(setIdentityLinks)
             .catch((err) => {
                 console.error('Error fetching identity providers:', err);
                 dispatch(showErrorSnackbar('Fehler beim Laden der Nutzerkontenanbieter.'));
             });
-    }, [form]);
+    }, [version]);
 
-    if (form == null || identityLinks == null || identityLinks.length === 0) {
+    if (version == null || identityLinks == null || identityLinks.length === 0) {
         return null;
     }
 
@@ -63,7 +66,7 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
             }}
         >
             {
-                form.identityVerificationRequired ?
+                version.identityVerificationRequired ?
                     <>
                         <Typography
                             component="h4"
@@ -146,14 +149,14 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
     );
 }
 
-async function getIdentityProviderLinks(api: Api, form: FormDetailsResponseDTO) {
-    const idps = await new FormsApiService(api)
-        .getIdentityProviders(form.slug, form.version);
+async function getIdentityProviderLinks(form: FormEntity, version: FormVersionEntity) {
+    const idps = await new FormApiService()
+        .getIdentityProviders(form.slug, version.version);
 
     const identityLinks: CombinedIdentityProviderLink[] = [];
 
     for (const identityProvider of idps.content) {
-        const link = form
+        const link = version
             .identityProviders
             .find((idpl) => idpl.identityProviderKey === identityProvider.key);
 

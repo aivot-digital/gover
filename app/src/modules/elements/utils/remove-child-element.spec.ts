@@ -9,7 +9,7 @@ describe('removeChildElement', () => {
     it('should remove the child element if it is a direct child', () => {
         const childElement = generateElementWithDefaultValues(ElementType.Text) as TextFieldElement;
 
-        const element = generateElementWithDefaultValues(ElementType.Container) as GroupLayout;
+        const element = generateElementWithDefaultValues(ElementType.GroupLayout) as GroupLayout;
         element.children.push(childElement);
 
         const updatedElement = removeChildElement(element, childElement);
@@ -20,10 +20,10 @@ describe('removeChildElement', () => {
     it('should remove the child element if it is a nested child', () => {
         const nestedChildElement = generateElementWithDefaultValues(ElementType.Text) as TextFieldElement;
 
-        const childElement = generateElementWithDefaultValues(ElementType.Container) as GroupLayout;
+        const childElement = generateElementWithDefaultValues(ElementType.GroupLayout) as GroupLayout;
         childElement.children.push(nestedChildElement);
 
-        const element = generateElementWithDefaultValues(ElementType.Container) as GroupLayout;
+        const element = generateElementWithDefaultValues(ElementType.GroupLayout) as GroupLayout;
         element.children.push(childElement);
 
         const updatedElement = removeChildElement(element, nestedChildElement);
@@ -34,7 +34,7 @@ describe('removeChildElement', () => {
     it('should not modify the element if the child element is not present', () => {
         const childElement = generateElementWithDefaultValues(ElementType.Text) as TextFieldElement;
 
-        const element = generateElementWithDefaultValues(ElementType.Container) as GroupLayout;
+        const element = generateElementWithDefaultValues(ElementType.GroupLayout) as GroupLayout;
 
         const updatedElement = removeChildElement(element, childElement);
 
@@ -44,10 +44,10 @@ describe('removeChildElement', () => {
     it('should not modify the element if the child element is not present in a nested child', () => {
         const nestedChildElement = generateElementWithDefaultValues(ElementType.Text) as TextFieldElement;
 
-        const childElement = generateElementWithDefaultValues(ElementType.Container) as GroupLayout;
+        const childElement = generateElementWithDefaultValues(ElementType.GroupLayout) as GroupLayout;
         childElement.children.push(nestedChildElement);
 
-        const element = generateElementWithDefaultValues(ElementType.Container) as GroupLayout;
+        const element = generateElementWithDefaultValues(ElementType.GroupLayout) as GroupLayout;
         element.children.push(childElement);
 
         const otherChildElement = generateElementWithDefaultValues(ElementType.Text) as TextFieldElement;

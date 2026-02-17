@@ -9,6 +9,7 @@ public class UserFilter implements Filter<UserEntity> {
     private String name;
     private Boolean deletedInIdp;
     private Boolean disabledInIdp;
+    private Integer systemRoleId;
 
     public static UserFilter create() {
         return new UserFilter();
@@ -21,6 +22,7 @@ public class UserFilter implements Filter<UserEntity> {
                 .withContains("fullName", name)
                 .withEquals("deletedInIdp", deletedInIdp)
                 .withEquals("enabled", disabledInIdp == null ? null : !disabledInIdp)
+                .withEquals("systemRoleId", systemRoleId)
                 .build();
     }
 
@@ -48,6 +50,15 @@ public class UserFilter implements Filter<UserEntity> {
 
     public UserFilter setDisabledInIdp(Boolean disabledInIdp) {
         this.disabledInIdp = disabledInIdp;
+        return this;
+    }
+
+    public Integer getSystemRoleId() {
+        return systemRoleId;
+    }
+
+    public UserFilter setSystemRoleId(Integer systemRoleId) {
+        this.systemRoleId = systemRoleId;
         return this;
     }
 }

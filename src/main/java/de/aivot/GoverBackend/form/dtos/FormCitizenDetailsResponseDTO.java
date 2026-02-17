@@ -1,12 +1,12 @@
 package de.aivot.GoverBackend.form.dtos;
 
-import de.aivot.GoverBackend.elements.models.elements.RootElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
-import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.List;
 
 public record FormCitizenDetailsResponseDTO(
@@ -19,7 +19,7 @@ public record FormCitizenDetailsResponseDTO(
         @Nonnull
         String title,
         @Nonnull
-        RootElement root,
+        FormLayoutElement root,
         @Nullable
         Integer legalSupportDepartmentId,
         @Nullable
@@ -44,7 +44,7 @@ public record FormCitizenDetailsResponseDTO(
         List<IdentityProviderLink> identityProviders
 
 ) {
-    public static FormCitizenDetailsResponseDTO fromEntity(FormVersionWithDetailsEntity form, boolean obfuscateSteps) {
+    public static FormCitizenDetailsResponseDTO fromEntity(VFormVersionWithDetailsEntity form, boolean obfuscateSteps) {
         ElementStreamUtils
                 .applyAction(form.getRootElement(), element -> {
                     element.setName("");

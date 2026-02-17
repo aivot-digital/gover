@@ -11,7 +11,7 @@ import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
 import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 import de.aivot.GoverBackend.enums.ElementType;
-import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.form.services.FormVersionService;
 import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
 import de.aivot.GoverBackend.identity.models.IdentityData;
@@ -98,7 +98,7 @@ public class PdfService {
         }
     }
 
-    public byte[] generatePrintableForm(FormVersionWithDetailsEntity form) throws IOException, URISyntaxException, InterruptedException, ResponseException {
+    public byte[] generatePrintableForm(VFormVersionWithDetailsEntity form) throws IOException, URISyntaxException, InterruptedException, ResponseException {
         var allElements = ElementFlattenUtils.flattenElements(form.getRootElement());
 
         var dto = new HashMap<String, Object>();
@@ -113,7 +113,7 @@ public class PdfService {
         return generatePdf(form, dto, FormPdfScope.Blank);
     }
 
-    public byte[] generateCustomerSummary(FormVersionWithDetailsEntity form, Submission submission, FormPdfScope scope) throws IOException, InterruptedException, URISyntaxException, ResponseException {
+    public byte[] generateCustomerSummary(VFormVersionWithDetailsEntity form, Submission submission, FormPdfScope scope) throws IOException, InterruptedException, URISyntaxException, ResponseException {
         var dto = new HashMap<String, Object>();
 
         dto.put("elements", PdfElementsGenerator.generatePdfElements(
@@ -161,7 +161,7 @@ public class PdfService {
             dto.put("paymentProvider", paymentProvider);
 
             var paymentProviderDefinition = paymentProviderDefinitionsService
-                    .getProviderDefinition(paymentProvider.getProviderKey())
+                    .getProviderDefinition(paymentProvider.getPaymentProviderDefinitionKey())
                     .orElseThrow(() -> new RuntimeException("Payment provider definition not found"));
 
             dto.put("paymentProviderDefinition", paymentProviderDefinition);
@@ -170,9 +170,9 @@ public class PdfService {
         return generatePdf(form, dto, scope);
     }
 
-    private byte[] generatePdf(FormVersionWithDetailsEntity form, Map<String, Object> dto, FormPdfScope scope) throws IOException, URISyntaxException, InterruptedException, ResponseException {
+    private byte[] generatePdf(VFormVersionWithDetailsEntity form, Map<String, Object> dto, FormPdfScope scope) throws IOException, URISyntaxException, InterruptedException, ResponseException {
         var formTheme = formVersionService
-                .getFormThemesInOrderOfImportance(form)
+                .getFormThemesInOrderOfImportance(form.getFormId(), form.getVersion())
                 .getFirst();
 
         dto.put("base", createBaseContext(formTheme, scope));
@@ -186,7 +186,7 @@ public class PdfService {
         return generateGotenbergPdf(form, dto);
     }
 
-    private byte[] generateGotenbergPdf(FormVersionWithDetailsEntity form, Map<String, Object> dto) throws IOException, InterruptedException, URISyntaxException {
+    private byte[] generateGotenbergPdf(VFormVersionWithDetailsEntity form, Map<String, Object> dto) throws IOException, InterruptedException, URISyntaxException {
         String template = loadContentTemplate(form, dto);
         String headerTemplate = loadTemplate("pp_form_header.html", dto);
         String footerTemplate = loadTemplate("pp_form_footer.html", dto);
@@ -217,7 +217,7 @@ public class PdfService {
         return response.body();
     }
 
-    private String loadContentTemplate(FormVersionWithDetailsEntity form, Map<String, Object> dto) {
+    private String loadContentTemplate(VFormVersionWithDetailsEntity form, Map<String, Object> dto) {
         var template = form.getPdfTemplateKey();
 
         if (template != null) {

@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
 import de.aivot.GoverBackend.utils.StringUtils;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Map;
@@ -22,6 +22,17 @@ public class JavascriptCode implements Serializable {
     private String code;
 
     // region Utility Constructors
+
+    public static JavascriptCode of(@Nonnull String codeStr) {
+        return new JavascriptCode()
+                .setCode(codeStr);
+    }
+
+    public static JavascriptCode of(@Nonnull String codeStrTemplate, @Nonnull Object... args) {
+        String codeStr = String.format(codeStrTemplate, args);
+        return new JavascriptCode()
+                .setCode(codeStr);
+    }
 
     public static JavascriptCode from(@Nullable Object object) {
         if (object instanceof Map<?, ?> map) {

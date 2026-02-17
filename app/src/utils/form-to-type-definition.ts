@@ -1,20 +1,20 @@
-import {Form} from '../models/entities/form';
 import {flattenElements} from './flatten-elements';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
 import {ElementType} from '../data/element-type/element-type';
+import {FormVersionEntity} from '../modules/forms/entities/form-version-entity';
 
 const typeMap: Record<ElementType, string> = {
-    [ElementType.Root]: 'undefined',
+    [ElementType.FormLayout]: 'undefined',
     [ElementType.Step]: 'undefined',
     [ElementType.Alert]: 'undefined',
-    [ElementType.Container]: 'undefined',
+    [ElementType.GroupLayout]: 'undefined',
     [ElementType.Checkbox]: 'boolean',
     [ElementType.Date]: 'string',
     [ElementType.Headline]: 'undefined',
     [ElementType.MultiCheckbox]: 'string[]',
     [ElementType.Number]: 'number',
     [ElementType.ReplicatingContainer]: 'string[]',
-    [ElementType.Richtext]: 'undefined',
+    [ElementType.RichText]: 'undefined',
     [ElementType.Radio]: 'string',
     [ElementType.Select]: 'string',
     [ElementType.Spacer]: 'undefined',
@@ -27,9 +27,18 @@ const typeMap: Record<ElementType, string> = {
     [ElementType.Image]: 'undefined',
     [ElementType.SubmittedStep]: 'undefined',
     [ElementType.FileUpload]: '{name: string; uri: string; size: number;}',
+    [ElementType.DialogLayout]: 'undefined',
+    [ElementType.StepperLayout]: 'undefined',
+    [ElementType.ConfigLayout]: 'undefined',
+    [ElementType.FunctionInput]: 'undefined',
+    [ElementType.CodeInput]: 'undefined',
+    [ElementType.RichTextInput]: 'undefined',
+    [ElementType.UiDefinitionInput]: 'undefined',
+    [ElementType.IdentityInput]: 'undefined',
+    [ElementType.TabLayout]: 'undefined',
 };
 
-export function formToTypeDefinition(form: Form): string {
+export function formToTypeDefinition(form: FormVersionEntity): string {
     const lines = ['interface Data {'];
     for (const element of flattenElements(form.rootElement)) {
         if (isAnyInputElement(element)) {

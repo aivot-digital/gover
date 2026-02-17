@@ -1,9 +1,9 @@
 package de.aivot.GoverBackend.elements.utils;
 
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
-import de.aivot.GoverBackend.elements.models.elements.RootElement;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.ReplicatingContainerLayout;
+import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
 
 import java.util.Collection;
@@ -14,13 +14,13 @@ public class ElementFlattenUtils {
     public static Collection<BaseElement> flattenElements(BaseElement current) {
         Collection<? extends BaseElement> children;
 
-        if (current instanceof RootElement rootElement) {
+        if (current instanceof FormLayoutElement rootElement) {
             children = rootElement.getChildren();
         } else if (current instanceof StepElement stepElement) {
             children = stepElement.getChildren();
-        } else if (current instanceof GroupLayout groupLayout) {
+        } else if (current instanceof GroupLayoutElement groupLayout) {
             children = groupLayout.getChildren();
-        } else if (current instanceof ReplicatingContainerLayout replicatingContainerLayout) {
+        } else if (current instanceof ReplicatingContainerLayoutElement replicatingContainerLayout) {
             children = replicatingContainerLayout.getChildren();
         } else {
             return List.of(current);

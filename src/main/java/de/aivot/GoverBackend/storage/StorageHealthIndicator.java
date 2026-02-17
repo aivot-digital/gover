@@ -1,0 +1,83 @@
+package de.aivot.GoverBackend.storage;
+
+import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
+import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
+import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
+import de.aivot.GoverBackend.storage.exceptions.StorageException;
+import de.aivot.GoverBackend.storage.models.StorageProviderDefinition;
+import de.aivot.GoverBackend.storage.repositories.StorageProviderRepository;
+import de.aivot.GoverBackend.storage.services.StorageProviderDefinitionService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
+import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.stereotype.Component;
+
+@Component("storage")
+@ConditionalOnEnabledHealthIndicator("storage")
+public class StorageHealthIndicator implements HealthIndicator {
+
+    private final StorageProviderRepository storageProviderRepository;
+    private final StorageProviderDefinitionService storageProviderDefinitionService;
+
+    @Autowired
+    public StorageHealthIndicator(StorageProviderRepository storageProviderRepository,
+                                  StorageProviderDefinitionService storageProviderDefinitionService) {
+        this.storageProviderRepository = storageProviderRepository;
+        this.storageProviderDefinitionService = storageProviderDefinitionService;
+    }
+
+    @Override
+    public Health health() {
+        var providers = storageProviderRepository
+                .findAll();
+
+        if (providers.isEmpty()) {
+            return Health
+                    .unknown()
+                    .withDetail("hint", "Es sind keine Speicheranbieter konfiguriert.")
+                    .build();
+        }
+
+        for (var provider : providers) {
+            var def = storageProviderDefinitionService
+                    .retrieveProviderDefinition(
+                            provider.getStorageProviderDefinitionKey(),
+                            provider.getStorageProviderDefinitionVersion()
+                    )
+                    .orElse(null);
+
+            if (def == null) {
+                return Health
+                        .down()
+                        .withDetail("hint", "Der Speicheranbieter '" + provider.getName() + "' referenziert eine nicht vorhandene Anbieterdefinition.")
+                        .build();
+            }
+
+            try {
+                testConnection(provider, def);
+            } catch (Exception e) {
+                return Health
+                        .down()
+                        .withDetail("error", "Verbindungstest zum Speicheranbieter '" + provider.getName() + "' ist fehlgeschlagen. Fehlermeldung: " + e.getMessage())
+                        .build();
+            }
+        }
+
+        return Health
+                .up()
+                .build();
+    }
+
+    private static <T> void testConnection(StorageProviderEntity provider, StorageProviderDefinition<T> definition) throws StorageException {
+        T config;
+        try {
+            config = ElementPOJOMapper
+                    .mapToPOJO(provider.getConfiguration(), definition.getConfigClass());
+        } catch (ElementDataConversionException e) {
+            throw new StorageException(e, "Fehler beim Konvertieren der Speicheranbieter-Konfiguration.");
+        }
+
+        definition.testConnection(config);
+    }
+}

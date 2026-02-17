@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.identity.models;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;

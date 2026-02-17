@@ -1,18 +1,26 @@
 package de.aivot.GoverBackend.form.controllers;
 
-import de.aivot.GoverBackend.form.entities.FormEditorEntity;
+import de.aivot.GoverBackend.form.entities.projections.FormEditorProjection;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/form-editors/")
+@Tag(
+        name = "Forms",
+        description = "Forms are built for collecting data from users. " +
+                      "They can be designed with various elements and configurations to suit different data collection needs. " +
+                      "Forms can be published, managed, and analyzed within the system."
+)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class FormEditorController {
 
     private final FormRepository formRepository;
@@ -23,8 +31,11 @@ public class FormEditorController {
     }
 
     @GetMapping("")
-    public List<FormEditorEntity> listFormEditorsForForms(
-            @Nullable @AuthenticationPrincipal Jwt jwt,
+    @Operation(
+            summary = "List Form Editors for Forms",
+            description = "Retrieve a list of form editors associated with the specified form IDs."
+    )
+    public List<FormEditorProjection> listFormEditorsForForms(
             @Nonnull @RequestParam List<Integer> formIds
     ) {
         return formRepository
@@ -32,8 +43,11 @@ public class FormEditorController {
     }
 
     @GetMapping("{formId}/")
-    public List<FormEditorEntity> listFormEditorsForVersions(
-            @Nullable @AuthenticationPrincipal Jwt jwt,
+    @Operation(
+            summary = "List Form Editors for a Form's Versions",
+            description = "Retrieve a list of form editors associated with all versions of the specified form ID."
+    )
+    public List<FormEditorProjection> listFormEditorsForVersions(
             @Nonnull @PathVariable Integer formId
     ) {
         return formRepository

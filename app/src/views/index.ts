@@ -1,7 +1,6 @@
 import {ElementType} from '../data/element-type/element-type';
-import {BaseView} from './base-view';
+import {type BaseView} from './base-view';
 import {TextFieldView} from './text-field-view';
-import {ElementTypesMap} from '../data/element-type/element-types-map';
 import {CheckboxFieldView} from './checkbox-field-view';
 import {NumberFieldView} from './number-field-view';
 import {AlertView} from './alert-view';
@@ -23,20 +22,23 @@ import {GeneralInformationComponentView} from '../components/general-information
 import {SummaryComponentView} from '../components/summary/summary.component.view';
 import {SubmitComponentView} from '../components/submit/submit.component.view';
 import {FileUploadView} from '../components/file-upload-field/file-upload.view';
+import {CodeInputView} from './code-input-view';
+import {FunctionInputView} from './function-input-view';
+import {RichTextView} from './rich-text-input-view';
 
-export const views: ElementTypesMap<BaseView<any, any> | null> = {
-    [ElementType.Root]: RootComponentView,
+export const views: Record<ElementType, BaseView<any, any> | null> = {
+    [ElementType.FormLayout]: RootComponentView,
     [ElementType.Step]: StepComponentView,
     [ElementType.Alert]: AlertView,
     [ElementType.Image]: ImageView,
-    [ElementType.Container]: ContainerView,
+    [ElementType.GroupLayout]: ContainerView,
     [ElementType.Checkbox]: CheckboxFieldView,
     [ElementType.Date]: DateFieldView,
     [ElementType.Headline]: HeadlineComponentView,
     [ElementType.MultiCheckbox]: MultiCheckboxFieldComponentView,
     [ElementType.Number]: NumberFieldView,
     [ElementType.ReplicatingContainer]: ReplicatingContainerView,
-    [ElementType.Richtext]: RichtextComponentView,
+    [ElementType.RichText]: RichtextComponentView,
     [ElementType.Radio]: RadioFieldComponentView,
     [ElementType.Select]: SelectFieldView,
     [ElementType.Spacer]: SpacerComponentView,
@@ -48,4 +50,13 @@ export const views: ElementTypesMap<BaseView<any, any> | null> = {
     [ElementType.SubmitStep]: SubmitComponentView,
     [ElementType.SubmittedStep]: null,
     [ElementType.FileUpload]: FileUploadView,
+    [ElementType.DialogLayout]: null,
+    [ElementType.StepperLayout]: null,
+    [ElementType.ConfigLayout]: ContainerView, // TODO
+    [ElementType.FunctionInput]: FunctionInputView,
+    [ElementType.CodeInput]: CodeInputView,
+    [ElementType.RichTextInput]: RichTextView,
+    [ElementType.UiDefinitionInput]: null,
+    [ElementType.IdentityInput]: null,
+    [ElementType.TabLayout]: null,
 };

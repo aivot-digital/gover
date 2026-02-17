@@ -1,16 +1,16 @@
 import React, {useContext} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {GenericList} from '../../../../components/generic-list/generic-list';
-import {FormsApiService} from '../../../forms/forms-api-service';
 import {GridColDef} from '@mui/x-data-grid';
 import {EditOutlined} from '@mui/icons-material';
 import {Box, Typography} from '@mui/material';
 import {PaymentProviderResponseDTO} from '../../dtos/payment-provider-response-dto';
 import {CellLink} from '../../../../components/cell-link/cell-link';
-import {FormDetailsResponseDTO} from '../../../forms/dtos/form-details-response-dto';
 import {FormStatusChip} from '../../../forms/components/form-status-chip';
+import {VFormVersionWithDetailsEntity} from '../../../forms/entities/v-form-version-with-details-entity';
+import {VFormVersionWithDetailsService} from '../../../forms/services/v-form-version-with-details-api-service';
 
-const columns: GridColDef<FormDetailsResponseDTO>[] = [
+const columns: GridColDef<VFormVersionWithDetailsEntity>[] = [
     {
         field: 'internalTitle',
         headerName: 'Titel des Formulars',
@@ -65,7 +65,7 @@ export function PaymentProviderDetailsPageForms() {
                 Eine Liste aller Formulare, die Online-Zahlungen mit dieser Konfiguration des Zahlungsdienstleisters entgegennehmen, bzw. mit ihr konfiguriert sind.
             </Typography>
 
-            <GenericList<FormDetailsResponseDTO>
+            <GenericList<VFormVersionWithDetailsEntity>
                 disableFullWidthToggle={true}
                 sx={{
                     mx: '-16px',
@@ -74,8 +74,8 @@ export function PaymentProviderDetailsPageForms() {
                 columnDefinitions={columns}
                 defaultFilter="dev"
                 fetch={(options) => {
-                    return new FormsApiService(options.api)
-                        .listVersions(
+                    return new VFormVersionWithDetailsService()
+                        .list(
                             options.page,
                             options.size,
                             options.sort,
@@ -94,7 +94,7 @@ export function PaymentProviderDetailsPageForms() {
                 noDataPlaceholder="Keine Formulare vorhanden"
                 loadingPlaceholder="Lade Formulare…"
                 noSearchResultsPlaceholder="Keine Formulare gefunden"
-                rowActions={(item: FormDetailsResponseDTO) => [{
+                rowActions={(item) => [{
                     icon: <EditOutlined />,
                     to: `/forms/${item.id}/${item.version}`,
                     tooltip: 'Formular anzeigen',

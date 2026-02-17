@@ -178,7 +178,7 @@ export function ElementTreeItemList<T extends AnyElementWithChildren, E extends 
                             fontStyle: 'italic',
                         }}
                     >
-                        Noch keine {props.element.type === ElementType.Root ? 'Abschnitte' : 'Elemente'} vorhanden
+                        Noch keine {props.element.type === ElementType.FormLayout ? 'Abschnitte' : 'Elemente'} vorhanden
                     </Typography>
                 </ElementTreeItemDropTarget>
             }

@@ -30,7 +30,7 @@ function deepCloneElement<T extends AnyElement>(element: T, skipSuffix?: boolean
     if (isAnyElementWithChildren(clone)) {
         const clonedChildren = [];
 
-        const isStoreElement = clone.type === ElementType.Container && clone.storeLink != null;
+        const isStoreElement = clone.type === ElementType.GroupLayout && clone.storeLink != null;
 
         for (const child of clone.children ?? []) {
             const res = deepCloneElement(child, skipSuffix || isStoreElement);

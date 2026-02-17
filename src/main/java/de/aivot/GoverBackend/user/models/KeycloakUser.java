@@ -1,5 +1,7 @@
 package de.aivot.GoverBackend.user.models;
 
+import de.aivot.GoverBackend.user.entities.UserEntity;
+
 public class KeycloakUser {
     private String id;
     private String firstName;
@@ -7,6 +9,16 @@ public class KeycloakUser {
     private String email;
     private Boolean emailVerified;
     private Boolean enabled;
+
+    public static KeycloakUser from(UserEntity entity) {
+        return new KeycloakUser()
+                .setId(entity.getId())
+                .setFirstName(entity.getFirstName())
+                .setLastName(entity.getLastName())
+                .setEmail(entity.getEmail())
+                .setEmailVerified(entity.getVerified())
+                .setEnabled(entity.getEnabled());
+    }
 
     public String getId() {
         return id;

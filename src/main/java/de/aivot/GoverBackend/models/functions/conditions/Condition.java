@@ -4,7 +4,7 @@ import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
-import de.aivot.GoverBackend.elements.models.elements.ElementWithChildren;
+import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.enums.ConditionOperator;
 
 import java.io.Serializable;
@@ -21,7 +21,7 @@ public class Condition implements Serializable {
 
     }
 
-    public String evaluate(ElementWithChildren<?> rootElement, ElementData elementData, BaseElement element) {
+    public String evaluate(LayoutElement<?> rootElement, ElementData elementData, BaseElement element) {
         // Prüfe, ob ein Operator angegeben wurde. Falls nicht, gib eine Fehlermeldung zurück.
         if (operator == null) {
             return "Auswertung fehlgeschlagen. Kein Operator angegeben.";

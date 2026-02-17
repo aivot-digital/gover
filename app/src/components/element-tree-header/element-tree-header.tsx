@@ -29,7 +29,7 @@ import GradingOutlinedIcon from '@mui/icons-material/GradingOutlined';
 import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
 import {SearchInput} from '../search-input-2/search-input';
-import {selectAllElements} from '../../slices/app-slice';
+import {isLoadedForm, selectAllElements} from '../../slices/app-slice';
 import Fuse from 'fuse.js';
 import {generateComponentTitle} from '../../utils/generate-component-title';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
@@ -426,7 +426,7 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                     open={true}
                     parents={[] /* Uppermost element so no parents here */}
                     entity={props.entity}
-                    element={props.entity.rootElement as any /* TODO: Fix this any type */}
+                    element={isLoadedForm(props.entity) ? props.entity.version.rootElement : props.entity.rootElement as any /* TODO: Fix this any type */}
                     onSave={(updatedElement: Partial<T>, updatedApplication: Partial<E>) => {
                         closeElementEditor();
                         props.onPatch(updatedElement, updatedApplication);

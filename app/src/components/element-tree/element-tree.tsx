@@ -7,53 +7,100 @@ import {ElementTreeHeader} from '../element-tree-header/element-tree-header';
 import {ElementTreeItemList} from '../element-tree-item-list/element-tree-item-list';
 import {ElementType} from '../../data/element-type/element-type';
 import {AddElementDialog} from '../../dialogs/add-element-dialog/add-element-dialog';
-import {type AnyElement} from '../../models/elements/any-element';
 import {ElementTreeItem} from '../element-tree-item/element-tree-item';
-import {type RootElement} from '../../models/elements/root-element';
-import {isForm} from '../../models/entities/form';
+import {isRootElement, type RootElement} from '../../models/elements/root-element';
 import {type GroupLayout} from '../../models/elements/form/layout/group-layout';
 import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
 import {type ElementTreeEntity} from './element-tree-entity';
 import {StepElement} from '../../models/elements/steps/step-element';
 import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
+import {isLoadedForm, LoadedForm} from '../../slices/app-slice';
+import {AnyFormElement} from '../../models/elements/form/any-form-element';
+import {PresetVersion} from '../../models/entities/preset-version';
 
 export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps<T>) {
     const [showAddDialog, setShowAddDialog] = useState(false);
 
     const scrollContainerRef = useRef<HTMLDivElement>(undefined);
 
-    const handleAddElement = (element: AnyElement): void => {
-        props.onPatch({
-            ...props.entity,
-            rootElement: {
-                ...props.entity.rootElement,
-                children: [
-                    ...props.entity.rootElement.children ?? [],
-                    element,
-                ],
-            },
-        });
+    const handleAddElement = (element: StepElement | AnyFormElement): void => {
+        if (isLoadedForm(props.entity)) {
+            props.onPatch({
+                ...props.entity,
+
+                version: {
+                    ...props.entity.version,
+
+                    rootElement: {
+                        ...props.entity.version.rootElement,
+
+                        children: [
+                            ...props.entity.version.rootElement.children ?? [],
+                            element,
+                        ],
+                    },
+                },
+            });
+        } else {
+            props.onPatch({
+                ...props.entity,
+
+                rootElement: {
+                    ...props.entity.rootElement,
+
+                    children: [
+                        ...props.entity.rootElement.children ?? [],
+                        element,
+                    ],
+                },
+            });
+        }
     };
 
     const handleAdd = (): void => {
-        if (isForm(props.entity)) {
+        if (isLoadedForm(props.entity)) {
             handleAddElement(generateElementWithDefaultValues(ElementType.Step) as StepElement);
         } else {
             setShowAddDialog(true);
         }
     };
 
-    const handleRootPatch = (updatedElement: Partial<RootElement | GroupLayout>, updatedEntity: Partial<T>): void => {
-        props.onPatch({
-            ...props.entity,
-            ...updatedEntity,
-            rootElement: {
-                ...props.entity.rootElement,
-                ...updatedEntity.rootElement,
-                ...updatedElement,
-            },
-        });
+    const handleRootPatch = (updatedElement: Partial<T extends LoadedForm ? RootElement : GroupLayout>, updatedEntity: Partial<T>): void => {
+        if (isLoadedForm(props.entity)) {
+            const updatedLoadedForm = updatedEntity as Partial<LoadedForm>;
+            props.onPatch({
+                ...props.entity,
+                ...updatedLoadedForm,
+
+                version: {
+                    ...props.entity.version,
+                    ...updatedLoadedForm.version,
+
+                    rootElement: {
+                        ...props.entity.version.rootElement,
+                        ...updatedLoadedForm.version?.rootElement,
+
+                        ...updatedElement,
+                    },
+                },
+            });
+        } else {
+            const updatedPreset = updatedEntity as Partial<PresetVersion>;
+            props.onPatch({
+                ...props.entity,
+                ...updatedPreset,
+
+                rootElement: {
+                    ...props.entity.rootElement,
+                    ...updatedPreset.rootElement,
+
+                    ...updatedElement,
+                },
+            });
+        }
     };
+
+    const root = isLoadedForm(props.entity) ? props.entity.version.rootElement : props.entity.rootElement;
 
     return (
         <>
@@ -70,7 +117,7 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
                 <Box>
                     <ElementTreeHeader
                         entity={props.entity}
-                        element={props.entity.rootElement}
+                        element={root as any}
                         onPatch={handleRootPatch}
                         editable={props.editable}
                         scope={props.scope}
@@ -81,24 +128,34 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
                         backend={HTML5Backend}
                     >
                         {
-                            isForm(props.entity) &&
+                            isRootElement(root) &&
                             <ElementTreeItem
-                                parents={[props.entity.rootElement]}
+                                parents={[root]}
                                 entity={props.entity}
-                                element={props.entity.rootElement.introductionStep!}
+                                element={root.introductionStep!}
                                 disableDrag={true}
-                                onPatch={(updatedElement, updatedEntity) => {
-                                    if (isForm(props.entity)) {
+                                onPatch={(element, entity) => {
+                                    if (isLoadedForm(props.entity)) {
+                                        const updatedEntity = entity as Partial<LoadedForm>;
+
                                         props.onPatch({
                                             ...props.entity,
                                             ...updatedEntity,
-                                            rootElement: {
-                                                ...props.entity.rootElement,
-                                                ...updatedEntity.rootElement,
-                                                introductionStep: {
-                                                    ...props.entity.rootElement.introductionStep,
-                                                    ...updatedEntity.rootElement?.introductionStep,
-                                                    ...updatedElement,
+
+                                            version: {
+                                                ...props.entity.version,
+                                                ...updatedEntity.version,
+
+
+                                                rootElement: {
+                                                    ...props.entity.version.rootElement,
+                                                    ...updatedEntity.version?.rootElement,
+
+                                                    introductionStep: {
+                                                        ...props.entity.version.rootElement.introductionStep,
+                                                        ...updatedEntity.version?.rootElement?.introductionStep,
+                                                        ...element,
+                                                    },
                                                 },
                                             },
                                         });
@@ -122,17 +179,37 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
                         <ElementTreeItemList
                             parents={[]}
                             entity={props.entity}
-                            element={props.entity.rootElement}
-                            onPatch={(updatedElement, updatedEntity) => {
-                                props.onPatch({
-                                    ...props.entity,
-                                    ...updatedEntity,
-                                    rootElement: {
-                                        ...props.entity.rootElement,
-                                        ...updatedEntity.rootElement,
-                                        ...updatedElement,
-                                    },
-                                });
+                            element={isLoadedForm(props.entity) ? props.entity.version.rootElement : props.entity.rootElement}
+                            onPatch={(updatedElement, entity) => {
+                                if (isLoadedForm(props.entity)) {
+                                    const updatedEntity = entity as Partial<LoadedForm>;
+                                    props.onPatch({
+                                        ...props.entity,
+                                        ...updatedEntity,
+
+                                        version: {
+                                            ...props.entity.version,
+                                            ...updatedEntity.version,
+
+                                            rootElement: {
+                                                ...props.entity.version.rootElement,
+                                                ...updatedEntity.version?.rootElement,
+                                                ...updatedElement,
+                                            },
+                                        },
+                                    });
+                                } else {
+                                    const updatedEntity = entity as Partial<PresetVersion>;
+                                    props.onPatch({
+                                        ...props.entity,
+                                        ...updatedEntity,
+                                        rootElement: {
+                                            ...props.entity.rootElement,
+                                            ...updatedEntity.rootElement,
+                                            ...updatedElement,
+                                        },
+                                    });
+                                }
                             }}
                             onMove={() => {
                                 // Nothing to do
@@ -144,24 +221,34 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
                         />
 
                         {
-                            isForm(props.entity) &&
+                            isRootElement(root) &&
                             <ElementTreeItem
-                                parents={[props.entity.rootElement]}
+                                parents={[root]}
                                 entity={props.entity}
-                                element={props.entity.rootElement.summaryStep!}
+                                element={root.summaryStep!}
                                 disableDrag={true}
-                                onPatch={(updatedElement, updatedEntity) => {
-                                    if (isForm(props.entity)) {
+                                onPatch={(element, entity) => {
+                                    if (isLoadedForm(props.entity)) {
+                                        const updatedEntity = entity as Partial<LoadedForm>;
+
                                         props.onPatch({
                                             ...props.entity,
                                             ...updatedEntity,
-                                            rootElement: {
-                                                ...props.entity.rootElement,
-                                                ...updatedEntity.rootElement,
-                                                summaryStep: {
-                                                    ...props.entity.rootElement.summaryStep,
-                                                    ...updatedEntity.rootElement?.summaryStep,
-                                                    ...updatedElement,
+
+                                            version: {
+                                                ...props.entity.version,
+                                                ...updatedEntity.version,
+
+
+                                                rootElement: {
+                                                    ...props.entity.version.rootElement,
+                                                    ...updatedEntity.version?.rootElement,
+
+                                                    summaryStep: {
+                                                        ...props.entity.version.rootElement.summaryStep,
+                                                        ...updatedEntity.version?.rootElement?.summaryStep,
+                                                        ...element,
+                                                    },
                                                 },
                                             },
                                         });
@@ -183,24 +270,34 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
                         }
 
                         {
-                            isForm(props.entity) &&
+                            isRootElement(root) &&
                             <ElementTreeItem
-                                parents={[props.entity.rootElement]}
+                                parents={[root]}
                                 entity={props.entity}
-                                element={props.entity.rootElement.submitStep!}
+                                element={root.submitStep!}
                                 disableDrag={true}
-                                onPatch={(updatedElement, updatedEntity) => {
-                                    if (isForm(props.entity)) {
+                                onPatch={(element, entity) => {
+                                    if (isLoadedForm(props.entity)) {
+                                        const updatedEntity = entity as Partial<LoadedForm>;
+
                                         props.onPatch({
                                             ...props.entity,
                                             ...updatedEntity,
-                                            rootElement: {
-                                                ...props.entity.rootElement,
-                                                ...updatedEntity.rootElement,
-                                                submitStep: {
-                                                    ...props.entity.rootElement.submitStep,
-                                                    ...updatedEntity.rootElement?.submitStep,
-                                                    ...updatedElement,
+
+                                            version: {
+                                                ...props.entity.version,
+                                                ...updatedEntity.version,
+
+
+                                                rootElement: {
+                                                    ...props.entity.version.rootElement,
+                                                    ...updatedEntity.version?.rootElement,
+
+                                                    submitStep: {
+                                                        ...props.entity.version.rootElement.submitStep,
+                                                        ...updatedEntity.version?.rootElement?.submitStep,
+                                                        ...element,
+                                                    },
                                                 },
                                             },
                                         });
@@ -238,7 +335,7 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
                             }}
                         >
                             {
-                                isForm(props.entity) ?
+                                isLoadedForm(props.entity) ?
                                     'Neuen Abschnitt hinzufügen' :
                                     'Neues Element hinzufügen'
                             }
@@ -249,9 +346,9 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
 
             <AddElementDialog
                 show={showAddDialog}
-                parentType={props.entity.rootElement.type}
+                parentType={isLoadedForm(props.entity) ? props.entity.version.rootElement.type : props.entity.rootElement.type}
                 onAddElement={(element) => {
-                    handleAddElement(element);
+                    handleAddElement(element as AnyFormElement);
                     setShowAddDialog(false);
                 }}
                 onClose={() => {

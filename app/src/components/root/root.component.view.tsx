@@ -29,8 +29,6 @@ import {CustomStep} from '../custom-step/custom-step';
 import {Api, useApi} from '../../hooks/use-api';
 import {useSearchParams} from 'react-router-dom';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
-import {FormsApiService} from '../../modules/forms/forms-api-service';
-import {FormsApiService as FormsApiServiceV2} from '../../modules/forms/forms-api-service-v2';
 import {SubmissionListResponseDTO} from '../../modules/submissions/dtos/submission-list-response-dto';
 import {SubmissionStatus} from '../../modules/submissions/enums/submission-status';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
@@ -47,13 +45,15 @@ import {collectErrors, ErrorAlert} from '../error-alert/error-alert';
 import {ElementWithParents, flattenElementsWithParents} from '../../utils/flatten-elements';
 import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
 import {mapElementData, mergeDerivedElementDataWithLocal, walkElementData} from '../../utils/element-data-utils';
-import {Form} from '../../models/entities/form';
 import {isElementChangedByTrigger} from '../../utils/element-reference-utils';
 import {IdentityCustomerInputKey} from '../../modules/identity/constants/identity-customer-input-key';
 import {IdentityData} from '../../modules/identity/models/identity-data';
 import {CustomerInputLoader} from '../../dialogs/customer-input-loader/customer-input-loader';
 import {addDerivationLogItems} from '../../slices/logging-slice';
 import {RootComponentHeader} from './root-component-header';
+import {FormEntity} from '../../modules/forms/entities/form-entity';
+import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
+import {FormApiService} from '../../modules/forms/services/form-api-service';
 
 type AnyStepElement = StepElement | IntroductionStepElement | SummaryStepElement | SubmitStepElement | SubmittedStepElement;
 
@@ -257,7 +257,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
 
         // Check if submit step
         else if (currentStep === (totalStepCount - 1)) {
-            const formsApiService = new FormsApiServiceV2();
+            const formsApiService = new FormApiService();
 
             setIsSubmitting(true);
 
@@ -277,8 +277,8 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                 });
                 submitResponse = await formsApiService
                     .submit({
-                        id: form.id,
-                        version: form.version,
+                        formId: form.form.id,
+                        version: form.version.version,
                     }, submitElementData, identityId);
             } catch (error: ApiError | any) {
                 if (isApiError(error) || 'status' in error) {
@@ -309,7 +309,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                     destinationId: 0,
                     destinationSuccess: false,
                     fileNumber: '',
-                    formId: form.id,
+                    formId: form.form.id,
                     isTestSubmission: false,
                     status: SubmissionStatus.Pending,
                 });
@@ -318,7 +318,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                 setSearchParams({}, {
                     replace: true,
                 });
-                CustomerInputService.cleanCustomerInput(form);
+                CustomerInputService.cleanCustomerInput(form.form.slug, form.version.version);
             }
         }
 
@@ -426,9 +426,9 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
         try {
             const derivationResult = await withAsyncWrapper({
                 desiredMinRuntime: 600,
-                main: () => new FormsApiServiceV2().determineFormState(
-                    form.slug,
-                    form.version,
+                main: () => new FormApiService().deriveForm(
+                    form.form.slug,
+                    form.version.version,
                     elementData,
                     {
                         skipErrorsFor: options.forceAll ? [] : (doNotPerformErrorDerivation ? ['ALL'] : skipErrorsForStepIds),
@@ -487,7 +487,8 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
             main: () => determineUploadSizeError(
                 element,
                 elementData,
-                form!,
+                form!.form,
+                form!.version,
                 api,
             ),
         })
@@ -531,8 +532,8 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
             runtimeCallback: setIsLoading,
             main: async () => {
                 try {
-                    const calculatedCosts = await new FormsApiService(api)
-                        .calculateCosts(form.slug, form.version, elementData);
+                    const calculatedCosts = await new FormApiService()
+                        .calculateCosts(form.form.slug, form.version.version, elementData);
                     onElementDataChange({
                         ...elementData,
                         [SubmitPaymentDataKey]: {
@@ -614,7 +615,8 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
             {
                 form != null &&
                 <RootComponentHeader
-                    form={form}
+                    form={form.form}
+                    version={form.version}
                     onDeleteFormData={() => {
                         onElementDataChange({}, []);
                         dispatch(setCurrentStep(0));
@@ -625,7 +627,8 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
             {
                 form != null &&
                 <CustomerInputLoader
-                    form={form}
+                    form={form.form}
+                    version={form.version}
                     onElementDataLoad={data => onElementDataChange(data, [])}
                     isBusy={isBusy || isDeriving}
                 />
@@ -753,7 +756,8 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                                     form != null &&
                                     <Submitted
                                         submission={submission}
-                                        form={form}
+                                        form={form.form}
+                                        version={form.version}
                                     />
                                 }
                             </CustomStep>
@@ -802,7 +806,8 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
             {
                 form != null &&
                 <RootComponentFooter
-                    form={form}
+                    form={form.form}
+                    version={form.version}
                 />
             }
 
@@ -834,7 +839,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
 /**
  * Returns null if the file sizes are within the limits, returns an error message if the total file size exceeds the maximum allowed size.
  */
-async function determineUploadSizeError(element: RootElement, elementData: ElementData, form: Form, api: Api): Promise<string | null> {
+async function determineUploadSizeError(element: RootElement, elementData: ElementData, form: FormEntity, version: FormVersionEntity, api: Api): Promise<string | null> {
     let totalFileSize = 0;
 
     walkElementData(
@@ -853,8 +858,8 @@ async function determineUploadSizeError(element: RootElement, elementData: Eleme
         return null;
     }
 
-    const {maxFileSize} = await new FormsApiService(api)
-        .getMaxFileSize(form.slug, form.version);
+    const {maxFileSize} = await new FormApiService()
+        .getMaxFileSize(form.slug, version.version);
 
     const maxFileSizeBytes = maxFileSize * 1000 * 1000;
 

@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.nocode.models;
 
 import de.aivot.GoverBackend.utils.StringUtils;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.util.Objects;
 
 /**

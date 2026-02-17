@@ -14,9 +14,9 @@ import {Box, Paper, Typography, useEventCallback} from '@mui/material';
 import {RichTextEditorMenuComponentView} from '../rich-text-editor-menu.component.view';
 import './rich-text-editor.component.scss';
 
-interface RichTextEditorComponentViewProps {
+export interface RichTextEditorComponentViewProps {
     label?: string;
-    value: string;
+    value: string | null | undefined;
     onChange: (text: string | undefined) => void;
     required?: boolean;
     error?: string;

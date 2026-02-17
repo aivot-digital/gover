@@ -16,7 +16,7 @@ export interface GenericDetailsPageProps<ItemType, ID, AdditionalData> {
     header: Omit<GenericPageHeaderProps, 'isBusy'>;
     initializeItem: (api: Api) => ItemType;
     fetchData: (api: Api, id: ID) => Promise<ItemType>;
-    fetchAdditionalData?: AdditionalDataFetchObject<AdditionalData, ID>;
+    fetchAdditionalData?: AdditionalDataFetchObject<AdditionalData, ID | string>;
     tabs: TabConfig<ItemType>[] | ((item: ItemType | undefined) => TabConfig<ItemType>[]);
     idParam?: string;
     // parentLink is used for links to the list pages on 404 errors

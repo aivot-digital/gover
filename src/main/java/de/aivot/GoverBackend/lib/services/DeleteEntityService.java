@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.lib.services;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import org.springframework.http.HttpStatus;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 public interface DeleteEntityService<T, I> extends RetrieveEntityService<T, I> {
     default T delete(
@@ -15,6 +15,13 @@ public interface DeleteEntityService<T, I> extends RetrieveEntityService<T, I> {
         }
         performDelete(entity.get());
         return entity.get();
+    }
+
+    default T deleteEntity(
+            @Nonnull T entity
+    ) throws ResponseException {
+        performDelete(entity);
+        return entity;
     }
 
     void performDelete(

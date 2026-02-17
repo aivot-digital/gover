@@ -1,7 +1,9 @@
 package de.aivot.GoverBackend.user.controllers;
 
-import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.user.services.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -12,12 +14,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/auth/")
+@Tag(name = "Authentication", description = "Endpoints for user authentication")
 public class AuthController {
     private static final String AUTH_PATH = "/protocol/openid-connect/auth";
 
@@ -28,18 +29,17 @@ public class AuthController {
     private String clientId;
 
     @GetMapping("login/")
-    public void list(
+    @Operation(
+            summary = "Login",
+            description = "Redirects the user to the authentication provider login page or directly to the specified redirect URL if already authenticated."
+    )
+    public void redirectToLogin(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull HttpServletResponse response,
-            @Nonnull @RequestParam String redirect
-    ) throws ResponseException, IOException {
+            @Nonnull @RequestParam(required = true) String redirect
+    ) throws IOException {
         if (jwt != null) {
-            UserService
-                    .fromJWT(jwt)
-                    .orElseThrow(ResponseException::unauthorized);
-
-            response
-                    .sendRedirect(redirect);
+            response.sendRedirect(redirect);
         }
 
         var uri = UriComponentsBuilder

@@ -20,13 +20,13 @@ export class SystemApiService extends BaseApiService {
     }
 
     public getHealth(): Promise<HealthData> {
-        return this.get<HealthData>('/api/public/actuator/health/', {
+        return this.get<HealthData>('/api/actuator/health/', {
             doNotHandleStatusCodes: true,
         });
     }
 
     public getHttpExchanges(): Promise<HttpExchanges> {
-        return this.get<HttpExchanges>('/api/public/actuator/httpexchanges/');
+        return this.get<HttpExchanges>('/api/actuator/httpexchanges/');
     }
 
     public getFileExtensions(): Promise<string[]> {
