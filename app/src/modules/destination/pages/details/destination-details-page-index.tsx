@@ -479,13 +479,11 @@ export function DestinationDetailsPageIndex() {
 
                     <Typography
                         sx={{
-                            mb: 1,
+                            mb: 2,
                         }}
                     >
                         Konfigurieren Sie die OZG-Cloud-Schnittstelle, an die Formulare gesendet werden sollen.
                     </Typography>
-
-                    <OzgCloudInfo />
 
                     <Grid
                         container
@@ -508,6 +506,8 @@ export function DestinationDetailsPageIndex() {
                             />
                         </Grid>
                     </Grid>
+
+                    <OzgCloudInfo />
                 </>
             }
 

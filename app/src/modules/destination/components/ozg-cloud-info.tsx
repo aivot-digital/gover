@@ -20,7 +20,7 @@ export function OzgCloudInfo(props: OzgCloudInfoProps) {
                 mb: 2,
             }}
             sx={{
-                mt: 3,
+                mt: 1,
                 mb: 4,
                 ...props.sx,
             }}
