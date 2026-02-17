@@ -8,7 +8,6 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;

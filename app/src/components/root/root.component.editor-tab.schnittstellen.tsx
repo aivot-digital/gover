@@ -30,6 +30,7 @@ import {ElementEditorSectionHeader} from '../element-editor-section-header/eleme
 import {withDelay} from '../../utils/with-delay';
 import {LoadedForm} from '../../slices/app-slice';
 import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
+import {OzgCloudInfo} from '../../modules/destination/components/ozg-cloud-info';
 
 export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<RootElement, LoadedForm>) {
     const api = useApi();
@@ -178,6 +179,27 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                             E-Mail-Konfiguration aufzunehmen. Falls Sie keine E-Mails erhalten, überprüfen Sie bitte auch Ihren Spam-Ordner oder kontaktieren Sie Ihre
                             E-Mail-Administrator:in.
                         </Typography>
+                    </AlertComponent>
+                }
+
+                {
+                    destinations != null &&
+                    destinations.length > 0 &&
+                    props.entity.destinationId != null &&
+                    destinations.find((dest) => dest.id === props.entity.destinationId)?.type === DestinationType.OZGCloud &&
+                    <AlertComponent
+                        title="Hinweis zur OZG-Cloud Schnittstelle"
+                        color="warning"
+                        sx={{
+                            mt: 1,
+                        }}
+                    >
+                        <OzgCloudInfo
+                            sx={{
+                                mb: 0,
+                                mt: 0,
+                            }}
+                        />
                     </AlertComponent>
                 }
             </Box>

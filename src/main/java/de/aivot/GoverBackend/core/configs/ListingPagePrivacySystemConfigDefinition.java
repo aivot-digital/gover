@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.core.configs;
 import de.aivot.GoverBackend.config.enums.ConfigType;
 import de.aivot.GoverBackend.config.models.SystemConfigDefinition;
 import de.aivot.GoverBackend.data.SystemConfigKey;
-import org.jetbrains.annotations.NotNull;
+import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -11,37 +11,37 @@ public class ListingPagePrivacySystemConfigDefinition implements SystemConfigDef
     // TODO: Remove SystemConfigKey.PROVIDER__LISTINGPAGE__PRIVACYDEPARTMENTID and use the key directly
     public static final String KEY = SystemConfigKey.PROVIDER__LISTINGPAGE__PRIVACYDEPARTMENTID.getKey();
 
-    @NotNull
+    @Nonnull
     @Override
     public String getKey() {
         return KEY;
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public ConfigType getType() {
         return ConfigType.DEPARTMENT;
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public String getCategory() {
         return "Öffentliche Auflistung";
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public String getLabel() {
         return "Datenschutzerklärung";
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public String getDescription() {
         return "Der für den Datenschutz zuständige Fachbereich.";
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public Boolean isPublicConfig() {
         return true;

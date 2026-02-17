@@ -6,6 +6,8 @@ import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 
 import jakarta.annotation.Nonnull;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 public record SpecificationBuilderContains<T>(
         @Nonnull String field,

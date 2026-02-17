@@ -4,4 +4,5 @@ public enum DestinationType {
     Mail,
     HTTP,
     Script,
+    OZGCloud,
 }

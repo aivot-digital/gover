@@ -7,6 +7,8 @@ import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.List;
 
 public record FormCitizenDetailsResponseDTO(
