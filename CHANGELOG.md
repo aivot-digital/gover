@@ -2,6 +2,9 @@
 
 ## [4.6.0](https://github.com/aivot-digital/gover/compare/v4.5.4...v4.6.0) (TBD)
 
+### Features
+* **App:** Add a new destination type for OZG-Cloud.
+
 ### Improvements
 
 * **Services:** Updated minor versions of all services in the docker compose setup.

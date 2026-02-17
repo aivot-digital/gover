@@ -349,6 +349,8 @@ public class SubmitController {
         }
 
         if (optionalIdp.isEmpty()) {
+            // Remove the idp data from the customer input if no idp data is present, to avoid confusion in the destination and to keep the customer input clean
+            customerInput.remove(IdentityValueKey.IdCustomerInputKey);
             return;
         }
 
