@@ -10,6 +10,11 @@ public class OpenApiConstants {
         public static final String PermissionsDescription = "Permissions define the access rights for users and roles within the system. " +
                 "They determine what actions can be performed on different entities and resources, ensuring proper access control and security.";
 
+        public static final String PluginsName = "Plugins";
+        public static final String PluginsDescription = "Plugins extend the application platform with additional features and functionalities. " +
+                "They can provide new capabilities, integrations, or customizations to enhance the user experience and meet specific requirements. " +
+                "Plugins can be developed and installed to tailor the system to the needs of different organizations and use cases.";
+
         public static final String ProcessAccessControlsName = "Process Access Controls";
         public static final String ProcessAccessControlsDescription =
                 "Process Access Controls define the permissions for teams and departments to access and interact with specific processes. " +
