@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.identity.models;
 import de.aivot.GoverBackend.identity.cache.entities.IdentityCacheEntity;
 import jakarta.annotation.Nonnull;
 
+import jakarta.annotation.Nonnull;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.UUID;

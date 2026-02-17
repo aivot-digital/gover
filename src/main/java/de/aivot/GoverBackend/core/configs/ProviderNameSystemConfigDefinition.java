@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.core.configs;
 import de.aivot.GoverBackend.config.enums.ConfigType;
 import de.aivot.GoverBackend.config.models.SystemConfigDefinition;
 import de.aivot.GoverBackend.data.SystemConfigKey;
-import org.jetbrains.annotations.NotNull;
+import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -11,37 +11,37 @@ public class ProviderNameSystemConfigDefinition implements SystemConfigDefinitio
     // TODO: Remove SystemConfigKey.PROVIDER__NAME and use the key directly
     public static final String KEY = SystemConfigKey.PROVIDER__NAME.getKey();
 
-    @NotNull
+    @Nonnull
     @Override
     public String getKey() {
         return KEY;
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public ConfigType getType() {
         return ConfigType.TEXT;
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public String getCategory() {
         return "Oberfläche";
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public String getLabel() {
         return "Name des Anbieters";
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public String getDescription() {
         return "Der Name des Anbieters, der in der Anwendung angezeigt wird.";
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public Boolean isPublicConfig() {
         return true;

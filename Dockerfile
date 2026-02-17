@@ -67,7 +67,7 @@ COPY --from=build_mails /mails/dist src/main/resources/templates/mail
 RUN mvn install -DskipTests
 
 # App
-FROM eclipse-temurin:21.0.7_6-jre-alpine-3.21
+FROM eclipse-temurin:21.0.10_7-jre-alpine-3.21
 
 # Set build version and date
 ARG BUILD_VERSION=0.0.0

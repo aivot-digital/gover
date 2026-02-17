@@ -5,7 +5,7 @@ import {Typography} from '@mui/material';
 import {DescriptionOutlined, EditOutlined} from '@mui/icons-material';
 import React from 'react';
 import {CellLink} from '../../../../components/cell-link/cell-link';
-import {DestinationType, DestinationTypeIcons} from '../../../../data/destination-type';
+import {DestinationType, DestinationTypeIcons, DestinationTypeLabels} from '../../../../data/destination-type';
 import {Destination} from '../../models/destination';
 import {DestinationsApiService} from '../../destinations-api-service';
 import DataObjectOutlinedIcon from '@mui/icons-material/DataObjectOutlined';
@@ -20,12 +20,12 @@ export function DestinationListPage() {
         >
             <GenericListPage<Destination>
                 header={{
-                    icon: <DataObjectOutlinedIcon />,
+                    icon: <DataObjectOutlinedIcon/>,
                     title: 'Schnittstellen',
                     actions: [
                         {
                             label: 'Neue Schnittstelle',
-                            icon: <AddOutlinedIcon />,
+                            icon: <AddOutlinedIcon/>,
                             to: '/destinations/new',
                             variant: 'contained',
                         },
@@ -36,17 +36,20 @@ export function DestinationListPage() {
                         content: (
                             <>
                                 <Typography>
-                                    Schnittstellen dienen in der Gover-Anwendung zur Übertragung von durch Bürger:innen gestellten Anträgen in Folgesysteme.
+                                    Schnittstellen dienen in der Gover-Anwendung zur Übertragung von durch Bürger:innen
+                                    gestellten Anträgen in Folgesysteme.
                                 </Typography>
                                 <ul>
                                     <li>
                                         <Typography variant="body1" paragraph>
-                                            Über eine E-Mail-Schnittstelle können Sie eingegangene Anträge an eine oder mehrere E-Mail-Adressen senden lassen.
+                                            Über eine E-Mail-Schnittstelle können Sie eingegangene Anträge an eine oder mehrere
+                                    E-Mail-Adressen senden lassen.
                                         </Typography>
                                     </li>
                                     <li>
                                         <Typography variant="body1" paragraph>
-                                            Über eine HTTP-Schnittstelle können Sie eingegangene Anträge an eine HTTP-Adresse via POST-Anfrage übertragen lassen.
+                                            Über eine HTTP-Schnittstelle können Sie eingegangene Anträge an eine HTTP-Adresse
+                                    via POST-Anfrage übertragen lassen.
                                         </Typography>
                                     </li>
                                     <li>
@@ -56,8 +59,10 @@ export function DestinationListPage() {
                                     </li>
                                 </ul>
                                 <Typography sx={{mt: 2}}>
-                                    Falls einen von ihnen benötigte Schnittstelle nicht vorhanden ist, bietet Aivot Ihnen die Möglichkeit, neue Schnittstellen zum System hinzufügen zu lassen.
-                                    So können Sie beispielsweise Ihre eigenen Fachverfahren oder Folgesysteme anschließen. Bitte wenden Sie sich dazu an den Support.
+                                    Falls einen von ihnen benötigte Schnittstelle nicht vorhanden ist, bietet Aivot
+                                    Ihnen die Möglichkeit, neue Schnittstellen zum System hinzufügen zu lassen.
+                                    So können Sie beispielsweise Ihre eigenen Fachverfahren oder Folgesysteme
+                                    anschließen. Bitte wenden Sie sich dazu an den Support.
                                 </Typography>
                             </>
                         ),
@@ -83,7 +88,7 @@ export function DestinationListPage() {
                         headerName: '',
                         renderCell: (params) => {
                             const Icon = DestinationTypeIcons[params.row.type];
-                            return (<CellContentWrapper><Icon /></CellContentWrapper>);
+                            return (<CellContentWrapper><Icon/></CellContentWrapper>);
                         },
                         disableColumnMenu: true,
                         width: 24,
@@ -105,13 +110,14 @@ export function DestinationListPage() {
                     {
                         field: 'type',
                         headerName: 'Typ',
-                        flex: 0.5,
+                        flex: 1,
+                        renderCell: (params) => DestinationTypeLabels[params.row.type],
                     },
                     {
                         field: 'target',
                         headerName: 'Ziel',
-                        renderCell: (params) => params.row.type === DestinationType.HTTP ? params.row.apiAddress : params.row.mailTo,
                         flex: 2,
+                        renderCell: (params) => params.row.type === DestinationType.Mail ? params.row.mailTo : params.row.apiAddress,
                     },
                 ]}
                 getRowIdentifier={row => row.id.toString()}
@@ -120,12 +126,12 @@ export function DestinationListPage() {
                 rowActionsCount={3}
                 rowActions={(item: Destination) => [
                     {
-                        icon: <EditOutlined />,
+                        icon: <EditOutlined/>,
                         to: `/destinations/${item.id}`,
                         tooltip: 'Schnittstelle bearbeiten',
                     },
                     {
-                        icon: <DescriptionOutlined />,
+                        icon: <DescriptionOutlined/>,
                         to: `/destinations/${item.id}/forms`,
                         tooltip: 'Formulare mit dieser Schnittstelle ansehen',
                     },

@@ -18,7 +18,7 @@ import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentTransaction;
 import de.aivot.GoverBackend.payment.repositories.PaymentProviderRepository;
 import de.aivot.GoverBackend.payment.repositories.PaymentTransactionRepository;
-import org.jetbrains.annotations.Nullable;
+import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

@@ -1,6 +1,9 @@
 import {Box, Button, Grid, Typography} from '@mui/material';
 import React, {useContext, useMemo, useState} from 'react';
-import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
+import {
+    GenericDetailsPageContext,
+    GenericDetailsPageContextType,
+} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
 import {useNavigate} from 'react-router-dom';
@@ -13,6 +16,20 @@ import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackba
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../../hooks/use-form-manager';
+import {FormsApiService} from '../../../forms/forms-api-service';
+import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
+import {ConstraintDialog} from '../../../../dialogs/constraint-dialog/constraint-dialog';
+import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constraint-link-props';
+import * as yup from 'yup';
+import {Destination} from '../../models/destination';
+import {DestinationsApiService} from '../../destinations-api-service';
+import {NumberFieldComponent} from '../../../../components/number-field/number-field-component';
+import {DestinationType, DestinationTypeLabels, DestinationTypeOptions} from '../../../../data/destination-type';
+import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
+import {MailProcessingNotice} from '../../../../components/mail-processing-notice/mail-processing-notice';
+import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
+import {StatusTable} from '../../../../components/status-table/status-table';
+import { OzgCloudInfo } from '../../components/ozg-cloud-info';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {ConstraintDialog} from '../../../../dialogs/constraint-dialog/constraint-dialog';
 import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constraint-link-props';
@@ -89,6 +106,18 @@ export const DestinationSchema = yup.object({
                 )
                 .required('Die API-Adresse ist erforderlich.'),
             otherwise: (schema) => schema.notRequired().nullable(),
+        })
+        .when('type', {
+            is: DestinationType.OZGCloud,
+            then: (schema) => schema
+                .trim()
+                .max(255, 'Der Endpunkt darf maximal 255 Zeichen lang sein.')
+                .matches(
+                    /^https?:\/\/[\w.-]+(:\d+)?(\/[\w./-]*)?$/,
+                    'Bitte einen gültigen Endpunkt eingeben (z. B. https://example.com/api).',
+                )
+                .required('Der Endpunkt ist erforderlich.'),
+            otherwise: (schema) => schema.notRequired().nullable(),
         }),
     authorizationHeader: yup.string()
         .when('type', {
@@ -142,7 +171,7 @@ export function DestinationDetailsPageIndex() {
 
     if (destination == null) {
         return (
-            <GenericDetailsSkeleton />
+            <GenericDetailsSkeleton/>
         );
     }
 
@@ -259,7 +288,8 @@ export function DestinationDetailsPageIndex() {
                 Schnittstelle konfigurieren
             </Typography>
             <Typography sx={{mb: 2, maxWidth: 900}}>
-                Konfigurieren Sie die Schnittstelle, an die Anträge gesendet werden sollen. Sie können die Einstellungen jederzeit anpassen, auch wenn die Schnittstelle bereits für Formulare verwendet wird.
+                Konfigurieren Sie die Schnittstelle, an die Anträge gesendet werden sollen. Sie können die Einstellungen
+                jederzeit anpassen, auch wenn die Schnittstelle bereits für Formulare verwendet wird.
             </Typography>
             <Grid
                 container
@@ -295,20 +325,10 @@ export function DestinationDetailsPageIndex() {
                         hint="Der Typ bestimmt die Übertragungsart für diese Schnittstelle."
                         value={destination?.type}
                         onChange={(val) => handleInputChange('type')((val ?? DestinationType.Mail) as DestinationType)}
-                        options={[
-                            {
-                                value: DestinationType.Mail,
-                                label: 'Mail-Schnittstelle',
-                            },
-                            {
-                                value: DestinationType.HTTP,
-                                label: 'HTTP-Schnittstelle',
-                            },
-                            {
-                                value: DestinationType.Script,
-                                label: 'Javascript-Schnittstelle',
-                            },
-                        ]}
+                        options={DestinationTypeOptions.map((opt) => ({
+                            value: opt,
+                            label: DestinationTypeLabels[opt],
+                        }))}
                         required
                         error={errors.type}
                     />
@@ -395,7 +415,7 @@ export function DestinationDetailsPageIndex() {
                             }}
                         >
                             <Box>
-                                <MailProcessingNotice />
+                                <MailProcessingNotice/>
                             </Box>
                         </Grid>
                     </Grid>
@@ -515,6 +535,96 @@ export function DestinationDetailsPageIndex() {
                     </Grid>
                 </>
             }
+
+            {
+                destination?.type === DestinationType.OZGCloud &&
+                <>
+                    <Typography
+                        variant="h6"
+                        sx={{
+                            mt: 4,
+                            mb: 1,
+                        }}
+                    >
+                        Einstellungen für OZG-Cloud-Schnittstelle
+                    </Typography>
+
+                    <Typography
+                        sx={{
+                            mb: 2,
+                        }}
+                    >
+                        Konfigurieren Sie die OZG-Cloud-Schnittstelle, an die Formulare gesendet werden sollen.
+                    </Typography>
+
+                    <Grid
+                        container
+                        columnSpacing={4}
+                    >
+                        <Grid
+                            item
+                            xs={12}
+                        >
+                            <TextFieldComponent
+                                label="Endpunkt"
+                                placeholder="https://ozg-cloud-hostname.de/antrag"
+                                hint="Der Endpunkt der OZG-Cloud, an den die Daten der antragstellenden Person übermittelt werden."
+                                value={destination.apiAddress}
+                                onChange={handleInputChange('apiAddress')}
+                                onBlur={handleInputBlur('apiAddress')}
+                                required
+                                maxCharacters={255}
+                                error={errors.apiAddress}
+                            />
+                        </Grid>
+                    </Grid>
+
+                    <OzgCloudInfo />
+                </>
+            }
+
+            <Typography
+                variant="h6"
+                sx={{
+                    mt: 4,
+                    mb: 1,
+                }}
+            >
+                Einstellungen für Anlagen
+            </Typography>
+
+            <Typography sx={{mb: 2}}>
+                Konfigurieren Sie die maximale Größe der Anlagen, die an die Schnittstelle übermittelt werden können.
+            </Typography>
+
+            <Grid
+                container
+                columnSpacing={4}
+            >
+                <Grid
+                    item
+                    xs={12}
+                    lg={6}
+                >
+                    <NumberFieldComponent
+                        label="Maximale Gesamtgröße der Anlagen (MB)"
+                        placeholder="20"
+                        hint="Sollten die Anlagen einer antragstellenden Person diese überschreiten, kann ein Antrag für diese Schnittstelle nicht abgesendet werden."
+                        value={destination?.maxAttachmentMegaBytes}
+                        onChange={handleInputChange('maxAttachmentMegaBytes')}
+                        decimalPlaces={2}
+                        minValue={1}
+                        maxValue={100}
+                        error={errors.maxAttachmentMegaBytes}
+                    />
+                </Grid>
+                <Grid
+                    item
+                    xs={12}
+                    lg={6}
+                />
+            </Grid>
+
             {
                 userIsAdmin &&
                 <Box
@@ -529,7 +639,7 @@ export function DestinationDetailsPageIndex() {
                         disabled={isBusy || hasNotChanged}
                         variant="contained"
                         color="primary"
-                        startIcon={<SaveOutlinedIcon />}
+                        startIcon={<SaveOutlinedIcon/>}
                     >
                         Speichern
                     </Button>
@@ -557,7 +667,7 @@ export function DestinationDetailsPageIndex() {
                             sx={{
                                 marginLeft: 'auto',
                             }}
-                            startIcon={<DeleteOutlinedIcon />}
+                            startIcon={<DeleteOutlinedIcon/>}
                         >
                             Löschen
                         </Button>
