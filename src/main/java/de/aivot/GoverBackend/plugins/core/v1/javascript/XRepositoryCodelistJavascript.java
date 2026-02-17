@@ -22,7 +22,7 @@ import java.util.Map;
  * The functions are exposed to the JavaScript environment through the GraalVM Polyglot API.
  */
 @Component
-public class XRepositoryCodelistJavascript implements JavascriptFunctionProvider, PluginComponent {
+public class XRepositoryCodelistJavascript implements JavascriptFunctionProvider {
     private final XRepositoryCodeListService codeListService;
 
     @Autowired
@@ -30,15 +30,16 @@ public class XRepositoryCodelistJavascript implements JavascriptFunctionProvider
         this.codeListService = codeListService;
     }
 
+    @Nonnull
     @Override
-    public @Nonnull String getKey() {
+    public String getComponentKey() {
         return "xrp_codelists";
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nonnull
@@ -57,11 +58,6 @@ public class XRepositoryCodelistJavascript implements JavascriptFunctionProvider
     @Override
     public String getDescription() {
         return "Dieses Paket enthält Funktionen für Codelisten aus den XRepositories.";
-    }
-
-    @Override
-    public String getObjectName() {
-        return "_" + getKey();
     }
 
     @Override

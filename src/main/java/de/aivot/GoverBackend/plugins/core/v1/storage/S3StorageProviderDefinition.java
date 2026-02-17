@@ -16,7 +16,6 @@ import de.aivot.GoverBackend.secrets.entities.SecretEntity;
 import de.aivot.GoverBackend.secrets.repositories.SecretRepository;
 import de.aivot.GoverBackend.secrets.services.SecretService;
 import de.aivot.GoverBackend.storage.exceptions.StorageException;
-import de.aivot.GoverBackend.storage.models.KnownFileExtension;
 import de.aivot.GoverBackend.storage.models.StorageDocument;
 import de.aivot.GoverBackend.storage.models.StorageFolder;
 import de.aivot.GoverBackend.storage.models.StorageProviderDefinition;
@@ -39,7 +38,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 @Component
-public class S3StorageProviderDefinition implements StorageProviderDefinition<S3StorageProviderDefinition.Config>, PluginComponent {
+public class S3StorageProviderDefinition implements StorageProviderDefinition<S3StorageProviderDefinition.Config> {
     private final SecretRepository secretRepository;
     private final SecretService secretService;
     private final KnownExtensionsService knownExtensionsService;
@@ -47,7 +46,8 @@ public class S3StorageProviderDefinition implements StorageProviderDefinition<S3
     // TODO: Maybe cache MinioClients for better performance
 
     public S3StorageProviderDefinition(SecretRepository secretRepository,
-                                       SecretService secretService, KnownExtensionsService knownExtensionsService) {
+                                       SecretService secretService,
+                                       KnownExtensionsService knownExtensionsService) {
         this.secretRepository = secretRepository;
         this.secretService = secretService;
         this.knownExtensionsService = knownExtensionsService;
@@ -61,6 +61,18 @@ public class S3StorageProviderDefinition implements StorageProviderDefinition<S3
 
     @Nonnull
     @Override
+    public String getComponentKey() {
+        return "s3_storage";
+    }
+
+    @Nonnull
+    @Override
+    public String getComponentVersion() {
+        return "1.0.0";
+    }
+
+    @Nonnull
+    @Override
     public String getName() {
         return "S3 Speicheranbieter";
     }
@@ -68,19 +80,9 @@ public class S3StorageProviderDefinition implements StorageProviderDefinition<S3
     @Nonnull
     @Override
     public String getDescription() {
-        return "Speichert Dokumente auf einem S3-kompatiblen Speicher.";
-    }
-
-    @Nonnull
-    @Override
-    public String getKey() {
-        return "s3_storage";
-    }
-
-    @Nonnull
-    @Override
-    public Integer getVersion() {
-        return 1;
+        return """
+                Speichert Dokumente auf einem S3-kompatiblen Speicher.
+                """;
     }
 
     @Nullable

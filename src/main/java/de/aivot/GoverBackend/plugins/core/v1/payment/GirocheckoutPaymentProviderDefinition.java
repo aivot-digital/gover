@@ -44,7 +44,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @Component
-public class GirocheckoutPaymentProviderDefinition implements PaymentProviderDefinition, PluginComponent {
+public class GirocheckoutPaymentProviderDefinition implements PaymentProviderDefinition {
     private final static String MERCHANT_ID_FIELD = "sellerId";
     private final static String PROJECT_ID_FIELD = "projectId";
     private final static String PROJECT_PASSWORD_FIELD = "projectPasswordSecret";
@@ -61,15 +61,16 @@ public class GirocheckoutPaymentProviderDefinition implements PaymentProviderDef
         this.httpService = httpService;
     }
 
+    @Nonnull
     @Override
-    public @Nonnull String getKey() {
+    public String getComponentKey() {
         return "girocheckout";
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nonnull

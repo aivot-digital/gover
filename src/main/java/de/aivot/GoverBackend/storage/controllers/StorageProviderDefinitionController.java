@@ -58,7 +58,7 @@ public class StorageProviderDefinitionController {
     ) throws ResponseException {
         return storageProviderDefinitions
                 .stream()
-                .filter(def -> def.getKey().equals(key) && def.getVersion().equals(version))
+                .filter(def -> def.getKey().equals(key) && def.getMajorVersion().equals(version))
                 .findFirst()
                 .map(StorageProviderDefinitionDTO::from)
                 .orElseThrow(ResponseException::notFound);
@@ -82,7 +82,7 @@ public class StorageProviderDefinitionController {
 
             return new StorageProviderDefinitionDTO(
                     definition.getKey(),
-                    definition.getVersion(),
+                    definition.getMajorVersion(),
                     definition.getName(),
                     definition.getDescription(),
                     layout

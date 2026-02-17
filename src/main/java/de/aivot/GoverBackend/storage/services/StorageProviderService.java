@@ -153,7 +153,7 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
                     "Fehler beim Verarbeiten der Speicheranbieter-Konfiguration für die Speicheranbieter-Definition %s (%s v%d)",
                     StringUtils.quote(def.getName()),
                     StringUtils.quote(def.getKey()),
-                    def.getVersion()
+                    def.getMajorVersion()
             );
         }
 
@@ -166,7 +166,7 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
                     "Fehler beim Verarbeiten der Speicheranbieter-Konfiguration für die Speicheranbieter-Definition %s (%s v%d)",
                     StringUtils.quote(def.getName()),
                     StringUtils.quote(def.getKey()),
-                    def.getVersion()
+                    def.getMajorVersion()
             );
         }
 

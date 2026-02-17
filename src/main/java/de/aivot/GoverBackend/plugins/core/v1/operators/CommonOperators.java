@@ -22,16 +22,16 @@ import org.springframework.stereotype.Component;
  * This class provides the common no code operators for Gover.
  */
 @Component
-public class CommonOperators implements NoCodeOperatorsProvider, PluginComponent {
+public class CommonOperators implements NoCodeOperatorsProvider {
     @Override
-    public @Nonnull String getKey() {
+    public @Nonnull String getComponentKey() {
         return "common";
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nonnull

@@ -27,7 +27,7 @@ import java.util.LinkedList;
 import java.util.Optional;
 
 @Component
-public class LocalDiskStorageProviderDefinition implements StorageProviderDefinition<LocalDiskStorageProviderDefinition.Config>, PluginComponent {
+public class LocalDiskStorageProviderDefinition implements StorageProviderDefinition<LocalDiskStorageProviderDefinition.Config> {
     @Nonnull
     @Override
     public String getParentPluginKey() {
@@ -48,14 +48,14 @@ public class LocalDiskStorageProviderDefinition implements StorageProviderDefini
 
     @Nonnull
     @Override
-    public String getKey() {
+    public String getComponentKey() {
         return "local_disk_storage";
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nullable

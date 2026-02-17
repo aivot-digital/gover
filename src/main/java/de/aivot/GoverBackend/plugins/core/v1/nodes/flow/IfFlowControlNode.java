@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class IfFlowControlNode implements ProcessNodeDefinition, PluginComponent {
+public class IfFlowControlNode implements ProcessNodeDefinition {
     private static final String PORT_NAME_TRUE = "true";
     private static final String PORT_NAME_FALSE = "false";
 
@@ -35,15 +35,16 @@ public class IfFlowControlNode implements ProcessNodeDefinition, PluginComponent
         this.processDataService = processDataService;
     }
 
+    @Nonnull
     @Override
-    public @Nonnull String getKey() {
+    public String getComponentKey() {
         return "if";
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nonnull

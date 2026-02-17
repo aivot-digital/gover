@@ -31,7 +31,7 @@ import java.util.Map;
  * The functions are exposed to the JavaScript environment through the GraalVM Polyglot API.
  */
 @Component
-public class DataObjectJavascript implements JavascriptFunctionProvider, PluginComponent {
+public class DataObjectJavascript implements JavascriptFunctionProvider {
     private final DataObjectSchemaService dataObjectSchemaService;
     private final DataObjectItemService dataObjectItemService;
 
@@ -42,15 +42,16 @@ public class DataObjectJavascript implements JavascriptFunctionProvider, PluginC
         this.dataObjectItemService = dataObjectItemService;
     }
 
+    @Nonnull
     @Override
-    public @Nonnull String getKey() {
+    public String getComponentKey() {
         return "data_objects";
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nonnull
@@ -69,11 +70,6 @@ public class DataObjectJavascript implements JavascriptFunctionProvider, PluginC
     @Override
     public String getDescription() {
         return "Dieses Paket enthält Funktionen für Datenobjekte.";
-    }
-
-    @Override
-    public String getObjectName() {
-        return "_" + getKey();
     }
 
     @Override

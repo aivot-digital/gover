@@ -19,22 +19,23 @@ import java.util.Map;
  * SPI for providing HTTP functions to the Javascript environment.
  */
 @Service
-public class HttpJavascript implements JavascriptFunctionProvider, PluginComponent {
+public class HttpJavascript implements JavascriptFunctionProvider {
     private final HttpService httpService;
 
     public HttpJavascript(HttpService httpService) {
         this.httpService = httpService;
     }
 
+    @Nonnull
     @Override
-    public @Nonnull String getKey() {
+    public String getComponentKey() {
         return "http";
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nonnull
@@ -53,11 +54,6 @@ public class HttpJavascript implements JavascriptFunctionProvider, PluginCompone
     @Override
     public String getDescription() {
         return "Dieses Modul stellt Funktionen zur Durchführung von HTTP-Anfragen bereit.";
-    }
-
-    @Override
-    public String getObjectName() {
-        return "_" + getKey();
     }
 
     @Override

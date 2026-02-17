@@ -5,6 +5,7 @@ import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
 import de.aivot.GoverBackend.payment.exceptions.PaymentException;
+import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -14,10 +15,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public interface PaymentProviderDefinition {
-    @Nonnull
-    String getKey();
-
+public interface PaymentProviderDefinition extends PluginComponent {
     @Nonnull
     String getProviderName();
 

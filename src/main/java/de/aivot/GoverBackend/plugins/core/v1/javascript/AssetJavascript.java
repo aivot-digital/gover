@@ -17,7 +17,7 @@ import java.util.Base64;
 import java.util.UUID;
 
 @Component
-public class AssetJavascript implements JavascriptFunctionProvider, PluginComponent {
+public class AssetJavascript implements JavascriptFunctionProvider {
     private final AssetService assetService;
     private final AssetStorageService assetStorageService;
 
@@ -30,15 +30,16 @@ public class AssetJavascript implements JavascriptFunctionProvider, PluginCompon
         this.assetStorageService = assetStorageService;
     }
 
+    @Nonnull
     @Override
-    public @Nonnull String getKey() {
+    public String getComponentKey() {
         return "assets";
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nonnull
@@ -57,11 +58,6 @@ public class AssetJavascript implements JavascriptFunctionProvider, PluginCompon
     @Override
     public String getDescription() {
         return "Dieses Paket enthält Funktionen für Dateien & Medien.";
-    }
-
-    @Override
-    public String getObjectName() {
-        return "_" + getKey();
     }
 
     @Override

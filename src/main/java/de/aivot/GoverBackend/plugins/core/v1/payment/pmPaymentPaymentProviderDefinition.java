@@ -53,15 +53,16 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
         this.httpService = httpService;
     }
 
+    @Nonnull
     @Override
-    public @Nonnull String getKey() {
+    public String getComponentKey() {
         return "pmpayment";
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nonnull

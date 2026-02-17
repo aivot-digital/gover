@@ -23,7 +23,7 @@ public class ProcessNodeDefinitionService {
         for (ProcessNodeDefinition provider : allProcessNodeProviders) {
             processNodeDefinitionMap
                     .computeIfAbsent(provider.getKey(), k -> new HashMap<>())
-                    .put(provider.getVersion(), provider);
+                    .put(provider.getMajorVersion(), provider);
         }
     }
 

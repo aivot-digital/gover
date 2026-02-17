@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class LowCodeActionNode implements ProcessNodeDefinition, PluginComponent {
+public class LowCodeActionNode implements ProcessNodeDefinition {
     private static final String PORT_NAME = "output";
 
     private static final String CODE_FIELD_KEY = "js_code";
@@ -36,15 +36,16 @@ public class LowCodeActionNode implements ProcessNodeDefinition, PluginComponent
         this.javascriptEngineFactoryService = javascriptEngineFactoryService;
     }
 
+    @Nonnull
     @Override
-    public @Nonnull String getKey() {
+    public String getComponentKey() {
         return "js";
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nonnull

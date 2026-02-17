@@ -36,7 +36,7 @@ import java.net.http.HttpResponse;
 import java.util.*;
 
 @Component
-public class epay21PaymentProviderDefinition implements PaymentProviderDefinition, PluginComponent {
+public class epay21PaymentProviderDefinition implements PaymentProviderDefinition {
     private final static String ORIGINATOR_ID_FIELD = "originatorId";
     private final static String ENDPOINT_ID_FIELD = "endpointId";
     private final static String PASSWORD_SECRET_KEY_FIELD = "passwordSecretKey";
@@ -50,15 +50,16 @@ public class epay21PaymentProviderDefinition implements PaymentProviderDefinitio
         this.secretService = secretService;
     }
 
+    @Nonnull
     @Override
-    public @Nonnull String getKey() {
+    public String getComponentKey() {
         return "epay21";
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nonnull

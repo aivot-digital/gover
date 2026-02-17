@@ -43,7 +43,7 @@ import java.util.HashMap;
 import java.util.List;
 
 @Component
-public class EMailActionNode implements ProcessNodeDefinition, PluginComponent {
+public class EMailActionNode implements ProcessNodeDefinition {
     public static final String NODE_KEY = "mail";
 
     private static final String SUCCESS_PORT_NAME = "output";
@@ -60,15 +60,16 @@ public class EMailActionNode implements ProcessNodeDefinition, PluginComponent {
         this.mailSender = mailSender;
     }
 
+    @Nonnull
     @Override
-    public @Nonnull String getKey() {
+    public String getComponentKey() {
         return NODE_KEY;
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nonnull

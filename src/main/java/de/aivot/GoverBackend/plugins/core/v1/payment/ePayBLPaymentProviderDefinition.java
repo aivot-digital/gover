@@ -62,15 +62,16 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
         this.assetStorageService = assetStorageService;
     }
 
+    @Nonnull
     @Override
-    public @Nonnull String getKey() {
+    public String getComponentKey() {
         return "epaybl";
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nonnull

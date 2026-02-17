@@ -5,6 +5,7 @@ import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
@@ -15,25 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public interface ProcessNodeDefinition {
-    /**
-     * Get the unique key of the process node provider.
-     * Providers are identified by this key, when they are assigned to process definition nodes.
-     *
-     * @return The unique key of the process node provider.
-     */
-    @Nonnull
-    String getKey();
-
-    /**
-     * Get the version of the process node provider.
-     * This allows multiple versions of the same provider to coexist.
-     *
-     * @return The version of the process node provider.
-     */
-    @Nonnull
-    Integer getVersion();
-
+public interface ProcessNodeDefinition extends PluginComponent {
     /**
      * Get the type of the process node.
      * This type specifies the behavior of the node in the process execution and if and how other nodes can be connected to it.
@@ -42,24 +25,6 @@ public interface ProcessNodeDefinition {
      */
     @Nonnull
     ProcessNodeType getType();
-
-    /**
-     * Get the name of the process node.
-     * This is displayed in the UI when a node of this type is used in a process definition.
-     *
-     * @return The name of the process node.
-     */
-    @Nonnull
-    String getName();
-
-    /**
-     * Get the description of the process node.
-     * This is displayed in the UI when a node of this type is used in a process definition.
-     *
-     * @return The description of the process node.
-     */
-    @Nonnull
-    String getDescription();
 
     /**
      * Get the ports of the process node.

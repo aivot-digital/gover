@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class HttpActionNode implements ProcessNodeDefinition, PluginComponent {
+public class HttpActionNode implements ProcessNodeDefinition {
     private static final String METHOD_FIELD_ID = "method";
     private static final String URL_FIELD_ID = "url";
     private static final String IS_JSON_FIELD_ID = "isJson";
@@ -54,15 +54,16 @@ public class HttpActionNode implements ProcessNodeDefinition, PluginComponent {
         this.processDataService = processDataService;
     }
 
+    @Nonnull
     @Override
-    public @Nonnull String getKey() {
+    public String getComponentKey() {
         return "http";
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nonnull

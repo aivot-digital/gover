@@ -5,6 +5,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public record PluginDTO(
         @Nonnull String key,
@@ -16,10 +17,22 @@ public record PluginDTO(
         @Nonnull String vendorWebsite,
         @Nonnull String changelog,
         @Nullable String deprecationNotice,
-        @Nonnull List<PluginComponentDTO> components
+        @Nonnull List<List<PluginComponentDTO>> components
 ) {
     public static PluginDTO from(@Nonnull Plugin plugin,
                                  @Nonnull List<PluginComponentDTO> components) {
+        List<List<PluginComponentDTO>> componentsGroups = components
+                .stream()
+                .collect(Collectors.groupingBy(PluginComponentDTO::componentKey))
+                .values()
+                .stream()
+                .map(s -> s
+                        .stream()
+                        .sorted((c1, c2) -> Integer.compare(c2.majorVersion(), c1.majorVersion()))
+                        .toList()
+                )
+                .toList();
+
         return new PluginDTO(
                 plugin.getKey(),
                 plugin.getName(),
@@ -30,7 +43,7 @@ public record PluginDTO(
                 plugin.getVendorWebsite(),
                 plugin.getChangelog(),
                 plugin.getDeprecationNotice(),
-                components
+                componentsGroups
         );
     }
 }

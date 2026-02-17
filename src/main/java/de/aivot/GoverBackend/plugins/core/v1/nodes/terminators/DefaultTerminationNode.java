@@ -25,7 +25,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
-public class DefaultTerminationNode implements ProcessNodeDefinition, PluginComponent {
+public class DefaultTerminationNode implements ProcessNodeDefinition {
     private static final String NODE_KEY = "default-termination";
 
     private static final String RETENTION_VALUE_FIELD_KEY = "retention_value";
@@ -45,15 +45,16 @@ public class DefaultTerminationNode implements ProcessNodeDefinition, PluginComp
         return Core.PLUGIN_KEY;
     }
 
+    @Nonnull
     @Override
-    public @Nonnull String getKey() {
+    public String getComponentKey() {
         return NODE_KEY;
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nonnull

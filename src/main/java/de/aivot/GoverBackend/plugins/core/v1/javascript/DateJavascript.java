@@ -12,22 +12,23 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 
 @Service
-public class DateJavascript implements JavascriptFunctionProvider, PluginComponent {
+public class DateJavascript implements JavascriptFunctionProvider {
+    @Nonnull
     @Override
-    public @Nonnull String getKey() {
+    public String getParentPluginKey() {
+        return Core.PLUGIN_KEY;
+    }
+
+    @Nonnull
+    @Override
+    public String getComponentKey() {
         return "date";
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
-    }
-
-    @Nonnull
-    @Override
-    public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nonnull
@@ -40,11 +41,6 @@ public class DateJavascript implements JavascriptFunctionProvider, PluginCompone
     @Override
     public String getDescription() {
         return "Dieses Modul stellt Funktionen zur Verarbeitung von Datumswerten bereit.";
-    }
-
-    @Override
-    public String getObjectName() {
-        return "_" + getKey();
     }
 
     @Override

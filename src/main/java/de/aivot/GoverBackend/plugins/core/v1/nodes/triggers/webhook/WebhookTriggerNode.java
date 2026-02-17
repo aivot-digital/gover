@@ -42,7 +42,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class WebhookTriggerNode implements ProcessNodeDefinition, PluginComponent {
+public class WebhookTriggerNode implements ProcessNodeDefinition {
     public static final String NODE_KEY = "webhook";
     private static final String PORT_NAME = "input";
 
@@ -66,15 +66,16 @@ public class WebhookTriggerNode implements ProcessNodeDefinition, PluginComponen
         return Core.PLUGIN_KEY;
     }
 
+    @Nonnull
     @Override
-    public @Nonnull String getKey() {
+    public String getComponentKey() {
         return NODE_KEY;
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nonnull

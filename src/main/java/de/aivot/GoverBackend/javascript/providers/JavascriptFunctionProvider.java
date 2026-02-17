@@ -1,19 +1,23 @@
 package de.aivot.GoverBackend.javascript.providers;
 
 
+import de.aivot.GoverBackend.plugin.models.PluginComponent;
+
 /**
  * Interface for providing functions to the javascript context.
  * The functions will be available in the javascript context under the name returned by {@link #getObjectName}.
  * Your provider should be annotated with {@link org.graalvm.polyglot.HostAccess.Export} to make the functions available in the javascript context.
  * Please make sure, your provider is public.
  */
-public interface JavascriptFunctionProvider {
+public interface JavascriptFunctionProvider extends PluginComponent {
     /**
      * Returns the name of the object in the javascript context.
      *
      * @return the name of the object in the javascript context
      */
-    String getObjectName();
+    default String getObjectName() {
+        return String.format("_%s_v%s", getComponentKey(), getComponentVersion()).toLowerCase();
+    }
 
     /**
      * Returns the type definition of the object in the javascript context.

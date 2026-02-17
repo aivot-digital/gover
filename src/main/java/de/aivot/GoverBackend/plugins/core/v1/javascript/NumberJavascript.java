@@ -9,16 +9,16 @@ import org.graalvm.polyglot.HostAccess;
 import org.springframework.stereotype.Service;
 
 @Service
-public class NumberJavascript implements JavascriptFunctionProvider, PluginComponent {
+public class NumberJavascript implements JavascriptFunctionProvider {
     @Override
-    public @Nonnull String getKey() {
+    public @Nonnull String getComponentKey() {
         return "number";
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nonnull
@@ -37,11 +37,6 @@ public class NumberJavascript implements JavascriptFunctionProvider, PluginCompo
     @Override
     public String getDescription() {
         return "Dieses Modul stellt Funktionen zur Verarbeitung von Zahlenwerten bereit.";
-    }
-
-    @Override
-    public String getObjectName() {
-        return "_" + getKey();
     }
 
     @Override
