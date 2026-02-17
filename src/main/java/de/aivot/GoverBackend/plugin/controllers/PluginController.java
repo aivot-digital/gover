@@ -43,14 +43,7 @@ public class PluginController {
                             ))
                             .toList();
 
-                    return new PluginDTO(
-                            plugin.getName(),
-                            plugin.getDescription(),
-                            plugin.getBuildDate(),
-                            plugin.getVersion(),
-                            plugin.getVendorName(),
-                            componentDTOs
-                    );
+                    return PluginDTO.from(plugin, componentDTOs);
                 }).toList();
     }
 
