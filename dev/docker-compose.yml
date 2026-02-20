@@ -153,6 +153,8 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:Z
     ports:
       - "9595:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 
 volumes:
