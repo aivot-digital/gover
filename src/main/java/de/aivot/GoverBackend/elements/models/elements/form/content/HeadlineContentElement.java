@@ -2,6 +2,8 @@ package de.aivot.GoverBackend.elements.models.elements.form.content;
 
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.enums.ElementType;
+import de.aivot.GoverBackend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.util.Objects;
@@ -45,6 +47,14 @@ public class HeadlineContentElement extends BaseFormElement {
     @Nullable
     public String getContent() {
         return content;
+    }
+
+    @Nonnull
+    public String getResolvedContent() {
+        if (StringUtils.isNotNullOrEmpty(content)) {
+            return content;
+        }
+        return "Überschrift";
     }
 
     public HeadlineContentElement setContent(@Nullable String content) {

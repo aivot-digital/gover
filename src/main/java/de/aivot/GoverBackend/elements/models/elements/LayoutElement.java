@@ -7,6 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 public interface LayoutElement<T extends BaseElement> {
     @Nonnull
@@ -37,6 +38,30 @@ public interface LayoutElement<T extends BaseElement> {
                 .map(s -> {
                     if (s instanceof LayoutElement<?> sC) {
                         return sC.findChild(childId);
+                    } else {
+                        return Optional.<BaseElement>empty();
+                    }
+                })
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .findFirst();
+    }
+
+    default Optional<? extends BaseElement> findChild(Predicate<BaseElement> pred) {
+        var matchingDirectChild = getChildren()
+                .stream()
+                .filter(pred)
+                .findFirst();
+
+        if (matchingDirectChild.isPresent()) {
+            return matchingDirectChild;
+        }
+
+        return getChildren()
+                .stream()
+                .map(s -> {
+                    if (s instanceof LayoutElement<?> sC) {
+                        return sC.findChild(pred);
                     } else {
                         return Optional.<BaseElement>empty();
                     }

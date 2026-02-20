@@ -185,8 +185,8 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                 {
                     destinations != null &&
                     destinations.length > 0 &&
-                    props.entity.destinationId != null &&
-                    destinations.find((dest) => dest.id === props.entity.destinationId)?.type === DestinationType.OZGCloud &&
+                    props.entity.version.destinationId != null &&
+                    destinations.find((dest) => dest.id === props.entity.version.destinationId)?.type === DestinationType.OZGCloud &&
                     <AlertComponent
                         title="Hinweis zur OZG-Cloud Schnittstelle"
                         color="warning"

@@ -57,7 +57,7 @@ public class HttpActionNode implements ProcessNodeDefinition {
     @Nonnull
     @Override
     public String getComponentKey() {
-        return "http";
+        return "http_request";
     }
 
     @Nonnull

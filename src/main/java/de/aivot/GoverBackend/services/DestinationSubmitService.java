@@ -4,25 +4,19 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.destination.entities.Destination;
-import de.aivot.GoverBackend.destination.entities.Destination;
-import de.aivot.GoverBackend.elements.models.form.input.TextField;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.exceptions.ConflictException;
 import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
-import de.aivot.GoverBackend.javascript.models.JavascriptCode;
-import de.aivot.GoverBackend.javascript.models.JavascriptResult;
-import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
-import de.aivot.GoverBackend.form.entities.Form;
 import de.aivot.GoverBackend.form.models.FormState;
-import de.aivot.GoverBackend.form.services.FormDerivationService;
-import de.aivot.GoverBackend.form.services.FormDerivationServiceFactory;
 import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
 import de.aivot.GoverBackend.identity.entities.IdentityProviderEntity;
 import de.aivot.GoverBackend.identity.enums.IdentityProviderType;
-import de.aivot.GoverBackend.identity.models.IdentityValue;
 import de.aivot.GoverBackend.identity.services.IdentityProviderService;
+import de.aivot.GoverBackend.javascript.models.JavascriptCode;
+import de.aivot.GoverBackend.javascript.models.JavascriptResult;
+import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.mail.services.SubmissionMailService;
 import de.aivot.GoverBackend.mail.services.SubmissionMailService;
 import de.aivot.GoverBackend.ozgCloud.enums.OZGCloudPostfachAdresseType;
 import de.aivot.GoverBackend.ozgCloud.enums.OZGCloudServiceKontoType;
@@ -70,7 +64,6 @@ public class DestinationSubmitService {
     private final PaymentProviderRepository paymentProviderRepository;
     private final OZGCloudDestinationService oZGCloudDestinationService;
     private final IdentityProviderService identityProviderService;
-    private final FormDerivationServiceFactory formDerivationServiceFactory;
     private final JavascriptEngineFactoryService javascriptEngineFactoryService;
 
     @Autowired
@@ -81,10 +74,10 @@ public class DestinationSubmitService {
             SubmissionAttachmentRepository submissionAttachmentRepository,
             PaymentTransactionRepository paymentTransactionRepository,
             PaymentProviderRepository paymentProviderRepository,
-            JavascriptEngineFactoryService javascriptEngineFactoryService) {
-            PaymentProviderRepository paymentProviderRepository,
+            JavascriptEngineFactoryService javascriptEngineFactoryService,
             OZGCloudDestinationService oZGCloudDestinationService,
-            IdentityProviderService identityProviderService, FormDerivationServiceFactory formDerivationServiceFactory) {
+            IdentityProviderService identityProviderService
+    ) {
         this.mailService = mailService;
         this.submissionStorageService = submissionStorageService;
         this.pdfService = pdfService;
@@ -94,7 +87,6 @@ public class DestinationSubmitService {
         this.javascriptEngineFactoryService = javascriptEngineFactoryService;
         this.oZGCloudDestinationService = oZGCloudDestinationService;
         this.identityProviderService = identityProviderService;
-        this.formDerivationServiceFactory = formDerivationServiceFactory;
     }
 
     public void testDestinationAttachmentSize(Destination destination, MultipartFile[] files) {
@@ -135,6 +127,7 @@ public class DestinationSubmitService {
                 }
                 case HTTP -> sendHttp(destination, form, submission, attachments);
                 case OZGCloud -> sendOzg(destination, form, submission, attachments);
+                case Script ->  performScript(destination, submission);
             };
         } catch (Exception e) {
             response = new DestinationResponse(false, "Die Übermittlung an das Ziel konnte nicht durchgeführt werden. Fehler: " + e.getMessage(), null, null);
@@ -301,9 +294,10 @@ public class DestinationSubmitService {
     private static final String INTERNAL_NAME_ZUSTAENDIGE_STELLE = "OZG_CLOUD_ZUSTAENDIGE_STELLE";
 
     private DestinationResponse sendOzg(@Nonnull Destination destination,
-                                        @Nonnull Form form,
+                                        @Nonnull VFormVersionWithDetailsEntity form,
                                         @Nonnull Submission submission,
                                         @Nonnull Collection<SubmissionAttachment> attachments) {
+        /*
         var derivationService = formDerivationServiceFactory
                 .create(
                         form,
@@ -323,14 +317,15 @@ public class DestinationSubmitService {
                     null,
                     null);
         }
+         */
 
-        var zustandigeStelle = form
-                .getRoot()
+        var zustaendigeStelle = form
+                .getRootElement()
                 .findChild((c) -> (
-                        INTERNAL_NAME_ZUSTAENDIGE_STELLE.equals(c.getName()) && c instanceof TextField
+                        INTERNAL_NAME_ZUSTAENDIGE_STELLE.equals(c.getName()) && c instanceof TextInputElement
                 ))
                 .map((c) -> {
-                    if (c instanceof TextField textField) {
+                    if (c instanceof TextInputElement textField) {
                         return textField.getLabel();
                     } else {
                         return null;
@@ -338,7 +333,7 @@ public class DestinationSubmitService {
                 })
                 .orElse(null);
 
-        if (zustandigeStelle == null) {
+        if (zustaendigeStelle == null) {
             return new DestinationResponse(false,
                     "Das Formular enthält kein Textfeld mit dem Namen '" + INTERNAL_NAME_ZUSTAENDIGE_STELLE + "'. Dieses wird jedoch benötigt, um die zuständige Stelle für die Übermittlung an OZG Cloud zu bestimmen.",
                     null,
@@ -351,6 +346,7 @@ public class DestinationSubmitService {
 
         OZGCloudServiceKontoData serviceKontoData = null;
 
+        /*
         if (idDataObj instanceof Map<?, ?> idData) {
             IdentityValue idValue;
             try {
@@ -397,13 +393,14 @@ public class DestinationSubmitService {
                 }
             }
         }
+         */
 
         var control = new OZGCloudControlData(
                 submission.getId(),
-                zustandigeStelle,
+                zustaendigeStelle,
                 List.of(),
                 form.getId().toString(),
-                form.getFormTitle(),
+                form.getPublicTitle(),
                 serviceKontoData
         );
 
@@ -418,7 +415,7 @@ public class DestinationSubmitService {
             @Override
             public String getFilename() {
                 return form
-                        .getFormTitle()
+                        .getPublicTitle()
                         .replaceAll("\\W+", "_") + ".pdf";
             }
         };
@@ -456,11 +453,10 @@ public class DestinationSubmitService {
                 .send(
                         destination.getApiAddress(),
                         control,
-                        form.getRoot(),
+                        form.getRootElement(),
                         submission.getCustomerInput(),
                         pdfRes,
-                        attRes,
-                        formState
+                        attRes
                 );
 
         return new DestinationResponse(true, null, null, List.of());

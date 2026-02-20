@@ -18,9 +18,9 @@ import java.time.format.DateTimeParseException;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
-public class DateFieldInputElement extends BaseInputElement<ZonedDateTime> implements PrintableElement<ZonedDateTime> {
-    private static final Logger logger = LoggerFactory.getLogger(DateFieldInputElement.class);
-    private final static ZoneId zoneId = ZoneId.of("Europe/Berlin");
+public class DateInputElement extends BaseInputElement<ZonedDateTime> implements PrintableElement<ZonedDateTime> {
+    private static final Logger logger = LoggerFactory.getLogger(DateInputElement.class);
+    public final static ZoneId zoneId = ZoneId.of("Europe/Berlin");
 
     @Nullable
     private String placeholder;
@@ -31,7 +31,7 @@ public class DateFieldInputElement extends BaseInputElement<ZonedDateTime> imple
     @Nullable
     private DateType mode;
 
-    public DateFieldInputElement() {
+    public DateInputElement() {
         super(ElementType.Date);
     }
 
@@ -417,7 +417,7 @@ public class DateFieldInputElement extends BaseInputElement<ZonedDateTime> imple
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
 
-        DateFieldInputElement dateField = (DateFieldInputElement) o;
+        DateInputElement dateField = (DateInputElement) o;
         return Objects.equals(placeholder, dateField.placeholder) && Objects.equals(autocomplete, dateField.autocomplete) && mode == dateField.mode;
     }
 
@@ -439,7 +439,7 @@ public class DateFieldInputElement extends BaseInputElement<ZonedDateTime> imple
         return placeholder;
     }
 
-    public DateFieldInputElement setPlaceholder(@Nullable String placeholder) {
+    public DateInputElement setPlaceholder(@Nullable String placeholder) {
         this.placeholder = placeholder;
         return this;
     }
@@ -449,7 +449,7 @@ public class DateFieldInputElement extends BaseInputElement<ZonedDateTime> imple
         return autocomplete;
     }
 
-    public DateFieldInputElement setAutocomplete(@Nullable String autocomplete) {
+    public DateInputElement setAutocomplete(@Nullable String autocomplete) {
         this.autocomplete = autocomplete;
         return this;
     }
@@ -459,7 +459,7 @@ public class DateFieldInputElement extends BaseInputElement<ZonedDateTime> imple
         return mode;
     }
 
-    public DateFieldInputElement setMode(@Nullable DateType mode) {
+    public DateInputElement setMode(@Nullable DateType mode) {
         this.mode = mode;
         return this;
     }

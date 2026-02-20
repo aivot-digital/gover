@@ -35,7 +35,7 @@ import java.util.UUID;
         @JsonSubTypes.Type(value = AlertContentElement.class, name = ElementType.ID_Alert),
         @JsonSubTypes.Type(value = GroupLayoutElement.class, name = ElementType.ID_Group),
         @JsonSubTypes.Type(value = CheckboxInputElement.class, name = ElementType.ID_Checkbox),
-        @JsonSubTypes.Type(value = DateFieldInputElement.class, name = ElementType.ID_Date),
+        @JsonSubTypes.Type(value = DateInputElement.class, name = ElementType.ID_Date),
         @JsonSubTypes.Type(value = HeadlineContentElement.class, name = ElementType.ID_Headline),
         @JsonSubTypes.Type(value = MultiCheckboxInputElement.class, name = ElementType.ID_MultiCheckbox),
         @JsonSubTypes.Type(value = NumberInputElement.class, name = ElementType.ID_Number),

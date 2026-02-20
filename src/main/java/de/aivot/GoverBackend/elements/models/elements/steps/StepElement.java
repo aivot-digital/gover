@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.enums.ElementType;
+import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -50,6 +51,14 @@ public class StepElement extends BaseElement implements LayoutElement<BaseFormEl
     @Nullable
     public String getTitle() {
         return title;
+    }
+
+    @Nonnull
+    public String getResolvedTitle() {
+        if (StringUtils.isNotNullOrEmpty(title)) {
+            return title;
+        }
+        return "Unbenannter Abschnitt";
     }
 
     public StepElement setTitle(@Nullable String title) {

@@ -8,6 +8,7 @@ import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
 import de.aivot.GoverBackend.enums.ElementType;
+import jakarta.annotation.Nonnull;
 import net.minidev.json.annotate.JsonIgnore;
 
 import java.io.Serializable;
@@ -70,6 +71,11 @@ public class ElementData extends HashMap<String, ElementDataObject> implements S
 
     public Optional<ElementDataObject> getOpt(String key) {
         return Optional.ofNullable(get(key));
+    }
+
+    @Nonnull
+    public ElementDataObject mustGet(BaseElement forElement) {
+        return getOrDefault(forElement.getId(), ElementDataObject.of(forElement));
     }
 
     @JsonIgnore
