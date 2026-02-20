@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.plugin.models;
 
+import de.aivot.GoverBackend.plugin.enums.PluginComponentType;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -80,6 +81,14 @@ public interface PluginComponent {
             throw new IllegalArgumentException("Invalid major version format: " + versionParts[0], e);
         }
     }
+
+    /**
+     * Get the type of this plugin component.
+     *
+     * @return The component type.
+     */
+    @Nonnull
+    PluginComponentType getComponentType();
 
     /**
      * Get the name of the plugin component.

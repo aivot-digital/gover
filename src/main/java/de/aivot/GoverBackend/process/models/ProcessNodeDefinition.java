@@ -5,6 +5,7 @@ import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.plugin.enums.PluginComponentType;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
@@ -17,6 +18,12 @@ import java.util.Map;
 import java.util.Optional;
 
 public interface ProcessNodeDefinition extends PluginComponent {
+    @Nonnull
+    @Override
+    default PluginComponentType getComponentType() {
+        return PluginComponentType.ProcessNodeDefinition;
+    }
+
     /**
      * Get the type of the process node.
      * This type specifies the behavior of the node in the process execution and if and how other nodes can be connected to it.

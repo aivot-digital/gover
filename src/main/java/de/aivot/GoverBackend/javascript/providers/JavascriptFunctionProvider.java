@@ -1,7 +1,9 @@
 package de.aivot.GoverBackend.javascript.providers;
 
 
+import de.aivot.GoverBackend.plugin.enums.PluginComponentType;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
+import jakarta.annotation.Nonnull;
 
 /**
  * Interface for providing functions to the javascript context.
@@ -10,6 +12,12 @@ import de.aivot.GoverBackend.plugin.models.PluginComponent;
  * Please make sure, your provider is public.
  */
 public interface JavascriptFunctionProvider extends PluginComponent {
+    @Nonnull
+    @Override
+    default PluginComponentType getComponentType() {
+        return PluginComponentType.JavascriptFunctionProvider;
+    }
+
     /**
      * Returns the name of the object in the javascript context.
      *

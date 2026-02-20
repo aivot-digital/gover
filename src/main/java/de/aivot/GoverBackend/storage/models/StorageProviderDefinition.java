@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.storage.models;
 
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.plugin.enums.PluginComponentType;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.storage.exceptions.StorageException;
 import jakarta.annotation.Nonnull;
@@ -12,6 +13,12 @@ import java.io.InputStream;
 import java.util.Optional;
 
 public interface StorageProviderDefinition<T> extends PluginComponent {
+    @Nonnull
+    @Override
+    default PluginComponentType getComponentType() {
+        return PluginComponentType.StorageProviderDefinition;
+    }
+
     @Nullable
     ConfigLayoutElement getProviderConfigLayout() throws ResponseException;
 
