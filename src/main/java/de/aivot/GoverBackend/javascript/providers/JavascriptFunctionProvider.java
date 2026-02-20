@@ -24,7 +24,7 @@ public interface JavascriptFunctionProvider extends PluginComponent {
      * @return the name of the object in the javascript context
      */
     default String getObjectName() {
-        return String.format("_%s_v%s", getComponentKey(), getComponentVersion()).toLowerCase();
+        return String.format("_%s_v%d", getComponentKey(), getMajorVersion()).toLowerCase();
     }
 
     /**

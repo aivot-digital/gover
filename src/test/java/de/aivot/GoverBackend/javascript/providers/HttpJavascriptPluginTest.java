@@ -39,7 +39,7 @@ class HttpJavascriptPluginTest {
             when(httpService.get(any(URI.class), any(HttpServiceHeaders.class)))
                     .thenReturn(mockResponse);
 
-            var result = jsService.evaluateCode(new JavascriptCode().setCode("_http.get('https://postman-echo.com/get?test=value', {'x-test-header': 'header-value'}).body;"));
+            var result = jsService.evaluateCode(new JavascriptCode().setCode("_http_v1.get('https://postman-echo.com/get?test=value', {'x-test-header': 'header-value'}).body;"));
 
             assertEquals("{}", result.asString());
         } catch (Exception e) {
@@ -60,7 +60,7 @@ class HttpJavascriptPluginTest {
             when(httpService.post(any(URI.class), any(), any(HttpServiceHeaders.class)))
                     .thenReturn(mockResponse);
 
-            var result = jsService.evaluateCode(new JavascriptCode().setCode("_http.post('https://postman-echo.com/post?test=value', JSON.stringify({'test-field': 'field-value'}), {'x-test-header': 'header-value'}).body;"));
+            var result = jsService.evaluateCode(new JavascriptCode().setCode("_http_v1.post('https://postman-echo.com/post?test=value', JSON.stringify({'test-field': 'field-value'}), {'x-test-header': 'header-value'}).body;"));
 
             assertEquals("{}", result.asString());
         } catch (Exception e) {
