@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.javascript.providers;
 
-import de.aivot.GoverBackend.plugins.core.v1.javascript.HttpJavascript;
+import de.aivot.GoverBackend.plugins.core.v1.javascript.HttpJavascriptV1;
 import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
@@ -28,7 +28,7 @@ class HttpJavascriptPluginTest {
 
     @Test
     void get() {
-        try (var jsService = new JavascriptEngine(new HttpJavascript(httpService))) {
+        try (var jsService = new JavascriptEngine(new HttpJavascriptV1(httpService))) {
             HttpResponse<String> mockResponse = mock(HttpResponse.class);
             when(mockResponse.statusCode())
                     .thenReturn(200);
@@ -49,7 +49,7 @@ class HttpJavascriptPluginTest {
 
     @Test
     void post() {
-        try (var jsService = new JavascriptEngine(new HttpJavascript(httpService))) {
+        try (var jsService = new JavascriptEngine(new HttpJavascriptV1(httpService))) {
             HttpResponse<String> mockResponse = mock(HttpResponse.class);
             when(mockResponse.statusCode())
                     .thenReturn(200);

@@ -1,10 +1,9 @@
 package de.aivot.GoverBackend.plugins.core.v1.payment;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
-import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
-import de.aivot.GoverBackend.core.services.HttpService;
-import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.common.contenttype.ContentType;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
@@ -12,16 +11,15 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElem
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.enums.ElementType;
+import de.aivot.GoverBackend.enums.XBezahldienstStatus;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
 import de.aivot.GoverBackend.payment.exceptions.PaymentException;
-import de.aivot.GoverBackend.payment.exceptions.PaymentHttpRequestException;
 import de.aivot.GoverBackend.payment.exceptions.PaymentMissingDataException;
-import de.aivot.GoverBackend.payment.exceptions.PaymentSerializationException;
 import de.aivot.GoverBackend.payment.models.PaymentProviderDefinition;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentTransaction;
-import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
 import de.aivot.GoverBackend.secrets.services.SecretService;
 import de.aivot.GoverBackend.utils.StringUtils;
@@ -29,36 +27,32 @@ import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.Nonnull;
 import java.io.IOException;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Component
-public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefinition, PluginComponent {
+public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinition {
     private final static String ORIGINATOR_ID_FIELD = "originatorId";
     private final static String ENDPOINT_ID_FIELD = "endpointId";
-    private final static String CLIENT_ID_FIELD = "clientId";
-    private final static String CLIENT_SECRET_FIELD = "clientSecret";
-    private final static String OAUTH_URL_FIELD = "oauthUrl";
+    private final static String PASSWORD_SECRET_KEY_FIELD = "passwordSecretKey";
+    private final static String USERNAME_FIELD = "username";
     private final static String PAYMENT_TRANSACTION_URL_FIELD = "paymentTransactionUrl";
 
     private final SecretService secretService;
-    private final HttpService httpService;
 
     @Autowired
-    public pmPaymentPaymentProviderDefinition(SecretService secretService, HttpService httpService) {
+    public epay21PaymentProviderDefinitionV1(SecretService secretService) {
         this.secretService = secretService;
-        this.httpService = httpService;
     }
 
     @Nonnull
     @Override
     public String getComponentKey() {
-        return "pmpayment";
+        return "epay21";
     }
 
     @Nonnull
@@ -76,25 +70,25 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
     @Nonnull
     @Override
     public String getName() {
-        return "pmPayment Zahlungsdienstleister";
+        return "ePay21 Zahlungsanbieter";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Zahlungsdienstleister pmPayment zur Abwicklung von Zahlungen gemäß XBezahldienste-Standard.";
+        return "Zahlungsanbieter ePay21 für XBezahldienste";
     }
 
     @Nonnull
     @Override
     public String getProviderName() {
-        return "pmPayment";
+        return "ePay21";
     }
 
     @Nonnull
     @Override
     public String getProviderDescription() {
-        return "Zahlungsdienstleister pmPayment";
+        return "Zahlungsdienstleister ePay21";
     }
 
     @Nonnull
@@ -102,17 +96,19 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
     public GroupLayoutElement getPaymentConfigLayout() throws ResponseException {
         var list = new LinkedList<BaseFormElement>();
 
-        var originatorIdInput = new TextInputElement()
-                .setPlaceholder("Originator ID")
-                .setRequired(true)
-                .setLabel("Originator ID")
-                .setHint("Diese ID wird vom Zahlungsdienstleister festgelegt. Üblicherweise ist dies eine Kennzeichnung für das Formular wie z.B. der Formularname, eine LeiKa-ID etc.")
-                .setWeight(6.0d)
-                .setId(ORIGINATOR_ID_FIELD);
-        list.add((BaseFormElement) originatorIdInput);
+        var originatorIdInput = new TextInputElement();
+        originatorIdInput.setPlaceholder("Originator ID");
+        originatorIdInput.setType(ElementType.Text);
+        originatorIdInput.setRequired(true);
+        originatorIdInput.setLabel("Originator ID");
+        originatorIdInput.setHint("Diese ID wird vom Zahlungsdienstleister festgelegt. Üblicherweise ist dies eine Kennzeichnung für das Formular wie z.B. der Formularname, eine LeiKa-ID etc.");
+        originatorIdInput.setWeight(6.0d);
+        originatorIdInput.setId(ORIGINATOR_ID_FIELD);
+        list.add(originatorIdInput);
 
         var endpointIdInput = new TextInputElement();
         endpointIdInput.setId(ENDPOINT_ID_FIELD);
+        endpointIdInput.setType(ElementType.Text);
         endpointIdInput.setRequired(true);
         endpointIdInput.setLabel("Endpoint ID");
         endpointIdInput.setPlaceholder("Endpoint ID");
@@ -120,57 +116,52 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
         endpointIdInput.setWeight(6.0d);
         list.add(endpointIdInput);
 
-        var clientIdInput = new TextInputElement();
-        clientIdInput.setId(CLIENT_ID_FIELD);
-        clientIdInput.setRequired(true);
-        clientIdInput.setLabel("OAuth Client-ID");
-        clientIdInput.setPlaceholder("Client ID");
-        clientIdInput.setHint("Die OAuth Client ID aus dem pmPayment-System.");
-        clientIdInput.setWeight(6.0d);
-        list.add(clientIdInput);
+        var usernameInput = new TextInputElement();
+        usernameInput.setType(ElementType.Text);
+        usernameInput.setId(USERNAME_FIELD);
+        usernameInput.setRequired(true);
+        usernameInput.setLabel("Benutzername");
+        usernameInput.setPlaceholder("Benutzername");
+        usernameInput.setHint("Der Benutzername für die Authentifizierung am Zahlungsdienstleister.");
+        usernameInput.setWeight(6.0d);
+        list.add(usernameInput);
 
-        var clientSecretInput = new SelectInputElement();
-        clientSecretInput.setId(CLIENT_SECRET_FIELD);
-        clientSecretInput.setRequired(true);
-        clientSecretInput.setLabel("OAuth Client Secret");
-        clientSecretInput.setPlaceholder("Client Secret");
-        clientSecretInput.setHint("Das OAuth Client Secret aus dem pmPayment-System. Es muss zuvor unter \"Geheimnisse\" hinterlegt werden, um hier auswählbar zu sein.");
-        var clientSecretInputOptions = secretService
+        var passwordInput = new SelectInputElement();
+        passwordInput.setType(ElementType.Select);
+        passwordInput.setId(PASSWORD_SECRET_KEY_FIELD);
+        passwordInput.setRequired(true);
+        passwordInput.setLabel("Passwort");
+        passwordInput.setPlaceholder("Passwort");
+        passwordInput.setHint("Das Passwort für die Authentifizierung am Zahlungsdienstleister.");
+        List<RadioInputElementOption> clientSecretInputOptions = secretService
                 .list()
                 .stream()
-                .map(secret -> new RadioInputElementOption()
-                        .setValue(secret.getKey().toString())
-                        .setLabel(secret.getName())
-                )
+                .map(secret -> RadioInputElementOption.of(
+                        secret.getKey().toString(),
+                        secret.getName()
+                ))
                 .toList();
-        clientSecretInput.setOptions(clientSecretInputOptions);
-        clientSecretInput.setWeight(6.0d);
-        list.add(clientSecretInput);
+        passwordInput.setOptions(clientSecretInputOptions);
+        passwordInput.setWeight(6.0d);
+        list.add(passwordInput);
 
-        TextInputElementPattern urlPattern = new TextInputElementPattern()
-                .setRegex("^(https?:\\/\\/)?([\\da-z.-]+)\\.([a-z.]{2,6})([\\/\\w .-]*)*\\/?$")
-                .setMessage("Bitte geben Sie eine gültige URL ein (z. B. https://example.com).");
-
-        var oauthUrlInput = new TextInputElement();
-        oauthUrlInput.setId(OAUTH_URL_FIELD);
-        oauthUrlInput.setRequired(true);
-        oauthUrlInput.setLabel("OAuth URL");
-        oauthUrlInput.setPlaceholder("https://payment-test.govconnect.de/oauth/token/");
-        oauthUrlInput.setHint("Die OAuth-URL des Zielsystems. Diese wird vom Zahlungsdienstleister bereitgestellt.");
-        oauthUrlInput.setPattern(urlPattern);
-        list.add(oauthUrlInput);
+        TextInputElementPattern urlPattern = new TextInputElementPattern();
+        urlPattern.setRegex("^(https?:\\/\\/)?([\\da-z.-]+)\\.([a-z.]{2,6})([\\/\\w .-]*)*\\/?$");
+        urlPattern.setMessage("Bitte geben Sie eine gültige URL ein (z. B. https://example.com).");
 
         var paymentTransactionUrlInput = new TextInputElement();
+        paymentTransactionUrlInput.setType(ElementType.Text);
         paymentTransactionUrlInput.setId(PAYMENT_TRANSACTION_URL_FIELD);
         paymentTransactionUrlInput.setRequired(true);
         paymentTransactionUrlInput.setLabel("Basis-URL");
-        paymentTransactionUrlInput.setPlaceholder("https://payment-test.govconnect.de/");
+        paymentTransactionUrlInput.setPlaceholder("https://epay-qs.ekom21.de/xbezahldienste/api/v1.0.0/");
         paymentTransactionUrlInput.setHint("Die Basis-URL des Zielsystems gemäß XBezahldienste-Standard. Diese wird vom Zahlungsdienstleister bereitgestellt.");
         paymentTransactionUrlInput.setPattern(urlPattern);
         list.add(paymentTransactionUrlInput);
 
         var group = new GroupLayoutElement();
-        group.setId("pmPaymentConfig");
+        group.setType(ElementType.Group);
+        group.setId("epay21Config");
         group.setChildren(list);
 
         return group;
@@ -183,8 +174,6 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
             @Nonnull ElementData config,
             @Nonnull XBezahldienstePaymentRequest paymentRequest
     ) throws PaymentException {
-        var accessToken = getAccessToken(config, paymentProviderEntity);
-
         var originatorID = (String) config.get(ORIGINATOR_ID_FIELD).getValue();
         if (StringUtils.isNullOrEmpty(originatorID)) {
             throw new PaymentException("Originator ID for payment provider %s is missing", getProviderName());
@@ -195,11 +184,22 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
             throw new PaymentException("Endpoint ID for payment provider %s is missing", getProviderName());
         }
 
-        var paymentTransactionUrl = (String) config.get(PAYMENT_TRANSACTION_URL_FIELD).getValue();
+        var username = getUsername(paymentProviderEntity, config);
+        var password = getPasswordSecret(paymentProviderEntity, config);
+        var auth = Base64.getEncoder().encodeToString((username + ":" + password).getBytes());
+
+        var paymentTransactionUrl = (String) config.get("paymentTransactionUrl").getValue();
         var normalizedPaymentTransactionUrl = StringUtils.normalizeUrl(paymentTransactionUrl);
 
-        var objectMapper = ObjectMapperFactory
-                .getInstance();
+        var objectMapper = new ObjectMapper()
+                .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
+        paymentRequest.setRequestor(null);
+        for (var item : paymentRequest.getItems()) {
+            if (item.getBookingData().isEmpty()) {
+                item.setBookingData(null);
+            }
+        }
 
         String body;
         try {
@@ -212,19 +212,22 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
         var paymentPath = String
                 .format("%spaymenttransaction/%s/%s", normalizedPaymentTransactionUrl, originatorID, endpointID);
 
+        var request = HttpRequest
+                .newBuilder(URI.create(paymentPath))
+                .headers("Content-Type", ContentType.APPLICATION_JSON.getType())
+                .headers("Accept", ContentType.APPLICATION_JSON.getType())
+                .headers("Authorization", "Basic " + auth)
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+
+        var client = HttpClient
+                .newHttpClient();
+
         HttpResponse<String> response;
         try {
-            response = httpService
-                    .post(
-                            URI.create(paymentPath),
-                            body,
-                            HttpServiceHeaders
-                                    .create()
-                                    .withContentType(HttpServiceHeaders.APPLICATION_JSON)
-                                    .withAccept(HttpServiceHeaders.APPLICATION_JSON)
-                                    .withAuthorizationBearer(accessToken)
-                    );
-        } catch (HttpConnectionException e) {
+            response = client
+                    .send(request, HttpResponse.BodyHandlers.ofString());
+        } catch (IOException | InterruptedException e) {
             throw new PaymentException(e, "Failed to poll payment from payment provider %s", getProviderName());
         }
 
@@ -241,6 +244,8 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
             return objectMapper.readValue(response.body(), XBezahldienstePaymentTransaction.class);
         } catch (JsonProcessingException e) {
             throw new PaymentException(e, "Failed to deserialize payment transaction");
+        } finally {
+            client.close();
         }
     }
 
@@ -251,27 +256,33 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
             @Nonnull ElementData config,
             @Nonnull XBezahldienstePaymentTransaction transaction
     ) throws PaymentException {
-        var accessToken = getAccessToken(config, paymentProviderEntity);
-
         var originatorID = getOriginatorID(paymentProviderEntity, config);
         var endpointID = getEndpointID(paymentProviderEntity, config);
+        var username = getUsername(paymentProviderEntity, config);
+        var password = getPasswordSecret(paymentProviderEntity, config);
+        var auth = Base64.getEncoder().encodeToString((username + ":" + password).getBytes());
         var normalizedPaymentTransactionUrl = getNormalizedPaymentTransactionUrl(paymentProviderEntity, config);
+
+        var client = HttpClient
+                .newBuilder()
+                .build();
 
         var paymentPath = String
                 .format("%spaymenttransaction/%s/%s/%s", normalizedPaymentTransactionUrl, originatorID, endpointID, transaction.getPaymentInformation().getTransactionId());
 
+        var request = HttpRequest
+                .newBuilder(URI.create(paymentPath))
+                .headers("Content-Type", ContentType.APPLICATION_JSON.getType())
+                .headers("Accept", ContentType.APPLICATION_JSON.getType())
+                .headers("Authorization", "Basic " + auth)
+                .GET()
+                .build();
+
         HttpResponse<String> response;
         try {
-            response = httpService
-                    .get(
-                            URI.create(paymentPath),
-                            HttpServiceHeaders
-                                    .create()
-                                    .withContentType(HttpServiceHeaders.APPLICATION_JSON)
-                                    .withAccept(HttpServiceHeaders.APPLICATION_JSON)
-                                    .withAuthorizationBearer(accessToken)
-                    );
-        } catch (HttpConnectionException e) {
+            response = client
+                    .send(request, HttpResponse.BodyHandlers.ofString());
+        } catch (IOException | InterruptedException e) {
             throw new PaymentException(e, "Failed to check payment status for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
@@ -287,11 +298,18 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
 
         XBezahldienstePaymentTransaction updatedTransaction = null;
         try {
-            updatedTransaction = ObjectMapperFactory
-                    .getInstance()
+            updatedTransaction = new ObjectMapper()
                     .readValue(response.body(), XBezahldienstePaymentTransaction.class);
         } catch (JsonProcessingException e) {
             throw new PaymentException(e, "Failed to deserialize payment transaction for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+        }
+
+        client.close();
+
+        if (updatedTransaction.getPaymentInformation().getStatus() != XBezahldienstStatus.INITIAL) {
+            updatedTransaction
+                    .getPaymentInformation()
+                    .setTransactionRedirectUrl(null);
         }
 
         return updatedTransaction;
@@ -306,63 +324,6 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
             @Nonnull Map<String, Object> callbackData
     ) throws PaymentException {
         return onPaymentResultPull(paymentProviderEntity, config, paymentTransaction);
-    }
-
-    private String getAccessToken(ElementData config, PaymentProviderEntity paymentProviderEntity) throws PaymentException {
-        var paymentProviderOAuthUrl = (String) config.get(OAUTH_URL_FIELD).getValue();
-        if (StringUtils.isNullOrEmpty(paymentProviderOAuthUrl)) {
-            throw new PaymentMissingDataException("OAuth URL", paymentProviderEntity);
-        }
-        var normalizedPaymentProviderOAuthUrl = StringUtils
-                .normalizeUrl(paymentProviderOAuthUrl)
-                .replaceAll("/$", "");
-
-        var paymentProviderClientId = (String) config.get(CLIENT_ID_FIELD).getValue();
-        if (StringUtils.isNullOrEmpty(paymentProviderClientId)) {
-            throw new PaymentException("Client ID for payment provider %s is missing", getProviderName());
-        }
-
-        var paymentProviderClientSecretKey = (String) config.get(CLIENT_SECRET_FIELD).getValue();
-        var paymentProviderClientSecret = getDecryptedClientSecret(paymentProviderClientSecretKey);
-        if (StringUtils.isNullOrEmpty(paymentProviderClientSecret)) {
-            throw new PaymentException("Client secret %s is empty", paymentProviderClientSecretKey);
-        }
-
-        var formData = String.format("grant_type=client_credentials&client_id=%s&client_secret=%s", paymentProviderClientId, paymentProviderClientSecret);
-
-        HttpResponse<String> response;
-        try {
-            response = httpService
-                    .post(
-                            URI.create(normalizedPaymentProviderOAuthUrl),
-                            formData,
-                            HttpServiceHeaders
-                                    .create()
-                                    .withContentType(HttpServiceHeaders.APPLICATION_X_WWW_FORM_URLENCODED)
-                                    .withAccept(HttpServiceHeaders.APPLICATION_JSON)
-                    );
-        } catch (HttpConnectionException e) {
-            throw new PaymentHttpRequestException(e, paymentProviderEntity, formData.replaceAll("client_secret=.*", "client_secret=***"));
-        }
-
-        if (response.statusCode() != 200) {
-            throw new PaymentHttpRequestException(response.statusCode(), paymentProviderEntity, formData.replaceAll("client_secret=.*", "client_secret=***"), response.body());
-        }
-
-        var objectMapper = ObjectMapperFactory
-                .getInstance();
-
-        String token;
-        try {
-            token = objectMapper
-                    .readTree(response.body())
-                    .get("access_token")
-                    .asText();
-        } catch (JsonProcessingException e) {
-            throw new PaymentSerializationException(e, "Failed to deserialize response body", response.body(), paymentProviderEntity);
-        }
-
-        return token;
     }
 
     @Nonnull
@@ -389,34 +350,61 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
         return endpointID;
     }
 
-    private String getDecryptedClientSecret(@Nonnull String clientSecretKey) throws PaymentException {
-        try {
-            var uuid = UUID.fromString(clientSecretKey);
-            return getDecryptedClientSecret(uuid);
-        } catch (IllegalArgumentException e) {
-            throw new PaymentException(e, "Client secret key %s is not a valid UUID", clientSecretKey);
+    @Nonnull
+    private String getUsername(
+            @Nonnull PaymentProviderEntity paymentProviderEntity,
+            @Nonnull ElementData config
+    ) throws PaymentException {
+        var username = (String) config.get(USERNAME_FIELD).getValue();
+        if (StringUtils.isNullOrEmpty(username)) {
+            throw new PaymentException("Username for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
+        return username;
     }
 
     @Nonnull
-    private String getDecryptedClientSecret(@Nonnull UUID clientSecretKey) throws PaymentException {
-        var paymentProviderClientSecretEntity = secretService
-                .retrieve(clientSecretKey)
-                .orElseThrow(() -> new PaymentException("Client secret %s not found", clientSecretKey));
-        try {
-            return secretService
-                    .decrypt(paymentProviderClientSecretEntity);
-        } catch (Exception e) {
-            throw new PaymentException(e, "Failed to decrypt client secret %s", clientSecretKey);
-        }
-    }
-
-    @Nonnull
-    private static String getNormalizedPaymentTransactionUrl(@Nonnull PaymentProviderEntity paymentProviderEntity, @Nonnull ElementData config) throws PaymentException {
+    private static String getNormalizedPaymentTransactionUrl(@Nonnull PaymentProviderEntity paymentProviderEntity,
+                                                             @Nonnull ElementData config) throws PaymentException {
         var paymentTransactionUrl = (String) config.get(PAYMENT_TRANSACTION_URL_FIELD).getValue();
         if (StringUtils.isNullOrEmpty(paymentTransactionUrl)) {
             throw new PaymentException("Payment transaction URL for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
         return StringUtils.normalizeUrl(paymentTransactionUrl);
+    }
+
+    @Nonnull
+    private String getPasswordSecret(
+            @Nonnull PaymentProviderEntity paymentProviderEntity,
+            @Nonnull ElementData config
+    ) throws PaymentMissingDataException {
+        var passwordSecretField = (String) config.get(PASSWORD_SECRET_KEY_FIELD).getValue();
+        if (StringUtils.isNullOrEmpty(passwordSecretField)) {
+            throw new PaymentMissingDataException("Project password", paymentProviderEntity);
+        }
+
+        UUID passwordSecretFieldKey;
+        try {
+            passwordSecretFieldKey = UUID.fromString(passwordSecretField);
+        } catch (IllegalArgumentException e) {
+            throw new PaymentMissingDataException("Project password", paymentProviderEntity);
+        }
+
+        var passwordSecretEntity = secretService
+                .retrieve(passwordSecretFieldKey)
+                .orElseThrow(() -> new PaymentMissingDataException("Project password entity", paymentProviderEntity));
+
+        String passwordSecret = null;
+        try {
+            passwordSecret = secretService
+                    .decrypt(passwordSecretEntity);
+        } catch (Exception e) {
+            throw new PaymentMissingDataException("Project password value", paymentProviderEntity);
+        }
+
+        if (StringUtils.isNullOrEmpty(passwordSecret)) {
+            throw new PaymentMissingDataException("Project password value", paymentProviderEntity);
+        }
+
+        return passwordSecret;
     }
 }

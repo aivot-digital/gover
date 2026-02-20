@@ -23,7 +23,6 @@ import de.aivot.GoverBackend.payment.exceptions.PaymentSerializationException;
 import de.aivot.GoverBackend.payment.models.PaymentProviderDefinition;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentTransaction;
-import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
 import de.aivot.GoverBackend.plugins.core.v1.payment.models.GiroPayCallbackResponse;
 import de.aivot.GoverBackend.plugins.core.v1.payment.models.GiroPayPaymentRequest;
@@ -34,8 +33,6 @@ import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.Nonnull;
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpResponse;
 import java.security.InvalidKeyException;
@@ -46,7 +43,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @Component
-public class GirocheckoutPaymentProviderDefinition implements PaymentProviderDefinition {
+public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderDefinition {
     private final static String MERCHANT_ID_FIELD = "sellerId";
     private final static String PROJECT_ID_FIELD = "projectId";
     private final static String PROJECT_PASSWORD_FIELD = "projectPasswordSecret";
@@ -57,8 +54,8 @@ public class GirocheckoutPaymentProviderDefinition implements PaymentProviderDef
     private final HttpService httpService;
 
     @Autowired
-    public GirocheckoutPaymentProviderDefinition(AuditService auditService, SecretService secretService, HttpService httpService) {
-        this.auditService = auditService.createScopedAuditService(GirocheckoutPaymentProviderDefinition.class);
+    public GirocheckoutPaymentProviderDefinitionV1(AuditService auditService, SecretService secretService, HttpService httpService) {
+        this.auditService = auditService.createScopedAuditService(GirocheckoutPaymentProviderDefinitionV1.class);
         this.secretService = secretService;
         this.httpService = httpService;
     }

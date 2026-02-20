@@ -8,7 +8,7 @@ import de.aivot.GoverBackend.payment.filters.PaymentTransactionFilter;
 import de.aivot.GoverBackend.payment.services.PaymentProviderTestService;
 import de.aivot.GoverBackend.payment.services.PaymentTransactionService;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
-import de.aivot.GoverBackend.plugins.core.v1.payment.GirocheckoutPaymentProviderDefinition;
+import de.aivot.GoverBackend.plugins.core.v1.payment.GirocheckoutPaymentProviderDefinitionV1;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -83,7 +83,7 @@ public class PaymentTransactionController {
      * This endpoint should handle the processing of the callback data.
      * When calling this endpoint, inform the calling payment provider that the callback data has been received.
      * <br/>
-     * ATTENTION: When this path changes, make sure to change the notify url creation at {@link GirocheckoutPaymentProviderDefinition#initiatePayment}.
+     * ATTENTION: When this path changes, make sure to change the notify url creation at {@link GirocheckoutPaymentProviderDefinitionV1#initiatePayment}.
      *
      * @param transactionKey The transaction key
      * @param callbackData   The callback data in the query params received from the payment provider.
@@ -127,7 +127,7 @@ public class PaymentTransactionController {
      * This endpoint should handle the processing of the callback data.
      * When calling this endpoint, redirect the user to the given redirect url of the saved transaction.
      * <br/>
-     * ATTENTION: When this path changes, make sure to change the notify url creation at {@link GirocheckoutPaymentProviderDefinition#initiatePayment}.
+     * ATTENTION: When this path changes, make sure to change the notify url creation at {@link GirocheckoutPaymentProviderDefinitionV1#initiatePayment}.
      *
      * @param transactionKey The transaction key
      * @param callbackData   The callback data in the query params received from the payment provider.

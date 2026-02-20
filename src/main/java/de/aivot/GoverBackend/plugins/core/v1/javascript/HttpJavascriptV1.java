@@ -4,7 +4,6 @@ import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
-import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
 import jakarta.annotation.Nonnull;
 import org.graalvm.polyglot.HostAccess;
@@ -19,10 +18,10 @@ import java.util.Map;
  * SPI for providing HTTP functions to the Javascript environment.
  */
 @Service
-public class HttpJavascript implements JavascriptFunctionProvider {
+public class HttpJavascriptV1 implements JavascriptFunctionProvider {
     private final HttpService httpService;
 
-    public HttpJavascript(HttpService httpService) {
+    public HttpJavascriptV1(HttpService httpService) {
         this.httpService = httpService;
     }
 

@@ -3,7 +3,6 @@ package de.aivot.GoverBackend.plugins.core.v1.javascript;
 import de.aivot.GoverBackend.asset.services.AssetService;
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
 import de.aivot.GoverBackend.services.storages.AssetStorageService;
 import jakarta.annotation.Nonnull;
@@ -17,12 +16,12 @@ import java.util.Base64;
 import java.util.UUID;
 
 @Component
-public class AssetJavascript implements JavascriptFunctionProvider {
+public class AssetJavascriptV1 implements JavascriptFunctionProvider {
     private final AssetService assetService;
     private final AssetStorageService assetStorageService;
 
     @Autowired
-    public AssetJavascript(
+    public AssetJavascriptV1(
             AssetService assetService,
             AssetStorageService assetStorageService
     ) {

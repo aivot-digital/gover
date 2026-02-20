@@ -28,8 +28,6 @@ import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import java.io.ByteArrayInputStream;
@@ -45,7 +43,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @Component
-public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinition, PluginComponent {
+public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinition, PluginComponent {
     private final static String ORIGINATOR_ID_FIELD = "originatorId";
     private final static String ENDPOINT_ID_FIELD = "endpointId";
     private final static String CERTIFICATE_FIELD = "certificate";
@@ -58,7 +56,7 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
     private final AssetStorageService assetStorageService;
 
     @Autowired
-    public ePayBLPaymentProviderDefinition(AssetRepository assetRepository, SecretService secretService, AssetStorageService assetStorageService) {
+    public ePayBLPaymentProviderDefinitionV1(AssetRepository assetRepository, SecretService secretService, AssetStorageService assetStorageService) {
         this.assetRepository = assetRepository;
         this.secretService = secretService;
         this.assetStorageService = assetStorageService;

@@ -2,16 +2,12 @@ package de.aivot.GoverBackend.plugins.core.v1.nodes.terminators;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.elements.models.ElementData;
-import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.NumberInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
-import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
@@ -25,7 +21,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
-public class DefaultTerminationNode implements ProcessNodeDefinition {
+public class DefaultTerminationNodeV1 implements ProcessNodeDefinition {
     private static final String NODE_KEY = "default-termination";
 
     private static final String RETENTION_VALUE_FIELD_KEY = "retention_value";

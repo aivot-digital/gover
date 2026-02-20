@@ -2,14 +2,13 @@ package de.aivot.GoverBackend.plugins.core.v1.javascript;
 
 import de.aivot.GoverBackend.elements.models.elements.form.input.NumberInputElement;
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
-import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
 import jakarta.annotation.Nonnull;
 import org.graalvm.polyglot.HostAccess;
 import org.springframework.stereotype.Service;
 
 @Service
-public class NumberJavascript implements JavascriptFunctionProvider {
+public class NumberJavascriptV1 implements JavascriptFunctionProvider {
     @Override
     public @Nonnull String getComponentKey() {
         return "number";

@@ -2,7 +2,6 @@ package de.aivot.GoverBackend.plugins.core.v1.operators;
 
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.providers.NoCodeOperatorsProvider;
-import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
 import de.aivot.GoverBackend.plugins.core.v1.operators.bool.NoCodeAndOperator;
 import de.aivot.GoverBackend.plugins.core.v1.operators.bool.NoCodeNotOperator;
@@ -22,7 +21,7 @@ import org.springframework.stereotype.Component;
  * This class provides the common no code operators for Gover.
  */
 @Component
-public class CommonOperators implements NoCodeOperatorsProvider {
+public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
     @Override
     public @Nonnull String getComponentKey() {
         return "common";

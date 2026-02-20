@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
@@ -66,41 +67,46 @@ public class PluginStartupService implements ApplicationListener<ApplicationRead
             throw new RuntimeException("Es wurden doppelte Plugin-Schlüssel gefunden. Bitte korrigieren Sie die Fehler in den Log-Ausgaben und starten Sie die Anwendung erneut.");
         }
 
-        var knownComponentKeys = new HashMap<String, List<PluginComponent>>();
+        var knownComponentKeys = new HashMap<String, Map<Integer, List<PluginComponent>>>();
         for (var component : pluginComponents) {
-            var classList = knownComponentKeys.getOrDefault(component.getKey(), new ArrayList<>());
+            var versionMap = knownComponentKeys.getOrDefault(component.getKey(), new HashMap<>());
+            var classList = versionMap.getOrDefault(component.getMajorVersion(), new ArrayList<>());
             classList.add(component);
-            knownComponentKeys.put(component.getKey(), classList);
+            versionMap.put(component.getMajorVersion(), classList);
+            knownComponentKeys.put(component.getKey(), versionMap);
         }
 
         hasErrors = false;
-        for (var entry : knownComponentKeys.entrySet()) {
-            if (entry.getValue().size() > 1) {
-                logger.warn(
-                        "Für den eindeutigen Plugin-Komponenten-Schlüssel {} werden mehrere Komponenten registriert. " +
-                                "Bitte stellen Sie sicher, dass für einen Schlüssel nur eine einzige Komponente registriert wird. " +
-                                "Die Schlüssel der folgenden Komponenten doppeln sich:\n{}",
-                        StringUtils.quote(entry.getKey()),
-                        entry
-                                .getValue()
-                                .stream()
-                                .map(component -> {
-                                    var plugin = knownPluginKeys
-                                            .get(entry.getValue().getFirst().getParentPluginKey())
-                                            .getFirst();
-                                    return String.format(
-                                            "- %s Version %s des Plugins %s Version %s von %s (Klasse %s)",
-                                            component.getName(),
-                                            component.getComponentVersion(),
-                                            plugin.getName(),
-                                            plugin.getVersion(),
-                                            plugin.getVendorName(),
-                                            component.getClass().getCanonicalName()
-                                    );
-                                })
-                                .collect(Collectors.joining("\n"))
-                );
-                hasErrors = true;
+        for (var keyEntry : knownComponentKeys.entrySet()) {
+            for (var entry : keyEntry.getValue().entrySet()) {
+                if (entry.getValue().size() > 1) {
+                    logger.warn(
+                            "Für die Major-Version {} des eindeutigen Plugin-Komponenten-Schlüssels {} werden mehrere Komponenten registriert. " +
+                                    "Bitte stellen Sie sicher, dass für einen Schlüssel nur eine einzige Komponente registriert wird. " +
+                                    "Die Schlüssel der folgenden Komponenten doppeln sich:\n{}",
+                            entry.getKey(),
+                            StringUtils.quote(keyEntry.getKey()),
+                            entry
+                                    .getValue()
+                                    .stream()
+                                    .map(component -> {
+                                        var plugin = knownPluginKeys
+                                                .get(entry.getValue().getFirst().getParentPluginKey())
+                                                .getFirst();
+                                        return String.format(
+                                                "- %s Version %s des Plugins %s Version %s von %s (Klasse %s)",
+                                                component.getName(),
+                                                component.getComponentVersion(),
+                                                plugin.getName(),
+                                                plugin.getVersion(),
+                                                plugin.getVendorName(),
+                                                component.getClass().getCanonicalName()
+                                        );
+                                    })
+                                    .collect(Collectors.joining("\n"))
+                    );
+                    hasErrors = true;
+                }
             }
         }
 

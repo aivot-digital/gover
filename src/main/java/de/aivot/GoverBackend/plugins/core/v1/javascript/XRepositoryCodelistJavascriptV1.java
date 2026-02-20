@@ -4,7 +4,6 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputEleme
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
 import de.aivot.GoverBackend.xrepository.services.XRepositoryCodeListService;
 import jakarta.annotation.Nonnull;
@@ -22,11 +21,11 @@ import java.util.Map;
  * The functions are exposed to the JavaScript environment through the GraalVM Polyglot API.
  */
 @Component
-public class XRepositoryCodelistJavascript implements JavascriptFunctionProvider {
+public class XRepositoryCodelistJavascriptV1 implements JavascriptFunctionProvider {
     private final XRepositoryCodeListService codeListService;
 
     @Autowired
-    public XRepositoryCodelistJavascript(XRepositoryCodeListService codeListService) {
+    public XRepositoryCodelistJavascriptV1(XRepositoryCodeListService codeListService) {
         this.codeListService = codeListService;
     }
 

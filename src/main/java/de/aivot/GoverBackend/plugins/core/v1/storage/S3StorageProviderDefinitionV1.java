@@ -10,7 +10,6 @@ import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
 import de.aivot.GoverBackend.secrets.entities.SecretEntity;
 import de.aivot.GoverBackend.secrets.repositories.SecretRepository;
@@ -38,16 +37,16 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 @Component
-public class S3StorageProviderDefinition implements StorageProviderDefinition<S3StorageProviderDefinition.Config> {
+public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<S3StorageProviderDefinitionV1.Config> {
     private final SecretRepository secretRepository;
     private final SecretService secretService;
     private final KnownExtensionsService knownExtensionsService;
 
     // TODO: Maybe cache MinioClients for better performance
 
-    public S3StorageProviderDefinition(SecretRepository secretRepository,
-                                       SecretService secretService,
-                                       KnownExtensionsService knownExtensionsService) {
+    public S3StorageProviderDefinitionV1(SecretRepository secretRepository,
+                                         SecretService secretService,
+                                         KnownExtensionsService knownExtensionsService) {
         this.secretRepository = secretRepository;
         this.secretService = secretService;
         this.knownExtensionsService = knownExtensionsService;
@@ -114,7 +113,7 @@ public class S3StorageProviderDefinition implements StorageProviderDefinition<S3
     }
 
     @Override
-    public Class<S3StorageProviderDefinition.Config> getConfigClass() {
+    public Class<S3StorageProviderDefinitionV1.Config> getConfigClass() {
         return Config.class;
     }
 

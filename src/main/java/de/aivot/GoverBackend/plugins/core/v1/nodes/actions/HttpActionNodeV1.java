@@ -9,23 +9,15 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputEleme
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
-import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
-import de.aivot.GoverBackend.process.entities.ProcessEntity;
-import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
-import de.aivot.GoverBackend.process.entities.ProcessVersionEntity;
-import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
-import de.aivot.GoverBackend.process.enums.ProcessHistoryEventType;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.services.ProcessDataService;
-import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -35,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class HttpActionNode implements ProcessNodeDefinition {
+public class HttpActionNodeV1 implements ProcessNodeDefinition {
     private static final String METHOD_FIELD_ID = "method";
     private static final String URL_FIELD_ID = "url";
     private static final String IS_JSON_FIELD_ID = "isJson";
@@ -49,7 +41,7 @@ public class HttpActionNode implements ProcessNodeDefinition {
     private final HttpService httpService;
     private final ProcessDataService processDataService;
 
-    public HttpActionNode(HttpService httpService, ProcessDataService processDataService) {
+    public HttpActionNodeV1(HttpService httpService, ProcessDataService processDataService) {
         this.httpService = httpService;
         this.processDataService = processDataService;
     }
