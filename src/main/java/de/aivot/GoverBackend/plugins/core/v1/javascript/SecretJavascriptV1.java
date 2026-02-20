@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.plugins.core.v1.javascript;
 
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
-import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
 import de.aivot.GoverBackend.secrets.services.SecretService;
 import jakarta.annotation.Nonnull;
@@ -16,11 +15,11 @@ import java.util.UUID;
  * The functions are exposed to the JavaScript environment through the GraalVM Polyglot API.
  */
 @Component
-public class SecretJavascript implements JavascriptFunctionProvider {
+public class SecretJavascriptV1 implements JavascriptFunctionProvider {
     private final SecretService secretService;
 
     @Autowired
-    public SecretJavascript(SecretService secretService) {
+    public SecretJavascriptV1(SecretService secretService) {
         this.secretService = secretService;
     }
 
