@@ -435,7 +435,8 @@
         "SISSL",
         "Sleepycat",
         "SSPL-1.0",
-        "GraalVM Free Terms and Conditions (GFTC) including License for Early Adopter Versions"
+        "GraalVM Free Terms and Conditions (GFTC) including License for Early Adopter Versions",
+        "Sustainable Use License"
     ],
     "packageLicenseOverrides": {
         "gover-frontend": {
@@ -546,6 +547,9 @@
         },
         "amqp-client@5.25.0": {
             "license": "Apache-2.0"
+        },
+        "nodebox@0.1.8": {
+            "license": "Sustainable Use License"
         }
     }
 }
