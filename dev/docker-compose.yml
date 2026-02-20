@@ -6,7 +6,7 @@ name: gover_dev_environment
 services:
 
   gover-database:
-    image: postgres:16.11-alpine3.22
+    image: postgres:16.12-alpine3.23
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: gover
@@ -25,13 +25,13 @@ services:
       - "3310:3310"
 
   cache:
-    image: redis:8.2.3-alpine3.22
+    image: redis:8.2.4-alpine3.22
     restart: unless-stopped
     ports:
       - "6379:6379"
 
   pdf-printer:
-    image: gotenberg/gotenberg:8.25.0
+    image: gotenberg/gotenberg:8.26.0
     restart: unless-stopped
     network_mode: host
     environment:
@@ -63,7 +63,7 @@ services:
       "
 
   smtp:
-    image: axllent/mailpit:v1.27.11
+    image: axllent/mailpit:v1.29.1
     restart: unless-stopped
     environment:
       MP_MAX_MESSAGES: 5000
@@ -77,7 +77,7 @@ services:
       - "2025:1025"
 
   keycloak-database:
-    image: postgres:16.11-alpine3.22
+    image: postgres:16.12-alpine3.23
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: keycloak
@@ -90,7 +90,7 @@ services:
       - "5433:5432"
 
   keycloak:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.4.7.0
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.5.3.0
     restart: unless-stopped
     depends_on:
       - keycloak-database
@@ -110,7 +110,7 @@ services:
       KC_FEATURES: "transient-users,update-email,hostname:v2"
 
   keycloak_setup:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.16
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.17
     depends_on:
       - keycloak
     environment:
@@ -135,7 +135,7 @@ services:
       BACKEND_CLIENT_SECRET: "my-super-secret-key"
 
   message-broker:
-    image: rabbitmq:4.2.1-management-alpine
+    image: rabbitmq:4.2.4-management-alpine
     restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: admin
@@ -154,15 +154,6 @@ services:
     ports:
       - "9595:80"
 
-  code-analysis:
-    image: sonarqube:25.11.0.114957-community
-    restart: unless-stopped
-    ports:
-      - "9010:9000"
-    volumes:
-      - sonar_data:/opt/sonarqube/data
-      - sonar_logs:/opt/sonarqube/logs
-      - sonar_extensions:/opt/sonarqube/extensions
 
 volumes:
   gover_pg_data:
@@ -170,6 +161,3 @@ volumes:
   minio_data:
   mailpit_data:
   rabbitmq_data:
-  sonar_data:
-  sonar_logs:
-  sonar_extensions:
