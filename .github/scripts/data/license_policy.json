@@ -544,7 +544,6 @@
         "js-community@24.2.2": {
             "license": "MIT"
         },
-        },
         "amqp-client@5.25.0": {
             "license": "Apache-2.0"
         }
