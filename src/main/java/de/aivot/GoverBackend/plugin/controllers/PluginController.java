@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 @RestController
@@ -50,7 +51,11 @@ public class PluginController {
 
                     return PluginDTO.from(plugin, componentDTOs);
                 })
-                .collect(java.util.stream.Collectors.toMap(PluginDTO::key, plugin -> plugin));
+                .collect(Collectors.toMap(
+                        PluginDTO::key,
+                        plugin -> plugin,
+                        (existing, replacement) -> existing
+                ));
 
         pluginList = pluginMap
                 .values()
