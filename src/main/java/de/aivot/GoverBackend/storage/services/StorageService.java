@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -69,6 +70,7 @@ public class StorageService {
                         StringUtils.getLastPathSegment(createdFolderPath),
                         FOLDER_MIME_TYPE,
                         false,
+                        Map.of(), // TODO: Add metadata
                         LocalDateTime.now(),
                         LocalDateTime.now()
                 );
@@ -138,6 +140,7 @@ public class StorageService {
                         .determineMimeType(createdDocument.getName())
                         .orElse(UNKNOWN_MIME_TYPE),
                 false,
+                Map.of(), // TODO: Add metadata
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );

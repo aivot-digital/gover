@@ -19,8 +19,8 @@ public interface StorageIndexItemRepository extends JpaRepository<StorageIndexIt
                         SELECT * FROM storage_index_items
                         WHERE storage_provider_id = :storageProviderId AND
                               path_from_root ~ :path AND
-                              (is_missing = false OR :includeMissing = true)
-                        ORDER BY is_directory DESC
+                              (missing = false OR :includeMissing = true)
+                        ORDER BY directory DESC
             """,
             nativeQuery = true
     )
@@ -28,7 +28,7 @@ public interface StorageIndexItemRepository extends JpaRepository<StorageIndexIt
                                                  @Param("path") String path,
                                                  @Param("includeMissing") boolean includeMissing);
 
-    Optional<StorageIndexItemEntity> findByStorageProviderIdAndPathFromRootAndIsDirectoryIsFalse(
+    Optional<StorageIndexItemEntity> findByStorageProviderIdAndPathFromRootAndDirectoryIsFalse(
             @Nonnull Integer storageProviderId,
             @Nonnull String pathFromRoot
     );

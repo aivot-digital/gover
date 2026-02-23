@@ -267,7 +267,7 @@ public class StorageProviderController {
         var normalizedPath = getNormalizedPath(request, false);
 
         var storageItem = storageIndexItemRepository
-                .findByStorageProviderIdAndPathFromRootAndIsDirectoryIsFalse(
+                .findByStorageProviderIdAndPathFromRootAndDirectoryIsFalse(
                         id,
                         normalizedPath
                 )

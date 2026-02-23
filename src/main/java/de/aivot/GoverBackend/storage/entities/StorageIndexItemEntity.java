@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.storage.entities;
 
+import de.aivot.GoverBackend.core.converters.JsonObjectConverter;
 import de.aivot.GoverBackend.storage.enums.StorageProviderType;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
@@ -9,6 +10,8 @@ import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.Objects;
 
 @Entity
 @Table(name = "storage_index_items")
@@ -33,7 +36,7 @@ public class StorageIndexItemEntity {
 
     @Nonnull
     @NotNull(message = "Gibt an, ob das Speicherobjekt ein Verzeichnis ist.")
-    private Boolean isDirectory;
+    private Boolean directory;
 
     @Nonnull
     @NotNull(message = "Der Name der Datei darf nicht null sein.")
@@ -50,7 +53,13 @@ public class StorageIndexItemEntity {
     @Nonnull
     @NotNull(message = "Gibt an, ob das Speicherobjekt fehlt.")
     @ColumnDefault("FALSE")
-    private Boolean isMissing;
+    private Boolean missing;
+
+    @Nonnull
+    @NotNull(message = "Die Metadaten des Speicherobjekts dürfen nicht null sein.")
+    @Column(columnDefinition = "jsonb")
+    @Convert(converter = JsonObjectConverter.class)
+    private Map<String, Object> metadata;
 
     @Nonnull
     private LocalDateTime created;
@@ -58,28 +67,34 @@ public class StorageIndexItemEntity {
     @Nonnull
     private LocalDateTime updated;
 
+    // region Constructors
+
     public StorageIndexItemEntity() {
     }
 
     public StorageIndexItemEntity(@Nonnull Integer storageProviderId,
                                   @Nonnull StorageProviderType storageProviderType,
                                   @Nonnull String pathFromRoot,
-                                  @Nonnull Boolean isDirectory,
+                                  @Nonnull Boolean directory,
                                   @Nonnull String filename,
                                   @Nonnull String mimeType,
-                                  @Nonnull Boolean isMissing,
+                                  @Nonnull Boolean missing,
+                                  @Nonnull Map<String, Object> metadata,
                                   @Nonnull LocalDateTime created,
                                   @Nonnull LocalDateTime updated) {
         this.storageProviderId = storageProviderId;
         this.storageProviderType = storageProviderType;
         this.pathFromRoot = pathFromRoot;
-        this.isDirectory = isDirectory;
+        this.directory = directory;
         this.filename = filename;
         this.mimeType = mimeType;
-        this.isMissing = isMissing;
+        this.missing = missing;
+        this.metadata = metadata;
         this.created = created;
         this.updated = updated;
     }
+
+    // endregion
 
     // region Signals
 
@@ -94,6 +109,26 @@ public class StorageIndexItemEntity {
     protected void onUpdate() {
         updated = LocalDateTime.now();
     }
+
+    // endregion
+
+    // region Equals and HashCode
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        StorageIndexItemEntity that = (StorageIndexItemEntity) o;
+        return Objects.equals(storageProviderId, that.storageProviderId) && storageProviderType == that.storageProviderType && Objects.equals(pathFromRoot, that.pathFromRoot) && Objects.equals(directory, that.directory) && Objects.equals(filename, that.filename) && Objects.equals(mimeType, that.mimeType) && Objects.equals(missing, that.missing) && Objects.equals(metadata, that.metadata) && Objects.equals(created, that.created) && Objects.equals(updated, that.updated);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(storageProviderId, storageProviderType, pathFromRoot, directory, filename, mimeType, missing, metadata, created, updated);
+    }
+
+    // endregion
+
+    // region Getters and Setters
 
     @Nonnull
     public Integer getStorageProviderId() {
@@ -126,12 +161,12 @@ public class StorageIndexItemEntity {
     }
 
     @Nonnull
-    public Boolean getIsDirectory() {
-        return isDirectory;
+    public Boolean getDirectory() {
+        return directory;
     }
 
-    public StorageIndexItemEntity setIsDirectory(@Nonnull Boolean directory) {
-        isDirectory = directory;
+    public StorageIndexItemEntity setDirectory(@Nonnull Boolean directory) {
+        this.directory = directory;
         return this;
     }
 
@@ -156,12 +191,22 @@ public class StorageIndexItemEntity {
     }
 
     @Nonnull
-    public Boolean getIsMissing() {
-        return isMissing;
+    public Boolean getMissing() {
+        return missing;
     }
 
-    public StorageIndexItemEntity setIsMissing(@Nonnull Boolean missing) {
-        isMissing = missing;
+    public StorageIndexItemEntity setMissing(@Nonnull Boolean missing) {
+        this.missing = missing;
+        return this;
+    }
+
+    @Nonnull
+    public Map<String, Object> getMetadata() {
+        return metadata;
+    }
+
+    public StorageIndexItemEntity setMetadata(@Nonnull Map<String, Object> metadata) {
+        this.metadata = metadata;
         return this;
     }
 
@@ -184,4 +229,6 @@ public class StorageIndexItemEntity {
         this.updated = updated;
         return this;
     }
+
+    // endregion
 }

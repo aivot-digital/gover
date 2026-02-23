@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -120,6 +121,7 @@ public class StorageSyncService {
                                 folder.getName(),
                                 StorageService.FOLDER_MIME_TYPE,
                                 false,
+                                Map.of(), // Only store metadata for documents, not for folders for now
                                 LocalDateTime.now(),
                                 LocalDateTime.now()
                         );
@@ -128,7 +130,7 @@ public class StorageSyncService {
                     folderItem
                             .setStorageProviderType(storageProvider.getType())
                             .setMimeType(StorageService.FOLDER_MIME_TYPE)
-                            .setIsDirectory(true)
+                            .setDirectory(true)
                             .setFilename(folder.getName());
 
                     storageIndexItemRepository.save(folderItem);
@@ -149,6 +151,7 @@ public class StorageSyncService {
                                     document.getName(),
                                     StorageService.UNKNOWN_MIME_TYPE,
                                     false,
+                                    Map.of(), // TODO: Fetch Metadata
                                     LocalDateTime.now(),
                                     LocalDateTime.now()
                             );
@@ -161,7 +164,7 @@ public class StorageSyncService {
                         docItem
                                 .setStorageProviderType(storageProvider.getType())
                                 .setMimeType(mimeType)
-                                .setIsDirectory(false)
+                                .setDirectory(false)
                                 .setFilename(document.getName());
 
                         storageIndexItemRepository.save(docItem);
@@ -186,7 +189,7 @@ public class StorageSyncService {
                         .log();
 
                 storageIndexItemRepository.save(item
-                        .setIsMissing(true)
+                        .setMissing(true)
                         .setUpdated(LocalDateTime.now()));
             }
         }
