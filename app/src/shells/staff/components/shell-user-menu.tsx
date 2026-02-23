@@ -17,6 +17,7 @@ import OpenInNew from '@mui/icons-material/OpenInNew';
 import {AppInfo} from '../../../app-info';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {setShowAboutGoverDialog} from '../../../slices/shell-slice';
+import {StringAvatar} from '../../../components/avatar/string-avatar';
 
 interface ShellUserMenuProps {
     anchorEl: null | HTMLElement;
@@ -81,22 +82,34 @@ export function ShellUserMenu({ anchorEl, onClose, minimizeDrawer }: ShellUserMe
                 <Box
                     sx={{
                         px: 2,
-                        pt: .25,
-                        pb: 0.75,
+                        pl: 1.125,
+                        pt: 0.25,
+                        pb: 1,
                         display: 'flex',
-                        flexDirection: 'column',
-                        gap: 0.25,
+                        alignItems: 'center',
+                        gap: 1.25,
                     }}
                 >
-                    <Typography variant="caption" sx={{ color: 'rgba(0,0,0,0.5)', fontWeight: 500, mb: '-2px' }}>
-                        Angemeldet als
-                    </Typography>
-                    <Typography
-                        variant="body1"
-                        sx={{ fontWeight: 600, color: '#111', lineHeight: 1.2 }}
-                    >
-                        {userName || 'Unbekannte Nutzer:in'}
-                    </Typography>
+                    <StringAvatar name={userName} sx={{ width: 34, height: 34, fontSize: 14 }} />
+
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, minWidth: 0 }}>
+                        <Typography
+                            variant="body1"
+                            sx={{ fontWeight: 600, color: '#111', lineHeight: 1, mt: 0.25 }}
+                            noWrap
+                            title={userName || 'Unbekannte Nutzer:in'}
+                        >
+                            {userName || 'Unbekannte Nutzer:in'}
+                        </Typography>
+                        <Typography
+                            variant="caption"
+                            sx={{ color: 'rgba(0,0,0,0.5)', mt: 0.25, lineHeight: 1 }}
+                            noWrap
+                            title={user?.email || 'Unbekannte E-Mail-Adresse'}
+                        >
+                            {user?.email || 'Unbekannte E-Mail-Adresse'}
+                        </Typography>
+                    </Box>
                 </Box>
 
                 <Divider sx={{ my: 1 }} />
