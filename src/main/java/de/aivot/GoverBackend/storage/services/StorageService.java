@@ -165,6 +165,7 @@ public class StorageService {
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
 
+        // Check if the provider is read-only before doing any other checks, to avoid unnecessary processing.
         if (provider.getReadOnly()) {
             throw ResponseException
                     .badRequest(
@@ -174,6 +175,7 @@ public class StorageService {
                     );
         }
 
+        // Check if the provider has a maximum file size defined and if the content exceeds it.
         if (provider.getMaxFileSizeInBytes() != null &&
                 provider.getMaxFileSizeInBytes() != 0 &&
                 content.length > provider.getMaxFileSizeInBytes()) {
@@ -201,9 +203,11 @@ public class StorageService {
             }
         }
 
+        // Store the document in the storage provider.
         var createdDocument = definition
                 .storeDocument(config, path, content, filteredMetadata);
 
+        // Create or update the index item for the stored document.
         var indexItem = new StorageIndexItemEntity(
                 provider.getId(),
                 provider.getType(),
