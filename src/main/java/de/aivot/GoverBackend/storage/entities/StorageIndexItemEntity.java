@@ -1,7 +1,8 @@
 package de.aivot.GoverBackend.storage.entities;
 
-import de.aivot.GoverBackend.core.converters.JsonObjectConverter;
+import de.aivot.GoverBackend.storage.converters.StorageItemMetadataConverter;
 import de.aivot.GoverBackend.storage.enums.StorageProviderType;
+import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -10,7 +11,6 @@ import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.Objects;
 
 @Entity
@@ -58,8 +58,8 @@ public class StorageIndexItemEntity {
     @Nonnull
     @NotNull(message = "Die Metadaten des Speicherobjekts dürfen nicht null sein.")
     @Column(columnDefinition = "jsonb")
-    @Convert(converter = JsonObjectConverter.class)
-    private Map<String, Object> metadata;
+    @Convert(converter = StorageItemMetadataConverter.class)
+    private StorageItemMetadata metadata;
 
     @Nonnull
     private LocalDateTime created;
@@ -79,7 +79,7 @@ public class StorageIndexItemEntity {
                                   @Nonnull String filename,
                                   @Nonnull String mimeType,
                                   @Nonnull Boolean missing,
-                                  @Nonnull Map<String, Object> metadata,
+                                  @Nonnull StorageItemMetadata metadata,
                                   @Nonnull LocalDateTime created,
                                   @Nonnull LocalDateTime updated) {
         this.storageProviderId = storageProviderId;
@@ -201,11 +201,11 @@ public class StorageIndexItemEntity {
     }
 
     @Nonnull
-    public Map<String, Object> getMetadata() {
+    public StorageItemMetadata getMetadata() {
         return metadata;
     }
 
-    public StorageIndexItemEntity setMetadata(@Nonnull Map<String, Object> metadata) {
+    public StorageIndexItemEntity setMetadata(@Nonnull StorageItemMetadata metadata) {
         this.metadata = metadata;
         return this;
     }

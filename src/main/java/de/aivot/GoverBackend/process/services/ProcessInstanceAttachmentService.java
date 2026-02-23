@@ -9,6 +9,7 @@ import de.aivot.GoverBackend.process.configs.DefaultStorageProcessAttachmentsSys
 import de.aivot.GoverBackend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceAttachmentRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceRepository;
+import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
 import de.aivot.GoverBackend.storage.services.StorageService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -67,12 +68,12 @@ public class ProcessInstanceAttachmentService implements EntityService<ProcessIn
 
         var processInstance = processInstanceRepository
                 .findById(entity.getProcessInstanceId())
-                        .orElseThrow(() -> ResponseException
-                                .badRequest(
-                                        "Die Prozess-Instanz mit der ID %s existiert nicht.",
-                                        entity.getProcessInstanceId()
-                                )
-                        );
+                .orElseThrow(() -> ResponseException
+                        .badRequest(
+                                "Die Prozess-Instanz mit der ID %s existiert nicht.",
+                                entity.getProcessInstanceId()
+                        )
+                );
 
         var extension = StringUtils
                 .extractExtensionFromFileName(entity.getFileName())
@@ -94,7 +95,10 @@ public class ProcessInstanceAttachmentService implements EntityService<ProcessIn
         ));
 
         var doc = storageService
-                .storeDocument(defaultStorageProviderId, filePath, entity.getFileBytes());
+                .storeDocument(defaultStorageProviderId,
+                        filePath,
+                        entity.getFileBytes(),
+                        StorageItemMetadata.empty()); // TODO: Think of and specify metadata
 
         entity.setStorageProviderId(defaultStorageProviderId);
         entity.setStoragePathFromRoot(doc.getPathFromRoot());

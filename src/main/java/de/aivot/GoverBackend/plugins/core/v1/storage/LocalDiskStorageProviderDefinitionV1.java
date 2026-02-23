@@ -12,6 +12,7 @@ import de.aivot.GoverBackend.plugins.core.Core;
 import de.aivot.GoverBackend.storage.exceptions.StorageException;
 import de.aivot.GoverBackend.storage.models.StorageDocument;
 import de.aivot.GoverBackend.storage.models.StorageFolder;
+import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
 import de.aivot.GoverBackend.storage.models.StorageProviderDefinition;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -55,6 +56,12 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
     @Override
     public String getComponentVersion() {
         return "1.0.0";
+    }
+
+    @Nonnull
+    @Override
+    public Boolean getSupportsMetadataAttributes() {
+        return false;
     }
 
     @Nullable
@@ -316,7 +323,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
 
     @Nonnull
     @Override
-    public StorageDocument storeDocument(@Nonnull Config config, @Nonnull String path, @Nonnull byte[] data) {
+    public StorageDocument storeDocument(@Nonnull Config config, @Nonnull String path, @Nonnull byte[] data, @Nonnull StorageItemMetadata metadata) {
         // Check if the parent directory exists
         var documentPathReal = getSecurePath(config.getRealRootPath(), path);
         var parentDirectoryReal = documentPathReal.getParent();

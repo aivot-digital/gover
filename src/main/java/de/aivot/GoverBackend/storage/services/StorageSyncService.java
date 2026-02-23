@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.storage.entities.StorageIndexItemEntityId;
 import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
 import de.aivot.GoverBackend.storage.enums.StorageProviderStatus;
 import de.aivot.GoverBackend.storage.models.StorageFolder;
+import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
 import de.aivot.GoverBackend.storage.models.StorageProviderDefinition;
 import de.aivot.GoverBackend.storage.repositories.StorageIndexItemRepository;
 import de.aivot.GoverBackend.storage.repositories.StorageProviderRepository;
@@ -121,7 +122,7 @@ public class StorageSyncService {
                                 folder.getName(),
                                 StorageService.FOLDER_MIME_TYPE,
                                 false,
-                                Map.of(), // Only store metadata for documents, not for folders for now
+                                StorageItemMetadata.empty(), // Only store metadata for documents, not for folders for now
                                 LocalDateTime.now(),
                                 LocalDateTime.now()
                         );
@@ -151,7 +152,7 @@ public class StorageSyncService {
                                     document.getName(),
                                     StorageService.UNKNOWN_MIME_TYPE,
                                     false,
-                                    Map.of(), // TODO: Fetch Metadata
+                                    document.getMetadata(),
                                     LocalDateTime.now(),
                                     LocalDateTime.now()
                             );

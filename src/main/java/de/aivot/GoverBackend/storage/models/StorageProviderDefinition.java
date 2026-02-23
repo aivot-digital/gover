@@ -19,6 +19,9 @@ public interface StorageProviderDefinition<T> extends PluginComponent {
         return PluginComponentType.StorageProviderDefinition;
     }
 
+    @Nonnull
+    Boolean getSupportsMetadataAttributes();
+
     @Nullable
     ConfigLayoutElement getProviderConfigLayout() throws ResponseException;
 
@@ -57,9 +60,9 @@ public interface StorageProviderDefinition<T> extends PluginComponent {
     void deleteFolder(@Nonnull T config, @Nonnull String pathFromRoot) throws StorageException;
 
     @Nonnull
-    default StorageDocument storeDocument(@Nonnull T config, @Nonnull String pathFromRoot, @Nonnull MultipartFile file) throws StorageException {
+    default StorageDocument storeDocument(@Nonnull T config, @Nonnull String pathFromRoot, @Nonnull MultipartFile file, @Nonnull StorageItemMetadata metadata) throws StorageException {
         try {
-            return storeDocument(config, pathFromRoot, file.getBytes());
+            return storeDocument(config, pathFromRoot, file.getBytes(), metadata);
         } catch (Exception e) {
             throw new StorageException(
                     e,
@@ -71,7 +74,7 @@ public interface StorageProviderDefinition<T> extends PluginComponent {
     }
 
     @Nonnull
-    StorageDocument storeDocument(@Nonnull T config, @Nonnull String pathFromRoot, @Nonnull byte[] data) throws StorageException;
+    StorageDocument storeDocument(@Nonnull T config, @Nonnull String pathFromRoot, @Nonnull byte[] data, @Nonnull StorageItemMetadata metadata) throws StorageException;
 
     @Nonnull
     Optional<StorageDocument> retrieveDocument(@Nonnull T config, @Nonnull String pathFromRoot) throws StorageException;

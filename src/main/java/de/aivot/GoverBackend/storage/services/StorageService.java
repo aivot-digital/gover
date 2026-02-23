@@ -8,6 +8,7 @@ import de.aivot.GoverBackend.storage.entities.StorageIndexItemEntityId;
 import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
 import de.aivot.GoverBackend.storage.models.StorageDocument;
 import de.aivot.GoverBackend.storage.models.StorageFolder;
+import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
 import de.aivot.GoverBackend.storage.models.StorageProviderDefinition;
 import de.aivot.GoverBackend.storage.repositories.StorageIndexItemRepository;
 import de.aivot.GoverBackend.storage.repositories.StorageProviderRepository;
@@ -18,7 +19,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
 import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -70,7 +70,7 @@ public class StorageService {
                         StringUtils.getLastPathSegment(createdFolderPath),
                         FOLDER_MIME_TYPE,
                         false,
-                        Map.of(), // TODO: Add metadata
+                        StorageItemMetadata.empty(),
                         LocalDateTime.now(),
                         LocalDateTime.now()
                 );
@@ -99,7 +99,6 @@ public class StorageService {
 
         // TODO: Find all subfolders and documents and delete them as well
 
-
         storageIndexItemRepository
                 .deleteById(StorageIndexItemEntityId.of(
                         provider.getId(),
@@ -123,12 +122,13 @@ public class StorageService {
         return definition.retrieveDocumentContent(config, path);
     }
 
-    public StorageDocument storeDocument(@Nonnull Integer providerId, @Nonnull String path, @Nonnull byte[] content) throws ResponseException {
+    public StorageDocument storeDocument(@Nonnull Integer providerId, @Nonnull String path, @Nonnull byte[] content, @Nonnull StorageItemMetadata metadata) throws ResponseException {
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
 
-        var createdDocument = definition.storeDocument(config, path, content);
+        var createdDocument = definition
+                .storeDocument(config, path, content, metadata);
 
         var indexItem = new StorageIndexItemEntity(
                 provider.getId(),
@@ -140,7 +140,7 @@ public class StorageService {
                         .determineMimeType(createdDocument.getName())
                         .orElse(UNKNOWN_MIME_TYPE),
                 false,
-                Map.of(), // TODO: Add metadata
+                createdDocument.getMetadata(),
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );

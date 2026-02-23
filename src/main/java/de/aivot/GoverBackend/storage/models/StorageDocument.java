@@ -6,8 +6,17 @@ public class StorageDocument extends StorageItem {
     @Nonnull
     private String extension;
 
+    @Nonnull
+    private StorageItemMetadata metadata;
+
     public StorageDocument(@Nonnull String pathFromRoot,
                            @Nonnull String name) {
+        this(pathFromRoot, name, new StorageItemMetadata());
+    }
+
+    public StorageDocument(@Nonnull String pathFromRoot,
+                           @Nonnull String name,
+                           @Nonnull StorageItemMetadata metadata) {
         super(pathFromRoot, name, false);
 
         int lastDotIndex = getName().lastIndexOf('.');
@@ -15,6 +24,7 @@ public class StorageDocument extends StorageItem {
             extension = "";
         }
         extension = getName().substring(lastDotIndex + 1);
+        this.metadata = metadata;
     }
 
     @Nonnull
@@ -24,6 +34,16 @@ public class StorageDocument extends StorageItem {
 
     public StorageDocument setExtension(@Nonnull String extension) {
         this.extension = extension;
+        return this;
+    }
+
+    @Nonnull
+    public StorageItemMetadata getMetadata() {
+        return metadata;
+    }
+
+    public StorageDocument setMetadata(@Nonnull StorageItemMetadata metadata) {
+        this.metadata = metadata;
         return this;
     }
 }

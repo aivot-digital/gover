@@ -17,6 +17,7 @@ import de.aivot.GoverBackend.secrets.services.SecretService;
 import de.aivot.GoverBackend.storage.exceptions.StorageException;
 import de.aivot.GoverBackend.storage.models.StorageDocument;
 import de.aivot.GoverBackend.storage.models.StorageFolder;
+import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
 import de.aivot.GoverBackend.storage.models.StorageProviderDefinition;
 import de.aivot.GoverBackend.storage.services.KnownExtensionsService;
 import de.aivot.GoverBackend.storage.services.StorageService;
@@ -35,6 +36,7 @@ import java.io.InputStream;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<S3StorageProviderDefinitionV1.Config> {
@@ -82,6 +84,12 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         return """
                 Speichert Dokumente auf einem S3-kompatiblen Speicher.
                 """;
+    }
+
+    @Nonnull
+    @Override
+    public Boolean getSupportsMetadataAttributes() {
+        return true;
     }
 
     @Nullable
@@ -265,18 +273,27 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
 
     @Nonnull
     @Override
-    public StorageDocument storeDocument(@Nonnull Config config, @Nonnull String path, @Nonnull byte[] data) {
+    public StorageDocument storeDocument(@Nonnull Config config, @Nonnull String path, @Nonnull byte[] data, @Nonnull StorageItemMetadata metadata) {
         var inputStream = new ByteArrayInputStream(data);
 
         var mimeType = knownExtensionsService
                 .determineMimeType(path)
                 .orElse(StorageService.UNKNOWN_MIME_TYPE);
 
+        var userMetadata = metadata
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().toString()
+                ));
+
         var putObjectArgs = PutObjectArgs
                 .builder()
                 .bucket(config.bucket)
                 .object(path.substring(1))
                 .stream(inputStream, data.length, -1)
+                .userMetadata(userMetadata)
                 .contentType(mimeType)
                 .build();
 
@@ -307,8 +324,9 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 .object(path.substring(1))
                 .build();
 
+        StatObjectResponse response;
         try {
-            client.statObject(statObjectArgs);
+            response = client.statObject(statObjectArgs);
         } catch (ErrorResponseException e) {
             if (e.errorResponse().code().equals("NoSuchKey")) {
                 return Optional.empty();
@@ -319,9 +337,13 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
             throw new StorageException(e, "Fehler beim Abrufen des Dokuments aus dem S3-kompatiblen Speicher.");
         }
 
+        var metadata = new StorageItemMetadata();
+        metadata.putAll(response.userMetadata());
+
         return Optional.of(new StorageDocument(
                 path,
-                StringUtils.getLastPathSegment(path)
+                StringUtils.getLastPathSegment(path),
+                metadata
         ));
     }
 
