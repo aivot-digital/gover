@@ -106,6 +106,10 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
             @Nonnull StorageProviderEntity entity,
             @Nonnull StorageProviderEntity existingEntity
     ) throws ResponseException {
+        if (existingEntity.getPreventDeletion()) {
+            throw ResponseException.badRequest("Dieser Speicheranbieter kann nicht bearbeitet werden");
+        }
+
         var def = storageProviderDefinitionService
                 .retrieveProviderDefinition(
                         existingEntity.getStorageProviderDefinitionKey(),
@@ -177,6 +181,10 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
     public void performDelete(
             @Nonnull StorageProviderEntity entity
     ) throws ResponseException {
+        if (entity.getPreventDeletion()) {
+            throw ResponseException.badRequest("Dieser Speicheranbieter kann nicht bearbeitet werden");
+        }
+
         storageProviderRepository.delete(entity);
     }
 }
