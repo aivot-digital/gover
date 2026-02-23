@@ -241,7 +241,7 @@ public class OZGCloudDataFormatService {
                 .mustGet(replicatingContainerLayout);
 
         var childElementDataObject = edo.getValue();
-        var childElementData = new LinkedList<>();
+        List<ElementData> childElementData = new LinkedList<>();
 
         if (childElementDataObject instanceof List<?> list) {
             for (var itemObj : list) {
@@ -254,14 +254,14 @@ public class OZGCloudDataFormatService {
         var childItems = new LinkedList<OZGCloudFormDataItem>();
 
         for (int i = 0; i < childElementData.size(); i++) {
-            var childId = childElementData.get(i);
+            var childED = childElementData.get(i);
             var childFormData = buildChildList(
                     replicatingContainerLayout.getChildren(),
-                    elementData
+                    childED
             );
 
             var childItem = new OZGCloudFormDataItem(
-                    replicatingContainerLayout.getId() + "_" + childId,
+                    replicatingContainerLayout.getId() + "_" + i,
                     replicatingContainerLayout.getResolvedHeadline(i),
                     null,
                     null,
@@ -450,6 +450,17 @@ public class OZGCloudDataFormatService {
         var edo = elementData.mustGet(tableField);
 
         var rows = tableField.formatValue(edo.getValue());
+        if (rows == null || rows.isEmpty()) {
+            return new OZGCloudFormDataItem(
+                    tableField.getId(),
+                    tableField.getLabel(),
+                    "Keine Angabe",
+                    null,
+                    null,
+                    null,
+                    null
+            );
+        }
 
         var rowItems = new LinkedList<OZGCloudFormDataItem>();
 
