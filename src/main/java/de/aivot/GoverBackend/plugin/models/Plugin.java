@@ -10,8 +10,10 @@ import jakarta.annotation.Nullable;
 public interface Plugin {
     /**
      * The unique key identifying the plugin.
-     * This should be a concise, lowercase string with words separated by hyphens (e.g., "my-plugin").
-     * A good plugin key should include the vendor name and a descriptive name for the plugin to ensure uniqueness and clarity (e.g., "de.aivot.core").
+     * This should be a concise, lowercase string with words separated by hyphens (e.g., "de.aivot.my-plugin").
+     * The key should be prefixed with the domain this plugin resides in, to ensure uniqueness across different plugins and vendors.
+     * The domains may be separated by dots, and parts of the key may be separated by hyphens for readability.
+     * A good plugin key should include the vendor name and a descriptive name for the plugin to ensure uniqueness and clarity (e.g., "de.aivot.egov-nodes").
      *
      * @return The plugin key.
      */
