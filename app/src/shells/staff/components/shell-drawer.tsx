@@ -802,49 +802,41 @@ function NestedMenuItem({
     item: DrawerItem;
     onAnyClose: () => void;
 }) {
-    const navigate = useNavigate();
     const [submenuAnchor, setSubmenuAnchor] = useState<HTMLElement | null>(null);
     const hasChildren = !!item.children?.length;
 
-    const handleItemClick = (e: React.MouseEvent<HTMLElement>) => {
+    const handleToggleSubmenu = (e: React.MouseEvent<HTMLElement>) => {
         e.stopPropagation();
-
-        if (item.disabled) {
-            return;
-        }
-
-        if (hasChildren) {
-            // toggle submenu open/close on click
-            if (submenuAnchor) {
-                setSubmenuAnchor(null);
-            } else {
-                setSubmenuAnchor(e.currentTarget);
-            }
-        } else if (item.to) {
-            navigate(item.to);
-            onAnyClose(); // close all menus after navigation
-        }
+        if (item.disabled) return;
+        setSubmenuAnchor((prev) => (prev ? null : e.currentTarget));
     };
 
-    const handleCloseSubmenu: NonNullable<React.ComponentProps<typeof Menu>['onClose']> = () => {
-        setSubmenuAnchor(null);
-    };
-
-    return (
-        <>
+    // Regular menu item
+    if (!hasChildren && item.to) {
+        return (
             <MenuItem
-                onClick={handleItemClick}
-                sx={{
-                    minWidth: 220,
-                    gap: 1,
-                    cursor: 'pointer',
-                    '&:hover': {backgroundColor: 'rgba(255,255,255,0.08)'},
-                }}
+                component={Link}
+                to={item.to}
+                onClick={onAnyClose}
+                disabled={item.disabled}
+                sx={{ minWidth: 220, gap: 1 }}
             >
-                <Box sx={{width: 24, display: 'inline-flex', justifyContent: 'center'}}>
+                <Box sx={{ width: 24, display: 'inline-flex', justifyContent: 'center' }}>
                     {item.icon ?? <PageInfo />}
                 </Box>
-                <Box sx={{flex: 1}}>{item.label}</Box>
+                <Box sx={{ flex: 1 }}>{item.label}</Box>
+            </MenuItem>
+        );
+    }
+
+    // Submenu item
+    return (
+        <>
+            <MenuItem onClick={handleToggleSubmenu} disabled={item.disabled} sx={{ minWidth: 220, gap: 1 }}>
+                <Box sx={{ width: 24, display: 'inline-flex', justifyContent: 'center' }}>
+                    {item.icon ?? <PageInfo />}
+                </Box>
+                <Box sx={{ flex: 1 }}>{item.label}</Box>
                 {hasChildren && <ChevronForward />}
             </MenuItem>
 
@@ -852,18 +844,14 @@ function NestedMenuItem({
                 <Menu
                     anchorEl={submenuAnchor}
                     open={Boolean(submenuAnchor)}
-                    onClose={handleCloseSubmenu}
-                    anchorOrigin={{vertical: 'top', horizontal: 'right'}}
-                    transformOrigin={{vertical: 'top', horizontal: 'left'}}
-                    MenuListProps={{dense: true}}
+                    onClose={() => setSubmenuAnchor(null)}
+                    anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                    transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                    MenuListProps={{ dense: true }}
                     disableAutoFocusItem
                 >
                     {item.children!.map((child) => (
-                        <NestedMenuItem
-                            key={child.label}
-                            item={child}
-                            onAnyClose={onAnyClose}
-                        />
+                        <NestedMenuItem key={child.label} item={child} onAnyClose={onAnyClose} />
                     ))}
                 </Menu>
             )}
