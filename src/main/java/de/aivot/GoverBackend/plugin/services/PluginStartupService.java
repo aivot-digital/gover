@@ -90,18 +90,33 @@ public class PluginStartupService implements ApplicationListener<ApplicationRead
                                     .getValue()
                                     .stream()
                                     .map(component -> {
-                                        var plugin = knownPluginKeys
-                                                .get(entry.getValue().getFirst().getParentPluginKey())
-                                                .getFirst();
-                                        return String.format(
-                                                "- %s Version %s des Plugins %s Version %s von %s (Klasse %s)",
-                                                component.getName(),
-                                                component.getComponentVersion(),
-                                                plugin.getName(),
-                                                plugin.getVersion(),
-                                                plugin.getVendorName(),
-                                                component.getClass().getCanonicalName()
-                                        );
+                                        var parentPluginKey = entry
+                                                .getValue()
+                                                .getFirst()
+                                                .getParentPluginKey();
+
+                                        if (knownPluginKeys.containsKey(parentPluginKey)) {
+                                            var plugin = knownPluginKeys
+                                                    .get(parentPluginKey)
+                                                    .getFirst();
+
+                                            return String.format(
+                                                    "- %s Version %s des Plugins %s Version %s von %s (Klasse %s)",
+                                                    component.getName(),
+                                                    component.getComponentVersion(),
+                                                    plugin.getName(),
+                                                    plugin.getVersion(),
+                                                    plugin.getVendorName(),
+                                                    component.getClass().getCanonicalName()
+                                            );
+                                        } else {
+                                            return String.format(
+                                                    "- %s Version %s (Klasse %s)",
+                                                    component.getName(),
+                                                    component.getComponentVersion(),
+                                                    component.getClass().getCanonicalName()
+                                            );
+                                        }
                                     })
                                     .collect(Collectors.joining("\n"))
                     );
