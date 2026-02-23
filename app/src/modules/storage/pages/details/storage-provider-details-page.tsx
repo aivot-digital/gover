@@ -47,14 +47,15 @@ export function StorageProviderDetailsPage(): ReactNode {
                     header={{
                         icon: ModuleIcons.storage,
                         title: 'Speicheranbieter bearbeiten',
-                        badge: provider != null ? <StorageStatusChip status={provider.status}/> : undefined,
+                        badge: provider != null && provider?.id !== 0 ? <StorageStatusChip status={provider.status} lastSync={provider.lastSync}/> : undefined,
                         actions: [{
                             tooltip: 'Speicher synchronisieren',
                             icon: <Sync/>,
                             onClick: handleSync,
+                            disabled: provider?.id === 0,
                         }],
                         helpDialog: {
-                            title: 'Hilfe zu Speicheranbieter',
+                            title: 'Hilfe zu Speicheranbietern',
                             tooltip: 'Hilfe anzeigen',
                             content: (
                                 <>

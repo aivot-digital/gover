@@ -6,7 +6,6 @@ import DriveFolderUpload from '@aivot/mui-material-symbols-400-outlined/dist/dri
 import GroupWork from '@aivot/mui-material-symbols-400-outlined/dist/group-work/GroupWork';
 import Webhook from '@aivot/mui-material-symbols-400-outlined/dist/webhook/Webhook';
 import IdentityPlatform from '@aivot/mui-material-symbols-400-outlined/dist/identity-platform/IdentityPlatform';
-import AccountBalance from '@aivot/mui-material-symbols-400-outlined/dist/account-balance/AccountBalance';
 import CopyAll from '@aivot/mui-material-symbols-400-outlined/dist/copy-all/CopyAll';
 import Link from '@aivot/mui-material-symbols-400-outlined/dist/link/Link';
 import Key from '@aivot/mui-material-symbols-400-outlined/dist/key/Key';
@@ -24,6 +23,7 @@ import Storefront from '@aivot/mui-material-symbols-400-outlined/dist/storefront
 import Groups3 from '@aivot/mui-material-symbols-400-outlined/dist/groups-3/Groups3';
 import Rule from '@aivot/mui-material-symbols-400-outlined/dist/rule/Rule';
 import Storage from '@aivot/mui-material-symbols-400-outlined/dist/storage/Storage';
+import Payments from '@aivot/mui-material-symbols-400-outlined/dist/payments/Payments';
 
 export const ModuleIcons = {
     dashboard: <Dashboard />,
@@ -36,7 +36,7 @@ export const ModuleIcons = {
     destinations: <Webhook />,
     forms: <Description />,
     identity: <IdentityPlatform />,
-    payment: <AccountBalance />,
+    payment: <Payments />,
     presets: <CopyAll />,
     providerLinks: <Link />,
     secrets: <Key />,

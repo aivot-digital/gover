@@ -33,6 +33,11 @@ export class StorageProvidersApiService extends BaseCrudApiService<StorageProvid
             storageProviderDefinitionVersion: 0,
             type: StorageProviderType.Assets,
             updated: '',
+            lastSync: '',
+            metadataAttributes: [],
+            preventDeletion: false,
+            readOnly: false,
+            maxFileSizeInBytes: 0,
         };
     }
 

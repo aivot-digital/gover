@@ -5,10 +5,10 @@ import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import {GridColType} from '@mui/x-data-grid/models/colDef/gridColType';
 import {Actions} from '../actions/actions';
 import AddIcon from '@mui/icons-material/Add';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 import {Action} from '../actions/actions-props';
 import {InfoDialog} from '../../dialogs/info-dialog/info-dialog';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 interface TableField<T extends GridValidRowModel, K extends keyof T & string> {
     key: K;
@@ -229,7 +229,7 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
                             sx={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                mt: 2,
+                                my: 2,
                                 mx: 2,
                             }}
                         >
@@ -254,7 +254,7 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
                                             visible: !disabled,
                                         },
                                         {
-                                            icon: <DeleteForeverOutlinedIcon />,
+                                            icon: <Delete />,
                                             label: 'Löschen',
                                             tooltip: deleteTooltip,
                                             onClick: () => setConfirmDelete(() => handleDeleteRows),

@@ -51,7 +51,7 @@ export function StorageProvidersListPage(): ReactNode {
                                         variant="body1"
                                         paragraph
                                     >
-                                        Konfigurieren Sie hier Zahlungsdienstleister, die in Ihrer Gover-Instanz global
+                                        Konfigurieren Sie hier Speicheranbieter, die in Ihrer Gover-Instanz global
                                         verfügbar sein sollen.
                                         Die erforderlichen Konfigurationsdaten erhalten Sie vom Zahlungsdienstleister
                                         oder finden Sie in dessen Dokumentation.
@@ -60,14 +60,14 @@ export function StorageProvidersListPage(): ReactNode {
                                         variant="body1"
                                         paragraph
                                     >
-                                        Es wird empfohlen, für jeden Zahlungsdienstleister sowohl eine produktive als
+                                        Es wird empfohlen, für jeden Speicheranbieter sowohl eine produktive als
                                         auch eine vorproduktive Anbindung einzurichten, um Tests zu erleichtern.
                                     </Typography>
                                 </>
                             ),
                         },
                     }}
-                    searchLabel="Zahlungsdienstleister suchen"
+                    searchLabel="Speicheranbieter suchen"
                     searchPlaceholder="Name der Konfiguration eingeben…"
                     fetch={(options) => {
                         return new StorageProvidersApiService()
@@ -75,20 +75,6 @@ export function StorageProvidersListPage(): ReactNode {
                     }}
                     columnIcon={ModuleIcons.storage}
                     columnDefinitions={[
-                        {
-                            field: 'status',
-                            headerName: 'Status',
-                            width: 150,
-                            renderCell: (params) => {
-                                return (
-                                    <CellContentWrapper>
-                                        <StorageStatusChip
-                                            status={params.value as StorageProviderStatus}
-                                        />
-                                    </CellContentWrapper>
-                                );
-                            },
-                        },
                         {
                             field: 'name',
                             headerName: 'Name der Konfiguration',
@@ -119,10 +105,24 @@ export function StorageProvidersListPage(): ReactNode {
                             headerName: 'Beschreibung',
                             flex: 2,
                         },
+                        {
+                            field: 'status',
+                            headerName: 'Status',
+                            width: 150,
+                            renderCell: (params) => {
+                                return (
+                                    <CellContentWrapper>
+                                        <StorageStatusChip
+                                            status={params.value as StorageProviderStatus}
+                                        />
+                                    </CellContentWrapper>
+                                );
+                            },
+                        },
                     ]}
                     getRowIdentifier={(row) => row.id.toString()}
-                    noDataPlaceholder="Keine Zahlungsdienstleister angelegt"
-                    noSearchResultsPlaceholder="Keine Zahlungsdienstleister gefunden"
+                    noDataPlaceholder="Keine Speicheranbieter angelegt"
+                    noSearchResultsPlaceholder="Keine Speicheranbieter gefunden"
                     rowActionsCount={1}
                     rowActions={(item: StorageProviderEntity) => [
                         {
