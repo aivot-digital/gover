@@ -9,6 +9,9 @@
 /data/
 /fakesmtp/
 /test-files/
+/assets/
+/attachments/
+/default/
 
 ### App ###
 /app/node_modules/
