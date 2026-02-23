@@ -48,6 +48,15 @@ public class StorageService {
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
 
+        if (provider.getReadOnly()) {
+            throw ResponseException
+                    .badRequest(
+                            "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Es können keine Ordner erstellt werden.",
+                            StringUtils.quote(provider.getName()),
+                            provider.getId()
+                    );
+        }
+
         var createdFolder = definition
                 .createFolder(config, path);
 
@@ -94,6 +103,15 @@ public class StorageService {
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
+
+        if (provider.getReadOnly()) {
+            throw ResponseException
+                    .badRequest(
+                            "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Es können keine Ordner gelöscht werden.",
+                            StringUtils.quote(provider.getName()),
+                            provider.getId()
+                    );
+        }
 
         definition.deleteFolder(config, path);
 
@@ -147,6 +165,15 @@ public class StorageService {
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
 
+        if (provider.getReadOnly()) {
+            throw ResponseException
+                    .badRequest(
+                            "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Es können keine Dokumente gespeichert werden.",
+                            StringUtils.quote(provider.getName()),
+                            provider.getId()
+                    );
+        }
+
         // Only respect metadata attributes if the provider definition supports them.
         // Additionally, filter out any metadata attributes that are not supported by the provider definition.
         var filteredMetadata = new StorageItemMetadata();
@@ -188,6 +215,15 @@ public class StorageService {
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
+
+        if (provider.getReadOnly()) {
+            throw ResponseException
+                    .badRequest(
+                            "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Es können keine Dokumente gelöscht werden.",
+                            StringUtils.quote(provider.getName()),
+                            provider.getId()
+                    );
+        }
 
         definition.deleteDocument(config, path);
 
