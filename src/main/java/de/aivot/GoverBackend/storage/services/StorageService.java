@@ -111,7 +111,24 @@ public class StorageService {
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
 
-        return definition.retrieveDocument(config, path);
+        var doc = definition.retrieveDocument(config, path);
+
+        doc.ifPresent(d -> {
+            var filteredMetadata = new StorageItemMetadata();
+            if (definition.getSupportsMetadataAttributes()) {
+                for (var ma : provider.getMetadataAttributes()) {
+                    if (d.getMetadata().containsKey(ma.getKey())) {
+                        filteredMetadata.put(
+                                ma.getKey(),
+                                d.getMetadata().get(ma.getKey())
+                        );
+                    }
+                }
+            }
+            d.setMetadata(filteredMetadata);
+        });
+
+        return doc;
     }
 
     public InputStream getDocumentContent(@Nonnull Integer providerId, @Nonnull String path) throws ResponseException {
@@ -122,13 +139,30 @@ public class StorageService {
         return definition.retrieveDocumentContent(config, path);
     }
 
-    public StorageDocument storeDocument(@Nonnull Integer providerId, @Nonnull String path, @Nonnull byte[] content, @Nonnull StorageItemMetadata metadata) throws ResponseException {
+    public StorageDocument storeDocument(@Nonnull Integer providerId,
+                                         @Nonnull String path,
+                                         @Nonnull byte[] content,
+                                         @Nonnull StorageItemMetadata metadata) throws ResponseException {
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
 
+        // Only respect metadata attributes if the provider definition supports them.
+        // Additionally, filter out any metadata attributes that are not supported by the provider definition.
+        var filteredMetadata = new StorageItemMetadata();
+        if (definition.getSupportsMetadataAttributes()) {
+            for (var ma : provider.getMetadataAttributes()) {
+                if (metadata.containsKey(ma.getKey())) {
+                    filteredMetadata.put(
+                            ma.getKey(),
+                            metadata.get(ma.getKey())
+                    );
+                }
+            }
+        }
+
         var createdDocument = definition
-                .storeDocument(config, path, content, metadata);
+                .storeDocument(config, path, content, filteredMetadata);
 
         var indexItem = new StorageIndexItemEntity(
                 provider.getId(),
