@@ -5,7 +5,6 @@ import {
 } from '../../../../components/generic-details-page/generic-details-page-context';
 import {GenericList} from '../../../../components/generic-list/generic-list';
 import {Box, Button, Typography} from '@mui/material';
-import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
@@ -32,6 +31,7 @@ import {
 } from "../../services/v-department-user-role-assignment-with-details-service";
 import {resolveUserName} from "../../../users/utils/resolve-user-name";
 import {snakeToCamel} from "../../../../utils/camel-to-snake";
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export function DepartmentsDetailsPageMembers() {
     const dispatch = useAppDispatch();
@@ -84,7 +84,7 @@ export function DepartmentsDetailsPageMembers() {
                 disabled: membershipItem.userDeletedInIdp ?? undefined,
             },
             {
-                icon: <DeleteOutlineOutlinedIcon/>,
+                icon: <Delete/>,
                 onClick: () => {
                     showConfirm({
                         title: 'Mitarbeiter:in entfernen',

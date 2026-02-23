@@ -11,11 +11,11 @@ import Typography from '@mui/material/Typography';
 import {stringOrDefault} from '../../utils/string-utils';
 import {type BaseViewProps} from '../../views/base-view';
 import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {flattenElements} from '../../utils/flatten-elements';
 import {type ElementData} from '../../models/element-data';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContainerLayout, ElementData[]>) {
     const [confirmDelete, setConfirmDelete] = useState<() => void>();
@@ -205,7 +205,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                         color="error"
                                         size="small"
                                         endIcon={
-                                            <DeleteForeverOutlinedIcon
+                                            <Delete
                                                 sx={{
                                                     marginTop: '-4px',
                                                 }}

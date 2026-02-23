@@ -1,8 +1,8 @@
 import React, {type PropsWithChildren, type ReactNode, useState} from 'react';
 import {Button, Dialog, DialogActions, DialogContent, Typography} from '@mui/material';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {TextFieldComponent} from '../../components/text-field/text-field-component';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 interface ConfirmDialogProps {
     title: string;
@@ -68,7 +68,7 @@ export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>): Rea
                     variant="contained"
                     color={props.isDestructive ? 'error' : 'primary'}
                     disabled={isConfirmDisabled}
-                    startIcon={props.isDestructive ? <DeleteOutlinedIcon /> : undefined}
+                    startIcon={props.isDestructive ? <Delete /> : undefined}
                 >
                     {props.confirmButtonText || (props.isDestructive ? 'Löschen' : 'Bestätigen')}
                 </Button>

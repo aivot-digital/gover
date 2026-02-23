@@ -15,7 +15,6 @@ import {DataObjectSchema} from '../../models/data-object-schema';
 import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service';
 import {DataObjectItemsApiService} from '../../data-object-items-api-service';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {DataObjectItem} from '../../models/data-object-item';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {ConfirmDialogV2} from '../../../../dialogs/confirm-dialog/confirm-dialog-v2';
@@ -26,6 +25,7 @@ import {format as formatDateTime} from 'date-fns/format';
 import {isApiError} from '../../../../models/api-error';
 import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
 import {useAccessGuard} from '../../../../hooks/use-admin-guard';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export function DataObjectItemDetailsPageIndex() {
     const dispatch = useAppDispatch();
@@ -346,7 +346,7 @@ export function DataObjectItemDetailsPageIndex() {
                         sx={{
                             marginLeft: 'auto',
                         }}
-                        startIcon={<DeleteOutlinedIcon />}
+                        startIcon={<Delete />}
                     >
                         Löschen
                     </Button>

@@ -9,7 +9,6 @@ import {ValidationCodeTabProps} from './validation-code-tab-props';
 import {Box, Button, Typography} from '@mui/material';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {Actions} from '../actions/actions';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-element-dialog';
@@ -20,6 +19,7 @@ import {ReferenceCheck} from './components/reference-check/reference-check';
 import {editor} from 'monaco-editor';
 import {ElementValidationFunction} from '../../models/elements/element-validation-function';
 import {NoCodeEditorWrapper} from './components/no-code-editor-wrapper/no-code-editor-wrapper';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 const exampleValidationCode = `(function(){
     // Hier kann der Code eingefügt werden, der bestimmt, ob das Element valide ist.
@@ -217,7 +217,7 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                                                     <Actions
                                                         actions={[
                                                             {
-                                                                icon: <DeleteOutlinedIcon />,
+                                                                icon: <Delete />,
                                                                 tooltip: 'Delete Expression',
                                                                 onClick: () => {
                                                                     const updatedValidationExpressions = [

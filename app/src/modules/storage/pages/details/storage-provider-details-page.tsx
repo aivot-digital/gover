@@ -86,7 +86,13 @@ export function StorageProviderDetailsPage(): ReactNode {
                         },
                         {
                             path: '/storage-providers/:id/explore',
-                            label: 'Dateien',
+                            label: 'Dateiexplorer',
+                            isDisabled: (item) => item?.id === 0,
+                        },
+                        {
+                            path: '/storage-providers/:id/test',
+                            label: 'Testen',
+                            isDisabled: (item) => item?.id === 0,
                         },
                     ]}
                     initializeItem={() => {

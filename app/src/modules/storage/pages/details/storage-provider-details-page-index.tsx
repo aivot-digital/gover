@@ -300,6 +300,16 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 </AlertComponent>
             }
 
+            <Typography
+                variant="h5"
+                sx={{mt: 1.5, mb: 1}}
+            >
+                Speicheranbieter konfigurieren
+            </Typography>
+            <Typography sx={{mb: 3, maxWidth: 900}}>
+                Konfigurieren Sie den Speicheranbieter, um ihn für die Ablage von Dateien zum angegebenen Verwendungszweck (Typ) nutzen zu können. Sie können die meisten Einstellungen jederzeit anpassen – bitte beachten Sie jedoch, dass bestehende Dateien bei einer Änderung des Speicherortes nicht automatisch migriert werden.
+            </Typography>
+
             <Grid
                 container={true}
                 spacing={2}

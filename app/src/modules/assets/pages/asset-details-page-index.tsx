@@ -7,7 +7,6 @@ import {useNavigate} from 'react-router-dom';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useChangeBlocker} from '../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../hooks/use-form-manager';
 import {ConfirmDialog} from '../../../dialogs/confirm-dialog/confirm-dialog';
@@ -28,6 +27,7 @@ import {format} from 'date-fns';
 import {StatusTable} from '../../../components/status-table/status-table';
 import {BadgeOutlined} from '@mui/icons-material';
 import {getFileTypeIcon} from '../../../utils/file-type-icon';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export const AssetSchema = yup.object({
     filename: yup.string()
@@ -357,7 +357,7 @@ export function AssetDetailsPageIndex() {
                         sx={{
                             marginLeft: 'auto',
                         }}
-                        startIcon={<DeleteOutlinedIcon />}
+                        startIcon={<Delete />}
                     >
                         Löschen
                     </Button>

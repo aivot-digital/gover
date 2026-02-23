@@ -4,6 +4,7 @@ import {StorageProvidersListPage} from './pages/list/storage-providers-list-page
 import {StorageProviderDetailsPage} from './pages/details/storage-provider-details-page';
 import {StorageProviderDetailsPageIndex} from './pages/details/storage-provider-details-page-index';
 import {StorageProviderDetailsPageExplore} from './pages/details/storage-provider-details-page-explore';
+import {StorageProviderDetailsPageTest} from './pages/details/storage-provider-details-page-test';
 
 export const storageRoutes: RouteObject[] = [
     {
@@ -21,6 +22,10 @@ export const storageRoutes: RouteObject[] = [
             {
                 path: '/storage-providers/:id/explore',
                 element: <StorageProviderDetailsPageExplore/>,
+            },
+            {
+                path: '/storage-providers/:id/test',
+                element: <StorageProviderDetailsPageTest/>,
             },
         ],
     },

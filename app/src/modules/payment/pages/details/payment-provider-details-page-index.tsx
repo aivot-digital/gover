@@ -15,7 +15,6 @@ import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackba
 import {PaymentProviderAdditionalData} from './payment-provider-details-page-additional-data';
 import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
 import {PaymentProviderResponseDTO} from '../../dtos/payment-provider-response-dto';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {ConstraintDialog} from '../../../../dialogs/constraint-dialog/constraint-dialog';
@@ -30,6 +29,7 @@ import {GenericDetailsSkeleton} from '../../../../components/generic-details-pag
 import {useConfirm} from '../../../../providers/confirm-provider';
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import {VFormVersionWithDetailsService} from '../../../forms/services/v-form-version-with-details-api-service';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export const _PaymentProviderSchema = {
     name: yup.string()
@@ -426,7 +426,7 @@ export function PaymentProviderDetailsPageIndex() {
                         sx={{
                             marginLeft: 'auto',
                         }}
-                        startIcon={<DeleteOutlinedIcon />}
+                        startIcon={<Delete />}
                     >
                         Löschen
                     </Button>
@@ -442,7 +442,7 @@ export function PaymentProviderDetailsPageIndex() {
                                 variant="outlined"
                                 disabled={true}
                                 color="error"
-                                startIcon={<DeleteOutlinedIcon />}
+                                startIcon={<Delete />}
                             >
                                 Löschen
                             </Button>

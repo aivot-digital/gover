@@ -8,7 +8,6 @@ import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {RichTextEditorComponentView, RichTextEditorComponentViewProps} from '../../../../components/richt-text-editor/rich-text-editor.component.view';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
@@ -28,6 +27,7 @@ import {DepartmentEntity} from '../../entities/department-entity';
 import {DepartmentApiService} from '../../services/department-api-service';
 import {getDepartmentTypeLabelGenitiv} from '../../utils/department-utils';
 import {FormApiService} from '../../../forms/services/form-api-service';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 
 export const DepartmentSchema = yup.object({
@@ -783,7 +783,7 @@ export function DepartmentsDetailsPageIndex() {
                         sx={{
                             marginLeft: 'auto',
                         }}
-                        startIcon={<DeleteOutlinedIcon />}
+                        startIcon={<Delete />}
                     >
                         Löschen
                     </Button>

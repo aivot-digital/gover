@@ -28,6 +28,7 @@ import {PermissionLabelsDe} from '../../../../data/permissions/permission-labels
 import {type SystemRoleEntity} from '../../entities/system-role-entity';
 import {SystemRolesApiService} from '../../services/system-roles-api-service';
 import {PermissionApiService} from '../../../permissions/permission-api-service';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export const SystemRoleSchema = yup.object({
     name: yup.string()
@@ -321,7 +322,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                         sx={{
                             marginLeft: 'auto',
                         }}
-                        startIcon={<DeleteOutlinedIcon/>}
+                        startIcon={<Delete/>}
                     >
                         Löschen
                     </Button>

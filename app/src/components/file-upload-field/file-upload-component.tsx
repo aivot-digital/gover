@@ -3,9 +3,9 @@ import {Box, Button, FormLabel, IconButton, Table, TableBody, TableCell, TableCo
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {humanizeFileSize, humanizeNumber, pluralize} from '../../utils/huminization-utils';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import BackupOutlinedIcon from '@mui/icons-material/BackupOutlined';
 import {FileUploadComponentProps} from './file-upload-component-props';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export function FileUploadComponent(props: FileUploadComponentProps) {
     const theme = useTheme();
@@ -138,7 +138,7 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
                                                     <IconButton
                                                         onClick={() => handleRemove(file)}
                                                     >
-                                                        <DeleteForeverOutlinedIcon
+                                                        <Delete
                                                             fontSize={'small'}
                                                         />
                                                     </IconButton> :
@@ -147,7 +147,7 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
                                                         variant="outlined"
                                                         onClick={() => handleRemove(file)}
                                                         startIcon={
-                                                            <DeleteForeverOutlinedIcon
+                                                            <Delete
                                                                 fontSize={'small'}
                                                             />
                                                         }

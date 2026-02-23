@@ -7,7 +7,6 @@ import {useNavigate} from 'react-router-dom';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
@@ -20,6 +19,7 @@ import {ThemesApiService} from '../../../themes/themes-api-service';
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import {TeamsApiService} from '../../services/teams-api-service';
 import {TeamEntity} from "../../entities/team-entity";
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export const TeamSchema = yup.object({
     name: yup.string()
@@ -259,7 +259,7 @@ export function TeamsDetailsPageIndex() {
                         sx={{
                             marginLeft: 'auto',
                         }}
-                        startIcon={<DeleteOutlinedIcon />}
+                        startIcon={<Delete />}
                     >
                         Löschen
                     </Button>

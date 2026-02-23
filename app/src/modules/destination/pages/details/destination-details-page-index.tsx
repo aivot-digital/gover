@@ -13,7 +13,6 @@ import {isAdmin} from '../../../../utils/is-admin';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
@@ -30,6 +29,7 @@ import {GenericDetailsSkeleton} from '../../../../components/generic-details-pag
 import {OzgCloudInfo} from '../../components/ozg-cloud-info';
 import {CodeEditor} from '../../../../components/code-editor/code-editor';
 import {VFormVersionWithDetailsService} from '../../../forms/services/v-form-version-with-details-api-service';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export const DestinationSchema = yup.object({
     name: yup.string()
@@ -655,7 +655,7 @@ export function DestinationDetailsPageIndex() {
                             sx={{
                                 marginLeft: 'auto',
                             }}
-                            startIcon={<DeleteOutlinedIcon/>}
+                            startIcon={<Delete/>}
                         >
                             Löschen
                         </Button>

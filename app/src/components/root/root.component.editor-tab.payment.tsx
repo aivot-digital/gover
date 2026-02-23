@@ -9,7 +9,6 @@ import {v4 as uuid4} from 'uuid';
 import {RadioFieldComponent} from '../radio-field/radio-field-component';
 import {AlertComponent} from '../alert/alert-component';
 import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import ExpandLessOutlinedIcon from '@mui/icons-material/ExpandLessOutlined';
 import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
 import {isStringNotNullOrEmpty} from '../../utils/string-utils';
@@ -33,6 +32,7 @@ import {withDelay} from '../../utils/with-delay';
 import {isLoadedForm, LoadedForm} from '../../slices/app-slice';
 import {FormEntity} from '../../modules/forms/entities/form-entity';
 import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 interface PaymentPositionItemProps {
     allElements: ElementWithParents[];
@@ -87,7 +87,7 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                         sx={{ml: 'auto'}}
                         size="small"
                         color="error"
-                        endIcon={<DeleteForeverOutlinedIcon />}
+                        endIcon={<Delete />}
                         onClick={props.onDelete}
                     >
                         Löschen

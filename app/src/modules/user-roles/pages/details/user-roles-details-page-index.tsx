@@ -4,7 +4,6 @@ import {GenericDetailsPageContext} from '../../../../components/generic-details-
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
 import {useNavigate} from 'react-router-dom';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {useFormManager} from '../../../../hooks/use-form-manager';
@@ -20,6 +19,7 @@ import {UserRolesApiService} from '../../user-roles-api-service';
 import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
 import {PermissionGroups} from "../../../../data/permissions/permission-groups";
 import {PermissionLabelsDe} from "../../../../data/permissions/permission-labels";
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export const SecretSchema = yup.object({
     name: yup.string()
@@ -277,7 +277,7 @@ export function UserRolesDetailsPageIndex() {
                         sx={{
                             marginLeft: 'auto',
                         }}
-                        startIcon={<DeleteOutlinedIcon />}
+                        startIcon={<Delete />}
                     >
                         Löschen
                     </Button>

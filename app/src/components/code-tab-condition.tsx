@@ -9,9 +9,9 @@ import {generateComponentTitle} from '../utils/generate-component-title';
 import {TextFieldComponent} from './text-field/text-field-component';
 import {NumberFieldComponent} from './number-field/number-field-component';
 import CachedOutlinedIcon from '@mui/icons-material/CachedOutlined';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import {isStringArray} from '../utils/is-string-array';
 import {ElementWithParents, generateElementNameWithParent} from '../utils/flatten-elements';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 interface CodeTabConditionProps {
     allElements: ElementWithParents[];
@@ -67,7 +67,7 @@ export function CodeTabCondition({
                         color="error"
                         onClick={onDelete}
                     >
-                        <DeleteForeverOutlinedIcon
+                        <Delete
                             fontSize="small"
                         />
                     </IconButton>

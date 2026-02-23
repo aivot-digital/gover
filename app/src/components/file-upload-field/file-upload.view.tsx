@@ -5,9 +5,9 @@ import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {humanizeFileSize, humanizeNumber, pluralize} from '../../utils/huminization-utils';
 import {BaseViewProps} from '../../views/base-view';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import BackupOutlinedIcon from '@mui/icons-material/BackupOutlined';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploadElementItem[]>) {
     const {
@@ -170,7 +170,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
                                                         onClick={() => handleRemove(file)}
                                                         disabled={isDisabled || isBusy}
                                                     >
-                                                        <DeleteForeverOutlinedIcon
+                                                        <Delete
                                                             fontSize="small"
                                                         />
                                                     </IconButton> :
@@ -179,7 +179,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
                                                         onClick={() => handleRemove(file)}
                                                         disabled={isDisabled || isBusy}
                                                         startIcon={
-                                                            <DeleteForeverOutlinedIcon
+                                                            <Delete
                                                                 fontSize="small"
                                                             />
                                                         }
