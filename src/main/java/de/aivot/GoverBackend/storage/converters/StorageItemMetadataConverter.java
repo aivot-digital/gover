@@ -3,7 +3,6 @@ package de.aivot.GoverBackend.storage.converters;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
-import de.aivot.GoverBackend.storage.models.StorageProviderMetadataAttribute;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
@@ -23,11 +22,10 @@ public class StorageItemMetadataConverter implements AttributeConverter<StorageI
     @Override
     public StorageItemMetadata convertToEntityAttribute(String s) {
         var mapper = ObjectMapperFactory
-                .getInstance()
-                .readerForListOf(StorageProviderMetadataAttribute.class);
+                .getInstance();
 
         try {
-            return mapper.readValue(s);
+            return mapper.readValue(s, StorageItemMetadata.class);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
