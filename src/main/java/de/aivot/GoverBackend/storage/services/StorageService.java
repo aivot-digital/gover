@@ -174,6 +174,19 @@ public class StorageService {
                     );
         }
 
+        if (provider.getMaxFileSizeInBytes() != null &&
+                provider.getMaxFileSizeInBytes() != 0 &&
+                content.length > provider.getMaxFileSizeInBytes()) {
+            throw ResponseException
+                    .badRequest(
+                            "Der Speicheranbieter %s (ID %d) erlaubt Dateien mit einer maximalen Größe von %d Bytes. Die übermittelte Datei ist jedoch %d Bytes groß.",
+                            StringUtils.quote(provider.getName()),
+                            provider.getId(),
+                            provider.getMaxFileSizeInBytes(),
+                            content.length
+                    );
+        }
+
         // Only respect metadata attributes if the provider definition supports them.
         // Additionally, filter out any metadata attributes that are not supported by the provider definition.
         var filteredMetadata = new StorageItemMetadata();
