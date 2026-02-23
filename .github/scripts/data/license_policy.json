@@ -435,7 +435,8 @@
         "SISSL",
         "Sleepycat",
         "SSPL-1.0",
-        "GraalVM Free Terms and Conditions (GFTC) including License for Early Adopter Versions"
+        "GraalVM Free Terms and Conditions (GFTC) including License for Early Adopter Versions",
+        "Sustainable Use License"
     ],
     "packageLicenseOverrides": {
         "gover-frontend": {
@@ -532,17 +533,23 @@
         "json@20250517": {
             "license": "CC0-1.0"
         },
-        "icu4j@24.2.1": {
+        "icu4j@24.2.2": {
             "license": "ICU"
         },
         "jai-imageio-core@1.4.0": {
             "license": "LicenseRef-scancode-bsd-3-clause-no-nuclear-warranty"
         },
-        "bcprov-jdk18on@1.78.1": {
+        "bcprov-jdk18on@1.81": {
             "license": "MIT"
         },
-        "js-community@24.2.1": {
+        "js-community@24.2.2": {
             "license": "MIT"
+        },
+        "amqp-client@5.25.0": {
+            "license": "Apache-2.0"
+        },
+        "nodebox@0.1.8": {
+            "license": "Sustainable Use License"
         }
     }
 }

@@ -8,7 +8,6 @@ import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
 import de.aivot.GoverBackend.storage.exceptions.StorageException;
 import de.aivot.GoverBackend.storage.models.StorageDocument;
@@ -27,7 +26,7 @@ import java.util.LinkedList;
 import java.util.Optional;
 
 @Component
-public class LocalDiskStorageProviderDefinition implements StorageProviderDefinition<LocalDiskStorageProviderDefinition.Config>, PluginComponent {
+public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefinition<LocalDiskStorageProviderDefinitionV1.Config> {
     @Nonnull
     @Override
     public String getParentPluginKey() {
@@ -48,14 +47,14 @@ public class LocalDiskStorageProviderDefinition implements StorageProviderDefini
 
     @Nonnull
     @Override
-    public String getKey() {
+    public String getComponentKey() {
         return "local_disk_storage";
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nullable
@@ -69,7 +68,7 @@ public class LocalDiskStorageProviderDefinition implements StorageProviderDefini
     }
 
     @Override
-    public Class<LocalDiskStorageProviderDefinition.Config> getConfigClass() {
+    public Class<LocalDiskStorageProviderDefinitionV1.Config> getConfigClass() {
         return Config.class;
     }
 

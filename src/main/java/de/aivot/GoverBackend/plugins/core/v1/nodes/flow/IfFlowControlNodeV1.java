@@ -3,47 +3,39 @@ package de.aivot.GoverBackend.plugins.core.v1.nodes.flow;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
-import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
-import de.aivot.GoverBackend.process.entities.ProcessEntity;
-import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
-import de.aivot.GoverBackend.process.entities.ProcessVersionEntity;
-import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
-import de.aivot.GoverBackend.process.enums.ProcessHistoryEventType;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.services.ProcessDataService;
-import de.aivot.GoverBackend.user.entities.UserEntity;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Component
-public class IfFlowControlNode implements ProcessNodeDefinition, PluginComponent {
+public class IfFlowControlNodeV1 implements ProcessNodeDefinition {
     private static final String PORT_NAME_TRUE = "true";
     private static final String PORT_NAME_FALSE = "false";
 
     private static final String CONDITION_FIELD_KEY = "condition";
     private final ProcessDataService processDataService;
 
-    public IfFlowControlNode(ProcessDataService processDataService) {
+    public IfFlowControlNodeV1(ProcessDataService processDataService) {
         this.processDataService = processDataService;
     }
 
+    @Nonnull
     @Override
-    public @Nonnull String getKey() {
+    public String getComponentKey() {
         return "if";
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nonnull

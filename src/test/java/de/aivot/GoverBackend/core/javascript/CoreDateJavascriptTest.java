@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.core.javascript;
 
-import de.aivot.GoverBackend.plugins.core.v1.javascript.DateJavascript;
+import de.aivot.GoverBackend.plugins.core.v1.javascript.DateJavascriptV1;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -11,7 +11,7 @@ import java.util.TimeZone;
 import static org.junit.jupiter.api.Assertions.*;
 
 class CoreDateJavascriptTest {
-    private DateJavascript provider;
+    private DateJavascriptV1 provider;
     private static final ZoneId TEST_ZONE = ZoneId.of("Europe/Berlin");
     private ZoneId originalZone;
 
@@ -22,7 +22,7 @@ class CoreDateJavascriptTest {
 
     @BeforeEach
     void setUp() {
-        provider = new DateJavascript();
+        provider = new DateJavascriptV1();
         originalZone = ZoneId.systemDefault();
     }
 

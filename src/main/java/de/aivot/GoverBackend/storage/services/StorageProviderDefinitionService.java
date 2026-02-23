@@ -20,7 +20,7 @@ public class StorageProviderDefinitionService {
                         java.util.stream.Collectors.groupingBy(
                                 StorageProviderDefinition::getKey,
                                 java.util.stream.Collectors.toMap(
-                                        StorageProviderDefinition::getVersion,
+                                        StorageProviderDefinition::getMajorVersion,
                                         provider -> provider
                                 )
                         )

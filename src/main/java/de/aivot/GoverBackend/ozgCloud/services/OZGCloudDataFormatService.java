@@ -1,17 +1,16 @@
 package de.aivot.GoverBackend.ozgCloud.services;
 
-import de.aivot.GoverBackend.elements.models.BaseElement;
-import de.aivot.GoverBackend.elements.models.RootElement;
-import de.aivot.GoverBackend.elements.models.form.content.Headline;
-import de.aivot.GoverBackend.elements.models.form.input.*;
-import de.aivot.GoverBackend.elements.models.form.layout.GroupLayout;
-import de.aivot.GoverBackend.elements.models.form.layout.ReplicatingContainerLayout;
-import de.aivot.GoverBackend.elements.models.steps.StepElement;
+import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.form.content.HeadlineContentElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.*;
+import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
 import de.aivot.GoverBackend.enums.TableColumnDataType;
-import de.aivot.GoverBackend.form.models.FormState;
 import de.aivot.GoverBackend.ozgCloud.models.OZGCloudFormDataItem;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
@@ -24,85 +23,66 @@ public class OZGCloudDataFormatService {
     @Nonnull
     public List<OZGCloudFormDataItem> buildFormData(
             @Nonnull BaseElement currentElement,
-            @Nonnull Map<String, Object> customerInput,
-            @Nullable String idPrefix,
-            @Nonnull FormState elementData
+            @Nonnull ElementData elementData
     ) {
-        var resolvedId = currentElement.getResolvedId(idPrefix);
+        var edo = elementData.mustGet(currentElement);
 
         // Check if the element is visible.
         // If not, yield an empty list.
         // If there is no explicit visibility setting for the element, we assume it is visible.
-        var isVisible = elementData
-                .visibilities()
-                .getOrDefault(resolvedId, true);
-        if (!isVisible) {
+        if (!edo.getIsVisible()) {
             return List.of();
         }
 
         // Check if there is an override for the element.
         // If yes, we use the override instead of the current element for building the form data.
-        var override = elementData
-                .overrides()
-                .getOrDefault(resolvedId, currentElement);
-        // If the override was null, we need to set it to the current element to avoid null pointer exceptions in the switch statement.
-        if (override == null) {
-            override = currentElement;
-        }
+        var override = edo
+                .getComputedOverrideOrDefault(currentElement);
 
         return switch (override) {
-            case RootElement rootElement -> buildRoot(rootElement, customerInput, idPrefix, elementData);
-            case StepElement stepElement -> List.of(buildStep(stepElement, customerInput, idPrefix, elementData));
-            case GroupLayout groupLayout -> buildGroupLayout(groupLayout, customerInput, idPrefix, elementData);
-            case ReplicatingContainerLayout replicatingContainerLayout ->
-                    List.of(buildReplicatingContainerLayout(replicatingContainerLayout, customerInput, idPrefix, elementData));
-            case CheckboxField cbx -> List.of(buildCheckboxField(cbx, customerInput, idPrefix, elementData));
-            case DateField dateField -> List.of(buildDateField(dateField, customerInput, idPrefix, elementData));
-            case FileUploadField fileUploadField ->
-                    List.of(buildFileUploadField(fileUploadField, customerInput, idPrefix, elementData));
-            case MultiCheckboxField multiCheckboxField ->
-                    List.of(buildMultiCheckboxField(multiCheckboxField, customerInput, idPrefix, elementData));
-            case NumberField numberField -> List.of(buildNumberField(numberField, customerInput, idPrefix, elementData));
-            case SelectField selectField -> List.of(buildSelectField(selectField, customerInput, idPrefix, elementData));
-            case RadioField radioField -> List.of(buildRadioField(radioField, customerInput, idPrefix, elementData));
-            case TableField tableField -> List.of(buildTableField(tableField, customerInput, idPrefix, elementData));
-            case TextField textField -> List.of(buildTextField(textField, customerInput, idPrefix, elementData));
-            case TimeField timeField -> List.of(buildTimeField(timeField, customerInput, idPrefix, elementData));
+            case FormLayoutElement rootElement -> buildRoot(rootElement, elementData);
+            case StepElement stepElement -> List.of(buildStep(stepElement, elementData));
+            case GroupLayoutElement groupLayout -> buildGroupLayout(groupLayout, elementData);
+            case ReplicatingContainerLayoutElement replicatingContainerLayout ->
+                    List.of(buildReplicatingContainerLayout(replicatingContainerLayout, elementData));
+            case CheckboxInputElement cbx -> List.of(buildCheckboxField(cbx, elementData));
+            case DateInputElement dateField -> List.of(buildDateField(dateField, elementData));
+            case FileUploadInputElement fileUploadField -> List.of(buildFileUploadField(fileUploadField, elementData));
+            case MultiCheckboxInputElement multiCheckboxField ->
+                    List.of(buildMultiCheckboxField(multiCheckboxField, elementData));
+            case NumberInputElement numberField -> List.of(buildNumberField(numberField, elementData));
+            case SelectInputElement selectField -> List.of(buildSelectField(selectField, elementData));
+            case RadioInputElement radioField -> List.of(buildRadioField(radioField, elementData));
+            case TableInputElement tableField -> List.of(buildTableField(tableField, elementData));
+            case TextInputElement textField -> List.of(buildTextField(textField, elementData));
+            case TimeInputElement timeField -> List.of(buildTimeField(timeField, elementData));
             default -> List.of();
         };
     }
 
     private List<OZGCloudFormDataItem> buildRoot(
-            @Nonnull RootElement rootElement,
-            @Nonnull Map<String, Object> customerInput,
-            @Nullable String idPrefix,
-            @Nonnull FormState elementData
+            @Nonnull FormLayoutElement rootElement,
+            @Nonnull ElementData elementData
     ) {
         return rootElement
                 .getChildren()
                 .stream()
-                .flatMap(child -> buildFormData(child, customerInput, idPrefix,elementData).stream())
+                .flatMap(child -> buildFormData(child, elementData).stream())
                 .toList();
     }
 
     private OZGCloudFormDataItem buildStep(
             @Nonnull StepElement stepElement,
-            @Nonnull Map<String, Object> customerInput,
-            @Nullable String idPrefix,
-            @Nonnull FormState elementData
+            @Nonnull ElementData elementData
     ) {
-        var resolvedId = stepElement.getResolvedId(idPrefix);
-
         var children = buildChildList(
                 stepElement.getChildren(),
-                customerInput,
-                idPrefix,
                 elementData
         );
 
         return new OZGCloudFormDataItem(
-                resolvedId,
-                stepElement.getTitle(),
+                stepElement.getId(),
+                stepElement.getResolvedTitle(),
                 null,
                 null,
                 null,
@@ -113,16 +93,14 @@ public class OZGCloudDataFormatService {
 
     private List<OZGCloudFormDataItem> buildChildList(
             @Nonnull Collection<? extends BaseElement> childList,
-            @Nonnull Map<String, Object> customerInput,
-            @Nullable String idPrefix,
-            @Nonnull FormState elementData
+            @Nonnull ElementData elementData
     ) {
         var children = new LinkedList<OZGCloudFormDataItem>();
 
-        Headline currentLargeHeadline = null;
+        HeadlineContentElement currentLargeHeadline = null;
         List<OZGCloudFormDataItem> largeHeadlineBuffer = null;
 
-        Headline currentSmallHeadline = null;
+        HeadlineContentElement currentSmallHeadline = null;
         List<OZGCloudFormDataItem> smallHeadlineBuffer = null;
 
         // Iterate over all children in the list
@@ -131,18 +109,18 @@ public class OZGCloudDataFormatService {
             // If the child is a headline, we need to start a new section for it. If there is already an active
             //  headline with the same size, we need to flush the buffer into the children list before starting the
             //  new section.
-            if (child instanceof Headline hdl) {
+            if (child instanceof HeadlineContentElement hdl) {
                 // If it's a small headline, we need to check if there is already an active small headline.
                 //  If yes, we need to check if there is an active large headline. If there is, we need to flush the
                 //  small headline as an OZGCloudFormDataItem with its buffered children into the large headline
                 //  buffer, because the small headline is a subsection of the large headline. If there is no active
                 //  large headline, we can flush the small headline directly into the children list. After flushing
                 //  the existing small headline, we can start the new small headline section.
-                if (hdl.getSmall()) {
+                if (Boolean.TRUE.equals(hdl.getSmall())) {
                     if (currentSmallHeadline != null) {
                         var smallHeadlineItem = new OZGCloudFormDataItem(
-                                currentSmallHeadline.getResolvedId(idPrefix),
-                                currentSmallHeadline.getContent(),
+                                currentSmallHeadline.getId(),
+                                currentSmallHeadline.getResolvedContent(),
                                 null,
                                 null,
                                 null,
@@ -171,8 +149,8 @@ public class OZGCloudDataFormatService {
                         // If there is an active small headline, we need to flush it into the large headline buffer before flushing the large headline
                         if (currentSmallHeadline != null) {
                             var smallHeadlineItem = new OZGCloudFormDataItem(
-                                    currentSmallHeadline.getResolvedId(idPrefix),
-                                    currentSmallHeadline.getContent(),
+                                    currentSmallHeadline.getId(),
+                                    currentSmallHeadline.getResolvedContent(),
                                     null,
                                     null,
                                     null,
@@ -185,8 +163,8 @@ public class OZGCloudDataFormatService {
                         }
 
                         var headlineItem = new OZGCloudFormDataItem(
-                                currentLargeHeadline.getResolvedId(idPrefix),
-                                currentLargeHeadline.getContent(),
+                                currentLargeHeadline.getId(),
+                                currentLargeHeadline.getResolvedContent(),
                                 null,
                                 null,
                                 null,
@@ -203,7 +181,7 @@ public class OZGCloudDataFormatService {
             // If it's not a headline we might append the form data of the child to the current headline section
             //  or add it directly to the children list.
             else {
-                var childFormData = buildFormData(child, customerInput, idPrefix, elementData);
+                var childFormData = buildFormData(child, elementData);
 
                 if (currentSmallHeadline != null) {
                     smallHeadlineBuffer.addAll(childFormData);
@@ -220,8 +198,8 @@ public class OZGCloudDataFormatService {
             // Flush the small headline buffer if there is an active small headline
             if (currentSmallHeadline != null) {
                 var smallHeadlineItem = new OZGCloudFormDataItem(
-                        currentSmallHeadline.getResolvedId(idPrefix),
-                        currentSmallHeadline.getContent(),
+                        currentSmallHeadline.getId(),
+                        currentSmallHeadline.getResolvedContent(),
                         null,
                         null,
                         null,
@@ -234,8 +212,8 @@ public class OZGCloudDataFormatService {
             }
 
             var headlineItem = new OZGCloudFormDataItem(
-                    currentLargeHeadline.getResolvedId(idPrefix),
-                    currentLargeHeadline.getContent(),
+                    currentLargeHeadline.getId(),
+                    currentLargeHeadline.getResolvedContent(),
                     null,
                     null,
                     null,
@@ -249,49 +227,41 @@ public class OZGCloudDataFormatService {
     }
 
     private List<OZGCloudFormDataItem> buildGroupLayout(
-            @Nonnull GroupLayout groupLayout,
-            @Nonnull Map<String, Object> customerInput,
-            @Nullable String idPrefix,
-            @Nonnull FormState elementData
+            @Nonnull GroupLayoutElement groupLayout,
+            @Nonnull ElementData elementData
     ) {
-        return buildChildList(groupLayout.getChildren(), customerInput, idPrefix, elementData);
+        return buildChildList(groupLayout.getChildren(), elementData);
     }
 
     private OZGCloudFormDataItem buildReplicatingContainerLayout(
-            @Nonnull ReplicatingContainerLayout replicatingContainerLayout,
-            @Nonnull Map<String, Object> customerInput,
-            @Nullable String idPrefix,
-            @Nonnull FormState elementData
+            @Nonnull ReplicatingContainerLayoutElement replicatingContainerLayout,
+            @Nonnull ElementData elementData
     ) {
-        var resolvedId = replicatingContainerLayout.getResolvedId(idPrefix);
+        var edo = elementData
+                .mustGet(replicatingContainerLayout);
 
-        var childIds = new LinkedList<String>();
+        var childElementDataObject = edo.getValue();
+        List<ElementData> childElementData = new LinkedList<>();
 
-        var childIdsObj = elementData
-                .values()
-                .getOrDefault(resolvedId, List.of());
-
-        if (childIdsObj instanceof List<?> list) {
+        if (childElementDataObject instanceof List<?> list) {
             for (var itemObj : list) {
-                if (itemObj instanceof String str) {
-                    childIds.add(str);
+                if (itemObj instanceof ElementData str) {
+                    childElementData.add(str);
                 }
             }
         }
 
         var childItems = new LinkedList<OZGCloudFormDataItem>();
 
-        for (int i = 0; i < childIds.size(); i++) {
-            var childId = childIds.get(i);
+        for (int i = 0; i < childElementData.size(); i++) {
+            var childED = childElementData.get(i);
             var childFormData = buildChildList(
                     replicatingContainerLayout.getChildren(),
-                    customerInput,
-                    resolvedId + "_" + childId,
-                    elementData
+                    childED
             );
 
             var childItem = new OZGCloudFormDataItem(
-                    resolvedId + "_" + childId,
+                    replicatingContainerLayout.getId() + "_" + i,
                     replicatingContainerLayout.getResolvedHeadline(i),
                     null,
                     null,
@@ -304,7 +274,7 @@ public class OZGCloudDataFormatService {
         }
 
         return new OZGCloudFormDataItem(
-                resolvedId,
+                replicatingContainerLayout.getId(),
                 replicatingContainerLayout.getLabel(),
                 null,
                 null,
@@ -315,39 +285,34 @@ public class OZGCloudDataFormatService {
     }
 
     private OZGCloudFormDataItem buildCheckboxField(
-            @Nonnull CheckboxField cbx,
-            @Nonnull Map<String, Object> customerInput,
-            @Nullable String idPrefix,
-            @Nonnull FormState elementData
+            @Nonnull CheckboxInputElement cbx,
+            @Nonnull ElementData elementData
     ) {
-        var resolvedId = cbx.getResolvedId(idPrefix);
+        var edo = elementData.mustGet(cbx);
 
         return new OZGCloudFormDataItem(
-                resolvedId,
+                cbx.getId(),
                 cbx.getLabel(),
                 null,
                 null,
                 null,
-                (Boolean) elementData.values().getOrDefault(resolvedId, false),
+                edo.getValue(Boolean.class, false),
                 null
         );
     }
 
     private OZGCloudFormDataItem buildNumberField(
-            @Nonnull NumberField cbx,
-            @Nonnull Map<String, Object> customerInput,
-            @Nullable String idPrefix,
-            @Nonnull FormState elementData
+            @Nonnull NumberInputElement cbx,
+            @Nonnull ElementData elementData
     ) {
-        var resolvedId = cbx.getResolvedId(idPrefix);
-
-        var val = elementData.values().getOrDefault(resolvedId, null);
+        var edo = elementData.mustGet(cbx);
+        var val = edo.getValue(Number.class, null);
 
         return new OZGCloudFormDataItem(
-                resolvedId,
+                cbx.getId(),
                 cbx.getLabel(),
                 val == null ? "Keine Angabe" : null,
-                val != null ? (Number) val : null,
+                val != null ? val : null,
                 null,
                 null,
                 null
@@ -355,17 +320,16 @@ public class OZGCloudDataFormatService {
     }
 
     private OZGCloudFormDataItem buildDateField(
-            @Nonnull DateField dateField,
-            @Nonnull Map<String, Object> customerInput,
-            @Nullable String idPrefix,
-            @Nonnull FormState elementData
+            @Nonnull DateInputElement dateField,
+            @Nonnull ElementData elementData
     ) {
-        var resolvedId = dateField.getResolvedId(idPrefix);
+        var edo = elementData.mustGet(dateField);
+        var date = dateField
+                .formatValue(edo.getValue());
 
-        var valObj = elementData.values().getOrDefault(resolvedId, null);
-        if (valObj == null) {
+        if (date == null) {
             return new OZGCloudFormDataItem(
-                    resolvedId,
+                    dateField.getId(),
                     dateField.getLabel(),
                     "Keine Angabe",
                     null,
@@ -375,19 +339,17 @@ public class OZGCloudDataFormatService {
             );
         }
 
-        var date = dateField
-                .getDate((String) valObj);
 
         var displayValue = date
                 .format(
                         DateTimeFormatter
                                 .ofPattern("yyyy-MM-dd")
-                                .withZone(DateField.zoneId)
+                                .withZone(DateInputElement.zoneId)
                 );
 
 
         return new OZGCloudFormDataItem(
-                resolvedId,
+                dateField.getId(),
                 dateField.getLabel(),
                 null,
                 null,
@@ -398,37 +360,24 @@ public class OZGCloudDataFormatService {
     }
 
     private OZGCloudFormDataItem buildFileUploadField(
-            @Nonnull FileUploadField fileUploadField,
-            @Nonnull Map<String, Object> customerInput,
-            @Nullable String idPrefix,
-            @Nonnull FormState elementData
+            @Nonnull FileUploadInputElement fileUploadField,
+            @Nonnull ElementData elementData
     ) {
-        var resolvedId = fileUploadField.getResolvedId(idPrefix);
+        var edo = elementData.mustGet(fileUploadField);
 
-        var items = new LinkedList<FileUploadFieldItem>();
+        var items = fileUploadField.formatValue(edo.getValue());
 
-        var valObj = elementData.values().getOrDefault(resolvedId, List.of());
-        if (valObj instanceof List<?> list) {
-            for (var itemObj : list) {
-                if (itemObj instanceof FileUploadFieldItem fileItem) {
-                    items.add(fileItem);
-                } else if (itemObj instanceof Map<?, ?> itemMap) {
-                    items.add(new FileUploadFieldItem((Map<String, Object>) itemMap));
-                }
-            }
-        }
-
-        var displayValue = items
+        var displayValue = items != null ? items
                 .stream()
-                .map(FileUploadFieldItem::getName)
-                .collect(Collectors.joining(", "));
+                .map(FileUploadInputElementItem::getName)
+                .collect(Collectors.joining(", ")) : "";
 
         if (displayValue.isEmpty()) {
             displayValue = "Keine Anlagen hochgeladen";
         }
 
         return new OZGCloudFormDataItem(
-                resolvedId,
+                fileUploadField.getId(),
                 fileUploadField.getLabel(),
                 displayValue,
                 null,
@@ -439,18 +388,18 @@ public class OZGCloudDataFormatService {
     }
 
     private OZGCloudFormDataItem buildMultiCheckboxField(
-            @Nonnull MultiCheckboxField multiCheckboxField,
-            @Nonnull Map<String, Object> customerInput,
-            @Nullable String idPrefix,
-            @Nonnull FormState elementData
+            @Nonnull MultiCheckboxInputElement multiCheckboxField,
+            @Nonnull ElementData elementData
     ) {
-        var resolvedId = multiCheckboxField.getResolvedId(idPrefix);
+        var edo = elementData.mustGet(multiCheckboxField);
+
+        var items = multiCheckboxField.formatValue(edo.getValue());
 
         var displayValue = multiCheckboxField
-                .toDisplayValue(elementData.values().getOrDefault(resolvedId, List.of()));
+                .toDisplayValue(items);
 
         return new OZGCloudFormDataItem(
-                resolvedId,
+                multiCheckboxField.getId(),
                 multiCheckboxField.getLabel(),
                 displayValue,
                 null,
@@ -461,17 +410,15 @@ public class OZGCloudDataFormatService {
     }
 
     private OZGCloudFormDataItem buildRadioField(
-            @Nonnull RadioField radioField,
-            @Nonnull Map<String, Object> customerInput,
-            @Nullable String idPrefix,
-            @Nonnull FormState elementData
+            @Nonnull RadioInputElement radioField,
+            @Nonnull ElementData elementData
     ) {
-        var resolvedId = radioField.getResolvedId(idPrefix);
+        var edo = elementData.mustGet(radioField);
 
         return new OZGCloudFormDataItem(
-                resolvedId,
+                radioField.getId(),
                 radioField.getLabel(),
-                radioField.toDisplayValue(elementData.values().getOrDefault(resolvedId, null)),
+                radioField.toDisplayValue(edo.getValue(String.class, null)),
                 null,
                 null,
                 null,
@@ -480,17 +427,15 @@ public class OZGCloudDataFormatService {
     }
 
     private OZGCloudFormDataItem buildSelectField(
-            @Nonnull SelectField selectField,
-            @Nonnull Map<String, Object> customerInput,
-            @Nullable String idPrefix,
-            @Nonnull FormState elementData
+            @Nonnull SelectInputElement selectField,
+            @Nonnull ElementData elementData
     ) {
-        var resolvedId = selectField.getResolvedId(idPrefix);
+        var edo = elementData.mustGet(selectField);
 
         return new OZGCloudFormDataItem(
-                resolvedId,
+                selectField.getId(),
                 selectField.getLabel(),
-                selectField.toDisplayValue(elementData.values().getOrDefault(resolvedId, null)),
+                selectField.toDisplayValue(edo.getValue(String.class, null)),
                 null,
                 null,
                 null,
@@ -499,30 +444,22 @@ public class OZGCloudDataFormatService {
     }
 
     private OZGCloudFormDataItem buildTableField(
-            @Nonnull TableField tableField,
-            @Nonnull Map<String, Object> customerInput,
-            @Nullable String idPrefix,
-            @Nonnull FormState elementData
+            @Nonnull TableInputElement tableField,
+            @Nonnull ElementData elementData
     ) {
-        var resolvedId = tableField.getResolvedId(idPrefix);
+        var edo = elementData.mustGet(tableField);
 
-        var rows = new LinkedList<Map<String, Object>>();
-
-        var rowsObject = elementData.values().getOrDefault(resolvedId, List.of());
-        if (rowsObject instanceof List<?> rowsList) {
-            for (var rowObj : rowsList) {
-                if (rowObj instanceof Map<?, ?> rowMap) {
-                    var typedRowMap = rowMap
-                            .entrySet()
-                            .stream()
-                            .filter(e -> e.getKey() instanceof String)
-                            .collect(Collectors.toMap(
-                                    e -> (String) e.getKey(),
-                                    e -> (Object) e.getValue()
-                            ));
-                    rows.add(typedRowMap);
-                }
-            }
+        var rows = tableField.formatValue(edo.getValue());
+        if (rows == null || rows.isEmpty()) {
+            return new OZGCloudFormDataItem(
+                    tableField.getId(),
+                    tableField.getLabel(),
+                    "Keine Angabe",
+                    null,
+                    null,
+                    null,
+                    null
+            );
         }
 
         var rowItems = new LinkedList<OZGCloudFormDataItem>();
@@ -550,7 +487,7 @@ public class OZGCloudDataFormatService {
                 }
 
                 cellItems.add(new OZGCloudFormDataItem(
-                        resolvedId + "_" + i + "_" + column.getLabel().replaceAll("\\W+", "_"),
+                        tableField.getId() + "_" + i + "_" + column.getLabel().replaceAll("\\W+", "_"),
                         column.getLabel(),
                         stringValue,
                         numberValue,
@@ -561,7 +498,7 @@ public class OZGCloudDataFormatService {
             }
 
             rowItems.add(new OZGCloudFormDataItem(
-                    resolvedId + "_" + i,
+                    tableField.getId() + "_" + i,
                     "Zeile " + (i + 1),
                     null,
                     null,
@@ -572,7 +509,7 @@ public class OZGCloudDataFormatService {
         }
 
         return new OZGCloudFormDataItem(
-                resolvedId,
+                tableField.getId(),
                 tableField.getLabel(),
                 null,
                 null,
@@ -583,17 +520,15 @@ public class OZGCloudDataFormatService {
     }
 
     private OZGCloudFormDataItem buildTextField(
-            @Nonnull TextField textField,
-            @Nonnull Map<String, Object> customerInput,
-            @Nullable String idPrefix,
-            @Nonnull FormState elementData
+            @Nonnull TextInputElement textField,
+            @Nonnull ElementData elementData
     ) {
-        var resolvedId = textField.getResolvedId(idPrefix);
+        var edo = elementData.mustGet(textField);
 
         return new OZGCloudFormDataItem(
-                resolvedId,
+                textField.getId(),
                 textField.getLabel(),
-                textField.toDisplayValue(elementData.values().getOrDefault(resolvedId, null)),
+                textField.toDisplayValue(edo.getValue(String.class, null)),
                 null,
                 null,
                 null,
@@ -602,17 +537,15 @@ public class OZGCloudDataFormatService {
     }
 
     private OZGCloudFormDataItem buildTimeField(
-            @Nonnull TimeField timeField,
-            @Nonnull Map<String, Object> customerInput,
-            @Nullable String idPrefix,
-            @Nonnull FormState elementData
+            @Nonnull TimeInputElement timeField,
+            @Nonnull ElementData elementData
     ) {
-        var resolvedId = timeField.getResolvedId(idPrefix);
+        var edo = elementData.mustGet(timeField);
 
         return new OZGCloudFormDataItem(
-                resolvedId,
+                timeField.getId(),
                 timeField.getLabel(),
-                timeField.toDisplayValue(elementData.values().getOrDefault(resolvedId, null)),
+                timeField.toDisplayValue(DateInputElement._formatValue(edo.getValue())),
                 null,
                 null,
                 null,

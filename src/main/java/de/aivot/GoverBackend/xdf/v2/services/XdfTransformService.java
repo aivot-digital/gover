@@ -400,7 +400,7 @@ public class XdfTransformService {
                         fields.add(uploadField);
                         break;
                     case XdfFieldType.DATE:
-                        var dateField = new DateFieldInputElement();
+                        var dateField = new DateInputElement();
 
                         dateField.setId(id);
                         dateField.setName(name);

@@ -12,14 +12,14 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class LocalDiskStorageProviderDefinitionTest {
 
-    private LocalDiskStorageProviderDefinition.Config config;
+    private LocalDiskStorageProviderDefinitionV1.Config config;
 
     private static final String testRoot = ".storage-test/";
     private static final String documentsFolder = "/documents/";
 
     @BeforeEach
     void setUp() throws IOException {
-        config = new LocalDiskStorageProviderDefinition.Config();
+        config = new LocalDiskStorageProviderDefinitionV1.Config();
         config.root = testRoot;
 
         Files.createDirectories(Path.of(config.root));
@@ -41,18 +41,18 @@ class LocalDiskStorageProviderDefinitionTest {
 
     @Test
     void rootFolder() {
-        var root = new LocalDiskStorageProviderDefinition()
+        var root = new LocalDiskStorageProviderDefinitionV1()
                 .rootFolder(config, true);
         assertNotNull(root);
 
-        root = new LocalDiskStorageProviderDefinition()
+        root = new LocalDiskStorageProviderDefinitionV1()
                 .rootFolder(config, false);
         assertNotNull(root);
     }
 
     @Test
     void createFolder() {
-        var target = new LocalDiskStorageProviderDefinition()
+        var target = new LocalDiskStorageProviderDefinitionV1()
                 .createFolder(config, "/new-folder");
 
         // Test returned folder object
@@ -66,14 +66,14 @@ class LocalDiskStorageProviderDefinitionTest {
 
     @Test
     void retrieveFolder() {
-        var target = new LocalDiskStorageProviderDefinition()
+        var target = new LocalDiskStorageProviderDefinitionV1()
                 .retrieveFolder(config, "/" + documentsFolder, true)
                 .orElse(null);
         assertNotNull(target);
         assertEquals("documents", target.getName());
         assertEquals("/" + documentsFolder, target.getPathFromRoot());
 
-        target = new LocalDiskStorageProviderDefinition()
+        target = new LocalDiskStorageProviderDefinitionV1()
                 .retrieveFolder(config, "/" + documentsFolder, false)
                 .orElse(null);
         assertNotNull(target);
@@ -83,18 +83,18 @@ class LocalDiskStorageProviderDefinitionTest {
 
     @Test
     void folderExists() {
-        var exists = new LocalDiskStorageProviderDefinition()
+        var exists = new LocalDiskStorageProviderDefinitionV1()
                 .folderExists(config, "/" + documentsFolder);
         assertTrue(exists);
 
-        exists = new LocalDiskStorageProviderDefinition()
+        exists = new LocalDiskStorageProviderDefinitionV1()
                 .folderExists(config, "/non-existing-folder");
         assertFalse(exists);
     }
 
     @Test
     void deleteFolder() {
-        var provider = new LocalDiskStorageProviderDefinition();
+        var provider = new LocalDiskStorageProviderDefinitionV1();
         var folderPath = "/folder-to-delete";
 
         // Create folder to delete
@@ -108,7 +108,7 @@ class LocalDiskStorageProviderDefinitionTest {
 
     @Test
     void storeDocument() {
-        var provider = new LocalDiskStorageProviderDefinition();
+        var provider = new LocalDiskStorageProviderDefinitionV1();
         var documentPath = "/documents/test-document.txt";
         var documentData = "This is a test document.".getBytes();
         var document = provider.storeDocument(config, documentPath, documentData);
@@ -120,7 +120,7 @@ class LocalDiskStorageProviderDefinitionTest {
 
     @Test
     void retrieveDocument() {
-        var provider = new LocalDiskStorageProviderDefinition();
+        var provider = new LocalDiskStorageProviderDefinitionV1();
         var documentPath = "/documents/test-document.txt";
         var documentData = "This is a test document.".getBytes();
 
@@ -138,7 +138,7 @@ class LocalDiskStorageProviderDefinitionTest {
 
      @Test
     void retrieveDocumentContent() {
-        var provider = new LocalDiskStorageProviderDefinition();
+        var provider = new LocalDiskStorageProviderDefinitionV1();
         var documentPath = "/documents/test-document.txt";
         var documentData = "This is a test document.".getBytes();
 
@@ -156,7 +156,7 @@ class LocalDiskStorageProviderDefinitionTest {
 
     @Test
     void documentExists() {
-        var provider = new LocalDiskStorageProviderDefinition();
+        var provider = new LocalDiskStorageProviderDefinitionV1();
         var documentPath = "/documents/test-document.txt";
         var documentData = "This is a test document.".getBytes();
 
@@ -173,7 +173,7 @@ class LocalDiskStorageProviderDefinitionTest {
 
     @Test
     void deleteDocument() {
-        var provider = new LocalDiskStorageProviderDefinition();
+        var provider = new LocalDiskStorageProviderDefinitionV1();
         var documentPath = "/documents/document-to-delete.txt";
         var documentData = "This document will be deleted.".getBytes();
 
@@ -191,60 +191,60 @@ class LocalDiskStorageProviderDefinitionTest {
         var base = Path.of("/tmp/storage");
 
         // Test valid paths
-        Path result = LocalDiskStorageProviderDefinition.getSecurePath(base, "folder/file.txt");
+        Path result = LocalDiskStorageProviderDefinitionV1.getSecurePath(base, "folder/file.txt");
         assertTrue(result.startsWith(base));
 
         // Test absolute pathFromRoot
-        result = LocalDiskStorageProviderDefinition.getSecurePath(base, "/file.txt");
+        result = LocalDiskStorageProviderDefinitionV1.getSecurePath(base, "/file.txt");
         assertTrue(result.startsWith(base));
 
         // Test pathFromRoot traversal attempts
         assertThrows(SecurityException.class, () ->
-                LocalDiskStorageProviderDefinition.getSecurePath(base, "../etc/passwd")
+                LocalDiskStorageProviderDefinitionV1.getSecurePath(base, "../etc/passwd")
         );
 
         // Test edge cases
-        result = LocalDiskStorageProviderDefinition.getSecurePath(base, "/");
+        result = LocalDiskStorageProviderDefinitionV1.getSecurePath(base, "/");
         assertEquals(base.normalize(), result);
 
         // Test relative paths
-        result = LocalDiskStorageProviderDefinition.getSecurePath(base, "./subdir/file.txt");
+        result = LocalDiskStorageProviderDefinitionV1.getSecurePath(base, "./subdir/file.txt");
         assertTrue(result.startsWith(base));
 
         // Test complex traversal
         assertThrows(SecurityException.class, () ->
-                LocalDiskStorageProviderDefinition.getSecurePath(base, "../../outside.txt")
+                LocalDiskStorageProviderDefinitionV1.getSecurePath(base, "../../outside.txt")
         );
 
         // Test empty pathFromRoot
-        result = LocalDiskStorageProviderDefinition.getSecurePath(base, "");
+        result = LocalDiskStorageProviderDefinitionV1.getSecurePath(base, "");
         assertEquals(base.normalize(), result);
     }
 
     @Test
     void sanitizeFilename() {
         // Test normal filename
-        String result = LocalDiskStorageProviderDefinition.sanitizeFilename("document.txt");
+        String result = LocalDiskStorageProviderDefinitionV1.sanitizeFilename("document.txt");
         assertEquals("document.txt", result);
 
         // Test filename with spaces
-        result = LocalDiskStorageProviderDefinition.sanitizeFilename("my document.txt");
+        result = LocalDiskStorageProviderDefinitionV1.sanitizeFilename("my document.txt");
         assertEquals("my_document.txt", result);
 
         // Test filename with special characters
-        result = LocalDiskStorageProviderDefinition.sanitizeFilename("docu<>ment?.txt");
+        result = LocalDiskStorageProviderDefinitionV1.sanitizeFilename("docu<>ment?.txt");
         assertEquals("docu__ment_.txt", result);
 
         // Test filename with only invalid characters
-        result = LocalDiskStorageProviderDefinition.sanitizeFilename("<>:\"/\\|?*");
+        result = LocalDiskStorageProviderDefinitionV1.sanitizeFilename("<>:\"/\\|?*");
         assertEquals("_________", result);
 
         // Test empty filename
-        result = LocalDiskStorageProviderDefinition.sanitizeFilename("");
+        result = LocalDiskStorageProviderDefinitionV1.sanitizeFilename("");
         assertNotEquals("", result);
 
         // Test filename with unicode characters
-        result = LocalDiskStorageProviderDefinition.sanitizeFilename("döcümént.txt");
+        result = LocalDiskStorageProviderDefinitionV1.sanitizeFilename("döcümént.txt");
         assertEquals("d_c_m_nt.txt", result);
     }
 }

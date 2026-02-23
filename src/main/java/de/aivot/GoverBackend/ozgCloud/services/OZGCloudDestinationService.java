@@ -2,19 +2,11 @@ package de.aivot.GoverBackend.ozgCloud.services;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.aivot.GoverBackend.elements.models.BaseElement;
-import de.aivot.GoverBackend.elements.models.RootElement;
-import de.aivot.GoverBackend.elements.models.form.input.*;
-import de.aivot.GoverBackend.elements.models.form.layout.GroupLayout;
-import de.aivot.GoverBackend.elements.models.form.layout.ReplicatingContainerLayout;
-import de.aivot.GoverBackend.elements.models.steps.StepElement;
-import de.aivot.GoverBackend.enums.TableColumnDataType;
-import de.aivot.GoverBackend.form.models.FormState;
+import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.ozgCloud.models.OZGCloudControlData;
-import de.aivot.GoverBackend.ozgCloud.models.OZGCloudFormDataItem;
 import de.aivot.GoverBackend.ozgCloud.models.OZGCloudPayload;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -25,10 +17,7 @@ import org.springframework.web.client.RestClient;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 public class OZGCloudDestinationService {
@@ -48,15 +37,14 @@ public class OZGCloudDestinationService {
             @Nonnull String destinationUrl,
             @Nonnull OZGCloudControlData controlData,
             @Nonnull BaseElement rootElement,
-            @Nonnull Map<String, Object> elementData,
+            @Nonnull ElementData elementData,
             @Nonnull Resource representation,
-            @Nonnull List<Resource> attachments,
-            @Nonnull FormState formState
+            @Nonnull List<Resource> attachments
     ) {
         var destinationUri = URI.create(destinationUrl);
 
         var formData = new OZGCloudDataFormatService()
-                .buildFormData(rootElement, elementData, null, formState);
+                .buildFormData(rootElement, elementData);
 
         var payload = new OZGCloudPayload(
                 controlData,

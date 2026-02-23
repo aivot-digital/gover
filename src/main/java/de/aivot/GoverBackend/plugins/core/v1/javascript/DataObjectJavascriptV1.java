@@ -9,7 +9,6 @@ import de.aivot.GoverBackend.dataObject.services.DataObjectSchemaService;
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -31,26 +30,27 @@ import java.util.Map;
  * The functions are exposed to the JavaScript environment through the GraalVM Polyglot API.
  */
 @Component
-public class DataObjectJavascript implements JavascriptFunctionProvider, PluginComponent {
+public class DataObjectJavascriptV1 implements JavascriptFunctionProvider {
     private final DataObjectSchemaService dataObjectSchemaService;
     private final DataObjectItemService dataObjectItemService;
 
     @Autowired
-    public DataObjectJavascript(DataObjectSchemaService dataObjectSchemaService,
-                                @Lazy DataObjectItemService dataObjectItemService) {
+    public DataObjectJavascriptV1(DataObjectSchemaService dataObjectSchemaService,
+                                  @Lazy DataObjectItemService dataObjectItemService) {
         this.dataObjectSchemaService = dataObjectSchemaService;
         this.dataObjectItemService = dataObjectItemService;
     }
 
+    @Nonnull
     @Override
-    public @Nonnull String getKey() {
+    public String getComponentKey() {
         return "data_objects";
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nonnull
@@ -69,11 +69,6 @@ public class DataObjectJavascript implements JavascriptFunctionProvider, PluginC
     @Override
     public String getDescription() {
         return "Dieses Paket enthält Funktionen für Datenobjekte.";
-    }
-
-    @Override
-    public String getObjectName() {
-        return "_" + getKey();
     }
 
     @Override
@@ -144,7 +139,7 @@ public class DataObjectJavascript implements JavascriptFunctionProvider, PluginC
 
         var items = page
                 .stream()
-                .map(DataObjectJavascript::getItemData)
+                .map(DataObjectJavascriptV1::getItemData)
                 .toList();
 
         return JavascriptEngine

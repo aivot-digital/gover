@@ -23,7 +23,7 @@ public class TimeInputElement extends BaseInputElement<ZonedDateTime> implements
 
     @Override
     public ZonedDateTime formatValue(Object value) {
-        return DateFieldInputElement._formatValue(value);
+        return DateInputElement._formatValue(value);
     }
 
     @Override

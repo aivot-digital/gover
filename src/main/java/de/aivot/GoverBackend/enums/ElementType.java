@@ -116,7 +116,7 @@ public enum ElementType implements Identifiable<Integer> {
             case Alert -> new AlertContentElement();
             case Group -> new GroupLayoutElement();
             case Checkbox -> new CheckboxInputElement();
-            case Date -> new DateFieldInputElement();
+            case Date -> new DateInputElement();
             case Headline -> new HeadlineContentElement();
             case MultiCheckbox -> new MultiCheckboxInputElement();
             case Number -> new NumberInputElement();

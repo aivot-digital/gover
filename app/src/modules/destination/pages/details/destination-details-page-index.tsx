@@ -16,7 +16,6 @@ import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackba
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../../hooks/use-form-manager';
-import {FormsApiService} from '../../../forms/forms-api-service';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {ConstraintDialog} from '../../../../dialogs/constraint-dialog/constraint-dialog';
 import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constraint-link-props';
@@ -28,19 +27,7 @@ import {DestinationType, DestinationTypeLabels, DestinationTypeOptions} from '..
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 import {MailProcessingNotice} from '../../../../components/mail-processing-notice/mail-processing-notice';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
-import {StatusTable} from '../../../../components/status-table/status-table';
-import { OzgCloudInfo } from '../../components/ozg-cloud-info';
-import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
-import {ConstraintDialog} from '../../../../dialogs/constraint-dialog/constraint-dialog';
-import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constraint-link-props';
-import * as yup from 'yup';
-import {Destination} from '../../models/destination';
-import {DestinationsApiService} from '../../destinations-api-service';
-import {NumberFieldComponent} from '../../../../components/number-field/number-field-component';
-import {DestinationType} from '../../../../data/destination-type';
-import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
-import {MailProcessingNotice} from '../../../../components/mail-processing-notice/mail-processing-notice';
-import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
+import {OzgCloudInfo} from '../../components/ozg-cloud-info';
 import {CodeEditor} from '../../../../components/code-editor/code-editor';
 import {VFormVersionWithDetailsService} from '../../../forms/services/v-form-version-with-details-api-service';
 
@@ -562,8 +549,7 @@ export function DestinationDetailsPageIndex() {
                         columnSpacing={4}
                     >
                         <Grid
-                            item
-                            xs={12}
+                            size={12}
                         >
                             <TextFieldComponent
                                 label="Endpunkt"
@@ -602,9 +588,10 @@ export function DestinationDetailsPageIndex() {
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
                 >
                     <NumberFieldComponent
                         label="Maximale Gesamtgröße der Anlagen (MB)"
@@ -619,9 +606,10 @@ export function DestinationDetailsPageIndex() {
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
                 />
             </Grid>
 

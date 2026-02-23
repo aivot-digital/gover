@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.plugins.core.v1.javascript;
 
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
-import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -12,22 +11,23 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 
 @Service
-public class DateJavascript implements JavascriptFunctionProvider, PluginComponent {
+public class DateJavascriptV1 implements JavascriptFunctionProvider {
+    @Nonnull
     @Override
-    public @Nonnull String getKey() {
+    public String getParentPluginKey() {
+        return Core.PLUGIN_KEY;
+    }
+
+    @Nonnull
+    @Override
+    public String getComponentKey() {
         return "date";
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
-    }
-
-    @Nonnull
-    @Override
-    public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nonnull
@@ -40,11 +40,6 @@ public class DateJavascript implements JavascriptFunctionProvider, PluginCompone
     @Override
     public String getDescription() {
         return "Dieses Modul stellt Funktionen zur Verarbeitung von Datumswerten bereit.";
-    }
-
-    @Override
-    public String getObjectName() {
-        return "_" + getKey();
     }
 
     @Override

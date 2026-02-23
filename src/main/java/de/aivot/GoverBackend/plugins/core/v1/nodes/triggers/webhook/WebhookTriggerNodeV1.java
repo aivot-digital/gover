@@ -18,7 +18,6 @@ import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
 import de.aivot.GoverBackend.nocode.models.NoCodeReference;
 import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
-import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
 import de.aivot.GoverBackend.plugins.core.v1.operators.bool.NoCodeOrOperator;
 import de.aivot.GoverBackend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
@@ -42,7 +41,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class WebhookTriggerNode implements ProcessNodeDefinition, PluginComponent {
+public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
     public static final String NODE_KEY = "webhook";
     private static final String PORT_NAME = "input";
 
@@ -54,8 +53,8 @@ public class WebhookTriggerNode implements ProcessNodeDefinition, PluginComponen
     private final ProcessNodeRepository processDefinitionNodeRepository;
 
     @Autowired
-    public WebhookTriggerNode(GoverConfig goverConfig,
-                              ProcessNodeRepository processDefinitionNodeRepository) {
+    public WebhookTriggerNodeV1(GoverConfig goverConfig,
+                                ProcessNodeRepository processDefinitionNodeRepository) {
         this.goverConfig = goverConfig;
         this.processDefinitionNodeRepository = processDefinitionNodeRepository;
     }
@@ -66,15 +65,16 @@ public class WebhookTriggerNode implements ProcessNodeDefinition, PluginComponen
         return Core.PLUGIN_KEY;
     }
 
+    @Nonnull
     @Override
-    public @Nonnull String getKey() {
+    public String getComponentKey() {
         return NODE_KEY;
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nonnull

@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.javascript.services;
 import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
+import jakarta.annotation.Nonnull;
 import org.graalvm.polyglot.HostAccess;
 import org.junit.jupiter.api.Test;
 
@@ -108,6 +109,36 @@ class JavascriptEngineTest {
         @Override
         public String[] getMethodTypeDefinitions() {
             return new String[0];
+        }
+
+        @Nonnull
+        @Override
+        public String getParentPluginKey() {
+            return "de.aivot";
+        }
+
+        @Nonnull
+        @Override
+        public String getComponentKey() {
+            return "test";
+        }
+
+        @Nonnull
+        @Override
+        public String getComponentVersion() {
+            return "1.0.0";
+        }
+
+        @Nonnull
+        @Override
+        public String getName() {
+            return "";
+        }
+
+        @Nonnull
+        @Override
+        public String getDescription() {
+            return "";
         }
     }
 }

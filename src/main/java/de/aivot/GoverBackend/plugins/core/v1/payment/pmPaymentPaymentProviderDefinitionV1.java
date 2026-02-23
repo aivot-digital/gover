@@ -29,8 +29,6 @@ import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.Nonnull;
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpResponse;
 import java.util.LinkedList;
@@ -38,7 +36,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @Component
-public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefinition, PluginComponent {
+public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefinition, PluginComponent {
     private final static String ORIGINATOR_ID_FIELD = "originatorId";
     private final static String ENDPOINT_ID_FIELD = "endpointId";
     private final static String CLIENT_ID_FIELD = "clientId";
@@ -50,20 +48,21 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
     private final HttpService httpService;
 
     @Autowired
-    public pmPaymentPaymentProviderDefinition(SecretService secretService, HttpService httpService) {
+    public pmPaymentPaymentProviderDefinitionV1(SecretService secretService, HttpService httpService) {
         this.secretService = secretService;
         this.httpService = httpService;
     }
 
+    @Nonnull
     @Override
-    public @Nonnull String getKey() {
+    public String getComponentKey() {
         return "pmpayment";
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nonnull

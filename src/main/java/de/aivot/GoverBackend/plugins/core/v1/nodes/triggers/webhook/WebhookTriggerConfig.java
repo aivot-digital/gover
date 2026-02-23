@@ -6,7 +6,7 @@ import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.GoverBackend.enums.ElementType;
 
 
-@LayoutElementPOJOBinding(id = WebhookTriggerNode.NODE_KEY, type = ElementType.ConfigLayout)
+@LayoutElementPOJOBinding(id = WebhookTriggerNodeV1.NODE_KEY, type = ElementType.ConfigLayout)
 public class WebhookTriggerConfig {
     // The basic slug for this webhook node
     public static final String SLUG_CONFIG_KEY = "slug";

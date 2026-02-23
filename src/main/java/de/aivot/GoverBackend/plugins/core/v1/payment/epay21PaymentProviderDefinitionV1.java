@@ -20,7 +20,6 @@ import de.aivot.GoverBackend.payment.exceptions.PaymentMissingDataException;
 import de.aivot.GoverBackend.payment.models.PaymentProviderDefinition;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentTransaction;
-import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
 import de.aivot.GoverBackend.secrets.services.SecretService;
 import de.aivot.GoverBackend.utils.StringUtils;
@@ -28,7 +27,6 @@ import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.Nonnull;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -37,7 +35,7 @@ import java.net.http.HttpResponse;
 import java.util.*;
 
 @Component
-public class epay21PaymentProviderDefinition implements PaymentProviderDefinition, PluginComponent {
+public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinition {
     private final static String ORIGINATOR_ID_FIELD = "originatorId";
     private final static String ENDPOINT_ID_FIELD = "endpointId";
     private final static String PASSWORD_SECRET_KEY_FIELD = "passwordSecretKey";
@@ -47,19 +45,20 @@ public class epay21PaymentProviderDefinition implements PaymentProviderDefinitio
     private final SecretService secretService;
 
     @Autowired
-    public epay21PaymentProviderDefinition(SecretService secretService) {
+    public epay21PaymentProviderDefinitionV1(SecretService secretService) {
         this.secretService = secretService;
     }
 
+    @Nonnull
     @Override
-    public @Nonnull String getKey() {
+    public String getComponentKey() {
         return "epay21";
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nonnull

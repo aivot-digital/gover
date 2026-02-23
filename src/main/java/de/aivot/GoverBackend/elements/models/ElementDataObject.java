@@ -47,6 +47,14 @@ public class ElementDataObject implements Serializable {
         this.type = elementType;
     }
 
+    public static ElementDataObject of(ElementType type) {
+        return new ElementDataObject(type);
+    }
+
+    public static ElementDataObject of(BaseElement element) {
+        return new ElementDataObject(element);
+    }
+
     public ElementType getType() {
         return type;
     }
@@ -174,6 +182,11 @@ public class ElementDataObject implements Serializable {
             return Optional.of(clazz.cast(value));
         }
         return Optional.empty();
+    }
+
+    @Nullable
+    public <T> T getValue(Class<T> clazz, T def) {
+        return getOptionalValue(clazz).orElse(def);
     }
 
     @JsonIgnore

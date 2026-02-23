@@ -1,7 +1,6 @@
-package de.aivot.GoverBackend.plugins.core.v1.javascript;
+package de.aivot.GoverBackend.plugins.core.v2.javascript;
 
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
-import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
 import de.aivot.GoverBackend.secrets.services.SecretService;
 import jakarta.annotation.Nonnull;
@@ -16,23 +15,24 @@ import java.util.UUID;
  * The functions are exposed to the JavaScript environment through the GraalVM Polyglot API.
  */
 @Component
-public class SecretJavascript implements JavascriptFunctionProvider, PluginComponent {
+public class SecretJavascriptV2 implements JavascriptFunctionProvider {
     private final SecretService secretService;
 
     @Autowired
-    public SecretJavascript(SecretService secretService) {
+    public SecretJavascriptV2(SecretService secretService) {
         this.secretService = secretService;
     }
 
+    @Nonnull
     @Override
-    public @Nonnull String getKey() {
+    public String getComponentKey() {
         return "secrets";
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "2.0.0";
     }
 
     @Nonnull
@@ -51,11 +51,6 @@ public class SecretJavascript implements JavascriptFunctionProvider, PluginCompo
     @Override
     public String getDescription() {
         return "Dieses Paket enthält Funktionen für Geheimnisse.";
-    }
-
-    @Override
-    public String getObjectName() {
-        return "_" + getKey();
     }
 
     @Override

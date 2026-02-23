@@ -8,7 +8,6 @@ import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
-import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
@@ -18,7 +17,6 @@ import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
 import de.aivot.GoverBackend.nocode.models.NoCodeReference;
 import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
-import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
 import de.aivot.GoverBackend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
@@ -43,7 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 
 @Component
-public class EMailActionNode implements ProcessNodeDefinition, PluginComponent {
+public class EMailActionNodeV1 implements ProcessNodeDefinition {
     public static final String NODE_KEY = "mail";
 
     private static final String SUCCESS_PORT_NAME = "output";
@@ -52,23 +50,24 @@ public class EMailActionNode implements ProcessNodeDefinition, PluginComponent {
     private final ProcessDataService processDataService;
     private final JavaMailSenderImpl mailSender;
 
-    public EMailActionNode(GoverConfig goverConfig,
-                           ProcessDataService processDataService,
-                           JavaMailSenderImpl mailSender) {
+    public EMailActionNodeV1(GoverConfig goverConfig,
+                             ProcessDataService processDataService,
+                             JavaMailSenderImpl mailSender) {
         this.goverConfig = goverConfig;
         this.processDataService = processDataService;
         this.mailSender = mailSender;
     }
 
+    @Nonnull
     @Override
-    public @Nonnull String getKey() {
+    public String getComponentKey() {
         return NODE_KEY;
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nonnull

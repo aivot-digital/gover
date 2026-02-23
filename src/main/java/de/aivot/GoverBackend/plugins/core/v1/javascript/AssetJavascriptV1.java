@@ -3,7 +3,6 @@ package de.aivot.GoverBackend.plugins.core.v1.javascript;
 import de.aivot.GoverBackend.asset.services.AssetService;
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
 import de.aivot.GoverBackend.services.storages.AssetStorageService;
 import jakarta.annotation.Nonnull;
@@ -17,12 +16,12 @@ import java.util.Base64;
 import java.util.UUID;
 
 @Component
-public class AssetJavascript implements JavascriptFunctionProvider, PluginComponent {
+public class AssetJavascriptV1 implements JavascriptFunctionProvider {
     private final AssetService assetService;
     private final AssetStorageService assetStorageService;
 
     @Autowired
-    public AssetJavascript(
+    public AssetJavascriptV1(
             AssetService assetService,
             AssetStorageService assetStorageService
     ) {
@@ -30,15 +29,16 @@ public class AssetJavascript implements JavascriptFunctionProvider, PluginCompon
         this.assetStorageService = assetStorageService;
     }
 
+    @Nonnull
     @Override
-    public @Nonnull String getKey() {
+    public String getComponentKey() {
         return "assets";
     }
 
     @Nonnull
     @Override
-    public Integer getVersion() {
-        return 1;
+    public String getComponentVersion() {
+        return "1.0.0";
     }
 
     @Nonnull
@@ -57,11 +57,6 @@ public class AssetJavascript implements JavascriptFunctionProvider, PluginCompon
     @Override
     public String getDescription() {
         return "Dieses Paket enthält Funktionen für Dateien & Medien.";
-    }
-
-    @Override
-    public String getObjectName() {
-        return "_" + getKey();
     }
 
     @Override

@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.*;
 import de.aivot.GoverBackend.nocode.providers.NoCodeOperatorsProvider;
+import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -131,6 +132,36 @@ class NoCodeEvaluationServiceTest {
         };
 
         return new NoCodeOperatorsProvider() {
+            @Nonnull
+            @Override
+            public String getParentPluginKey() {
+                return "de.aivot";
+            }
+
+            @Nonnull
+            @Override
+            public String getComponentKey() {
+                return "test";
+            }
+
+            @Nonnull
+            @Override
+            public String getComponentVersion() {
+                return "1.0.0";
+            }
+
+            @Nonnull
+            @Override
+            public String getName() {
+                return "";
+            }
+
+            @Nonnull
+            @Override
+            public String getDescription() {
+                return "";
+            }
+
             @Override
             public NoCodeOperator[] getOperators() {
                 return new NoCodeOperator[]{
