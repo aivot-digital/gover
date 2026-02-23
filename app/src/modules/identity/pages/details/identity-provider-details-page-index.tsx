@@ -641,7 +641,7 @@ export function IdentityProviderDetailsPageIndex() {
                             color="info"
                             sx={{mt: 2}}
                         >
-                            <strong>Hinweis:</strong>
+                            <strong>Hinweis:</strong>{" "}
                             Die Konfigurationen für die offiziellen Nutzerkonten von Bund und Ländern werden von Gover bereitgestellt und sind nicht veränderbar.
                         </AlertComponent>
                     }

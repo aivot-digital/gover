@@ -12,7 +12,6 @@ import {
     type ListControlRef,
 } from '../../../../components/generic-list/generic-list-props';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
-import ProcessChart from '@aivot/mui-material-symbols-400-outlined/dist/process-chart/ProcessChart';
 import {ProcessInstanceHistoryEventDialog} from '../../dialogs/process-instance-history-event-dialog';
 import News from '@aivot/mui-material-symbols-400-outlined/dist/news/News';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
@@ -21,6 +20,7 @@ import {ProcessDefinitionApiService} from '../../services/process-definition-api
 import {type Page} from '../../../../models/dtos/page';
 import {useSearchParams} from 'react-router-dom';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
+import FolderShared from '@aivot/mui-material-symbols-400-outlined/dist/folder-shared/FolderShared';
 
 interface ProcessInstanceEntityWithProcessInfo extends ProcessInstanceEntity {
     processName: string;
@@ -135,7 +135,7 @@ export function ProcessInstanceListPage(): ReactNode {
                         },
                     ]}
                     header={{
-                        icon: <ProcessChart/>,
+                        icon: ModuleIcons.submissions,
                         title: 'Vorgänge',
                         badge:
                             (processDefinition !== null && processVersion !== undefined) ?
@@ -146,29 +146,18 @@ export function ProcessInstanceListPage(): ReactNode {
                                 undefined,
                         actions: [
                             {
-                                tooltip: 'Refresh',
+                                tooltip: 'Liste aktualisieren',
                                 icon: <Refresh/>,
                                 onClick: handleListRefresh,
                             },
                         ],
                         helpDialog: {
-                            title: 'Hilfe zu Teams',
+                            title: 'Hilfe zu Vorgängen',
                             tooltip: 'Hilfe anzeigen',
                             content: (
                                 <>
                                     <Typography>
-                                        Ein Fachbereich ist eine zentrale Verwaltungseinheit in Gover und essenziell für
-                                        den
-                                        Betrieb der Anwendung. Er speichert wichtige Stammdaten wie Adress- und
-                                        Kontaktdaten
-                                        sowie rechtliche Informationen (z.
-                                        B. Impressum, Datenschutzerklärung), die in Formularen wiederverwendet werden
-                                        können.
-                                    </Typography>
-                                    <Typography sx={{mt: 2}}>
-                                        Jedem Fachbereich sind Mitarbeiter:innen mit einer spezifischen Rolle
-                                        zugeordnet,
-                                        die deren Berechtigungen innerhalb des Fachbereichs definiert.
+                                        Auf dieser Seite erhalten Sie einen Überblick über alle offenen bzw. laufenden Vorgänge. Klicken Sie auf einen Vorgang, um die zugehörigen Informationen einzusehen und Aufgaben zu bearbeiten.
                                     </Typography>
                                 </>
                             ),
@@ -177,7 +166,7 @@ export function ProcessInstanceListPage(): ReactNode {
                     searchLabel="Vorgang suchen"
                     searchPlaceholder="Schlüssel des Vorgangs eingeben…"
                     fetch={fetchDataWithParams}
-                    columnIcon={<ProcessChart/>}
+                    columnIcon={<FolderShared/>}
                     columnDefinitions={[
                         {
                             field: 'processName',
@@ -248,14 +237,14 @@ export function ProcessInstanceListPage(): ReactNode {
                         },
                         {
                             icon: <News/>,
-                            tooltip: 'Aufgaben Einsehen',
+                            tooltip: 'Aufgaben einsehen',
                             onClick: () => {
                                 setShowEventsForInstanceId(item.id);
                             },
                         },
                         {
                             icon: ModuleIcons.processes,
-                            tooltip: 'Prozessverlauf Einsehen',
+                            tooltip: 'Prozessverlauf ansehen',
                             to: `/processes/${item.processId}/versions/${item.initialProcessVersion}/?instanceId=${item.id}`,
                         },
                     ]}

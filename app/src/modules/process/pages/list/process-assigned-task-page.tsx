@@ -12,12 +12,9 @@ import {ListControlRef} from "../../../../components/generic-list/generic-list-p
 import Refresh from "@aivot/mui-material-symbols-400-outlined/dist/refresh/Refresh";
 import {ProcessInstanceEntity} from "../../entities/process-instance-entity";
 import {ProcessInstanceApiService} from "../../services/process-instance-api-service";
-import Replay from "@aivot/mui-material-symbols-400-outlined/dist/replay/Replay";
 import {useAppDispatch} from "../../../../hooks/use-app-dispatch";
-import {clearLoadingMessage, setLoadingMessage} from "../../../../slices/shell-slice";
 import TaskAlt from "@aivot/mui-material-symbols-400-outlined/dist/task-alt/TaskAlt";
 import DataObject from "@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject";
-import FactCheck from "@aivot/mui-material-symbols-400-outlined/dist/fact-check/FactCheck";
 import {ProcessEntity} from "../../entities/process-entity";
 import {ProcessNodeEntity} from "../../entities/process-node-entity";
 import {ProcessDefinitionApiService} from "../../services/process-definition-api-service";
@@ -25,6 +22,7 @@ import {ProcessNodeApiService} from "../../services/process-node-api-service";
 import {ProcessNodeProvider, ProcessNodeProviderApiService} from "../../services/process-node-provider-api-service";
 import {getNodeName} from "../details/components/process-flow-editor/utils/node-utils";
 import {CellLink} from "../../../../components/cell-link/cell-link";
+import Task from '@aivot/mui-material-symbols-400-outlined/dist/task/Task';
 
 interface ProcessInstanceTaskEntityWithInstance extends ProcessInstanceTaskEntity {
     instance: ProcessInstanceEntity;
@@ -54,7 +52,7 @@ export function ProcessAssignedTaskListPage() {
                     title: 'Aufgaben',
                     actions: [
                         {
-                            tooltip: 'Refresh',
+                            tooltip: 'Liste aktualisieren',
                             icon: <Refresh/>,
                             onClick: () => {
                                 if (listRef.current != null) {
@@ -64,27 +62,19 @@ export function ProcessAssignedTaskListPage() {
                         },
                     ],
                     helpDialog: {
-                        title: 'Hilfe zu Teams',
+                        title: 'Hilfe zu Aufgaben',
                         tooltip: 'Hilfe anzeigen',
                         content: (
                             <>
                                 <Typography>
-                                    Ein Fachbereich ist eine zentrale Verwaltungseinheit in Gover und essenziell für den
-                                    Betrieb der Anwendung. Er speichert wichtige Stammdaten wie Adress- und Kontaktdaten
-                                    sowie rechtliche Informationen (z.
-                                    B. Impressum, Datenschutzerklärung), die in Formularen wiederverwendet werden
-                                    können.
-                                </Typography>
-                                <Typography sx={{mt: 2}}>
-                                    Jedem Fachbereich sind Mitarbeiter:innen mit einer spezifischen Rolle zugeordnet,
-                                    die deren Berechtigungen innerhalb des Fachbereichs definiert.
+                                    Erhalten Sie hier einen Überblick über Ihre aktuellen Aufgaben in laufenden Vorgängen. Klicken Sie auf eine Aufgabe, um weitere Details zu sehen und die Aufgabe zu bearbeiten.
                                 </Typography>
                             </>
                         ),
                     },
                 }}
-                searchLabel="Team suchen"
-                searchPlaceholder="Name des Teams eingeben…"
+                searchLabel="Aufgabe suchen"
+                searchPlaceholder="Name der Aufgabe eingeben…"
                 fetch={(options) => {
                     return Promise.all([
                         new ProcessInstanceTaskApiService()
@@ -117,7 +107,7 @@ export function ProcessAssignedTaskListPage() {
                             }
                         })
                 }}
-                columnIcon={<TaskAlt/>}
+                columnIcon={<Task/>}
                 columnDefinitions={[
                     {
                         field: 'status',
@@ -163,8 +153,8 @@ export function ProcessAssignedTaskListPage() {
                     },
                 ]}
                 getRowIdentifier={row => row.id.toString()}
-                noDataPlaceholder="Keine Team angelegt"
-                noSearchResultsPlaceholder="Keine Teams gefunden"
+                noDataPlaceholder="Keine Aufgaben vorhanden"
+                noSearchResultsPlaceholder="Keine Aufgaben gefunden"
                 rowActionsCount={3}
                 rowActions={(item) => [
                     {
