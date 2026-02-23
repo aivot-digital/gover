@@ -43,7 +43,7 @@ export function Extensions() {
             >
                 {plugins.map((serviceProvider) => (
                     <Grid
-                        key={serviceProvider.name}
+                        key={serviceProvider.key}
                         size={{
                             xs: 12,
                         }}
@@ -80,7 +80,12 @@ export function Extensions() {
                                         <li>Version {serviceProvider.version}</li>
                                         <li>
                                             {serviceProvider.vendorName}&nbsp;
-                                            <a href={serviceProvider.vendorWebsite}>{serviceProvider.vendorWebsite}</a>
+                                            <a
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                href={serviceProvider.vendorWebsite}>
+                                                {serviceProvider.vendorWebsite}
+                                            </a>
                                         </li>
                                     </Box>
                                 }
@@ -170,7 +175,8 @@ export function Extensions() {
                                                         .components
                                                         .filter(group => group[0].componentType === componentType)
                                                         .map((componentGroup) => {
-                                                            const orderedVersions = componentGroup.sort((a, b) => b.majorVersion - a.majorVersion);
+                                                            const orderedVersions = [...componentGroup]
+                                                                .sort((a, b) => b.majorVersion - a.majorVersion);
                                                             const currentVersion = orderedVersions[0];
                                                             return (
                                                                 <li key={currentVersion.name}>
@@ -214,7 +220,7 @@ export function Extensions() {
                                                                             orderedVersions.length > 1 &&
                                                                             orderedVersions.slice(1).map((version) => (
                                                                                 <Box
-                                                                                    key={version.name}
+                                                                                    key={version.componentVersion}
                                                                                     sx={{
                                                                                         mt: 1,
                                                                                         ml: 2,
