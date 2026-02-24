@@ -211,8 +211,7 @@ export function UserRolesDetailsPageIndex() {
             <PermissionEditor
                 originalPermissions={item?.permissions ?? []}
                 value={entity.permissions ?? []}
-                //@ts-ignore
-                onChange={(next) => handleInputPatch({permissions: next})}
+                onChange={(next: string[]) => handleInputPatch({permissions: next} as Partial<UserRoleResponseDTO>)}
                 isBusy={isBusy}
                 isEditable={isEditable}
                 scope={'Domain'}
