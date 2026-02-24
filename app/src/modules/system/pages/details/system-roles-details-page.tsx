@@ -46,7 +46,7 @@ export function SystemRolesDetailsPage() {
                 tabs={[
                     {
                         path: '/system-roles/:id',
-                        label: 'Allgemeine Informationen',
+                        label: 'Konfiguration',
                     },
                     {
                         path: '/system-roles/:id/members',

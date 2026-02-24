@@ -177,7 +177,7 @@ export function UserDetailsPageIndex() {
                     </Grid>
                     <Grid size={6}>
                         <SelectFieldComponent
-                            label="Konto aktiviert"
+                            label="Systemrolle"
                             value={updatedUser?.globalRole}
                             onChange={handleInputChange('globalRole')}
                             options={[
