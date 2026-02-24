@@ -101,7 +101,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
     }
 
     @Override
-    public void testConnection(@Nonnull Config config) throws StorageException {
+    public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWritable) throws StorageException {
         var rootPathReal = config.getRealRootPath();
         if (!Files.exists(rootPathReal) || !Files.isDirectory(rootPathReal) || !Files.isWritable(rootPathReal)) {
             throw new StorageException(
@@ -139,7 +139,6 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
             return new StorageFolder(
                     toSuffixWithSlash(toPrefixWithSlash(pathFromRoot)),
                     folderToCreatePathReal.getFileName().toString(),
-                    null,
                     new LinkedList<>(),
                     new LinkedList<>(),
                     false
@@ -188,7 +187,6 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
         var folderObject = new StorageFolder(
                 toSuffixWithSlash(toPrefixWithSlash(pathFromRoot)),
                 folderToRetrieveName,
-                null,
                 new LinkedList<>(),
                 new LinkedList<>(),
                 false
@@ -204,7 +202,18 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
                     var subfolder = retrieveFolderRecursive(rootPathReal, childPathReal, pathFromRootToChild);
                     folderObject.addSubfolder(subfolder);
                 } else if (Files.isRegularFile(childPathReal)) {
-                    var document = new StorageDocument(pathFromRootToChild, filename);
+                    long size;
+                    try {
+                        size = Files.size(childPathReal);
+                    } catch (IOException e) {
+                        throw new StorageException(
+                                e,
+                                "Fehler beim Lesen der Dateigröße für %s: %s.",
+                                StringUtils.quote(childPathReal.toString()),
+                                e.getMessage()
+                        );
+                    }
+                    var document = new StorageDocument(pathFromRootToChild, filename, size, StorageItemMetadata.empty());
                     folderObject.addDocument(document);
                 }
             });
@@ -238,7 +247,6 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
         var folderObject = new StorageFolder(
                 toSuffixWithSlash(toPrefixWithSlash(pathFromRoot)),
                 folderToRetrieveName,
-                null,
                 new LinkedList<>(),
                 new LinkedList<>(),
                 false
@@ -273,16 +281,18 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
                 var subfolder = new StorageFolder(
                         toSuffixWithSlash(pathFromTheRootToThisFile),
                         filename,
-                        null,
                         new LinkedList<>(),
                         new LinkedList<>(),
                         false
                 );
                 folderObject.addSubfolder(subfolder);
             } else if (file.isFile()) {
+
                 var document = new StorageDocument(
                         pathFromTheRootToThisFile,
-                        filename
+                        filename,
+                        file.length(),
+                        StorageItemMetadata.empty()
                 );
                 folderObject.addDocument(document);
             }
@@ -340,7 +350,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
             Files.write(sanitizedDocumentPathReal, data);
             var relativePathFromRoot = config.getRealRootPath().relativize(sanitizedDocumentPathReal).toString();
             relativePathFromRoot = toPrefixWithSlash(relativePathFromRoot);
-            return new StorageDocument(relativePathFromRoot, sanitizedFilename);
+            return new StorageDocument(relativePathFromRoot, sanitizedFilename, (long) data.length, StorageItemMetadata.empty());
         } catch (IOException e) {
             throw new StorageException(e,
                     "Fehler beim Speichern des Dokuments %s: %s.",
@@ -358,7 +368,15 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
         }
         var relativePathFromRoot = config.getRealRootPath().relativize(documentPathReal).toString();
         relativePathFromRoot = toPrefixWithSlash(relativePathFromRoot);
-        var document = new StorageDocument(relativePathFromRoot, documentPathReal.getFileName().toString());
+
+        long size;
+        try {
+            size =  Files.size(documentPathReal);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        var document = new StorageDocument(relativePathFromRoot, documentPathReal.getFileName().toString(), size, StorageItemMetadata.empty());
         return Optional.of(document);
     }
 
@@ -401,11 +419,10 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
     }
 
     /**
-     * Get a pathFromRoot resolved against a base directory with basic sanitization to prevent pathFromRoot traversal attacks.
-     * Given the base directory /home/user/storage and the input pathFromRoot /test.txt will return /home/user/storage/test.txt.
-     * Given the base directory /home/user/storage and the input pathFromRoot / will return /home/user/storage/.
-     * Given the base directory /home/user/storage and the input pathFromRoot ./subdir/file.txt will return /home/user/storage/subdir/file.txt.
-     * Given the base directory /home/user/storage and the input pathFromRoot /../etc/passwd will throw a SecurityException.
+     * Get a pathFromRoot resolved against a base directory with basic sanitization to prevent pathFromRoot traversal attacks. Given the base directory /home/user/storage and the
+     * input pathFromRoot /test.txt will return /home/user/storage/test.txt. Given the base directory /home/user/storage and the input pathFromRoot / will return
+     * /home/user/storage/. Given the base directory /home/user/storage and the input pathFromRoot ./subdir/file.txt will return /home/user/storage/subdir/file.txt. Given the base
+     * directory /home/user/storage and the input pathFromRoot /../etc/passwd will throw a SecurityException.
      *
      * @param baseDirectory The base directory to resolve against.
      * @param path          The input pathFromRoot to sanitize and resolve.
@@ -433,8 +450,8 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
     }
 
     /**
-     * Sanitize a filename by removing potentially dangerous characters and patterns.
-     * This method ensures the filename does not contain pathFromRoot segments, special characters, or hidden file indicators.
+     * Sanitize a filename by removing potentially dangerous characters and patterns. This method ensures the filename does not contain pathFromRoot segments, special characters,
+     * or hidden file indicators.
      *
      * @param filename The input filename to sanitize.
      * @return The sanitized filename.

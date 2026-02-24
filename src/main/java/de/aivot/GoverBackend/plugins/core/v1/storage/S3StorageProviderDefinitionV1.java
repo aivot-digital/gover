@@ -40,6 +40,8 @@ import java.util.stream.Collectors;
 
 @Component
 public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<S3StorageProviderDefinitionV1.Config> {
+    private static final String ACCESS_DENIED_ERROR_CODE = "AccessDenied";
+
     private final SecretRepository secretRepository;
     private final SecretService secretService;
     private final KnownExtensionsService knownExtensionsService;
@@ -142,7 +144,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
     }
 
     @Override
-    public void testConnection(@Nonnull Config config) throws StorageException {
+    public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWritable) throws StorageException {
         var client = getClient(config);
 
         var bucketTestRequest = BucketExistsArgs
@@ -163,6 +165,38 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         if (!bucketExists) {
             throw new StorageException("Der angegebene Bucket '%s' existiert nicht.", config.bucket);
         }
+
+        if (mustCheckWritable) {
+            String testObjectName = "permissions-check-temp";
+
+            try {
+                // 1. Attempt a 0-byte upload
+                // This is the "PutObject" action
+                client.putObject(
+                        PutObjectArgs.builder()
+                                .bucket(config.bucket)
+                                .object(testObjectName)
+                                .stream(new ByteArrayInputStream(new byte[0]), 0, -1)
+                                .build()
+                );
+
+                // 2. Clean up immediately
+                client.removeObject(
+                        RemoveObjectArgs.builder()
+                                .bucket(config.bucket)
+                                .object(testObjectName)
+                                .build()
+                );
+            } catch (ErrorResponseException e) {
+                if (ACCESS_DENIED_ERROR_CODE.equals(e.errorResponse().code())) {
+                    throw new StorageException("Der Zugriff auf den S3-kompatiblen Speicher ist nicht schreibbar. Bitte überprüfen Sie die Berechtigungen des Access Keys.");
+                } else {
+                    throw new StorageException(e, "Fehler beim Überprüfen der Schreibberechtigung im S3-kompatiblen Speicher.");
+                }
+            } catch (Exception e) {
+                throw new StorageException(e, "Fehler beim Überprüfen der Schreibberechtigung im S3-kompatiblen Speicher.");
+            }
+        }
     }
 
     @Nonnull
@@ -182,7 +216,6 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         var folder = new StorageFolder(
                 pathFromRoot,
                 pathFromRoot.substring(1).isEmpty() ? "Root" : StringUtils.getLastPathSegment(pathFromRoot),
-                new HashMap<>(),
                 new LinkedList<>(),
                 new LinkedList<>(),
                 recursive
@@ -202,9 +235,14 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 retrieveFolder(config, "/" + item.objectName())
                         .ifPresent(folder::addSubfolder);
             } else {
+                var metadata = new StorageItemMetadata();
+                metadata.putAll(item.userMetadata());
+
                 folder.addDocument(new StorageDocument(
                         "/" + item.objectName(),
-                        StringUtils.getLastPathSegment(item.objectName())
+                        StringUtils.getLastPathSegment(item.objectName()),
+                        item.size(),
+                        metadata
                 ));
             }
         });
@@ -222,7 +260,6 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         return new StorageFolder(
                 toPrefixWithSlash(pathFromRoot),
                 StringUtils.getLastPathSegment(pathFromRoot),
-                new HashMap<>(),
                 new LinkedList<>(),
                 new LinkedList<>(),
                 false
@@ -309,7 +346,9 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
 
         return new StorageDocument(
                 path,
-                StringUtils.getLastPathSegment(path)
+                StringUtils.getLastPathSegment(path),
+                (long) data.length,
+                metadata
         );
     }
 
@@ -343,6 +382,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         return Optional.of(new StorageDocument(
                 path,
                 StringUtils.getLastPathSegment(path),
+                response.size(),
                 metadata
         ));
     }
