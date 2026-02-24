@@ -247,66 +247,6 @@ public class StorageProviderController {
                 .listAllInFolder(id, "^" + normalizedPath + "([^/]+$|[^/]+/$)", false);
     }
 
-    @GetMapping(value = {
-            "{id}/files/",
-            "{id}/files/**",
-    })
-    @Operation(
-            summary = "Get Folder from Storage Provider",
-            description = "Retrieve a folder from the specified storage provider. Requires the permission " + StoragePermissionProvider.STORAGE_PROVIDER_READ + "."
-    )
-    public ResponseEntity<Resource> getDocument(
-            @AuthenticationPrincipal Jwt jwt,
-            @PathVariable Integer id,
-            @RequestParam(defaultValue = "false") boolean download,
-            @Nonnull HttpServletRequest request
-    ) throws ResponseException {
-        permissionService
-                .testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
-
-        var normalizedPath = getNormalizedPath(request, false);
-
-        var storageItem = storageIndexItemRepository
-                .findByStorageProviderIdAndPathFromRootAndDirectoryIsFalse(
-                        id,
-                        normalizedPath
-                )
-                .orElseThrow(ResponseException::notFound);
-
-        var is = storageService
-                .getDocumentContent(id, storageItem.getPathFromRoot());
-
-        byte[] bytes;
-        try {
-            bytes = is.readAllBytes();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        Resource resource = new ByteArrayResource(bytes);
-
-        MediaType mediaType;
-        try {
-            mediaType = MediaType.parseMediaType(storageItem.getMimeType());
-        } catch (InvalidMediaTypeException e) {
-            mediaType = MediaType.APPLICATION_OCTET_STREAM;
-        }
-
-        if (resource.exists() && resource.isReadable()) {
-            ResponseEntity.BodyBuilder responseBuilder = ResponseEntity
-                    .ok()
-                    .contentType(mediaType);
-
-            if (download) {
-                responseBuilder.header("Content-Disposition", "attachment; filename=\"" + storageItem.getFilename() + "\"");
-            }
-
-            return responseBuilder.body(resource);
-        }
-
-        throw ResponseException.notFound();
-    }
-
     @Nonnull
     private static String getNormalizedPath(HttpServletRequest request, boolean isDirectory) {
         var pathParts = request
