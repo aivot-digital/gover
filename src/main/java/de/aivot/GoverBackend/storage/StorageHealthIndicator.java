@@ -78,6 +78,7 @@ public class StorageHealthIndicator implements HealthIndicator {
             throw new StorageException(e, "Fehler beim Konvertieren der Speicheranbieter-Konfiguration.");
         }
 
-        definition.testConnection(config);
+        // Do not test write, because this may include the writing of test files (S3) and we do not want to write unnecessary files
+        definition.testConnection(config, false);
     }
 }
