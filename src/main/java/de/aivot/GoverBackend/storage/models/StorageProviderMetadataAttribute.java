@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.storage.models;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 public class StorageProviderMetadataAttribute implements Serializable {
     private String key;
@@ -32,5 +33,17 @@ public class StorageProviderMetadataAttribute implements Serializable {
     public StorageProviderMetadataAttribute setDescription(String description) {
         this.description = description;
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        StorageProviderMetadataAttribute that = (StorageProviderMetadataAttribute) o;
+        return Objects.equals(key, that.key) && Objects.equals(label, that.label) && Objects.equals(description, that.description);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(key, label, description);
     }
 }

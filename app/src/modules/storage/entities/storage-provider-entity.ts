@@ -19,7 +19,7 @@ export interface StorageProviderEntity {
     statusMessage?: string | null;
     readOnly: boolean;
     configuration: ElementData;
-    maxFileSizeInBytes: number | null;
+    maxFileSizeInBytes: number;
     preventDeletion: boolean;
     metadataAttributes: StorageProviderMetadataAttribute[];
     created: string; // ISO date string

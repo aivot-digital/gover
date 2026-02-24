@@ -26,6 +26,7 @@ import {ExpandableCodeBlock} from '../../../../components/expandable-code-block/
 import {NumberFieldComponent} from '../../../../components/number-field/number-field-component';
 import {TableFieldComponent2} from '../../../../components/table-field/table-field-component-2';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {bytesToMegabytes, megabytesToBytes} from '../../../../utils/bytes-megabytes-conversion';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 
 function getIndexedFieldError(
@@ -382,7 +383,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 <Grid
                     size={{
                         xs: 12,
-                        md: 6,
+                        md: 8,
                     }}
                 >
                     <TextFieldComponent
@@ -399,20 +400,18 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 <Grid
                     size={{
                         xs: 12,
-                        md: 6,
+                        md: 4,
                     }}
                 >
-
                     <NumberFieldComponent
-                        label="Maximale Dateigröße (in Bytes)"
-                        required
-                        value={storageProvider.maxFileSizeInBytes ?? undefined}
-                        onChange={handleInputChange('maxFileSizeInBytes')}
-                        onBlur={handleInputBlur('maxFileSizeInBytes')}
+                        label="Maximale Dateigröße (in Megabytes)"
+                        value={bytesToMegabytes(storageProvider.maxFileSizeInBytes)}
+                        onChange={(mb) => handleInputChange('maxFileSizeInBytes')(megabytesToBytes(mb) as any)}
+                        onBlur={(mb) => handleInputBlur('maxFileSizeInBytes')(megabytesToBytes(mb) as any)}
                         disabled={isBusy || !isEditable}
                         error={errors.maxFileSizeInBytes}
-                        suffix="Bytes"
-                        hint='Max. Größe für abzulegende Dateien. Geben Sie 0 ein, wenn keine Beschränkung existiert.'
+                        suffix="MB"
+                        hint='1 Megabyte entspricht 1000 Kilobytes oder 1.000.000 Bytes.'
                     />
                 </Grid>
 
