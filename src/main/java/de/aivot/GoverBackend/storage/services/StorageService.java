@@ -48,7 +48,7 @@ public class StorageService {
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
 
-        if (provider.getReadOnly()) {
+        if (provider.getReadOnlyStorage()) {
             throw ResponseException
                     .badRequest(
                             "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Es können keine Ordner erstellt werden.",
@@ -105,7 +105,7 @@ public class StorageService {
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
 
-        if (provider.getReadOnly()) {
+        if (provider.getReadOnlyStorage()) {
             throw ResponseException
                     .badRequest(
                             "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Es können keine Ordner gelöscht werden.",
@@ -167,7 +167,7 @@ public class StorageService {
         var config = createConfig(provider, definition);
 
         // Check if the provider is read-only before doing any other checks, to avoid unnecessary processing.
-        if (provider.getReadOnly()) {
+        if (provider.getReadOnlyStorage()) {
             throw ResponseException
                     .badRequest(
                             "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Es können keine Dokumente gespeichert werden.",
@@ -235,7 +235,7 @@ public class StorageService {
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
 
-        if (provider.getReadOnly()) {
+        if (provider.getReadOnlyStorage()) {
             throw ResponseException
                     .badRequest(
                             "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Es können keine Dokumente gelöscht werden.",

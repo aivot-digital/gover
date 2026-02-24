@@ -69,7 +69,7 @@ public class StorageProviderEntity {
     @Nonnull
     @NotNull(message = "Die Read-Only-Eigenschaft des Speicheranbieters darf nicht null sein.")
     @ColumnDefault("FALSE")
-    private Boolean readOnly;
+    private Boolean readOnlyStorage;
 
     @Nonnull
     @NotNull(message = "Die Konfiguration des Speicheranbieters darf nicht null sein.")
@@ -86,7 +86,7 @@ public class StorageProviderEntity {
     @Nonnull
     @NotNull(message = "Die Verhinderung der Löschung des Speicheranbieters darf nicht null sein.")
     @ColumnDefault("FALSE")
-    private Boolean preventDeletion;
+    private Boolean systemProvider;
 
     @Nonnull
     @NotNull(message = "Die Konfiguration des Speicheranbieters darf nicht null sein.")
@@ -131,10 +131,10 @@ public class StorageProviderEntity {
                                  @Nonnull StorageProviderType type,
                                  @Nonnull StorageProviderStatus status,
                                  @Nullable String statusMessage,
-                                 @Nonnull Boolean readOnly,
+                                 @Nonnull Boolean readOnlyStorage,
                                  @Nonnull ElementData configuration,
                                  @Nonnull Long maxFileSizeInBytes,
-                                 @Nonnull Boolean preventDeletion,
+                                 @Nonnull Boolean systemProvider,
                                  @Nonnull List<StorageProviderMetadataAttribute> metadataAttributes,
                                  @Nullable LocalDateTime lastSync,
                                  @Nonnull LocalDateTime created,
@@ -147,10 +147,10 @@ public class StorageProviderEntity {
         this.type = type;
         this.status = status;
         this.statusMessage = statusMessage;
-        this.readOnly = readOnly;
+        this.readOnlyStorage = readOnlyStorage;
         this.configuration = configuration;
         this.maxFileSizeInBytes = maxFileSizeInBytes;
-        this.preventDeletion = preventDeletion;
+        this.systemProvider = systemProvider;
         this.metadataAttributes = metadataAttributes;
         this.lastSync = lastSync;
         this.created = created;
@@ -165,12 +165,12 @@ public class StorageProviderEntity {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         StorageProviderEntity that = (StorageProviderEntity) o;
-        return Objects.equals(id, that.id) && Objects.equals(storageProviderDefinitionKey, that.storageProviderDefinitionKey) && Objects.equals(storageProviderDefinitionVersion, that.storageProviderDefinitionVersion) && Objects.equals(name, that.name) && Objects.equals(description, that.description) && type == that.type && status == that.status && Objects.equals(statusMessage, that.statusMessage) && Objects.equals(readOnly, that.readOnly) && Objects.equals(configuration, that.configuration) && Objects.equals(maxFileSizeInBytes, that.maxFileSizeInBytes) && Objects.equals(preventDeletion, that.preventDeletion) && Objects.equals(metadataAttributes, that.metadataAttributes) && Objects.equals(lastSync, that.lastSync) && Objects.equals(created, that.created) && Objects.equals(updated, that.updated);
+        return Objects.equals(id, that.id) && Objects.equals(storageProviderDefinitionKey, that.storageProviderDefinitionKey) && Objects.equals(storageProviderDefinitionVersion, that.storageProviderDefinitionVersion) && Objects.equals(name, that.name) && Objects.equals(description, that.description) && type == that.type && status == that.status && Objects.equals(statusMessage, that.statusMessage) && Objects.equals(readOnlyStorage, that.readOnlyStorage) && Objects.equals(configuration, that.configuration) && Objects.equals(maxFileSizeInBytes, that.maxFileSizeInBytes) && Objects.equals(systemProvider, that.systemProvider) && Objects.equals(metadataAttributes, that.metadataAttributes) && Objects.equals(lastSync, that.lastSync) && Objects.equals(created, that.created) && Objects.equals(updated, that.updated);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, storageProviderDefinitionKey, storageProviderDefinitionVersion, name, description, type, status, statusMessage, readOnly, configuration, maxFileSizeInBytes, preventDeletion, metadataAttributes, lastSync, created, updated);
+        return Objects.hash(id, storageProviderDefinitionKey, storageProviderDefinitionVersion, name, description, type, status, statusMessage, readOnlyStorage, configuration, maxFileSizeInBytes, systemProvider, metadataAttributes, lastSync, created, updated);
     }
 
     // endregion
@@ -258,12 +258,12 @@ public class StorageProviderEntity {
     }
 
     @Nonnull
-    public Boolean getReadOnly() {
-        return readOnly;
+    public Boolean getReadOnlyStorage() {
+        return readOnlyStorage;
     }
 
-    public StorageProviderEntity setReadOnly(@Nonnull Boolean readOnly) {
-        this.readOnly = readOnly;
+    public StorageProviderEntity setReadOnlyStorage(@Nonnull Boolean readOnly) {
+        this.readOnlyStorage = readOnly;
         return this;
     }
 
@@ -288,12 +288,12 @@ public class StorageProviderEntity {
     }
 
     @Nonnull
-    public Boolean getPreventDeletion() {
-        return preventDeletion;
+    public Boolean getSystemProvider() {
+        return systemProvider;
     }
 
-    public StorageProviderEntity setPreventDeletion(@Nonnull Boolean preventDeletion) {
-        this.preventDeletion = preventDeletion;
+    public StorageProviderEntity setSystemProvider(@Nonnull Boolean preventDeletion) {
+        this.systemProvider = preventDeletion;
         return this;
     }
 

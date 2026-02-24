@@ -106,7 +106,7 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
             @Nonnull StorageProviderEntity entity,
             @Nonnull StorageProviderEntity existingEntity
     ) throws ResponseException {
-        if (existingEntity.getPreventDeletion()) {
+        if (existingEntity.getSystemProvider()) {
             throw ResponseException.badRequest("Dieser Speicheranbieter kann nicht bearbeitet werden");
         }
 
@@ -183,7 +183,7 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
     public void performDelete(
             @Nonnull StorageProviderEntity entity
     ) throws ResponseException {
-        if (entity.getPreventDeletion()) {
+        if (entity.getSystemProvider()) {
             throw ResponseException.badRequest("Dieser Speicheranbieter kann nicht bearbeitet werden");
         }
 
