@@ -40,6 +40,7 @@ import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {PermissionDetails, PermissionEditorProps} from './permission-editor-props';
+import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
 
 function groupKey(label: string): string {
     return label.trim();
@@ -369,60 +370,64 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                         title="Alle auswählen"
                         arrow
                     >
-            <span>
-              <IconButton
-                  size="small"
-                  onClick={() => handleSelectAll(true, 'all')}
-                  disabled={isBusy || !isEditable || allKnownPermissions.length === 0}
-              >
-                <SelectAll fontSize="small" />
-              </IconButton>
-            </span>
+                        <span>
+                          <IconButton
+                              aria-label="Alle auswählen"
+                              size="small"
+                              onClick={() => handleSelectAll(true, 'all')}
+                              disabled={isBusy || !isEditable || allKnownPermissions.length === 0}
+                          >
+                            <SelectAll fontSize="small" />
+                          </IconButton>
+                        </span>
                     </Tooltip>
 
                     <Tooltip
                         title="Alle abwählen"
                         arrow
                     >
-            <span>
-              <IconButton
-                  size="small"
-                  onClick={() => handleSelectAll(false, 'all')}
-                  disabled={isBusy || !isEditable || selectedCount === 0}
-              >
-                <Deselect fontSize="small" />
-              </IconButton>
-            </span>
+                        <span>
+                          <IconButton
+                              aria-label="Alle abwählen"
+                              size="small"
+                              onClick={() => handleSelectAll(false, 'all')}
+                              disabled={isBusy || !isEditable || selectedCount === 0}
+                          >
+                            <Deselect fontSize="small" />
+                          </IconButton>
+                        </span>
                     </Tooltip>
 
                     <Tooltip
                         title="Smartes ausklappen (Gruppen mit Auswahl und Suchtreffern öffnen)"
                         arrow
                     >
-            <span>
-              <IconButton
-                  size="small"
-                  onClick={expandSmart}
-                  disabled={isBusy || permissions.length === 0}
-              >
-                <UnfoldMoreIcon fontSize="small" />
-              </IconButton>
-            </span>
+                        <span>
+                          <IconButton
+                              aria-label="Smartes ausklappen"
+                              size="small"
+                              onClick={expandSmart}
+                              disabled={isBusy || permissions.length === 0}
+                          >
+                            <UnfoldMoreIcon fontSize="small" />
+                          </IconButton>
+                        </span>
                     </Tooltip>
 
                     <Tooltip
                         title="Alle einklappen"
                         arrow
                     >
-            <span>
-              <IconButton
-                  size="small"
-                  onClick={() => expandAll(false, 'all')}
-                  disabled={isBusy || permissions.length === 0}
-              >
-                <UnfoldLessIcon fontSize="small" />
-              </IconButton>
-            </span>
+                        <span>
+                          <IconButton
+                              aria-label="Alle einklappen"
+                              size="small"
+                              onClick={() => expandAll(false, 'all')}
+                              disabled={isBusy || permissions.length === 0}
+                          >
+                            <UnfoldLessIcon fontSize="small" />
+                          </IconButton>
+                        </span>
                     </Tooltip>
 
                     {permissionQuery.trim() && (
@@ -686,6 +691,14 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                                                         label={crud.toUpperCase()}
                                                         variant="outlined"
                                                     />}
+
+                                                    <Tooltip title="Permission-Key kopieren">
+                                                        <span>
+                                                          <IconButton aria-label="Permission-Key kopieren" size="small" disabled={isBusy} onClick={() => copyToClipboard(permission)}>
+                                                            <ContentCopy fontSize="inherit" />
+                                                          </IconButton>
+                                                        </span>
+                                                    </Tooltip>
                                                 </Stack>
                                             </Paper>
                                         );
