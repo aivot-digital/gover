@@ -1,4 +1,5 @@
-import {Box, Button, Grid, Typography} from '@mui/material';
+import {Box, Button, Typography} from '@mui/material';
+import Grid from '@mui/material/Grid';
 import React, {useContext, useEffect, useMemo, useState} from 'react';
 import {GenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
