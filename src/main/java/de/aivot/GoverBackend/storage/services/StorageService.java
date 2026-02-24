@@ -77,6 +77,7 @@ public class StorageService {
                         createdFolderPath,
                         true,
                         StringUtils.getLastPathSegment(createdFolderPath),
+                        0L,
                         FOLDER_MIME_TYPE,
                         false,
                         StorageItemMetadata.empty(),
@@ -214,6 +215,7 @@ public class StorageService {
                 path,
                 false,
                 createdDocument.getName(),
+                createdDocument.getSizeInBytes(),
                 knownExtensionsService
                         .determineMimeType(createdDocument.getName())
                         .orElse(UNKNOWN_MIME_TYPE),

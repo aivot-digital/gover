@@ -5,6 +5,7 @@ import de.aivot.GoverBackend.storage.enums.StorageProviderType;
 import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -51,6 +52,12 @@ public class StorageIndexItemEntity {
     private String mimeType;
 
     @Nonnull
+    @NotNull(message = "Die Größe des Speicherobjekts in Bytes darf nicht null sein.")
+    @Min(value = 0, message = "Die Größe des Speicherobjekts in Bytes muss größer oder gleich 0 sein.")
+    @ColumnDefault("0")
+    private Long sizeInBytes;
+
+    @Nonnull
     @NotNull(message = "Gibt an, ob das Speicherobjekt fehlt.")
     @ColumnDefault("FALSE")
     private Boolean missing;
@@ -77,6 +84,7 @@ public class StorageIndexItemEntity {
                                   @Nonnull String pathFromRoot,
                                   @Nonnull Boolean directory,
                                   @Nonnull String filename,
+                                  @Nonnull Long sizeInBytes,
                                   @Nonnull String mimeType,
                                   @Nonnull Boolean missing,
                                   @Nonnull StorageItemMetadata metadata,
@@ -87,6 +95,7 @@ public class StorageIndexItemEntity {
         this.pathFromRoot = pathFromRoot;
         this.directory = directory;
         this.filename = filename;
+        this.sizeInBytes = sizeInBytes;
         this.mimeType = mimeType;
         this.missing = missing;
         this.metadata = metadata;
@@ -118,12 +127,12 @@ public class StorageIndexItemEntity {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         StorageIndexItemEntity that = (StorageIndexItemEntity) o;
-        return Objects.equals(storageProviderId, that.storageProviderId) && storageProviderType == that.storageProviderType && Objects.equals(pathFromRoot, that.pathFromRoot) && Objects.equals(directory, that.directory) && Objects.equals(filename, that.filename) && Objects.equals(mimeType, that.mimeType) && Objects.equals(missing, that.missing) && Objects.equals(metadata, that.metadata) && Objects.equals(created, that.created) && Objects.equals(updated, that.updated);
+        return Objects.equals(storageProviderId, that.storageProviderId) && storageProviderType == that.storageProviderType && Objects.equals(pathFromRoot, that.pathFromRoot) && Objects.equals(directory, that.directory) && Objects.equals(filename, that.filename) && Objects.equals(mimeType, that.mimeType) && Objects.equals(sizeInBytes, that.sizeInBytes) && Objects.equals(missing, that.missing) && Objects.equals(metadata, that.metadata) && Objects.equals(created, that.created) && Objects.equals(updated, that.updated);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(storageProviderId, storageProviderType, pathFromRoot, directory, filename, mimeType, missing, metadata, created, updated);
+        return Objects.hash(storageProviderId, storageProviderType, pathFromRoot, directory, filename, mimeType, sizeInBytes, missing, metadata, created, updated);
     }
 
     // endregion
@@ -227,6 +236,16 @@ public class StorageIndexItemEntity {
 
     public StorageIndexItemEntity setUpdated(@Nonnull LocalDateTime updated) {
         this.updated = updated;
+        return this;
+    }
+
+    @Nonnull
+    public Long getSizeInBytes() {
+        return sizeInBytes;
+    }
+
+    public StorageIndexItemEntity setSizeInBytes(@Nonnull Long sizeInBytes) {
+        this.sizeInBytes = sizeInBytes;
         return this;
     }
 

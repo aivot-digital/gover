@@ -120,6 +120,7 @@ public class StorageSyncService {
                                 folder.getPathFromRoot(),
                                 true,
                                 folder.getName(),
+                                0L,
                                 StorageService.FOLDER_MIME_TYPE,
                                 false,
                                 StorageItemMetadata.empty(), // Only store metadata for documents, not for folders for now
@@ -150,6 +151,7 @@ public class StorageSyncService {
                                     document.getPathFromRoot(),
                                     false,
                                     document.getName(),
+                                    document.getSizeInBytes(),
                                     StorageService.UNKNOWN_MIME_TYPE,
                                     false,
                                     document.getMetadata(),

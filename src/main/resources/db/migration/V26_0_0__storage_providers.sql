@@ -26,6 +26,7 @@ create table storage_index_items
     directory             boolean      not null,
     filename              varchar(255) not null,
     mime_type             varchar(255) null,
+    size_in_bytes         bigint       not null default 0,
     missing               boolean      not null default false,
     metadata              jsonb        not null,
     created               timestamp    not null default now(),
