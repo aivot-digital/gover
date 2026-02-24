@@ -14,7 +14,6 @@ import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import * as yup from 'yup';
 import {goverSchemaToYup2 as goverSchemaToYup} from '../../../../utils/gover-schema-to-yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
-import {useConfirm} from '../../../../providers/confirm-provider';
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import {type StorageProviderDefinition} from '../../entities/storage-provider-definition';
 import {type StorageProviderEntity, StorageProviderMetadataAttribute} from '../../entities/storage-provider-entity';
@@ -27,6 +26,7 @@ import {ExpandableCodeBlock} from '../../../../components/expandable-code-block/
 import {NumberFieldComponent} from '../../../../components/number-field/number-field-component';
 import {TableFieldComponent2} from '../../../../components/table-field/table-field-component-2';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 
 function getIndexedFieldError(
     errors: Record<string, any> | undefined,
@@ -93,7 +93,6 @@ export const _StorageProviderSchema = {
 export function StorageProviderDetailsPageIndex(): ReactNode {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const confirm = useConfirm();
 
     const [storageProviderSchema, setStorageProviderSchema] = useState<any>(_StorageProviderSchema);
 
@@ -168,7 +167,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     }, [definition]);
 
     const changeBlocker = useChangeBlocker(item, storageProvider, undefined, undefined, true);
-
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
     if (storageProvider == null) {
         return (
@@ -220,20 +219,6 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
 
     const handleDelete = async (): Promise<void> => {
         if (storageProvider.id === 0) {
-            return;
-        }
-
-        const confirmed = await confirm({
-            title: 'Speicheranbieter löschen',
-            children: (
-                <Typography>
-                    Möchten Sie diesen Speicheranbieter wirklich löschen? Diese Aktion kann nicht rückgängig gemacht
-                    werden.
-                </Typography>
-            ),
-        });
-
-        if (!confirmed) {
             return;
         }
 
@@ -566,7 +551,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     item != null &&
                     <Button
                         variant={'outlined'}
-                        onClick={handleDelete}
+                        onClick={() => setShowConfirmDialog(true)}
                         disabled={isBusy || !isEditable}
                         color="error"
                         sx={{
@@ -580,6 +565,23 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
             </Box>
 
             {changeBlocker.dialog}
+
+            <ConfirmDialog
+                title="Speicheranbieter löschen"
+                onCancel={() => setShowConfirmDialog(false)}
+                onConfirm={showConfirmDialog ? handleDelete : undefined}
+                confirmationText={storageProvider.name ?? ''}
+                isDestructive
+                confirmButtonText="Ja, endgültig löschen"
+            >
+                <Typography>
+                    Möchten Sie diesen Speicheranbieter wirklich löschen? Diese Aktion kann nicht rückgängig gemacht
+                    werden.
+                </Typography>
+                <AlertComponent color={'warning'}>
+                    Wenn der Speicheranbieter bereits für die Ablage von Dateien genutzt wurde, können diese Dateien nach dem Löschen des Speicheranbieters nicht mehr erreicht werden. Bitte stellen Sie sicher, dass Sie alle Dateien migriert oder gelöscht haben, bevor Sie fortfahren.
+                </AlertComponent>
+            </ConfirmDialog>
         </Box>
     );
 }
