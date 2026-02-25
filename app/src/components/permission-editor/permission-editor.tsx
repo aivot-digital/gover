@@ -6,8 +6,10 @@ import {
     Button,
     Checkbox,
     Chip,
-    Dialog, DialogActions,
-    DialogContent, Divider,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    Divider,
     FormControlLabel,
     IconButton,
     ListItemIcon,
@@ -98,7 +100,7 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                     ...scopedApiPermissions,
                 ] as PermissionDetails[];
 
-                setPermissions(merged);
+                setPermissions(scopedApiPermissions);
 
                 // Expand groups that have at least one selected permission initially
                 const initialExpanded: Record<string, boolean> = {};
@@ -339,7 +341,7 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                     >
                         <span>
                           <Button
-                              variant='outlined'
+                              variant="outlined"
                               size="small"
                               onClick={() => setDiffDialogOpen(true)}
                               disabled={!diff.hasChanges}
@@ -574,9 +576,15 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                                         </span>
                                     </Tooltip>*/}
 
-                                    <Divider orientation="vertical" flexItem/>
+                                    <Divider
+                                        orientation="vertical"
+                                        flexItem
+                                    />
 
-                                    <Tooltip title={allSelected ? 'Gruppe abwählen' : 'Gruppe auswählen'} arrow>
+                                    <Tooltip
+                                        title={allSelected ? 'Gruppe abwählen' : 'Gruppe auswählen'}
+                                        arrow
+                                    >
                                         <span>
                                             <Button
                                                 component="span"
@@ -694,7 +702,12 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
 
                                                     <Tooltip title="Permission-Key kopieren">
                                                         <span>
-                                                          <IconButton aria-label="Permission-Key kopieren" size="small" disabled={isBusy} onClick={() => copyToClipboard(permission)}>
+                                                          <IconButton
+                                                              aria-label="Permission-Key kopieren"
+                                                              size="small"
+                                                              disabled={isBusy}
+                                                              onClick={() => copyToClipboard(permission)}
+                                                          >
                                                             <ContentCopy fontSize="inherit" />
                                                           </IconButton>
                                                         </span>
@@ -784,7 +797,10 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                     )}
                 </DialogContent>
                 <DialogActions>
-                    <Button sx={{ml: 'auto'}} onClick={() => setDiffDialogOpen(false)}>Schließen</Button>
+                    <Button
+                        sx={{ml: 'auto'}}
+                        onClick={() => setDiffDialogOpen(false)}
+                    >Schließen</Button>
                 </DialogActions>
             </Dialog>
         </Box>
