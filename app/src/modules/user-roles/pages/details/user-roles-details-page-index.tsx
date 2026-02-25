@@ -168,7 +168,7 @@ export function UserRolesDetailsPageIndex() {
                 Domänenrolle konfigurieren
             </Typography>
             <Typography sx={{mb: 3, maxWidth: 900}}>
-                Domänenrollen definieren Berechtigungen für Benutzer:innen auf Ebene einer Domäne (z. B. einer Organisationseinheit oder eines Team).
+                Domänenrollen definieren Berechtigungen für Benutzer:innen auf Ebene einer Domäne (z. B. einer Organisationseinheit oder eines Teams).
                 Seien Sie vorsichtig bei der Vergabe von Berechtigungen, insbesondere bei solchen, die Zugriff auf sensible Daten oder kritische Funktionen ermöglichen.
             </Typography>
 
