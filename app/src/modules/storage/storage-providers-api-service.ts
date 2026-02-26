@@ -10,6 +10,8 @@ import {type StorageIndexItem} from './entities/storage-index-item-entity';
 export interface StorageProviderFilter {
     name: string;
     type: StorageProviderType;
+    readOnlyStorage: boolean;
+    systemProvider: boolean;
 }
 
 export class StorageProvidersApiService extends BaseCrudApiService<StorageProviderEntity, StorageProviderEntity, StorageProviderEntity, StorageProviderEntity, number, StorageProviderFilter> {
@@ -35,8 +37,8 @@ export class StorageProvidersApiService extends BaseCrudApiService<StorageProvid
             updated: '',
             lastSync: '',
             metadataAttributes: [],
-            preventDeletion: false,
-            readOnly: false,
+            systemProvider: false,
+            readOnlyStorage: false,
             maxFileSizeInBytes: 0,
         };
     }

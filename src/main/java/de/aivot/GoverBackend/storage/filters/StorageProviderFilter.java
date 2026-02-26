@@ -10,6 +10,8 @@ import org.springframework.data.jpa.domain.Specification;
 public class StorageProviderFilter implements Filter<StorageProviderEntity> {
     private String name;
     private StorageProviderType type;
+    private Boolean readOnlyStorage;
+    private Boolean systemProvider;
 
     public static StorageProviderFilter create() {
         return new StorageProviderFilter();
@@ -22,6 +24,8 @@ public class StorageProviderFilter implements Filter<StorageProviderEntity> {
                 .create(StorageProviderEntity.class)
                 .withContains("name", name)
                 .withEquals("type", type)
+                .withEquals("readOnlyStorage", readOnlyStorage)
+                .withEquals("systemProvider", systemProvider)
                 .build();
     }
 
@@ -40,6 +44,24 @@ public class StorageProviderFilter implements Filter<StorageProviderEntity> {
 
     public StorageProviderFilter setType(StorageProviderType type) {
         this.type = type;
+        return this;
+    }
+
+    public Boolean getReadOnlyStorage() {
+        return readOnlyStorage;
+    }
+
+    public StorageProviderFilter setReadOnlyStorage(Boolean readOnlyStorage) {
+        this.readOnlyStorage = readOnlyStorage;
+        return this;
+    }
+
+    public Boolean getSystemProvider() {
+        return systemProvider;
+    }
+
+    public StorageProviderFilter setSystemProvider(Boolean systemProvider) {
+        this.systemProvider = systemProvider;
         return this;
     }
 }

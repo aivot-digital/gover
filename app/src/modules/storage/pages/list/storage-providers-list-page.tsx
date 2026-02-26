@@ -3,7 +3,7 @@ import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Typography} from '@mui/material';
 import {EditOutlined} from '@mui/icons-material';
-import {StorageProvidersApiService} from '../../storage-providers-api-service';
+import {StorageProvidersApiService, type StorageProviderFilter} from '../../storage-providers-api-service';
 import React, {type ReactNode, useEffect, useState} from 'react';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
@@ -12,6 +12,21 @@ import {type StorageProviderDefinition} from '../../entities/storage-provider-de
 import {type StorageProviderEntity} from '../../entities/storage-provider-entity';
 import {type StorageProviderStatus} from '../../enums/storage-provider-status';
 import {StorageStatusChip} from '../../components/storage-status-chip';
+
+const availableFilter = [
+    {
+        label: 'Alle',
+        value: 'all',
+    },
+    {
+        label: 'Systemanbieter',
+        value: 'systemProvider',
+    },
+    {
+        label: 'Read-only Speicher',
+        value: 'readOnlyStorage',
+    },
+];
 
 export function StorageProvidersListPage(): ReactNode {
     const [definitions, setDefinitions] = useState<StorageProviderDefinition[]>([]);
@@ -31,6 +46,8 @@ export function StorageProvidersListPage(): ReactNode {
                 background
             >
                 <GenericListPage<StorageProviderEntity>
+                    defaultFilter="all"
+                    filters={availableFilter}
                     header={{
                         icon: ModuleIcons.storage,
                         title: 'Speicheranbieter',
@@ -70,8 +87,17 @@ export function StorageProvidersListPage(): ReactNode {
                     searchLabel="Speicheranbieter suchen"
                     searchPlaceholder="Name der Konfiguration eingeben…"
                     fetch={(options) => {
+                        const filter: Partial<StorageProviderFilter> = {};
+                        if (options.search) {
+                            filter.name = options.search;
+                        }
+                        if (options.filter === 'systemProvider') {
+                            filter.systemProvider = true;
+                        } else if (options.filter === 'readOnlyStorage') {
+                            filter.readOnlyStorage = true;
+                        }
                         return new StorageProvidersApiService()
-                            .list(options.page, options.size, options.sort, options.order, {name: options.search});
+                            .list(options.page, options.size, options.sort, options.order, filter);
                     }}
                     columnIcon={ModuleIcons.storage}
                     columnDefinitions={[
