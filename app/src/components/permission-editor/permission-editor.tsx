@@ -23,6 +23,7 @@ import {
     Typography,
 } from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
+import Fuse from 'fuse.js';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
@@ -149,6 +150,34 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
         return {added, removed, hasChanges: added.length > 0 || removed.length > 0};
     }, [originalPermissions, selectedPermissions]);
 
+    const permissionSearchIndex = useMemo(() => {
+        type IndexedPermission = {
+            groupLabel: string;
+            permission: PermissionDetails['permissions'][number];
+            searchLabel: string;
+            searchPermission: string;
+            searchDescription: string;
+            searchGroupLabel: string;
+        };
+
+        const indexedPermissions: IndexedPermission[] = permissions.flatMap((group) =>
+            group.permissions.map((permission) => ({
+                groupLabel: group.contextLabel,
+                permission,
+                searchLabel: normalizeSearch(permission.label),
+                searchPermission: normalizeSearch(permission.permission),
+                searchDescription: normalizeSearch(permission.description ?? ''),
+                searchGroupLabel: normalizeSearch(group.contextLabel),
+            })),
+        );
+
+        return new Fuse(indexedPermissions, {
+            keys: ['searchLabel', 'searchPermission', 'searchDescription', 'searchGroupLabel'],
+            threshold: 0.35,
+            ignoreLocation: true,
+        });
+    }, [permissions]);
+
     const filteredPermissionGroups = useMemo(() => {
         const q = normalizeSearch(permissionQuery);
         if (!q) {
@@ -158,20 +187,27 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
             }));
         }
 
+        const matchesByGroup = new Map<string, PermissionDetails['permissions'][number][]>();
+        const seen = new Set<string>();
+
+        permissionSearchIndex.search(q).forEach(({item}) => {
+            const key = `${groupKey(item.groupLabel)}::${item.permission.permission}`;
+            if (seen.has(key)) return;
+            seen.add(key);
+
+            const existing = matchesByGroup.get(item.groupLabel) ?? [];
+            existing.push(item.permission);
+            matchesByGroup.set(item.groupLabel, existing);
+        });
+
         return permissions
-            .map((g) => ({
-                ...g,
-                permissions: g.permissions
-                    .filter((p) => {
-                        const haystack = normalizeSearch(
-                            `${p.label} ${p.permission} ${p.description ?? ''} ${g.contextLabel}`,
-                        );
-                        return haystack.includes(q);
-                    })
+            .map((group) => ({
+                ...group,
+                permissions: [...(matchesByGroup.get(group.contextLabel) ?? [])]
                     .sort((a, b) => a.label.localeCompare(b.label)),
             }))
-            .filter((g) => g.permissions.length > 0);
-    }, [permissions, permissionQuery]);
+            .filter((group) => group.permissions.length > 0);
+    }, [permissions, permissionQuery, permissionSearchIndex]);
 
     const visiblePermissions = useMemo(() => {
         const set = new Set<string>();
