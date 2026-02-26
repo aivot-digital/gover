@@ -134,6 +134,20 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
         return new RegExp(props.pattern.regex).test(inputValue) ? undefined : props.pattern.message;
     }, [props.pattern, inputValue]);
 
+    const helperMessage = patternError ?? props.error ?? props.hint;
+    const showMaxCharacters = Boolean(
+        props.maxCharacters &&
+        (!props.minCharacters || inputValue.length >= props.minCharacters)
+    );
+    const showMinCharacters = Boolean(
+        props.minCharacters && inputValue.length < props.minCharacters
+    );
+    const minCharacters = props.minCharacters ?? 0;
+    const showSoftLimitWarning = Boolean(
+        props.softLimitCharacters && isSoftLimitExceeded
+    );
+    const hasHelperTextContent = Boolean(helperMessage || showMaxCharacters || showMinCharacters || showSoftLimitWarning);
+
     // Render function for IconButtons
     const renderIconButton = (action: { icon: React.ReactNode; onClick: () => void; tooltip?: string }, key?: number) => (
         action.tooltip ? (
@@ -165,55 +179,57 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
             rows={props.multiline ? (props.rows ?? 4) : undefined}
             FormHelperTextProps={{component: 'div'}}
             helperText={
-                <>
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            flexWrap: {
-                                xs: 'wrap',
-                                sm: 'nowrap'
-                            },
-                            columnGap: 3,
-                            rowGap: .5,
-                    }}>
-                        <Box>
-                            {patternError ?? props.error ?? props.hint}
-                        </Box>
-
-                        {props.maxCharacters && (
-                            !props.minCharacters ||
-                            inputValue.length >= props.minCharacters
-                        ) && (
+                hasHelperTextContent ? (
+                    <>
+                        {(helperMessage || showMaxCharacters || showMinCharacters) && (
                             <Box
-                                role="text"
-                                aria-label={`${inputValue.length} von ${props.maxCharacters} Zeichen verwendet`}
+                                sx={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    flexWrap: {
+                                        xs: 'wrap',
+                                        sm: 'nowrap'
+                                    },
+                                    columnGap: 3,
+                                    rowGap: .5,
+                                }}
                             >
-                                <span aria-hidden="true">
-                                    {`${inputValue.length}/${props.maxCharacters}`}
-                                </span>
+                                <Box>
+                                    {helperMessage}
+                                </Box>
+
+                                {showMaxCharacters && (
+                                    <Box
+                                        role="text"
+                                        aria-label={`${inputValue.length} von ${props.maxCharacters} Zeichen verwendet`}
+                                    >
+                                        <span aria-hidden="true">
+                                            {`${inputValue.length}/${props.maxCharacters}`}
+                                        </span>
+                                    </Box>
+                                )}
+                                {showMinCharacters && (
+                                    <Box>
+                                        {inputValue.length === 0
+                                            ? `Mindestens ${getCharacterCount(minCharacters)} Zeichen`
+                                            : `Noch mindestens ${getCharacterCount(minCharacters - inputValue.length)} Zeichen`}
+                                    </Box>
+                                )}
                             </Box>
                         )}
-                        {props.minCharacters && inputValue.length < props.minCharacters && (
-                            <Box>
-                                {inputValue.length === 0
-                                    ? `Mindestens ${getCharacterCount(props.minCharacters)} Zeichen`
-                                    : `Noch mindestens ${getCharacterCount(props.minCharacters - inputValue.length)} Zeichen`}
+                        {showSoftLimitWarning && (
+                            <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
+                                <Typography
+                                    variant="caption"
+                                    color="warning.main"
+                                >
+                                    {props.softLimitCharactersWarning ??
+                                        `Wir empfehlen, eine Länge von ${props.softLimitCharacters} Zeichen nicht zu überschreiten.`}
+                                </Typography>
                             </Box>
                         )}
-                    </Box>
-                    {props.softLimitCharacters && isSoftLimitExceeded && (
-                        <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
-                            <Typography
-                                variant="caption"
-                                color="warning.main"
-                            >
-                                {props.softLimitCharactersWarning ??
-                                    `Wir empfehlen, eine Länge von ${props.softLimitCharacters} Zeichen nicht zu überschreiten.`}
-                            </Typography>
-                        </Box>
-                    )}
-                </>
+                    </>
+                ) : undefined
             }
             value={inputValue}
             onChange={handleChange}
