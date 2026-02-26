@@ -35,7 +35,7 @@ import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {PermissionScope} from '../../modules/permissions/enums/permission-scope';
-import {PermissionEntry} from '../../modules/permissions/models/permission-provider';
+import {PermissionEntry, PermissionProvider} from '../../modules/permissions/models/permission-provider';
 import {PermissionEditorProps, PermissionGroup} from './permission-editor-props';
 import {PermissionGroupAccordion} from './permission-group-accordion';
 
@@ -65,7 +65,7 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
 
     const dispatch = useAppDispatch();
 
-    const [permissions, setPermissions] = useState<PermissionGroup[]>([]);
+    const [apiPermissions, setApiPermissions] = useState<PermissionProvider[]>([]);
     const [permissionQuery, setPermissionQuery] = useState('');
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
     const [bulkMenuAnchorEl, setBulkMenuAnchorEl] = useState<null | HTMLElement>(null);
@@ -74,47 +74,49 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
     useEffect(() => {
         new PermissionApiService()
             .listPermissions()
-            .then((apiPermissions: any[]) => {
-                const allowedScopes = scope
-                    ? Array.isArray(scope) ? scope : [scope]
-                    : null;
-
-                const scopedApiPermissions = allowedScopes
-                    ? apiPermissions.filter((g) => allowedScopes.includes(g.scope))
-                    : apiPermissions;
-
-                const merged = [
-                    ...PermissionGroups.map((group) => ({
-                        contextLabel: group.label,
-                        permissions: group.permissions.map((per) => ({
-                            label: PermissionLabelsDe[per],
-                            permission: per,
-                            description: '',
-                        })),
-                    })),
-                    ...scopedApiPermissions,
-                ] as PermissionGroup[];
-
-                setPermissions(merged);
-
-                // Expand groups that have at least one selected permission initially
-                const initialExpanded: Record<string, boolean> = {};
-                for (const g of merged) {
-                    const selected = (value ?? []).some((p) => g.permissions.some((gp) => gp.permission === p));
-                    if (selected) {
-                        initialExpanded[groupKey(g.contextLabel)] = true;
-                    }
-                }
-                setExpandedGroups(initialExpanded);
+            .then((permissions: PermissionProvider[]) => {
+                setApiPermissions(permissions);
             })
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Beim Laden der Berechtigungen ist ein Fehler aufgetreten.'));
             });
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [dispatch]);
+
+    const permissions = useMemo(() => {
+        const allowedScopes = scope
+            ? Array.isArray(scope) ? scope : [scope]
+            : null;
+
+        const scopedApiPermissions = allowedScopes
+            ? apiPermissions.filter((g) => allowedScopes.includes(g.scope))
+            : apiPermissions;
+
+        return [
+            ...PermissionGroups.map((group) => ({
+                contextLabel: group.label,
+                permissions: group.permissions.map((per) => ({
+                    label: PermissionLabelsDe[per],
+                    permission: per,
+                    description: '',
+                })),
+            })),
+            ...scopedApiPermissions,
+        ] as PermissionGroup[];
+    }, [apiPermissions, scope]);
 
     const selectedPermissions = value ?? [];
     const selectedCount = selectedPermissions.length;
+
+    useEffect(() => {
+        const initialExpanded: Record<string, boolean> = {};
+        for (const g of permissions) {
+            const selected = selectedPermissions.some((p) => g.permissions.some((gp) => gp.permission === p));
+            if (selected) {
+                initialExpanded[groupKey(g.contextLabel)] = true;
+            }
+        }
+        setExpandedGroups((prev) => ({...prev, ...initialExpanded}));
+    }, [permissions, selectedPermissions]);
 
     const bulkMenuOpen = Boolean(bulkMenuAnchorEl);
     const openBulkMenu = (event: React.MouseEvent<HTMLElement>): void => {
