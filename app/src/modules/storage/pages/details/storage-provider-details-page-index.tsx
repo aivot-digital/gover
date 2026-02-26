@@ -28,6 +28,10 @@ import {TableFieldComponent2} from '../../../../components/table-field/table-fie
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {bytesToMegabytes, megabytesToBytes} from '../../../../utils/bytes-megabytes-conversion';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
+import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
+import {format} from 'date-fns';
+import {StatusTable} from '../../../../components/status-table/status-table';
+import Sync from '@aivot/mui-material-symbols-400-outlined/dist/sync/Sync';
 
 function getIndexedFieldError(
     errors: Record<string, any> | undefined,
@@ -64,6 +68,8 @@ export const _StorageProviderSchema = {
     maxFileSizeInBytes: yup.number()
         .min(0, 'Die maximale Dateigröße muss mindestens 0 Bytes betragen.')
         .required('Die maximale Dateigröße ist ein Pflichtfeld.'),
+    readOnlyStorage: yup.boolean()
+        .optional(),
     metadataAttributes: yup.array()
         .of(
             yup.object({
@@ -254,12 +260,30 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
             setIsBusy(false);
         }
     };
-    const inputsDisabled = storageProvider.readOnly;
+    const inputsDisabled = storageProvider.systemProvider || isBusy || !isEditable;
     const attributesError = getIndexedFieldError(
         errors,
         'metadataAttributes',
         'Bitte füllen Sie alle Metadaten-Attribute mit mindestens dem Titel und Feldnamen aus.',
     );
+
+    // Build StatusTable items array in a type-safe way
+    const statusTableItems = [];
+    if (storageProvider.systemProvider) {
+        statusTableItems.push({
+            label: 'Systemanbieter',
+            icon: <HelpIconOutlined color="primary" />,
+            children: 'Dieser Speicheranbieter ist ein Systemanbieter und kann nicht verändert werden.',
+        });
+    }
+    statusTableItems.push({
+        label: 'Zuletzt synchronisiert',
+        icon: <Sync />,
+        children: storageProvider.lastSync
+            ? format(new Date(storageProvider.lastSync), 'dd.MM.yyyy – HH:mm:ss') + ' Uhr'
+            : 'Noch nicht synchronisiert',
+    });
+
     return (
         <Box>
             {
@@ -296,6 +320,14 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 Konfigurieren Sie den Speicheranbieter, um ihn für die Ablage von Dateien zum angegebenen Verwendungszweck (Typ) nutzen zu können. Sie können die meisten Einstellungen jederzeit anpassen – bitte beachten Sie jedoch, dass bestehende Dateien bei einer Änderung des Speicherortes nicht automatisch migriert werden.
             </Typography>
 
+            {isExistingItem &&
+                <StatusTable
+                    sx={{ mt: 4, mb: 3 }}
+                    cardVariant="outlined"
+                    items={statusTableItems}
+                />
+            }
+
             <Grid
                 container={true}
                 spacing={2}
@@ -307,7 +339,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     }}
                 >
                     <SelectFieldComponent
-                        label="Speicheranbieter"
+                        label="Speichertyp"
                         required={true}
                         value={storageProvider.storageProviderDefinitionKey}
                         onChange={handleInputChange('storageProviderDefinitionKey')}
@@ -344,6 +376,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                             value: def.version.toString(),
                             label: `Version ${def.version.toString()}`,
                         }))}
+                        disabled={inputsDisabled}
                         error={errors.storageProviderDefinitionVersion}
                         hint="Bestimmt, welche Version der Konfigurationsoberfläche und Einstellungsmöglichkeiten angezeigt werden."
                     />
@@ -355,7 +388,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     }}
                 >
                     <SelectFieldComponent
-                        label="Typ (Verwendungszweck)"
+                        label="Verwendungszweck"
                         required={true}
                         value={storageProvider.type}
                         onChange={(val) => {
@@ -383,16 +416,16 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 <Grid
                     size={{
                         xs: 12,
-                        md: 8,
+                        md: 6,
                     }}
                 >
                     <TextFieldComponent
-                        label="Name"
+                        label="Name des Speicheranbieters"
                         required
                         value={storageProvider.name}
                         onChange={handleInputChange('name')}
                         onBlur={handleInputBlur('name')}
-                        disabled={isBusy || !isEditable}
+                        disabled={inputsDisabled}
                         error={errors.name}
                         hint="Dient der Identifizierung des Speicheranbieters."
                     />
@@ -400,21 +433,9 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 <Grid
                     size={{
                         xs: 12,
-                        md: 4,
+                        md: 6,
                     }}
-                >
-                    <NumberFieldComponent
-                        label="Maximale Dateigröße (in Megabytes)"
-                        value={bytesToMegabytes(storageProvider.maxFileSizeInBytes)}
-                        onChange={(mb) => handleInputChange('maxFileSizeInBytes')(megabytesToBytes(mb) as any)}
-                        onBlur={(mb) => handleInputBlur('maxFileSizeInBytes')(megabytesToBytes(mb) as any)}
-                        disabled={isBusy || !isEditable}
-                        error={errors.maxFileSizeInBytes}
-                        suffix="MB"
-                        hint='1 Megabyte entspricht 1000 Kilobytes oder 1.000.000 Bytes.'
-                    />
-                </Grid>
-
+                />
                 <Grid
                     size={{
                         xs: 12,
@@ -428,9 +449,37 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         onChange={handleInputChange('description')}
                         onBlur={handleInputBlur('description')}
                         multiline={true}
-                        disabled={isBusy || !isEditable}
+                        disabled={inputsDisabled}
                         error={errors.description}
                         hint="Interne Beschreibung des Speicheranbieters zur besseren Identifizierbarkeit."
+                        rows={6}
+                    />
+                </Grid>
+
+                <Grid
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
+                >
+                    <NumberFieldComponent
+                        label="Maximale Dateigröße (in Megabytes)"
+                        value={bytesToMegabytes(storageProvider.maxFileSizeInBytes)}
+                        onChange={(mb) => handleInputChange('maxFileSizeInBytes')(megabytesToBytes(mb) as any)}
+                        onBlur={(mb) => handleInputBlur('maxFileSizeInBytes')(megabytesToBytes(mb) as any)}
+                        disabled={inputsDisabled}
+                        error={errors.maxFileSizeInBytes}
+                        suffix="MB"
+                        hint='1 Megabyte entspricht 1.000 Kilobytes oder 1.000.000 Bytes.'
+                    />
+
+                    <CheckboxFieldComponent
+                        label="Es handelt sich um einen read-only Speicher, von welchem Dateien nur gelesen, aber nicht geschrieben werden können."
+                        value={storageProvider.readOnlyStorage}
+                        onChange={handleInputChange('readOnlyStorage')}
+                        variant="switch"
+                        error={errors.readOnlyStorage}
+                        disabled={inputsDisabled}
                     />
                 </Grid>
             </Grid>
@@ -442,6 +491,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     element={definition.providerConfigLayout}
                     elementData={storageProvider.configuration}
                     onElementDataChange={handleInputChange('configuration')}
+                    disabled={inputsDisabled}
                 />
             }
 
@@ -525,7 +575,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
             >
                 <Button
                     onClick={handleSave}
-                    disabled={isBusy || hasNotChanged || !isEditable}
+                    disabled={inputsDisabled || hasNotChanged}
                     variant="contained"
                     color="primary"
                     startIcon={<SaveOutlinedIcon />}
@@ -536,7 +586,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 <Tooltip title={'Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'}>
                     <Button
                         onClick={handleRefreshDefinitions}
-                        disabled={isBusy || !isEditable}
+                        disabled={inputsDisabled}
                     >
                         Auswahllisten neu laden <HelpIconOutlined
                         fontSize="small"
@@ -551,7 +601,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     <Button
                         variant={'outlined'}
                         onClick={() => setShowConfirmDialog(true)}
-                        disabled={isBusy || !isEditable}
+                        disabled={inputsDisabled}
                         color="error"
                         sx={{
                             marginLeft: 'auto',

@@ -77,7 +77,7 @@ export function StorageProvidersListPage(): ReactNode {
                     columnDefinitions={[
                         {
                             field: 'name',
-                            headerName: 'Name der Konfiguration',
+                            headerName: 'Name',
                             flex: 1,
                             renderCell: (params) => (
                                 <CellLink
@@ -90,7 +90,7 @@ export function StorageProvidersListPage(): ReactNode {
                         },
                         {
                             field: 'storageProviderDefinitionKey',
-                            headerName: 'Anbieter',
+                            headerName: 'Speichertyp',
                             flex: 1,
                             valueGetter: (_, row) => {
                                 const provider = definitions.find((def) => (

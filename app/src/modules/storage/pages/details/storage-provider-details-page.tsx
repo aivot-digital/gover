@@ -128,7 +128,7 @@ export function StorageProviderDetailsPage(): ReactNode {
                         label: 'Liste der Speicheranbieter',
                         to: '/payment-providers',
                     }}
-                    entityType={ServerEntityType.PaymentProviders}
+                    entityType={ServerEntityType.StorageProviders}
                 />
             </PageWrapper>
         </>

@@ -126,6 +126,7 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
         existingEntity.setName(entity.getName());
         existingEntity.setDescription(entity.getDescription());
         existingEntity.setMaxFileSizeInBytes(entity.getMaxFileSizeInBytes());
+        existingEntity.setReadOnlyStorage(entity.getReadOnlyStorage());
         existingEntity.setMetadataAttributes(entity.getMetadataAttributes());
 
         var shouldResync = shouldResync(def,
