@@ -18,16 +18,16 @@ import React from 'react';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
 
-import {PermissionDetails} from './permission-editor-props';
+import {PermissionGroup} from './permission-editor-props';
 
 interface PermissionGroupAccordionProps {
-    group: PermissionDetails;
+    group: PermissionGroup;
     selectedPermissions: string[];
     isExpanded: boolean;
     isBusy: boolean;
     isEditable: boolean;
     onExpandedChange: (next: boolean) => void;
-    onToggleGroup: (group: PermissionDetails, checked: boolean) => void;
+    onToggleGroup: (group: PermissionGroup, checked: boolean) => void;
     onTogglePermission: (permission: string, checked: boolean) => void;
     inferCrud: (permission: string) => 'create' | 'read' | 'update' | 'delete' | null;
     onCopyPermission: (permission: string) => void;

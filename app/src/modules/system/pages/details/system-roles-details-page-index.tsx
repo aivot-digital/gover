@@ -18,6 +18,7 @@ import {SystemRolesApiService} from '../../services/system-roles-api-service';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import Grid from '@mui/material/Grid';
 import {PermissionEditor} from '../../../../components/permission-editor/permission-editor';
+import {PermissionScope} from '../../../permissions/enums/permission-scope';
 
 export const SystemRoleSchema = yup.object({
     name: yup.string()
@@ -214,7 +215,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                 onChange={(next) => handleInputPatch({permissions: next})}
                 isBusy={isBusy}
                 isEditable={isEditable}
-                scope={'System'}
+                scope={PermissionScope.System}
             />
 
             <Box

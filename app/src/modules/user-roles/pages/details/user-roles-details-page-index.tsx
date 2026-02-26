@@ -18,6 +18,7 @@ import {UserRoleResponseDTO} from '../../dtos/user-role-response-dto';
 import {UserRolesApiService} from '../../user-roles-api-service';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {PermissionEditor} from '../../../../components/permission-editor/permission-editor';
+import {PermissionScope} from '../../../permissions/enums/permission-scope';
 
 export const UserRoleSchema = yup.object({
     name: yup.string()
@@ -215,7 +216,7 @@ export function UserRolesDetailsPageIndex() {
                 onChange={(next: string[]) => handleInputPatch({permissions: next} as Partial<UserRoleResponseDTO>)}
                 isBusy={isBusy}
                 isEditable={isEditable}
-                scope={'Domain'}
+                scope={PermissionScope.Domain}
             />
 
             <Box

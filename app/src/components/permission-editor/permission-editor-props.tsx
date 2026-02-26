@@ -1,11 +1,7 @@
-export interface PermissionDetails {
-    contextLabel: string;
-    permissions: Array<{
-        permission: string;
-        label: string;
-        description: string;
-    }>;
-}
+import {type PermissionScope} from '../../modules/permissions/enums/permission-scope';
+import {type PermissionProvider} from '../../modules/permissions/models/permission-provider';
+
+export type PermissionGroup = Pick<PermissionProvider, 'contextLabel' | 'permissions'>;
 
 export interface PermissionEditorProps {
     /** Persisted permissions (used for diff view). */
@@ -21,5 +17,5 @@ export interface PermissionEditorProps {
     /** Optional label above editor. */
     title?: string;
     /** Scope of the permissions. */
-    scope?: 'System' | 'Domain' | Array<'System' | 'Domain'>;
+    scope?: PermissionScope | PermissionScope[];
 }

@@ -34,7 +34,9 @@ import {AlertComponent} from '../alert/alert-component';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
-import {PermissionDetails, PermissionEditorProps} from './permission-editor-props';
+import {PermissionScope} from '../../modules/permissions/enums/permission-scope';
+import {PermissionEntry} from '../../modules/permissions/models/permission-provider';
+import {PermissionEditorProps, PermissionGroup} from './permission-editor-props';
 import {PermissionGroupAccordion} from './permission-group-accordion';
 
 function groupKey(label: string): string {
@@ -58,12 +60,12 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
         isEditable = true,
         isBusy = false,
         title = 'Berechtigungen',
-        scope = ['System', 'Domain'],
+        scope = [PermissionScope.System, PermissionScope.Domain],
     } = props;
 
     const dispatch = useAppDispatch();
 
-    const [permissions, setPermissions] = useState<PermissionDetails[]>([]);
+    const [permissions, setPermissions] = useState<PermissionGroup[]>([]);
     const [permissionQuery, setPermissionQuery] = useState('');
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
     const [bulkMenuAnchorEl, setBulkMenuAnchorEl] = useState<null | HTMLElement>(null);
@@ -91,7 +93,7 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                         })),
                     })),
                     ...scopedApiPermissions,
-                ] as PermissionDetails[];
+                ] as PermissionGroup[];
 
                 setPermissions(merged);
 
@@ -145,7 +147,7 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
     const permissionSearchIndex = useMemo(() => {
         type IndexedPermission = {
             groupLabel: string;
-            permission: PermissionDetails['permissions'][number];
+            permission: PermissionEntry;
             searchLabel: string;
             searchPermission: string;
             searchDescription: string;
@@ -179,7 +181,7 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
             }));
         }
 
-        const matchesByGroup = new Map<string, PermissionDetails['permissions'][number][]>();
+        const matchesByGroup = new Map<string, PermissionEntry[]>();
         const seen = new Set<string>();
 
         permissionSearchIndex.search(q).forEach(({item}) => {
@@ -230,7 +232,7 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
         setPermissionsValue(Array.from(current));
     };
 
-    const handleToggleGroup = (group: PermissionDetails, checked: boolean): void => {
+    const handleToggleGroup = (group: PermissionGroup, checked: boolean): void => {
         const current = new Set(selectedPermissions);
         const groupPerms = group.permissions.map((p) => p.permission);
 
