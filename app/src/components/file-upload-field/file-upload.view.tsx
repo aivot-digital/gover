@@ -3,7 +3,7 @@ import {Box, Button, FormLabel, IconButton, Table, TableBody, TableCell, TableCo
 import {FileUploadElement, FileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
-import {humanizeFileSize, humanizeNumber, pluralize} from '../../utils/huminization-utils';
+import {humanizeFileSize, humanizeNumber, pluralize} from '../../utils/humanization-utils';
 import {BaseViewProps} from '../../views/base-view';
 import BackupOutlinedIcon from '@mui/icons-material/BackupOutlined';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';

@@ -49,7 +49,26 @@ export class StorageProvidersApiService extends BaseCrudApiService<StorageProvid
     }
 
     public async getFolder(id: number, path: string): Promise<StorageIndexItem[]> {
-        return await this.get<StorageIndexItem[]>(`${this.buildPath(id)}folders${path}`, {});
+        const items = await this.get<any[]>(`${this.buildPath(id)}folders${path}`, {});
+
+        return items.map((item) => {
+            const isDirectory = item.directory ?? item.isDirectory ?? String(item.pathFromRoot ?? '').endsWith('/');
+
+            return {
+                storageProviderId: item.storageProviderId,
+                storageProviderType: item.storageProviderType,
+                pathFromRoot: item.pathFromRoot,
+                directory: isDirectory,
+                isDirectory: isDirectory,
+                filename: item.filename,
+                mimeType: item.mimeType ?? '',
+                sizeInBytes: Number(item.sizeInBytes ?? 0),
+                missing: item.missing === true,
+                metadata: (typeof item.metadata === 'object' && item.metadata != null) ? item.metadata : {},
+                created: item.created ?? '',
+                updated: item.updated ?? '',
+            } as StorageIndexItem;
+        });
     }
 
     public async downloadFile(id: number, path: string): Promise<Blob> {

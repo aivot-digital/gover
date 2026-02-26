@@ -133,7 +133,10 @@ public class StorageSyncService {
                             .setStorageProviderType(storageProvider.getType())
                             .setMimeType(StorageService.FOLDER_MIME_TYPE)
                             .setDirectory(true)
-                            .setFilename(folder.getName());
+                            .setFilename(folder.getName())
+                            .setSizeInBytes(0L)
+                            .setMissing(false)
+                            .setMetadata(StorageItemMetadata.empty());
 
                     storageIndexItemRepository.save(folderItem);
 
@@ -168,7 +171,10 @@ public class StorageSyncService {
                                 .setStorageProviderType(storageProvider.getType())
                                 .setMimeType(mimeType)
                                 .setDirectory(false)
-                                .setFilename(document.getName());
+                                .setFilename(document.getName())
+                                .setSizeInBytes(document.getSizeInBytes())
+                                .setMissing(false)
+                                .setMetadata(document.getMetadata());
 
                         storageIndexItemRepository.save(docItem);
 

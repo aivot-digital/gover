@@ -2,7 +2,7 @@ import React, {useRef, useState} from 'react';
 import {Box, Button, FormLabel, IconButton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, useMediaQuery, useTheme} from '@mui/material';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
-import {humanizeFileSize, humanizeNumber, pluralize} from '../../utils/huminization-utils';
+import {humanizeFileSize, humanizeNumber, pluralize} from '../../utils/humanization-utils';
 import BackupOutlinedIcon from '@mui/icons-material/BackupOutlined';
 import {FileUploadComponentProps} from './file-upload-component-props';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
