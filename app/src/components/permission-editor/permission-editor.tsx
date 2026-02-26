@@ -1,22 +1,15 @@
 import {
-    Accordion,
-    AccordionDetails,
-    AccordionSummary,
     Box,
     Button,
-    Checkbox,
     Chip,
     Dialog,
     DialogActions,
     DialogContent,
-    Divider,
-    FormControlLabel,
     IconButton,
     ListItemIcon,
     ListItemText,
     Menu,
     MenuItem,
-    Paper,
     Stack,
     TextField,
     Tooltip,
@@ -24,7 +17,6 @@ import {
 } from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
 import Fuse from 'fuse.js';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
 import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
@@ -43,7 +35,7 @@ import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {PermissionDetails, PermissionEditorProps} from './permission-editor-props';
-import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
+import {PermissionGroupAccordion} from './permission-group-accordion';
 
 function groupKey(label: string): string {
     return label.trim();
@@ -101,7 +93,7 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                     ...scopedApiPermissions,
                 ] as PermissionDetails[];
 
-                setPermissions(scopedApiPermissions);
+                setPermissions(merged);
 
                 // Expand groups that have at least one selected permission initially
                 const initialExpanded: Record<string, boolean> = {};
@@ -549,216 +541,27 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
 
             <Stack spacing={2}>
                 {filteredPermissionGroups.map((group) => {
-                    const total = group.permissions.length;
-                    const selectedInGroup = group.permissions.filter((p) => selectedPermissions.includes(p.permission)).length;
-                    const allSelected = total > 0 && selectedInGroup === total;
-                    const someSelected = selectedInGroup > 0 && selectedInGroup < total;
-
                     const isExpanded = expandedGroups[groupKey(group.contextLabel)] ?? false;
 
                     return (
-                        <Accordion
+                        <PermissionGroupAccordion
                             key={group.contextLabel}
-                            expanded={isExpanded}
-                            onChange={(_, next) =>
+                            group={group}
+                            selectedPermissions={selectedPermissions}
+                            isExpanded={isExpanded}
+                            isBusy={isBusy}
+                            isEditable={isEditable}
+                            onExpandedChange={(next) =>
                                 setExpandedGroups((prev) => ({
                                     ...prev,
                                     [groupKey(group.contextLabel)]: next,
                                 }))
                             }
-                            disableGutters
-                            sx={{
-                                borderRadius: 2,
-                                '&:before': {display: 'none'},
-                                border: '1px solid',
-                                borderColor: 'divider',
-                                boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
-                            }}
-                        >
-                            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                                <Stack
-                                    direction="row"
-                                    alignItems="center"
-                                    spacing={1.5}
-                                    sx={{width: '100%', pr: 1}}
-                                >
-                                    <Typography
-                                        sx={{flex: 1, minWidth: 0}}
-                                        noWrap
-                                    >
-                                        {group.contextLabel}
-                                    </Typography>
-
-                                    <Chip
-                                        size="small"
-                                        variant={selectedInGroup > 0 ? 'filled' : 'outlined'}
-                                        label={`${selectedInGroup} von ${total}`}
-                                    />
-
-                                    {/*
-                                    // Alternative selection via Checkbox, does not work because it triggers the Accordion toggle
-                                    // and thus cannot be used to select/deselect groups without expanding them first.
-                                    // Maybe with some event.stopPropagation() magic, but the Button approach is more straightforward
-                                    // and has a larger click target.
-                                    <Tooltip
-                                        title={allSelected ? 'Gruppe abwählen' : 'Gruppe auswählen'}
-                                        arrow
-                                    >
-                                        <span>
-                                          <Checkbox
-                                              checked={allSelected}
-                                              indeterminate={someSelected}
-                                              onChange={(_, next) => handleToggleGroup(group, next)}
-                                              disabled={isBusy || !isEditable || total === 0}
-                                              size="small"
-                                              sx={{p: 0.5}}
-                                          />
-                                        </span>
-                                    </Tooltip>*/}
-
-                                    <Divider
-                                        orientation="vertical"
-                                        flexItem
-                                    />
-
-                                    <Tooltip
-                                        title={allSelected ? 'Gruppe abwählen' : 'Gruppe auswählen'}
-                                        arrow
-                                    >
-                                        <span>
-                                            <Button
-                                                component="span"
-                                                size="small"
-                                                variant="text"
-                                                disabled={isBusy || !isEditable || total === 0}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleToggleGroup(group, !allSelected);
-                                                }}
-                                            >
-                                                {allSelected ? 'Abwählen' : 'Auswählen'}
-                                            </Button>
-                                        </span>
-                                    </Tooltip>
-                                </Stack>
-                            </AccordionSummary>
-
-                            <AccordionDetails>
-                                <Box
-                                    sx={{
-                                        display: 'grid',
-                                        gridTemplateColumns: {xs: '1fr', md: '1fr 1fr'},
-                                        columnGap: 2,
-                                        rowGap: 2,
-                                    }}
-                                >
-                                    {group.permissions.map(({permission, label, description}) => {
-                                        const checked = selectedPermissions.includes(permission);
-                                        const crud = inferCrud(permission);
-
-                                        return (
-                                            <Paper
-                                                key={permission}
-                                                variant="outlined"
-                                                sx={{
-                                                    px: 1.5,
-                                                    py: 1,
-                                                    borderRadius: 2,
-                                                    display: 'flex',
-                                                    alignItems: 'flex-start',
-                                                    gap: 1,
-                                                    '&:hover': {backgroundColor: 'action.hover'},
-                                                }}
-                                            >
-                                                <FormControlLabel
-                                                    sx={{m: 0, flex: 1, alignItems: 'flex-start'}}
-                                                    control={(
-                                                        <Checkbox
-                                                            checked={checked}
-                                                            onChange={(_, next) => handleTogglePermission(permission, next)}
-                                                            disabled={isBusy || !isEditable}
-                                                            size="small"
-                                                            sx={{p: 0, pt: .25, pr: 1, m: 0}}
-                                                        />
-                                                    )}
-                                                    label={(
-                                                        <Box sx={{width: '100%'}}>
-                                                            <Stack
-                                                                direction="row"
-                                                                spacing={1}
-                                                                alignItems="center"
-                                                                sx={{minWidth: 0}}
-                                                            >
-                                                                <Typography
-                                                                    variant="body2"
-                                                                    sx={{flex: 1, minWidth: 0}}
-                                                                    noWrap
-                                                                >
-                                                                    {label}
-                                                                </Typography>
-
-                                                            </Stack>
-
-                                                            <Typography
-                                                                variant="caption"
-                                                                color="text.secondary"
-                                                                sx={{
-                                                                    display: 'block',
-                                                                    fontFamily: 'monospace',
-                                                                    wordBreak: 'break-word',
-                                                                }}
-                                                            >
-                                                                {permission}
-                                                            </Typography>
-
-                                                            {description && (
-                                                                <Typography
-                                                                    variant="caption"
-                                                                    color="text.secondary"
-                                                                    sx={{
-                                                                        display: 'block',
-                                                                        mt: 0.25,
-                                                                        wordBreak: 'break-word',
-                                                                    }}
-                                                                >
-                                                                    {description}
-                                                                </Typography>
-                                                            )}
-                                                        </Box>
-                                                    )}
-                                                />
-
-                                                <Stack
-                                                    direction="row"
-                                                    spacing={1}
-                                                    alignItems="center"
-                                                    sx={{pt: 0.25}}
-                                                >
-                                                    {crud && <Chip
-                                                        size="small"
-                                                        label={crud.toUpperCase()}
-                                                        variant="outlined"
-                                                    />}
-
-                                                    <Tooltip title="Permission-Key kopieren">
-                                                        <span>
-                                                          <IconButton
-                                                              aria-label="Permission-Key kopieren"
-                                                              size="small"
-                                                              disabled={isBusy}
-                                                              onClick={() => copyToClipboard(permission)}
-                                                          >
-                                                            <ContentCopy fontSize="inherit" />
-                                                          </IconButton>
-                                                        </span>
-                                                    </Tooltip>
-                                                </Stack>
-                                            </Paper>
-                                        );
-                                    })}
-                                </Box>
-                            </AccordionDetails>
-                        </Accordion>
+                            onToggleGroup={handleToggleGroup}
+                            onTogglePermission={handleTogglePermission}
+                            inferCrud={inferCrud}
+                            onCopyPermission={copyToClipboard}
+                        />
                     );
                 })}
             </Stack>
