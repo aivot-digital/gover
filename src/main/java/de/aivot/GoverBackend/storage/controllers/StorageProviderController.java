@@ -10,9 +10,11 @@ import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.storage.entities.StorageIndexItemEntity;
 import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
 import de.aivot.GoverBackend.storage.enums.StorageProviderStatus;
+import de.aivot.GoverBackend.storage.exceptions.StorageException;
 import de.aivot.GoverBackend.storage.filters.StorageProviderFilter;
 import de.aivot.GoverBackend.storage.permissions.StoragePermissionProvider;
 import de.aivot.GoverBackend.storage.repositories.StorageIndexItemRepository;
+import de.aivot.GoverBackend.storage.services.StorageProviderDefinitionService;
 import de.aivot.GoverBackend.storage.services.StorageProviderService;
 import de.aivot.GoverBackend.storage.services.StorageService;
 import de.aivot.GoverBackend.storage.services.StorageSyncWorker;
@@ -61,6 +63,7 @@ public class StorageProviderController {
     private final RabbitTemplate rabbitTemplate;
     private final StorageIndexItemRepository storageIndexItemRepository;
     private final StorageService storageService;
+    private final StorageProviderDefinitionService storageProviderDefinitionService;
 
     @Autowired
     public StorageProviderController(AuditService auditService,
@@ -69,7 +72,8 @@ public class StorageProviderController {
                                      PermissionService permissionService,
                                      RabbitTemplate rabbitTemplate,
                                      StorageIndexItemRepository storageIndexItemRepository,
-                                     StorageService storageService) {
+                                     StorageService storageService,
+                                     StorageProviderDefinitionService storageProviderDefinitionService) {
         this.auditService = auditService.createScopedAuditService(StorageProviderController.class);
         this.userService = userService;
         this.storageProviderService = storageProviderService;
@@ -77,6 +81,7 @@ public class StorageProviderController {
         this.rabbitTemplate = rabbitTemplate;
         this.storageIndexItemRepository = storageIndexItemRepository;
         this.storageService = storageService;
+        this.storageProviderDefinitionService = storageProviderDefinitionService;
     }
 
     @GetMapping("")
@@ -268,5 +273,59 @@ public class StorageProviderController {
         }
 
         return URLDecoder.decode(normalizedPath, StandardCharsets.UTF_8);
+    }
+
+    @PostMapping("{id}/test/")
+    @Operation(
+            summary = "Test Storage Provider",
+            description = "Manually test the connection to a storage provider. Uses the same logic as the health check. Optionally checks for writability."
+    )
+    public Map<String, Object> testStorageProvider(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Integer id,
+            @RequestParam(name = "writable", required = false, defaultValue = "false") boolean writable
+    ) throws ResponseException {
+        permissionService.testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+
+        var provider = storageProviderService.retrieve(id).orElseThrow(ResponseException::notFound);
+        var def = storageProviderDefinitionService
+                .retrieveProviderDefinition(
+                        provider.getStorageProviderDefinitionKey(),
+                        provider.getStorageProviderDefinitionVersion()
+                )
+                .orElse(null);
+
+        if (def == null) {
+            return Map.of(
+                    "success", false,
+                    "error", "Der Speicheranbieter referenziert eine nicht vorhandene Anbieterdefinition."
+            );
+        }
+
+        try {
+            testConnection(provider, def, writable);
+            return Map.of(
+                    "success", true
+            );
+        } catch (Exception e) {
+            return Map.of(
+                    "success", false,
+                    "error", e.getMessage()
+            );
+        }
+    }
+
+    private static <T> void testConnection(StorageProviderEntity provider, de.aivot.GoverBackend.storage.models.StorageProviderDefinition<T> definition, boolean writable) throws StorageException {
+        T config;
+
+        try {
+            config = de.aivot.GoverBackend.elements.utils.ElementPOJOMapper
+                    .mapToPOJO(provider.getConfiguration(), definition.getConfigClass());
+        } catch (de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException e) {
+            throw new StorageException(e, "Fehler beim Konvertieren der Speicheranbieter-Konfiguration.");
+        }
+
+        // Test write only if requested, because this may include the writing of test files (S3) and we do not want to always write unnecessary files
+        definition.testConnection(config, writable);
     }
 }

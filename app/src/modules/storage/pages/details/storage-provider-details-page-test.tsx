@@ -1,62 +1,40 @@
-import {Box, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography} from '@mui/material';
-import React, {useContext, useEffect, useMemo, useState} from 'react';
+import {Box, Button, Typography} from '@mui/material';
+import React, {useContext, useEffect, useState} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
-import {useSearchParams} from 'react-router-dom';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import {AlertComponent} from '../../../../components/alert/alert-component';
-import {ExpandableCodeBlock} from '../../../../components/expandable-code-block/expandable-code-block';
 import type {StorageProviderEntity} from '../../entities/storage-provider-entity';
-import {IdentityData} from '../../../identity/models/identity-data';
-import {IdentityIdQueryParam} from '../../../identity/constants/identity-id-query-param';
-import {IdentityStateQueryParam} from '../../../identity/constants/identity-state-query-param';
-import {IdentityResultState} from '../../../identity/enums/identity-result-state';
-import {IdentityProvidersApiService} from '../../../identity/identity-providers-api-service';
+import {StorageProvidersApiService} from '../../storage-providers-api-service';
+import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
+import {ExpandableCodeBlock} from '../../../../components/expandable-code-block/expandable-code-block';
 
 export function StorageProviderDetailsPageTest() {
-    const [urlSearchParams, _] = useSearchParams();
-
     const {
         item: storageProvider,
     } = useContext<GenericDetailsPageContextType<StorageProviderEntity, void>>(GenericDetailsPageContext);
 
-    const [identityData, setIdentityData] = useState<IdentityData>();
-    const [identityError, setIdentityError] = useState<string>();
-
-    const testLink = useMemo(() => {
-        if (storageProvider == null) {
-            return '#';
-        }
-
-        return '#';
-        //return IdentityProvidersApiService.createLink(identityProvider.key);
-    }, [storageProvider]);
+    const [testResult, setTestResult] = useState<{ success: boolean; error?: string } | null>(null);
+    const [isTesting, setIsTesting] = useState(false);
+    const [writable, setWritable] = useState(false);
 
     useEffect(() => {
-        const stateStr = urlSearchParams.get(IdentityStateQueryParam);
-        const state = stateStr != null ? parseInt(stateStr) : IdentityResultState.UnknownError;
-        const id = urlSearchParams.get(IdentityIdQueryParam);
+        setTestResult(null);
+    }, [writable]);
 
-        switch (state) {
-            case IdentityResultState.Success:
-                if (id == null) {
-                    setIdentityError('Es wurde kein Nutzerkonto übergeben.');
-                    break;
-                }
-
-                setIdentityError(undefined);
-                IdentityProvidersApiService
-                    .fetchIdentity(id)
-                    .then(setIdentityData)
-                    .catch(err => {
-                        console.error(err);
-                    });
-                break;
-            default:
-            case IdentityResultState.UnknownError:
-                setIdentityError('Unbekannter Fehler aufgetreten. Bitte versuchen Sie es erneut.');
-                break;
+    const handleTest = async () => {
+        if (!storageProvider) return;
+        setIsTesting(true);
+        setTestResult(null);
+        try {
+            const api = new StorageProvidersApiService();
+            const result = await api.testStorageProvider(storageProvider.id, writable);
+            setTestResult(result);
+        } catch (e) {
+            setTestResult({ success: false, error: 'Unbekannter Fehler beim Testen.' });
+        } finally {
+            setIsTesting(false);
         }
-    }, [urlSearchParams]);
+    };
 
     return (
         <Box>
@@ -67,10 +45,21 @@ export function StorageProviderDetailsPageTest() {
                 Test des Speicheranbieters
             </Typography>
 
-            <Typography sx={{mb: 3, maxWidth: 900}}>
+            <Typography sx={{mb: 2, maxWidth: 900}}>
                 Um die korrekte Funktion eines Speicheranbieters sicherzustellen, können Sie hier einen Test durchführen.
                 Technisch wird ein Health-Check durchgeführt, bei welchem Gover eine Anfrage an den Speicheranbieter sendet und prüft, ob eine erfolgreiche Verbindung aufgebaut werden kann.
             </Typography>
+            <Typography sx={{mb: 1, maxWidth: 900}}>
+                Optional kann auch die Beschreibbarkeit des Anbieters getestet werden. Je nach Speicheranbieter kann es sein, dass zu diesem Zweck eine Testdatei hochgeladen und wieder gelöscht wird. Aktivieren Sie diese Option nur, wenn Sie sicher sind, dass dies bei Ihrem Speicheranbieter keine Probleme verursacht.
+            </Typography>
+
+            <CheckboxFieldComponent
+                label="Beschreibbarkeit testen (optional)"
+                value={writable}
+                onChange={setWritable}
+                disabled={!!storageProvider?.readOnlyStorage}
+                hint={storageProvider?.readOnlyStorage ? 'Diese Option ist deaktiviert, da der Speicheranbieter als read-only (nur lesend) konfiguriert ist.' : undefined}
+            />
 
             <Box
                 sx={{
@@ -79,94 +68,37 @@ export function StorageProviderDetailsPageTest() {
                 }}
             >
                 <Button
-                    component="a"
-                    href={testLink}
+                    onClick={handleTest}
                     variant="contained"
                     startIcon={<ScienceOutlinedIcon />}
-                    disabled={storageProvider == null}
+                    disabled={storageProvider == null || isTesting}
                 >
                     Speicheranbieter testen
                 </Button>
             </Box>
 
-            {
-                identityData != null &&
-                storageProvider != null &&
-                <Box
-                    sx={{
-                        mt: 4,
-                    }}
+            {testResult && (
+                <AlertComponent
+                    color={testResult.success ? 'success' : 'error'}
+                    title={testResult.success ? (writable ? 'Verbindung und Beschreibbarkeit erfolgreich getestet' : 'Verbindung erfolgreich getestet') : (writable ? 'Test von Verbindung und Beschreibbarkeit fehlgeschlagen' : 'Test der Verbindung fehlgeschlagen')}
                 >
-                    <Typography
-                        variant="h6"
-                        sx={{
-                            mb: 1,
-                        }}
-                    >
-                        Testergebnisse
-                    </Typography>
-
-                    <Typography
-                        sx={{
-                            mb: 3,
-                            maxWidth: 900,
-                        }}
-                    >
-                        Hier sehen Sie die Daten, die von dem Nutzerkontenanbieter an Gover übermittelt wurden.
-                        Bitte beachten Sie, dass nur die Attribute angezeigt werden, die auch in der Konfiguration des Anbieters zugewiesen worden sind.
-                    </Typography>
-
-                    {
-                        identityError != null &&
-                        <AlertComponent
-                            color="error"
-                            title="Fehler"
-                            text={identityError}
-                        />
+                    {testResult.success
+                        ? writable
+                            ? 'Die Verbindung zum Speicheranbieter war erfolgreich und der Anbieter ist beschreibbar.'
+                            : 'Die Verbindung zum Speicheranbieter war erfolgreich.'
+                        : (
+                            <>
+                                {writable
+                                    ? 'Die Verbindung zum Speicheranbieter und dessen Beschreibbarkeit konnte nicht bestätigt werden.'
+                                    : 'Die Verbindung zum Speicheranbieter konnte nicht bestätigt werden.'}
+                                {testResult.error && (
+                                    <ExpandableCodeBlock value={testResult.error} sx={{ mt: 2 }} />
+                                )}
+                            </>
+                        )
                     }
-
-                    <TableContainer sx={{border: '1px solid rgba(224, 224, 224, 1)', borderRadius: '4px', my: 2}}>
-                        <Table>
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell>
-                                        <strong>Feld</strong>
-                                    </TableCell>
-                                    <TableCell>
-                                        <strong>Wert</strong>
-                                    </TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
-
-                    <Typography
-                        variant="h6"
-                        sx={{
-                            mt: 3,
-                            mb: 1,
-                        }}
-                    >
-                        Original-Datensatz
-                    </Typography>
-
-                    <Typography
-                        sx={{
-                            mb: 3,
-                            maxWidth: 900,
-                        }}
-                    >
-                        Hier sehen Sie, im Gegensatz zu den obigen Testergebnissen, den vollständigen Datensatz, welcher vom Nutzerkontenanbieter an Gover übermittelt wurde.
-                        Dieser kann auch Attribute enthalten, welche Sie in der Konfiguration des Nutzerkontenanbieters nicht zugewiesen haben.
-                        Bitte beachten Sie, dass ausschließlich im Nutzerkontenanbieter zugewiesene Attribute auch innerhalb von Gover verwendbar sind.
-                    </Typography>
-
-                    <ExpandableCodeBlock value={JSON.stringify(identityData.attributes, null, '\t')} />
-                </Box>
-            }
+                </AlertComponent>
+            )}
         </Box>
     );
 }
