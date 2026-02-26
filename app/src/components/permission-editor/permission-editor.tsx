@@ -279,15 +279,19 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
         setExpandedGroups((prev) => ({...prev, ...nextExpanded}));
     };
 
-    const expandSmart = (): void => {
+    const expandSelectedAndSearchMatchGroups = (): void => {
         const nextExpanded: Record<string, boolean> = {};
 
+        // Expand groups that currently matter: those with selected permissions and,
+        // only when a query is active, groups with search matches.
         for (const g of permissions) {
             const hasSelected = selectedPermissions.some((p) => g.permissions.some((gp) => gp.permission === p));
             if (hasSelected) nextExpanded[groupKey(g.contextLabel)] = true;
         }
-        for (const g of filteredPermissionGroups) {
-            nextExpanded[groupKey(g.contextLabel)] = true;
+        if (permissionQuery.trim()) {
+            for (const g of filteredPermissionGroups) {
+                nextExpanded[groupKey(g.contextLabel)] = true;
+            }
         }
 
         setExpandedGroups((prev) => ({...prev, ...nextExpanded}));
@@ -437,14 +441,14 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                     </Tooltip>
 
                     <Tooltip
-                        title="Smartes ausklappen (Gruppen mit Auswahl und Suchtreffern öffnen)"
+                        title="Gruppen mit Auswahl und Suchtreffern ausklappen"
                         arrow
                     >
                         <span>
                           <IconButton
-                              aria-label="Smartes ausklappen"
+                              aria-label="Gruppen mit Auswahl und Suchtreffern ausklappen"
                               size="small"
-                              onClick={expandSmart}
+                              onClick={expandSelectedAndSearchMatchGroups}
                               disabled={isBusy || permissions.length === 0}
                           >
                             <UnfoldMoreIcon fontSize="small" />
