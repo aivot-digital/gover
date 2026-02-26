@@ -12,6 +12,7 @@ public class StorageProviderFilter implements Filter<StorageProviderEntity> {
     private StorageProviderType type;
     private Boolean readOnlyStorage;
     private Boolean systemProvider;
+    private String storageProviderDefinitionKey;
 
     public static StorageProviderFilter create() {
         return new StorageProviderFilter();
@@ -26,6 +27,7 @@ public class StorageProviderFilter implements Filter<StorageProviderEntity> {
                 .withEquals("type", type)
                 .withEquals("readOnlyStorage", readOnlyStorage)
                 .withEquals("systemProvider", systemProvider)
+                .withEquals("storageProviderDefinitionKey", storageProviderDefinitionKey)
                 .build();
     }
 
@@ -62,6 +64,15 @@ public class StorageProviderFilter implements Filter<StorageProviderEntity> {
 
     public StorageProviderFilter setSystemProvider(Boolean systemProvider) {
         this.systemProvider = systemProvider;
+        return this;
+    }
+
+    public String getStorageProviderDefinitionKey() {
+        return storageProviderDefinitionKey;
+    }
+
+    public StorageProviderFilter setStorageProviderDefinitionKey(String storageProviderDefinitionKey) {
+        this.storageProviderDefinitionKey = storageProviderDefinitionKey;
         return this;
     }
 }

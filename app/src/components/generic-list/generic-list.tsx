@@ -26,6 +26,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import {useSearchParams} from 'react-router-dom';
 import {GridSortItem} from '@mui/x-data-grid/models/gridSortModel';
 import {CellContentWrapper} from "../cell-content-wrapper/cell-content-wrapper";
+import WidthWide from '@aivot/mui-material-symbols-400-outlined/dist/width-wide/WidthWide';
+import FitPageWidth from '@aivot/mui-material-symbols-400-outlined/dist/fit-page-width/FitPageWidth';
 
 const UrlParamKeys = {
     search: 'search',
@@ -282,7 +284,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                     setIsBusy(false);
                 }
             });
-    }, [api, currentFilter, sortModel, paginationModel, search]);
+    }, [api, currentFilter, sortModel, paginationModel, search, props.fetch, props.defaultFilter, defaultSortField]);
 
     useEffect(() => {
         if (props.controlRef == null) {
@@ -427,7 +429,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                 <Box
                     sx={{
                         display: 'flex',
-                        alignItems: 'flex-end',
+                        alignItems: 'center',
                         borderBottom: 1,
                         borderBottomColor: 'divider',
                     }}
@@ -460,18 +462,17 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                                 onClick: toggleIsFullWidth,
                                 sx: {
                                     marginLeft: 'auto',
-                                    marginRight: 1,
-                                    marginY: 1,
+                                    mr: 0.75
                                 },
                             }}
                             tooltipProps={{
-                                title: isFullWidth ? 'Vollbildmodus beenden' : 'Vollbildmodus aktivieren',
+                                title: isFullWidth ? 'Breite der Anzeige beschränken' : 'Volle Bildschirmbreite nutzen',
                             }}
                         >
                             {
                                 isFullWidth ?
-                                    <ZoomInMapOutlinedIcon/> :
-                                    <ZoomOutMapOutlinedIcon/>
+                                    <WidthWide/> :
+                                    <FitPageWidth/>
                             }
                         </IconButton>
                     }
@@ -492,6 +493,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                             key={index}
                             sx={{
                                 flex: 1,
+                                padding: '4px 0 12px 0',
                             }}
                         >
                             {element}

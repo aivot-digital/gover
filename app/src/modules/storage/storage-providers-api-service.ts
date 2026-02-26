@@ -12,6 +12,7 @@ export interface StorageProviderFilter {
     type: StorageProviderType;
     readOnlyStorage: boolean;
     systemProvider: boolean;
+    storageProviderDefinitionKey: string;
 }
 
 export class StorageProvidersApiService extends BaseCrudApiService<StorageProviderEntity, StorageProviderEntity, StorageProviderEntity, StorageProviderEntity, number, StorageProviderFilter> {
