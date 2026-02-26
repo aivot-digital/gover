@@ -25,6 +25,7 @@ import {
     Tooltip,
     Typography,
 } from '@mui/material';
+import {alpha} from '@mui/material/styles';
 import {DataGrid, type GridColDef, type GridRenderCellParams} from '@mui/x-data-grid';
 import Fuse from 'fuse.js';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
@@ -151,6 +152,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
     const [treeLoadingPaths, setTreeLoadingPaths] = useState<Record<string, boolean>>({});
     const [probedPaths, setProbedPaths] = useState<Record<string, boolean>>({});
     const treeItemGapPx = 5;
+    const treeItemHeightPx = 40;
     const isRootPath = currentPath === ROOT_PATH;
 
     const loadTreeChildren = useCallback((path: string): void => {
@@ -561,7 +563,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                             pr: 0.5,
                             py: 0.5,
                             borderRadius: 1,
-                            minHeight: 36,
+                            minHeight: treeItemHeightPx,
                         }}
                     >
                         {renderExpandButton(pathFromRoot)}
@@ -755,7 +757,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                 pr: 0.5,
                                 py: 0.5,
                                 borderRadius: 1,
-                                minHeight: 36,
+                                minHeight: treeItemHeightPx,
                                 mb: `${treeItemGapPx}px`,
                             }}
                         >
@@ -849,6 +851,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                             density="standard"
                             loading={isLoading}
                             autoHeight={true}
+                            columnHeaderHeight={treeItemHeightPx}
                             pageSizeOptions={[12, 24, 48, 96]}
                             initialState={{
                                 pagination: {
@@ -876,7 +879,10 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                 borderRadius: 1,
                                 '& .MuiDataGrid-columnHeader': {
                                     alignItems: 'center',
-                                    backgroundColor: 'rgba(20, 38, 56, 0.06)',
+                                    backgroundColor: 'transparent',
+                                },
+                                '& .MuiDataGrid-columnHeaders': {
+                                    backgroundColor: (theme) => alpha(theme.palette.primary.main, theme.palette.action.selectedOpacity),
                                 },
                                 '& .MuiDataGrid-columnHeader .MuiDataGrid-columnSeparator': {
                                     color: 'rgba(20, 38, 56, 0.2)',
@@ -884,6 +890,14 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                 '& .MuiDataGrid-cell': {
                                     display: 'flex',
                                     alignItems: 'center',
+                                },
+                                '& .MuiDataGrid-footerContainer': {
+                                    minHeight: treeItemHeightPx,
+                                    height: treeItemHeightPx,
+                                },
+                                '& .MuiTablePagination-root, & .MuiTablePagination-toolbar': {
+                                    minHeight: treeItemHeightPx,
+                                    height: treeItemHeightPx,
                                 },
                                 '& .MuiDataGrid-row': {
                                     cursor: 'pointer',
