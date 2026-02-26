@@ -47,8 +47,13 @@ export function PermissionGroupAccordion(props: PermissionGroupAccordionProps): 
         onCopyPermission,
     } = props;
 
+    const selectedPermissionsSet = React.useMemo(
+        () => new Set(selectedPermissions),
+        [selectedPermissions],
+    );
+
     const total = group.permissions.length;
-    const selectedInGroup = group.permissions.filter((p) => selectedPermissions.includes(p.permission)).length;
+    const selectedInGroup = group.permissions.filter((p) => selectedPermissionsSet.has(p.permission)).length;
     const allSelected = total > 0 && selectedInGroup === total;
 
     return (
