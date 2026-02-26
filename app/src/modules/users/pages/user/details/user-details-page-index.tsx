@@ -1,5 +1,5 @@
 import {Box, Button, Grid, Typography} from '@mui/material';
-import React, {useContext, useId, useState} from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {useNavigate} from 'react-router-dom';
@@ -21,9 +21,9 @@ import {useFormManager} from '../../../../../hooks/use-form-manager';
 import * as yup from 'yup';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {SelectFieldComponent} from '../../../../../components/select-field-2/select-field-component';
-import {SystemUserRole} from '../../../models/user';
 import {UsersApiService} from '../../../users-api-service';
 import {useConfirm} from "../../../../../providers/confirm-provider";
+import {SystemRolesApiService} from '../../../../system/services/system-roles-api-service';
 
 const Schema = yup.object({});
 
@@ -54,12 +54,32 @@ export function UserDetailsPageIndex() {
     const [showConstraintDialog, setShowConstraintDialog] = useState(false);
     const [confirmDeleteAction, setConfirmDeleteAction] = useState<(() => void) | undefined>(undefined);
     const [relatedSubmissions, setRelatedSubmissions] = useState<ConstraintLinkProps[] | undefined>(undefined);
+    const [systemRoleOptions, setSystemRoleOptions] = useState<Array<{label: string; value: number}>>([]);
+
+    useEffect(() => {
+        new SystemRolesApiService()
+            .listAll()
+            .then((result) => {
+                const options = result.content
+                    .map((role) => ({
+                        label: role.name,
+                        value: role.id,
+                    }))
+                    .sort((a, b) => a.label.localeCompare(b.label));
+                setSystemRoleOptions(options);
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Beim Laden der Systemrollen ist ein Fehler aufgetreten.'));
+            });
+    }, [dispatch]);
 
     if (user == null) {
         return (
             <GenericDetailsSkeleton />
         );
     }
+
+    const hasSystemRoleSelection = systemRoleOptions.length > 0;
 
     const handleSave = () => {
         if (isNewUser) {
@@ -178,22 +198,11 @@ export function UserDetailsPageIndex() {
                     <Grid size={6}>
                         <SelectFieldComponent
                             label="Systemrolle"
-                            value={updatedUser?.globalRole}
-                            onChange={handleInputChange('globalRole')}
-                            options={[
-                                {
-                                    label: 'Mitarbeiter:in',
-                                    value: SystemUserRole.Default,
-                                },
-                                {
-                                    label: 'Systemadministrator:in',
-                                    value: SystemUserRole.SystemAdmin,
-                                },
-                                {
-                                    label: 'Superadministrator:in',
-                                    value: SystemUserRole.SuperAdmin,
-                                },
-                            ]}
+                            value={updatedUser?.systemRoleId}
+                            onChange={handleInputChange('systemRoleId')}
+                            options={systemRoleOptions}
+                            emptyStatePlaceholder="Keine Systemrollen vorhanden"
+                            disabled={isBusy || !hasSystemRoleSelection}
                             required
                         />
                     </Grid>
