@@ -335,7 +335,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 <Grid
                     size={{
                         xs: 12,
-                        md: 4,
+                        md: 6,
                     }}
                 >
                     <SelectFieldComponent
@@ -350,13 +350,13 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         }))}
                         disabled={isExistingItem}
                         error={errors.storageProviderDefinitionKey}
-                        hint="Dies kann nach der Erstellung nicht mehr geändert werden."
+                        hint="Diese Einstellung kann nach der Erstellung nicht mehr geändert werden."
                     />
                 </Grid>
                 <Grid
                     size={{
                         xs: 12,
-                        md: 4,
+                        md: 6,
                     }}
                 >
                     <SelectFieldComponent
@@ -379,32 +379,6 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         disabled={inputsDisabled}
                         error={errors.storageProviderDefinitionVersion}
                         hint="Bestimmt, welche Version der Konfigurationsoberfläche und Einstellungsmöglichkeiten angezeigt werden."
-                    />
-                </Grid>
-                <Grid
-                    size={{
-                        xs: 12,
-                        md: 4,
-                    }}
-                >
-                    <SelectFieldComponent
-                        label="Verwendungszweck"
-                        required={true}
-                        value={storageProvider.type}
-                        onChange={(val) => {
-                            if (val == null) {
-                                handleInputChange('type')(StorageProviderType.Assets);
-                            } else {
-                                handleInputChange('type')(val as StorageProviderType);
-                            }
-                        }}
-                        options={StorageProviderTypes.map((type) => ({
-                            value: type,
-                            label: StorageProviderTypeLabels[type],
-                        }))}
-                        disabled={isExistingItem}
-                        error={errors.type}
-                        hint="Bestimmt die Art der gespeicherten Daten. Dies kann nach der Erstellung nicht mehr geändert werden."
                     />
                 </Grid>
             </Grid>
@@ -435,7 +409,27 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         xs: 12,
                         md: 6,
                     }}
-                />
+                >
+                    <SelectFieldComponent
+                        label="Verwendungszweck"
+                        required={true}
+                        value={storageProvider.type}
+                        onChange={(val) => {
+                            if (val == null) {
+                                handleInputChange('type')(StorageProviderType.Assets);
+                            } else {
+                                handleInputChange('type')(val as StorageProviderType);
+                            }
+                        }}
+                        options={StorageProviderTypes.map((type) => ({
+                            value: type,
+                            label: StorageProviderTypeLabels[type],
+                        }))}
+                        disabled={isExistingItem}
+                        error={errors.type}
+                        hint="Bestimmt die Art der gespeicherten Daten bzw. wo im System dieser Anbieter verwendet werden kann. Diese Einstellung kann nach der Erstellung nicht mehr geändert werden."
+                    />
+                </Grid>
                 <Grid
                     size={{
                         xs: 12,
