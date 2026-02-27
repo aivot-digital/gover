@@ -1,4 +1,4 @@
-import React, {type ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
+import React, {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
     Box,
     Breadcrumbs,
@@ -28,6 +28,7 @@ import {
 import {alpha} from '@mui/material/styles';
 import {DataGrid, type GridColDef, type GridRenderCellParams} from '@mui/x-data-grid';
 import Fuse from 'fuse.js';
+import SimpleBar from 'simplebar-react';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
@@ -122,6 +123,73 @@ function getFolderPath(pathFromRoot: string): string {
     return folder.length > 0 ? folder : ROOT_PATH;
 }
 
+function useSyncedColumnHeight(
+    ref: React.MutableRefObject<HTMLDivElement | null>,
+    fallbackHeight: number,
+): number {
+    // Keep both columns visually aligned while allowing only the tree panel to scroll internally.
+    const [height, setHeight] = useState<number>(fallbackHeight);
+    const heightRef = useRef<number>(fallbackHeight);
+    const resizeFrameRef = useRef<number | null>(null);
+
+    useEffect(() => {
+        const target = ref.current;
+        if (target == null) {
+            return;
+        }
+
+        const initialHeight = Math.round(target.getBoundingClientRect().height);
+        if (initialHeight > 0) {
+            heightRef.current = initialHeight;
+            setHeight(initialHeight);
+        }
+
+        const observer = new ResizeObserver((entries) => {
+            const nextHeight = entries[0]?.contentRect.height;
+            if (nextHeight == null || nextHeight <= 0) {
+                return;
+            }
+
+            const roundedHeight = Math.round(nextHeight);
+            if (roundedHeight === heightRef.current) {
+                return;
+            }
+
+            if (resizeFrameRef.current != null) {
+                cancelAnimationFrame(resizeFrameRef.current);
+            }
+
+            resizeFrameRef.current = requestAnimationFrame(() => {
+                if (roundedHeight === heightRef.current) {
+                    return;
+                }
+                heightRef.current = roundedHeight;
+                setHeight(roundedHeight);
+                resizeFrameRef.current = null;
+            });
+        });
+
+        observer.observe(target);
+        return () => {
+            observer.disconnect();
+            if (resizeFrameRef.current != null) {
+                cancelAnimationFrame(resizeFrameRef.current);
+                resizeFrameRef.current = null;
+            }
+        };
+    }, [ref]);
+
+    useEffect(() => {
+        if (heightRef.current === fallbackHeight) {
+            return;
+        }
+        heightRef.current = fallbackHeight;
+        setHeight(fallbackHeight);
+    }, [fallbackHeight]);
+
+    return height;
+}
+
 export function StorageExplorer(props: StorageExplorerProps): ReactNode {
     const {
         providerId,
@@ -129,7 +197,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
         allowFileDownload = false,
         showContainerBorder = false,
         showTopNavigationBar = false,
-        minGridHeight = 440,
+        minGridHeight = 706,
         sx,
     } = props;
 
@@ -144,6 +212,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
     const [isLoading, setIsLoading] = useState(true);
     const [isDownloading, setIsDownloading] = useState(false);
 
+    // Keep content during close transition to avoid dialog flicker before unmount.
     const [dialogItem, setDialogItem] = useState<StorageIndexItem>();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -154,7 +223,12 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
     const treeItemGapPx = 5;
     const treeItemHeightPx = 40;
     const isRootPath = currentPath === ROOT_PATH;
+    const rightColumnContentRef = useRef<HTMLDivElement | null>(null);
+    // Keep the tree column constrained on first paint, before ResizeObserver reports.
+    const structureHeightFallback = minGridHeight + 60;
+    const structureColumnHeight = useSyncedColumnHeight(rightColumnContentRef, structureHeightFallback);
 
+    // Tree is loaded on demand per expanded folder and cached to avoid repeat requests.
     const loadTreeChildren = useCallback((path: string): void => {
         const normalizedPath = normalizeDirectoryPath(path);
         if (treeLoadingPaths[normalizedPath] === true || folderCache[normalizedPath] != null) {
@@ -250,6 +324,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
         });
     }, [currentFolder, filterMimeTypes]);
 
+    // Visible rows pipeline: MIME filtering -> fuzzy search -> directory-first alphabetic ordering.
     const rows = useMemo(() => {
         const trimmedSearch = search.trim();
 
@@ -336,7 +411,14 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                         <Typography
                             variant="body2"
                             noWrap={true}
-                            sx={{minWidth: 0, flex: 1}}
+                            title={item.filename}
+                            sx={{
+                                minWidth: 0,
+                                flex: 1,
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                            }}
                         >
                             {item.filename}
                         </Typography>
@@ -596,6 +678,49 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
         });
     };
 
+    const dataGridSx = useMemo<SxProps<Theme>>(() => ({
+        minHeight: minGridHeight,
+        borderRadius: 1,
+        '& .MuiDataGrid-columnHeader': {
+            alignItems: 'center',
+            backgroundColor: 'transparent',
+        },
+        '& .MuiDataGrid-columnHeaders': {
+            backgroundColor: (theme: Theme) => alpha(theme.palette.primary.main, theme.palette.action.selectedOpacity),
+        },
+        '& .MuiDataGrid-columnHeader .MuiDataGrid-columnSeparator': {
+            color: 'rgba(20, 38, 56, 0.2)',
+        },
+        '& .MuiDataGrid-cell': {
+            display: 'flex',
+            alignItems: 'center',
+        },
+        '& .MuiDataGrid-footerContainer': {
+            minHeight: treeItemHeightPx,
+            height: treeItemHeightPx,
+        },
+        '& .MuiTablePagination-root, & .MuiTablePagination-toolbar': {
+            minHeight: treeItemHeightPx,
+            height: treeItemHeightPx,
+        },
+        '& .MuiDataGrid-row': {
+            cursor: 'pointer',
+        },
+        '& .MuiDataGrid-row:last-of-type .MuiDataGrid-cell': {
+            borderBottom: '1px solid',
+            borderBottomColor: 'divider',
+        },
+        '& .MuiDataGrid-main': {
+            overflow: 'hidden',
+        },
+        '& .MuiDataGrid-scrollbar--horizontal': {
+            bottom: 0,
+        },
+        '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within, & .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within': {
+            outline: 'none',
+        },
+    }), [minGridHeight, treeItemHeightPx]);
+
     if (provider == null) {
         return null;
     }
@@ -721,7 +846,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                 </Stack>
             )}
 
-            <Grid container>
+            <Grid container sx={{alignItems: 'flex-start'}}>
                 <Grid
                     size={{xs: 12, md: 3}}
                     sx={{
@@ -729,6 +854,11 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                         borderRight: {xs: 'none', md: '1px solid'},
                         borderRightColor: {xs: 'transparent', md: 'divider'},
                         mb: {xs: 2, md: 0},
+                        display: 'flex',
+                        flexDirection: 'column',
+                        height: {xs: 'auto', md: `${structureColumnHeight}px`},
+                        maxHeight: {xs: 'none', md: `${structureColumnHeight}px`},
+                        overflow: 'hidden',
                     }}
                 >
                     <Typography
@@ -736,112 +866,127 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                         sx={{pt: 2, px: 0.75, pb: 1.75, textTransform: 'uppercase', color: 'text.secondary'}}
                     >Ordnerstruktur</Typography>
 
-                    <List
-                        dense={false}
-                        disablePadding={true}
+                    <Box
                         sx={{
-                            maxHeight: 560,
-                            overflowY: 'auto',
-                            overflowX: 'hidden',
-                            pr: 0.25,
+                            flex: 1,
+                            minHeight: 0,
+                            '& .simplebar-scrollbar:before': {
+                                backgroundColor: 'rgba(20, 38, 56, 0.35)',
+                                left: '3px',
+                                right: '3px',
+                            },
                         }}
                     >
-                        <ListItemButton
-                            dense={false}
-                            selected={isRootPath}
-                            onClick={() => {
-                                navigateToFolder(ROOT_PATH);
-                            }}
-                            sx={{
-                                pl: 0.75,
-                                pr: 0.5,
-                                py: 0.5,
-                                borderRadius: 1,
-                                minHeight: treeItemHeightPx,
-                                mb: `${treeItemGapPx}px`,
+                        <SimpleBar
+                            style={{
+                                height: '100%',
+                                overflowX: 'hidden',
+                                paddingRight: '2px',
                             }}
                         >
-                            {renderExpandButton(ROOT_PATH)}
-                            <ListItemIcon sx={{minWidth: 26}}>
-                                <HomeOutlinedIcon fontSize="small" />
-                            </ListItemIcon>
-                            <ListItemText
-                                primary={(
-                                    <Typography
-                                        variant="body2"
-                                        title={provider.name}
-                                        sx={{
-                                            display: 'block',
-                                            fontWeight: 600,
-                                            whiteSpace: 'nowrap',
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
-                                            maxWidth: '100%',
-                                        }}
-                                    >
-                                        {provider.name}
-                                    </Typography>
-                                )}
-                            />
-                        </ListItemButton>
+                            <List
+                                dense={false}
+                                disablePadding={true}
+                                sx={{pr: 0.25}}
+                            >
+                                <ListItemButton
+                                    dense={false}
+                                    selected={isRootPath}
+                                    onClick={() => {
+                                        navigateToFolder(ROOT_PATH);
+                                    }}
+                                    sx={{
+                                        pl: 0.75,
+                                        pr: 0.5,
+                                        py: 0.5,
+                                        borderRadius: 1,
+                                        minHeight: treeItemHeightPx,
+                                        mb: `${treeItemGapPx}px`,
+                                    }}
+                                >
+                                    {renderExpandButton(ROOT_PATH)}
+                                    <ListItemIcon sx={{minWidth: 26}}>
+                                        <HomeOutlinedIcon fontSize="small" />
+                                    </ListItemIcon>
+                                    <ListItemText
+                                        primary={(
+                                            <Typography
+                                                variant="body2"
+                                                title={provider.name}
+                                                sx={{
+                                                    display: 'block',
+                                                    fontWeight: 600,
+                                                    whiteSpace: 'nowrap',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    maxWidth: '100%',
+                                                }}
+                                            >
+                                                {provider.name}
+                                            </Typography>
+                                        )}
+                                    />
+                                </ListItemButton>
 
-                        {isExpanded(ROOT_PATH) && renderTree(ROOT_PATH, 1)}
-                    </List>
+                                {isExpanded(ROOT_PATH) && renderTree(ROOT_PATH, 1)}
+                            </List>
+                        </SimpleBar>
+                    </Box>
                 </Grid>
 
                 <Grid
                     size={{xs: 12, md: 9}}
                     sx={{pl: {xs: 0, md: 2}}}
                 >
-                    <Stack
-                        direction="row"
-                        spacing={1.25}
-                        alignItems="center"
-                        sx={{mb: 1.5}}
-                    >
-                        <TextField
-                            size="small"
-                            placeholder="Dateien oder Ordner suchen"
-                            value={search}
-                            onChange={(event) => {
-                                setSearch(event.target.value);
-                            }}
-                            sx={{minWidth: 240, flexGrow: 1}}
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <SearchOutlinedIcon fontSize="small" />
-                                    </InputAdornment>
-                                ),
-                                endAdornment: search.trim().length > 0 ? (
-                                    <InputAdornment position="end">
-                                        <Tooltip
-                                            title="Suche leeren"
-                                            arrow={true}
-                                        >
-                                            <IconButton
-                                                size="small"
-                                                onClick={() => {
-                                                    setSearch('');
-                                                }}
-                                            >
-                                                <ClearOutlinedIcon fontSize="small" />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </InputAdornment>
-                                ) : undefined,
-                            }}
-                        />
-                        <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{whiteSpace: 'nowrap', pl: 1}}
+                    <Box ref={rightColumnContentRef}>
+                        <Stack
+                            direction="row"
+                            spacing={1.25}
+                            alignItems="center"
+                            sx={{mb: 1.5}}
                         >
-                            {folderCount} Ordner, {fileCount} Dateien
-                        </Typography>
-                    </Stack>
+                            <TextField
+                                size="small"
+                                placeholder="Dateien oder Ordner suchen"
+                                value={search}
+                                onChange={(event) => {
+                                    setSearch(event.target.value);
+                                }}
+                                sx={{minWidth: 240, flexGrow: 1}}
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <SearchOutlinedIcon fontSize="small" />
+                                        </InputAdornment>
+                                    ),
+                                    endAdornment: search.trim().length > 0 ? (
+                                        <InputAdornment position="end">
+                                            <Tooltip
+                                                title="Suche leeren"
+                                                arrow={true}
+                                            >
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={() => {
+                                                        setSearch('');
+                                                    }}
+                                                >
+                                                    <ClearOutlinedIcon fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
+                                        </InputAdornment>
+                                    ) : undefined,
+                                }}
+                            />
+                            <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{whiteSpace: 'nowrap', pl: 1}}
+                            >
+                                {folderCount} Ordner, {fileCount} Dateien
+                            </Typography>
+                        </Stack>
 
-                    <Box>
                         <DataGrid
                             rows={rows}
                             columns={columns}
@@ -874,48 +1019,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
 
                                 openFileDialog(item);
                             }}
-                            sx={{
-                                minHeight: minGridHeight,
-                                borderRadius: 1,
-                                '& .MuiDataGrid-columnHeader': {
-                                    alignItems: 'center',
-                                    backgroundColor: 'transparent',
-                                },
-                                '& .MuiDataGrid-columnHeaders': {
-                                    backgroundColor: (theme) => alpha(theme.palette.primary.main, theme.palette.action.selectedOpacity),
-                                },
-                                '& .MuiDataGrid-columnHeader .MuiDataGrid-columnSeparator': {
-                                    color: 'rgba(20, 38, 56, 0.2)',
-                                },
-                                '& .MuiDataGrid-cell': {
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                },
-                                '& .MuiDataGrid-footerContainer': {
-                                    minHeight: treeItemHeightPx,
-                                    height: treeItemHeightPx,
-                                },
-                                '& .MuiTablePagination-root, & .MuiTablePagination-toolbar': {
-                                    minHeight: treeItemHeightPx,
-                                    height: treeItemHeightPx,
-                                },
-                                '& .MuiDataGrid-row': {
-                                    cursor: 'pointer',
-                                },
-                                '& .MuiDataGrid-row:last-of-type .MuiDataGrid-cell': {
-                                    borderBottom: '1px solid',
-                                    borderBottomColor: 'divider',
-                                },
-                                '& .MuiDataGrid-main': {
-                                    overflow: 'hidden',
-                                },
-                                '& .MuiDataGrid-scrollbar--horizontal': {
-                                    bottom: 0,
-                                },
-                                '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within, & .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within': {
-                                    outline: 'none',
-                                },
-                            }}
+                            sx={dataGridSx}
                             slots={{
                                 noRowsOverlay: () => (
                                     <Stack
