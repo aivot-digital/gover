@@ -1,75 +1,140 @@
-import {styled} from '@mui/material/styles';
-import {InputBase} from '@mui/material';
+import {Box, IconButton, InputAdornment, SxProps, TextField} from '@mui/material';
 import React from 'react';
-import {SearchInputProps} from './search-input-props';
-import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
+import Search from '@aivot/mui-material-symbols-400-outlined/dist/search/Search';
+import Close from '@aivot/mui-material-symbols-400-outlined/dist/close/Close';
 
-// TODO: DK -> Bitte styling anpassen
+export interface SearchInputProps {
+    value: string;
+    onChange: (val: string) => void;
+    label: string;
+    placeholder?: string;
+    autoFocus?: boolean;
+    sx?: SxProps;
+    disabled?: boolean;
+    clearable?: boolean;
+    ariaLabel?: string;
+    size?: 'small' | 'medium';
+    fullWidth?: boolean;
+    hideLabel?: boolean;
+    debounce?: number;
+}
 
-const Search = styled('div')(({theme}) => ({
-    position: 'relative',
-    borderRadius: theme.shape.borderRadius,
-    backgroundColor: '#E2E7E2',
-    '&:hover': {
-        backgroundColor: '#E7ECE7',
-    },
-    marginLeft: 0,
-    width: '100%',
-    [theme.breakpoints.up('sm')]: {
-        marginLeft: theme.spacing(1),
-        width: 'auto',
-    },
-}));
-
-const SearchIconWrapper = styled('div')(({theme}) => ({
-    padding: theme.spacing(0, 2),
-    height: '100%',
-    position: 'absolute',
-    pointerEvents: 'none',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-}));
-
-const StyledInputBase = styled(InputBase)(({theme}) => ({
-    color: 'inherit',
-    '& .MuiInputBase-input': {
-        padding: theme.spacing(1, 1, 1, 0),
-        // vertical padding + font size from searchIcon
-        paddingLeft: `calc(1em + ${theme.spacing(4)})`,
-        transition: theme.transitions.create('width'),
-        width: '100%',
-        [theme.breakpoints.up('sm')]: {
-            width: '16ch',
-            '&:focus': {
-                width: '24ch',
-            },
-        },
-    },
-}));
-
-/**
- * @deprecated Use SearchInput from search-input-2 instead
- * @param props
- * @constructor
- */
 export function SearchInput(props: SearchInputProps) {
+    const hideLabel = props.hideLabel ?? false;
+    const clearable = props.clearable ?? true;
+    const debounce = props.debounce ?? 0;
+    const debounceTimeoutRef = React.useRef<number | null>(null);
+    // Keep typing responsive while parent state may update debounced.
+    const [localValue, setLocalValue] = React.useState(props.value);
+
+    React.useEffect(() => {
+        setLocalValue(props.value);
+    }, [props.value]);
+
+    React.useEffect(() => {
+        return () => {
+            if (debounceTimeoutRef.current != null) {
+                window.clearTimeout(debounceTimeoutRef.current);
+            }
+        };
+    }, []);
+
+    const emitChange = (nextValue: string): void => {
+        if (debounce <= 0) {
+            props.onChange(nextValue);
+            return;
+        }
+
+        if (debounceTimeoutRef.current != null) {
+            window.clearTimeout(debounceTimeoutRef.current);
+        }
+
+        debounceTimeoutRef.current = window.setTimeout(() => {
+            props.onChange(nextValue);
+        }, debounce);
+    };
+
+    const handleInputChange = (nextValue: string): void => {
+        setLocalValue(nextValue);
+        emitChange(nextValue);
+    };
+
+    const handleClear = (): void => {
+        if (debounceTimeoutRef.current != null) {
+            window.clearTimeout(debounceTimeoutRef.current);
+            debounceTimeoutRef.current = null;
+        }
+
+        setLocalValue('');
+        props.onChange('');
+    };
+
+    const handleBlur = (): void => {
+        // Align with TextFieldComponent: commit pending debounced change immediately on blur.
+        if (debounceTimeoutRef.current != null) {
+            window.clearTimeout(debounceTimeoutRef.current);
+            debounceTimeoutRef.current = null;
+            const cleaned = localValue.trim();
+            props.onChange(cleaned);
+            if (cleaned !== localValue) {
+                setLocalValue(cleaned);
+            }
+            return;
+        }
+
+        const cleaned = localValue.trim();
+        if (cleaned !== localValue) {
+            setLocalValue(cleaned);
+            props.onChange(cleaned);
+        }
+    };
+
     return (
-        <Search>
-            <SearchIconWrapper>
-                <SearchOutlinedIcon/>
-            </SearchIconWrapper>
-            <StyledInputBase
-                placeholder={props.placeholder}
-                inputProps={{
-                    'aria-label': 'Suche',
-                }}
-                value={props.value}
+        <Box sx={props.sx}>
+            <TextField
+                value={localValue}
                 onChange={event => {
-                    props.onChange(event.target.value ?? '');
+                    handleInputChange(event.target.value ?? '');
                 }}
+                onBlur={handleBlur}
+                label={props.label}
+                placeholder={props.placeholder}
+                variant="outlined"
+                fullWidth={props.fullWidth ?? true}
                 autoFocus={props.autoFocus}
+                disabled={props.disabled}
+                size={props.size ?? 'small'}
+                sx={{
+                    margin: 0,
+                }}
+                InputLabelProps={{
+                    sx: {
+                        display: hideLabel ? 'none' : undefined,
+                    },
+                }}
+                InputProps={{
+                    startAdornment: (
+                        <InputAdornment position="start">
+                            <Search fontSize="small" />
+                        </InputAdornment>
+                    ),
+                    endAdornment: clearable && localValue.trim().length > 0 ? (
+                        <InputAdornment position="end">
+                            <IconButton
+                                size={props.size ?? 'small'}
+                                onClick={handleClear}
+                                disabled={props.disabled}
+                                aria-label="Suche löschen"
+                            >
+                                <Close fontSize="small" />
+                            </IconButton>
+                        </InputAdornment>
+                    ) : undefined,
+                }}
+                inputProps={{
+                    'aria-label': props.ariaLabel ?? props.label,
+                }}
             />
-        </Search>
+        </Box>
     );
 }

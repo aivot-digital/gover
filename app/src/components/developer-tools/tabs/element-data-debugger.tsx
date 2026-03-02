@@ -10,7 +10,7 @@ import {downloadObjectFile, uploadObjectFile} from '../../../utils/download-util
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {ExpandableCodeBlock} from '../../expandable-code-block/expandable-code-block';
-import {SearchInput} from '../../search-input-2/search-input';
+import {SearchInput} from '../../search-input/search-input';
 import {filterElementData, mapElementData, walkElementData} from '../../../utils/element-data-utils';
 
 interface ElementDataDebuggerProps {
@@ -112,7 +112,8 @@ export function ElementDataDebugger(props: ElementDataDebuggerProps) {
                 }}
             >
                 <SearchInput
-                    placeholder="Element ID suchen…"
+                    label="Element-ID suchen"
+                    placeholder="Element-ID eingeben"
                     value={elementIdSearch}
                     onChange={setElementIdSearch}
                 />

@@ -62,7 +62,8 @@ export function SelectAssetDialog(props: PropsWithChildren<SelectAssetDialogProp
                 <SearchInput
                     value={search}
                     onChange={setSearch}
-                    placeholder="Suchen…"
+                    label="Dateien suchen"
+                    placeholder="Dateiname eingeben"
                 />
 
                 {

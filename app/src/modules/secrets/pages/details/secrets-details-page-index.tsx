@@ -19,6 +19,7 @@ import * as yup from 'yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {copyToClipboardText} from '../../../../utils/copy-to-clipboard';
 
 export const SecretSchema = yup.object({
     name: yup.string()
@@ -181,17 +182,13 @@ export function SecretsDetailsPageIndex() {
                             {
                                 icon: <ContentPasteOutlinedIcon />,
                                 tooltip: 'Schlüssel (ID) in Zwischenablage kopieren',
-                                onClick: () => {
-                                    navigator
-                                        .clipboard
-                                        .writeText(secret.key)
-                                        .then(() => {
-                                            dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
-                                        })
-                                        .catch((err) => {
-                                            console.error(err);
-                                            dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
-                                        });
+                                onClick: async () => {
+                                    const success = await copyToClipboardText(secret.key);
+                                    if (success) {
+                                        dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
+                                    } else {
+                                        dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
+                                    }
                                 },
                             },
                         ]

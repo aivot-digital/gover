@@ -1,5 +1,5 @@
 import {Box, Button, Grid, Typography} from '@mui/material';
-import React, {useContext, useId, useState} from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {useNavigate} from 'react-router-dom';
@@ -21,11 +21,32 @@ import {useFormManager} from '../../../../../hooks/use-form-manager';
 import * as yup from 'yup';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {SelectFieldComponent} from '../../../../../components/select-field-2/select-field-component';
-import {SystemUserRole} from '../../../models/user';
 import {UsersApiService} from '../../../users-api-service';
 import {useConfirm} from "../../../../../providers/confirm-provider";
+import {SystemRolesApiService} from '../../../../system/services/system-roles-api-service';
 
-const Schema = yup.object({});
+const Schema = yup.object({
+    firstName: yup
+        .string()
+        .trim()
+        .required('Bitte einen Vornamen angeben.'),
+    lastName: yup
+        .string()
+        .trim()
+        .required('Bitte einen Nachnamen angeben.'),
+    email: yup
+        .string()
+        .trim()
+        .email('Bitte eine gültige E-Mail-Adresse angeben.')
+        .required('Bitte eine E-Mail-Adresse angeben.'),
+    enabled: yup
+        .boolean()
+        .required(),
+    systemRoleId: yup
+        .number()
+        .nullable()
+        .required('Bitte eine Systemrolle auswählen.'),
+});
 
 export function UserDetailsPageIndex() {
     const dispatch = useAppDispatch();
@@ -39,7 +60,9 @@ export function UserDetailsPageIndex() {
 
     const {
         currentItem: updatedUser,
+        errors,
         handleInputChange,
+        validate,
     } = useFormManager<User>(user, Schema as any);
 
     const confirm = useConfirm();
@@ -54,6 +77,32 @@ export function UserDetailsPageIndex() {
     const [showConstraintDialog, setShowConstraintDialog] = useState(false);
     const [confirmDeleteAction, setConfirmDeleteAction] = useState<(() => void) | undefined>(undefined);
     const [relatedSubmissions, setRelatedSubmissions] = useState<ConstraintLinkProps[] | undefined>(undefined);
+    const [systemRoleOptions, setSystemRoleOptions] = useState<Array<{label: string; value: number}>>([]);
+    const [isSystemRolesLoading, setIsSystemRolesLoading] = useState(true);
+    const [hasSystemRolesLoadingError, setHasSystemRolesLoadingError] = useState(false);
+
+    useEffect(() => {
+        setIsSystemRolesLoading(true);
+        setHasSystemRolesLoadingError(false);
+        new SystemRolesApiService()
+            .listAll()
+            .then((result) => {
+                const options = result.content
+                    .map((role) => ({
+                        label: role.name,
+                        value: role.id,
+                    }))
+                    .sort((a, b) => a.label.localeCompare(b.label));
+                setSystemRoleOptions(options);
+            })
+            .catch((err) => {
+                setHasSystemRolesLoadingError(true);
+                dispatch(showApiErrorSnackbar(err, 'Beim Laden der Systemrollen ist ein Fehler aufgetreten.'));
+            })
+            .finally(() => {
+                setIsSystemRolesLoading(false);
+            });
+    }, [dispatch]);
 
     if (user == null) {
         return (
@@ -62,6 +111,15 @@ export function UserDetailsPageIndex() {
     }
 
     const handleSave = () => {
+        if (!validate()) {
+            dispatch(showErrorSnackbar('Bitte prüfen Sie die Pflichtfelder.'));
+            return;
+        }
+        if (systemRoleOptions.length === 0) {
+            dispatch(showErrorSnackbar('Es sind keine Systemrollen verfügbar.'));
+            return;
+        }
+
         if (isNewUser) {
             new UsersApiService()
                 .create(updatedUser!)
@@ -156,6 +214,7 @@ export function UserDetailsPageIndex() {
                             label="Vorname"
                             value={updatedUser?.firstName}
                             onChange={handleInputChange('firstName')}
+                            error={errors.firstName}
                             required
                         />
                     </Grid>
@@ -164,6 +223,7 @@ export function UserDetailsPageIndex() {
                             label="Nachname"
                             value={updatedUser?.lastName}
                             onChange={handleInputChange('lastName')}
+                            error={errors.lastName}
                             required
                         />
                     </Grid>
@@ -172,28 +232,31 @@ export function UserDetailsPageIndex() {
                             label="E-Mail-Adresse"
                             value={updatedUser?.email}
                             onChange={handleInputChange('email')}
+                            error={errors.email}
                             required
                         />
                     </Grid>
                     <Grid size={6}>
                         <SelectFieldComponent
-                            label="Konto aktiviert"
-                            value={updatedUser?.globalRole}
-                            onChange={handleInputChange('globalRole')}
-                            options={[
-                                {
-                                    label: 'Mitarbeiter:in',
-                                    value: SystemUserRole.Default,
-                                },
-                                {
-                                    label: 'Systemadministrator:in',
-                                    value: SystemUserRole.SystemAdmin,
-                                },
-                                {
-                                    label: 'Superadministrator:in',
-                                    value: SystemUserRole.SuperAdmin,
-                                },
-                            ]}
+                            label="Systemrolle"
+                            value={updatedUser?.systemRoleId}
+                            onChange={handleInputChange('systemRoleId')}
+                            options={systemRoleOptions}
+                            placeholder="Systemrolle auswählen"
+                            emptyStatePlaceholder={
+                                isSystemRolesLoading
+                                    ? 'Systemrollen werden geladen…'
+                                    : hasSystemRolesLoadingError
+                                        ? 'Systemrollen konnten nicht geladen werden'
+                                        : 'Keine Systemrollen vorhanden'
+                            }
+                            hint={
+                                hasSystemRolesLoadingError
+                                    ? 'Die Rollen konnten nicht geladen werden. Bitte laden Sie die Seite neu oder wenden Sie sich an eine Administrator:in!'
+                                    : undefined
+                            }
+                            error={errors.systemRoleId}
+                            disabled={isBusy || isSystemRolesLoading}
                             required
                         />
                     </Grid>
@@ -202,6 +265,7 @@ export function UserDetailsPageIndex() {
                             label="Konto aktiviert"
                             value={updatedUser?.enabled}
                             onChange={handleInputChange('enabled')}
+                            error={errors.enabled}
                             variant="switch"
                         />
                     </Grid>

@@ -17,6 +17,7 @@ import {ElementEditorSectionHeader} from '../element-editor-section-header/eleme
 import {getElementNameForType} from '../../data/element-type/element-names';
 import {AlertComponent} from '../alert/alert-component';
 import {editors as Editors} from '../../editors';
+import {copyToClipboardText} from '../../utils/copy-to-clipboard';
 
 export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorContentProps<T, E>) {
     const dispatch = useAppDispatch();
@@ -358,15 +359,13 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                         }}
                         endAction={{
                             icon: <ContentPasteIcon />,
-                            onClick: () => {
-                                navigator.clipboard.writeText(props.element.id ?? '')
-                                    .then(() => {
-                                        dispatch(showSuccessSnackbar('Element-ID in Zwischenablage kopiert'));
-                                    })
-                                    .catch((error) => {
-                                        console.error('Failed to copy ID', error);
-                                        dispatch(showErrorSnackbar('Element-ID konnte nicht in Zwischenablage kopiert werden'));
-                                    });
+                            onClick: async () => {
+                                const success = await copyToClipboardText(props.element.id ?? '');
+                                if (success) {
+                                    dispatch(showSuccessSnackbar('Element-ID in Zwischenablage kopiert'));
+                                } else {
+                                    dispatch(showErrorSnackbar('Element-ID konnte nicht in Zwischenablage kopiert werden'));
+                                }
                             },
                         }}
                         hint={props.scope === 'data_modelling' ? 'Wenn Sie eine bereits in Verwendung befindliche ID nachträglich ändern, werden bereits erfasste Daten verworfen. Eine automatische Migration findet derzeit nicht statt. Bitte verwenden Sie daher von Beginn an stabile, eindeutige IDs.' : undefined}
