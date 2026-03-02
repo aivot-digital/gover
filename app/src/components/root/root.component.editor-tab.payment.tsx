@@ -33,6 +33,7 @@ import {isLoadedForm, LoadedForm} from '../../slices/app-slice';
 import {FormEntity} from '../../modules/forms/entities/form-entity';
 import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {copyToClipboardText} from '../../utils/copy-to-clipboard';
 
 interface PaymentPositionItemProps {
     allElements: ElementWithParents[];
@@ -491,10 +492,14 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
             <SelectElementDialog
                 allElements={props.allElements}
                 open={showElementSelectDialog}
-                onSelect={(element) => {
-                    navigator.clipboard.writeText(element.id);
+                onSelect={async (element) => {
+                    const success = await copyToClipboardText(element.id);
+                    if (success) {
+                        dispatch(showSuccessSnackbar('Element-ID kopiert'));
+                    } else {
+                        dispatch(showErrorSnackbar('Fehler beim Kopieren der Element-ID'));
+                    }
                     toggleShowElementSelectDialog();
-                    dispatch(showSuccessSnackbar('Element-ID kopiert'));
                 }}
                 onClose={toggleShowElementSelectDialog}
             />

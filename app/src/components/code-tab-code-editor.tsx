@@ -10,11 +10,12 @@ import {SearchInput} from './search-input/search-input';
 import {ElementWithParents, flattenElementsWithParents, generateElementNameWithParent} from '../utils/flatten-elements';
 import {getElementName} from '../data/element-type/element-names';
 import {useAppDispatch} from '../hooks/use-app-dispatch';
-import {showSuccessSnackbar} from '../slices/snackbar-slice';
+import {showErrorSnackbar, showSuccessSnackbar} from '../slices/snackbar-slice';
 import {generateComponentTitle} from '../utils/generate-component-title';
 import {AnyElement} from '../models/elements/any-element';
 import {formToTypeDefinition} from '../utils/form-to-type-definition';
 import {elementToTypeDefinition} from '../utils/elemet-to-type-definition';
+import {copyToClipboardText} from '../utils/copy-to-clipboard';
 
 interface CodeTabCodeEditorProps {
     element?: AnyElement;
@@ -176,13 +177,13 @@ function LookupElementIdDialog(props: { open: boolean, onClose: () => void }) {
                                 key={element.element.id}
                             >
                                 <ListItemButton
-                                    onClick={() => {
-                                        navigator
-                                            .clipboard
-                                            .writeText(`${element.element.id}`)
-                                            .then(() => {
-                                                dispatch(showSuccessSnackbar('Element ID in die Zwischenablage kopiert'));
-                                            });
+                                    onClick={async () => {
+                                        const success = await copyToClipboardText(`${element.element.id}`);
+                                        if (success) {
+                                            dispatch(showSuccessSnackbar('Element ID in die Zwischenablage kopiert'));
+                                        } else {
+                                            dispatch(showErrorSnackbar('Element ID konnte nicht kopiert werden'));
+                                        }
                                         props.onClose();
                                         setSearch('');
                                     }}

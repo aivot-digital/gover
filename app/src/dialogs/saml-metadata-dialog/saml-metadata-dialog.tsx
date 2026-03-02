@@ -3,9 +3,10 @@ import {Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, Sk
 import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined';
 import {useDispatch} from 'react-redux';
 import {TextFieldComponent} from '../../components/text-field/text-field-component';
-import {showSuccessSnackbar} from '../../slices/snackbar-slice';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {AlertComponent} from '../../components/alert/alert-component';
+import {copyToClipboardText} from '../../utils/copy-to-clipboard';
 
 interface SamlMetadataDialogProps {
     open: boolean;
@@ -50,9 +51,13 @@ export function SamlMetadataDialog({ open, loading, fields, error, onClose }: Sa
                                             onChange={() => {}}
                                             endAction={{
                                                 icon: <ContentPasteOutlinedIcon />,
-                                                onClick: () => {
-                                                    navigator.clipboard.writeText(field.value);
-                                                    dispatch(showSuccessSnackbar('Link in die Zwischenablage kopiert.'));
+                                                onClick: async () => {
+                                                    const success = await copyToClipboardText(field.value);
+                                                    if (success) {
+                                                        dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
+                                                    } else {
+                                                        dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
+                                                    }
                                                 },
                                             }}
                                         />

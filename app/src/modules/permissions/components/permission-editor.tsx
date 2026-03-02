@@ -33,7 +33,7 @@ import {type Action} from '../../../components/actions/actions-props';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {SearchInput} from '../../../components/search-input/search-input';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
+import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
 import {PermissionScope} from '../enums/permission-scope';
 import {type PermissionEntry, type PermissionProvider} from '../models/permission-provider';
 import {PermissionGroupAccordion} from './permission-group-accordion';
@@ -341,33 +341,6 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
         return null;
     };
 
-    const copyToClipboard = async (text: string): Promise<void> => {
-        try {
-            if (navigator?.clipboard?.writeText) {
-                await navigator.clipboard.writeText(text);
-                dispatch(showSuccessSnackbar('Permission-Key kopiert.'));
-                return;
-            }
-        } catch {
-            // ignore
-        }
-
-        try {
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            textarea.focus();
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-            dispatch(showSuccessSnackbar('Permission-Key kopiert.'));
-        } catch {
-            dispatch(showErrorSnackbar('Kopieren nicht möglich.'));
-        }
-    };
-
     const toolbarActions: Action[] = [
         {
             tooltip: 'Alle auswählen',
@@ -561,7 +534,6 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                             onToggleGroup={handleToggleGroup}
                             onTogglePermission={handleTogglePermission}
                             inferCrud={inferCrud}
-                            onCopyPermission={copyToClipboard}
                         />
                     );
                 })}

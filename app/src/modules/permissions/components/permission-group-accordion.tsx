@@ -8,7 +8,6 @@ import {
     Chip,
     Divider,
     FormControlLabel,
-    IconButton,
     Paper,
     Stack,
     Tooltip,
@@ -17,6 +16,7 @@ import {
 import React from 'react';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
+import {CopyToClipboardButton} from '../../../components/copy-to-clipboard-button/copy-to-clipboard-button';
 
 import {type PermissionGroup} from './permission-editor';
 
@@ -30,7 +30,6 @@ interface PermissionGroupAccordionProps {
     onToggleGroup: (group: PermissionGroup, checked: boolean) => void;
     onTogglePermission: (permission: string, checked: boolean) => void;
     inferCrud: (permission: string) => 'create' | 'read' | 'update' | 'delete' | null;
-    onCopyPermission: (permission: string) => void;
 }
 
 export function PermissionGroupAccordion(props: PermissionGroupAccordionProps): React.ReactElement {
@@ -44,7 +43,6 @@ export function PermissionGroupAccordion(props: PermissionGroupAccordionProps): 
         onToggleGroup,
         onTogglePermission,
         inferCrud,
-        onCopyPermission,
     } = props;
 
     const selectedPermissionsSet = React.useMemo(
@@ -247,18 +245,16 @@ export function PermissionGroupAccordion(props: PermissionGroupAccordionProps): 
                                         />
                                     )}
 
-                                    <Tooltip title="Permission-Key kopieren">
-                                        <span>
-                                          <IconButton
-                                              aria-label="Permission-Key kopieren"
-                                              size="small"
-                                              disabled={isBusy}
-                                              onClick={() => onCopyPermission(permission)}
-                                          >
-                                            <ContentCopy fontSize="inherit" />
-                                          </IconButton>
-                                        </span>
-                                    </Tooltip>
+                                    <CopyToClipboardButton
+                                        text={permission}
+                                        tooltip="Permission-Key kopieren"
+                                        ariaLabel="Permission-Key kopieren"
+                                        size="small"
+                                        disabled={isBusy}
+                                        icon={<ContentCopy fontSize="inherit" />}
+                                        successMessage="Permission-Key kopiert."
+                                        errorMessage="Kopieren nicht möglich."
+                                    />
                                 </Stack>
                             </Paper>
                         );
