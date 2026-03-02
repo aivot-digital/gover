@@ -17,7 +17,7 @@ import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarTyp
 import {UserRoleResponseDTO} from '../../dtos/user-role-response-dto';
 import {UserRolesApiService} from '../../user-roles-api-service';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
-import {PermissionEditor} from '../../../../components/permission-editor/permission-editor';
+import {PermissionEditor} from '../../../permissions/components/permission-editor';
 import {PermissionScope} from '../../../permissions/enums/permission-scope';
 
 export const UserRoleSchema = yup.object({

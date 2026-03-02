@@ -17,7 +17,7 @@ import {type SystemRoleEntity} from '../../entities/system-role-entity';
 import {SystemRolesApiService} from '../../services/system-roles-api-service';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import Grid from '@mui/material/Grid';
-import {PermissionEditor} from '../../../../components/permission-editor/permission-editor';
+import {PermissionEditor} from '../../../permissions/components/permission-editor';
 import {PermissionScope} from '../../../permissions/enums/permission-scope';
 
 export const SystemRoleSchema = yup.object({

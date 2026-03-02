@@ -18,7 +18,7 @@ import React from 'react';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
 
-import {PermissionGroup} from './permission-editor-props';
+import {type PermissionGroup} from './permission-editor';
 
 interface PermissionGroupAccordionProps {
     group: PermissionGroup;

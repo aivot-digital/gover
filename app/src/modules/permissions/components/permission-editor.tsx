@@ -26,17 +26,16 @@ import {CompareArrows} from '@mui/icons-material';
 import Deselect from '@aivot/mui-material-symbols-400-outlined/dist/deselect/Deselect';
 import SelectAll from '@aivot/mui-material-symbols-400-outlined/dist/select-all/SelectAll';
 
-import {PermissionGroups} from '../../data/permissions/permission-groups';
-import {PermissionLabelsDe} from '../../data/permissions/permission-labels';
-import {PermissionApiService} from '../../modules/permissions/permission-api-service';
+import {PermissionGroups} from '../../../data/permissions/permission-groups';
+import {PermissionLabelsDe} from '../../../data/permissions/permission-labels';
+import {PermissionApiService} from '../permission-api-service';
 
-import {AlertComponent} from '../alert/alert-component';
-import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
-import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
-import {PermissionScope} from '../../modules/permissions/enums/permission-scope';
-import {PermissionEntry, PermissionProvider} from '../../modules/permissions/models/permission-provider';
-import {PermissionEditorProps, PermissionGroup} from './permission-editor-props';
+import {AlertComponent} from '../../../components/alert/alert-component';
+import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
+import {PermissionScope} from '../enums/permission-scope';
+import {type PermissionEntry, type PermissionProvider} from '../models/permission-provider';
 import {PermissionGroupAccordion} from './permission-group-accordion';
 
 function groupKey(label: string): string {
@@ -50,6 +49,25 @@ function normalizeSearch(value: string): string {
         .normalize('NFD')
         // remove accents/diacritics
         .replace(/[\u0300-\u036f]/g, '');
+}
+
+export type PermissionGroup = Pick<PermissionProvider, 'contextLabel' | 'permissions'>;
+
+interface PermissionEditorProps {
+    /** Persisted permissions (used for diff view). */
+    originalPermissions?: string[];
+    /** Current permissions (controlled). */
+    value: string[];
+    /** Controlled change callback. */
+    onChange: (next: string[]) => void;
+    /** When false, disables selection and bulk actions. */
+    isEditable?: boolean;
+    /** When true, disables inputs and copy action. */
+    isBusy?: boolean;
+    /** Optional label above editor. */
+    title?: string;
+    /** Scope of the permissions. */
+    scope?: PermissionScope | PermissionScope[];
 }
 
 export function PermissionEditor(props: PermissionEditorProps): React.ReactElement {
