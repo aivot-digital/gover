@@ -165,7 +165,8 @@ function LookupElementIdDialog(props: { open: boolean, onClose: () => void }) {
                 <SearchInput
                     value={search}
                     onChange={setSearch}
-                    placeholder="Element suchen…"
+                    label="Element suchen"
+                    placeholder="Titel oder Pfad eingeben"
                 />
 
                 <List dense>

@@ -9,8 +9,7 @@ import {
 } from '@mui/x-data-grid';
 import {Box, CircularProgress, Menu, MenuItem, styled, SxProps, Tab, Tabs} from '@mui/material';
 import React, {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react';
-import {TextFieldComponent} from '../text-field/text-field-component';
-import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
+import {SearchInput} from '../search-input/search-input';
 import {IconButton} from '../icon-button/icon-button';
 import ZoomOutMapOutlinedIcon from '@mui/icons-material/ZoomOutMapOutlined';
 import ZoomInMapOutlinedIcon from '@mui/icons-material/ZoomInMapOutlined';
@@ -22,7 +21,6 @@ import {GenericListRowModel} from './generic-list-row-models';
 import {Actions} from '../actions/actions';
 import {withAsyncWrapper} from '../../utils/with-async-wrapper';
 import {GenericListProps} from './generic-list-props';
-import CloseIcon from '@mui/icons-material/Close';
 import {useSearchParams} from 'react-router-dom';
 import {GridSortItem} from '@mui/x-data-grid/models/gridSortModel';
 import {CellContentWrapper} from "../cell-content-wrapper/cell-content-wrapper";
@@ -503,24 +501,14 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                     <Box
                         sx={{
                             flex: 1,
-                            padding: '4px 0 12px 0',
+                            py: 2
                         }}
                     >
-                        <TextFieldComponent
+                        <SearchInput
                             label={props.searchLabel}
                             value={search}
                             onChange={handleSearchChange}
                             placeholder={props.searchPlaceholder}
-                            startIcon={<SearchOutlinedIcon/>}
-                            endAction={
-                                search
-                                    ? {
-                                        onClick: () => handleSearchChange(undefined),
-                                        tooltip: 'Suche zurücksetzen',
-                                        icon: <CloseIcon sx={{fontSize: 20}}/>,
-                                    }
-                                    : undefined
-                            }
                             debounce={1000}
                             size={'small'}
                         />

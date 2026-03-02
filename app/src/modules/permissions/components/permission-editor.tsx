@@ -11,14 +11,11 @@ import {
     Menu,
     MenuItem,
     Stack,
-    TextField,
     Tooltip,
     Typography,
 } from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
 import Fuse from 'fuse.js';
-import ClearIcon from '@mui/icons-material/Clear';
-import SearchIcon from '@mui/icons-material/Search';
 import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
 import UnfoldLessIcon from '@mui/icons-material/UnfoldLess';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -34,6 +31,7 @@ import {AlertComponent} from '../../../components/alert/alert-component';
 import {Actions} from '../../../components/actions/actions';
 import {type Action} from '../../../components/actions/actions-props';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
+import {SearchInput} from '../../../components/search-input/search-input';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import {PermissionScope} from '../enums/permission-scope';
@@ -524,28 +522,15 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                 </Stack>
             </Stack>
 
-            <TextField
-                fullWidth
-                size="small"
-                label="Berechtigungen suchen"
+            <SearchInput
                 value={permissionQuery}
-                onChange={(e) => setPermissionQuery(e.target.value)}
+                onChange={setPermissionQuery}
+                label="Berechtigungen suchen"
+                placeholder="Name, Key oder Beschreibung eingeben"
+                ariaLabel="Berechtigungen suchen"
+                clearable
                 disabled={isBusy}
-                InputProps={{
-                    startAdornment: <SearchIcon
-                        fontSize="small"
-                        style={{marginRight: 8}}
-                    />,
-                    endAdornment: permissionQuery ? (
-                        <IconButton
-                            size="small"
-                            onClick={() => setPermissionQuery('')}
-                            aria-label="Suche löschen"
-                        >
-                            <ClearIcon fontSize="small"/>
-                        </IconButton>
-                    ) : undefined,
-                }}
+                size="small"
                 sx={{
                     mt: 1.5,
                     mb: 2,
