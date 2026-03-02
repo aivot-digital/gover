@@ -31,4 +31,10 @@ export enum ElementType {
     UiDefinitionInput = 29,
     IdentityInput = 30,
     TabLayout = 31,
+    ChipInput = 32,
+    DateTime = 33,
+    DateRange = 34,
+    TimeRange = 35,
+    DateTimeRange = 36,
+    MapPoint = 37,
 }

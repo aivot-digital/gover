@@ -16,8 +16,14 @@ const BaseComponents = [
     ElementType.Spacer,
     ElementType.Table,
     ElementType.Time,
+    ElementType.DateTime,
+    ElementType.DateRange,
+    ElementType.TimeRange,
+    ElementType.DateTimeRange,
+    ElementType.MapPoint,
     ElementType.Alert,
     ElementType.FileUpload,
+    ElementType.ChipInput,
 
     ElementType.ReplicatingContainer,
 ];
@@ -57,4 +63,10 @@ export const ElementChildOptions: Record<ElementType, ElementType[] | null> = {
     [ElementType.UiDefinitionInput]: null,
     [ElementType.IdentityInput]: null,
     [ElementType.TabLayout]: null,
+    [ElementType.ChipInput]: null,
+    [ElementType.DateTime]: null,
+    [ElementType.DateRange]: null,
+    [ElementType.TimeRange]: null,
+    [ElementType.DateTimeRange]: null,
+    [ElementType.MapPoint]: null,
 };

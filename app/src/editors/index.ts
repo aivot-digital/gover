@@ -27,6 +27,13 @@ import {SubmitComponentEditor} from '../components/submit/submit.component.edito
 import {FileUploadEditor} from '../components/file-upload-field/file-upload.editor';
 import {ContainerEditor} from './container-editor';
 import {RootComponentEditorTabPayment} from '../components/root/root.component.editor-tab.payment';
+import {ChipInputFieldEditor} from './chip-input-field-editor';
+import {DateTimeFieldEditor} from './date-time-field-editor';
+import {DateRangeFieldEditor} from './date-range-field-editor';
+import {TimeRangeFieldEditor} from './time-range-field-editor';
+import {DateTimeRangeFieldEditor} from './date-time-range-field-editor';
+import {TimeFieldEditor} from './time-field-editor';
+import {MapPointFieldEditor} from './map-point-field-editor';
 
 export interface EditorTab {
     label: string;
@@ -102,7 +109,9 @@ export const editors: ElementTypesMap<EditorSet | null> = {
     [ElementType.Text]: {
         default: TextFieldEditor,
     },
-    [ElementType.Time]: null,
+    [ElementType.Time]: {
+        default: TimeFieldEditor,
+    },
     [ElementType.IntroductionStep]: {
         default: GeneralInformationComponentEditor,
     },
@@ -125,4 +134,22 @@ export const editors: ElementTypesMap<EditorSet | null> = {
     [ElementType.UiDefinitionInput]: null,
     [ElementType.IdentityInput]: null,
     [ElementType.TabLayout]: null,
+    [ElementType.ChipInput]: {
+        default: ChipInputFieldEditor,
+    },
+    [ElementType.DateTime]: {
+        default: DateTimeFieldEditor,
+    },
+    [ElementType.DateRange]: {
+        default: DateRangeFieldEditor,
+    },
+    [ElementType.TimeRange]: {
+        default: TimeRangeFieldEditor,
+    },
+    [ElementType.DateTimeRange]: {
+        default: DateTimeRangeFieldEditor,
+    },
+    [ElementType.MapPoint]: {
+        default: MapPointFieldEditor,
+    },
 };

@@ -56,7 +56,13 @@ const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
     [ElementType.Spacer]: ElementTypeGroups.Display,
     [ElementType.Table]: ElementTypeGroups.Input,
     [ElementType.Text]: ElementTypeGroups.Input,
+    [ElementType.ChipInput]: ElementTypeGroups.Input,
     [ElementType.Time]: ElementTypeGroups.DateTime,
+    [ElementType.DateTime]: ElementTypeGroups.DateTime,
+    [ElementType.DateRange]: ElementTypeGroups.DateTime,
+    [ElementType.TimeRange]: ElementTypeGroups.DateTime,
+    [ElementType.DateTimeRange]: ElementTypeGroups.DateTime,
+    [ElementType.MapPoint]: ElementTypeGroups.Input,
     [ElementType.FileUpload]: ElementTypeGroups.Input,
 
     [ElementType.IntroductionStep]: null,

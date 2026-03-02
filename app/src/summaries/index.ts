@@ -17,6 +17,12 @@ import {FileUploadSummary} from '../components/file-upload-field/file-upload.sum
 import {StepComponentSummary} from '../components/step/step.component.summary';
 import {GroupSummary} from './group-summary';
 import {RootSummary} from './root-summary';
+import {ChipInputFieldSummary} from '../components/chip-input-field/chip-input-field.component.summary';
+import {DateTimeFieldSummary} from './date-time-field-summary';
+import {DateRangeFieldSummary} from './date-range-field-summary';
+import {TimeRangeFieldSummary} from './time-range-field-summary';
+import {DateTimeRangeFieldSummary} from './date-time-range-field-summary';
+import {MapPointFieldSummary} from './map-point-field-summary';
 
 export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.FormLayout]: RootSummary,
@@ -51,5 +57,10 @@ export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.UiDefinitionInput]: null,
     [ElementType.IdentityInput]: null,
     [ElementType.TabLayout]: null,
+    [ElementType.ChipInput]: ChipInputFieldSummary,
+    [ElementType.DateTime]: DateTimeFieldSummary,
+    [ElementType.DateRange]: DateRangeFieldSummary,
+    [ElementType.TimeRange]: TimeRangeFieldSummary,
+    [ElementType.DateTimeRange]: DateTimeRangeFieldSummary,
+    [ElementType.MapPoint]: MapPointFieldSummary,
 };
-

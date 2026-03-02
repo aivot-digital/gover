@@ -36,6 +36,12 @@ const typeMap: Record<ElementType, string> = {
     [ElementType.UiDefinitionInput]: 'undefined',
     [ElementType.IdentityInput]: 'undefined',
     [ElementType.TabLayout]: 'undefined',
+    [ElementType.ChipInput]: 'string[]',
+    [ElementType.DateTime]: 'string',
+    [ElementType.DateRange]: '{start: string | null | undefined; end: string | null | undefined;}',
+    [ElementType.TimeRange]: '{start: string | null | undefined; end: string | null | undefined;}',
+    [ElementType.DateTimeRange]: '{start: string | null | undefined; end: string | null | undefined;}',
+    [ElementType.MapPoint]: '{latitude: number | null | undefined; longitude: number | null | undefined; address: string | null | undefined;}',
 };
 
 export function formToTypeDefinition(form: FormVersionEntity): string {

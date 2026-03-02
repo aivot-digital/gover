@@ -115,14 +115,22 @@ function elementToValueType(element: AnyElement): string {
             return 'boolean';
         case ElementType.Text:
         case ElementType.Date:
+        case ElementType.DateTime:
         case ElementType.Time:
             return 'string';
+        case ElementType.DateRange:
+        case ElementType.TimeRange:
+        case ElementType.DateTimeRange:
+            return '{start: string | null | undefined; end: string | null | undefined}';
+        case ElementType.MapPoint:
+            return '{latitude: number | null | undefined; longitude: number | null | undefined; address: string | null | undefined}';
         case ElementType.Radio:
         case ElementType.Select:
             return element.options?.map(option => `'${option.value}'`).join(' | ') ?? 'string';
         case ElementType.Number:
             return 'number';
         case ElementType.MultiCheckbox:
+        case ElementType.ChipInput:
             return 'string[]';
         case ElementType.FileUpload:
             return '{name: string; uri: string; size: number;}[]';

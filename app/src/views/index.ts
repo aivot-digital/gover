@@ -25,6 +25,12 @@ import {FileUploadView} from '../components/file-upload-field/file-upload.view';
 import {CodeInputView} from './code-input-view';
 import {FunctionInputView} from './function-input-view';
 import {RichTextView} from './rich-text-input-view';
+import {ChipInputFieldView} from './chip-input-field-view';
+import {DateTimeFieldView} from './date-time-field-view';
+import {DateRangeFieldView} from './date-range-field-view';
+import {TimeRangeFieldView} from './time-range-field-view';
+import {DateTimeRangeFieldView} from './date-time-range-field-view';
+import {MapPointFieldView} from './map-point-field-view';
 
 export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.FormLayout]: RootComponentView,
@@ -59,4 +65,10 @@ export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.UiDefinitionInput]: null,
     [ElementType.IdentityInput]: null,
     [ElementType.TabLayout]: null,
+    [ElementType.ChipInput]: ChipInputFieldView,
+    [ElementType.DateTime]: DateTimeFieldView,
+    [ElementType.DateRange]: DateRangeFieldView,
+    [ElementType.TimeRange]: TimeRangeFieldView,
+    [ElementType.DateTimeRange]: DateTimeRangeFieldView,
+    [ElementType.MapPoint]: MapPointFieldView,
 };

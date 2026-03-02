@@ -33,4 +33,10 @@ export const ElementIsInput: Record<ElementType, boolean> = {
     [ElementType.UiDefinitionInput]: true,
     [ElementType.IdentityInput]: true,
     [ElementType.TabLayout]: false,
+    [ElementType.ChipInput]: true,
+    [ElementType.DateTime]: true,
+    [ElementType.DateRange]: true,
+    [ElementType.TimeRange]: true,
+    [ElementType.DateTimeRange]: true,
+    [ElementType.MapPoint]: true,
 };

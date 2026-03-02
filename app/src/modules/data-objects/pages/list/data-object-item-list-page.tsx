@@ -26,6 +26,7 @@ import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-objec
 import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
+import {TimeFieldComponentModelMode} from '../../../../models/elements/form/input/time-field-element';
 
 export function DataObjectItemListPage() {
     const api = useApi();
@@ -206,10 +207,52 @@ function dataObjectSchemaExtractDisplayFields(dataObjectSchema: DataObjectSchema
                             return value
                                 .map((val: string) => element.options?.find((opt) => opt.value === val)?.label)
                                 .join(', ');
+                        case ElementType.ChipInput:
+                            return value
+                                .map((val: string) => val)
+                                .join(', ');
                         case ElementType.Date:
                             return format(parseISO(value), 'dd.MM.yyyy');
+                        case ElementType.DateTime:
+                            return format(
+                                parseISO(value),
+                                (element.mode ?? TimeFieldComponentModelMode.Minute) === TimeFieldComponentModelMode.Second
+                                    ? 'dd.MM.yyyy HH:mm:ss'
+                                    : 'dd.MM.yyyy HH:mm',
+                            );
+                        case ElementType.DateRange:
+                            return `${formatRangeValue(value?.start, 'dd.MM.yyyy')} bis ${formatRangeValue(value?.end, 'dd.MM.yyyy')}`;
+                        case ElementType.TimeRange:
+                            return `${formatRangeValue(
+                                value?.start,
+                                (element.mode ?? TimeFieldComponentModelMode.Minute) === TimeFieldComponentModelMode.Second ? 'HH:mm:ss' : 'HH:mm',
+                            )} bis ${formatRangeValue(
+                                value?.end,
+                                (element.mode ?? TimeFieldComponentModelMode.Minute) === TimeFieldComponentModelMode.Second ? 'HH:mm:ss' : 'HH:mm',
+                            )}`;
+                        case ElementType.DateTimeRange:
+                            return `${formatRangeValue(
+                                value?.start,
+                                (element.mode ?? TimeFieldComponentModelMode.Minute) === TimeFieldComponentModelMode.Second
+                                    ? 'dd.MM.yyyy HH:mm:ss'
+                                    : 'dd.MM.yyyy HH:mm',
+                            )} bis ${formatRangeValue(
+                                value?.end,
+                                (element.mode ?? TimeFieldComponentModelMode.Minute) === TimeFieldComponentModelMode.Second
+                                    ? 'dd.MM.yyyy HH:mm:ss'
+                                    : 'dd.MM.yyyy HH:mm',
+                            )}`;
+                        case ElementType.MapPoint:
+                            return value?.address ?? (
+                                value?.latitude != null && value?.longitude != null
+                                    ? `${value.latitude.toFixed(6)}, ${value.longitude.toFixed(6)}`
+                                    : null
+                            );
                         case ElementType.Time:
-                            return format(parseISO(value), 'HH:mm');
+                            return format(
+                                parseISO(value),
+                                (element.mode ?? TimeFieldComponentModelMode.Minute) === TimeFieldComponentModelMode.Second ? 'HH:mm:ss' : 'HH:mm',
+                            );
                         case ElementType.Radio:
                         case ElementType.Select:
                             return element.options?.find((opt) => opt.value === value)?.label;
@@ -223,4 +266,12 @@ function dataObjectSchemaExtractDisplayFields(dataObjectSchema: DataObjectSchema
     }
 
     return cols;
+}
+
+function formatRangeValue(value: string | undefined, formatStr: string): string {
+    if (value == null || value.length === 0) {
+        return 'Keine Angabe';
+    }
+
+    return format(parseISO(value), formatStr);
 }

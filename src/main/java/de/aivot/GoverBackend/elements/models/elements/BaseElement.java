@@ -61,6 +61,12 @@ import java.util.UUID;
         @JsonSubTypes.Type(value = UiDefinitionInputElement.class, name = ElementType.ID_UiDefinitionInput),
         @JsonSubTypes.Type(value = IdentityInputElement.class, name = ElementType.ID_IdentityInput),
         @JsonSubTypes.Type(value = TabLayoutElement.class, name = ElementType.ID_TabLayout),
+        @JsonSubTypes.Type(value = ChipInputElement.class, name = ElementType.ID_ChipInput),
+        @JsonSubTypes.Type(value = DateTimeInputElement.class, name = ElementType.ID_DateTime),
+        @JsonSubTypes.Type(value = DateRangeInputElement.class, name = ElementType.ID_DateRange),
+        @JsonSubTypes.Type(value = TimeRangeInputElement.class, name = ElementType.ID_TimeRange),
+        @JsonSubTypes.Type(value = DateTimeRangeInputElement.class, name = ElementType.ID_DateTimeRange),
+        @JsonSubTypes.Type(value = MapPointInputElement.class, name = ElementType.ID_MapPoint),
 })
 public abstract class BaseElement implements Serializable {
     @Nonnull

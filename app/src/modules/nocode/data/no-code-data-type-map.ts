@@ -34,4 +34,10 @@ export const NoCodeDataTypeMap: Record<ElementType, NoCodeDataType> = {
     [ElementType.UiDefinitionInput]: NoCodeDataType.Runtime,
     [ElementType.IdentityInput]: NoCodeDataType.Runtime,
     [ElementType.TabLayout]: NoCodeDataType.Runtime,
+    [ElementType.ChipInput]: NoCodeDataType.List,
+    [ElementType.DateTime]: NoCodeDataType.Date,
+    [ElementType.DateRange]: NoCodeDataType.Object,
+    [ElementType.TimeRange]: NoCodeDataType.Object,
+    [ElementType.DateTimeRange]: NoCodeDataType.Object,
+    [ElementType.MapPoint]: NoCodeDataType.Object,
 }

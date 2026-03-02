@@ -25,6 +25,12 @@ import {DateFieldElement} from './form/input/date-field-element';
 import {NumberFieldElement} from './form/input/number-field-element';
 import {CodeInputElement} from "./form/input/code-input-element";
 import {RichTextInputElement} from "./form/input/rich-text-input-element";
+import {ChipInputFieldElement} from './form/input/chip-input-field-element';
+import {DateTimeFieldElement} from './form/input/date-time-field-element';
+import {DateRangeFieldElement} from './form/input/date-range-field-element';
+import {TimeRangeFieldElement} from './form/input/time-range-field-element';
+import {DateTimeRangeFieldElement} from './form/input/date-time-range-field-element';
+import {MapPointFieldElement} from './form/input/map-point-field-element';
 
 export type AnyElement =
     RootElement |
@@ -61,10 +67,12 @@ export type AnyElementType<T extends ElementType> =
                                                                                     T extends ElementType.SubmittedStep ? SubmittedStepElement :
                                                                                         T extends ElementType.FileUpload ? FileUploadElement :
                                                                                             T extends ElementType.CodeInput ? CodeInputElement :
-                                                                                                T extends ElementType.RichTextInput ? RichTextInputElement : never;
-
-
-
-
+                                                                                                T extends ElementType.RichTextInput ? RichTextInputElement :
+                                                                                                    T extends ElementType.ChipInput ? ChipInputFieldElement :
+                                                                                                        T extends ElementType.DateTime ? DateTimeFieldElement :
+                                                                                                            T extends ElementType.DateRange ? DateRangeFieldElement :
+                                                                                                                T extends ElementType.TimeRange ? TimeRangeFieldElement :
+                                                                                                                    T extends ElementType.DateTimeRange ? DateTimeRangeFieldElement :
+                                                                                                                        T extends ElementType.MapPoint ? MapPointFieldElement : never;
 
 

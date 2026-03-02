@@ -28,6 +28,13 @@ import {ImageElement} from '../models/elements/form/content/image-element';
 import {SubmittedStepElement} from '../models/elements/steps/submitted-step-element';
 import {FileUploadElement} from '../models/elements/form/input/file-upload-element';
 import {AppInfo} from '../app-info';
+import {ChipInputFieldElement} from '../models/elements/form/input/chip-input-field-element';
+import {DateTimeFieldElement} from '../models/elements/form/input/date-time-field-element';
+import {DateRangeFieldElement} from '../models/elements/form/input/date-range-field-element';
+import {TimeRangeFieldElement} from '../models/elements/form/input/time-range-field-element';
+import {DateTimeRangeFieldElement} from '../models/elements/form/input/date-time-range-field-element';
+import {TimeFieldComponentModelMode} from '../models/elements/form/input/time-field-element';
+import {MapPointFieldElement} from '../models/elements/form/input/map-point-field-element';
 
 function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
     return {
@@ -94,6 +101,12 @@ const elementConstructors: {
     [ElementType.UiDefinitionInput]: (id: string) => void;
     [ElementType.IdentityInput]: (id: string) => void;
     [ElementType.TabLayout]: (id: string) => void;
+    [ElementType.ChipInput]: (id: string) => ChipInputFieldElement;
+    [ElementType.DateTime]: (id: string) => DateTimeFieldElement;
+    [ElementType.DateRange]: (id: string) => DateRangeFieldElement;
+    [ElementType.TimeRange]: (id: string) => TimeRangeFieldElement;
+    [ElementType.DateTimeRange]: (id: string) => DateTimeRangeFieldElement;
+    [ElementType.MapPoint]: (id: string) => MapPointFieldElement;
 } = {
     [ElementType.FormLayout]: (id) => ({
         ...makeBase(ElementType.FormLayout, id),
@@ -266,6 +279,7 @@ const elementConstructors: {
     [ElementType.Time]: (id) => ({
         ...makeInputBase(ElementType.Time, id),
         label: 'Uhrzeit',
+        mode: TimeFieldComponentModelMode.Minute,
     }),
     [ElementType.IntroductionStep]: (id) => ({
         ...makeFormBase(ElementType.IntroductionStep, id),
@@ -317,6 +331,48 @@ const elementConstructors: {
     [ElementType.UiDefinitionInput]: (id) => ({}),
     [ElementType.IdentityInput]: (id) => ({}),
     [ElementType.TabLayout]: (id) => ({}),
+    [ElementType.ChipInput]: (id) => ({
+        ...makeInputBase(ElementType.ChipInput, id),
+        label: 'Tag-Liste (Schlagwörter)',
+        placeholder: 'Eintrag hinzufügen',
+        suggestions: undefined,
+        minItems: undefined,
+        maxItems: undefined,
+        allowDuplicates: false,
+    }),
+    [ElementType.DateTime]: (id) => ({
+        ...makeInputBase(ElementType.DateTime, id),
+        label: 'Datum und Uhrzeit',
+        placeholder: undefined,
+        mode: TimeFieldComponentModelMode.Minute,
+    }),
+    [ElementType.DateRange]: (id) => ({
+        ...makeInputBase(ElementType.DateRange, id),
+        label: 'Datumsspanne',
+        mode: DateFieldComponentModelMode.Day,
+        placeholder: undefined,
+        allowOpenRange: false,
+    }),
+    [ElementType.TimeRange]: (id) => ({
+        ...makeInputBase(ElementType.TimeRange, id),
+        label: 'Zeitspanne',
+        allowOpenRange: false,
+        mode: TimeFieldComponentModelMode.Minute,
+    }),
+    [ElementType.DateTimeRange]: (id) => ({
+        ...makeInputBase(ElementType.DateTimeRange, id),
+        label: 'Datum- und Zeitspanne',
+        placeholder: undefined,
+        allowOpenRange: false,
+        mode: TimeFieldComponentModelMode.Minute,
+    }),
+    [ElementType.MapPoint]: (id) => ({
+        ...makeInputBase(ElementType.MapPoint, id),
+        label: 'Kartenpunkt',
+        zoom: 14,
+        centerLatitude: 52.52,
+        centerLongitude: 13.405,
+    }),
 };
 
 export function generateElementWithDefaultValues<T extends ElementType>(type: T): AnyElementType<T> {

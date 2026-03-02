@@ -11,6 +11,11 @@ import {RadioFieldElement} from '../models/elements/form/input/radio-field-eleme
 import {ElementData, ElementDataObject, newElementDataObject} from '../models/element-data';
 import {DataObjectItem} from '../modules/data-objects/models/data-object-item';
 import {mapElementData} from './element-data-utils';
+import {ChipInputFieldElement} from '../models/elements/form/input/chip-input-field-element';
+import {DateRangeFieldElement} from '../models/elements/form/input/date-range-field-element';
+import {TimeRangeFieldElement} from '../models/elements/form/input/time-range-field-element';
+import {DateTimeRangeFieldElement} from '../models/elements/form/input/date-time-range-field-element';
+import {MapPointFieldElement} from '../models/elements/form/input/map-point-field-element';
 
 /**
  * @deprecated Use goverSchemaToYup2 instead
@@ -170,6 +175,11 @@ const YupSchemaMap: {
     [ElementType.Number]: numberFieldToYup,
     [ElementType.Select]: selectFieldToYup,
     [ElementType.Radio]: selectFieldToYup,
+    [ElementType.ChipInput]: chipInputFieldToYup,
+    [ElementType.DateRange]: dateRangeFieldToYup,
+    [ElementType.TimeRange]: timeRangeFieldToYup,
+    [ElementType.DateTimeRange]: dateTimeRangeFieldToYup,
+    [ElementType.MapPoint]: mapPointFieldToYup,
     [ElementType.ReplicatingContainer]: replicatingContainerToYup,
 };
 
@@ -284,6 +294,181 @@ function replicatingContainerToYup(elem: ReplicatingContainerLayout): Schema {
     }
 
     return elementShema;
+}
+
+function chipInputFieldToYup(elem: ChipInputFieldElement): Schema {
+    let chipSchema: yup.ArraySchema<(string | undefined)[] | undefined | null, yup.AnyObject, '', ''> = yup
+        .array()
+        .of(yup.string().trim());
+
+    if (elem.required) {
+        chipSchema = chipSchema
+            .required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`);
+    } else {
+        chipSchema = chipSchema
+            .nullable();
+    }
+
+    if ((elem.minItems ?? 0) > 0) {
+        chipSchema = chipSchema
+            .min(elem.minItems!, `Mindestens ${elem.minItems} Einträge erforderlich.`);
+    }
+
+    if ((elem.maxItems ?? 0) > 0) {
+        chipSchema = chipSchema
+            .max(elem.maxItems!, `Maximal ${elem.maxItems} Einträge erlaubt.`);
+    }
+
+    if (elem.allowDuplicates !== true) {
+        chipSchema = chipSchema
+            .test(
+                'no-duplicates',
+                'Mehrfach vorhandene Einträge sind nicht erlaubt.',
+                (value) => value == null || new Set(value).size === value.length,
+            );
+    }
+
+    return chipSchema;
+}
+
+function dateRangeFieldToYup(elem: DateRangeFieldElement): Schema {
+    return buildRangeSchema(elem, 'date');
+}
+
+function timeRangeFieldToYup(elem: TimeRangeFieldElement): Schema {
+    return buildRangeSchema(elem, 'time');
+}
+
+function dateTimeRangeFieldToYup(elem: DateTimeRangeFieldElement): Schema {
+    return buildRangeSchema(elem, 'dateTime');
+}
+
+function buildRangeSchema(
+    elem: DateRangeFieldElement | TimeRangeFieldElement | DateTimeRangeFieldElement,
+    kind: 'date' | 'time' | 'dateTime',
+): Schema {
+    const allowOpenRange = elem.allowOpenRange === true;
+
+    let rangeSchema: Schema = yup
+        .object()
+        .shape({
+            start: yup.string().nullable(),
+            end: yup.string().nullable(),
+        })
+        .test(
+            'range-complete',
+            'Bitte geben Sie sowohl den Start- als auch den Endwert an.',
+            (value: any) => {
+                if (allowOpenRange) {
+                    return true;
+                }
+
+                if (value == null) {
+                    return true;
+                }
+
+                const startFilled = value?.start != null && value.start.length > 0;
+                const endFilled = value?.end != null && value.end.length > 0;
+
+                // Valid states: both empty or both filled.
+                return (startFilled && endFilled) || (!startFilled && !endFilled);
+            },
+        )
+        .test(
+            'range-order',
+            'Der Startwert darf nicht größer als der Endwert sein.',
+            (value: any) => {
+                if (value == null) {
+                    return true;
+                }
+
+                const start = value.start ?? undefined;
+                const end = value.end ?? undefined;
+                if (start == null || end == null || start.length === 0 || end.length === 0) {
+                    return true;
+                }
+
+                const startValue = parseComparableRangeValue(start, kind);
+                const endValue = parseComparableRangeValue(end, kind);
+                if (startValue == null || endValue == null) {
+                    return true;
+                }
+
+                return startValue <= endValue;
+            },
+        );
+
+    if (elem.required) {
+        rangeSchema = rangeSchema
+            .required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`)
+            .test(
+                'range-filled',
+                `${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`,
+                (value: any) => {
+                    if (allowOpenRange) {
+                        return (value?.start != null && value.start.length > 0) || (value?.end != null && value.end.length > 0);
+                    }
+
+                    return value?.start != null && value.start.length > 0 && value?.end != null && value.end.length > 0;
+                },
+            );
+    } else {
+        rangeSchema = rangeSchema
+            .nullable();
+    }
+
+    return rangeSchema;
+}
+
+function parseComparableRangeValue(value: string, kind: 'date' | 'time' | 'dateTime'): number | null {
+    const parsed = new Date(value);
+    if (isNaN(parsed.getTime())) {
+        return null;
+    }
+
+    if (kind === 'time') {
+        return parsed.getHours() * 60 + parsed.getMinutes();
+    }
+
+    return parsed.getTime();
+}
+
+function mapPointFieldToYup(elem: MapPointFieldElement): Schema {
+    let mapPointSchema: Schema = yup
+        .object()
+        .shape({
+            latitude: yup.number().nullable(),
+            longitude: yup.number().nullable(),
+            address: yup.string().nullable(),
+        })
+        .test(
+            'map-point-pair',
+            'Bitte geben Sie sowohl Breitengrad als auch Längengrad an.',
+            (value: any) => {
+                if (value == null) {
+                    return true;
+                }
+
+                const hasLat = value?.latitude != null;
+                const hasLon = value?.longitude != null;
+                return (hasLat && hasLon) || (!hasLat && !hasLon);
+            },
+        );
+
+    if (elem.required) {
+        mapPointSchema = mapPointSchema
+            .required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`)
+            .test(
+                'map-point-required',
+                `${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`,
+                (value: any) => value?.latitude != null && value?.longitude != null,
+            );
+    } else {
+        mapPointSchema = mapPointSchema
+            .nullable();
+    }
+
+    return mapPointSchema;
 }
 
 export function applyYupErrorsToElementData(rootElement: AnyElement, elementData: ElementData, errors: Record<string, string>): ElementData {

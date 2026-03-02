@@ -13,6 +13,12 @@ import {ElementType} from '../../../../data/element-type/element-type';
 import {CodeInputElement} from "./code-input-element";
 import {FunctionInputElement} from "./function-input-element";
 import {RichTextInputElement} from "./rich-text-input-element";
+import {ChipInputFieldElement} from './chip-input-field-element';
+import {DateTimeFieldElement} from './date-time-field-element';
+import {DateRangeFieldElement} from './date-range-field-element';
+import {TimeRangeFieldElement} from './time-range-field-element';
+import {DateTimeRangeFieldElement} from './date-time-range-field-element';
+import {MapPointFieldElement} from './map-point-field-element';
 
 export type AnyInputElement = (
     CheckboxFieldElement |
@@ -29,6 +35,12 @@ export type AnyInputElement = (
     CodeInputElement |
     FunctionInputElement |
     RichTextInputElement |
+    ChipInputFieldElement |
+    DateTimeFieldElement |
+    DateRangeFieldElement |
+    TimeRangeFieldElement |
+    DateTimeRangeFieldElement |
+    MapPointFieldElement |
 
     ReplicatingContainerLayout
     );
@@ -48,6 +60,12 @@ export function isAnyInputElement(obj: any): obj is AnyInputElement {
         ElementType.CodeInput,
         ElementType.FunctionInput,
         ElementType.RichTextInput,
+        ElementType.ChipInput,
+        ElementType.DateTime,
+        ElementType.DateRange,
+        ElementType.TimeRange,
+        ElementType.DateTimeRange,
+        ElementType.MapPoint,
         ElementType.ReplicatingContainer,
     ].includes(obj.type);
 }

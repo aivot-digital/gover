@@ -35,4 +35,10 @@ export const ElementToMuiDataGridType: Record<ElementType, GridColType | null> =
     [ElementType.UiDefinitionInput]: null,
     [ElementType.IdentityInput]: null,
     [ElementType.TabLayout]: null,
+    [ElementType.ChipInput]: 'string',
+    [ElementType.DateTime]: 'string',
+    [ElementType.DateRange]: 'string',
+    [ElementType.TimeRange]: 'string',
+    [ElementType.DateTimeRange]: 'string',
+    [ElementType.MapPoint]: 'string',
 };

@@ -104,6 +104,14 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                         options.push(...element.options);
                     }
                     break;
+                case ElementType.ChipInput:
+                    if (element.suggestions != null) {
+                        options.push(...element.suggestions.map((value) => ({
+                            value,
+                            label: value,
+                        })));
+                    }
+                    break;
             }
         }
 

@@ -14,6 +14,12 @@ import {NumberFieldComponent} from '../../../components/number-field/number-fiel
 import {RadioFieldComponent} from '../../../components/radio-field/radio-field-component';
 import {SelectFieldComponent} from '../../../components/select-field/select-field-component';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
+import {ChipInputFieldComponent} from '../../../components/chip-input-field/chip-input-field-component';
+import {DateTimeFieldComponent} from '../../../components/date-time-field/date-time-field-component';
+import {DateRangeFieldComponent} from '../../../components/date-range-field/date-range-field-component';
+import {TimeRangeFieldComponent} from '../../../components/time-range-field/time-range-field-component';
+import {DateTimeRangeFieldComponent} from '../../../components/date-time-range-field/date-time-range-field-component';
+import {MapPointFieldComponent} from '../../../components/map-point-field/map-point-field-component';
 
 const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Alert]: (
@@ -537,6 +543,157 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                     onChange={() => {
                     }}
                     error="Fehler des Text-Elements"
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.ChipInput]: (
+        <Box>
+            <Typography>
+                Das Tag-Liste (Schlagwörter)-Element dient zur Erfassung mehrerer kurzer Freitext-Einträge, z. B. Schlagwörter
+                oder Stichpunkte.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <ChipInputFieldComponent
+                    label="Schlagwörter"
+                    value={['Wohnen', 'Familie']}
+                    onChange={() => {
+                    }}
+                    placeholder="Eintrag hinzufügen"
+                    hint="Drücken Sie Enter, um einen Eintrag zu übernehmen."
+                />
+            </Box>
+
+            <Box sx={{mt: 2}}>
+                <ChipInputFieldComponent
+                    label="Schlagwörter"
+                    value={[]}
+                    onChange={() => {
+                    }}
+                    error="Bitte geben Sie mindestens einen Eintrag an."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.DateTime]: (
+        <Box>
+            <Typography>
+                Das Datum und Uhrzeit-Element dient Ihnen dazu, einen konkreten Zeitpunkt abzufragen.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <DateTimeFieldComponent
+                    label="Datum und Uhrzeit"
+                    value={new Date().toISOString()}
+                    onChange={() => {
+                    }}
+                    hint="Bitte wählen Sie Datum und Uhrzeit."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.DateRange]: (
+        <Box>
+            <Typography>
+                Das Element „Datumsspanne“ ermöglicht die Erfassung eines Start- und Enddatums.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <DateRangeFieldComponent
+                    label="Datumsspanne"
+                    value={{
+                        start: new Date().toISOString(),
+                        end: new Date().toISOString(),
+                    }}
+                    onChange={() => {
+                    }}
+                    hint="Bitte geben Sie den Zeitraum an."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.TimeRange]: (
+        <Box>
+            <Typography>
+                Das Element „Zeitspanne“ ermöglicht die Erfassung einer Start- und Enduhrzeit.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <TimeRangeFieldComponent
+                    label="Zeitspanne"
+                    value={{
+                        start: new Date().toISOString(),
+                        end: new Date().toISOString(),
+                    }}
+                    onChange={() => {
+                    }}
+                    hint="Bitte geben Sie die Uhrzeitspanne an."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.DateTimeRange]: (
+        <Box>
+            <Typography>
+                Das Element „Datum- und Zeitspanne“ ermöglicht die Erfassung eines Start- und Endzeitpunkts.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <DateTimeRangeFieldComponent
+                    label="Datum- und Zeitspanne"
+                    value={{
+                        start: new Date().toISOString(),
+                        end: new Date().toISOString(),
+                    }}
+                    onChange={() => {
+                    }}
+                    hint="Bitte geben Sie den Zeitraum an."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.MapPoint]: (
+        <Box>
+            <Typography>
+                Das Kartenpunkt-Element ermöglicht die Erfassung eines Standorts auf einer Karte.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <MapPointFieldComponent
+                    label="Standort"
+                    value={{
+                        latitude: 52.52,
+                        longitude: 13.405,
+                        address: 'Berlin, Deutschland',
+                    }}
+                    onChange={() => {
+                    }}
+                    hint="Klicken Sie in die Karte oder suchen Sie nach einer Adresse."
                 />
             </Box>
         </Box>

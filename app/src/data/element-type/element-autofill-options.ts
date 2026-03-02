@@ -73,6 +73,12 @@ export const ElementAutofillMapping: Record<ElementType, string[]> = {
     [ElementType.UiDefinitionInput]: [],
     [ElementType.IdentityInput]: [],
     [ElementType.TabLayout]: [],
+    [ElementType.ChipInput]: [],
+    [ElementType.DateTime]: [],
+    [ElementType.DateRange]: [],
+    [ElementType.TimeRange]: [],
+    [ElementType.DateTimeRange]: [],
+    [ElementType.MapPoint]: [],
 };
 
 export const getAutofillOptionsForElementType = (elementType: ElementType) => {

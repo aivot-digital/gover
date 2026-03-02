@@ -34,6 +34,10 @@ export function generateComponentTitle(component: AnyElement | null | undefined)
             const height = component.height;
             return height != null && isStringNotNullOrEmpty(height) ? `${defaultElementDescriptor} (${height}px)` : defaultElementDescriptor;
         case ElementType.Date:
+        case ElementType.DateTime:
+        case ElementType.DateRange:
+        case ElementType.TimeRange:
+        case ElementType.DateTimeRange:
         case ElementType.Table:
         case ElementType.Radio:
         case ElementType.MultiCheckbox:
@@ -43,6 +47,8 @@ export function generateComponentTitle(component: AnyElement | null | undefined)
         case ElementType.Number:
         case ElementType.Text:
         case ElementType.FileUpload:
+        case ElementType.ChipInput:
+        case ElementType.MapPoint:
         case ElementType.ReplicatingContainer:
             return stringOrDefault(component.label, defaultElementDescriptor);
         default:

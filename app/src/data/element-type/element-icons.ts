@@ -21,6 +21,9 @@ import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import ChecklistOutlinedIcon from '@mui/icons-material/ChecklistOutlined';
 import TitleOutlinedIcon from '@mui/icons-material/TitleOutlined';
 import ExtensionOutlinedIcon from '@mui/icons-material/ExtensionOutlined';
+import CalendarClock from '@aivot/mui-material-symbols-400-outlined/dist/calendar-clock/CalendarClock';
+import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined';
+import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined';
 
 import {type SvgIcon} from '@mui/material';
 import {type AnyElement} from '../../models/elements/any-element';
@@ -59,6 +62,12 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.UiDefinitionInput]: UploadFileOutlinedIcon,
     [ElementType.IdentityInput]: UploadFileOutlinedIcon,
     [ElementType.TabLayout]: UploadFileOutlinedIcon,
+    [ElementType.ChipInput]: LocalOfferOutlinedIcon,
+    [ElementType.DateTime]: CalendarClock,
+    [ElementType.DateRange]: CalendarMonthOutlinedIcon,
+    [ElementType.TimeRange]: AccessTimeOutlinedIcon,
+    [ElementType.DateTimeRange]: CalendarClock,
+    [ElementType.MapPoint]: PlaceOutlinedIcon,
 };
 
 export function getElementIcon(element: AnyElement): typeof SvgIcon {
