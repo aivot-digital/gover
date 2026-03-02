@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.storage.entities.StorageIndexItemEntity;
 import de.aivot.GoverBackend.storage.entities.StorageIndexItemEntityId;
 import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
 import de.aivot.GoverBackend.storage.enums.StorageProviderStatus;
+import de.aivot.GoverBackend.storage.models.StorageDocument;
 import de.aivot.GoverBackend.storage.models.StorageFolder;
 import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
 import de.aivot.GoverBackend.storage.models.StorageProviderDefinition;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 @Service
@@ -152,6 +154,10 @@ public class StorageSyncService {
                                 .findById(StorageIndexItemEntityId.of(storageProvider.getId(), document.getPathFromRoot()))
                                 .orElse(null);
 
+                        var mimeType = knownExtensions
+                                .determineMimeType(document.getName())
+                                .orElse(MediaType.APPLICATION_OCTET_STREAM_VALUE);
+
                         if (docItem == null) {
                             docItem = new StorageIndexItemEntity(
                                     storageProvider.getId(),
@@ -166,22 +172,20 @@ public class StorageSyncService {
                                     LocalDateTime.now(),
                                     LocalDateTime.now()
                             );
+                            storageIndexItemRepository.save(docItem);
+                        } else if (hasDocumentIndexItemChanged(docItem, storageProvider, document, mimeType, filteredDocumentMetadata)) {
+                            docItem
+                                    .setStorageProviderType(storageProvider.getType())
+                                    .setMimeType(mimeType)
+                                    .setDirectory(false)
+                                    .setFilename(document.getName())
+                                    .setSizeInBytes(document.getSizeInBytes())
+                                    .setMissing(false)
+                                    .setMetadata(filteredDocumentMetadata)
+                                    .setUpdated(LocalDateTime.now());
+
+                            storageIndexItemRepository.save(docItem);
                         }
-
-                        var mimeType = knownExtensions
-                                .determineMimeType(document.getName())
-                                .orElse(MediaType.APPLICATION_OCTET_STREAM_VALUE);
-
-                        docItem
-                                .setStorageProviderType(storageProvider.getType())
-                                .setMimeType(mimeType)
-                                .setDirectory(false)
-                                .setFilename(document.getName())
-                                .setSizeInBytes(document.getSizeInBytes())
-                                .setMissing(false)
-                                .setMetadata(filteredDocumentMetadata);
-
-                        storageIndexItemRepository.save(docItem);
 
                         syncedPaths.add(docItem.getPathFromRoot());
                     }
@@ -245,5 +249,19 @@ public class StorageSyncService {
         }
 
         return filteredMetadata;
+    }
+
+    private static boolean hasDocumentIndexItemChanged(@Nonnull StorageIndexItemEntity existingItem,
+                                                       @Nonnull StorageProviderEntity storageProvider,
+                                                       @Nonnull StorageDocument document,
+                                                       @Nonnull String mimeType,
+                                                       @Nonnull StorageItemMetadata filteredDocumentMetadata) {
+        return !Objects.equals(existingItem.getStorageProviderType(), storageProvider.getType())
+                || !Objects.equals(existingItem.getMimeType(), mimeType)
+                || !Objects.equals(existingItem.getDirectory(), false)
+                || !Objects.equals(existingItem.getFilename(), document.getName())
+                || !Objects.equals(existingItem.getSizeInBytes(), document.getSizeInBytes())
+                || !Objects.equals(existingItem.getMissing(), false)
+                || !Objects.equals(existingItem.getMetadata(), filteredDocumentMetadata);
     }
 }
