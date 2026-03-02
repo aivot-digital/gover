@@ -251,7 +251,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
             }
         });
 
-        if (folder.getDocuments().isEmpty()) {
+        if (folder.getDocuments().isEmpty() && folder.getSubfolders().isEmpty()) {
             return Optional.empty();
         }
 
