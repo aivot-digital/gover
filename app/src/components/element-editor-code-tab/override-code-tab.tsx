@@ -4,7 +4,7 @@ import {CodeEditor} from '../code-editor/code-editor';
 import {OverrideCodeTabProps} from './override-code-tab-props';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-element-dialog';
-import {showSuccessSnackbar} from '../../slices/snackbar-slice';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {ReferenceCheck} from './components/reference-check/reference-check';
 import {createLowCodeContextType} from '../../utils/create-low-code-context-type';
@@ -172,7 +172,7 @@ export function OverrideCodeTab(props: OverrideCodeTabProps) {
                             if (success) {
                                 dispatch(showSuccessSnackbar('Element-ID kopiert'));
                             } else {
-                                dispatch(showSuccessSnackbar('Element-ID konnte nicht kopiert werden'));
+                                dispatch(showErrorSnackbar('Element-ID konnte nicht kopiert werden'));
                             }
                         });
                     }

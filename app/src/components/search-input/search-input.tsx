@@ -1,7 +1,7 @@
 import {Box, IconButton, InputAdornment, SxProps, TextField} from '@mui/material';
 import React from 'react';
-import ClearIcon from '@mui/icons-material/Clear';
-import SearchIcon from '@mui/icons-material/Search';
+import Search from '@aivot/mui-material-symbols-400-outlined/dist/search/Search';
+import Close from '@aivot/mui-material-symbols-400-outlined/dist/close/Close';
 
 export interface SearchInputProps {
     value: string;
@@ -115,7 +115,7 @@ export function SearchInput(props: SearchInputProps) {
                 InputProps={{
                     startAdornment: (
                         <InputAdornment position="start">
-                            <SearchIcon fontSize="small" />
+                            <Search fontSize="small" />
                         </InputAdornment>
                     ),
                     endAdornment: clearable && localValue.trim().length > 0 ? (
@@ -126,7 +126,7 @@ export function SearchInput(props: SearchInputProps) {
                                 disabled={props.disabled}
                                 aria-label="Suche löschen"
                             >
-                                <ClearIcon fontSize="small" />
+                                <Close fontSize="small" />
                             </IconButton>
                         </InputAdornment>
                     ) : undefined,

@@ -1,9 +1,9 @@
 import React from 'react';
 import {IconButton, SxProps, Theme, Tooltip} from '@mui/material';
-import ContentCopy from '@mui/icons-material/ContentCopyOutlined';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {copyToClipboardText} from '../../utils/copy-to-clipboard';
+import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
 
 interface CopyToClipboardButtonProps {
     text: string;
