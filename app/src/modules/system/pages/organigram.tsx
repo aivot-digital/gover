@@ -42,21 +42,47 @@ interface OrganigramUserItem extends User {
 }
 
 const MAX_VISIBLE_MEMBERS_PER_CARD = 3;
-const CARD_WIDTH_SX = {xs: '100%', lg: 420};
-const CARD_GRID_SX = {
-    display: 'flex',
-    flexWrap: 'wrap',
-    alignItems: 'flex-start',
+const CARD_MIN_WIDTH = 400;
+const CARD_MAX_WIDTH = 480;
+const CARD_GRID_BASE_SX = {
+    display: 'grid',
     gap: 2.5,
+    alignItems: 'start',
+};
+const CARD_GRID_PACKED_SX = {
+    ...CARD_GRID_BASE_SX,
+    gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${CARD_MIN_WIDTH}px), ${CARD_MAX_WIDTH}px))`,
+    justifyContent: 'start',
+};
+const CARD_GRID_FLUID_SX = {
+    ...CARD_GRID_BASE_SX,
+    gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${CARD_MIN_WIDTH}px), 1fr))`,
 };
 const ROOT_CARD_CONTAINER_SX = {
-    border: (theme: {palette: {divider: string}}) => `1px solid ${theme.palette.divider}`,
+    border: 1,
+    borderColor: 'divider',
     borderRadius: 3,
     p: 1.5,
     bgcolor: 'background.default',
-    width: CARD_WIDTH_SX,
-    flexShrink: 0,
 };
+
+function getCardGridSx(itemCount: number) {
+    return itemCount >= 3 ? CARD_GRID_FLUID_SX : CARD_GRID_PACKED_SX;
+}
+
+function getCardItemSx(itemCount: number) {
+    return {
+        width: '100%',
+        maxWidth: itemCount < 3 ? `${CARD_MAX_WIDTH}px` : undefined,
+    };
+}
+
+function getRootCardItemSx(itemCount: number) {
+    return {
+        ...ROOT_CARD_CONTAINER_SX,
+        ...getCardItemSx(itemCount),
+    };
+}
 
 function scopedKey(scopeId: number, userId: string): string {
     return `${scopeId}:${userId}`;
@@ -245,13 +271,13 @@ export function Organigram(): React.ReactElement {
                     ) : (
                         <Stack spacing={5} sx={{mt: 2.5, pb: 7}}>
                             <Box
-                                sx={CARD_GRID_SX}
+                                sx={getCardGridSx(rootDepartments.length)}
                             >
                                 {
                                     rootDepartments.map((dept) => (
                                         <Box
                                             key={dept.id}
-                                            sx={ROOT_CARD_CONTAINER_SX}
+                                            sx={getRootCardItemSx(rootDepartments.length)}
                                         >
                                             <DepartmentNode
                                                 department={dept}
@@ -268,7 +294,7 @@ export function Organigram(): React.ReactElement {
                                     Teams
                                 </Typography>
                                 <Box
-                                    sx={CARD_GRID_SX}
+                                    sx={getCardGridSx(teams.length)}
                                 >
                                     {
                                         teams.length === 0 ? (
@@ -279,10 +305,7 @@ export function Organigram(): React.ReactElement {
                                             teams.map((team) => (
                                                 <Box
                                                     key={team.id}
-                                                    sx={{
-                                                        width: CARD_WIDTH_SX,
-                                                        flexShrink: 0,
-                                                    }}
+                                                    sx={getCardItemSx(teams.length)}
                                                 >
                                                     <TeamNode
                                                         team={team}
@@ -304,11 +327,11 @@ export function Organigram(): React.ReactElement {
 function OrganigramLoadingSkeleton(): React.ReactElement {
     return (
         <Stack spacing={5} sx={{mt: 2.5, pb: 7}}>
-            <Box sx={CARD_GRID_SX}>
+            <Box sx={CARD_GRID_PACKED_SX}>
                 {[0, 1].map((index) => (
                     <Box
                         key={index}
-                        sx={ROOT_CARD_CONTAINER_SX}
+                        sx={getRootCardItemSx(2)}
                     >
                         <Skeleton variant="rounded" width="100%" height={248} />
                     </Box>
@@ -319,14 +342,11 @@ function OrganigramLoadingSkeleton(): React.ReactElement {
 
             <Box>
                 <Skeleton variant="text" width={100} height={34} sx={{mb: 2.5}} />
-                <Box sx={CARD_GRID_SX}>
+                <Box sx={CARD_GRID_PACKED_SX}>
                     {[0, 1].map((index) => (
                         <Box
                             key={index}
-                            sx={{
-                                width: CARD_WIDTH_SX,
-                                flexShrink: 0,
-                            }}
+                            sx={getCardItemSx(2)}
                         >
                             <Skeleton variant="rounded" width="100%" height={220} />
                         </Box>
@@ -656,7 +676,10 @@ function MembersList(props: MembersListProps): React.ReactElement {
             }}
         >
             {
-                visibleMembers.map((member) => (
+                visibleMembers.map((member) => {
+                    const memberName = resolveUserName(member);
+
+                    return (
                     <Box
                         key={member.id}
                         sx={{
@@ -685,7 +708,7 @@ function MembersList(props: MembersListProps): React.ReactElement {
                             >
                                 <ListItemAvatar sx={{minWidth: 36}}>
                                     <StringAvatar
-                                        name={resolveUserName(member)}
+                                        name={memberName}
                                         sx={{width: 28, height: 28, fontSize: 12}}
                                     />
                                 </ListItemAvatar>
@@ -694,7 +717,7 @@ function MembersList(props: MembersListProps): React.ReactElement {
                                     primary={(
                                         <Typography
                                             component="span"
-                                            title={resolveUserName(member)}
+                                            title={memberName}
                                             noWrap
                                             sx={{
                                                 display: 'block',
@@ -703,7 +726,7 @@ function MembersList(props: MembersListProps): React.ReactElement {
                                                 textOverflow: 'ellipsis',
                                             }}
                                         >
-                                            {resolveUserName(member)}
+                                            {memberName}
                                         </Typography>
                                     )}
                                     secondary={(
@@ -723,7 +746,8 @@ function MembersList(props: MembersListProps): React.ReactElement {
                         </ListItem>
 
                     </Box>
-                ))
+                );
+                })
             }
             {
                 hiddenCount > 0 &&
