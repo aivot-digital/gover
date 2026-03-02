@@ -133,18 +133,7 @@ public class StorageService {
         var doc = definition.retrieveDocument(config, path);
 
         doc.ifPresent(d -> {
-            var filteredMetadata = new StorageItemMetadata();
-            if (definition.getSupportsMetadataAttributes()) {
-                for (var ma : provider.getMetadataAttributes()) {
-                    if (d.getMetadata().containsKey(ma.getKey())) {
-                        filteredMetadata.put(
-                                ma.getKey(),
-                                d.getMetadata().get(ma.getKey())
-                        );
-                    }
-                }
-            }
-            d.setMetadata(filteredMetadata);
+            d.setMetadata(filterMetadataByRegisteredAttributes(provider, d.getMetadata()));
         });
 
         return doc;
@@ -192,21 +181,17 @@ public class StorageService {
 
         // Only respect metadata attributes if the provider definition supports them.
         // Additionally, filter out any metadata attributes that are not supported by the provider definition.
-        var filteredMetadata = new StorageItemMetadata();
-        if (definition.getSupportsMetadataAttributes()) {
-            for (var ma : provider.getMetadataAttributes()) {
-                if (metadata.containsKey(ma.getKey())) {
-                    filteredMetadata.put(
-                            ma.getKey(),
-                            metadata.get(ma.getKey())
-                    );
-                }
-            }
+        var filteredMetadata = filterMetadataByRegisteredAttributes(provider, metadata);
+        if (!definition.getSupportsMetadataAttributes()) {
+            filteredMetadata = StorageItemMetadata.empty();
         }
 
         // Store the document in the storage provider.
         var createdDocument = definition
                 .storeDocument(config, path, content, filteredMetadata);
+
+        var createdDocumentFilteredMetadata = filterMetadataByRegisteredAttributes(provider, createdDocument.getMetadata());
+        createdDocument.setMetadata(createdDocumentFilteredMetadata);
 
         // Create or update the index item for the stored document.
         var indexItem = new StorageIndexItemEntity(
@@ -220,7 +205,7 @@ public class StorageService {
                         .determineMimeType(createdDocument.getName())
                         .orElse(UNKNOWN_MIME_TYPE),
                 false,
-                createdDocument.getMetadata(),
+                createdDocumentFilteredMetadata,
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
@@ -292,5 +277,19 @@ public class StorageService {
                             e.getMessage()
                     );
         }
+    }
+
+    private static StorageItemMetadata filterMetadataByRegisteredAttributes(@Nonnull StorageProviderEntity provider,
+                                                                            @Nonnull StorageItemMetadata metadata) {
+        var filteredMetadata = new StorageItemMetadata();
+
+        for (var metadataAttribute : provider.getMetadataAttributes()) {
+            var key = metadataAttribute.getKey();
+            if (metadata.containsKey(key)) {
+                filteredMetadata.put(key, metadata.get(key));
+            }
+        }
+
+        return filteredMetadata;
     }
 }

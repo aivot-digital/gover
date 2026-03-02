@@ -97,6 +97,7 @@ public class StorageSyncService {
                 ));
 
         var root = getRoot(storageProvider, storageDefinition);
+        var supportsMetadataAttributes = storageDefinition.getSupportsMetadataAttributes();
 
         Set<String> syncedPaths = new HashSet<>();
 
@@ -143,6 +144,10 @@ public class StorageSyncService {
                     syncedPaths.add(folder.getPathFromRoot());
 
                     for (var document : folder.getDocuments()) {
+                        var filteredDocumentMetadata = supportsMetadataAttributes
+                                ? filterMetadataByRegisteredAttributes(storageProvider, document.getMetadata())
+                                : StorageItemMetadata.empty();
+
                         var docItem = storageIndexItemRepository
                                 .findById(StorageIndexItemEntityId.of(storageProvider.getId(), document.getPathFromRoot()))
                                 .orElse(null);
@@ -157,7 +162,7 @@ public class StorageSyncService {
                                     document.getSizeInBytes(),
                                     StorageService.UNKNOWN_MIME_TYPE,
                                     false,
-                                    document.getMetadata(),
+                                    filteredDocumentMetadata,
                                     LocalDateTime.now(),
                                     LocalDateTime.now()
                             );
@@ -174,7 +179,7 @@ public class StorageSyncService {
                                 .setFilename(document.getName())
                                 .setSizeInBytes(document.getSizeInBytes())
                                 .setMissing(false)
-                                .setMetadata(document.getMetadata());
+                                .setMetadata(filteredDocumentMetadata);
 
                         storageIndexItemRepository.save(docItem);
 
@@ -226,5 +231,19 @@ public class StorageSyncService {
 
         // Retrieve root folder recursively
         return def.rootFolder(config, true);
+    }
+
+    private static StorageItemMetadata filterMetadataByRegisteredAttributes(@Nonnull StorageProviderEntity provider,
+                                                                            @Nonnull StorageItemMetadata metadata) {
+        var filteredMetadata = new StorageItemMetadata();
+
+        for (var metadataAttribute : provider.getMetadataAttributes()) {
+            var key = metadataAttribute.getKey();
+            if (metadata.containsKey(key)) {
+                filteredMetadata.put(key, metadata.get(key));
+            }
+        }
+
+        return filteredMetadata;
     }
 }
