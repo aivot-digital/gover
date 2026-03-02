@@ -457,12 +457,13 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     }}
                 >
                     <NumberFieldComponent
-                        label="Maximale Dateigröße (in Megabytes)"
+                        label="Maximale Dateigröße (in MB)"
                         value={bytesToMegabytes(storageProvider.maxFileSizeInBytes)}
                         onChange={(mb) => handleInputChange('maxFileSizeInBytes')(megabytesToBytes(mb) as any)}
                         onBlur={(mb) => handleInputBlur('maxFileSizeInBytes')(megabytesToBytes(mb) as any)}
                         disabled={inputsDisabled}
                         error={errors.maxFileSizeInBytes}
+                        decimalPlaces={2}
                         suffix="MB"
                         hint='1 Megabyte entspricht 1.000 Kilobytes oder 1.000.000 Bytes.'
                     />
