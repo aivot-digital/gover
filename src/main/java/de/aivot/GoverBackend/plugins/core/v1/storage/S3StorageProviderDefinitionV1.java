@@ -208,6 +208,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 .builder()
                 .bucket(config.bucket)
                 .prefix(pathFromRoot.substring(1))
+                .includeUserMetadata(true)
                 .build();
 
         var objects = client
@@ -236,7 +237,10 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                         .ifPresent(folder::addSubfolder);
             } else {
                 var metadata = new StorageItemMetadata();
-                metadata.putAll(item.userMetadata());
+
+                if (item.userMetadata() != null) {
+                    metadata.putAll(item.userMetadata());
+                }
 
                 folder.addDocument(new StorageDocument(
                         "/" + item.objectName(),
