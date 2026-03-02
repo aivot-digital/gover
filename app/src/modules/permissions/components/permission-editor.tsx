@@ -31,6 +31,8 @@ import {PermissionLabelsDe} from '../../../data/permissions/permission-labels';
 import {PermissionApiService} from '../permission-api-service';
 
 import {AlertComponent} from '../../../components/alert/alert-component';
+import {Actions} from '../../../components/actions/actions';
+import {type Action} from '../../../components/actions/actions-props';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
@@ -361,6 +363,37 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
         }
     };
 
+    const toolbarActions: Action[] = [
+        {
+            tooltip: 'Alle auswählen',
+            ariaLabel: 'Alle auswählen',
+            icon: <SelectAll fontSize="small" />,
+            onClick: () => handleSelectAll(true, 'all'),
+            disabled: !isEditable || allKnownPermissions.length === 0,
+        },
+        {
+            tooltip: 'Alle abwählen',
+            ariaLabel: 'Alle abwählen',
+            icon: <Deselect fontSize="small" />,
+            onClick: () => handleSelectAll(false, 'all'),
+            disabled: !isEditable || selectedCount === 0,
+        },
+        {
+            tooltip: 'Gruppen mit Auswahl und Suchtreffern ausklappen',
+            ariaLabel: 'Gruppen mit Auswahl und Suchtreffern ausklappen',
+            icon: <UnfoldMoreIcon fontSize="small" />,
+            onClick: expandSelectedAndSearchMatchGroups,
+            disabled: permissions.length === 0,
+        },
+        {
+            tooltip: 'Alle einklappen',
+            ariaLabel: 'Alle einklappen',
+            icon: <UnfoldLessIcon fontSize="small" />,
+            onClick: () => expandAll(false, 'all'),
+            disabled: permissions.length === 0,
+        },
+    ];
+
     return (
         <Box sx={{mt: 3}}>
             <Stack
@@ -422,69 +455,13 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                         </span>
                     </Tooltip>
 
-                    <Tooltip
-                        title="Alle auswählen"
-                        arrow
-                    >
-                        <span>
-                          <IconButton
-                              aria-label="Alle auswählen"
-                              size="small"
-                              onClick={() => handleSelectAll(true, 'all')}
-                              disabled={isBusy || !isEditable || allKnownPermissions.length === 0}
-                          >
-                            <SelectAll fontSize="small" />
-                          </IconButton>
-                        </span>
-                    </Tooltip>
-
-                    <Tooltip
-                        title="Alle abwählen"
-                        arrow
-                    >
-                        <span>
-                          <IconButton
-                              aria-label="Alle abwählen"
-                              size="small"
-                              onClick={() => handleSelectAll(false, 'all')}
-                              disabled={isBusy || !isEditable || selectedCount === 0}
-                          >
-                            <Deselect fontSize="small" />
-                          </IconButton>
-                        </span>
-                    </Tooltip>
-
-                    <Tooltip
-                        title="Gruppen mit Auswahl und Suchtreffern ausklappen"
-                        arrow
-                    >
-                        <span>
-                          <IconButton
-                              aria-label="Gruppen mit Auswahl und Suchtreffern ausklappen"
-                              size="small"
-                              onClick={expandSelectedAndSearchMatchGroups}
-                              disabled={isBusy || permissions.length === 0}
-                          >
-                            <UnfoldMoreIcon fontSize="small" />
-                          </IconButton>
-                        </span>
-                    </Tooltip>
-
-                    <Tooltip
-                        title="Alle einklappen"
-                        arrow
-                    >
-                        <span>
-                          <IconButton
-                              aria-label="Alle einklappen"
-                              size="small"
-                              onClick={() => expandAll(false, 'all')}
-                              disabled={isBusy || permissions.length === 0}
-                          >
-                            <UnfoldLessIcon fontSize="small" />
-                          </IconButton>
-                        </span>
-                    </Tooltip>
+                    <Actions
+                        actions={toolbarActions}
+                        isBusy={isBusy}
+                        dense
+                        tooltipPlacement="bottom"
+                        size="small"
+                    />
 
                     {permissionQuery.trim() && (
                         <Button
