@@ -163,7 +163,11 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
         added.sort();
         removed.sort();
 
-        return {added, removed, hasChanges: added.length > 0 || removed.length > 0};
+        return {
+            added,
+            removed,
+            hasChanges: added.length > 0 || removed.length > 0,
+        };
     }, [originalPermissions, selectedPermissions]);
 
     const permissionSearchIndex = useMemo(() => {
@@ -322,7 +326,10 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
     const permissionMeta = useMemo(() => {
         const map = new Map<string, { label?: string; description?: string }>();
         for (const g of permissions) {
-            for (const p of g.permissions) map.set(p.permission, {label: p.label, description: p.description});
+            for (const p of g.permissions) map.set(p.permission, {
+                label: p.label,
+                description: p.description,
+            });
         }
         return map;
     }, [permissions]);
@@ -367,28 +374,28 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
         {
             tooltip: 'Alle auswählen',
             ariaLabel: 'Alle auswählen',
-            icon: <SelectAll fontSize="small" />,
+            icon: <SelectAll fontSize="small"/>,
             onClick: () => handleSelectAll(true, 'all'),
             disabled: !isEditable || allKnownPermissions.length === 0,
         },
         {
             tooltip: 'Alle abwählen',
             ariaLabel: 'Alle abwählen',
-            icon: <Deselect fontSize="small" />,
+            icon: <Deselect fontSize="small"/>,
             onClick: () => handleSelectAll(false, 'all'),
             disabled: !isEditable || selectedCount === 0,
         },
         {
             tooltip: 'Gruppen mit Auswahl und Suchtreffern ausklappen',
             ariaLabel: 'Gruppen mit Auswahl und Suchtreffern ausklappen',
-            icon: <UnfoldMoreIcon fontSize="small" />,
+            icon: <UnfoldMoreIcon fontSize="small"/>,
             onClick: expandSelectedAndSearchMatchGroups,
             disabled: permissions.length === 0,
         },
         {
             tooltip: 'Alle einklappen',
             ariaLabel: 'Alle einklappen',
-            icon: <UnfoldLessIcon fontSize="small" />,
+            icon: <UnfoldLessIcon fontSize="small"/>,
             onClick: () => expandAll(false, 'all'),
             disabled: permissions.length === 0,
         },
@@ -432,7 +439,7 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                               size="small"
                               onClick={() => setDiffDialogOpen(true)}
                               disabled={!diff.hasChanges}
-                              startIcon={<CompareArrows />}
+                              startIcon={<CompareArrows/>}
                           >
                             <Stack
                                 direction="row"
@@ -469,7 +476,7 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                             size="small"
                             onClick={openBulkMenu}
                             disabled={isBusy || permissions.length === 0}
-                            endIcon={<MoreVertIcon />}
+                            endIcon={<MoreVertIcon/>}
                         >
                             Gefiltert
                         </Button>
@@ -479,8 +486,14 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                         anchorEl={bulkMenuAnchorEl}
                         open={bulkMenuOpen}
                         onClose={closeBulkMenu}
-                        anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
-                        transformOrigin={{vertical: 'top', horizontal: 'right'}}
+                        anchorOrigin={{
+                            vertical: 'bottom',
+                            horizontal: 'right',
+                        }}
+                        transformOrigin={{
+                            vertical: 'top',
+                            horizontal: 'right',
+                        }}
                     >
                         <MenuItem
                             onClick={() => {
@@ -490,9 +503,9 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                             disabled={isBusy || !isEditable || visiblePermissions.length === 0}
                         >
                             <ListItemIcon>
-                                <SelectAll fontSize="small" />
+                                <SelectAll fontSize="small"/>
                             </ListItemIcon>
-                            <ListItemText primary="Sichtbare auswählen" />
+                            <ListItemText primary="Sichtbare auswählen"/>
                         </MenuItem>
 
                         <MenuItem
@@ -503,9 +516,9 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                             disabled={isBusy || !isEditable || visiblePermissions.length === 0}
                         >
                             <ListItemIcon>
-                                <Deselect fontSize="small" />
+                                <Deselect fontSize="small"/>
                             </ListItemIcon>
-                            <ListItemText primary="Sichtbare abwählen" />
+                            <ListItemText primary="Sichtbare abwählen"/>
                         </MenuItem>
                     </Menu>
                 </Stack>
@@ -529,14 +542,18 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                             onClick={() => setPermissionQuery('')}
                             aria-label="Suche löschen"
                         >
-                            <ClearIcon fontSize="small" />
+                            <ClearIcon fontSize="small"/>
                         </IconButton>
                     ) : undefined,
                 }}
-                sx={{mt: 1.5, mb: 2}}
+                sx={{
+                    mt: 1.5,
+                    mb: 2,
+                }}
             />
 
-            {filteredPermissionGroups.length === 0 && <AlertComponent color="info">Keine Berechtigungen gefunden.</AlertComponent>}
+            {filteredPermissionGroups.length === 0 &&
+                <AlertComponent color="info">Keine Berechtigungen gefunden.</AlertComponent>}
 
             <Stack spacing={2}>
                 {filteredPermissionGroups.map((group) => {
@@ -571,7 +588,8 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                 fullWidth
                 maxWidth="md"
             >
-                <DialogTitleWithClose onClose={() => setDiffDialogOpen(false)}>Änderungen an Berechtigungen</DialogTitleWithClose>
+                <DialogTitleWithClose onClose={() => setDiffDialogOpen(false)}>Änderungen an
+                                                                               Berechtigungen</DialogTitleWithClose>
                 <DialogContent>
                     {!diff.hasChanges ? (
                         <Typography

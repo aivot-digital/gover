@@ -63,7 +63,9 @@ export function PermissionGroupAccordion(props: PermissionGroupAccordionProps): 
             disableGutters
             sx={{
                 borderRadius: 2,
-                '&:before': {display: 'none'},
+                '&:before': {
+                    display: 'none',
+                },
                 border: '1px solid',
                 borderColor: 'divider',
                 boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
@@ -74,10 +76,16 @@ export function PermissionGroupAccordion(props: PermissionGroupAccordionProps): 
                     direction="row"
                     alignItems="center"
                     spacing={1.5}
-                    sx={{width: '100%', pr: 1}}
+                    sx={{
+                        width: '100%',
+                        pr: 1,
+                    }}
                 >
                     <Typography
-                        sx={{flex: 1, minWidth: 0}}
+                        sx={{
+                            flex: 1,
+                            minWidth: 0,
+                        }}
                         noWrap
                     >
                         {group.contextLabel}
@@ -120,7 +128,10 @@ export function PermissionGroupAccordion(props: PermissionGroupAccordionProps): 
                 <Box
                     sx={{
                         display: 'grid',
-                        gridTemplateColumns: {xs: '1fr', md: '1fr 1fr'},
+                        gridTemplateColumns: {
+                            xs: '1fr',
+                            md: '1fr 1fr',
+                        },
                         columnGap: 2,
                         rowGap: 2,
                     }}
@@ -140,31 +151,51 @@ export function PermissionGroupAccordion(props: PermissionGroupAccordionProps): 
                                     display: 'flex',
                                     alignItems: 'flex-start',
                                     gap: 1,
-                                    '&:hover': {backgroundColor: 'action.hover'},
+                                    '&:hover': {
+                                        backgroundColor: 'action.hover',
+                                    },
                                 }}
                             >
                                 <FormControlLabel
-                                    sx={{m: 0, flex: 1, alignItems: 'flex-start'}}
+                                    sx={{
+                                        m: 0,
+                                        flex: 1,
+                                        alignItems: 'flex-start',
+                                    }}
                                     control={(
                                         <Checkbox
                                             checked={checked}
                                             onChange={(_, next) => onTogglePermission(permission, next)}
                                             disabled={isBusy || !isEditable}
                                             size="small"
-                                            sx={{p: 0, pt: .25, pr: 1, m: 0}}
+                                            sx={{
+                                                p: 0,
+                                                pt: 0.25,
+                                                pr: 1,
+                                                m: 0,
+                                            }}
                                         />
                                     )}
                                     label={(
-                                        <Box sx={{width: '100%'}}>
+                                        <Box
+                                            sx={{
+                                                width: '100%',
+                                            }}
+                                        >
                                             <Stack
                                                 direction="row"
                                                 spacing={1}
                                                 alignItems="center"
-                                                sx={{minWidth: 0}}
+                                                sx={{
+                                                    minWidth: 0,
+                                                }}
                                             >
                                                 <Typography
                                                     variant="body2"
-                                                    sx={{flex: 1, minWidth: 0}}
+                                                    sx={{
+                                                        flex: 1,
+                                                        minWidth: 0,
+                                                    }}
                                                     noWrap
                                                 >
                                                     {label}
@@ -204,7 +235,9 @@ export function PermissionGroupAccordion(props: PermissionGroupAccordionProps): 
                                     direction="row"
                                     spacing={1}
                                     alignItems="center"
-                                    sx={{pt: 0.25}}
+                                    sx={{
+                                        pt: 0.25,
+                                    }}
                                 >
                                     {crud && (
                                         <Chip
