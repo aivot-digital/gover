@@ -122,7 +122,8 @@ export function CustomerListPage() {
                                     title="Unsere Formulare"
                                     search={search}
                                     onSearchChange={setSearch}
-                                    searchPlaceholder="Formular suchen…"
+                                    searchLabel="Formular suchen"
+                                    searchPlaceholder="Titel des Formulars eingeben…"
                                     actions={[]}
                                 />
 

@@ -14,6 +14,7 @@ export function TablePageWrapper<T extends GridValidRowModel>(props: PropsWithCh
         children,
 
         search,
+        searchLabel,
         searchPlaceholder,
         onSearchChange,
         actions,
@@ -32,6 +33,7 @@ export function TablePageWrapper<T extends GridValidRowModel>(props: PropsWithCh
                 onRowClick={onRowClick}
                 title={pageWrapperProps.title}
                 search={search}
+                searchLabel={searchLabel}
                 searchPlaceholder={searchPlaceholder}
                 onSearchChange={onSearchChange}
                 actions={actions}

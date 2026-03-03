@@ -30,6 +30,7 @@ import {AlertComponent} from '../../components/alert/alert-component';
 import Chip from '@mui/material/Chip';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {ElementData} from '../../models/element-data';
+import {copyToClipboardText} from '../../utils/copy-to-clipboard';
 
 interface PrefillFormDialogProps {
     open: boolean;
@@ -123,7 +124,10 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
         }
 
         try {
-            await navigator.clipboard.writeText(link);
+            const success = await copyToClipboardText(link);
+            if (!success) {
+                throw new Error('copy failed');
+            }
             dispatch(showSuccessSnackbar('Link wurde in die Zwischenablage kopiert!'));
         } catch {
             dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));

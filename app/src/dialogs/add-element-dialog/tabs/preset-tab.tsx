@@ -9,7 +9,7 @@ import {Link} from 'react-router-dom';
 import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
 import {useApi} from '../../../hooks/use-api';
 import {filterItems} from '../../../utils/filter-items';
-import {TextFieldComponent} from '../../../components/text-field/text-field-component';
+import {SearchInput} from '../../../components/search-input/search-input';
 import {PresetsApiService} from '../../../modules/presets/presets-api-service';
 import {PresetVersionApiService} from '../../../modules/presets/preset-version-api-service';
 
@@ -79,13 +79,11 @@ export function PresetTab(props: BaseTabProps) {
                         px: 4,
                     }}
                 >
-                    <TextFieldComponent
+                    <SearchInput
                         label="Vorlage suchen"
                         value={search}
-                        onChange={(val) => {
-                            setSearch(val ?? '');
-                        }}
-                        placeholder="Suchen…"
+                        onChange={setSearch}
+                        placeholder="Name der Vorlage eingeben"
                     />
                 </Box>
 

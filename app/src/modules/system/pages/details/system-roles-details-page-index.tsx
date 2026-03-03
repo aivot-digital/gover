@@ -1,34 +1,24 @@
-import {Box, Button, Table, TableBody, TableCell, TableContainer, TableRow, Typography} from '@mui/material';
+import {Box, Button, Typography} from '@mui/material';
 import React, {type ReactNode, useContext, useEffect, useMemo, useState} from 'react';
-import {
-    GenericDetailsPageContext,
-    type GenericDetailsPageContextType,
-} from '../../../../components/generic-details-page/generic-details-page-context';
+import {GenericDetailsPageContext, type GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useNavigate} from 'react-router-dom';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
-import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import * as yup from 'yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
-import {
-    addSnackbarMessage,
-    removeSnackbarMessage,
-    SnackbarSeverity,
-    SnackbarType,
-} from '../../../../slices/shell-slice';
-import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
-import {PermissionGroups} from '../../../../data/permissions/permission-groups';
-import {PermissionLabelsDe} from '../../../../data/permissions/permission-labels';
+import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import {type SystemRoleEntity} from '../../entities/system-role-entity';
 import {SystemRolesApiService} from '../../services/system-roles-api-service';
-import {PermissionApiService} from '../../../permissions/permission-api-service';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Grid from '@mui/material/Grid';
+import {PermissionEditor} from '../../../permissions/components/permission-editor';
+import {PermissionScope} from '../../../permissions/enums/permission-scope';
 
 export const SystemRoleSchema = yup.object({
     name: yup.string()
@@ -43,15 +33,6 @@ export const SystemRoleSchema = yup.object({
         .required('Die Beschreibung ist ein Pflichtfeld.'),
 });
 
-interface PermissionDetails {
-    contextLabel: string;
-    permissions: Array<{
-        permission: string;
-        label: string;
-        description: string;
-    }>;
-}
-
 export function SystemRolesDetailsPageIndex(): ReactNode {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
@@ -64,47 +45,22 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
         isEditable,
     } = useContext<GenericDetailsPageContextType<SystemRoleEntity, void>>(GenericDetailsPageContext);
 
-    const [permissions, setPermissions] = useState<PermissionDetails[]>([]);
-
     useEffect(() => {
         if (isEditable) {
             return;
         }
 
         dispatch(addSnackbarMessage({
-            key: 'access-denied-secrets-details',
-            message: 'Dieses Geheimnis kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff',
+            key: 'access-denied-system-roles-details',
+            message: 'Diese Systemrolle kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
             severity: SnackbarSeverity.Warning,
             type: SnackbarType.Dismissable,
         }));
 
         return () => {
-            dispatch(removeSnackbarMessage('access-denied-secrets-details'));
+            dispatch(removeSnackbarMessage('access-denied-system-roles-details'));
         };
     }, [isEditable]);
-
-    useEffect(() => {
-        new PermissionApiService()
-            .listPermissions()
-            .then((permissions: any[]) => {
-                setPermissions([
-                    ...PermissionGroups.map((group) => ({
-                        contextLabel: group.label,
-                        permissions: group
-                            .permissions
-                            .map((per) => ({
-                                label: PermissionLabelsDe[per],
-                                permission: per,
-                                description: '',
-                            })),
-                    })),
-                    ...permissions,
-                ]);
-            })
-            .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Beim Laden der Berechtigungen ist ein Fehler aufgetreten.'));
-            });
-    }, []);
 
     const {
         currentItem: editedSystemRole,
@@ -124,7 +80,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
 
     if (editedSystemRole == null) {
         return (
-            <GenericDetailsSkeleton/>
+            <GenericDetailsSkeleton />
         );
     }
 
@@ -142,15 +98,15 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
             if (editedSystemRole.id === 0) {
                 apiService
                     .create(editedSystemRole as any)
-                    .then((newSecret) => {
-                        setItem(newSecret);
+                    .then((newRole) => {
+                        setItem(newRole);
                         reset();
 
-                        dispatch(showSuccessSnackbar('Neues Geheimnis erfolgreich angelegt.'));
+                        dispatch(showSuccessSnackbar('Neue Systemrolle erfolgreich angelegt.'));
 
                         // use setTimeout instead of useEffect to prevent unnecessary rerender
                         setTimeout(() => {
-                            navigate(`/user-roles/${newSecret.id}`, {
+                            navigate(`/system-roles/${newRole.id}`, {
                                 replace: true,
                             })?.catch(console.error);
                         }, 0);
@@ -165,11 +121,11 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
             } else {
                 apiService
                     .update(editedSystemRole.id, editedSystemRole as any)
-                    .then((updatedSecret) => {
-                        setItem(updatedSecret);
+                    .then((updatedRole) => {
+                        setItem(updatedRole);
                         reset();
 
-                        dispatch(showSuccessSnackbar('Änderungen an Geheimnis erfolgreich gespeichert.'));
+                        dispatch(showSuccessSnackbar('Änderungen an der Systemrolle erfolgreich gespeichert.'));
                     })
                     .catch((err) => {
                         console.error(err);
@@ -190,14 +146,14 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                 .destroy(editedSystemRole.id)
                 .then(() => {
                     reset(); // prevent change blocker by resetting unsaved changes
-                    navigate('/secrets', {
+                    navigate('/system-roles', {
                         replace: true,
                     })?.catch(console.error);
-                    dispatch(showSuccessSnackbar('Das Geheimnis wurde erfolgreich gelöscht.'));
+                    dispatch(showSuccessSnackbar('Die Systemrolle wurde erfolgreich gelöscht.'));
                 })
                 .catch((err) => {
                     console.error(err);
-                    dispatch(showErrorSnackbar('Beim Löschen des Geheimnisses ist ein Fehler aufgetreten.'));
+                    dispatch(showErrorSnackbar('Beim Löschen der Systemrolle ist ein Fehler aufgetreten.'));
                     setIsBusy(false);
                 });
         }
@@ -205,85 +161,67 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
 
     return (
         <Box>
-            <TextFieldComponent
-                label="Name"
-                required
-                value={editedSystemRole.name}
-                onChange={handleInputChange('name')}
-                onBlur={handleInputBlur('name')}
-                disabled={isBusy || !isEditable}
-                error={errors.name}
-                minCharacters={3}
-                maxCharacters={64}
+            <Typography
+                variant="h5"
+                sx={{mt: 1.5, mb: 1}}
+            >
+                Systemrolle konfigurieren
+            </Typography>
+            <Typography sx={{mb: 3, maxWidth: 900}}>
+                Systemrollen definieren Berechtigungen für Benutzer:innen auf Systemebene.
+                Seien Sie vorsichtig bei der Vergabe von Berechtigungen, insbesondere bei solchen, die Zugriff auf sensible Daten oder kritische Funktionen ermöglichen.
+            </Typography>
+
+            <Grid
+                container
+                spacing={2}
+            >
+                <Grid
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
+                >
+                    <TextFieldComponent
+                        label="Name"
+                        required
+                        value={editedSystemRole.name}
+                        onChange={handleInputChange('name')}
+                        onBlur={handleInputBlur('name')}
+                        disabled={isBusy || !isEditable}
+                        error={errors.name}
+                        minCharacters={3}
+                        maxCharacters={64}
+                    />
+
+                    <TextFieldComponent
+                        label="Beschreibung"
+                        required
+                        value={editedSystemRole.description}
+                        onChange={handleInputChange('description')}
+                        onBlur={handleInputBlur('description')}
+                        multiline={true}
+                        disabled={isBusy || !isEditable}
+                        error={errors.description}
+                        minCharacters={3}
+                        maxCharacters={255}
+                    />
+                </Grid>
+            </Grid>
+
+            <PermissionEditor
+                originalPermissions={systemRole?.permissions ?? []}
+                value={editedSystemRole.permissions ?? []}
+                onChange={(next) => handleInputPatch({permissions: next})}
+                isBusy={isBusy}
+                isEditable={isEditable}
+                scope={PermissionScope.System}
             />
-
-            <TextFieldComponent
-                label="Beschreibung"
-                required
-                value={editedSystemRole.description}
-                onChange={handleInputChange('description')}
-                onBlur={handleInputBlur('description')}
-                multiline={true}
-                disabled={isBusy || !isEditable}
-                error={errors.description}
-                minCharacters={3}
-                maxCharacters={255}
-            />
-
-            <TableContainer>
-                <Table size="small">
-                    <TableBody>
-                        {
-                            permissions.map((group) => (
-                                <TableRow key={group.contextLabel}>
-                                    <TableCell>
-                                        {group.contextLabel}
-                                    </TableCell>
-
-                                    <TableCell>
-                                        {
-                                            group.permissions.map(({permission, label, description}) => (
-                                                <CheckboxFieldComponent
-                                                    key={permission}
-                                                    label={label}
-                                                    hint={description}
-                                                    value={editedSystemRole.permissions.includes(permission)}
-                                                    onChange={(val) => {
-                                                        let newPermissions = [...editedSystemRole.permissions];
-
-                                                        if (val) {
-                                                            // Add permission
-                                                            if (!newPermissions.includes(permission)) {
-                                                                newPermissions.push(permission);
-                                                            }
-                                                        } else {
-                                                            // Remove permission
-                                                            newPermissions = newPermissions.filter((perm) => perm !== permission);
-                                                        }
-
-                                                        handleInputPatch({
-                                                            permissions: newPermissions,
-                                                        });
-                                                    }}
-                                                    sx={{
-                                                        m: 0,
-                                                        p: 0,
-                                                    }}
-                                                />
-                                            ))
-                                        }
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        }
-                    </TableBody>
-                </Table>
-            </TableContainer>
 
             <Box
                 sx={{
                     display: 'flex',
-                    marginTop: 2,
+                    marginTop: 3,
                     gap: 2,
                 }}
             >
@@ -292,63 +230,50 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                     disabled={isBusy || hasNotChanged || !isEditable}
                     variant="contained"
                     color="primary"
-                    startIcon={<SaveOutlinedIcon/>}
+                    startIcon={<SaveOutlinedIcon />}
                 >
                     Speichern
                 </Button>
 
-                {
-                    editedSystemRole.id !== 0 &&
+                {editedSystemRole.id !== 0 && (
                     <Button
-                        onClick={() => {
-                            reset();
-                        }}
+                        onClick={() => reset()}
                         disabled={isBusy || hasNotChanged || !isEditable}
                         color="error"
                     >
                         Zurücksetzen
                     </Button>
-                }
+                )}
 
-                {
-                    editedSystemRole.id !== 0 &&
+                {editedSystemRole.id !== 0 && (
                     <Button
                         variant="outlined"
-                        onClick={() => {
-                            setShowConfirmDialog(true);
-                        }}
+                        onClick={() => setShowConfirmDialog(true)}
                         disabled={isBusy || !isEditable}
                         color="error"
-                        sx={{
-                            marginLeft: 'auto',
-                        }}
-                        startIcon={<Delete/>}
+                        sx={{marginLeft: 'auto'}}
+                        startIcon={<Delete />}
                     >
                         Löschen
                     </Button>
-                }
+                )}
             </Box>
 
             {changeBlocker.dialog}
 
             <ConfirmDialog
-                title="Geheimnis löschen"
-                onCancel={() => {
-                    setShowConfirmDialog(false);
-                }}
+                title="Systemrolle löschen"
+                onCancel={() => setShowConfirmDialog(false)}
                 onConfirm={showConfirmDialog ? handleDelete : undefined}
                 confirmationText={editedSystemRole.name ?? ''}
                 isDestructive
                 confirmButtonText="Ja, endgültig löschen"
             >
                 <Typography>
-                    Möchten Sie dieses Geheimnis wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+                    Möchten Sie diese Systemrolle wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
                 </Typography>
                 <AlertComponent color={'warning'}>
-                    Vergewissern Sie sich, dass dieses Geheimnis nicht mehr benötigt wird, bevor Sie fortfahren. Wir
-                    können nicht prüfen, ob es noch an Stellen wie Low-Code-Funktionen oder Konfigurationen von
-                    Zahlungsdienstleistern
-                    verwendet wird.
+                    Vergewissern Sie sich, dass die Systemrolle nicht mehr benötigt wird, bevor Sie fortfahren.
                 </AlertComponent>
             </ConfirmDialog>
         </Box>

@@ -7,7 +7,7 @@ import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {LoadingPlaceholder} from '../loading-placeholder/loading-placeholder';
 import {AlertComponent} from '../alert/alert-component';
 import {Link} from 'react-router-dom';
-import {TextFieldComponent} from '../text-field/text-field-component';
+import {SearchInput} from '../search-input/search-input';
 import ExtensionOutlinedIcon from '@mui/icons-material/ExtensionOutlined';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import {type StoreModuleListProps} from './store-module-list-props';
@@ -91,13 +91,11 @@ export function StoreModuleList(props: StoreModuleListProps) {
                         px: 4,
                     }}
                 >
-                    <TextFieldComponent
+                    <SearchInput
                         label="Modul suchen"
                         value={search}
-                        onChange={(val) => {
-                            setSearch(val ?? '');
-                        }}
-                        placeholder="Suchen…"
+                        onChange={setSearch}
+                        placeholder="Name des Moduls eingeben"
                     />
                 </Box>
 
