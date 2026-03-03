@@ -72,6 +72,11 @@ public class StorageProviderEntity {
     private Boolean readOnlyStorage;
 
     @Nonnull
+    @NotNull(message = "Die vorproduktive Eigenschaft des Speicheranbieters darf nicht null sein.")
+    @ColumnDefault("FALSE")
+    private Boolean testProvider;
+
+    @Nonnull
     @NotNull(message = "Die Konfiguration des Speicheranbieters darf nicht null sein.")
     @Column(columnDefinition = "jsonb")
     @Convert(converter = ElementDataConverter.class)
@@ -132,6 +137,7 @@ public class StorageProviderEntity {
                                  @Nonnull StorageProviderStatus status,
                                  @Nullable String statusMessage,
                                  @Nonnull Boolean readOnlyStorage,
+                                 @Nonnull Boolean testProvider,
                                  @Nonnull ElementData configuration,
                                  @Nonnull Long maxFileSizeInBytes,
                                  @Nonnull Boolean systemProvider,
@@ -151,6 +157,7 @@ public class StorageProviderEntity {
         this.configuration = configuration;
         this.maxFileSizeInBytes = maxFileSizeInBytes;
         this.systemProvider = systemProvider;
+        this.testProvider = testProvider;
         this.metadataAttributes = metadataAttributes;
         this.lastSync = lastSync;
         this.created = created;
@@ -165,12 +172,12 @@ public class StorageProviderEntity {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         StorageProviderEntity that = (StorageProviderEntity) o;
-        return Objects.equals(id, that.id) && Objects.equals(storageProviderDefinitionKey, that.storageProviderDefinitionKey) && Objects.equals(storageProviderDefinitionVersion, that.storageProviderDefinitionVersion) && Objects.equals(name, that.name) && Objects.equals(description, that.description) && type == that.type && status == that.status && Objects.equals(statusMessage, that.statusMessage) && Objects.equals(readOnlyStorage, that.readOnlyStorage) && Objects.equals(configuration, that.configuration) && Objects.equals(maxFileSizeInBytes, that.maxFileSizeInBytes) && Objects.equals(systemProvider, that.systemProvider) && Objects.equals(metadataAttributes, that.metadataAttributes) && Objects.equals(lastSync, that.lastSync) && Objects.equals(created, that.created) && Objects.equals(updated, that.updated);
+        return Objects.equals(id, that.id) && Objects.equals(storageProviderDefinitionKey, that.storageProviderDefinitionKey) && Objects.equals(storageProviderDefinitionVersion, that.storageProviderDefinitionVersion) && Objects.equals(name, that.name) && Objects.equals(description, that.description) && type == that.type && status == that.status && Objects.equals(statusMessage, that.statusMessage) && Objects.equals(readOnlyStorage, that.readOnlyStorage) && Objects.equals(testProvider, that.testProvider) && Objects.equals(configuration, that.configuration) && Objects.equals(maxFileSizeInBytes, that.maxFileSizeInBytes) && Objects.equals(systemProvider, that.systemProvider) && Objects.equals(metadataAttributes, that.metadataAttributes) && Objects.equals(lastSync, that.lastSync) && Objects.equals(created, that.created) && Objects.equals(updated, that.updated);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, storageProviderDefinitionKey, storageProviderDefinitionVersion, name, description, type, status, statusMessage, readOnlyStorage, configuration, maxFileSizeInBytes, systemProvider, metadataAttributes, lastSync, created, updated);
+        return Objects.hash(id, storageProviderDefinitionKey, storageProviderDefinitionVersion, name, description, type, status, statusMessage, readOnlyStorage, testProvider, configuration, maxFileSizeInBytes, systemProvider, metadataAttributes, lastSync, created, updated);
     }
 
     // endregion
@@ -264,6 +271,16 @@ public class StorageProviderEntity {
 
     public StorageProviderEntity setReadOnlyStorage(@Nonnull Boolean readOnly) {
         this.readOnlyStorage = readOnly;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getTestProvider() {
+        return testProvider;
+    }
+
+    public StorageProviderEntity setTestProvider(@Nonnull Boolean testProvider) {
+        this.testProvider = testProvider;
         return this;
     }
 

@@ -70,6 +70,8 @@ export const _StorageProviderSchema = {
         .required('Die maximale Dateigröße ist ein Pflichtfeld.'),
     readOnlyStorage: yup.boolean()
         .optional(),
+    isTestProvider: yup.boolean()
+        .default(false),
     metadataAttributes: yup.array()
         .of(
             yup.object({
@@ -456,6 +458,31 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         md: 6,
                     }}
                 >
+                    <CheckboxFieldComponent
+                        label="Es handelt sich um einen read-only Speicher, von welchem Dateien nur gelesen, aber nicht geschrieben werden können."
+                        value={storageProvider.readOnlyStorage}
+                        onChange={handleInputChange('readOnlyStorage')}
+                        variant="switch"
+                        error={errors.readOnlyStorage}
+                        disabled={inputsDisabled}
+                    />
+
+                    <CheckboxFieldComponent
+                        label="Es handelt sich um eine vorproduktive Konfiguration"
+                        value={storageProvider.testProvider}
+                        onChange={handleInputChange('testProvider')}
+                        variant="switch"
+                        error={errors.testProvider}
+                        disabled={inputsDisabled}
+                        hint="Gibt an, ob diese Konfiguration für eine Testinstanz bestimmt ist. Das System verhindert den Einsatz von Testkonfigurationen in der Live-Umgebung, um Fehlkonfigurationen zu vermeiden."
+                    />
+                </Grid>
+                <Grid
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
+                >
                     <NumberFieldComponent
                         label="Maximale Dateigröße (in MB)"
                         value={bytesToMegabytes(storageProvider.maxFileSizeInBytes)}
@@ -466,15 +493,6 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         decimalPlaces={2}
                         suffix="MB"
                         hint='1 Megabyte entspricht 1.000 Kilobytes oder 1.000.000 Bytes.'
-                    />
-
-                    <CheckboxFieldComponent
-                        label="Es handelt sich um einen read-only Speicher, von welchem Dateien nur gelesen, aber nicht geschrieben werden können."
-                        value={storageProvider.readOnlyStorage}
-                        onChange={handleInputChange('readOnlyStorage')}
-                        variant="switch"
-                        error={errors.readOnlyStorage}
-                        disabled={inputsDisabled}
                     />
                 </Grid>
             </Grid>
