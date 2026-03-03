@@ -153,13 +153,13 @@ public class AssetController {
         asset.setUploaderId(execUser.getId());
         asset.setContentType(file.getContentType() != null ? file.getContentType() : "application/octet-stream");
         asset.setPrivate(privateAsset != null ? privateAsset : true);
-        try {
-            asset.setFileBytes(file.getBytes());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
 
-        var createdAsset = assetService.create(asset, asset.getFileBytes(), storageProviderId);
+        AssetEntity createdAsset;
+        try {
+            createdAsset = assetService.create(asset, file.getInputStream(), storageProviderId);
+        } catch (IOException e) {
+            throw ResponseException.internalServerError(e, "Die Dateidaten des Uploads konnten nicht gelesen werden.");
+        }
 
         auditService.logAction(execUser, AuditAction.Create, AssetEntity.class, Map.of(
                 "key", createdAsset.getKey(),

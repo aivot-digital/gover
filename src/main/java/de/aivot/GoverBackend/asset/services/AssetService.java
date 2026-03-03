@@ -25,6 +25,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Comparator;
@@ -89,14 +90,19 @@ public class AssetService implements EntityService<AssetEntity, UUID> {
 
     @Nonnull
     public AssetEntity create(@Nonnull AssetEntity entity, @Nonnull byte[] fileBytes) throws ResponseException {
-        entity.setKey(UUID.randomUUID());
-        var defaultStorageProviderId = resolveStorageProviderId(null);
-        return create(entity, fileBytes, defaultStorageProviderId);
+        return create(entity, fileBytes, null);
     }
 
     @Nonnull
     public AssetEntity create(@Nonnull AssetEntity entity,
                               @Nonnull byte[] fileBytes,
+                              @Nullable Integer requestedStorageProviderId) throws ResponseException {
+        return create(entity, new ByteArrayInputStream(fileBytes), requestedStorageProviderId);
+    }
+
+    @Nonnull
+    public AssetEntity create(@Nonnull AssetEntity entity,
+                              @Nonnull InputStream fileContent,
                               @Nullable Integer requestedStorageProviderId) throws ResponseException {
         entity.setKey(UUID.randomUUID());
 
@@ -105,7 +111,7 @@ public class AssetService implements EntityService<AssetEntity, UUID> {
         var pathFromRoot = "/" + entity.getKey();
 
         var document = storageService
-                .storeDocument(storageProviderId, pathFromRoot, fileBytes, StorageItemMetadata.empty());
+                .storeDocument(storageProviderId, pathFromRoot, fileContent, StorageItemMetadata.empty());
 
         entity.setStorageProviderId(storageProviderId);
         entity.setStoragePathFromRoot(document.getPathFromRoot());

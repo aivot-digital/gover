@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.LinkedList;
 import java.util.Optional;
 
@@ -333,7 +334,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
 
     @Nonnull
     @Override
-    public StorageDocument storeDocument(@Nonnull Config config, @Nonnull String path, @Nonnull byte[] data, @Nonnull StorageItemMetadata metadata) {
+    public StorageDocument storeDocument(@Nonnull Config config, @Nonnull String path, @Nonnull InputStream data, @Nonnull StorageItemMetadata metadata) {
         // Check if the parent directory exists
         var documentPathReal = getSecurePath(config.getRealRootPath(), path);
         var parentDirectoryReal = documentPathReal.getParent();
@@ -347,10 +348,11 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
 
         // Write the data to the file
         try {
-            Files.write(sanitizedDocumentPathReal, data);
+            Files.copy(data, sanitizedDocumentPathReal, StandardCopyOption.REPLACE_EXISTING);
             var relativePathFromRoot = config.getRealRootPath().relativize(sanitizedDocumentPathReal).toString();
             relativePathFromRoot = toPrefixWithSlash(relativePathFromRoot);
-            return new StorageDocument(relativePathFromRoot, sanitizedFilename, (long) data.length, StorageItemMetadata.empty());
+            var fileSize = Files.size(sanitizedDocumentPathReal);
+            return new StorageDocument(relativePathFromRoot, sanitizedFilename, fileSize, StorageItemMetadata.empty());
         } catch (IOException e) {
             throw new StorageException(e,
                     "Fehler beim Speichern des Dokuments %s: %s.",

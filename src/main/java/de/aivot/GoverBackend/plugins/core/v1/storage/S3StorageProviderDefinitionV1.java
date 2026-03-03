@@ -314,9 +314,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
 
     @Nonnull
     @Override
-    public StorageDocument storeDocument(@Nonnull Config config, @Nonnull String path, @Nonnull byte[] data, @Nonnull StorageItemMetadata metadata) {
-        var inputStream = new ByteArrayInputStream(data);
-
+    public StorageDocument storeDocument(@Nonnull Config config, @Nonnull String path, @Nonnull InputStream data, @Nonnull StorageItemMetadata metadata) {
         var mimeType = knownExtensionsService
                 .determineMimeType(path)
                 .orElse(StorageService.UNKNOWN_MIME_TYPE);
@@ -333,7 +331,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 .builder()
                 .bucket(config.bucket)
                 .object(path.substring(1))
-                .stream(inputStream, data.length, -1)
+                .stream(data, -1, 10 * 1024 * 1024)
                 .userMetadata(userMetadata)
                 .contentType(mimeType)
                 .build();
@@ -348,12 +346,12 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
             throw new StorageException(e, "Das Dokument konnte nicht im S3-kompatiblen Speicher gespeichert werden.");
         }
 
-        return new StorageDocument(
+        return retrieveDocument(config, path).orElseGet(() -> new StorageDocument(
                 path,
                 StringUtils.getLastPathSegment(path),
-                (long) data.length,
+                0L,
                 metadata
-        );
+        ));
     }
 
     @Nonnull

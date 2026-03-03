@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.storage.services;
 import com.beust.jcommander.Strings;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.storage.exceptions.StorageException;
 import de.aivot.GoverBackend.storage.entities.StorageIndexItemEntity;
 import de.aivot.GoverBackend.storage.entities.StorageIndexItemEntityId;
 import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
@@ -17,6 +18,9 @@ import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayInputStream;
+import java.io.FilterInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -149,7 +153,7 @@ public class StorageService {
 
     public StorageDocument storeDocument(@Nonnull Integer providerId,
                                          @Nonnull String path,
-                                         @Nonnull byte[] content,
+                                         @Nonnull InputStream content,
                                          @Nonnull StorageItemMetadata metadata) throws ResponseException {
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
@@ -165,19 +169,7 @@ public class StorageService {
                     );
         }
 
-        // Check if the provider has a maximum file size defined and if the content exceeds it.
-        if (provider.getMaxFileSizeInBytes() != null &&
-                provider.getMaxFileSizeInBytes() != 0 &&
-                content.length > provider.getMaxFileSizeInBytes()) {
-            throw ResponseException
-                    .badRequest(
-                            "Der Speicheranbieter %s (ID %d) erlaubt Dateien mit einer maximalen Größe von %d Bytes. Die übermittelte Datei ist jedoch %d Bytes groß.",
-                            StringUtils.quote(provider.getName()),
-                            provider.getId(),
-                            provider.getMaxFileSizeInBytes(),
-                            content.length
-                    );
-        }
+        var limitedContent = withProviderFileSizeLimit(provider, content);
 
         // Only respect metadata attributes if the provider definition supports them.
         // Additionally, filter out any metadata attributes that are not supported by the provider definition.
@@ -187,8 +179,22 @@ public class StorageService {
         }
 
         // Store the document in the storage provider.
-        var createdDocument = definition
-                .storeDocument(config, path, content, filteredMetadata);
+        StorageDocument createdDocument;
+        try {
+            createdDocument = definition
+                    .storeDocument(config, path, limitedContent, filteredMetadata);
+        } catch (StorageException e) {
+            if (isCausedByMaxFileSizeExceeded(e)) {
+                throw ResponseException
+                        .badRequest(
+                                "Der Speicheranbieter %s (ID %d) erlaubt Dateien mit einer maximalen Größe von %d Bytes. Die übermittelte Datei überschreitet dieses Limit.",
+                                StringUtils.quote(provider.getName()),
+                                provider.getId(),
+                                provider.getMaxFileSizeInBytes()
+                        );
+            }
+            throw e;
+        }
 
         var createdDocumentFilteredMetadata = filterMetadataByRegisteredAttributes(provider, createdDocument.getMetadata());
         createdDocument.setMetadata(createdDocumentFilteredMetadata);
@@ -213,6 +219,13 @@ public class StorageService {
                 .save(indexItem);
 
         return createdDocument;
+    }
+
+    public StorageDocument storeDocument(@Nonnull Integer providerId,
+                                         @Nonnull String path,
+                                         @Nonnull byte[] content,
+                                         @Nonnull StorageItemMetadata metadata) throws ResponseException {
+        return storeDocument(providerId, path, new ByteArrayInputStream(content), metadata);
     }
 
     public void deleteDocument(@Nonnull Integer providerId, @Nonnull String path) throws ResponseException {
@@ -291,5 +304,68 @@ public class StorageService {
         }
 
         return filteredMetadata;
+    }
+
+    private static InputStream withProviderFileSizeLimit(@Nonnull StorageProviderEntity provider,
+                                                         @Nonnull InputStream content) {
+        var maxFileSize = provider.getMaxFileSizeInBytes() != null ? provider.getMaxFileSizeInBytes() : 0L;
+        if (maxFileSize <= 0) {
+            return content;
+        }
+
+        return new MaxFileSizeLimitedInputStream(content, maxFileSize);
+    }
+
+    private static boolean isCausedByMaxFileSizeExceeded(@Nonnull Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof MaxFileSizeExceededIOException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    private static final class MaxFileSizeExceededIOException extends IOException {
+        private MaxFileSizeExceededIOException() {
+            super("InputStream exceeds configured max file size.");
+        }
+    }
+
+    private static final class MaxFileSizeLimitedInputStream extends FilterInputStream {
+        private final long maxFileSizeInBytes;
+        private long bytesRead;
+
+        private MaxFileSizeLimitedInputStream(@Nonnull InputStream in, long maxFileSizeInBytes) {
+            super(in);
+            this.maxFileSizeInBytes = maxFileSizeInBytes;
+            this.bytesRead = 0;
+        }
+
+        @Override
+        public int read() throws IOException {
+            int value = super.read();
+            if (value != -1) {
+                incrementAndValidate(1);
+            }
+            return value;
+        }
+
+        @Override
+        public int read(@Nonnull byte[] b, int off, int len) throws IOException {
+            int read = super.read(b, off, len);
+            if (read > 0) {
+                incrementAndValidate(read);
+            }
+            return read;
+        }
+
+        private void incrementAndValidate(int delta) throws IOException {
+            bytesRead += delta;
+            if (bytesRead > maxFileSizeInBytes) {
+                throw new MaxFileSizeExceededIOException();
+            }
+        }
     }
 }
