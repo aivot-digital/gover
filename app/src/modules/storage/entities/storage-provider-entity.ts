@@ -24,5 +24,5 @@ export interface StorageProviderEntity {
     metadataAttributes: StorageProviderMetadataAttribute[];
     created: string; // ISO date string
     updated: string; // ISO date string
-    lastSync: string; // ISO date string
+    lastSync?: string | null; // ISO date string
 }
