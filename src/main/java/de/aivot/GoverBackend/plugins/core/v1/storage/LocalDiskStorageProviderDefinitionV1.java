@@ -361,8 +361,8 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
 
     @Nonnull
     @Override
-    public Optional<StorageDocument> retrieveDocument(@Nonnull Config config, @Nonnull String path) {
-        var documentPathReal = getSecurePath(config.getRealRootPath(), path);
+    public Optional<StorageDocument> retrieveDocument(@Nonnull Config config, @Nonnull String pathFromRoot) throws StorageException {
+        var documentPathReal = getSecurePath(config.getRealRootPath(), pathFromRoot);
         if (!Files.exists(documentPathReal) || !Files.isRegularFile(documentPathReal)) {
             return Optional.empty();
         }
@@ -373,7 +373,10 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
         try {
             size =  Files.size(documentPathReal);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new StorageException(e,
+                    "Fehler beim Lesen des Dokuments %s: %s.",
+                    StringUtils.quote(pathFromRoot),
+                    e.getMessage());
         }
 
         var document = new StorageDocument(relativePathFromRoot, documentPathReal.getFileName().toString(), size, StorageItemMetadata.empty());
