@@ -12,6 +12,7 @@ create table storage_providers
     configuration                       jsonb        not null default '{}',
     max_file_size_in_bytes              bigint       not null default 0,
     system_provider                     boolean      not null default false,
+    test_provider                       boolean      not null default false,
     metadata_attributes                 jsonb        not null default '[]'::jsonb,
     last_sync                           timestamp    null,
     created                             timestamp    not null default now(),

@@ -21,6 +21,7 @@ export interface StorageProviderEntity {
     configuration: ElementData;
     maxFileSizeInBytes: number;
     systemProvider: boolean;
+    testProvider: boolean;
     metadataAttributes: StorageProviderMetadataAttribute[];
     created: string; // ISO date string
     updated: string; // ISO date string
