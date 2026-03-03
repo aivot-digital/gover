@@ -2,7 +2,7 @@ import {GenericListPage} from '../../../components/generic-list-page/generic-lis
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Stack, Typography} from '@mui/material';
-import {DownloadOutlined, EditOutlined} from '@mui/icons-material';
+import {DownloadOutlined, EditOutlined, VisibilityOutlined} from '@mui/icons-material';
 import React, {useEffect, useMemo, useState} from 'react';
 import {CellLink} from '../../../components/cell-link/cell-link';
 import {Asset} from '../models/asset';
@@ -38,10 +38,12 @@ export function AssetListPage() {
     }, [storageProviderId]);
 
     const [storageProviderName, setStorageProviderName] = useState<string>();
+    const [storageProviderReadOnly, setStorageProviderReadOnly] = useState(false);
 
     useEffect(() => {
         if (parsedStorageProviderId == null) {
             setStorageProviderName(undefined);
+            setStorageProviderReadOnly(false);
             return;
         }
 
@@ -49,9 +51,11 @@ export function AssetListPage() {
             .retrieve(parsedStorageProviderId)
             .then((provider) => {
                 setStorageProviderName(provider.name);
+                setStorageProviderReadOnly(provider.readOnlyStorage);
             })
             .catch((err) => {
                 setStorageProviderName(undefined);
+                setStorageProviderReadOnly(false);
                 dispatch(showApiErrorSnackbar(err, 'Der Speicheranbieter konnte nicht geladen werden.'));
             });
     }, [dispatch, parsedStorageProviderId]);
@@ -78,6 +82,8 @@ export function AssetListPage() {
                             label: 'Datei hochladen',
                             icon: <AddOutlinedIcon />,
                             tooltip: 'Neues Dokument oder Medieninhalt anlegen',
+                            disabledTooltip: 'Der ausgewählte Speicheranbieter ist schreibgeschützt.',
+                            disabled: storageProviderReadOnly,
                             to: uploadRoute,
                             variant: 'contained',
                         },
@@ -138,7 +144,7 @@ export function AssetListPage() {
                         renderCell: (params) => (
                             <CellLink
                                 to={parsedStorageProviderId != null ? `/assets/providers/${parsedStorageProviderId}/${params.id}` : `/assets/${params.id}`}
-                                title={`Datei bearbeiten`}
+                                title={storageProviderReadOnly ? 'Datei ansehen' : 'Datei bearbeiten'}
                             >
                                 {String(params.value)}
                             </CellLink>
@@ -188,9 +194,9 @@ export function AssetListPage() {
                 rowActionsCount={3}
                 rowActions={(item: Asset) => [
                     {
-                        icon: <EditOutlined />,
+                        icon: storageProviderReadOnly ? <VisibilityOutlined /> : <EditOutlined />,
                         to: parsedStorageProviderId != null ? `/assets/providers/${parsedStorageProviderId}/${item.key}` : `/assets/${item.key}`,
-                        tooltip: 'Datei bearbeiten',
+                        tooltip: storageProviderReadOnly ? 'Datei ansehen' : 'Datei bearbeiten',
                     },
                     {
                         icon: <ContentPasteOutlinedIcon />,

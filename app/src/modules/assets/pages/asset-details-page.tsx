@@ -4,26 +4,61 @@ import {GenericDetailsPage} from '../../../components/generic-details-page/gener
 import {Asset} from '../models/asset';
 import {AssetsApiService} from '../assets-api-service';
 import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
-import React, {useMemo} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
 import {useParams} from 'react-router-dom';
+import {StorageProvidersApiService} from '../../storage/storage-providers-api-service';
+import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 
 export function AssetDetailsPage() {
+    const dispatch = useAppDispatch();
     const {storageProviderId} = useParams<{ storageProviderId: string }>();
+    const [storageProviderReadOnly, setStorageProviderReadOnly] = useState(false);
+
+    const parsedStorageProviderId = useMemo(() => {
+        if (storageProviderId == null) {
+            return undefined;
+        }
+
+        const parsed = Number.parseInt(storageProviderId, 10);
+        if (Number.isNaN(parsed) || parsed <= 0) {
+            return undefined;
+        }
+
+        return parsed;
+    }, [storageProviderId]);
+
+    useEffect(() => {
+        if (parsedStorageProviderId == null) {
+            setStorageProviderReadOnly(false);
+            return;
+        }
+
+        new StorageProvidersApiService()
+            .retrieve(parsedStorageProviderId)
+            .then((provider) => {
+                setStorageProviderReadOnly(provider.readOnlyStorage);
+            })
+            .catch((err) => {
+                setStorageProviderReadOnly(false);
+                dispatch(showApiErrorSnackbar(err, 'Der Speicheranbieter konnte nicht geladen werden.'));
+            });
+    }, [dispatch, parsedStorageProviderId]);
 
     const parentRoute = `/assets/providers/${storageProviderId}`;
     const detailsPath = `/assets/providers/${storageProviderId}/:key`;
 
     return (
         <PageWrapper
-            title="Datei bearbeiten"
+            title={storageProviderReadOnly ? 'Datei ansehen' : 'Datei bearbeiten'}
             fullWidth
             background
         >
             <GenericDetailsPage<Asset, string, undefined>
                 header={{
                     icon: <InsertDriveFileOutlinedIcon />,
-                    title: 'Datei bearbeiten',
+                    title: storageProviderReadOnly ? 'Datei ansehen' : 'Datei bearbeiten',
                     helpDialog: {
                         title: 'Hilfe zu Dokumenten & Medieninhalten',
                         tooltip: 'Hilfe anzeigen',
@@ -59,8 +94,14 @@ export function AssetDetailsPage() {
                 }}
                 getHeaderTitle={(item, isNewItem, notFound) => {
                     if (notFound) return "Datei nicht gefunden";
-                    if (isNewItem) return "Neue Datei hochladen";
-                    return `Datei: ${item?.filename ?? "Unbenannt"}`;
+                    if (isNewItem) {
+                        return storageProviderReadOnly
+                            ? "Datei hochladen nicht möglich (schreibgeschützt)"
+                            : "Neue Datei hochladen";
+                    }
+                    return storageProviderReadOnly
+                        ? `Datei ansehen: ${item?.filename ?? "Unbenannt"}`
+                        : `Datei: ${item?.filename ?? "Unbenannt"}`;
                 }}
                 idParam="key"
                 parentLink={{
@@ -68,6 +109,7 @@ export function AssetDetailsPage() {
                     to: parentRoute,
                 }}
                 entityType={ServerEntityType.Assets}
+                isEditable={() => !storageProviderReadOnly}
             />
         </PageWrapper>
     );

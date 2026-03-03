@@ -50,6 +50,7 @@ export function AssetDetailsPageIndex() {
         setItem,
         isBusy,
         setIsBusy,
+        isEditable,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<Asset, undefined>;
 
     const {
@@ -81,6 +82,8 @@ export function AssetDetailsPageIndex() {
     const parentRoute = parsedStorageProviderId != null
         ? `/assets/providers/${parsedStorageProviderId}`
         : '/assets';
+    const isReadOnlyStorageProvider = !isEditable;
+    const readOnlyHint = 'Der ausgewählte Speicheranbieter ist schreibgeschützt. Änderungen sind nicht möglich.';
 
     const combinedEditedState = {
         ...currentItem,
@@ -128,6 +131,11 @@ export function AssetDetailsPageIndex() {
     const handleSubmit = (event: FormEvent): void => {
         event.preventDefault();
 
+        if (isReadOnlyStorageProvider) {
+            dispatch(showErrorSnackbar(readOnlyHint));
+            return;
+        }
+
         if (file == null || file.length === 0) {
             return;
         }
@@ -174,6 +182,10 @@ export function AssetDetailsPageIndex() {
 
     const handleSave = () => {
         if (asset != null) {
+            if (isReadOnlyStorageProvider) {
+                dispatch(showErrorSnackbar(readOnlyHint));
+                return;
+            }
 
             const validationResult = validate();
 
@@ -203,6 +215,11 @@ export function AssetDetailsPageIndex() {
     };
 
     const confirmDelete = () => {
+        if (isReadOnlyStorageProvider) {
+            dispatch(showErrorSnackbar(readOnlyHint));
+            return;
+        }
+
         if (asset.key === '') return;
 
         setIsBusy(true);
@@ -231,13 +248,18 @@ export function AssetDetailsPageIndex() {
                     </Typography>
 
                     <Typography sx={{mb: 2, maxWidth: 900}}>
-                        Wählen Sie eine einzelne Datei zum Hochladen aus oder ziehen Sie die Datei in das Feld.
+                        {isReadOnlyStorageProvider
+                            ? readOnlyHint
+                            : 'Wählen Sie eine einzelne Datei zum Hochladen aus oder ziehen Sie die Datei in das Feld.'}
                     </Typography>
 
                     <FileUploadComponent
                         id="asset-upload"
                         value={file}
                         onChange={file => {
+                            if (isReadOnlyStorageProvider) {
+                                return;
+                            }
                             setFile(file);
                             setUploadError(undefined);
                         }}
@@ -247,6 +269,8 @@ export function AssetDetailsPageIndex() {
                         maxFiles={1}
                         required={true}
                         error={uploadError}
+                        disabled={isReadOnlyStorageProvider}
+                        hint={isReadOnlyStorageProvider ? readOnlyHint : undefined}
                     />
                 </>
             }
@@ -261,7 +285,9 @@ export function AssetDetailsPageIndex() {
                     </Typography>
 
                     <Typography sx={{mb: 2, maxWidth: 900}}>
-                        Bearbeiten Sie den Dateinamen und sehen Sie ergänzende Informationen ein, wie z. B. den öffentlichen Link zur Datei.
+                        {isReadOnlyStorageProvider
+                            ? 'Der Speicheranbieter ist schreibgeschützt. Sie können Dateiinformationen einsehen, aber nicht bearbeiten.'
+                            : 'Bearbeiten Sie den Dateinamen und sehen Sie ergänzende Informationen ein, wie z. B. den öffentlichen Link zur Datei.'}
                     </Typography>
 
                     <Grid
@@ -278,6 +304,7 @@ export function AssetDetailsPageIndex() {
                                 value={asset?.filename}
                                 onChange={handleInputChange('filename')}
                                 onBlur={handleInputBlur('filename')}
+                                disabled={isReadOnlyStorageProvider}
                                 required
                                 maxCharacters={255}
                                 minCharacters={1}
@@ -309,6 +336,7 @@ export function AssetDetailsPageIndex() {
                             label="Öffentlichen (nicht authentifizierten) Zugriff zulassen"
                             value={!asset.isPrivate}
                             onChange={(val) => handleInputChange('isPrivate')(!val)}
+                            disabled={isReadOnlyStorageProvider}
                             variant="switch"
                             hint="Wenn diese Option aktiviert ist, kann die Datei über einen öffentlichen Link ohne Authentifizierung abgerufen werden.
                                     Nutzen Sie diese Option nur für Dateien, die öffentlich sein müssen und niemals für sicherheitsrelevante
@@ -350,12 +378,12 @@ export function AssetDetailsPageIndex() {
             >
                 <Button
                     onClick={asset?.filename !== '' ? handleSave : handleSubmit}
-                    disabled={isBusy || (file == null && hasNotChanged)}
+                    disabled={isBusy || isReadOnlyStorageProvider || (file == null && hasNotChanged)}
                     variant="contained"
                     color="primary"
                     startIcon={<SaveOutlinedIcon />}
                 >
-                    Speichern
+                    {isReadOnlyStorageProvider ? 'Nur Ansicht' : 'Speichern'}
                 </Button>
 
                 {
@@ -364,7 +392,7 @@ export function AssetDetailsPageIndex() {
                         onClick={() => {
                             reset();
                         }}
-                        disabled={isBusy || hasNotChanged}
+                        disabled={isBusy || isReadOnlyStorageProvider || hasNotChanged}
                         color="error"
                     >
                         Zurücksetzen
@@ -376,7 +404,7 @@ export function AssetDetailsPageIndex() {
                     <Button
                         variant={'outlined'}
                         onClick={() => setConfirmDeleteAction(() => confirmDelete)}
-                        disabled={isBusy}
+                        disabled={isBusy || isReadOnlyStorageProvider}
                         color="error"
                         sx={{
                             marginLeft: 'auto',
