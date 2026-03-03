@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.plugins.core.v1.payment;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.common.contenttype.ContentType;
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
+import de.aivot.GoverBackend.asset.services.AssetService;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
@@ -21,7 +22,7 @@ import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentTransaction;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
 import de.aivot.GoverBackend.secrets.services.SecretService;
-import de.aivot.GoverBackend.services.storages.AssetStorageService;
+import de.aivot.GoverBackend.storage.services.StorageService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -50,13 +51,14 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
     private final static String CERTIFICATE_PASSWORD_FIELD = "certificatePassword";
     private final static String PAYMENT_TRANSACTION_URL_FIELD = "paymentTransactionUrl";
 
-    // TODO: Replace with special asset service when the service exists
     private final AssetRepository assetRepository;
     private final SecretService secretService;
-    private final AssetStorageService assetStorageService;
+    private final AssetService assetStorageService;
 
     @Autowired
-    public ePayBLPaymentProviderDefinitionV1(AssetRepository assetRepository, SecretService secretService, AssetStorageService assetStorageService) {
+    public ePayBLPaymentProviderDefinitionV1(AssetRepository assetRepository,
+                                             SecretService secretService,
+                                             AssetService assetStorageService) {
         this.assetRepository = assetRepository;
         this.secretService = secretService;
         this.assetStorageService = assetStorageService;
@@ -416,7 +418,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
         byte[] paymentProviderClientCertBytes;
         try {
             paymentProviderClientCertBytes = assetStorageService
-                    .getAssetData(paymentProviderClientCertAsset);
+                    .getAssetContentBytes(paymentProviderClientCertAsset);
         } catch (ResponseException e) {
             throw new PaymentException(e, "Failed to retrieve certificate for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }

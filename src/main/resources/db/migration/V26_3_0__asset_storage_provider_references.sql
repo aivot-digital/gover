@@ -1,16 +1,10 @@
+-- drop the not null constraint on the uploader_id column in the assets table.
 -- add two new columns to the assets table to reference the storage provider and path from the root.
+-- link the new columns to the storage_index_items table.
 alter table assets
-    add column if not exists storage_provider_id    integer null,
-    add column if not exists storage_path_from_root text    null;
-
--- link the two columns to the storage_index_items table to reference the real stored files.
-alter table assets
+    alter column uploader_id drop not null,
     add column storage_provider_id    integer null,
     add column storage_path_from_root text    null,
-    alter column uploader_id drop not null;
-
--- add foreign key constraint for the storage provider index item.
-alter table assets
     add foreign key (storage_provider_id, storage_path_from_root) references storage_index_items (storage_provider_id, path_from_root);
 
 -- copy all assets to the default asset storage provider and mark them as missing.

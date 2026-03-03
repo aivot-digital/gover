@@ -159,7 +159,7 @@ public class AssetController {
             throw new RuntimeException(e);
         }
 
-        var createdAsset = assetService.create(asset, storageProviderId);
+        var createdAsset = assetService.create(asset, asset.getFileBytes(), storageProviderId);
 
         auditService.logAction(execUser, AuditAction.Create, AssetEntity.class, Map.of(
                 "key", createdAsset.getKey(),

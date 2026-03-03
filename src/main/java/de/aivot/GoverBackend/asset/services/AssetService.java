@@ -11,7 +11,6 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
 import de.aivot.GoverBackend.models.config.GoverConfig;
-import de.aivot.GoverBackend.services.storages.AssetStorageService;
 import de.aivot.GoverBackend.storage.enums.StorageProviderType;
 import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
 import de.aivot.GoverBackend.storage.repositories.StorageIndexItemRepository;
@@ -26,6 +25,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -35,34 +36,25 @@ import java.util.stream.Collectors;
 @Service
 public class AssetService implements EntityService<AssetEntity, UUID> {
     private final GoverConfig goverConfig;
-    private final StorageService storageService;
     private final SystemConfigRepository systemConfigRepository;
     private final AssetRepository repository;
-    private final StorageService storageService;
     private final StorageIndexItemRepository storageIndexItemRepository;
     private final StorageProviderRepository storageProviderRepository;
-    private final SystemConfigRepository systemConfigRepository;
-    private final AssetStorageService assetStorageService;
+    private final StorageService storageService;
 
     @Autowired
     public AssetService(GoverConfig goverConfig,
-                        StorageService storageService,
                         SystemConfigRepository systemConfigRepository,
                         AssetRepository repository,
-                        StorageService storageService,
                         StorageIndexItemRepository storageIndexItemRepository,
                         StorageProviderRepository storageProviderRepository,
-                        SystemConfigRepository systemConfigRepository,
-                        AssetStorageService assetStorageService) {
+                        StorageService storageService) {
         this.goverConfig = goverConfig;
-        this.storageService = storageService;
-        this.systemConfigRepository = systemConfigRepository;
         this.repository = repository;
-        this.storageService = storageService;
         this.storageIndexItemRepository = storageIndexItemRepository;
         this.storageProviderRepository = storageProviderRepository;
         this.systemConfigRepository = systemConfigRepository;
-        this.assetStorageService = assetStorageService;
+        this.storageService = storageService;
     }
 
     @Nonnull
@@ -83,19 +75,10 @@ public class AssetService implements EntityService<AssetEntity, UUID> {
             throw ResponseException.badRequest("Der Inhalt des Assets fehlt.");
         }
 
-        var extension = StringUtils
-                .extractExtensionFromFileName(entity.getFilename())
-                .orElse("dat");
-
-        var folder = storageService.createFolder(defaultStorageProviderId, "/assets");
-        var filePath = folder.resolvePath(String.format(
-                "%s.%s",
-                entity.getKey(),
-                extension
-        ));
-
-        var doc = storageService
-                .storeDocument(defaultStorageProviderId, filePath, entity.getFileBytes(), StorageItemMetadata.empty());
+        var doc = storageService.storeDocument(defaultStorageProviderId,
+                entity.getStoragePathFromRoot(),
+                entity.getFileBytes(),
+                StorageItemMetadata.empty());
 
         entity
                 .setStorageProviderId(defaultStorageProviderId)
@@ -133,7 +116,6 @@ public class AssetService implements EntityService<AssetEntity, UUID> {
     @Override
     public void performDelete(@Nonnull AssetEntity asset) throws ResponseException {
         storageService.deleteDocument(asset.getStorageProviderId(), asset.getStoragePathFromRoot());
-        assetStorageService.deleteAsset(asset); // TODO: Check if the delete of the storage item is done here too
         repository.delete(asset);
     }
 
@@ -290,4 +272,24 @@ public class AssetService implements EntityService<AssetEntity, UUID> {
 
         return storageProviderId;
     }
+
+    public InputStream getAssetContent(AssetEntity asset) throws ResponseException {
+        if (asset.getStorageProviderId() == null || StringUtils.isNullOrEmpty(asset.getStoragePathFromRoot())) {
+            throw ResponseException.internalServerError("Das Asset %s hat keinen gültigen Speicherpfad.", asset.getKey());
+        }
+
+        return storageService.getDocumentContent(
+                asset.getStorageProviderId(),
+                asset.getStoragePathFromRoot()
+        );
+    }
+
+    public byte[] getAssetContentBytes(AssetEntity asset) throws ResponseException {
+        try (var assetContent = getAssetContent(asset)) {
+            return assetContent.readAllBytes();
+        } catch (IOException e) {
+            throw ResponseException.internalServerError(e, "Der Inhalt des Assets %s konnte nicht gelesen werden.", asset.getKey());
+        }
+    }
+
 }

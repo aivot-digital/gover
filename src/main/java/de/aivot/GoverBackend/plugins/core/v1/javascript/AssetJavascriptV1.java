@@ -4,7 +4,6 @@ import de.aivot.GoverBackend.asset.services.AssetService;
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.plugins.core.Core;
-import de.aivot.GoverBackend.services.storages.AssetStorageService;
 import jakarta.annotation.Nonnull;
 import org.graalvm.polyglot.HostAccess;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,15 +17,12 @@ import java.util.UUID;
 @Component
 public class AssetJavascriptV1 implements JavascriptFunctionProvider {
     private final AssetService assetService;
-    private final AssetStorageService assetStorageService;
 
     @Autowired
     public AssetJavascriptV1(
-            AssetService assetService,
-            AssetStorageService assetStorageService
+            AssetService assetService
     ) {
         this.assetService = assetService;
-        this.assetStorageService = assetStorageService;
     }
 
     @Nonnull
@@ -77,8 +73,8 @@ public class AssetJavascriptV1 implements JavascriptFunctionProvider {
 
         byte[] assetBytes;
         try {
-            assetBytes = assetStorageService
-                    .getAssetData(assetObj);
+            assetBytes = assetService
+                    .getAssetContentBytes(assetObj);
         } catch (ResponseException e) {
             throw new IOException(e);
         }
@@ -104,11 +100,7 @@ public class AssetJavascriptV1 implements JavascriptFunctionProvider {
                 .retrieve(parseUUID(assetKey))
                 .orElseThrow(() -> new IllegalArgumentException("Asset not found: " + assetKey));
 
-        try {
-            return assetStorageService.getAssetDownloadUrl(assetObj);
-        } catch (ResponseException e) {
-            throw new IOException(e);
-        }
+        return assetService.createUrl(assetObj);
     }
 
     private UUID parseUUID(String assetKey) {
