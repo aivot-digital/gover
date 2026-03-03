@@ -81,3 +81,11 @@ values (1,
 -- fix id sequence for the storage providers
 select setval('storage_providers_id_seq',
               (select max(id) from storage_providers));
+
+-- set the default providers
+insert into system_configs (key,
+                            value)
+values ('storage.assets.default_storage_provider', '2'),
+       ('storage.attachments.default_storage_provider', '3')
+on conflict (key) do update
+    set value = excluded.value;
