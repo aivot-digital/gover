@@ -3,19 +3,16 @@ package de.aivot.GoverBackend.asset.controllers;
 import de.aivot.GoverBackend.asset.entities.AssetEntity;
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.models.config.GoverConfig;
-import de.aivot.GoverBackend.models.config.StorageConfig;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
-import de.aivot.GoverBackend.services.storages.AssetStorageService;
+import de.aivot.GoverBackend.storage.services.StorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.Resource;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -30,20 +27,14 @@ import java.util.UUID;
         description = OpenApiConstants.Tags.AssetsDescription
 )
 public class CitizenAssetController {
-    private final AssetStorageService assetStorageService;
+    private final StorageService storageService;
     private final AssetRepository assetRepository;
-    private final GoverConfig goverConfig;
-    private final StorageConfig storageConfig;
 
     @Autowired
-    public CitizenAssetController(AssetStorageService assetStorageService,
-                                  AssetRepository assetRepository,
-                                  GoverConfig goverConfig,
-                                  StorageConfig storageConfig) {
-        this.assetStorageService = assetStorageService;
+    public CitizenAssetController(StorageService storageService,
+                                  AssetRepository assetRepository) {
+        this.storageService = storageService;
         this.assetRepository = assetRepository;
-        this.goverConfig = goverConfig;
-        this.storageConfig = storageConfig;
     }
 
     /**
@@ -66,9 +57,7 @@ public class CitizenAssetController {
         var urlEncodedFilename = URLEncoder
                 .encode(asset.getFilename(), StandardCharsets.UTF_8);
 
-        var targetUrl = goverConfig.createUrl(
-                "/api/public/assets/" + assetId + "/" + urlEncodedFilename + "?download=" + download
-        );
+        var targetUrl = "/api/public/assets/" + assetId + "/" + urlEncodedFilename + "?download=" + download;
 
         response.sendRedirect(targetUrl);
     }
@@ -86,20 +75,10 @@ public class CitizenAssetController {
     ) throws IOException, ResponseException {
         var asset = getPublicAssetById(assetId);
 
-        if (storageConfig.localStorageEnabled()) {
-            var urlEncodedFilename = URLEncoder
-                    .encode(asset.getFilename(), StandardCharsets.UTF_8);
-            var targetUrl = goverConfig.createUrl(
-                    "/api/public/assets/local/" + assetId + "/" + urlEncodedFilename + "?download=" + download
-            );
-            response.sendRedirect(targetUrl);
-        } else {
-            var storageUrl = download
-                    ? assetStorageService.getAssetDownloadUrl(asset)
-                    : assetStorageService.getAssetUrl(asset);
-
-            response.sendRedirect(storageUrl);
-        }
+        var urlEncodedFilename = URLEncoder
+                .encode(asset.getFilename(), StandardCharsets.UTF_8);
+        var targetUrl = "/api/public/assets/local/" + assetId + "/" + urlEncodedFilename + "?download=" + download;
+        response.sendRedirect(targetUrl);
     }
 
 
@@ -108,18 +87,19 @@ public class CitizenAssetController {
             summary = "Retrieve Public Asset File from Local Storage",
             description = "Retrieves the actual file of a public asset stored in local storage by its ID and filename."
     )
-    public ResponseEntity<Resource> retrievePublicLocalFile(
+    public ResponseEntity<InputStreamResource> retrievePublicLocalFile(
             @PathVariable String assetId,
             @PathVariable String filename,
             @RequestParam(defaultValue = "false") boolean download
     ) throws ResponseException {
-        // Check if the assetId is a valid UUID.
         var asset = getPublicAssetById(assetId);
 
-        var assetBytes = assetStorageService
-                .getAssetData(asset);
+        if (asset.getStorageProviderId() == null || asset.getStoragePathFromRoot() == null) {
+            throw ResponseException.notFound();
+        }
 
-        Resource resource = new ByteArrayResource(assetBytes);
+        var inputStream = storageService
+                .getDocumentContent(asset.getStorageProviderId(), asset.getStoragePathFromRoot());
 
         MediaType mediaType;
         try {
@@ -128,17 +108,13 @@ public class CitizenAssetController {
             mediaType = MediaType.APPLICATION_OCTET_STREAM;
         }
 
-        if (resource.exists() && resource.isReadable()) {
-            ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok().contentType(mediaType);
+        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok().contentType(mediaType);
 
-            if (download) {
-                responseBuilder.header("Content-Disposition", "attachment; filename=\"" + asset.getFilename() + "\"");
-            }
-
-            return responseBuilder.body(resource);
+        if (download) {
+            responseBuilder.header("Content-Disposition", "attachment; filename=\"" + asset.getFilename() + "\"");
         }
 
-        throw ResponseException.notFound();
+        return responseBuilder.body(new InputStreamResource(inputStream));
     }
 
     private AssetEntity getPublicAssetById(String assetId) throws ResponseException {

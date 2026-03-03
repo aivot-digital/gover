@@ -1,10 +1,8 @@
 package de.aivot.GoverBackend.asset.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.annotation.Nonnull;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -29,7 +27,7 @@ public class AssetEntity {
 
     @Nonnull
     @NotNull(message = "Die Uploader ID darf nicht null sein.")
-    @Size(min = 36, max = 364, message = "Die Uploader ID muss zwischen 36 und 64 Zeichen lang sein.")
+    @Size(min = 36, max = 36, message = "Die Uploader ID muss genau 36 Zeichen lang sein.")
     @Column(length = 64)
     private String uploaderId;
 
@@ -47,6 +45,18 @@ public class AssetEntity {
     @Nonnull
     @NotNull(message = "Das Erstellungsdatum darf nicht null sein.")
     private LocalDateTime created;
+
+    @Nonnull
+    @NotNull(message = "Die ID des Speicherindex-Items darf nicht null sein.")
+    private Integer storageProviderId;
+
+    @Nonnull
+    @NotNull(message = "Der Pfad des Speicherindex-Items darf nicht null sein.")
+    private String storagePathFromRoot;
+
+    @Transient
+    @JsonIgnore
+    private byte[] fileBytes;
 
     // region Getters & Setters
 
@@ -107,6 +117,35 @@ public class AssetEntity {
 
     public AssetEntity setCreated(@Nonnull LocalDateTime created) {
         this.created = created;
+        return this;
+    }
+
+    @Nonnull
+    public Integer getStorageProviderId() {
+        return storageProviderId;
+    }
+
+    public AssetEntity setStorageProviderId(@Nonnull Integer storageProviderId) {
+        this.storageProviderId = storageProviderId;
+        return this;
+    }
+
+    @Nonnull
+    public String getStoragePathFromRoot() {
+        return storagePathFromRoot;
+    }
+
+    public AssetEntity setStoragePathFromRoot(@Nonnull String storagePathFromRoot) {
+        this.storagePathFromRoot = storagePathFromRoot;
+        return this;
+    }
+
+    public byte[] getFileBytes() {
+        return fileBytes;
+    }
+
+    public AssetEntity setFileBytes(byte[] fileBytes) {
+        this.fileBytes = fileBytes;
         return this;
     }
 

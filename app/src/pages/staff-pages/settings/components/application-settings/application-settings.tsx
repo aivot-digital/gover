@@ -67,6 +67,7 @@ export function ApplicationSettings() {
     const [departments, setDepartments] = useState<DepartmentEntity[]>([]);
     const [themes, setThemes] = useState<SelectFieldComponentOption[]>([]);
 
+    const [assetStorageProviders, setAssetStorageProviders] = useState<SelectFieldComponentOption[]>([]);
     const [attStorageProviders, setAttStorageProviders] = useState<SelectFieldComponentOption[]>([]);
 
     const hasNotChanged = Object.keys(editedConfig).length === 0;
@@ -83,6 +84,21 @@ export function ApplicationSettings() {
             .catch((err) => {
                 console.error(err);
                 dispatch(showErrorSnackbar('Farbschemata konnten nicht geladen werden'));
+            });
+
+        new StorageProvidersApiService()
+            .listAll({
+                type: StorageProviderType.Assets,
+            })
+            .then(({content: providers}) => {
+                setAssetStorageProviders(providers.map((prv) => ({
+                    value: prv.id.toString(),
+                    label: prv.name,
+                    subLabel: prv.description,
+                })));
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Die Liste der Speicheranbieter für Assets konnte nicht geladen werden'));
             });
 
         new StorageProvidersApiService()
@@ -296,6 +312,37 @@ export function ApplicationSettings() {
                 }}
                 disabled={!hasAccess}
                 options={attStorageProviders}
+            />
+
+            <Typography
+                variant="subtitle1"
+                sx={{
+                    mt: 4,
+                }}
+            >
+                Zentraler Speicheranbieter für Assets
+            </Typography>
+            <Typography
+                sx={{
+                    maxWidth: 900,
+                    mb: 1.6,
+                }}
+            >
+                Dieser Speicheranbieter wird verwendet, um Assets zu speichern, wenn kein spezifischer Speicheranbieter für ein Asset konfiguriert ist.
+                Bitte beachten Sie, dass die Änderung dieses Schlüssels Auswirkungen auf alle Assets hat, die den zentralen Speicheranbieter verwenden.
+            </Typography>
+            <SelectFieldComponent
+                label="Zentraler Speicheranbieter für Assets"
+                hint="Geben Sie den Speicheranbieter an, der standardmäßig für Assets verwendet werden soll."
+                value={editedConfig[SystemConfigKeys.storage.assets.default_storage_provider] ?? config[SystemConfigKeys.storage.assets.default_storage_provider]}
+                onChange={(val) => {
+                    setEditedConfig({
+                        ...editedConfig,
+                        [SystemConfigKeys.storage.assets.default_storage_provider]: val ?? '',
+                    });
+                }}
+                disabled={!hasAccess}
+                options={assetStorageProviders}
             />
 
 

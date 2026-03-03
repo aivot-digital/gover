@@ -1,5 +1,6 @@
-package de.aivot.GoverBackend.services;
+package de.aivot.GoverBackend.av;
 
+import de.aivot.GoverBackend.av.services.AVService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

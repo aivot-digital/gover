@@ -14,8 +14,7 @@ import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.permissions.data.Permissions;
 import de.aivot.GoverBackend.permissions.services.PermissionService;
-import de.aivot.GoverBackend.services.AVService;
-import de.aivot.GoverBackend.services.storages.AssetStorageService;
+import de.aivot.GoverBackend.av.services.AVService;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -34,8 +33,6 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -52,7 +49,6 @@ public class AssetController {
     private final ScopedAuditService auditService;
 
     private final AssetService assetService;
-    private final AssetStorageService assetStorageService;
     private final AssetRepository assetRepository;
     private final AVService avService;
     private final UserService userService;
@@ -61,7 +57,6 @@ public class AssetController {
     @Autowired
     public AssetController(AuditService auditService,
                            AssetService assetService,
-                           AssetStorageService assetStorageService,
                            AssetRepository assetRepository,
                            AVService avService,
                            UserService userService,
@@ -69,7 +64,6 @@ public class AssetController {
         this.auditService = auditService.createScopedAuditService(AssetController.class);
 
         this.assetService = assetService;
-        this.assetStorageService = assetStorageService;
         this.assetRepository = assetRepository;
         this.avService = avService;
         this.userService = userService;
@@ -109,7 +103,6 @@ public class AssetController {
             @Nullable @RequestPart(value = "filename", required = false) String explicitFilename,
             @Nullable @RequestPart(value = "private", required = false) Boolean privateAsset
     ) throws ResponseException {
-        // TODO: Refactor with new AssetService.create method
         var execUser = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
@@ -117,15 +110,7 @@ public class AssetController {
         permissionService
                 .hasSystemPermissionThrows(execUser, Permissions.ASSET_CREATE);
 
-        boolean isClean;
-        try {
-            isClean = avService.testFile(file);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        if (!isClean) {
-            throw ResponseException.badRequest("Die hochgeladene Datei enthält Schadsoftware.");
-        }
+        avService.testFile(file);
 
         String filename = explicitFilename != null ? explicitFilename : file.getOriginalFilename();
 
@@ -134,20 +119,18 @@ public class AssetController {
         }
 
         var asset = new AssetEntity();
-        asset.setKey(UUID.randomUUID());
         asset.setFilename(filename);
         asset.setCreated(LocalDateTime.now());
         asset.setUploaderId(execUser.getId());
         asset.setContentType(file.getContentType() != null ? file.getContentType() : "application/octet-stream");
         asset.setPrivate(privateAsset != null ? privateAsset : true);
-
         try {
-            assetStorageService.saveAsset(asset, file.getBytes());
+            asset.setFileBytes(file.getBytes());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
-        var createdAsset = assetRepository.save(asset);
+        var createdAsset = assetService.create(asset);
 
         auditService.logAction(execUser, AuditAction.Create, AssetEntity.class, Map.of(
                 "key", createdAsset.getKey(),
@@ -229,7 +212,5 @@ public class AssetController {
         ));
 
         assetService.delete(assetId);
-
-        assetStorageService.deleteAsset(asset);
     }
 }

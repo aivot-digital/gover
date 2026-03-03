@@ -204,6 +204,10 @@ public class ResponseException extends Exception {
         return ResponseException.conflict("Die angeforderte Ressource ist nicht in dem gewünschten Format verfügbar.");
     }
 
+    public static ResponseException notAcceptable(String format, Object... args) {
+        return ResponseException.notAcceptable(String.format(format, args));
+    }
+
     public static ResponseException notAcceptable(String message) {
         return new ResponseException(HttpStatus.NOT_ACCEPTABLE, "Die angeforderte Ressource ist nicht in dem gewünschten Format verfügbar.");
     }
