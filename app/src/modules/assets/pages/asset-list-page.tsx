@@ -3,7 +3,7 @@ import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Stack, Typography} from '@mui/material';
 import {DownloadOutlined, EditOutlined} from '@mui/icons-material';
-import React from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {CellLink} from '../../../components/cell-link/cell-link';
 import {Asset} from '../models/asset';
 import {AssetsApiService} from '../assets-api-service';
@@ -16,26 +16,69 @@ import {getFileTypeLabel} from '../../../utils/file-type-label';
 import Chip from '@mui/material/Chip';
 import {CellContentWrapper} from '../../../components/cell-content-wrapper/cell-content-wrapper';
 import {copyToClipboardText} from '../../../utils/copy-to-clipboard';
+import {useParams} from 'react-router-dom';
+import {StorageProvidersApiService} from '../../storage/storage-providers-api-service';
+import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
 
 export function AssetListPage() {
     const dispatch = useAppDispatch();
+    const {storageProviderId} = useParams<{ storageProviderId?: string }>();
+
+    const parsedStorageProviderId = useMemo(() => {
+        if (storageProviderId == null) {
+            return undefined;
+        }
+
+        const parsed = Number.parseInt(storageProviderId, 10);
+        if (Number.isNaN(parsed) || parsed <= 0) {
+            return undefined;
+        }
+
+        return parsed;
+    }, [storageProviderId]);
+
+    const [storageProviderName, setStorageProviderName] = useState<string>();
+
+    useEffect(() => {
+        if (parsedStorageProviderId == null) {
+            setStorageProviderName(undefined);
+            return;
+        }
+
+        new StorageProvidersApiService()
+            .retrieve(parsedStorageProviderId)
+            .then((provider) => {
+                setStorageProviderName(provider.name);
+            })
+            .catch((err) => {
+                setStorageProviderName(undefined);
+                dispatch(showApiErrorSnackbar(err, 'Der Speicheranbieter konnte nicht geladen werden.'));
+            });
+    }, [dispatch, parsedStorageProviderId]);
+
+    const headerTitle = storageProviderName != null && storageProviderName.length > 0
+        ? `Dateien & Medien - ${storageProviderName}`
+        : 'Dateien & Medien';
+    const uploadRoute = parsedStorageProviderId != null
+        ? `/assets/providers/${parsedStorageProviderId}/new`
+        : '/assets/new';
 
     return (
         <PageWrapper
-            title="Dateien & Medien"
+            title={headerTitle}
             fullWidth
             background
         >
             <GenericListPage<Asset>
                 header={{
                     icon: <DriveFolderUploadOutlinedIcon />,
-                    title: 'Dateien & Medien',
+                    title: headerTitle,
                     actions: [
                         {
                             label: 'Datei hochladen',
                             icon: <AddOutlinedIcon />,
                             tooltip: 'Neues Dokument oder Medieninhalt anlegen',
-                            to: '/assets/new',
+                            to: uploadRoute,
                             variant: 'contained',
                         },
                     ],
@@ -68,6 +111,7 @@ export function AssetListPage() {
                             options.order,
                             {
                                 filename: options.search,
+                                storageProviderId: parsedStorageProviderId,
                             },
                         );
                 }}
@@ -93,7 +137,7 @@ export function AssetListPage() {
                         flex: 2,
                         renderCell: (params) => (
                             <CellLink
-                                to={`/assets/${params.id}`}
+                                to={parsedStorageProviderId != null ? `/assets/providers/${parsedStorageProviderId}/${params.id}` : `/assets/${params.id}`}
                                 title={`Datei bearbeiten`}
                             >
                                 {String(params.value)}
@@ -145,7 +189,7 @@ export function AssetListPage() {
                 rowActions={(item: Asset) => [
                     {
                         icon: <EditOutlined />,
-                        to: `/assets/${item.key}`,
+                        to: parsedStorageProviderId != null ? `/assets/providers/${parsedStorageProviderId}/${item.key}` : `/assets/${item.key}`,
                         tooltip: 'Datei bearbeiten',
                     },
                     {

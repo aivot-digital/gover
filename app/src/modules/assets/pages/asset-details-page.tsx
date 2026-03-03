@@ -4,10 +4,16 @@ import {GenericDetailsPage} from '../../../components/generic-details-page/gener
 import {Asset} from '../models/asset';
 import {AssetsApiService} from '../assets-api-service';
 import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
-import React from 'react';
+import React, {useMemo} from 'react';
 import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
+import {useParams} from 'react-router-dom';
 
 export function AssetDetailsPage() {
+    const {storageProviderId} = useParams<{ storageProviderId: string }>();
+
+    const parentRoute = `/assets/providers/${storageProviderId}`;
+    const detailsPath = `/assets/providers/${storageProviderId}/:key`;
+
     return (
         <PageWrapper
             title="Datei bearbeiten"
@@ -38,7 +44,7 @@ export function AssetDetailsPage() {
                 }}
                 tabs={[
                     {
-                        path: '/assets/:key',
+                        path: detailsPath,
                         label: '',
                     },
                 ]}
@@ -59,7 +65,7 @@ export function AssetDetailsPage() {
                 idParam="key"
                 parentLink={{
                     label: "Liste der Dateien",
-                    to: "/assets",
+                    to: parentRoute,
                 }}
                 entityType={ServerEntityType.Assets}
             />

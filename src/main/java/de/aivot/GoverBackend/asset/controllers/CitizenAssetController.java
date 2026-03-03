@@ -141,4 +141,10 @@ public class CitizenAssetController {
                 .findById(assetId)
                 .orElseThrow(ResponseException::notFound);
     }
+
+    private static boolean hasStorageReference(AssetEntity asset) {
+        return asset.getStorageProviderId() != null &&
+                asset.getStoragePathFromRoot() != null &&
+                !asset.getStoragePathFromRoot().isBlank();
+    }
 }

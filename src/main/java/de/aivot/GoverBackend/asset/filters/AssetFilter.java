@@ -10,6 +10,7 @@ public class AssetFilter implements Filter<AssetEntity> {
     private String uploaderId;
     private String contentType;
     private Boolean isPrivate;
+    private Integer storageProviderId;
 
     public static AssetFilter create() {
         return new AssetFilter();
@@ -23,7 +24,16 @@ public class AssetFilter implements Filter<AssetEntity> {
                 .withEquals("uploaderId", uploaderId)
                 .withContains("contentType", contentType)
                 .withEquals("isPrivate", isPrivate)
+                .withEquals("storageProviderId", storageProviderId)
                 .build();
     }
 
+    public Integer getStorageProviderId() {
+        return storageProviderId;
+    }
+
+    public AssetFilter setStorageProviderId(Integer storageProviderId) {
+        this.storageProviderId = storageProviderId;
+        return this;
+    }
 }

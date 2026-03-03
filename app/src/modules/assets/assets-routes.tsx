@@ -9,7 +9,11 @@ export const assetsRoutes: RouteObject[] = [
         element: <AssetListPage />,
     },
     {
-        path: '/assets/:key',
+        path: '/assets/providers/:storageProviderId',
+        element: <AssetListPage />,
+    },
+    {
+        path: '/assets/providers/:storageProviderId/:key',
         element: <AssetDetailsPage />,
         children: [
             {

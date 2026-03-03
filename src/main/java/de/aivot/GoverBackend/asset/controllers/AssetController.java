@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.asset.controllers;
 
 import de.aivot.GoverBackend.asset.dtos.AssetRequestDTO;
 import de.aivot.GoverBackend.asset.dtos.AssetResponseDTO;
+import de.aivot.GoverBackend.asset.dtos.AssetFolderGroupResponseDTO;
 import de.aivot.GoverBackend.asset.entities.AssetEntity;
 import de.aivot.GoverBackend.asset.filters.AssetFilter;
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
@@ -21,6 +22,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +36,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -87,6 +92,29 @@ public class AssetController {
                 .map(AssetResponseDTO::fromEntity);
     }
 
+    @GetMapping(value = {
+            "folders/",
+            "folders/**",
+    }, produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "List assets grouped by storage provider and folder",
+            description = "Retrieves folder entries from the storage index and file entries from asset entities, grouped by storage provider."
+    )
+    public List<AssetFolderGroupResponseDTO> listGroupedByFolder(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            HttpServletRequest request
+    ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .hasSystemPermissionThrows(user, Permissions.ASSET_READ);
+
+        var normalizedPath = getNormalizedFolderPath(request);
+        return assetService.listGroupedByStorageProvider(normalizedPath);
+    }
+
     @PostMapping(
             value = "",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
@@ -101,7 +129,8 @@ public class AssetController {
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @RequestPart(value = "file", required = true) MultipartFile file,
             @Nullable @RequestPart(value = "filename", required = false) String explicitFilename,
-            @Nullable @RequestPart(value = "private", required = false) Boolean privateAsset
+            @Nullable @RequestPart(value = "private", required = false) Boolean privateAsset,
+            @Nullable @RequestParam(value = "storageProviderId", required = false) Integer storageProviderId
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
@@ -130,7 +159,7 @@ public class AssetController {
             throw new RuntimeException(e);
         }
 
-        var createdAsset = assetService.create(asset);
+        var createdAsset = assetService.create(asset, storageProviderId);
 
         auditService.logAction(execUser, AuditAction.Create, AssetEntity.class, Map.of(
                 "key", createdAsset.getKey(),
@@ -169,11 +198,20 @@ public class AssetController {
     public AssetResponseDTO update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable UUID assetId,
-            @Nonnull @RequestBody @Valid AssetRequestDTO requestDTO
+            @Nonnull @RequestBody @Valid AssetRequestDTO requestDTO,
+            @Nullable @RequestParam(value = "storageProviderId", required = false) Integer storageProviderId
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
+
+        if (storageProviderId != null) {
+            var existingAsset = assetRepository
+                    .findById(assetId)
+                    .orElseThrow(ResponseException::notFound);
+
+            validateStorageProviderContext(storageProviderId, existingAsset);
+        }
 
         var updatedAsset = assetService
                 .update(assetId, requestDTO.toEntity());
@@ -196,7 +234,8 @@ public class AssetController {
     )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable UUID assetId
+            @Nonnull @PathVariable UUID assetId,
+            @Nullable @RequestParam(value = "storageProviderId", required = false) Integer storageProviderId
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
@@ -206,11 +245,49 @@ public class AssetController {
                 .findById(assetId)
                 .orElseThrow(ResponseException::notFound);
 
+        if (storageProviderId != null) {
+            validateStorageProviderContext(storageProviderId, asset);
+        }
+
         auditService.logAction(user, AuditAction.Delete, AssetEntity.class, Map.of(
                 "key", asset.getKey(),
                 "filename", asset.getFilename()
         ));
 
         assetService.delete(assetId);
+    }
+
+    @Nonnull
+    private static String getNormalizedFolderPath(@Nonnull HttpServletRequest request) {
+        var pathParts = request
+                .getRequestURL()
+                .toString()
+                .split("/folders/");
+
+        var normalizedPath = "/";
+        if (pathParts.length > 1) {
+            normalizedPath = pathParts[1];
+
+            if (!normalizedPath.startsWith("/")) {
+                normalizedPath = "/" + normalizedPath;
+            }
+
+            if (!normalizedPath.endsWith("/")) {
+                normalizedPath = normalizedPath + "/";
+            }
+        }
+
+        return URLDecoder.decode(normalizedPath, StandardCharsets.UTF_8);
+    }
+
+    private static void validateStorageProviderContext(@Nonnull Integer requestedStorageProviderId,
+                                                       @Nonnull AssetEntity asset) throws ResponseException {
+        if (asset.getStorageProviderId() == null) {
+            throw ResponseException.notFound();
+        }
+
+        if (!requestedStorageProviderId.equals(asset.getStorageProviderId())) {
+            throw ResponseException.notFound();
+        }
     }
 }

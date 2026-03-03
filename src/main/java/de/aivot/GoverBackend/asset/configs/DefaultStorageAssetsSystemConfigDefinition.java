@@ -2,7 +2,6 @@ package de.aivot.GoverBackend.asset.configs;
 
 import de.aivot.GoverBackend.config.enums.ConfigType;
 import de.aivot.GoverBackend.config.models.SystemConfigDefinition;
-import de.aivot.GoverBackend.asset.services.AssetService;
 import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 

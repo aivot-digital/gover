@@ -3,7 +3,7 @@ import React, {type FormEvent, useContext, useEffect, useMemo, useState} from 'r
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {useApi} from '../../../hooks/use-api';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate, useParams} from 'react-router-dom';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
@@ -42,6 +42,7 @@ export const AssetSchema = yup.object({
 export function AssetDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
+    const {storageProviderId} = useParams<{ storageProviderId?: string }>();
 
     const api = useApi();
     const {
@@ -65,6 +66,21 @@ export function AssetDetailsPageIndex() {
     const asset = currentItem;
     const [file, setFile] = useState<File[]>();
     const [uploadError, setUploadError] = useState<string>();
+    const parsedStorageProviderId = useMemo(() => {
+        if (storageProviderId == null) {
+            return undefined;
+        }
+
+        const parsed = Number.parseInt(storageProviderId, 10);
+        if (Number.isNaN(parsed) || parsed <= 0) {
+            return undefined;
+        }
+
+        return parsed;
+    }, [storageProviderId]);
+    const parentRoute = parsedStorageProviderId != null
+        ? `/assets/providers/${parsedStorageProviderId}`
+        : '/assets';
 
     const combinedEditedState = {
         ...currentItem,
@@ -120,7 +136,7 @@ export function AssetDetailsPageIndex() {
         dispatch(showLoadingOverlay('Datei wird hochgeladen…'));
 
         new AssetsApiService(api)
-            .upload(file[0])
+            .upload(file[0], parsedStorageProviderId)
             .then((newAsset) => {
                 setItem(newAsset);
                 reset();
@@ -130,7 +146,10 @@ export function AssetDetailsPageIndex() {
 
                 // use setTimeout instead of useEffect to prevent unnecessary rerender
                 setTimeout(() => {
-                    navigate(`/assets/${newAsset.key}`, {replace: true});
+                    const detailsRoute = parsedStorageProviderId != null
+                        ? `/assets/providers/${parsedStorageProviderId}/${newAsset.key}`
+                        : `/assets/${newAsset.key}`;
+                    navigate(detailsRoute, {replace: true});
                 }, 0);
 
             })
@@ -166,7 +185,7 @@ export function AssetDetailsPageIndex() {
             setIsBusy(true);
 
             apiService
-                .update(asset.key, asset)
+                .updateInStorageProvider(asset.key, asset, parsedStorageProviderId)
                 .then((updatedAsset) => {
                     setItem(updatedAsset);
                     reset();
@@ -187,10 +206,10 @@ export function AssetDetailsPageIndex() {
         if (asset.key === '') return;
 
         setIsBusy(true);
-        apiService.destroy(asset.key)
+        apiService.destroyInStorageProvider(asset.key, parsedStorageProviderId)
             .then(() => {
                 reset(); // prevent change blocker by resetting unsaved changes
-                navigate('/assets', {
+                navigate(parentRoute, {
                     replace: true,
                 });
                 dispatch(showSuccessSnackbar('Die Datei wurde erfolgreich gelöscht.'));
