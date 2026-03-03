@@ -185,7 +185,7 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
             @Nonnull StorageProviderEntity entity
     ) throws ResponseException {
         if (entity.getSystemProvider()) {
-            throw ResponseException.badRequest("Dieser Speicheranbieter kann nicht bearbeitet werden");
+            throw ResponseException.badRequest("Dieser Speicheranbieter kann nicht gelöscht werden, da es sich um einen Systemanbieter handelt");
         }
 
         storageProviderRepository.delete(entity);
