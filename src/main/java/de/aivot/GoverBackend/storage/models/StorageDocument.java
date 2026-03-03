@@ -43,9 +43,10 @@ public class StorageDocument extends StorageItem {
 
         int lastDotIndex = getName().lastIndexOf('.');
         if (lastDotIndex == -1 || lastDotIndex == getName().length() - 1) {
-            extension = "";
+            extension = "dat";
+        } else {
+            extension = getName().substring(lastDotIndex + 1);
         }
-        extension = getName().substring(lastDotIndex + 1);
         this.sizeInBytes = sizeInBytes;
         this.metadata = metadata;
     }

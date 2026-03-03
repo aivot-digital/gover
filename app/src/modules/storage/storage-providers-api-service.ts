@@ -36,7 +36,7 @@ export class StorageProvidersApiService extends BaseCrudApiService<StorageProvid
             storageProviderDefinitionVersion: 0,
             type: StorageProviderType.Assets,
             updated: '',
-            lastSync: '',
+            lastSync: null,
             metadataAttributes: [],
             systemProvider: false,
             readOnlyStorage: false,
@@ -69,10 +69,6 @@ export class StorageProvidersApiService extends BaseCrudApiService<StorageProvid
                 updated: item.updated ?? '',
             } as StorageIndexItem;
         });
-    }
-
-    public async downloadFile(id: number, path: string): Promise<Blob> {
-        return await this.getBlob(`${this.buildPath(id)}files${path}`, {});
     }
 
     public async testStorageProvider(id: number, writable: boolean = false): Promise<{ success: boolean; error?: string }> {

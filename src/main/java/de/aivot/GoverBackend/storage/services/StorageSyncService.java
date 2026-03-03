@@ -174,7 +174,7 @@ public class StorageSyncService {
                                     false,
                                     document.getName(),
                                     document.getSizeInBytes(),
-                                    StorageService.UNKNOWN_MIME_TYPE,
+                                    mimeType,
                                     false,
                                     filteredDocumentMetadata,
                                     LocalDateTime.now(),
