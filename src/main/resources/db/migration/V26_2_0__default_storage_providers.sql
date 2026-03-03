@@ -27,7 +27,7 @@ values (1,
         '{
           "root": {
             "$type": 15,
-            "inputValue": "./default/"
+            "inputValue": "./data/default/"
           }
         }',
         10 * 1024 * 1024,
@@ -49,7 +49,7 @@ values (1,
         '{
           "root": {
             "$type": 15,
-            "inputValue": "./assets/"
+            "inputValue": "./data/assets/"
           }
         }',
         10 * 1024 * 1024,
@@ -71,7 +71,7 @@ values (1,
         '{
           "root": {
             "$type": 15,
-            "inputValue": "./attachments/"
+            "inputValue": "./data/attachments/"
           }
         }',
         10 * 1024 * 1024,
