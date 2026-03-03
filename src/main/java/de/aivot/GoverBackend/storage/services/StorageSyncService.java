@@ -1,9 +1,12 @@
 package de.aivot.GoverBackend.storage.services;
 
+import de.aivot.GoverBackend.asset.entities.AssetEntity;
+import de.aivot.GoverBackend.asset.repositories.AssetRepository;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.storage.entities.StorageIndexItemEntity;
 import de.aivot.GoverBackend.storage.entities.StorageIndexItemEntityId;
+import de.aivot.GoverBackend.storage.enums.StorageProviderType;
 import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
 import de.aivot.GoverBackend.storage.enums.StorageProviderStatus;
 import de.aivot.GoverBackend.storage.models.StorageDocument;
@@ -22,24 +25,29 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class StorageSyncService {
     private static final Logger logger = LoggerFactory.getLogger(StorageSyncService.class);
+    private static final String SYSTEM_SYNC_UPLOADER_ID = null;
 
     private final KnownExtensionsService knownExtensions;
     private final StorageProviderRepository storageProviderRepository;
     private final StorageProviderDefinitionService storageProviderDefinitionService;
     private final StorageIndexItemRepository storageIndexItemRepository;
+    private final AssetRepository assetRepository;
 
     public StorageSyncService(KnownExtensionsService knownExtensions,
                               StorageProviderRepository storageProviderRepository,
                               StorageProviderDefinitionService storageProviderDefinitionService,
-                              StorageIndexItemRepository storageIndexItemRepository) {
+                              StorageIndexItemRepository storageIndexItemRepository,
+                              AssetRepository assetRepository) {
         this.knownExtensions = knownExtensions;
         this.storageProviderRepository = storageProviderRepository;
         this.storageProviderDefinitionService = storageProviderDefinitionService;
         this.storageIndexItemRepository = storageIndexItemRepository;
+        this.assetRepository = assetRepository;
     }
 
     public void syncStorageProvider(int id) {
@@ -187,6 +195,8 @@ public class StorageSyncService {
                             storageIndexItemRepository.save(docItem);
                         }
 
+                        syncAssetEntityForDocument(storageProvider, docItem);
+
                         syncedPaths.add(docItem.getPathFromRoot());
                     }
                 }
@@ -263,5 +273,29 @@ public class StorageSyncService {
                 || !Objects.equals(existingItem.getSizeInBytes(), document.getSizeInBytes())
                 || !Objects.equals(existingItem.getMissing(), false)
                 || !Objects.equals(existingItem.getMetadata(), filteredDocumentMetadata);
+    }
+
+    private void syncAssetEntityForDocument(@Nonnull StorageProviderEntity storageProvider,
+                                            @Nonnull StorageIndexItemEntity documentIndexItem) {
+        if (storageProvider.getType() != StorageProviderType.Assets) {
+            return;
+        }
+
+        var asset = assetRepository
+                .findByStorageProviderIdAndStoragePathFromRoot(storageProvider.getId(), documentIndexItem.getPathFromRoot())
+                .orElseGet(() -> new AssetEntity()
+                        .setKey(UUID.randomUUID())
+                        .setUploaderId(SYSTEM_SYNC_UPLOADER_ID)
+                        .setPrivate(true)
+                        .setCreated(LocalDateTime.now())
+                        .setStorageProviderId(storageProvider.getId())
+                        .setStoragePathFromRoot(documentIndexItem.getPathFromRoot()));
+
+        asset.setFilename(documentIndexItem.getFilename());
+        asset.setContentType(documentIndexItem.getMimeType());
+        asset.setStorageProviderId(storageProvider.getId());
+        asset.setStoragePathFromRoot(documentIndexItem.getPathFromRoot());
+
+        assetRepository.save(asset);
     }
 }

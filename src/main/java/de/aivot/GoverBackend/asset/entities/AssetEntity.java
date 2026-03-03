@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.asset.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -25,8 +26,7 @@ public class AssetEntity {
     @Size(min = 3, max = 255, message = "Der Dateiname muss zwischen 3 und 255 Zeichen lang sein.")
     private String filename;
 
-    @Nonnull
-    @NotNull(message = "Die Uploader ID darf nicht null sein.")
+    @Nullable
     @Size(min = 36, max = 36, message = "Die Uploader ID muss genau 36 Zeichen lang sein.")
     @Column(length = 64)
     private String uploaderId;
@@ -80,12 +80,12 @@ public class AssetEntity {
         return this;
     }
 
-    @Nonnull
+    @Nullable
     public String getUploaderId() {
         return uploaderId;
     }
 
-    public AssetEntity setUploaderId(@Nonnull String uploaderId) {
+    public AssetEntity setUploaderId(@Nullable String uploaderId) {
         this.uploaderId = uploaderId;
         return this;
     }

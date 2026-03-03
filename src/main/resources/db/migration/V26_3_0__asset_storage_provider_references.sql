@@ -5,6 +5,12 @@ alter table assets
 
 -- link the two columns to the storage_index_items table to reference the real stored files.
 alter table assets
+    add column storage_provider_id    integer null,
+    add column storage_path_from_root text    null,
+    alter column uploader_id drop not null;
+
+-- add foreign key constraint for the storage provider index item.
+alter table assets
     add foreign key (storage_provider_id, storage_path_from_root) references storage_index_items (storage_provider_id, path_from_root);
 
 -- copy all assets to the default asset storage provider and mark them as missing.

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface AssetRepository extends JpaRepository<AssetEntity, UUID>, JpaSpecificationExecutor<AssetEntity> {
@@ -25,4 +26,6 @@ public interface AssetRepository extends JpaRepository<AssetEntity, UUID>, JpaSp
     )
     List<AssetEntity> listAllInFolder(@Param("storageProviderId") Integer storageProviderId,
                                       @Param("folderPath") String folderPath);
+
+    Optional<AssetEntity> findByStorageProviderIdAndStoragePathFromRoot(Integer storageProviderId, String storagePathFromRoot);
 }
