@@ -72,11 +72,6 @@ public class StorageProviderEntity {
     private Boolean readOnlyStorage;
 
     @Nonnull
-    @NotNull(message = "Die vorproduktive Eigenschaft des Speicheranbieters darf nicht null sein.")
-    @ColumnDefault("FALSE")
-    private Boolean testProvider;
-
-    @Nonnull
     @NotNull(message = "Die Konfiguration des Speicheranbieters darf nicht null sein.")
     @Column(columnDefinition = "jsonb")
     @Convert(converter = ElementDataConverter.class)
@@ -92,6 +87,11 @@ public class StorageProviderEntity {
     @NotNull(message = "Die Verhinderung der Löschung des Speicheranbieters darf nicht null sein.")
     @ColumnDefault("FALSE")
     private Boolean systemProvider;
+
+    @Nonnull
+    @NotNull(message = "Die vorproduktive Eigenschaft des Speicheranbieters darf nicht null sein.")
+    @ColumnDefault("FALSE")
+    private Boolean testProvider;
 
     @Nonnull
     @NotNull(message = "Die Liste der Metadatenattribute des Speicheranbieters darf nicht null sein.")

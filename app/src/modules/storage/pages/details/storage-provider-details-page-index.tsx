@@ -70,7 +70,7 @@ export const _StorageProviderSchema = {
         .required('Die maximale Dateigröße ist ein Pflichtfeld.'),
     readOnlyStorage: yup.boolean()
         .optional(),
-    isTestProvider: yup.boolean()
+    testProvider: yup.boolean()
         .default(false),
     metadataAttributes: yup.array()
         .of(
