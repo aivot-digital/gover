@@ -5,6 +5,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -112,7 +113,7 @@ class LocalDiskStorageProviderDefinitionTest {
         var provider = new LocalDiskStorageProviderDefinitionV1();
         var documentPath = "/documents/test-document.txt";
         var documentData = "This is a test document.".getBytes();
-        var document = provider.storeDocument(config, documentPath, documentData, new StorageItemMetadata());
+        var document = provider.storeDocument(config, documentPath, new ByteArrayInputStream(documentData), new StorageItemMetadata());
         assertNotNull(document);
         assertEquals("test-document.txt", document.getName());
         assertEquals("/documents/test-document.txt", document.getPathFromRoot());
@@ -126,7 +127,7 @@ class LocalDiskStorageProviderDefinitionTest {
         var documentData = "This is a test document.".getBytes();
 
         // Store document first
-        provider.storeDocument(config, documentPath, documentData, new StorageItemMetadata());
+        provider.storeDocument(config, documentPath, new ByteArrayInputStream(documentData), new StorageItemMetadata());
 
         // Retrieve document
         var retrievedDocumentOpt = provider.retrieveDocument(config, documentPath);
@@ -144,7 +145,7 @@ class LocalDiskStorageProviderDefinitionTest {
         var documentData = "This is a test document.".getBytes();
 
         // Store document first
-        provider.storeDocument(config, documentPath, documentData, new StorageItemMetadata());
+        provider.storeDocument(config, documentPath, new ByteArrayInputStream(documentData), new StorageItemMetadata());
 
         // Retrieve document content
         try (var inputStream = provider.retrieveDocumentContent(config, documentPath)) {
@@ -162,7 +163,7 @@ class LocalDiskStorageProviderDefinitionTest {
         var documentData = "This is a test document.".getBytes();
 
         // Store document first
-        provider.storeDocument(config, documentPath, documentData, new StorageItemMetadata());
+        provider.storeDocument(config, documentPath, new ByteArrayInputStream(documentData), new StorageItemMetadata());
 
         // Check existence
         var exists = provider.documentExists(config, documentPath);
@@ -179,7 +180,7 @@ class LocalDiskStorageProviderDefinitionTest {
         var documentData = "This document will be deleted.".getBytes();
 
         // Store document first
-        provider.storeDocument(config, documentPath, documentData, new StorageItemMetadata());
+        provider.storeDocument(config, documentPath, new ByteArrayInputStream(documentData), new StorageItemMetadata());
         assertTrue(provider.documentExists(config, documentPath));
 
         // Delete document
