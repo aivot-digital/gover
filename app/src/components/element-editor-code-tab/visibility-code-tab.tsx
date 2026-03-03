@@ -9,12 +9,13 @@ import {NoCodeDataType} from '../../data/no-code-data-type';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-element-dialog';
-import {showSuccessSnackbar} from '../../slices/snackbar-slice';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {createLowCodeContextType} from '../../utils/create-low-code-context-type';
 import {ReferenceCheck} from './components/reference-check/reference-check';
 import {ElementVisibilityFunction} from '../../models/elements/element-visibility-function';
 import {editor} from 'monaco-editor';
 import {NoCodeEditorWrapper} from './components/no-code-editor-wrapper/no-code-editor-wrapper';
+import {copyToClipboardText} from '../../utils/copy-to-clipboard';
 
 const exampleVisibilityCode = `(function(){
     // Hier kann der Code eingefügt werden, der bestimmt, ob das Element sichtbar ist.
@@ -223,8 +224,13 @@ export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
 
                         dispatch(showSuccessSnackbar('Element-ID eingefügt'));
                     } else {
-                        navigator.clipboard.writeText(element.id);
-                        dispatch(showSuccessSnackbar('Element-ID kopiert'));
+                        copyToClipboardText(element.id).then((success) => {
+                            if (success) {
+                                dispatch(showSuccessSnackbar('Element-ID kopiert'));
+                            } else {
+                                dispatch(showErrorSnackbar('Element-ID konnte nicht kopiert werden'));
+                            }
+                        });
                     }
 
                     toggleShowElementSelectDialog();

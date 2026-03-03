@@ -15,6 +15,7 @@ import DriveFolderUploadOutlinedIcon from '@mui/icons-material/DriveFolderUpload
 import {getFileTypeLabel} from '../../../utils/file-type-label';
 import Chip from '@mui/material/Chip';
 import {CellContentWrapper} from '../../../components/cell-content-wrapper/cell-content-wrapper';
+import {copyToClipboardText} from '../../../utils/copy-to-clipboard';
 
 export function AssetListPage() {
     const dispatch = useAppDispatch();
@@ -149,18 +150,14 @@ export function AssetListPage() {
                     },
                     {
                         icon: <ContentPasteOutlinedIcon />,
-                        onClick: () => {
-                            const link = AssetsApiService.useAssetLinkOfAsset(item)
-                            navigator
-                                .clipboard
-                                .writeText(link)
-                                .then(() => {
-                                    dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
-                                })
-                                .catch((err) => {
-                                    console.error(err);
-                                    dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
-                                });
+                        onClick: async () => {
+                            const link = AssetsApiService.useAssetLinkOfAsset(item);
+                            const success = await copyToClipboardText(link);
+                            if (success) {
+                                dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
+                            } else {
+                                dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
+                            }
                         },
                         tooltip: item.isPrivate ? `Öffentlicher Zugriff für Datei deaktiviert` : `Link zur Datei in Zwischenablage kopieren`,
                         disabled: item.isPrivate ?? undefined,

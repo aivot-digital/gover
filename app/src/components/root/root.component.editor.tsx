@@ -23,6 +23,7 @@ import {createCustomerPath} from '../../utils/url-path-utils';
 import {withDelay} from '../../utils/with-delay';
 import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
 import {LoadedForm} from '../../slices/app-slice';
+import {copyToClipboardText} from '../../utils/copy-to-clipboard';
 
 export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedForm>) {
     const dispatch = useAppDispatch();
@@ -188,17 +189,13 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
                                 {
                                     icon: <ContentPasteOutlinedIcon />,
                                     tooltip: 'Link in Zwischenablage kopieren',
-                                    onClick: () => {
-                                        navigator
-                                            .clipboard
-                                            .writeText(generalLink)
-                                            .then(() => {
-                                                dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
-                                            })
-                                            .catch((err) => {
-                                                console.error(err);
-                                                dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
-                                            });
+                                    onClick: async () => {
+                                        const success = await copyToClipboardText(generalLink);
+                                        if (success) {
+                                            dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
+                                        } else {
+                                            dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
+                                        }
                                     },
                                 },
                                 {
@@ -231,17 +228,13 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
                                 {
                                     icon: <ContentPasteOutlinedIcon />,
                                     tooltip: 'Link in Zwischenablage kopieren',
-                                    onClick: () => {
-                                        navigator
-                                            .clipboard
-                                            .writeText(versionedLink)
-                                            .then(() => {
-                                                dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
-                                            })
-                                            .catch((err) => {
-                                                console.error(err);
-                                                dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
-                                            });
+                                    onClick: async () => {
+                                        const success = await copyToClipboardText(versionedLink);
+                                        if (success) {
+                                            dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
+                                        } else {
+                                            dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
+                                        }
                                     },
                                 },
                                 {

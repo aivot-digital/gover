@@ -28,6 +28,7 @@ import {ShellNotificationsMenu} from './shell-notifications-menu';
 import Api from '@aivot/mui-material-symbols-400-outlined/dist/api/Api';
 import ReadinessScore from '@aivot/mui-material-symbols-400-outlined/dist/readiness-score/ReadinessScore';
 import FamilyHistory from '@aivot/mui-material-symbols-400-outlined/dist/family-history/FamilyHistory';
+import SupervisedUserCircle from '@aivot/mui-material-symbols-400-outlined/dist/supervised-user-circle/SupervisedUserCircle';
 
 /* -----------------------------
  * Types & Navigation Structure
@@ -115,10 +116,16 @@ const DrawerGroups: DrawerGroup[] = [
                 children: [
                     {icon: ModuleIcons.departments, label: 'Fachbereiche', to: '/departments'},
                     {icon: ModuleIcons.departments, label: 'Fachbereiche (Baum)', to: '/departments-tree'},
-                    {icon: ModuleIcons.users, label: 'Mitarbeiter:innen', to: '/users'},
                     {icon: ModuleIcons.teams, label: 'Teams', to: '/teams'},
-                    {icon: ModuleIcons.roles, label: 'Domänenrollen', to: '/user-roles'},
-                    {icon: ModuleIcons.roles, label: 'Systemrollen', to: '/system-roles'},
+                    {icon: ModuleIcons.users, label: 'Mitarbeiter:innen', to: '/users'},
+                    {
+                        icon: <SupervisedUserCircle />,
+                        label: 'Rollenverwaltung',
+                        children: [
+                            {icon: ModuleIcons.roles, label: 'Domänenrollen', to: '/user-roles'},
+                            {icon: ModuleIcons.roles, label: 'Systemrollen', to: '/system-roles'},
+                        ],
+                    },
                     {icon: <FamilyHistory/>, label: 'Organigramm', to: '/organigram'},
                 ],
             },

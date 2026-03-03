@@ -108,6 +108,7 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps): ReactNode
                 href={href}
                 to={to}
                 target={target}
+                aria-label={action.ariaLabel}
                 endIcon={action.icon}
                 disabled={shouldDisable}
             >
@@ -128,6 +129,7 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps): ReactNode
                 href={href}
                 to={to}
                 target={target}
+                aria-label={action.ariaLabel}
                 disabled={shouldDisable}
                 edge={isFirst ? 'start' : isLast ? 'end' : false}
             >

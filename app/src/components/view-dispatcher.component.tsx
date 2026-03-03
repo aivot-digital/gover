@@ -19,6 +19,7 @@ import {useAppSelector} from '../hooks/use-app-selector';
 import {selectDisableElementContextMenu, setComponentTree} from '../slices/admin-settings-slice';
 import {generateComponentTitle} from '../utils/generate-component-title';
 import JumpToElement from '@aivot/mui-material-symbols-400-outlined/dist/jump-to-element/JumpToElement';
+import {copyToClipboardText} from '../utils/copy-to-clipboard';
 
 interface DispatcherComponentProps<T extends AnyElement> {
     rootElement: AnyElement;
@@ -263,14 +264,12 @@ function ContextMenuButton(props: ContextMenuButtonProps) {
     };
 
     const handleCopyId = async () => {
-        navigator.clipboard.writeText(element.id ?? '')
-            .then(() => {
-                dispatch(showSuccessSnackbar('Element-ID in Zwischenablage kopiert'));
-            })
-            .catch((error) => {
-                console.error('Failed to copy ID', error);
-                dispatch(showErrorSnackbar('Element-ID konnte nicht in Zwischenablage kopiert werden'));
-            });
+        const success = await copyToClipboardText(element.id ?? '');
+        if (success) {
+            dispatch(showSuccessSnackbar('Element-ID in Zwischenablage kopiert'));
+        } else {
+            dispatch(showErrorSnackbar('Element-ID konnte nicht in Zwischenablage kopiert werden'));
+        }
 
         handleMenuClose();
     };
@@ -394,4 +393,3 @@ function ContextMenuButton(props: ContextMenuButtonProps) {
         </>
     );
 }
-

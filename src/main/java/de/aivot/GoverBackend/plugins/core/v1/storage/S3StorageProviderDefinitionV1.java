@@ -381,7 +381,9 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         }
 
         var metadata = new StorageItemMetadata();
-        metadata.putAll(response.userMetadata());
+        if (response.userMetadata() != null) {
+            metadata.putAll(response.userMetadata());
+        }
 
         return Optional.of(new StorageDocument(
                 path,

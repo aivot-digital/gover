@@ -126,7 +126,7 @@ export function StorageProviderDetailsPage(): ReactNode {
                     }}
                     parentLink={{
                         label: 'Liste der Speicheranbieter',
-                        to: '/payment-providers',
+                        to: '/storage-providers',
                     }}
                     entityType={ServerEntityType.StorageProviders}
                 />

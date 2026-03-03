@@ -89,7 +89,7 @@ public class StorageProviderEntity {
     private Boolean systemProvider;
 
     @Nonnull
-    @NotNull(message = "Die Konfiguration des Speicheranbieters darf nicht null sein.")
+    @NotNull(message = "Die Liste der Metadatenattribute des Speicheranbieters darf nicht null sein.")
     @Column(columnDefinition = "jsonb")
     @Convert(converter = StorageProviderMetadataAttributesConverter.class)
     private List<StorageProviderMetadataAttribute> metadataAttributes;

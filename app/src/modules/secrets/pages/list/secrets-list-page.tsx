@@ -14,6 +14,7 @@ import {CellLink} from '../../../../components/cell-link/cell-link';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
+import {copyToClipboardText} from '../../../../utils/copy-to-clipboard';
 
 export function SecretsListPage() {
     const dispatch = useAppDispatch();
@@ -116,17 +117,13 @@ export function SecretsListPage() {
                     },
                     {
                         icon: <ContentPasteOutlinedIcon />,
-                        onClick: () => {
-                            navigator
-                                .clipboard
-                                .writeText(item.key)
-                                .then(() => {
-                                    dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
-                                })
-                                .catch((err) => {
-                                    console.error(err);
-                                    dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
-                                });
+                        onClick: async () => {
+                            const success = await copyToClipboardText(item.key);
+                            if (success) {
+                                dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
+                            } else {
+                                dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
+                            }
                         },
                         tooltip: `Schlüssel (ID) in Zwischenablage kopieren (${item.key})`,
                     }

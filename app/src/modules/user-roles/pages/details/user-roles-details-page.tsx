@@ -1,5 +1,4 @@
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
-import KeyOutlinedIcon from '@mui/icons-material/KeyOutlined';
 import {Typography} from '@mui/material';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
 import React from 'react';
@@ -47,7 +46,7 @@ export function UserRolesDetailsPage() {
                 tabs={[
                     {
                         path: '/user-roles/:id',
-                        label: 'Allgemeine Informationen',
+                        label: 'Konfiguration',
                     },
                     {
                         path: '/user-roles/:id/department-memberships',

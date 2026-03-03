@@ -20,6 +20,7 @@
 * **Build-System:** Create separate workflow to build "next" images.
 * **System:** Add new prototype for processes.
 * **System:** Improve plugin system for better extensibility and maintainability.
+* **System:** Add generic storage provider functionality.
 
 ## [4.6.0](https://github.com/aivot-digital/gover/compare/v4.5.4...v4.6.0) (TBD)
 

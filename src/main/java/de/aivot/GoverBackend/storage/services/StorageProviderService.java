@@ -107,7 +107,15 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
             @Nonnull StorageProviderEntity existingEntity
     ) throws ResponseException {
         if (existingEntity.getSystemProvider()) {
-            throw ResponseException.badRequest("Dieser Speicheranbieter kann nicht bearbeitet werden");
+            if (entity.getStatus() == StorageProviderStatus.SyncPending) {
+                storageProviderRepository.save(
+                        existingEntity
+                                .setStatus(StorageProviderStatus.SyncPending)
+                );
+                rabbitTemplate.convertAndSend(StorageSyncWorker.DO_WORK_ON_STORAGE_SYNC_QUEUE, existingEntity.getId());
+            } else {
+                throw ResponseException.badRequest("Dieser Speicheranbieter kann nicht bearbeitet werden");
+            }
         }
 
         var def = storageProviderDefinitionService
@@ -117,10 +125,10 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
                 )
                 .orElseThrow(() -> ResponseException.badRequest(
                         "Die Speicheranbieter-Definition mit dem Schlüssel " +
-                        existingEntity.getStorageProviderDefinitionKey() +
-                        " und der Version " +
-                        existingEntity.getStorageProviderDefinitionVersion() +
-                        " ist nicht vorhanden")
+                                existingEntity.getStorageProviderDefinitionKey() +
+                                " und der Version " +
+                                existingEntity.getStorageProviderDefinitionVersion() +
+                                " ist nicht vorhanden")
                 );
 
         existingEntity.setName(entity.getName());
@@ -185,7 +193,7 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
             @Nonnull StorageProviderEntity entity
     ) throws ResponseException {
         if (entity.getSystemProvider()) {
-            throw ResponseException.badRequest("Dieser Speicheranbieter kann nicht bearbeitet werden");
+            throw ResponseException.badRequest("Dieser Speicheranbieter kann nicht gelöscht werden, da es sich um einen Systemanbieter handelt");
         }
 
         storageProviderRepository.delete(entity);

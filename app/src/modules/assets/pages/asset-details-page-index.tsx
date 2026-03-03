@@ -28,6 +28,7 @@ import {StatusTable} from '../../../components/status-table/status-table';
 import {BadgeOutlined} from '@mui/icons-material';
 import {getFileTypeIcon} from '../../../utils/file-type-icon';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {copyToClipboardText} from '../../../utils/copy-to-clipboard';
 
 export const AssetSchema = yup.object({
     filename: yup.string()
@@ -306,9 +307,13 @@ export function AssetDetailsPageIndex() {
                                 }}
                                 endAction={{
                                     icon: <ContentPasteOutlinedIcon />,
-                                    onClick: () => {
-                                        navigator.clipboard.writeText(AssetsApiService.useAssetLinkOfAsset(asset));
-                                        dispatch(showSuccessSnackbar('Link in die Zwischenablage kopiert.'));
+                                    onClick: async () => {
+                                        const success = await copyToClipboardText(AssetsApiService.useAssetLinkOfAsset(asset));
+                                        if (success) {
+                                            dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
+                                        } else {
+                                            dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
+                                        }
                                     },
                                 }}
                                 hint="Kopieren Sie diesen Link um das Dokument / den Medieninhalt in Ihren Formularen zu referenzieren."
