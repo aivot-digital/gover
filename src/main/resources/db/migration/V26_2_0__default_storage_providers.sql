@@ -76,7 +76,8 @@ values (1,
         '[]'::jsonb,
         null,
         now(),
-        now());
+        now())
+on conflict do nothing;
 
 -- fix id sequence for the storage providers
 select setval('storage_providers_id_seq',
