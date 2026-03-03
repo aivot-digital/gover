@@ -46,7 +46,6 @@ import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import {getFileTypeIcon} from '../../../utils/file-type-icon';
 import {type StorageProviderEntity} from '../entities/storage-provider-entity';
-import {downloadBlobFile} from '../../../utils/download-utils';
 import {humanizeFileSize} from '../../../utils/humanization-utils';
 
 interface StorageExplorerProps {
@@ -404,7 +403,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                     >
                         <Box sx={{display: 'inline-flex', alignItems: 'center', color: 'text.secondary'}}>
                             {itemIsDirectory
-                                ? <FolderOutlinedIcon fontSize="small" />
+                                ? <FolderOutlinedIcon fontSize="small"/>
                                 : getFileTypeIcon(item.mimeType, {fontSize: 'small'})}
                         </Box>
 
@@ -555,7 +554,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                 void copyToClipboard(value, copyLabel);
                             }}
                         >
-                            <ContentCopyOutlinedIcon fontSize="small" />
+                            <ContentCopyOutlinedIcon fontSize="small"/>
                         </IconButton>
                     </Tooltip>
                 </Stack>
@@ -581,7 +580,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                 }}
             >
                 {isLoadingPath ? (
-                    <CircularProgress size={13} />
+                    <CircularProgress size={13}/>
                 ) : ((cachedChildren != null || wasProbed) && !hasChildren) ? (
                     <Tooltip
                         title="Keine Unterordner gefunden"
@@ -593,7 +592,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                 disabled={true}
                                 sx={{opacity: 0.45, p: 0.25}}
                             >
-                                <ChevronRightOutlinedIcon fontSize="small" />
+                                <ChevronRightOutlinedIcon fontSize="small"/>
                             </IconButton>
                         </span>
                     </Tooltip>
@@ -611,8 +610,8 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                             sx={{p: 0.25}}
                         >
                             {isExpanded(normalizedPath)
-                                ? <ExpandMoreOutlinedIcon fontSize="small" />
-                                : <ChevronRightOutlinedIcon fontSize="small" />}
+                                ? <ExpandMoreOutlinedIcon fontSize="small"/>
+                                : <ChevronRightOutlinedIcon fontSize="small"/>}
                         </IconButton>
                     </Tooltip>
                 )}
@@ -651,7 +650,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                         {renderExpandButton(pathFromRoot)}
 
                         <ListItemIcon sx={{minWidth: 26}}>
-                            <FolderOutlinedIcon fontSize="small" />
+                            <FolderOutlinedIcon fontSize="small"/>
                         </ListItemIcon>
                         <ListItemText
                             primary={(
@@ -755,7 +754,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                 }}
                                 disabled={isRootPath}
                             >
-                                <HomeOutlinedIcon fontSize="small" />
+                                <HomeOutlinedIcon fontSize="small"/>
                             </IconButton>
                         </span>
                     </Tooltip>
@@ -772,7 +771,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                 }}
                                 disabled={isRootPath}
                             >
-                                <ArrowUpwardOutlinedIcon fontSize="small" />
+                                <ArrowUpwardOutlinedIcon fontSize="small"/>
                             </IconButton>
                         </span>
                     </Tooltip>
@@ -846,7 +845,8 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                 </Stack>
             )}
 
-            <Grid container sx={{alignItems: 'flex-start'}}>
+            <Grid container
+                  sx={{alignItems: 'flex-start'}}>
                 <Grid
                     size={{xs: 12, md: 3}}
                     sx={{
@@ -906,7 +906,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                 >
                                     {renderExpandButton(ROOT_PATH)}
                                     <ListItemIcon sx={{minWidth: 26}}>
-                                        <HomeOutlinedIcon fontSize="small" />
+                                        <HomeOutlinedIcon fontSize="small"/>
                                     </ListItemIcon>
                                     <ListItemText
                                         primary={(
@@ -956,7 +956,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                 InputProps={{
                                     startAdornment: (
                                         <InputAdornment position="start">
-                                            <SearchOutlinedIcon fontSize="small" />
+                                            <SearchOutlinedIcon fontSize="small"/>
                                         </InputAdornment>
                                     ),
                                     endAdornment: search.trim().length > 0 ? (
@@ -971,7 +971,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                                         setSearch('');
                                                     }}
                                                 >
-                                                    <ClearOutlinedIcon fontSize="small" />
+                                                    <ClearOutlinedIcon fontSize="small"/>
                                                 </IconButton>
                                             </Tooltip>
                                         </InputAdornment>
@@ -1028,7 +1028,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                         sx={{height: '100%'}}
                                         spacing={1}
                                     >
-                                        <InfoOutlinedIcon color="disabled" />
+                                        <InfoOutlinedIcon color="disabled"/>
                                         <Typography
                                             variant="body2"
                                             color="text.secondary"
@@ -1098,7 +1098,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                             top: 12,
                         }}
                     >
-                        <CloseOutlinedIcon fontSize="small" />
+                        <CloseOutlinedIcon fontSize="small"/>
                     </IconButton>
                 </DialogTitle>
 
@@ -1160,7 +1160,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
 
                             {metadataEntries.length > 0 && (
                                 <>
-                                    <Divider sx={{my: 0.25}} />
+                                    <Divider sx={{my: 0.25}}/>
                                     <Typography variant="subtitle2">Metadaten</Typography>
                                     {metadataEntries.map(([key, value]) => (
                                         <Stack
@@ -1200,7 +1200,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                 <DialogActions sx={{pt: 2}}>
                     <Button
                         variant="contained"
-                        startIcon={<DownloadOutlinedIcon />}
+                        startIcon={<DownloadOutlinedIcon/>}
                         disabled={!allowFileDownload || isDownloading || dialogItem == null}
                         onClick={() => {
                             if (!allowFileDownload || dialogItem == null) {
@@ -1208,11 +1208,10 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                             }
 
                             setIsDownloading(true);
-                            api
-                                .downloadFile(providerId, dialogItem.pathFromRoot)
-                                .then((blob) => {
-                                    downloadBlobFile(dialogItem.filename, blob);
-                                })
+                            Promise
+                                // Keep this for possible future extension for real file downloads.
+                                // For now, files should be only downloadable, in their respective context (Asset or Process Instance Attachment)
+                                .resolve()
                                 .catch((err) => {
                                     dispatch(showApiErrorSnackbar(err, 'Die Datei konnte nicht heruntergeladen werden.'));
                                 })

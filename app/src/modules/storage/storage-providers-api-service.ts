@@ -71,10 +71,6 @@ export class StorageProvidersApiService extends BaseCrudApiService<StorageProvid
         });
     }
 
-    public async downloadFile(id: number, path: string): Promise<Blob> {
-        return await this.getBlob(`${this.buildPath(id)}files${path}`, {});
-    }
-
     public async testStorageProvider(id: number, writable: boolean = false): Promise<{ success: boolean; error?: string }> {
         return await this.post<any, { success: boolean; error?: string }>(`${this.buildPath(id)}test/?writable=${writable}`, {});
     }
