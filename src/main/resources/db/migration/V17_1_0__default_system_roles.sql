@@ -286,6 +286,8 @@ values (1,
             'team_membership.read',
 
             'domain_resource_permission.read'
+
+            'storage_provider.read',
             ])
 on conflict (id) do update
     set name        = excluded.name,
