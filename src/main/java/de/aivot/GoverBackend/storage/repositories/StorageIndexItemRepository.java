@@ -41,7 +41,10 @@ public interface StorageIndexItemRepository extends JpaRepository<StorageIndexIt
             value = """
                     DELETE FROM storage_index_items
                     WHERE storage_provider_id = :storageProviderId
-                      AND (path_from_root = :folderPath OR path_from_root LIKE CONCAT(:folderPath, '%'))
+                      AND (
+                          path_from_root = CAST(:folderPath AS text)
+                          OR path_from_root LIKE (CAST(:folderPath AS text) || '%')
+                      )
                     """,
             nativeQuery = true
     )
