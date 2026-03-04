@@ -275,7 +275,7 @@ public class AssetController {
     public VStorageIndexItemWithAssetEntity updateFile(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer storageProviderId,
-            @Nonnull @RequestPart(value = "file", required = true) MultipartFile newAssetFile,
+            @Nullable @RequestPart(value = "file", required = false) MultipartFile newAssetFile,
             @Nonnull @Valid @RequestPart(value = "data", required = true) AssetRequestDTO updatedAsset,
             @Nonnull HttpServletRequest request
     ) throws ResponseException {
@@ -294,16 +294,18 @@ public class AssetController {
                 .findByStorageProviderIdAndStoragePathFromRoot(storageProvider.getId(), filePath)
                 .orElseThrow(ResponseException::notFound);
 
-        try {
-            storageService
-                    .storeDocument(
-                            storageProvider.getId(),
-                            filePath,
-                            newAssetFile.getInputStream(),
-                            updatedAsset.metadata() != null ? updatedAsset.metadata() : StorageItemMetadata.empty()
-                    );
-        } catch (Exception e) {
-            throw ResponseException.badRequest("Fehler beim Speichern des Datei-Inhalts.");
+        if (newAssetFile != null && !newAssetFile.isEmpty()) {
+            try {
+                storageService
+                        .storeDocument(
+                                storageProvider.getId(),
+                                filePath,
+                                newAssetFile.getInputStream(),
+                                updatedAsset.metadata() != null ? updatedAsset.metadata() : StorageItemMetadata.empty()
+                        );
+            } catch (Exception e) {
+                throw ResponseException.badRequest("Fehler beim Speichern des Datei-Inhalts.");
+            }
         }
 
         assetRepository
