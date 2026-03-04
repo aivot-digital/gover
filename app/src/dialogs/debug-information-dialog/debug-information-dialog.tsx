@@ -4,15 +4,15 @@ import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import {format} from 'date-fns';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
-import {HealthData, HealthDataComponents} from '../../models/dtos/health-data';
+import {type HealthData, type HealthDataComponents} from '../../models/dtos/health-data';
 import {SystemApiService} from '../../modules/system/system-api-service';
 import {copyToClipboardText} from '../../utils/copy-to-clipboard';
 import {downloadTextFile} from '../../utils/download-utils';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {AppInfo} from '../../app-info';
-import {PluginDTO, PluginsApiService} from '../../services/plugins-api-service';
-import {User} from '../../modules/users/models/user';
+import {type PluginDTO, PluginsApiService} from '../../services/plugins-api-service';
+import {type User} from '../../modules/users/models/user';
 import {UsersApiService} from '../../modules/users/users-api-service';
 
 interface DebugInformationDialogProps {
@@ -61,13 +61,40 @@ function anonymizeEmailKeepDomain(value: string): string {
     return `${maskedLocalPart}@${domain}`;
 }
 
-export function DebugInformationDialog(props: DebugInformationDialogProps) {
+function toDebugBooleanString(value: boolean): string {
+    return value ? 'true' : 'false';
+}
+
+function toDebugOptionalBooleanString(value: boolean | undefined): string {
+    if (value == null) {
+        return 'unknown';
+    }
+
+    return value ? 'true' : 'false';
+}
+
+export function DebugInformationDialog(props: DebugInformationDialogProps): React.ReactElement {
     const dispatch = useAppDispatch();
-    const [fetchedHealthData, setFetchedHealthData] = useState<HealthData | 'error'>();
-    const [fetchedPlugins, setFetchedPlugins] = useState<PluginDTO[]>();
-    const [pluginsLoadingFailed, setPluginsLoadingFailed] = useState(false);
-    const [selfUser, setSelfUser] = useState<User>();
-    const [selfLoadingFailed, setSelfLoadingFailed] = useState(false);
+    const [
+        fetchedHealthData,
+        setFetchedHealthData,
+    ] = useState<HealthData | 'error'>();
+    const [
+        fetchedPlugins,
+        setFetchedPlugins,
+    ] = useState<PluginDTO[]>();
+    const [
+        pluginsLoadingFailed,
+        setPluginsLoadingFailed,
+    ] = useState(false);
+    const [
+        selfUser,
+        setSelfUser,
+    ] = useState<User>();
+    const [
+        selfLoadingFailed,
+        setSelfLoadingFailed,
+    ] = useState(false);
 
     useEffect(() => {
         if (!props.open || props.healthData != null) {
@@ -100,7 +127,10 @@ export function DebugInformationDialog(props: DebugInformationDialogProps) {
         return () => {
             isCurrent = false;
         };
-    }, [props.open, props.healthData]);
+    }, [
+        props.open,
+        props.healthData,
+    ]);
 
     useEffect(() => {
         if (!props.open || props.plugins != null) {
@@ -130,7 +160,10 @@ export function DebugInformationDialog(props: DebugInformationDialogProps) {
         return () => {
             isCurrent = false;
         };
-    }, [props.open, props.plugins]);
+    }, [
+        props.open,
+        props.plugins,
+    ]);
 
     useEffect(() => {
         if (!props.open) {
@@ -168,9 +201,9 @@ export function DebugInformationDialog(props: DebugInformationDialogProps) {
     const hasBuildNumber = AppInfo.number !== '@buildNumber';
     const parsedBuildDate = new Date(AppInfo.date);
     const hasBuildDate = AppInfo.date !== '@buildTimestamp' && !Number.isNaN(parsedBuildDate.getTime());
-    const versionLabel = hasBuildVersion
-        ? (hasBuildNumber ? `${AppInfo.version} (Build ${AppInfo.number})` : AppInfo.version)
-        : '5.x (DEV)';
+    const versionLabel = hasBuildVersion ?
+        (hasBuildNumber ? `${AppInfo.version} (Build ${AppInfo.number})` : AppInfo.version) :
+        '5.x (DEV)';
     const compileDate = hasBuildDate ? parsedBuildDate : new Date();
 
     const debugInfoText = useMemo(() => {
@@ -182,9 +215,9 @@ export function DebugInformationDialog(props: DebugInformationDialogProps) {
             `- buildVersionRaw: ${AppInfo.version}`,
             `- buildNumberRaw: ${AppInfo.number}`,
             `- buildDateRaw: ${AppInfo.date}`,
-            `- hasBuildVersion: ${hasBuildVersion}`,
-            `- hasBuildNumber: ${hasBuildNumber}`,
-            `- hasBuildDate: ${hasBuildDate}`,
+            `- hasBuildVersion: ${toDebugBooleanString(hasBuildVersion)}`,
+            `- hasBuildNumber: ${toDebugBooleanString(hasBuildNumber)}`,
+            `- hasBuildDate: ${toDebugBooleanString(hasBuildDate)}`,
             `- compileDate: ${compileDate.toISOString()}`,
             `- appMode: ${AppInfo.mode}`,
             `- frontendMode: ${import.meta.env.MODE}`,
@@ -192,8 +225,8 @@ export function DebugInformationDialog(props: DebugInformationDialogProps) {
             `- oidcHostname: ${AppConfig.oidc.hostname}`,
             `- oidcRealm: ${AppConfig.oidc.realm}`,
             `- oidcClient: ${AppConfig.oidc.client}`,
-            `- oidcIdpHintConfigured: ${AppConfig.oidc.idp_hint.length > 0}`,
-            `- sentryDsnConfigured: ${AppConfig.sentry.dsn.length > 0}`,
+            `- oidcIdpHintConfigured: ${toDebugBooleanString(AppConfig.oidc.idp_hint.length > 0)}`,
+            `- sentryDsnConfigured: ${toDebugBooleanString(AppConfig.sentry.dsn.length > 0)}`,
             `- page: ${window.location.origin}${window.location.pathname}`,
             '',
             '## health',
@@ -206,7 +239,7 @@ export function DebugInformationDialog(props: DebugInformationDialogProps) {
         } else {
             lines.push(`- overallStatus: ${healthData.status}`);
             lines.push(`- payload: ${JSON.stringify(healthData)}`);
-            const componentsInOrder: (keyof HealthDataComponents)[] = [
+            const componentsInOrder: Array<keyof HealthDataComponents> = [
                 'db',
                 'mail',
                 'av',
@@ -247,9 +280,10 @@ export function DebugInformationDialog(props: DebugInformationDialogProps) {
                 lines.push(`- ${plugin.key}: ${plugin.name} v${plugin.version}`);
                 lines.push(`- ${plugin.key}.buildDate: ${plugin.buildDate}`);
                 lines.push(`- ${plugin.key}.vendor: ${plugin.vendorName} (${plugin.vendorWebsite})`);
-                lines.push(`- ${plugin.key}.deprecated: ${plugin.deprecationNotice != null}`);
+                lines.push(`- ${plugin.key}.deprecated: ${toDebugBooleanString(plugin.deprecationNotice != null)}`);
                 lines.push(`- ${plugin.key}.components: ${componentCount}`);
-                lines.push(`- ${plugin.key}.componentTypes: ${componentTypes.join(', ') || 'none'}`);
+                const componentTypesText = componentTypes.length > 0 ? componentTypes.join(', ') : 'none';
+                lines.push(`- ${plugin.key}.componentTypes: ${componentTypesText}`);
             }
         }
 
@@ -262,13 +296,13 @@ export function DebugInformationDialog(props: DebugInformationDialogProps) {
             lines.push(`- id: ${selfUser.id}`);
             lines.push(`- fullName: ${anonymizeName(selfUser.fullName)}`);
             lines.push(`- email: ${anonymizeEmailKeepDomain(selfUser.email)}`);
-            lines.push(`- enabled: ${selfUser.enabled}`);
-            lines.push(`- verified: ${selfUser.verified}`);
-            lines.push(`- isSystemAdmin: ${selfUser.isSystemAdmin}`);
-            lines.push(`- isSuperAdmin: ${selfUser.isSuperAdmin}`);
+            lines.push(`- enabled: ${toDebugBooleanString(selfUser.enabled)}`);
+            lines.push(`- verified: ${toDebugBooleanString(selfUser.verified)}`);
+            lines.push(`- isSystemAdmin: ${toDebugBooleanString(selfUser.isSystemAdmin)}`);
+            lines.push(`- isSuperAdmin: ${toDebugBooleanString(selfUser.isSuperAdmin)}`);
             lines.push(`- globalRole: ${selfUser.globalRole}`);
             lines.push(`- systemRoleId: ${selfUser.systemRoleId ?? 'none'}`);
-            lines.push(`- deletedInIdp: ${selfUser.deletedInIdp}`);
+            lines.push(`- deletedInIdp: ${toDebugBooleanString(selfUser.deletedInIdp)}`);
         }
 
         const colorScheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -295,17 +329,19 @@ export function DebugInformationDialog(props: DebugInformationDialogProps) {
             `- screen: ${window.screen.width}x${window.screen.height}`,
             `- visibilityState: ${document.visibilityState}`,
             `- colorScheme: ${colorScheme}`,
-            `- prefersReducedMotion: ${reducedMotion}`,
-            `- isTouchDevice: ${isTouchDevice}`,
-            `- online: ${navigator.onLine}`,
-            `- cookieEnabled: ${navigator.cookieEnabled}`,
+            `- prefersReducedMotion: ${toDebugBooleanString(reducedMotion)}`,
+            `- isTouchDevice: ${toDebugBooleanString(isTouchDevice)}`,
+            `- online: ${toDebugBooleanString(navigator.onLine)}`,
+            `- cookieEnabled: ${toDebugBooleanString(navigator.cookieEnabled)}`,
             `- doNotTrack: ${navigator.doNotTrack ?? 'unknown'}`,
             `- hardwareConcurrency: ${navigator.hardwareConcurrency ?? 'unknown'}`,
             `- deviceMemoryGB: ${(navigator as Navigator & {deviceMemory?: number}).deviceMemory ?? 'unknown'}`,
             `- connectionEffectiveType: ${navigatorWithConnection.connection?.effectiveType ?? 'unknown'}`,
             `- connectionDownlinkMbps: ${navigatorWithConnection.connection?.downlink ?? 'unknown'}`,
             `- connectionRttMs: ${navigatorWithConnection.connection?.rtt ?? 'unknown'}`,
-            `- connectionSaveData: ${navigatorWithConnection.connection?.saveData ?? 'unknown'}`,
+            `- connectionSaveData: ${
+                toDebugOptionalBooleanString(navigatorWithConnection.connection?.saveData)
+            }`,
             '',
             `Generated at: ${new Date().toISOString()}`,
         );
@@ -324,7 +360,7 @@ export function DebugInformationDialog(props: DebugInformationDialogProps) {
         versionLabel,
     ]);
 
-    const handleCopy = async () => {
+    const handleCopy = async (): Promise<void> => {
         const success = await copyToClipboardText(debugInfoText);
         if (success) {
             dispatch(showSuccessSnackbar('Debug-Informationen in die Zwischenablage kopiert.'));
@@ -333,7 +369,7 @@ export function DebugInformationDialog(props: DebugInformationDialogProps) {
         }
     };
 
-    const handleDownload = () => {
+    const handleDownload = (): void => {
         const filename = `gover-debug-info-${format(new Date(), 'yyyyMMdd-HHmmss')}.txt`;
         downloadTextFile(filename, debugInfoText, 'text/plain;charset=utf-8');
         dispatch(showSuccessSnackbar('Debug-Informationen wurden heruntergeladen.'));
@@ -383,7 +419,9 @@ export function DebugInformationDialog(props: DebugInformationDialogProps) {
                     </Typography>
                 </Box>
             </DialogContent>
-            <DialogActions sx={{px: 3, pb: 2}}>
+            <DialogActions sx={{
+                px: 3, pb: 2,
+            }}>
                 <Stack direction="row" spacing={1}>
                     <Button
                         variant="outlined"

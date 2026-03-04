@@ -1,13 +1,13 @@
 import React, {useEffect, useState} from 'react';
 import {Box, Button, CircularProgress, Typography} from '@mui/material';
 import {format} from 'date-fns';
-import {HealthData, HealthDataComponents, Status} from '../../../../../models/dtos/health-data';
+import {type HealthData, type HealthDataComponents, type Status} from '../../../../../models/dtos/health-data';
 import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
 import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutlineOutlined';
 import {AlertComponent} from '../../../../../components/alert/alert-component';
 import {AppInfo} from '../../../../../app-info';
 import {StatusTable} from '../../../../../components/status-table/status-table';
-import {StatusTablePropsItem} from '../../../../../components/status-table/status-table-props';
+import {type StatusTablePropsItem} from '../../../../../components/status-table/status-table-props';
 import {DebugInformationDialog} from '../../../../../dialogs/debug-information-dialog/debug-information-dialog';
 
 import TagIcon from '@mui/icons-material/Tag';
@@ -15,13 +15,22 @@ import EventIcon from '@mui/icons-material/Event';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import {downloadTextFile} from '../../../../../utils/download-utils';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
-import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
 import {SystemApiService} from '../../../../../modules/system/system-api-service';
 import BugReport from '@aivot/mui-material-symbols-400-outlined/dist/bug-report/BugReport';
 
-export function SystemInformation() {
-    const [health, setHealth] = useState<HealthData | 'error'>();
-    const [isDebugInformationDialogOpen, setDebugInformationDialogOpen] = useState(false);
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+    return value != null && typeof value === 'object';
+}
+
+export function SystemInformation(): React.ReactElement {
+    const [
+        health,
+        setHealth,
+    ] = useState<HealthData | 'error'>();
+    const [
+        isDebugInformationDialogOpen,
+        setDebugInformationDialogOpen,
+    ] = useState(false);
 
     useEffect(() => {
         new SystemApiService()
@@ -49,7 +58,7 @@ export function SystemInformation() {
         return health.components[key].status;
     };
 
-    const getStatusIcon = (key: keyof HealthDataComponents) => {
+    const getStatusIcon = (key: keyof HealthDataComponents): React.ReactNode => {
         if (health == null) {
             return <CircularProgress size={24} />;
         }
@@ -66,7 +75,7 @@ export function SystemInformation() {
         }
     };
 
-    const getStatusLabel = (key: keyof HealthDataComponents) => {
+    const getStatusLabel = (key: keyof HealthDataComponents): React.ReactNode => {
         if (health == null) {
             return <Typography fontStyle={'italic'} color={'text.secondary'}>Status wird geladen…</Typography>;
         }
@@ -78,20 +87,28 @@ export function SystemInformation() {
                 return 'Verfügbar';
             case 'DOWN':
                 return 'Nicht verfügbar';
-            default:
-                const comp = (health as HealthData).components![key];
+            default: {
+                const comp = health === 'error' ? undefined : health.components?.[key];
+                if (comp == null) {
+                    return 'Unbekannt';
+                }
+
                 if ('details' in comp) {
-                    const details = comp.details;
-                    if (details != null) {
-                        if ('error' in details) {
-                            return details.error;
+                    const details: unknown = comp.details;
+                    if (isObjectRecord(details)) {
+                        const error = details.error;
+                        if (typeof error === 'string' && error.length > 0) {
+                            return error;
                         }
-                        if ('hint' in details) {
-                            return details.hint;
+
+                        const hint = details.hint;
+                        if (typeof hint === 'string' && hint.length > 0) {
+                            return hint;
                         }
                     }
                 }
                 return 'Unbekannt';
+            }
         }
     };
 
@@ -138,9 +155,9 @@ export function SystemInformation() {
     const parsedBuildDate = new Date(AppInfo.date);
     const hasBuildDate = AppInfo.date !== '@buildTimestamp' && !Number.isNaN(parsedBuildDate.getTime());
 
-    const versionLabel = hasBuildVersion
-        ? (hasBuildNumber ? `${AppInfo.version} (Build ${AppInfo.number})` : AppInfo.version)
-        : '5.x (DEV)';
+    const versionLabel = hasBuildVersion ?
+        (hasBuildNumber ? `${AppInfo.version} (Build ${AppInfo.number})` : AppInfo.version) :
+        '5.x (DEV)';
     const compileDate = hasBuildDate ? parsedBuildDate : new Date();
 
     const systemInformationItems: StatusTablePropsItem[] = [
@@ -162,7 +179,11 @@ export function SystemInformation() {
                 label="Softwareinformationen"
                 labelVariant="subtitle1"
                 labelSx={{}}
-                description="Hier finden Sie wichtige Informationen über die einzelnen Komponenten der Software. Sollten Sie mit dem technischen Support in Kontakt treten, können diese Informationen hilfreich sein um Ihnen schnell weiterzuhelfen."
+                description={[
+                    'Hier finden Sie wichtige Informationen über die einzelnen Komponenten der Software.',
+                    'Sollten Sie mit dem technischen Support in Kontakt treten, können diese Informationen',
+                    'hilfreich sein um Ihnen schnell weiterzuhelfen.',
+                ].join(' ')}
                 descriptionSx={{
                     maxWidth: 900,
                 }}
@@ -265,17 +286,18 @@ export function SystemInformation() {
                     sx={{mt: 2.5}}
                     startIcon={<FileDownloadOutlinedIcon />}
                     onClick={() => {
-                        new SystemApiService()
+                        void new SystemApiService()
                             .getHttpExchanges()
                             .then((exchanges) => {
-                                const lines: string[] = [
-                                    'uri,method,timestamp,status,timing',
-                                ];
+                                const lines: string[] = ['uri,method,timestamp,status,timing'];
                                 for (const exchange of exchanges.exchanges) {
                                     lines.push(`"${exchange.request.uri}","${exchange.request.method}","${exchange.timestamp}",${exchange.response.status},"${exchange.timeTaken}"`);
                                 }
 
                                 downloadTextFile('http-austausch.csv', lines.join('\n'), 'text/csv');
+                            })
+                            .catch((err) => {
+                                console.error(err);
                             });
                     }}
                 >

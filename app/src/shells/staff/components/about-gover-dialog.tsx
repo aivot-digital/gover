@@ -3,7 +3,6 @@ import CloseIcon from '@mui/icons-material/Close';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import CodeIcon from '@mui/icons-material/Code';
 import ListAltIcon from '@mui/icons-material/ListAlt';
-import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
 import React from 'react';
 import {AppInfo} from '../../../app-info';
 import {createApiPath} from '../../../utils/url-path-utils';
@@ -15,11 +14,14 @@ interface AboutGoverDialogProps {
     onClose: () => void;
 }
 
-export function AboutGoverDialog({ open, onClose }: AboutGoverDialogProps) {
+export function AboutGoverDialog({ open, onClose }: AboutGoverDialogProps): React.ReactElement {
     const theme = useTheme();
-    const [isDebugInformationDialogOpen, setDebugInformationDialogOpen] = React.useState(false);
+    const [
+        isDebugInformationDialogOpen,
+        setDebugInformationDialogOpen,
+    ] = React.useState(false);
 
-    const handleClose = () => {
+    const handleClose = (): void => {
         setDebugInformationDialogOpen(false);
         onClose();
     };
@@ -34,38 +36,40 @@ export function AboutGoverDialog({ open, onClose }: AboutGoverDialogProps) {
                 PaperProps={{
                     sx: {
                         borderRadius: 3,
-                        overflow: "hidden",
+                        overflow: 'hidden',
                         boxShadow: 6,
                     },
                 }}
             >
                 <Box
                     sx={{
-                        position: "relative",
+                        position: 'relative',
                         height: 280,
                         backgroundImage: 'url("/staff/assets/images/about-gover-bg.jpg")',
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "#fff",
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#fff',
                     }}
                 >
                     <Box
                         component="img"
                         src="/staff/assets/images/about-gover-logo.svg"
                         alt="Gover Logo"
-                        sx={{ width: 250, height: "auto", zIndex: 2, mb: 3.5 }}
+                        sx={{
+                            width: 250, height: 'auto', zIndex: 2, mb: 3.5,
+                        }}
                     />
 
                     <IconButton
                         onClick={handleClose}
                         sx={{
-                            position: "absolute",
+                            position: 'absolute',
                             top: 8,
                             right: 8,
-                            color: "white",
+                            color: 'white',
                         }}
                     >
                         <CloseIcon />
@@ -92,19 +96,29 @@ export function AboutGoverDialog({ open, onClose }: AboutGoverDialogProps) {
 
                 </Box>
 
-                <Box sx={{ p: 4, textAlign: "center" }}>
+                <Box sx={{
+                    p: 4, textAlign: 'center',
+                }}>
                     <Typography variant="h2" fontWeight={600} sx={{ mb: 2 }}>
                         Über Gover Version {AppInfo.version === '@buildVersion' ? '5.x (DEV)' : AppInfo.version}
                     </Typography>
 
                     <Typography
                         variant="body1"
-                        sx={{ color: theme.palette.text.secondary, mb: 4 }}
+                        sx={{
+                            color: theme.palette.text.secondary, mb: 4,
+                        }}
                     >
                         Gover ist die quelloffene Software-Plattform für Ende-zu-Ende digitalisierte Antragsprozesse.
                         Einfach bedienbar und flexibel einsetzbar für Verwaltungen jeder Größe.
                         Entwickelt von Aivot und{' '}
-                        <abbr title={'Kontributoren im Kontext von Open Source sind Einzelpersonen und Organisationen, die an frei verfügbaren Softwareprojekten mitwirken, indem sie Code schreiben, Fehler melden, die Dokumentation verbessern oder die Community unterstützen.'}>
+                        <abbr
+                            title={[
+                                'Kontributoren im Kontext von Open Source sind Einzelpersonen und Organisationen,',
+                                'die an frei verfügbaren Softwareprojekten mitwirken, indem sie Code schreiben,',
+                                'Fehler melden, die Dokumentation verbessern oder die Community unterstützen.',
+                            ].join(' ')}
+                        >
                             Kontributoren
                         </abbr>{' '}
                         in Deutschland für die deutsche Verwaltung.
