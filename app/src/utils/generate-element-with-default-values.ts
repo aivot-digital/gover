@@ -37,6 +37,7 @@ import {TimeFieldComponentModelMode} from '../models/elements/form/input/time-fi
 import {MapPointFieldElement} from '../models/elements/form/input/map-point-field-element';
 import {DomainUserSelectFieldElement} from '../models/elements/form/input/domain-user-select-field-element';
 import {DomainAndUserSelectItemTypes} from '../models/elements/form/input/domain-user-select-field-element';
+import {AssignmentContextFieldElement} from '../models/elements/form/input/assignment-context-field-element';
 
 function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
     return {
@@ -110,6 +111,7 @@ const elementConstructors: {
     [ElementType.DateTimeRange]: (id: string) => DateTimeRangeFieldElement;
     [ElementType.MapPoint]: (id: string) => MapPointFieldElement;
     [ElementType.DomainAndUserSelect]: (id: string) => DomainUserSelectFieldElement;
+    [ElementType.AssignmentContext]: (id: string) => AssignmentContextFieldElement;
 } = {
     [ElementType.FormLayout]: (id) => ({
         ...makeBase(ElementType.FormLayout, id),
@@ -379,6 +381,17 @@ const elementConstructors: {
     [ElementType.DomainAndUserSelect]: (id) => ({
         ...makeInputBase(ElementType.DomainAndUserSelect, id),
         label: 'Personenkreis',
+        placeholder: 'Organisationseinheit, Team oder Mitarbeiter:in suchen',
+        minItems: undefined,
+        maxItems: undefined,
+        allowedTypes: DomainAndUserSelectItemTypes,
+        processAccessConstraint: undefined,
+    }),
+    [ElementType.AssignmentContext]: (id) => ({
+        ...makeInputBase(ElementType.AssignmentContext, id),
+        label: 'Verantwortlicher Personenkreis',
+        headline: 'Verantwortlicher Personenkreis',
+        text: 'Definieren Sie den Personenkreis, der für diese Aufgabe herangezogen werden kann.',
         placeholder: 'Organisationseinheit, Team oder Mitarbeiter:in suchen',
         minItems: undefined,
         maxItems: undefined,

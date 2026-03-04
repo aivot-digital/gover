@@ -50,6 +50,7 @@ export function generateComponentTitle(component: AnyElement | null | undefined)
         case ElementType.ChipInput:
         case ElementType.MapPoint:
         case ElementType.DomainAndUserSelect:
+        case ElementType.AssignmentContext:
         case ElementType.ReplicatingContainer:
             return stringOrDefault(component.label, defaultElementDescriptor);
         default:

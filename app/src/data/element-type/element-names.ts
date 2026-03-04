@@ -41,6 +41,7 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.DateTimeRange]: 'Datum- und Zeitspanne',
     [ElementType.MapPoint]: 'Kartenpunkt (Technische Preview)',
     [ElementType.DomainAndUserSelect]: 'Domänen- und Mitarbeitendenauswahl',
+    [ElementType.AssignmentContext]: 'Verantwortlicher Personenkreis',
 };
 
 export function getElementName(element: AnyElement): string {

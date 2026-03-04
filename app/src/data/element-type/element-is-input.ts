@@ -40,4 +40,5 @@ export const ElementIsInput: Record<ElementType, boolean> = {
     [ElementType.DateTimeRange]: true,
     [ElementType.MapPoint]: true,
     [ElementType.DomainAndUserSelect]: true,
+    [ElementType.AssignmentContext]: true,
 };

@@ -54,6 +54,8 @@ public class OZGCloudDataFormatService {
             case MapPointInputElement mapPointField -> List.of(buildMapPointField(mapPointField, elementData));
             case DomainAndUserSelectInputElement domainAndUserSelectField ->
                     List.of(buildDomainAndUserSelectField(domainAndUserSelectField, elementData));
+            case AssignmentContextInputElement assignmentContextField ->
+                    List.of(buildAssignmentContextField(assignmentContextField, elementData));
             case FileUploadInputElement fileUploadField -> List.of(buildFileUploadField(fileUploadField, elementData));
             case MultiCheckboxInputElement multiCheckboxField ->
                     List.of(buildMultiCheckboxField(multiCheckboxField, elementData));
@@ -667,6 +669,24 @@ public class OZGCloudDataFormatService {
                 domainAndUserSelectField.getId(),
                 domainAndUserSelectField.getLabel(),
                 domainAndUserSelectField.toDisplayValue(value),
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
+    private OZGCloudFormDataItem buildAssignmentContextField(
+            @Nonnull AssignmentContextInputElement assignmentContextField,
+            @Nonnull ElementData elementData
+    ) {
+        var edo = elementData.mustGet(assignmentContextField);
+        var value = assignmentContextField.formatValue(edo.getValue());
+
+        return new OZGCloudFormDataItem(
+                assignmentContextField.getId(),
+                assignmentContextField.getLabel(),
+                assignmentContextField.toDisplayValue(value),
                 null,
                 null,
                 null,

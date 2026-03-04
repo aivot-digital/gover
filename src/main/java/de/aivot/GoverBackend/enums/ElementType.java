@@ -56,6 +56,7 @@ public enum ElementType implements Identifiable<Integer> {
     DateTimeRange(36),
     MapPoint(37),
     DomainAndUserSelect(38),
+    AssignmentContext(39),
     ;
 
     public static final String ID_FormLayout = "0";
@@ -97,6 +98,7 @@ public enum ElementType implements Identifiable<Integer> {
     public static final String ID_DateTimeRange = "36";
     public static final String ID_MapPoint = "37";
     public static final String ID_DomainAndUserSelect = "38";
+    public static final String ID_AssignmentContext = "39";
 
     private final Integer key;
 
@@ -165,6 +167,7 @@ public enum ElementType implements Identifiable<Integer> {
             case DateTimeRange -> new DateTimeRangeInputElement();
             case MapPoint -> new MapPointInputElement();
             case DomainAndUserSelect -> new DomainAndUserSelectInputElement();
+            case AssignmentContext -> new AssignmentContextInputElement();
             default -> throw new ElementDataConversionException("Unsupported element type: %s", type.name());
         };
     }

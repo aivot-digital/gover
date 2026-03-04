@@ -32,6 +32,7 @@ import {
     normalizeDomainAndUserSelectItem,
 } from '../../../../components/domain-user-select-field/domain-user-select-options';
 import {DomainAndUserSelectItem} from '../../../../models/elements/form/input/domain-user-select-field-element';
+import {AssignmentContextValue} from '../../../../models/elements/form/input/assignment-context-field-element';
 
 export function DataObjectItemListPage() {
     const api = useApi();
@@ -263,6 +264,25 @@ function dataObjectSchemaExtractDisplayFields(dataObjectSchema: DataObjectSchema
                                 .filter((val): val is DomainAndUserSelectItem => val != null)
                                 .map((val) => formatDomainAndUserSelectValue(val))
                                 .join(', ');
+                        case ElementType.AssignmentContext:
+                            if (value == null || typeof value !== 'object') {
+                                return null;
+                            }
+
+                            const assignmentContextValue = value as AssignmentContextValue;
+                            const selectedLabels = (assignmentContextValue.domainAndUserSelection ?? [])
+                                .map((val: unknown) => normalizeDomainAndUserSelectItem(val))
+                                .filter((val): val is DomainAndUserSelectItem => val != null)
+                                .map((val) => formatDomainAndUserSelectValue(val));
+
+                            const preferenceLabels = [
+                                assignmentContextValue.preferPreviousTaskAssignee === true ? 'Vorherige Bearbeiter:in bevorzugen' : null,
+                                assignmentContextValue.preferUninvolvedUser === true ? 'Unbeteiligte Mitarbeiter:in bevorzugen' : null,
+                                assignmentContextValue.preferProcessInstanceAssignee === true ? 'Vorgangszuweisung bevorzugen' : null,
+                            ]
+                                .filter((entry): entry is string => entry != null);
+
+                            return [...selectedLabels, ...preferenceLabels].join(', ');
                         case ElementType.Time:
                             return format(
                                 parseISO(value),

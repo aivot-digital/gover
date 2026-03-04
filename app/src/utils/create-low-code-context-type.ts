@@ -134,6 +134,8 @@ function elementToValueType(element: AnyElement): string {
             return 'string[]';
         case ElementType.DomainAndUserSelect:
             return '{type: \'orgUnit\' | \'team\' | \'user\'; id: string}[]';
+        case ElementType.AssignmentContext:
+            return '{domainAndUserSelection: {type: \'orgUnit\' | \'team\' | \'user\'; id: string}[] | null | undefined; preferPreviousTaskAssignee: boolean | null | undefined; preferUninvolvedUser: boolean | null | undefined; preferProcessInstanceAssignee: boolean | null | undefined}';
         case ElementType.FileUpload:
             return '{name: string; uri: string; size: number;}[]';
         case ElementType.IntroductionStep:

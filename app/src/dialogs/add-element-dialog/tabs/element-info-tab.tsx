@@ -22,6 +22,7 @@ import {TimeRangeFieldComponent} from '../../../components/time-range-field/time
 import {DateTimeRangeFieldComponent} from '../../../components/date-time-range-field/date-time-range-field-component';
 import {MapPointFieldComponent} from '../../../components/map-point-field/map-point-field-component';
 import {DomainUserSelectFieldComponent} from '../../../components/domain-user-select-field/domain-user-select-field-component';
+import {AssignmentContextFieldComponent} from '../../../components/assignment-context-field/assignment-context-field-component';
 import {
     createDomainAndUserSelectValueKey,
     createOrgUnitOptionValue,
@@ -760,6 +761,67 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                         },
                     ]}
                     hint="Optionen werden im Formular asynchron geladen und nach Kategorien gruppiert."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.AssignmentContext]: (
+        <Box>
+            <Typography>
+                Das Element „Verantwortlicher Personenkreis“ kombiniert die Auswahl von Organisationseinheiten,
+                Teams und Mitarbeitenden mit zusätzlichen Zuweisungspräferenzen.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <AssignmentContextFieldComponent
+                    domainAndUserSelectionLabel="Verantwortlicher Personenkreis"
+                    value={{
+                        domainAndUserSelection: [
+                            {
+                                type: 'orgUnit',
+                                id: '1',
+                            },
+                            {
+                                type: 'user',
+                                id: 'user_123',
+                            },
+                        ],
+                        preferPreviousTaskAssignee: true,
+                        preferUninvolvedUser: false,
+                        preferProcessInstanceAssignee: false,
+                    }}
+                    onChange={() => {
+                    }}
+                    options={[
+                        {
+                            value: createOrgUnitOptionValue(1),
+                            key: createDomainAndUserSelectValueKey(createOrgUnitOptionValue(1)),
+                            label: 'Ordnungsamt',
+                            subLabel: 'Bereich',
+                            group: 'Organisationseinheiten',
+                            icon: getDepartmentTypeIcons(3),
+                        },
+                        {
+                            value: createTeamOptionValue(7),
+                            key: createDomainAndUserSelectValueKey(createTeamOptionValue(7)),
+                            label: 'Bürgerbüro Nord',
+                            group: 'Teams',
+                            icon: ModuleIcons.teams,
+                        },
+                        {
+                            value: createUserOptionValue('user_123'),
+                            key: createDomainAndUserSelectValueKey(createUserOptionValue('user_123')),
+                            label: 'Wagner, Marie-Therese',
+                            subLabel: 'Mitarbeiter:in',
+                            group: 'Mitarbeitende',
+                            icon: <PersonOutlineOutlinedIcon />,
+                        },
+                    ]}
+                    domainAndUserSelectionHint="Die Zuweisung erfolgt auf Basis der Auslastung betroffener Personen."
                 />
             </Box>
         </Box>

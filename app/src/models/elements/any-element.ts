@@ -32,6 +32,7 @@ import {TimeRangeFieldElement} from './form/input/time-range-field-element';
 import {DateTimeRangeFieldElement} from './form/input/date-time-range-field-element';
 import {MapPointFieldElement} from './form/input/map-point-field-element';
 import {DomainUserSelectFieldElement} from './form/input/domain-user-select-field-element';
+import {AssignmentContextFieldElement} from './form/input/assignment-context-field-element';
 
 export type AnyElement =
     RootElement |
@@ -75,5 +76,5 @@ export type AnyElementType<T extends ElementType> =
                                                                                                                     T extends ElementType.TimeRange ? TimeRangeFieldElement :
                                                                                                                     T extends ElementType.DateTimeRange ? DateTimeRangeFieldElement :
                                                                                                                         T extends ElementType.MapPoint ? MapPointFieldElement :
-                                                                                                                            T extends ElementType.DomainAndUserSelect ? DomainUserSelectFieldElement : never;
-
+                                                                                                                            T extends ElementType.DomainAndUserSelect ? DomainUserSelectFieldElement :
+                                                                                                                                T extends ElementType.AssignmentContext ? AssignmentContextFieldElement : never;

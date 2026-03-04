@@ -80,6 +80,7 @@ export const ElementAutofillMapping: Record<ElementType, string[]> = {
     [ElementType.DateTimeRange]: [],
     [ElementType.MapPoint]: [],
     [ElementType.DomainAndUserSelect]: [],
+    [ElementType.AssignmentContext]: [],
 };
 
 export const getAutofillOptionsForElementType = (elementType: ElementType) => {

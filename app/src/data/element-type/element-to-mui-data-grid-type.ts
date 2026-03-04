@@ -42,4 +42,5 @@ export const ElementToMuiDataGridType: Record<ElementType, GridColType | null> =
     [ElementType.DateTimeRange]: 'string',
     [ElementType.MapPoint]: 'string',
     [ElementType.DomainAndUserSelect]: 'string',
+    [ElementType.AssignmentContext]: 'string',
 };

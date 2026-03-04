@@ -18,6 +18,10 @@ import {DateTimeRangeFieldElement} from '../models/elements/form/input/date-time
 import {MapPointFieldElement} from '../models/elements/form/input/map-point-field-element';
 import {DomainAndUserSelectItem, DomainUserSelectFieldElement} from '../models/elements/form/input/domain-user-select-field-element';
 import {
+    AssignmentContextFieldElement,
+    AssignmentContextValue,
+} from '../models/elements/form/input/assignment-context-field-element';
+import {
     createDomainAndUserSelectValueKey,
     normalizeDomainAndUserSelectItem,
 } from '../components/domain-user-select-field/domain-user-select-options';
@@ -186,6 +190,7 @@ const YupSchemaMap: {
     [ElementType.DateTimeRange]: dateTimeRangeFieldToYup,
     [ElementType.MapPoint]: mapPointFieldToYup,
     [ElementType.DomainAndUserSelect]: domainUserSelectFieldToYup,
+    [ElementType.AssignmentContext]: assignmentContextFieldToYup,
     [ElementType.ReplicatingContainer]: replicatingContainerToYup,
 };
 
@@ -477,7 +482,15 @@ function mapPointFieldToYup(elem: MapPointFieldElement): Schema {
     return mapPointSchema;
 }
 
-function domainUserSelectFieldToYup(elem: DomainUserSelectFieldElement): Schema {
+function createDomainAndUserSelectionSchema(
+    opts: {
+        required: boolean;
+        label: string;
+        minItems?: number | null;
+        maxItems?: number | null;
+        allowedTypes?: string[] | null;
+    },
+): yup.ArraySchema<(DomainAndUserSelectItem | undefined)[] | undefined | null, yup.AnyObject, '', ''> {
     let itemSchema: yup.ArraySchema<(DomainAndUserSelectItem | undefined)[] | undefined | null, yup.AnyObject, '', ''> = yup
         .array()
         .of(
@@ -494,22 +507,22 @@ function domainUserSelectFieldToYup(elem: DomainUserSelectFieldElement): Schema 
                 ),
         );
 
-    if (elem.required) {
+    if (opts.required) {
         itemSchema = itemSchema
-            .required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`);
+            .required(`${opts.label || 'Dieses Feld'} ist ein Pflichtfeld.`);
     } else {
         itemSchema = itemSchema
             .nullable();
     }
 
-    if ((elem.minItems ?? 0) > 0) {
+    if ((opts.minItems ?? 0) > 0) {
         itemSchema = itemSchema
-            .min(elem.minItems!, `Mindestens ${elem.minItems} Einträge erforderlich.`);
+            .min(opts.minItems!, `Mindestens ${opts.minItems} Einträge erforderlich.`);
     }
 
-    if ((elem.maxItems ?? 0) > 0) {
+    if ((opts.maxItems ?? 0) > 0) {
         itemSchema = itemSchema
-            .max(elem.maxItems!, `Maximal ${elem.maxItems} Einträge erlaubt.`);
+            .max(opts.maxItems!, `Maximal ${opts.maxItems} Einträge erlaubt.`);
     }
 
     itemSchema = itemSchema
@@ -529,8 +542,8 @@ function domainUserSelectFieldToYup(elem: DomainUserSelectFieldElement): Schema 
             },
         );
 
-    if (elem.allowedTypes != null) {
-        const allowedTypes = new Set(elem.allowedTypes);
+    if (opts.allowedTypes != null) {
+        const allowedTypes = new Set(opts.allowedTypes);
         itemSchema = itemSchema
             .test(
                 'allowed-types',
@@ -549,6 +562,88 @@ function domainUserSelectFieldToYup(elem: DomainUserSelectFieldElement): Schema 
     }
 
     return itemSchema;
+}
+
+function domainUserSelectFieldToYup(elem: DomainUserSelectFieldElement): Schema {
+    return createDomainAndUserSelectionSchema({
+        required: elem.required === true,
+        label: elem.label ?? 'Dieses Feld',
+        minItems: elem.minItems,
+        maxItems: elem.maxItems,
+        allowedTypes: elem.allowedTypes,
+    });
+}
+
+function assignmentContextFieldToYup(elem: AssignmentContextFieldElement): Schema {
+    let domainSelectionSchema = createDomainAndUserSelectionSchema({
+        required: elem.required === true,
+        label: elem.label ?? 'Dieses Feld',
+        minItems: elem.minItems,
+        maxItems: elem.maxItems,
+        allowedTypes: elem.allowedTypes,
+    });
+
+    if (elem.required) {
+        domainSelectionSchema = domainSelectionSchema
+            .min(1, `Mindestens 1 Eintrag erforderlich.`);
+    }
+
+    let assignmentContextSchema: Schema = yup
+        .object()
+        .shape({
+            domainAndUserSelection: domainSelectionSchema,
+            preferPreviousTaskAssignee: yup.boolean().nullable(),
+            preferUninvolvedUser: yup.boolean().nullable(),
+            preferProcessInstanceAssignee: yup.boolean().nullable(),
+        })
+        .test(
+            'single-preference-only',
+            'Es darf nur eine Bevorzugungs-Option ausgewählt werden.',
+            (value: unknown) => {
+                if (value == null || typeof value !== 'object') {
+                    return true;
+                }
+
+                const typedValue = value as AssignmentContextValue;
+                const enabledPreferences = [
+                    typedValue.preferPreviousTaskAssignee === true,
+                    typedValue.preferUninvolvedUser === true,
+                    typedValue.preferProcessInstanceAssignee === true,
+                ]
+                    .filter((entry) => entry).length;
+
+                return enabledPreferences <= 1;
+            },
+        )
+        .test(
+            'normalize-assignment-context',
+            'Ungültiger Eintrag.',
+            (value: unknown) => {
+                if (value == null) {
+                    return elem.required !== true;
+                }
+
+                const typedValue = value as AssignmentContextValue;
+                const hasSelection = (typedValue.domainAndUserSelection ?? []).length > 0;
+                const hasPreference = typedValue.preferPreviousTaskAssignee === true ||
+                    typedValue.preferUninvolvedUser === true ||
+                    typedValue.preferProcessInstanceAssignee === true;
+
+                if (!hasSelection && !hasPreference) {
+                    return elem.required !== true;
+                }
+
+                return true;
+            },
+        );
+
+    if (elem.required) {
+        assignmentContextSchema = assignmentContextSchema.required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`);
+    } else {
+        assignmentContextSchema = assignmentContextSchema.nullable();
+    }
+
+    return assignmentContextSchema;
 }
 
 export function applyYupErrorsToElementData(rootElement: AnyElement, elementData: ElementData, errors: Record<string, string>): ElementData {
