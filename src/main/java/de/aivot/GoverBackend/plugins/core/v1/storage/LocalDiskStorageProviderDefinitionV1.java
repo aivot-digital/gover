@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.LinkedList;
@@ -324,6 +325,9 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
                             );
                         }
                     });
+        } catch (NoSuchFileException e) {
+            // If the folder does not exist, we can consider it as already deleted, so we ignore this exception
+            return;
         } catch (IOException e) {
             throw new StorageException(e,
                     "Fehler beim Löschen des Verzeichnisses %s: %s.",
