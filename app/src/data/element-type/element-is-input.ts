@@ -41,4 +41,6 @@ export const ElementIsInput: Record<ElementType, boolean> = {
     [ElementType.MapPoint]: true,
     [ElementType.DomainAndUserSelect]: true,
     [ElementType.AssignmentContext]: true,
+    [ElementType.DataModelSelect]: true,
+    [ElementType.DataObjectSelect]: true,
 };

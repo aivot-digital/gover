@@ -23,6 +23,8 @@ import {DateTimeRangeFieldComponent} from '../../../components/date-time-range-f
 import {MapPointFieldComponent} from '../../../components/map-point-field/map-point-field-component';
 import {DomainUserSelectFieldComponent} from '../../../components/domain-user-select-field/domain-user-select-field-component';
 import {AssignmentContextFieldComponent} from '../../../components/assignment-context-field/assignment-context-field-component';
+import {DataModelSelectFieldComponent} from '../../../components/data-model-select-field/data-model-select-field-component';
+import {DataObjectSelectFieldComponent} from '../../../components/data-object-select-field/data-object-select-field-component';
 import {
     createDomainAndUserSelectValueKey,
     createOrgUnitOptionValue,
@@ -822,6 +824,83 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                         },
                     ]}
                     domainAndUserSelectionHint="Die Zuweisung erfolgt auf Basis der Auslastung betroffener Personen."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.DataModelSelect]: (
+        <Box>
+            <Typography>
+                Das Element „Datenmodell-Auswahl“ ermöglicht die Auswahl genau eines Datenmodells.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <DataModelSelectFieldComponent
+                    label="Datenmodell"
+                    value="adressen"
+                    onChange={() => {
+                    }}
+                    options={[
+                        {
+                            key: 'adressen',
+                            value: 'adressen',
+                            label: 'Adressbuch',
+                            subLabel: 'adressen',
+                            icon: ModuleIcons.dataModels,
+                        },
+                        {
+                            key: 'anliegen',
+                            value: 'anliegen',
+                            label: 'Anliegen',
+                            subLabel: 'anliegen',
+                            icon: ModuleIcons.dataModels,
+                        },
+                    ]}
+                    hint="Die Optionen werden im Formular asynchron geladen."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.DataObjectSelect]: (
+        <Box>
+            <Typography>
+                Das Element „Datenobjekt-Auswahl“ ermöglicht die Auswahl genau eines Datenobjekts.
+                Die verfügbaren Einträge richten sich nach dem konfigurierten Datenmodell.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <DataObjectSelectFieldComponent
+                    label="Datenobjekt"
+                    value="obj_001"
+                    dataModelKey="adressen"
+                    dataLabelAttributeKey="name"
+                    onChange={() => {
+                    }}
+                    options={[
+                        {
+                            key: 'obj_001',
+                            value: 'obj_001',
+                            label: 'Max Mustermann',
+                            subLabel: 'adressen · obj_001',
+                            icon: ModuleIcons.dataObjects,
+                        },
+                        {
+                            key: 'obj_002',
+                            value: 'obj_002',
+                            label: 'Erika Mustermann',
+                            subLabel: 'adressen · obj_002',
+                            icon: ModuleIcons.dataObjects,
+                        },
+                    ]}
+                    hint="Die Optionen werden im Formular asynchron geladen."
                 />
             </Box>
         </Box>

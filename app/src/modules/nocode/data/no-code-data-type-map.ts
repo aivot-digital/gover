@@ -42,4 +42,6 @@ export const NoCodeDataTypeMap: Record<ElementType, NoCodeDataType> = {
     [ElementType.MapPoint]: NoCodeDataType.Object,
     [ElementType.DomainAndUserSelect]: NoCodeDataType.List,
     [ElementType.AssignmentContext]: NoCodeDataType.Object,
+    [ElementType.DataModelSelect]: NoCodeDataType.String,
+    [ElementType.DataObjectSelect]: NoCodeDataType.String,
 }

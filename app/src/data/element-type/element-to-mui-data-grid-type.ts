@@ -43,4 +43,6 @@ export const ElementToMuiDataGridType: Record<ElementType, GridColType | null> =
     [ElementType.MapPoint]: 'string',
     [ElementType.DomainAndUserSelect]: 'string',
     [ElementType.AssignmentContext]: 'string',
+    [ElementType.DataModelSelect]: 'string',
+    [ElementType.DataObjectSelect]: 'string',
 };

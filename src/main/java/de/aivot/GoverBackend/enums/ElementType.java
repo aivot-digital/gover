@@ -57,6 +57,8 @@ public enum ElementType implements Identifiable<Integer> {
     MapPoint(37),
     DomainAndUserSelect(38),
     AssignmentContext(39),
+    DataModelSelect(40),
+    DataObjectSelect(41),
     ;
 
     public static final String ID_FormLayout = "0";
@@ -99,6 +101,8 @@ public enum ElementType implements Identifiable<Integer> {
     public static final String ID_MapPoint = "37";
     public static final String ID_DomainAndUserSelect = "38";
     public static final String ID_AssignmentContext = "39";
+    public static final String ID_DataModelSelect = "40";
+    public static final String ID_DataObjectSelect = "41";
 
     private final Integer key;
 
@@ -168,6 +172,8 @@ public enum ElementType implements Identifiable<Integer> {
             case MapPoint -> new MapPointInputElement();
             case DomainAndUserSelect -> new DomainAndUserSelectInputElement();
             case AssignmentContext -> new AssignmentContextInputElement();
+            case DataModelSelect -> new DataModelSelectInputElement();
+            case DataObjectSelect -> new DataObjectSelectInputElement();
             default -> throw new ElementDataConversionException("Unsupported element type: %s", type.name());
         };
     }

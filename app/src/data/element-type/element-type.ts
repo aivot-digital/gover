@@ -39,4 +39,6 @@ export enum ElementType {
     MapPoint = 37,
     DomainAndUserSelect = 38,
     AssignmentContext = 39,
+    DataModelSelect = 40,
+    DataObjectSelect = 41,
 }

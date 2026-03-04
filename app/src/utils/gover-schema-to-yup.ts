@@ -21,6 +21,8 @@ import {
     AssignmentContextFieldElement,
     AssignmentContextValue,
 } from '../models/elements/form/input/assignment-context-field-element';
+import {DataModelSelectFieldElement} from '../models/elements/form/input/data-model-select-field-element';
+import {DataObjectSelectFieldElement} from '../models/elements/form/input/data-object-select-field-element';
 import {
     createDomainAndUserSelectValueKey,
     normalizeDomainAndUserSelectItem,
@@ -83,6 +85,16 @@ export function goverSchemaToYup(elem: AnyElement): any {
                     if (validValues.length > 0) {
                         fieldSchema = fieldSchema.oneOf(validValues, `Ungültiger Wert ausgewählt.`);
                     }
+                }
+                break;
+
+            case ElementType.DataModelSelect:
+            case ElementType.DataObjectSelect:
+                fieldSchema = yup.string().trim();
+                if (elem.required) {
+                    fieldSchema = fieldSchema.required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`);
+                } else {
+                    fieldSchema = fieldSchema.nullable();
                 }
                 break;
 
@@ -191,6 +203,8 @@ const YupSchemaMap: {
     [ElementType.MapPoint]: mapPointFieldToYup,
     [ElementType.DomainAndUserSelect]: domainUserSelectFieldToYup,
     [ElementType.AssignmentContext]: assignmentContextFieldToYup,
+    [ElementType.DataModelSelect]: dynamicSelectFieldToYup,
+    [ElementType.DataObjectSelect]: dynamicSelectFieldToYup,
     [ElementType.ReplicatingContainer]: replicatingContainerToYup,
 };
 
@@ -274,6 +288,22 @@ function selectFieldToYup(elem: SelectFieldElement | RadioFieldElement): Schema 
             selectFieldSchema = selectFieldSchema
                 .oneOf(validValues, `Ungültiger Wert ausgewählt.`);
         }
+    }
+
+    return selectFieldSchema;
+}
+
+function dynamicSelectFieldToYup(elem: DataModelSelectFieldElement | DataObjectSelectFieldElement): Schema {
+    let selectFieldSchema: StringSchema<string | undefined | null> = yup
+        .string()
+        .trim();
+
+    if (elem.required) {
+        selectFieldSchema = selectFieldSchema
+            .required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`);
+    } else {
+        selectFieldSchema = selectFieldSchema
+            .nullable();
     }
 
     return selectFieldSchema;

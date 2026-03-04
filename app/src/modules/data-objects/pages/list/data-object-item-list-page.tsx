@@ -291,6 +291,9 @@ function dataObjectSchemaExtractDisplayFields(dataObjectSchema: DataObjectSchema
                         case ElementType.Radio:
                         case ElementType.Select:
                             return element.options?.find((opt) => opt.value === value)?.label;
+                        case ElementType.DataModelSelect:
+                        case ElementType.DataObjectSelect:
+                            return value;
                     }
 
                     return row.data[element.id].inputValue;

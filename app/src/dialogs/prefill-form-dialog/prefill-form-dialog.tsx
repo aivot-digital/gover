@@ -54,6 +54,8 @@ const relevantElementTypes = [
     ElementType.MapPoint,
     ElementType.DomainAndUserSelect,
     ElementType.AssignmentContext,
+    ElementType.DataModelSelect,
+    ElementType.DataObjectSelect,
 ];
 
 const MAX_LINK_LENGTH = 2000; // Most sources suggest 2048 maximum for URLs, but some browsers may have lower limits, so playing safe here.

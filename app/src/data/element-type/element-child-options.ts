@@ -23,6 +23,8 @@ const BaseComponents = [
     ElementType.MapPoint,
     ElementType.DomainAndUserSelect,
     ElementType.AssignmentContext,
+    ElementType.DataModelSelect,
+    ElementType.DataObjectSelect,
     ElementType.Alert,
     ElementType.FileUpload,
     ElementType.ChipInput,
@@ -73,4 +75,6 @@ export const ElementChildOptions: Record<ElementType, ElementType[] | null> = {
     [ElementType.MapPoint]: null,
     [ElementType.DomainAndUserSelect]: null,
     [ElementType.AssignmentContext]: null,
+    [ElementType.DataModelSelect]: null,
+    [ElementType.DataObjectSelect]: null,
 };

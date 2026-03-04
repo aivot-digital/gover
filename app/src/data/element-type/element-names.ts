@@ -42,6 +42,8 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.MapPoint]: 'Kartenpunkt (Technische Preview)',
     [ElementType.DomainAndUserSelect]: 'Domänen- und Mitarbeitendenauswahl',
     [ElementType.AssignmentContext]: 'Verantwortlicher Personenkreis',
+    [ElementType.DataModelSelect]: 'Datenmodell-Auswahl',
+    [ElementType.DataObjectSelect]: 'Datenobjekt-Auswahl',
 };
 
 export function getElementName(element: AnyElement): string {

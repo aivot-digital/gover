@@ -44,6 +44,8 @@ const typeMap: Record<ElementType, string> = {
     [ElementType.MapPoint]: '{latitude: number | null | undefined; longitude: number | null | undefined; address: string | null | undefined;}',
     [ElementType.DomainAndUserSelect]: '{type: \'orgUnit\' | \'team\' | \'user\'; id: string;}[]',
     [ElementType.AssignmentContext]: '{domainAndUserSelection: {type: \'orgUnit\' | \'team\' | \'user\'; id: string;}[] | null | undefined; preferPreviousTaskAssignee: boolean | null | undefined; preferUninvolvedUser: boolean | null | undefined; preferProcessInstanceAssignee: boolean | null | undefined;}',
+    [ElementType.DataModelSelect]: 'string',
+    [ElementType.DataObjectSelect]: 'string',
 };
 
 export function formToTypeDefinition(form: FormVersionEntity): string {

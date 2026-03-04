@@ -56,6 +56,10 @@ public class OZGCloudDataFormatService {
                     List.of(buildDomainAndUserSelectField(domainAndUserSelectField, elementData));
             case AssignmentContextInputElement assignmentContextField ->
                     List.of(buildAssignmentContextField(assignmentContextField, elementData));
+            case DataModelSelectInputElement dataModelSelectField ->
+                    List.of(buildDataModelSelectField(dataModelSelectField, elementData));
+            case DataObjectSelectInputElement dataObjectSelectField ->
+                    List.of(buildDataObjectSelectField(dataObjectSelectField, elementData));
             case FileUploadInputElement fileUploadField -> List.of(buildFileUploadField(fileUploadField, elementData));
             case MultiCheckboxInputElement multiCheckboxField ->
                     List.of(buildMultiCheckboxField(multiCheckboxField, elementData));
@@ -687,6 +691,40 @@ public class OZGCloudDataFormatService {
                 assignmentContextField.getId(),
                 assignmentContextField.getLabel(),
                 assignmentContextField.toDisplayValue(value),
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
+    private OZGCloudFormDataItem buildDataModelSelectField(
+            @Nonnull DataModelSelectInputElement dataModelSelectField,
+            @Nonnull ElementData elementData
+    ) {
+        var edo = elementData.mustGet(dataModelSelectField);
+
+        return new OZGCloudFormDataItem(
+                dataModelSelectField.getId(),
+                dataModelSelectField.getLabel(),
+                dataModelSelectField.toDisplayValue(dataModelSelectField.formatValue(edo.getValue())),
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
+    private OZGCloudFormDataItem buildDataObjectSelectField(
+            @Nonnull DataObjectSelectInputElement dataObjectSelectField,
+            @Nonnull ElementData elementData
+    ) {
+        var edo = elementData.mustGet(dataObjectSelectField);
+
+        return new OZGCloudFormDataItem(
+                dataObjectSelectField.getId(),
+                dataObjectSelectField.getLabel(),
+                dataObjectSelectField.toDisplayValue(dataObjectSelectField.formatValue(edo.getValue())),
                 null,
                 null,
                 null,

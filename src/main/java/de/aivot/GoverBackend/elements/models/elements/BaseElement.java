@@ -69,6 +69,8 @@ import java.util.UUID;
         @JsonSubTypes.Type(value = MapPointInputElement.class, name = ElementType.ID_MapPoint),
         @JsonSubTypes.Type(value = DomainAndUserSelectInputElement.class, name = ElementType.ID_DomainAndUserSelect),
         @JsonSubTypes.Type(value = AssignmentContextInputElement.class, name = ElementType.ID_AssignmentContext),
+        @JsonSubTypes.Type(value = DataModelSelectInputElement.class, name = ElementType.ID_DataModelSelect),
+        @JsonSubTypes.Type(value = DataObjectSelectInputElement.class, name = ElementType.ID_DataObjectSelect),
 })
 public abstract class BaseElement implements Serializable {
     @Nonnull

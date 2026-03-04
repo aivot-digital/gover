@@ -51,6 +51,8 @@ export function generateComponentTitle(component: AnyElement | null | undefined)
         case ElementType.MapPoint:
         case ElementType.DomainAndUserSelect:
         case ElementType.AssignmentContext:
+        case ElementType.DataModelSelect:
+        case ElementType.DataObjectSelect:
         case ElementType.ReplicatingContainer:
             return stringOrDefault(component.label, defaultElementDescriptor);
         default:

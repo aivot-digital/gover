@@ -33,6 +33,8 @@ import {DateTimeRangeFieldElement} from './form/input/date-time-range-field-elem
 import {MapPointFieldElement} from './form/input/map-point-field-element';
 import {DomainUserSelectFieldElement} from './form/input/domain-user-select-field-element';
 import {AssignmentContextFieldElement} from './form/input/assignment-context-field-element';
+import {DataModelSelectFieldElement} from './form/input/data-model-select-field-element';
+import {DataObjectSelectFieldElement} from './form/input/data-object-select-field-element';
 
 export type AnyElement =
     RootElement |
@@ -77,4 +79,6 @@ export type AnyElementType<T extends ElementType> =
                                                                                                                     T extends ElementType.DateTimeRange ? DateTimeRangeFieldElement :
                                                                                                                         T extends ElementType.MapPoint ? MapPointFieldElement :
                                                                                                                             T extends ElementType.DomainAndUserSelect ? DomainUserSelectFieldElement :
-                                                                                                                                T extends ElementType.AssignmentContext ? AssignmentContextFieldElement : never;
+                                                                                                                                T extends ElementType.AssignmentContext ? AssignmentContextFieldElement :
+                                                                                                                                    T extends ElementType.DataModelSelect ? DataModelSelectFieldElement :
+                                                                                                                                        T extends ElementType.DataObjectSelect ? DataObjectSelectFieldElement : never;

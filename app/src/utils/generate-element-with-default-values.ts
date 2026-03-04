@@ -38,6 +38,8 @@ import {MapPointFieldElement} from '../models/elements/form/input/map-point-fiel
 import {DomainUserSelectFieldElement} from '../models/elements/form/input/domain-user-select-field-element';
 import {DomainAndUserSelectItemTypes} from '../models/elements/form/input/domain-user-select-field-element';
 import {AssignmentContextFieldElement} from '../models/elements/form/input/assignment-context-field-element';
+import {DataModelSelectFieldElement} from '../models/elements/form/input/data-model-select-field-element';
+import {DataObjectSelectFieldElement} from '../models/elements/form/input/data-object-select-field-element';
 
 function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
     return {
@@ -112,6 +114,8 @@ const elementConstructors: {
     [ElementType.MapPoint]: (id: string) => MapPointFieldElement;
     [ElementType.DomainAndUserSelect]: (id: string) => DomainUserSelectFieldElement;
     [ElementType.AssignmentContext]: (id: string) => AssignmentContextFieldElement;
+    [ElementType.DataModelSelect]: (id: string) => DataModelSelectFieldElement;
+    [ElementType.DataObjectSelect]: (id: string) => DataObjectSelectFieldElement;
 } = {
     [ElementType.FormLayout]: (id) => ({
         ...makeBase(ElementType.FormLayout, id),
@@ -397,6 +401,18 @@ const elementConstructors: {
         maxItems: undefined,
         allowedTypes: DomainAndUserSelectItemTypes,
         processAccessConstraint: undefined,
+    }),
+    [ElementType.DataModelSelect]: (id) => ({
+        ...makeInputBase(ElementType.DataModelSelect, id),
+        label: 'Datenmodell',
+        placeholder: 'Datenmodell auswählen',
+    }),
+    [ElementType.DataObjectSelect]: (id) => ({
+        ...makeInputBase(ElementType.DataObjectSelect, id),
+        label: 'Datenobjekt',
+        placeholder: 'Datenobjekt auswählen',
+        dataModelKey: undefined,
+        dataLabelAttributeKey: undefined,
     }),
 };
 

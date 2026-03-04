@@ -61,4 +61,6 @@ export const evaluators: {
     [ElementType.MapPoint]: MapPointEvaluator,
     [ElementType.DomainAndUserSelect]: DomainUserSelectEvaluator,
     [ElementType.AssignmentContext]: AssignmentContextFieldEvaluator,
+    [ElementType.DataModelSelect]: SelectEvaluator,
+    [ElementType.DataObjectSelect]: SelectEvaluator,
 };
