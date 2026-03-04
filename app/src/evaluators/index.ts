@@ -49,7 +49,7 @@ export const evaluators: {
     [ElementType.ConfigLayout]: null,
     [ElementType.FunctionInput]: null,
     [ElementType.CodeInput]: null,
-    [ElementType.RichTextInput]: null,
+    [ElementType.RichTextInput]: TextEvaluator,
     [ElementType.UiDefinitionInput]: null,
     [ElementType.IdentityInput]: null,
     [ElementType.TabLayout]: null,

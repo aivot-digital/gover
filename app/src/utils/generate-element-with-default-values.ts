@@ -40,6 +40,7 @@ import {DomainAndUserSelectItemTypes} from '../models/elements/form/input/domain
 import {AssignmentContextFieldElement} from '../models/elements/form/input/assignment-context-field-element';
 import {DataModelSelectFieldElement} from '../models/elements/form/input/data-model-select-field-element';
 import {DataObjectSelectFieldElement} from '../models/elements/form/input/data-object-select-field-element';
+import {RichTextInputElement} from '../models/elements/form/input/rich-text-input-element';
 
 function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
     return {
@@ -102,7 +103,7 @@ const elementConstructors: {
     [ElementType.ConfigLayout]: (id: string) => void;
     [ElementType.FunctionInput]: (id: string) => void;
     [ElementType.CodeInput]: (id: string) => void;
-    [ElementType.RichTextInput]: (id: string) => void;
+    [ElementType.RichTextInput]: (id: string) => RichTextInputElement;
     [ElementType.UiDefinitionInput]: (id: string) => void;
     [ElementType.IdentityInput]: (id: string) => void;
     [ElementType.TabLayout]: (id: string) => void;
@@ -336,7 +337,10 @@ const elementConstructors: {
     [ElementType.ConfigLayout]: (id) => ({}),
     [ElementType.FunctionInput]: (id) => ({}),
     [ElementType.CodeInput]: (id) => ({}),
-    [ElementType.RichTextInput]: (id) => ({}),
+    [ElementType.RichTextInput]: (id) => ({
+        ...makeInputBase(ElementType.RichTextInput, id),
+        label: 'Markdown-Eingabe',
+    }),
     [ElementType.UiDefinitionInput]: (id) => ({}),
     [ElementType.IdentityInput]: (id) => ({}),
     [ElementType.TabLayout]: (id) => ({}),

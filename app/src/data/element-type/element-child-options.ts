@@ -28,6 +28,7 @@ const BaseComponents = [
     ElementType.Alert,
     ElementType.FileUpload,
     ElementType.ChipInput,
+    ElementType.RichTextInput,
 
     ElementType.ReplicatingContainer,
 ];

@@ -30,7 +30,7 @@ export const NoCodeDataTypeMap: Record<ElementType, NoCodeDataType> = {
     [ElementType.ConfigLayout]: NoCodeDataType.Runtime,
     [ElementType.FunctionInput]: NoCodeDataType.Runtime,
     [ElementType.CodeInput]: NoCodeDataType.Runtime,
-    [ElementType.RichTextInput]: NoCodeDataType.Runtime,
+    [ElementType.RichTextInput]: NoCodeDataType.String,
     [ElementType.UiDefinitionInput]: NoCodeDataType.Runtime,
     [ElementType.IdentityInput]: NoCodeDataType.Runtime,
     [ElementType.TabLayout]: NoCodeDataType.Runtime,

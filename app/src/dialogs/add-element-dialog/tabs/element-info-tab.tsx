@@ -21,6 +21,7 @@ import {DateRangeFieldComponent} from '../../../components/date-range-field/date
 import {TimeRangeFieldComponent} from '../../../components/time-range-field/time-range-field-component';
 import {DateTimeRangeFieldComponent} from '../../../components/date-time-range-field/date-time-range-field-component';
 import {MapPointFieldComponent} from '../../../components/map-point-field/map-point-field-component';
+import {RichTextInputComponent} from '../../../components/rich-text-input-component/rich-text-input-component';
 import {DomainUserSelectFieldComponent} from '../../../components/domain-user-select-field/domain-user-select-field-component';
 import {AssignmentContextFieldComponent} from '../../../components/assignment-context-field/assignment-context-field-component';
 import {DataModelSelectFieldComponent} from '../../../components/data-model-select-field/data-model-select-field-component';
@@ -942,7 +943,28 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.ConfigLayout]: null,
     [ElementType.FunctionInput]: null,
     [ElementType.CodeInput]: null,
-    [ElementType.RichTextInput]: null,
+    [ElementType.RichTextInput]: (
+        <Box>
+            <Typography>
+                Das Element „Markdown-Eingabe“ erlaubt die Erfassung formatierter Texte (z. B. mit Überschriften,
+                Listen und Links).
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <RichTextInputComponent
+                    label="Beschreibung"
+                    value={'## Beispiel\n\n- Erster Punkt\n- Zweiter Punkt'}
+                    onChange={() => {
+                    }}
+                    hint="Die Eingabe wird als Markdown gespeichert."
+                />
+            </Box>
+        </Box>
+    ),
     [ElementType.UiDefinitionInput]: null,
     [ElementType.IdentityInput]: null,
     [ElementType.TabLayout]: null,

@@ -68,6 +68,7 @@ const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
     [ElementType.DataModelSelect]: ElementTypeGroups.Input,
     [ElementType.DataObjectSelect]: ElementTypeGroups.Input,
     [ElementType.FileUpload]: ElementTypeGroups.Input,
+    [ElementType.RichTextInput]: ElementTypeGroups.Input,
 
     [ElementType.IntroductionStep]: null,
     [ElementType.SummaryStep]: null,
@@ -79,7 +80,6 @@ const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
     [ElementType.ConfigLayout]: null,
     [ElementType.FunctionInput]: null,
     [ElementType.CodeInput]: null,
-    [ElementType.RichTextInput]: null,
     [ElementType.UiDefinitionInput]: null,
     [ElementType.IdentityInput]: null,
     [ElementType.TabLayout]: null,

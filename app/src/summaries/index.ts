@@ -27,6 +27,7 @@ import {DomainUserSelectFieldSummary} from './domain-user-select-field-summary';
 import {AssignmentContextFieldSummary} from './assignment-context-field-summary';
 import {DataModelSelectFieldSummary} from './data-model-select-field-summary';
 import {DataObjectSelectFieldSummary} from './data-object-select-field-summary';
+import {RichTextInputSummary} from './rich-text-input-summary';
 
 export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.FormLayout]: RootSummary,
@@ -57,7 +58,7 @@ export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.ConfigLayout]: null,
     [ElementType.FunctionInput]: null,
     [ElementType.CodeInput]: null,
-    [ElementType.RichTextInput]: null,
+    [ElementType.RichTextInput]: RichTextInputSummary,
     [ElementType.UiDefinitionInput]: null,
     [ElementType.IdentityInput]: null,
     [ElementType.TabLayout]: null,

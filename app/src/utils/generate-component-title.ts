@@ -53,6 +53,7 @@ export function generateComponentTitle(component: AnyElement | null | undefined)
         case ElementType.AssignmentContext:
         case ElementType.DataModelSelect:
         case ElementType.DataObjectSelect:
+        case ElementType.RichTextInput:
         case ElementType.ReplicatingContainer:
             return stringOrDefault(component.label, defaultElementDescriptor);
         default:

@@ -32,7 +32,7 @@ const typeMap: Record<ElementType, string> = {
     [ElementType.ConfigLayout]: 'undefined',
     [ElementType.FunctionInput]: 'undefined',
     [ElementType.CodeInput]: 'undefined',
-    [ElementType.RichTextInput]: 'undefined',
+    [ElementType.RichTextInput]: 'string',
     [ElementType.UiDefinitionInput]: 'undefined',
     [ElementType.IdentityInput]: 'undefined',
     [ElementType.TabLayout]: 'undefined',

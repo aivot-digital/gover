@@ -89,6 +89,7 @@ export function StoreModuleList(props: StoreModuleListProps) {
                 <Box
                     sx={{
                         px: 4,
+                        pt: 4,
                     }}
                 >
                     <SearchInput
