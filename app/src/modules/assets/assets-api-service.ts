@@ -40,16 +40,18 @@ export class AssetsApiService extends CrudApiService<Asset, Asset, Asset, Asset,
         );
     }
 
-    public async updateInStorageProvider(storagePathFromRoot: string, file: File, asset: Asset, storageProviderId: number): Promise<Asset> {
+    public async updateInStorageProvider(storagePathFromRoot: string, asset: Asset, storageProviderId: number, file?: File): Promise<Asset> {
         const formData = new FormData();
-        formData.set('file', file);
+        if (file != null) {
+            formData.set('file', file);
+        }
         formData.set(
             'data',
             new Blob(
                 [
                     JSON.stringify({
                         isPrivate: asset.isPrivate,
-                        metadata: asset.metadata ?? {},
+                        metadata: file != null ? (asset.metadata ?? {}) : null,
                     }),
                 ],
                 {type: 'application/json'},

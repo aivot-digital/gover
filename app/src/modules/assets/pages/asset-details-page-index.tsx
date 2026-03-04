@@ -214,14 +214,13 @@ export function AssetDetailsPageIndex() {
                 return;
             }
 
-            if (file == null || file.length === 0) {
-                dispatch(showErrorSnackbar('Für das Aktualisieren muss eine neue Datei ausgewählt werden.'));
-                setIsBusy(false);
-                return;
-            }
-
             apiService
-                .updateInStorageProvider(asset.storagePathFromRoot, file[0], asset, parsedStorageProviderId)
+                .updateInStorageProvider(
+                    asset.storagePathFromRoot,
+                    asset,
+                    parsedStorageProviderId,
+                    file != null && file.length > 0 ? file[0] : undefined,
+                )
                 .then((updatedAsset) => {
                     setItem(updatedAsset);
                     reset();
@@ -318,7 +317,7 @@ export function AssetDetailsPageIndex() {
                     <Typography sx={{mb: 2, maxWidth: 900}}>
                         {isReadOnlyStorageProvider
                             ? 'Der Speicheranbieter ist schreibgeschützt. Sie können Dateiinformationen einsehen, aber nicht bearbeiten.'
-                            : 'Ersetzen Sie die Datei, bearbeiten Sie Datenschutz- und Metadatenangaben und sehen Sie ergänzende Informationen ein.'}
+                            : 'Ersetzen Sie optional die Datei und bearbeiten Sie Datenschutzangaben. Metadaten können nur zusammen mit einem Datei-Upload geändert werden.'}
                     </Typography>
 
                     <FileUploadComponent
@@ -335,7 +334,7 @@ export function AssetDetailsPageIndex() {
                         isMultifile={false}
                         minFiles={1}
                         maxFiles={1}
-                        required={!isReadOnlyStorageProvider}
+                        required={false}
                         error={uploadError}
                         disabled={isReadOnlyStorageProvider}
                         hint={isReadOnlyStorageProvider
@@ -410,9 +409,14 @@ export function AssetDetailsPageIndex() {
                                 <StorageMetadataAttributesEditor
                                     storageProvider={storageProvider}
                                     metadata={assetMetadata}
-                                    disabled={isReadOnlyStorageProvider}
+                                    disabled={isReadOnlyStorageProvider || !hasSelectedFile}
                                     onChange={(metadata) => handleInputChange('metadata')(metadata as any)}
                                 />
+                                {!isReadOnlyStorageProvider && !hasSelectedFile && (
+                                    <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
+                                        Metadaten sind nur bearbeitbar, wenn eine neue Datei zum Ersetzen ausgewählt wurde.
+                                    </Typography>
+                                )}
                             </Box>
                         )
                     }
@@ -451,7 +455,7 @@ export function AssetDetailsPageIndex() {
             >
                 <Button
                     onClick={asset?.filename !== '' ? handleSave : handleSubmit}
-                    disabled={isBusy || isReadOnlyStorageProvider || !hasSelectedFile}
+                    disabled={isBusy || isReadOnlyStorageProvider || (isNewAsset ? !hasSelectedFile : hasNotChanged)}
                     variant="contained"
                     color="primary"
                     startIcon={<SaveOutlinedIcon />}
