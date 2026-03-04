@@ -77,6 +77,7 @@ const prefixMap: Record<ElementType, string> = {
     [ElementType.TimeRange]: 'tr',
     [ElementType.DateTimeRange]: 'dz',
     [ElementType.MapPoint]: 'mp',
+    [ElementType.DomainAndUserSelect]: 'du',
 };
 
 export function generateElementIdForType(type: ElementType): string {

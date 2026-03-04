@@ -132,6 +132,8 @@ function elementToValueType(element: AnyElement): string {
         case ElementType.MultiCheckbox:
         case ElementType.ChipInput:
             return 'string[]';
+        case ElementType.DomainAndUserSelect:
+            return '{type: \'orgUnit\' | \'team\' | \'user\'; id: string}[]';
         case ElementType.FileUpload:
             return '{name: string; uri: string; size: number;}[]';
         case ElementType.IntroductionStep:

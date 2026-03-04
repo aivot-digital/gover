@@ -67,6 +67,7 @@ import java.util.UUID;
         @JsonSubTypes.Type(value = TimeRangeInputElement.class, name = ElementType.ID_TimeRange),
         @JsonSubTypes.Type(value = DateTimeRangeInputElement.class, name = ElementType.ID_DateTimeRange),
         @JsonSubTypes.Type(value = MapPointInputElement.class, name = ElementType.ID_MapPoint),
+        @JsonSubTypes.Type(value = DomainAndUserSelectInputElement.class, name = ElementType.ID_DomainAndUserSelect),
 })
 public abstract class BaseElement implements Serializable {
     @Nonnull

@@ -40,4 +40,5 @@ export const NoCodeDataTypeMap: Record<ElementType, NoCodeDataType> = {
     [ElementType.TimeRange]: NoCodeDataType.Object,
     [ElementType.DateTimeRange]: NoCodeDataType.Object,
     [ElementType.MapPoint]: NoCodeDataType.Object,
+    [ElementType.DomainAndUserSelect]: NoCodeDataType.List,
 }

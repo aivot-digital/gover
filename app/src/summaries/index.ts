@@ -23,6 +23,7 @@ import {DateRangeFieldSummary} from './date-range-field-summary';
 import {TimeRangeFieldSummary} from './time-range-field-summary';
 import {DateTimeRangeFieldSummary} from './date-time-range-field-summary';
 import {MapPointFieldSummary} from './map-point-field-summary';
+import {DomainUserSelectFieldSummary} from './domain-user-select-field-summary';
 
 export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.FormLayout]: RootSummary,
@@ -63,4 +64,5 @@ export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.TimeRange]: TimeRangeFieldSummary,
     [ElementType.DateTimeRange]: DateTimeRangeFieldSummary,
     [ElementType.MapPoint]: MapPointFieldSummary,
+    [ElementType.DomainAndUserSelect]: DomainUserSelectFieldSummary,
 };

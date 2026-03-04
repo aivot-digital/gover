@@ -49,6 +49,7 @@ export function generateComponentTitle(component: AnyElement | null | undefined)
         case ElementType.FileUpload:
         case ElementType.ChipInput:
         case ElementType.MapPoint:
+        case ElementType.DomainAndUserSelect:
         case ElementType.ReplicatingContainer:
             return stringOrDefault(component.label, defaultElementDescriptor);
         default:

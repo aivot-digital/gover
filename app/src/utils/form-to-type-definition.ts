@@ -42,6 +42,7 @@ const typeMap: Record<ElementType, string> = {
     [ElementType.TimeRange]: '{start: string | null | undefined; end: string | null | undefined;}',
     [ElementType.DateTimeRange]: '{start: string | null | undefined; end: string | null | undefined;}',
     [ElementType.MapPoint]: '{latitude: number | null | undefined; longitude: number | null | undefined; address: string | null | undefined;}',
+    [ElementType.DomainAndUserSelect]: '{type: \'orgUnit\' | \'team\' | \'user\'; id: string;}[]',
 };
 
 export function formToTypeDefinition(form: FormVersionEntity): string {

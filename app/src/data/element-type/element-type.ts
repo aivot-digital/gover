@@ -37,4 +37,5 @@ export enum ElementType {
     TimeRange = 35,
     DateTimeRange = 36,
     MapPoint = 37,
+    DomainAndUserSelect = 38,
 }

@@ -27,6 +27,11 @@ import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 import {TimeFieldComponentModelMode} from '../../../../models/elements/form/input/time-field-element';
+import {
+    formatDomainAndUserSelectValue,
+    normalizeDomainAndUserSelectItem,
+} from '../../../../components/domain-user-select-field/domain-user-select-options';
+import {DomainAndUserSelectItem} from '../../../../models/elements/form/input/domain-user-select-field-element';
 
 export function DataObjectItemListPage() {
     const api = useApi();
@@ -248,6 +253,16 @@ function dataObjectSchemaExtractDisplayFields(dataObjectSchema: DataObjectSchema
                                     ? `${value.latitude.toFixed(6)}, ${value.longitude.toFixed(6)}`
                                     : null
                             );
+                        case ElementType.DomainAndUserSelect:
+                            if (!Array.isArray(value)) {
+                                return null;
+                            }
+
+                            return value
+                                .map((val: unknown) => normalizeDomainAndUserSelectItem(val))
+                                .filter((val): val is DomainAndUserSelectItem => val != null)
+                                .map((val) => formatDomainAndUserSelectValue(val))
+                                .join(', ');
                         case ElementType.Time:
                             return format(
                                 parseISO(value),

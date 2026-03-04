@@ -19,6 +19,7 @@ import {DateRangeFieldElement} from './date-range-field-element';
 import {TimeRangeFieldElement} from './time-range-field-element';
 import {DateTimeRangeFieldElement} from './date-time-range-field-element';
 import {MapPointFieldElement} from './map-point-field-element';
+import {DomainUserSelectFieldElement} from './domain-user-select-field-element';
 
 export type AnyInputElement = (
     CheckboxFieldElement |
@@ -41,6 +42,7 @@ export type AnyInputElement = (
     TimeRangeFieldElement |
     DateTimeRangeFieldElement |
     MapPointFieldElement |
+    DomainUserSelectFieldElement |
 
     ReplicatingContainerLayout
     );
@@ -66,6 +68,7 @@ export function isAnyInputElement(obj: any): obj is AnyInputElement {
         ElementType.TimeRange,
         ElementType.DateTimeRange,
         ElementType.MapPoint,
+        ElementType.DomainAndUserSelect,
         ElementType.ReplicatingContainer,
     ].includes(obj.type);
 }

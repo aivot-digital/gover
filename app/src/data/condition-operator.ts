@@ -192,6 +192,7 @@ export const ConditionOperatorHint: Record<ElementType, Partial<Record<Condition
     [ElementType.IdentityInput]: null,
     [ElementType.TabLayout]: null,
     [ElementType.ChipInput]: null,
+    [ElementType.DomainAndUserSelect]: null,
 };
 
 export function getConditionOperatorHint(elementType?: ElementType, operator?: ConditionOperator): string | null {

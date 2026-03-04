@@ -31,6 +31,7 @@ import {DateRangeFieldView} from './date-range-field-view';
 import {TimeRangeFieldView} from './time-range-field-view';
 import {DateTimeRangeFieldView} from './date-time-range-field-view';
 import {MapPointFieldView} from './map-point-field-view';
+import {DomainUserSelectFieldView} from './domain-user-select-field-view';
 
 export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.FormLayout]: RootComponentView,
@@ -71,4 +72,5 @@ export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.TimeRange]: TimeRangeFieldView,
     [ElementType.DateTimeRange]: DateTimeRangeFieldView,
     [ElementType.MapPoint]: MapPointFieldView,
+    [ElementType.DomainAndUserSelect]: DomainUserSelectFieldView,
 };

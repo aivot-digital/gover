@@ -52,6 +52,7 @@ const relevantElementTypes = [
     ElementType.TimeRange,
     ElementType.DateTimeRange,
     ElementType.MapPoint,
+    ElementType.DomainAndUserSelect,
 ];
 
 const MAX_LINK_LENGTH = 2000; // Most sources suggest 2048 maximum for URLs, but some browsers may have lower limits, so playing safe here.

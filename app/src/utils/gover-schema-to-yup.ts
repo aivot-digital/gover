@@ -16,6 +16,11 @@ import {DateRangeFieldElement} from '../models/elements/form/input/date-range-fi
 import {TimeRangeFieldElement} from '../models/elements/form/input/time-range-field-element';
 import {DateTimeRangeFieldElement} from '../models/elements/form/input/date-time-range-field-element';
 import {MapPointFieldElement} from '../models/elements/form/input/map-point-field-element';
+import {DomainAndUserSelectItem, DomainUserSelectFieldElement} from '../models/elements/form/input/domain-user-select-field-element';
+import {
+    createDomainAndUserSelectValueKey,
+    normalizeDomainAndUserSelectItem,
+} from '../components/domain-user-select-field/domain-user-select-options';
 
 /**
  * @deprecated Use goverSchemaToYup2 instead
@@ -180,6 +185,7 @@ const YupSchemaMap: {
     [ElementType.TimeRange]: timeRangeFieldToYup,
     [ElementType.DateTimeRange]: dateTimeRangeFieldToYup,
     [ElementType.MapPoint]: mapPointFieldToYup,
+    [ElementType.DomainAndUserSelect]: domainUserSelectFieldToYup,
     [ElementType.ReplicatingContainer]: replicatingContainerToYup,
 };
 
@@ -469,6 +475,80 @@ function mapPointFieldToYup(elem: MapPointFieldElement): Schema {
     }
 
     return mapPointSchema;
+}
+
+function domainUserSelectFieldToYup(elem: DomainUserSelectFieldElement): Schema {
+    let itemSchema: yup.ArraySchema<(DomainAndUserSelectItem | undefined)[] | undefined | null, yup.AnyObject, '', ''> = yup
+        .array()
+        .of(
+            yup
+                .object({
+                    type: yup.string().oneOf(['orgUnit', 'team', 'user']).required(),
+                    id: yup.string().trim().required(),
+                })
+                .required()
+                .test(
+                    'normalize-item',
+                    'Ungültiger Eintrag.',
+                    (value) => normalizeDomainAndUserSelectItem(value) != null,
+                ),
+        );
+
+    if (elem.required) {
+        itemSchema = itemSchema
+            .required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`);
+    } else {
+        itemSchema = itemSchema
+            .nullable();
+    }
+
+    if ((elem.minItems ?? 0) > 0) {
+        itemSchema = itemSchema
+            .min(elem.minItems!, `Mindestens ${elem.minItems} Einträge erforderlich.`);
+    }
+
+    if ((elem.maxItems ?? 0) > 0) {
+        itemSchema = itemSchema
+            .max(elem.maxItems!, `Maximal ${elem.maxItems} Einträge erlaubt.`);
+    }
+
+    itemSchema = itemSchema
+        .test(
+            'no-duplicates',
+            'Mehrfach vorhandene Einträge sind nicht erlaubt.',
+            (value) => {
+                if (value == null) {
+                    return true;
+                }
+
+                const normalizedValues = value
+                    .map((entry) => normalizeDomainAndUserSelectItem(entry))
+                    .filter((entry): entry is DomainAndUserSelectItem => entry != null);
+
+                return new Set(normalizedValues.map(createDomainAndUserSelectValueKey)).size === normalizedValues.length;
+            },
+        );
+
+    if (elem.allowedTypes != null) {
+        const allowedTypes = new Set(elem.allowedTypes);
+        itemSchema = itemSchema
+            .test(
+                'allowed-types',
+                'Eintragstyp ist laut Konfiguration nicht erlaubt.',
+                (value) => {
+                    if (value == null) {
+                        return true;
+                    }
+
+                    return value
+                        .map((entry) => normalizeDomainAndUserSelectItem(entry))
+                        .filter((entry): entry is DomainAndUserSelectItem => entry != null)
+                        .every((entry) => allowedTypes.has(entry.type));
+                },
+            );
+    }
+
+    return itemSchema;
 }
 
 export function applyYupErrorsToElementData(rootElement: AnyElement, elementData: ElementData, errors: Record<string, string>): ElementData {

@@ -35,6 +35,8 @@ import {TimeRangeFieldElement} from '../models/elements/form/input/time-range-fi
 import {DateTimeRangeFieldElement} from '../models/elements/form/input/date-time-range-field-element';
 import {TimeFieldComponentModelMode} from '../models/elements/form/input/time-field-element';
 import {MapPointFieldElement} from '../models/elements/form/input/map-point-field-element';
+import {DomainUserSelectFieldElement} from '../models/elements/form/input/domain-user-select-field-element';
+import {DomainAndUserSelectItemTypes} from '../models/elements/form/input/domain-user-select-field-element';
 
 function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
     return {
@@ -107,6 +109,7 @@ const elementConstructors: {
     [ElementType.TimeRange]: (id: string) => TimeRangeFieldElement;
     [ElementType.DateTimeRange]: (id: string) => DateTimeRangeFieldElement;
     [ElementType.MapPoint]: (id: string) => MapPointFieldElement;
+    [ElementType.DomainAndUserSelect]: (id: string) => DomainUserSelectFieldElement;
 } = {
     [ElementType.FormLayout]: (id) => ({
         ...makeBase(ElementType.FormLayout, id),
@@ -372,6 +375,15 @@ const elementConstructors: {
         zoom: 14,
         centerLatitude: 52.52,
         centerLongitude: 13.405,
+    }),
+    [ElementType.DomainAndUserSelect]: (id) => ({
+        ...makeInputBase(ElementType.DomainAndUserSelect, id),
+        label: 'Personenkreis',
+        placeholder: 'Organisationseinheit, Team oder Mitarbeiter:in suchen',
+        minItems: undefined,
+        maxItems: undefined,
+        allowedTypes: DomainAndUserSelectItemTypes,
+        processAccessConstraint: undefined,
     }),
 };
 

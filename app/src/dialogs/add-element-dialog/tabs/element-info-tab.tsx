@@ -1,6 +1,7 @@
 import React from 'react';
 import {Box, DialogContent, Divider, IconButton, Tooltip, Typography} from '@mui/material';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
+import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
 import {getElementNameForType} from '../../../data/element-type/element-names';
 import {type ElementTypesMap} from '../../../data/element-type/element-types-map';
 import {ElementType} from '../../../data/element-type/element-type';
@@ -20,6 +21,15 @@ import {DateRangeFieldComponent} from '../../../components/date-range-field/date
 import {TimeRangeFieldComponent} from '../../../components/time-range-field/time-range-field-component';
 import {DateTimeRangeFieldComponent} from '../../../components/date-time-range-field/date-time-range-field-component';
 import {MapPointFieldComponent} from '../../../components/map-point-field/map-point-field-component';
+import {DomainUserSelectFieldComponent} from '../../../components/domain-user-select-field/domain-user-select-field-component';
+import {
+    createDomainAndUserSelectValueKey,
+    createOrgUnitOptionValue,
+    createTeamOptionValue,
+    createUserOptionValue,
+} from '../../../components/domain-user-select-field/domain-user-select-options';
+import {getDepartmentTypeIcons} from '../../../modules/departments/utils/department-utils';
+import {ModuleIcons} from '../../../shells/staff/data/module-icons';
 
 const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Alert]: (
@@ -694,6 +704,62 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                     onChange={() => {
                     }}
                     hint="Klicken Sie in die Karte oder suchen Sie nach einer Adresse."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.DomainAndUserSelect]: (
+        <Box>
+            <Typography>
+                Das Domänen- und Mitarbeitendenauswahl-Element ermöglicht die Mehrfachauswahl von
+                Organisationseinheiten, Teams und Mitarbeitenden.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <DomainUserSelectFieldComponent
+                    label="Personenkreis"
+                    value={[
+                        {
+                            type: 'orgUnit',
+                            id: '1',
+                        },
+                        {
+                            type: 'user',
+                            id: 'user_123',
+                        },
+                    ]}
+                    onChange={() => {
+                    }}
+                    options={[
+                        {
+                            value: createOrgUnitOptionValue(1),
+                            key: createDomainAndUserSelectValueKey(createOrgUnitOptionValue(1)),
+                            label: 'Ordnungsamt',
+                            subLabel: 'Bereich',
+                            group: 'Organisationseinheiten',
+                            icon: getDepartmentTypeIcons(3),
+                        },
+                        {
+                            value: createTeamOptionValue(7),
+                            key: createDomainAndUserSelectValueKey(createTeamOptionValue(7)),
+                            label: 'Bürgerbüro Nord',
+                            group: 'Teams',
+                            icon: ModuleIcons.teams,
+                        },
+                        {
+                            value: createUserOptionValue('user_123'),
+                            key: createDomainAndUserSelectValueKey(createUserOptionValue('user_123')),
+                            label: 'Wagner, Marie-Therese',
+                            subLabel: 'm.wagner@example.org',
+                            group: 'Mitarbeitende',
+                            icon: <PersonOutlineOutlinedIcon />,
+                        },
+                    ]}
+                    hint="Optionen werden im Formular asynchron geladen und nach Kategorien gruppiert."
                 />
             </Box>
         </Box>

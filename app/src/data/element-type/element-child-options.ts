@@ -21,6 +21,7 @@ const BaseComponents = [
     ElementType.TimeRange,
     ElementType.DateTimeRange,
     ElementType.MapPoint,
+    ElementType.DomainAndUserSelect,
     ElementType.Alert,
     ElementType.FileUpload,
     ElementType.ChipInput,
@@ -69,4 +70,5 @@ export const ElementChildOptions: Record<ElementType, ElementType[] | null> = {
     [ElementType.TimeRange]: null,
     [ElementType.DateTimeRange]: null,
     [ElementType.MapPoint]: null,
+    [ElementType.DomainAndUserSelect]: null,
 };

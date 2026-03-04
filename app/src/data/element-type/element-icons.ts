@@ -24,6 +24,7 @@ import ExtensionOutlinedIcon from '@mui/icons-material/ExtensionOutlined';
 import CalendarClock from '@aivot/mui-material-symbols-400-outlined/dist/calendar-clock/CalendarClock';
 import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined';
 import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined';
+import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
 
 import {type SvgIcon} from '@mui/material';
 import {type AnyElement} from '../../models/elements/any-element';
@@ -68,6 +69,7 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.TimeRange]: AccessTimeOutlinedIcon,
     [ElementType.DateTimeRange]: CalendarClock,
     [ElementType.MapPoint]: PlaceOutlinedIcon,
+    [ElementType.DomainAndUserSelect]: GroupsOutlinedIcon,
 };
 
 export function getElementIcon(element: AnyElement): typeof SvgIcon {

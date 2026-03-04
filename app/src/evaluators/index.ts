@@ -15,6 +15,7 @@ import {DateRangeEvaluator} from './date-range-evaluator';
 import {TimeRangeEvaluator} from './time-range-evaluator';
 import {DateTimeRangeEvaluator} from './date-time-range-evaluator';
 import {MapPointEvaluator} from './map-point-evaluator';
+import {DomainUserSelectEvaluator} from './domain-user-select-evaluator';
 
 export const evaluators: {
     [key in ElementType]: BaseEvaluator<any> | null;
@@ -57,4 +58,5 @@ export const evaluators: {
     [ElementType.TimeRange]: TimeRangeEvaluator,
     [ElementType.DateTimeRange]: DateTimeRangeEvaluator,
     [ElementType.MapPoint]: MapPointEvaluator,
+    [ElementType.DomainAndUserSelect]: DomainUserSelectEvaluator,
 };

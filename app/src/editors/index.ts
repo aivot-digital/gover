@@ -34,6 +34,7 @@ import {TimeRangeFieldEditor} from './time-range-field-editor';
 import {DateTimeRangeFieldEditor} from './date-time-range-field-editor';
 import {TimeFieldEditor} from './time-field-editor';
 import {MapPointFieldEditor} from './map-point-field-editor';
+import {DomainUserSelectFieldEditor} from './domain-user-select-field-editor';
 
 export interface EditorTab {
     label: string;
@@ -151,5 +152,8 @@ export const editors: ElementTypesMap<EditorSet | null> = {
     },
     [ElementType.MapPoint]: {
         default: MapPointFieldEditor,
+    },
+    [ElementType.DomainAndUserSelect]: {
+        default: DomainUserSelectFieldEditor,
     },
 };
