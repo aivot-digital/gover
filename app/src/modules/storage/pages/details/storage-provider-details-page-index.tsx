@@ -104,7 +104,6 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     const navigate = useNavigate();
 
     const [storageProviderSchema, setStorageProviderSchema] = useState<any>(_StorageProviderSchema);
-    const [initialDerivationDone, setInitialDerivationDone] = useState(false);
 
     const {
         item: originalStorageProvider,
@@ -117,6 +116,21 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         isExistingItem,
     } = useGenericDetailsPageContext<StorageProviderEntity, StorageProviderAdditionalData>();
 
+    // Extract the id of the storage provider for later usage.
+    const {
+        id: storageProviderId
+    } = originalStorageProvider ?? {
+        id: null,
+    };
+
+    // Store the state of the initial derivation to prevent the change blocker from firing after the first derivation.
+    const [initialDerivationDone, setInitialDerivationDone] = useState(false);
+
+    // Reset the initial derivation done, when the id of the storage provider is changed.
+    useEffect(() => {
+        setInitialDerivationDone(false);
+    }, [storageProviderId]);
+
     useEffect(() => {
         if (isEditable) {
             return;
@@ -124,13 +138,13 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
 
         dispatch(addSnackbarMessage({
             key: 'storage-provider-no-access',
-            message: 'Dieser Zahlungsdienstleister kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
+            message: 'Dieser Speicheranbieter kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
             severity: SnackbarSeverity.Warning,
             type: SnackbarType.Dismissable,
         }));
 
         return () => {
-            dispatch(removeSnackbarMessage('payment-provider-no-access'));
+            dispatch(removeSnackbarMessage('storage-provider-no-access'));
         };
     }, [isEditable]);
 
@@ -519,10 +533,10 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         }
 
                         if (!initialDerivationDone) {
-                            setOriginalStorageProvider({
-                                ...originalStorageProvider,
+                            setOriginalStorageProvider((prev) => ({
+                                ...prev,
                                 configuration: derivedElementData,
-                            });
+                            }));
                         }
 
                         setInitialDerivationDone(true);
