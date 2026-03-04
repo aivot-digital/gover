@@ -62,11 +62,17 @@ export function useChangeBlocker<T>(props: ChangeBlockerProps<T>) {
             pendingBlocker.proceed();
         }
         setShowDialog(false);
+        setPendingBlocker(null);
     }, [pendingBlocker]);
 
     const handleCancel = useCallback(() => {
+        if (pendingBlocker != null && pendingBlocker.reset != null) {
+            pendingBlocker.reset();
+        }
+
         setShowDialog(false);
-    }, []);
+        setPendingBlocker(null);
+    }, [pendingBlocker]);
 
     const dialog = useMemo(() => {
         if (!showDialog) {
