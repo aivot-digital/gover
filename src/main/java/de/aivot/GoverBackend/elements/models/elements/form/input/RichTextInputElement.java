@@ -16,6 +16,8 @@ import java.util.regex.PatternSyntaxException;
 public class RichTextInputElement extends BaseInputElement<String> implements PrintableElement<String> {
     @Nullable
     private String content;
+    @Nullable
+    private Boolean reducedMode;
 
     public RichTextInputElement() {
         super(ElementType.RichTextInput);
@@ -124,12 +126,13 @@ public class RichTextInputElement extends BaseInputElement<String> implements Pr
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         RichTextInputElement that = (RichTextInputElement) o;
-        return Objects.equals(content, that.content);
+        return Objects.equals(content, that.content)
+                && Objects.equals(reducedMode, that.reducedMode);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), content);
+        return Objects.hash(super.hashCode(), content, reducedMode);
     }
 
     // endregion
@@ -143,6 +146,16 @@ public class RichTextInputElement extends BaseInputElement<String> implements Pr
 
     public RichTextInputElement setContent(@Nullable String content) {
         this.content = content;
+        return this;
+    }
+
+    @Nullable
+    public Boolean getReducedMode() {
+        return reducedMode;
+    }
+
+    public RichTextInputElement setReducedMode(@Nullable Boolean reducedMode) {
+        this.reducedMode = reducedMode;
         return this;
     }
 

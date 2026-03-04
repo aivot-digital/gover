@@ -30,6 +30,7 @@ export function RichTextView(props: BaseViewProps<RichTextInputElement, string>)
             required={element.required}
             disabled={isDisabled}
             readOnly={isBusy}
+            reducedMode={element.reducedMode ?? false}
             value={value}
             onChange={setValue}
         />

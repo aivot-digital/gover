@@ -85,6 +85,7 @@ interface RichTextInputComponentProps {
     required?: boolean | null | undefined;
     disabled?: boolean | null | undefined;
     readOnly?: boolean | null | undefined;
+    reducedMode?: boolean | null | undefined;
     value: string | null | undefined;
     onChange: (value: string | null) => void;
     sx?: SxProps | null | undefined;
@@ -100,12 +101,14 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
         required,
         disabled,
         readOnly,
+        reducedMode,
         value,
         onChange,
         sx,
     } = props;
 
     const isReadOnly = Boolean(disabled) || Boolean(readOnly);
+    const isReducedMode = Boolean(reducedMode);
     const sxArray = Array.isArray(sx) ? sx : [sx];
     const focusColor = error != null ? theme.palette.error.main : theme.palette.primary.main;
     const outlinedBorderColor = theme.palette.mode === 'light'
@@ -146,31 +149,16 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                 ref={handleOverlayContainerRef}
                 sx={{
                     position: 'relative',
-                    isolation: 'isolate',
                     border: '1px solid',
                     borderColor: error != null ? 'error.main' : outlinedBorderColor,
                     borderRadius: 1,
                     backgroundColor: baseBg,
-                    transition: theme.transitions.create(['border-color'], {
+                    transition: theme.transitions.create(['border-color', 'box-shadow'], {
                         duration: theme.transitions.duration.shorter,
                     }),
-                    '&::after': {
-                        content: '""',
-                        position: 'absolute',
-                        inset: -1,
-                        border: '2px solid transparent',
-                        borderRadius: 'inherit',
-                        pointerEvents: 'none',
-                        zIndex: 11,
-                        transition: theme.transitions.create(['border-color'], {
-                            duration: theme.transitions.duration.shorter,
-                        }),
-                    },
                     '&:focus-within': {
                         borderColor: focusColor,
-                    },
-                    '&:focus-within::after': {
-                        borderColor: focusColor,
+                        boxShadow: `0 0 0 1px ${focusColor}`,
                     },
                     '& .gover-mdx-editor': {
                         '--font-body': theme.typography.fontFamily,
@@ -261,6 +249,19 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         minHeight: 30,
                         backgroundColor: baseBg,
                     },
+                    '& .gover-mdx-editor [class*="_toolbarRoot_"] [class*="_selectTrigger_"]': {
+                        width: 'auto !important',
+                        minWidth: '92px !important',
+                        maxWidth: '120px !important',
+                        margin: '0 !important',
+                        paddingInline: `${theme.spacing(1)} !important`,
+                    },
+                    '& .gover-mdx-editor [class*="_toolbarNodeKindSelectTrigger_"]': {
+                        width: 'auto',
+                        minWidth: 92,
+                        maxWidth: 120,
+                        paddingInline: theme.spacing(1),
+                    },
                     '& .gover-mdx-editor [class*="_selectTrigger_"][data-state="open"]': {
                         borderColor: 'primary.main',
                     },
@@ -272,6 +273,8 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         boxShadow: theme.shadows[3],
                         filter: 'none',
                         padding: 0.5,
+                        position: 'relative',
+                        zIndex: `${theme.zIndex.modal + 1} !important`,
                     },
                     '& [class*="_toolbarNodeKindSelectContainer_"], & [class*="_toolbarButtonDropdownContainer_"], & [class*="_selectContainer_"]': {
                         padding: 0.25,
@@ -360,9 +363,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         ? {
                             '&:focus-within': {
                                 borderColor: error != null ? 'error.main' : outlinedBorderColor,
-                            },
-                            '&:focus-within::after': {
-                                borderColor: 'transparent',
+                                boxShadow: 'none',
                             },
                             '& .gover-mdx-editor': {
                                 pointerEvents: 'none',
@@ -393,18 +394,30 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         toolbarPlugin({
                             toolbarContents: () => (
                                 <DiffSourceToggleWrapper options={['rich-text', 'source']}>
-                                    <UndoRedo/>
-                                    <Separator/>
-                                    <BlockTypeSelect/>
-                                    <Separator/>
-                                    <BoldItalicUnderlineToggles/>
-                                    <StrikeThroughSupSubToggles options={['Strikethrough']}/>
-                                    <HighlightToggle/>
-                                    <CodeToggle/>
-                                    <Separator/>
-                                    <CreateLink/>
-                                    <Separator/>
-                                    <ListsToggle/>
+                                    {
+                                        isReducedMode ?
+                                            <>
+                                                <UndoRedo/>
+                                                <BlockTypeSelect/>
+                                                <BoldItalicUnderlineToggles/>
+                                                <CreateLink/>
+                                                <ListsToggle options={['bullet', 'number']}/>
+                                            </> :
+                                            <>
+                                                <UndoRedo/>
+                                                <Separator/>
+                                                <BlockTypeSelect/>
+                                                <Separator/>
+                                                <BoldItalicUnderlineToggles/>
+                                                <StrikeThroughSupSubToggles options={['Strikethrough']}/>
+                                                <HighlightToggle/>
+                                                <CodeToggle/>
+                                                <Separator/>
+                                                <CreateLink/>
+                                                <Separator/>
+                                                <ListsToggle/>
+                                            </>
+                                    }
                                 </DiffSourceToggleWrapper>
                             )
                         }),

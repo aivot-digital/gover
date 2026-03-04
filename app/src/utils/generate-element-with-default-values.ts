@@ -347,6 +347,7 @@ const elementConstructors: {
     [ElementType.RichTextInput]: (id) => ({
         ...makeInputBase(ElementType.RichTextInput, id),
         label: 'Markdown-Eingabe',
+        reducedMode: false,
     }),
     [ElementType.UiDefinitionInput]: (id) => ({}),
     [ElementType.IdentityInput]: (id) => ({}),
