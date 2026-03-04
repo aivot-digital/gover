@@ -7,12 +7,19 @@ import {
     BoldItalicUnderlineToggles,
     CodeToggle,
     CreateLink,
+    diffSourcePlugin,
+    DiffSourceToggleWrapper,
     headingsPlugin,
+    HighlightToggle,
+    linkDialogPlugin,
+    linkPlugin,
     listsPlugin,
     ListsToggle,
     markdownShortcutPlugin,
     MDXEditor,
     quotePlugin,
+    Separator,
+    StrikeThroughSupSubToggles,
     toolbarPlugin,
     UndoRedo,
     type Translation
@@ -31,6 +38,15 @@ const MDX_EDITOR_DE_TRANSLATIONS: Record<string, string> = {
     'toolbar.removeUnderline': 'Unterstreichung entfernen',
     'toolbar.inlineCode': 'Inline-Code',
     'toolbar.removeInlineCode': 'Inline-Code entfernen',
+    'toolbar.highlight': 'Hervorheben',
+    'toolbar.removeHighlight': 'Hervorhebung entfernen',
+    'toolbar.strikethrough': 'Durchstreichen',
+    'toolbar.removeStrikethrough': 'Durchstreichung entfernen',
+    'toolbar.richText': 'Formatierter Text',
+    'toolbar.rich-text': 'Formatierter Text',
+    'toolbar.source': 'Markdown-Quelle',
+    'toolbar.diffMode': 'Vergleichsansicht',
+    'toolbar.codeBlock': 'Codeblock',
     'toolbar.link': 'Link erstellen',
     'toolbar.bulletedList': 'Aufzählung',
     'toolbar.numberedList': 'Nummerierte Liste',
@@ -92,6 +108,9 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
     const isReadOnly = Boolean(disabled) || Boolean(readOnly);
     const sxArray = Array.isArray(sx) ? sx : [sx];
     const focusColor = error != null ? theme.palette.error.main : theme.palette.primary.main;
+    const outlinedBorderColor = theme.palette.mode === 'light'
+        ? 'rgba(0, 0, 0, 0.23)'
+        : 'rgba(255, 255, 255, 0.23)';
     const baseBg = isReadOnly
         ? theme.palette.action.disabledBackground
         : theme.palette.background.paper;
@@ -127,8 +146,9 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                 ref={handleOverlayContainerRef}
                 sx={{
                     position: 'relative',
+                    isolation: 'isolate',
                     border: '1px solid',
-                    borderColor: error != null ? 'error.main' : 'divider',
+                    borderColor: error != null ? 'error.main' : outlinedBorderColor,
                     borderRadius: 1,
                     backgroundColor: baseBg,
                     transition: theme.transitions.create(['border-color'], {
@@ -141,6 +161,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         border: '2px solid transparent',
                         borderRadius: 'inherit',
                         pointerEvents: 'none',
+                        zIndex: 11,
                         transition: theme.transitions.create(['border-color'], {
                             duration: theme.transitions.duration.shorter,
                         }),
@@ -180,17 +201,24 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         fontFamily: 'inherit',
                     },
                     '& .gover-mdx-editor [class*="_toolbarRoot_"]': {
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 2,
                         borderBottom: '1px solid',
                         borderColor: error != null ? alpha(theme.palette.error.main, 0.3) : 'divider',
                         borderRadius: '4px 4px 0 0',
+                        backgroundColor: baseBg,
                         paddingInline: 1,
                         paddingBlock: 0.75,
                         minHeight: 46,
                         gap: 0.5,
                     },
                     '& .gover-mdx-editor [class*="_toolbarRoot_"] [role="separator"]': {
+                        width: '1px',
+                        height: 18,
+                        alignSelf: 'center',
+                        backgroundColor: alpha(theme.palette.text.primary, 0.18),
                         marginInline: 0.5,
-                        marginBlock: 0.25,
                     },
                     '& .gover-mdx-editor [class*="_toolbarToggleItem_"], & .gover-mdx-editor [class*="_toolbarButton_"]': {
                         borderRadius: 1,
@@ -205,6 +233,26 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                     '& .gover-mdx-editor [class*="_toolbarToggleItem_"][data-state="on"], & .gover-mdx-editor [class*="_toolbarButton_"][data-state="on"]': {
                         backgroundColor: accentBg,
                         color: 'primary.main',
+                    },
+                    '& .gover-mdx-editor [class*="_diffSourceToggleWrapper_"]': {
+                        marginLeft: 'auto',
+                        paddingLeft: 0,
+                    },
+                    '& .gover-mdx-editor [class*="_diffSourceToggle_"]': {
+                        borderRadius: 0,
+                        backgroundColor: 'transparent',
+                        padding: 0,
+                        gap: 0,
+                    },
+                    '& .gover-mdx-editor [class*="_diffSourceToggle_"] [class*="_toolbarToggleItem_"]': {
+                        minWidth: 0,
+                        minHeight: 0,
+                        padding: 0,
+                        borderRadius: 1,
+                    },
+                    '& .gover-mdx-editor [class*="_diffSourceToggle_"] [class*="_toolbarToggleItem_"] > span': {
+                        display: 'block',
+                        padding: theme.spacing(0.5),
                     },
                     '& .gover-mdx-editor [class*="_selectTrigger_"]': {
                         borderRadius: 1,
@@ -271,6 +319,19 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         lineHeight: 1.6,
                         color: 'text.primary',
                     },
+                    '& .gover-mdx-editor .cm-sourceView': {
+                        minHeight: 180,
+                        maxHeight: '50vh',
+                    },
+                    '& .gover-mdx-editor .cm-sourceView .cm-editor': {
+                        minHeight: '100%',
+                        maxHeight: '100%',
+                    },
+                    '& .gover-mdx-editor .cm-sourceView .cm-scroller': {
+                        minHeight: '100%',
+                        maxHeight: '100%',
+                        overflowY: 'auto',
+                    },
                     '& .gover-mdx-editor [class*="_placeholder_"]': {
                         color: 'text.disabled',
                     },
@@ -298,7 +359,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                     ...(disabled
                         ? {
                             '&:focus-within': {
-                                borderColor: error != null ? 'error.main' : 'divider',
+                                borderColor: error != null ? 'error.main' : outlinedBorderColor,
                             },
                             '&:focus-within::after': {
                                 borderColor: 'transparent',
@@ -327,17 +388,29 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         headingsPlugin(),
                         quotePlugin(),
                         listsPlugin(),
+                        linkPlugin(),
+                        linkDialogPlugin(),
                         toolbarPlugin({
                             toolbarContents: () => (
-                                <>
+                                <DiffSourceToggleWrapper options={['rich-text', 'source']}>
                                     <UndoRedo/>
-                                    <BoldItalicUnderlineToggles/>
+                                    <Separator/>
                                     <BlockTypeSelect/>
+                                    <Separator/>
+                                    <BoldItalicUnderlineToggles/>
+                                    <StrikeThroughSupSubToggles options={['Strikethrough']}/>
+                                    <HighlightToggle/>
                                     <CodeToggle/>
+                                    <Separator/>
                                     <CreateLink/>
+                                    <Separator/>
                                     <ListsToggle/>
-                                </>
+                                </DiffSourceToggleWrapper>
                             )
+                        }),
+                        diffSourcePlugin({
+                            viewMode: 'rich-text',
+                            readOnlyDiff: isReadOnly,
                         }),
                         markdownShortcutPlugin(),
                     ]}
