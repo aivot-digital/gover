@@ -222,6 +222,6 @@ select setval('departments_id_seq',
 -- assign the default vendor name
 insert into system_configs (key,
                             value)
-values ('ProviderName', 'Verwaltungsstelle soziale Hilfen')
+values ('ProviderName', 'Verwaltungsstelle für soziale Hilfen in Musterland')
 on conflict (key) do update
     set value = excluded.value;
