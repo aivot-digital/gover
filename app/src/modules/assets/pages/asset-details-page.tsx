@@ -47,7 +47,7 @@ export function AssetDetailsPage() {
     }, [dispatch, parsedStorageProviderId]);
 
     const parentRoute = `/assets/providers/${storageProviderId}`;
-    const detailsPath = `/assets/providers/${storageProviderId}/:key`;
+    const detailsPath = `/assets/providers/${storageProviderId}/files/*`;
 
     return (
         <PageWrapper
@@ -80,11 +80,20 @@ export function AssetDetailsPage() {
                 tabs={[
                     {
                         path: detailsPath,
-                        label: '',
+                        label: 'Allgemein',
                     },
                 ]}
                 initializeItem={(api) => new AssetsApiService(api).initialize()}
-                fetchData={(api, key: string) => new AssetsApiService(api).retrieve(key)}
+                fetchData={(api, key: string) => {
+                    if (parsedStorageProviderId == null) {
+                        return Promise.reject(new Error('No storage provider selected'));
+                    }
+
+                    return new AssetsApiService(api).retrieveInStorageProvider(
+                        AssetsApiService.decodeStoragePathFromRoute(key),
+                        parsedStorageProviderId,
+                    );
+                }}
                 getTabTitle={(item: Asset) => {
                     if (item.key === "") {
                         return 'Neue Datei';
@@ -103,7 +112,7 @@ export function AssetDetailsPage() {
                         ? `Datei ansehen: ${item?.filename ?? "Unbenannt"}`
                         : `Datei: ${item?.filename ?? "Unbenannt"}`;
                 }}
-                idParam="key"
+                idParam="*"
                 parentLink={{
                     label: "Liste der Dateien",
                     to: parentRoute,

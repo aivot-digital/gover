@@ -17,21 +17,51 @@ export class AssetsApiService extends CrudApiService<Asset, Asset, Asset, Asset,
         super(api, 'assets/');
     }
 
-    public async upload(file: File, storageProviderId?: number): Promise<Asset> {
+    public async upload(file: File, storageProviderId: number, storagePathFromRoot: string, existingAsset?: Partial<Asset>): Promise<Asset> {
         const formData = new FormData();
         formData.set('file', file);
-        const storageProviderQuery = storageProviderId != null ? `?storageProviderId=${storageProviderId}` : '';
-        return await this.api.postFormData<Asset>(`assets/${storageProviderQuery}`, formData);
+
+        const normalizedPath = AssetsApiService.normalizeStoragePath(storagePathFromRoot);
+        const data = {
+            storagePathFromRoot: normalizedPath,
+            filename: existingAsset?.filename ?? file.name,
+            isPrivate: existingAsset?.isPrivate ?? true,
+            contentType: existingAsset?.contentType ?? file.type ?? 'application/octet-stream',
+            metadata: existingAsset?.metadata ?? {},
+        };
+        formData.set('data', new Blob([JSON.stringify(data)], {type: 'application/json'}));
+
+        const encodedPath = AssetsApiService.encodeStoragePathForRoute(normalizedPath);
+        return await this.api.postFormData<Asset>(`assets/path/${encodedPath}?storageProviderId=${storageProviderId}`, formData);
     }
 
-    public async updateInStorageProvider(key: string, asset: Asset, storageProviderId?: number): Promise<Asset> {
-        const storageProviderQuery = storageProviderId != null ? `?storageProviderId=${storageProviderId}` : '';
-        return await this.api.put<Asset>(`assets/${key}/${storageProviderQuery}`, asset);
+    public async retrieveInStorageProvider(storagePathFromRoot: string, storageProviderId: number): Promise<Asset> {
+        const normalizedPath = AssetsApiService.normalizeStoragePath(storagePathFromRoot);
+        const encodedPath = AssetsApiService.encodeStoragePathForRoute(normalizedPath);
+        return await this.api.get<Asset>(`assets/path/${encodedPath}`, {
+            queryParams: {
+                storageProviderId,
+            },
+        });
     }
 
-    public async destroyInStorageProvider(key: string, storageProviderId?: number): Promise<void> {
-        const storageProviderQuery = storageProviderId != null ? `?storageProviderId=${storageProviderId}` : '';
-        return await this.api.destroy<void>(`assets/${key}/${storageProviderQuery}`);
+    public async updateInStorageProvider(storagePathFromRoot: string, asset: Asset, storageProviderId: number): Promise<Asset> {
+        const normalizedPath = AssetsApiService.normalizeStoragePath(storagePathFromRoot);
+        const encodedPath = AssetsApiService.encodeStoragePathForRoute(normalizedPath);
+
+        return await this.api.put<Asset>(`assets/path/${encodedPath}?storageProviderId=${storageProviderId}`, {
+            storagePathFromRoot: normalizedPath,
+            filename: asset.filename,
+            isPrivate: asset.isPrivate,
+            contentType: asset.contentType ?? 'application/octet-stream',
+            metadata: asset.metadata ?? {},
+        });
+    }
+
+    public async destroyInStorageProvider(storagePathFromRoot: string, storageProviderId: number): Promise<void> {
+        const normalizedPath = AssetsApiService.normalizeStoragePath(storagePathFromRoot);
+        const encodedPath = AssetsApiService.encodeStoragePathForRoute(normalizedPath);
+        return await this.api.destroy<void>(`assets/path/${encodedPath}?storageProviderId=${storageProviderId}`);
     }
 
     public async listGroupedByFolder(path: string = '/'): Promise<AssetFolderGroup[]> {
@@ -47,14 +77,48 @@ export class AssetsApiService extends CrudApiService<Asset, Asset, Asset, Asset,
         return this.useAssetLink(asset.key);
     }
 
+    public static normalizeStoragePath(storagePathFromRoot: string) {
+        const trimmed = storagePathFromRoot.trim();
+        if (trimmed.length === 0) {
+            return '/';
+        }
+        return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+    }
+
+    public static encodeStoragePathForRoute(storagePathFromRoot: string) {
+        const normalized = AssetsApiService.normalizeStoragePath(storagePathFromRoot);
+        const segments = normalized
+            .split('/')
+            .filter((segment) => segment.length > 0)
+            .map((segment) => encodeURIComponent(segment));
+        return segments.join('/');
+    }
+
+    public static decodeStoragePathFromRoute(storagePathFromRoute: string) {
+        const normalized = storagePathFromRoute.trim().replace(/^\/+/, '');
+        if (normalized.length === 0) {
+            return '/';
+        }
+
+        const segments = normalized
+            .split('/')
+            .filter((segment) => segment.length > 0)
+            .map((segment) => decodeURIComponent(segment));
+
+        return `/${segments.join('/')}`;
+    }
+
     public initialize(): Asset {
         return {
             key: '',
+            storageProviderId: 0,
+            storagePathFromRoot: '',
             contentType: '',
             filename: '',
             created: new Date().toISOString(),
             uploaderId: '',
             isPrivate: true,
+            metadata: {},
         };
     }
 }

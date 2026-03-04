@@ -1,6 +1,6 @@
-CREATE INDEX idx_assets_filename_full_text
-    ON assets
-        USING GIN (to_tsvector('german', filename));
+--CREATE INDEX idx_assets_filename_full_text
+--    ON assets_with_metadata
+--        USING GIN (to_tsvector('german', filename));
 
 CREATE INDEX idx_data_object_items_id_full_text
     ON data_object_items
@@ -59,7 +59,7 @@ SELECT text 'assets'                   AS origin_table,
        filename                        AS label,
        key::varchar                    AS id,
        to_tsvector('german', filename) AS searchable_element
-FROM assets
+FROM assets_with_metadata
 UNION ALL
 SELECT text 'data_object_items'  AS origin_table,
        id                        AS label,

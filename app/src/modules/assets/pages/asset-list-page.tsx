@@ -64,8 +64,8 @@ export function AssetListPage() {
         ? `Dateien & Medien - ${storageProviderName}`
         : 'Dateien & Medien';
     const uploadRoute = parsedStorageProviderId != null
-        ? `/assets/providers/${parsedStorageProviderId}/new`
-        : '/assets/new';
+        ? `/assets/providers/${parsedStorageProviderId}/files/new`
+        : '/assets';
 
     return (
         <PageWrapper
@@ -82,8 +82,10 @@ export function AssetListPage() {
                             label: 'Datei hochladen',
                             icon: <AddOutlinedIcon />,
                             tooltip: 'Neues Dokument oder Medieninhalt anlegen',
-                            disabledTooltip: 'Der ausgewählte Speicheranbieter ist schreibgeschützt.',
-                            disabled: storageProviderReadOnly,
+                            disabledTooltip: parsedStorageProviderId == null
+                                ? 'Wählen Sie zuerst einen Speicheranbieter aus.'
+                                : 'Der ausgewählte Speicheranbieter ist schreibgeschützt.',
+                            disabled: parsedStorageProviderId == null || storageProviderReadOnly,
                             to: uploadRoute,
                             variant: 'contained',
                         },
@@ -141,14 +143,22 @@ export function AssetListPage() {
                         field: 'filename',
                         headerName: 'Dateiname',
                         flex: 2,
-                        renderCell: (params) => (
+                        renderCell: (params) => {
+                            const providerId = params.row.storageProviderId ?? parsedStorageProviderId;
+                            const encodedPath = AssetsApiService.encodeStoragePathForRoute(params.row.storagePathFromRoot ?? '/');
+                            const targetPath = providerId != null
+                                ? `/assets/providers/${providerId}/files/${encodedPath}`
+                                : '/assets';
+
+                            return (
                             <CellLink
-                                to={parsedStorageProviderId != null ? `/assets/providers/${parsedStorageProviderId}/${params.id}` : `/assets/${params.id}`}
+                                to={targetPath}
                                 title={storageProviderReadOnly ? 'Datei ansehen' : 'Datei bearbeiten'}
                             >
                                 {String(params.value)}
                             </CellLink>
-                        )
+                            );
+                        }
                     },
                     {
                         field: 'contentType',
@@ -195,7 +205,13 @@ export function AssetListPage() {
                 rowActions={(item: Asset) => [
                     {
                         icon: storageProviderReadOnly ? <VisibilityOutlined /> : <EditOutlined />,
-                        to: parsedStorageProviderId != null ? `/assets/providers/${parsedStorageProviderId}/${item.key}` : `/assets/${item.key}`,
+                        to: (() => {
+                            const providerId = item.storageProviderId ?? parsedStorageProviderId;
+                            if (providerId == null) {
+                                return '/assets';
+                            }
+                            return `/assets/providers/${providerId}/files/${AssetsApiService.encodeStoragePathForRoute(item.storagePathFromRoot ?? '/')}`;
+                        })(),
                         tooltip: storageProviderReadOnly ? 'Datei ansehen' : 'Datei bearbeiten',
                     },
                     {

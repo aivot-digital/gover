@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -19,11 +18,9 @@ public class AssetEntity {
     @NotNull(message = "Der Key darf nicht null sein.")
     private UUID key;
 
-    @Nonnull
-    @Column(length = 255)
-    @NotNull(message = "Der Dateiname darf nicht null sein.")
-    @NotBlank(message = "Der Dateiname darf nicht leer sein.")
-    @Size(min = 3, max = 255, message = "Der Dateiname muss zwischen 3 und 255 Zeichen lang sein.")
+    // Legacy/transient field: filename is now sourced from storage_index_items via assets_with_metadata view.
+    @Transient
+    @Nullable
     private String filename;
 
     @Nullable
@@ -31,11 +28,9 @@ public class AssetEntity {
     @Column(length = 64)
     private String uploaderId;
 
-    @Nonnull
-    @Column(length = 255)
-    @NotNull(message = "Der Content Type darf nicht null sein.")
-    @NotBlank(message = "Der Content Type darf nicht leer sein.")
-    @Size(min = 3, max = 255, message = "Der Content Type muss zwischen 3 und 255 Zeichen lang sein.")
+    // Legacy/transient field: content type is now sourced from storage_index_items via assets_with_metadata view.
+    @Transient
+    @Nullable
     private String contentType;
 
     @Nonnull
@@ -70,12 +65,12 @@ public class AssetEntity {
         return this;
     }
 
-    @Nonnull
+    @Nullable
     public String getFilename() {
         return filename;
     }
 
-    public AssetEntity setFilename(@Nonnull String filename) {
+    public AssetEntity setFilename(@Nullable String filename) {
         this.filename = filename;
         return this;
     }
@@ -90,12 +85,12 @@ public class AssetEntity {
         return this;
     }
 
-    @Nonnull
+    @Nullable
     public String getContentType() {
         return contentType;
     }
 
-    public AssetEntity setContentType(@Nonnull String contentType) {
+    public AssetEntity setContentType(@Nullable String contentType) {
         this.contentType = contentType;
         return this;
     }

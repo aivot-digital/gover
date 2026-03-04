@@ -1,12 +1,10 @@
 package de.aivot.GoverBackend.asset.services;
 
-import de.aivot.GoverBackend.asset.configs.DefaultStorageAssetsSystemConfigDefinition;
 import de.aivot.GoverBackend.asset.dtos.AssetFolderGroupResponseDTO;
 import de.aivot.GoverBackend.asset.dtos.AssetResponseDTO;
 import de.aivot.GoverBackend.asset.entities.AssetEntity;
+import de.aivot.GoverBackend.asset.filters.AssetFilter;
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
-import de.aivot.GoverBackend.config.entities.SystemConfigEntity;
-import de.aivot.GoverBackend.config.repositories.SystemConfigRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
@@ -23,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
@@ -37,92 +36,116 @@ import java.util.stream.Collectors;
 @Service
 public class AssetService implements EntityService<AssetEntity, UUID> {
     private final GoverConfig goverConfig;
-    private final SystemConfigRepository systemConfigRepository;
     private final AssetRepository repository;
+    private final AssetWithMetadataService assetWithMetadataService;
     private final StorageIndexItemRepository storageIndexItemRepository;
     private final StorageProviderRepository storageProviderRepository;
     private final StorageService storageService;
 
     @Autowired
     public AssetService(GoverConfig goverConfig,
-                        SystemConfigRepository systemConfigRepository,
                         AssetRepository repository,
+                        AssetWithMetadataService assetWithMetadataService,
                         StorageIndexItemRepository storageIndexItemRepository,
                         StorageProviderRepository storageProviderRepository,
                         StorageService storageService) {
         this.goverConfig = goverConfig;
         this.repository = repository;
+        this.assetWithMetadataService = assetWithMetadataService;
         this.storageIndexItemRepository = storageIndexItemRepository;
         this.storageProviderRepository = storageProviderRepository;
-        this.systemConfigRepository = systemConfigRepository;
         this.storageService = storageService;
     }
 
     @Nonnull
     @Override
     public AssetEntity create(@Nonnull AssetEntity entity) throws ResponseException {
-        entity.setKey(UUID.randomUUID());
-
-        var defaultStorageProviderId = systemConfigRepository
-                .findById(DefaultStorageAssetsSystemConfigDefinition.DEFAULT_STORAGE_ASSETS_KEY)
-                .flatMap(SystemConfigEntity::getValueAsInteger)
-                .orElse(null);
-
-        if (defaultStorageProviderId == null) {
-            throw ResponseException.internalServerError("Es wurde kein Standard-Speicheranbieter für Assets konfiguriert.");
-        }
-
         if (entity.getFileBytes() == null) {
             throw ResponseException.badRequest("Der Inhalt des Assets fehlt.");
         }
 
-        var doc = storageService.storeDocument(defaultStorageProviderId,
-                entity.getStoragePathFromRoot(),
-                entity.getFileBytes(),
-                StorageItemMetadata.empty());
-
-        entity
-                .setStorageProviderId(defaultStorageProviderId)
-                .setStoragePathFromRoot(doc.getPathFromRoot());
-
-        return repository.save(entity);
+        return create(entity, new ByteArrayInputStream(entity.getFileBytes()), entity.getStorageProviderId(), StorageItemMetadata.empty());
     }
 
     @Nonnull
     public AssetEntity create(@Nonnull AssetEntity entity, @Nonnull byte[] fileBytes) throws ResponseException {
-        return create(entity, fileBytes, null);
+        return create(entity, fileBytes, requireStorageProviderId(entity.getStorageProviderId()));
     }
 
     @Nonnull
     public AssetEntity create(@Nonnull AssetEntity entity,
                               @Nonnull byte[] fileBytes,
-                              @Nullable Integer requestedStorageProviderId) throws ResponseException {
-        return create(entity, new ByteArrayInputStream(fileBytes), requestedStorageProviderId);
+                              @Nonnull Integer requestedStorageProviderId) throws ResponseException {
+        return create(entity, new ByteArrayInputStream(fileBytes), requestedStorageProviderId, StorageItemMetadata.empty());
+    }
+
+    @Nonnull
+    public AssetEntity create(@Nonnull AssetEntity entity,
+                              @Nonnull byte[] fileBytes,
+                              @Nonnull Integer requestedStorageProviderId,
+                              @Nullable StorageItemMetadata metadata) throws ResponseException {
+        return create(entity, new ByteArrayInputStream(fileBytes), requestedStorageProviderId, metadata);
     }
 
     @Nonnull
     public AssetEntity create(@Nonnull AssetEntity entity,
                               @Nonnull InputStream fileContent,
-                              @Nullable Integer requestedStorageProviderId) throws ResponseException {
-        entity.setKey(UUID.randomUUID());
+                              @Nonnull Integer requestedStorageProviderId) throws ResponseException {
+        return create(entity, fileContent, requestedStorageProviderId, StorageItemMetadata.empty());
+    }
+
+    @Nonnull
+    public AssetEntity create(@Nonnull AssetEntity entity,
+                              @Nonnull InputStream fileContent,
+                              @Nonnull Integer requestedStorageProviderId,
+                              @Nullable StorageItemMetadata metadata) throws ResponseException {
+        var requestedFilename = entity.getFilename();
+        var requestedContentType = entity.getContentType();
 
         var storageProviderId = resolveStorageProviderId(requestedStorageProviderId);
+        var storagePathFromRoot = resolveAssetStoragePathForCreate(entity);
 
-        var pathFromRoot = "/" + entity.getKey();
+        if (repository.existsByStorageProviderIdAndStoragePathFromRoot(storageProviderId, storagePathFromRoot)) {
+            throw ResponseException.conflict(
+                    "Es existiert bereits ein Asset im Speicheranbieter %d mit dem Pfad %s.",
+                    storageProviderId,
+                    StringUtils.quote(storagePathFromRoot)
+            );
+        }
 
         var document = storageService
-                .storeDocument(storageProviderId, pathFromRoot, fileContent, StorageItemMetadata.empty());
+                .storeDocument(storageProviderId, storagePathFromRoot, fileContent, StorageItemMetadata.empty());
 
+        entity.setKey(entity.getKey() != null ? entity.getKey() : UUID.randomUUID());
         entity.setStorageProviderId(storageProviderId);
         entity.setStoragePathFromRoot(document.getPathFromRoot());
-
-        return repository.save(entity);
+        entity.setFilename(null);
+        entity.setContentType(null);
+        try {
+            var createdAsset = repository.save(entity);
+            syncStorageIndexItem(createdAsset, requestedFilename, requestedContentType, metadata);
+            return createdAsset;
+        } catch (DataIntegrityViolationException e) {
+            throw ResponseException.conflict(
+                    "Es existiert bereits ein Asset im Speicheranbieter %d mit dem Pfad %s.",
+                    storageProviderId,
+                    StringUtils.quote(storagePathFromRoot)
+            );
+        }
     }
 
     @Override
     public void performDelete(@Nonnull AssetEntity asset) throws ResponseException {
         storageService.deleteDocument(asset.getStorageProviderId(), asset.getStoragePathFromRoot());
         repository.delete(asset);
+    }
+
+    @Nonnull
+    public Page<AssetResponseDTO> listWithMetadata(@Nonnull Pageable pageable,
+                                                   @Nullable AssetFilter filter) {
+        return assetWithMetadataService
+                .list(pageable, filter)
+                .map(AssetResponseDTO::fromViewEntity);
     }
 
     @Nonnull
@@ -139,15 +162,99 @@ public class AssetService implements EntityService<AssetEntity, UUID> {
                                      @Nonnull AssetEntity entity,
                                      @Nonnull AssetEntity existingEntity
     ) throws ResponseException {
-        existingEntity.setFilename(entity.getFilename());
         existingEntity.setPrivate(entity.getPrivate());
+        existingEntity.setFilename(null);
+        existingEntity.setContentType(null);
         return repository.save(existingEntity);
+    }
+
+    @Nonnull
+    public AssetEntity update(@Nonnull UUID id,
+                              @Nonnull AssetEntity entity,
+                              @Nullable StorageItemMetadata metadata) throws ResponseException {
+        var existingAsset = retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        if (repository.existsByStorageProviderIdAndStoragePathFromRootAndKeyNot(
+                existingAsset.getStorageProviderId(),
+                existingAsset.getStoragePathFromRoot(),
+                existingAsset.getKey()
+        )) {
+            throw ResponseException.conflict(
+                    "Für den Speicheranbieter %d und den Pfad %s existiert bereits ein anderes Asset.",
+                    existingAsset.getStorageProviderId(),
+                    StringUtils.quote(existingAsset.getStoragePathFromRoot())
+            );
+        }
+
+        var updatedAsset = update(id, entity);
+        syncStorageIndexItem(updatedAsset, entity.getFilename(), entity.getContentType(), metadata);
+        return updatedAsset;
     }
 
     @Nonnull
     @Override
     public Optional<AssetEntity> retrieve(@Nonnull UUID id) {
         return repository.findById(id);
+    }
+
+    @Nonnull
+    public Optional<AssetResponseDTO> retrieveResponse(@Nonnull UUID id) {
+        return assetWithMetadataService
+                .retrieve(id)
+                .map(AssetResponseDTO::fromViewEntity);
+    }
+
+    @Nonnull
+    public Optional<AssetEntity> retrieveByPath(@Nonnull Integer storageProviderId,
+                                                @Nonnull String storagePathFromRoot) throws ResponseException {
+        return repository.findByStorageProviderIdAndStoragePathFromRoot(
+                storageProviderId,
+                normalizeAssetStoragePath(storagePathFromRoot)
+        );
+    }
+
+    @Nonnull
+    public Optional<AssetResponseDTO> retrieveResponseByPath(@Nonnull Integer storageProviderId,
+                                                             @Nonnull String storagePathFromRoot) throws ResponseException {
+        return retrieveByPath(storageProviderId, storagePathFromRoot)
+                .flatMap(asset -> retrieveResponse(asset.getKey()));
+    }
+
+    @Nonnull
+    public AssetResponseDTO createWithResponse(@Nonnull AssetEntity entity,
+                                               @Nonnull InputStream fileContent,
+                                               @Nonnull Integer requestedStorageProviderId,
+                                               @Nullable StorageItemMetadata metadata) throws ResponseException {
+        var createdAsset = create(entity, fileContent, requestedStorageProviderId, metadata);
+        return retrieveResponse(createdAsset.getKey())
+                .orElseThrow(() -> ResponseException.internalServerError("Das neu erstellte Asset konnte nicht gelesen werden."));
+    }
+
+    @Nonnull
+    public AssetResponseDTO updateByPath(@Nonnull Integer storageProviderId,
+                                         @Nonnull String storagePathFromRoot,
+                                         @Nonnull AssetEntity entity,
+                                         @Nullable StorageItemMetadata metadata) throws ResponseException {
+        var existingAsset = retrieveByPath(storageProviderId, storagePathFromRoot)
+                .orElseThrow(ResponseException::notFound);
+
+        var updatedAsset = update(existingAsset.getKey(), entity, metadata);
+        return retrieveResponse(updatedAsset.getKey())
+                .orElseThrow(() -> ResponseException.internalServerError("Das aktualisierte Asset konnte nicht gelesen werden."));
+    }
+
+    @Nonnull
+    public AssetResponseDTO deleteByPath(@Nonnull Integer storageProviderId,
+                                         @Nonnull String storagePathFromRoot) throws ResponseException {
+        var existingAsset = retrieveByPath(storageProviderId, storagePathFromRoot)
+                .orElseThrow(ResponseException::notFound);
+
+        var existingAssetResponse = retrieveResponse(existingAsset.getKey())
+                .orElseThrow(ResponseException::notFound);
+
+        delete(existingAsset.getKey());
+        return existingAssetResponse;
     }
 
     @Nonnull
@@ -171,7 +278,7 @@ public class AssetService implements EntityService<AssetEntity, UUID> {
         var folderPath = normalizeFolderPath(rawFolderPath);
 
         var storageProviderNamesById = storageProviderRepository
-                .findAllById(repository.findDistinctStorageProviderIds())
+                .findAllById(assetWithMetadataService.findDistinctStorageProviderIds())
                 .stream()
                 .collect(Collectors.toMap(
                         provider -> provider.getId(),
@@ -188,10 +295,10 @@ public class AssetService implements EntityService<AssetEntity, UUID> {
                             .filter(folder -> Boolean.TRUE.equals(folder.getDirectory()))
                             .toList();
 
-                    var files = repository
+                    var files = assetWithMetadataService
                             .listAllInFolder(providerId, folderPath)
                             .stream()
-                            .map(AssetResponseDTO::fromEntity)
+                            .map(AssetResponseDTO::fromViewEntity)
                             .toList();
 
                     if (folders.isEmpty() && files.isEmpty()) {
@@ -260,13 +367,8 @@ public class AssetService implements EntityService<AssetEntity, UUID> {
     }
 
     @Nonnull
-    private Integer resolveStorageProviderId(@Nullable Integer requestedStorageProviderId) throws ResponseException {
-        var storageProviderId = requestedStorageProviderId != null
-                ? requestedStorageProviderId
-                : systemConfigRepository
-                .findById(DefaultStorageAssetsSystemConfigDefinition.DEFAULT_STORAGE_ASSETS_KEY)
-                .flatMap(config -> config.getValueAsInteger())
-                .orElseThrow(() -> ResponseException.internalServerError("Es wurde kein Standard-Speicheranbieter für Assets konfiguriert."));
+    private Integer resolveStorageProviderId(@Nonnull Integer requestedStorageProviderId) throws ResponseException {
+        var storageProviderId = requireStorageProviderId(requestedStorageProviderId);
 
         var storageProvider = storageProviderRepository
                 .findById(storageProviderId)
@@ -276,6 +378,14 @@ public class AssetService implements EntityService<AssetEntity, UUID> {
             throw ResponseException.badRequest("Der Speicheranbieter mit der ID %d ist nicht für Assets konfiguriert.", storageProviderId);
         }
 
+        return storageProviderId;
+    }
+
+    @Nonnull
+    private static Integer requireStorageProviderId(@Nullable Integer storageProviderId) throws ResponseException {
+        if (storageProviderId == null) {
+            throw ResponseException.badRequest("Die ID des Speicheranbieters ist erforderlich.");
+        }
         return storageProviderId;
     }
 
@@ -296,6 +406,63 @@ public class AssetService implements EntityService<AssetEntity, UUID> {
         } catch (IOException e) {
             throw ResponseException.internalServerError(e, "Der Inhalt des Assets %s konnte nicht gelesen werden.", asset.getKey());
         }
+    }
+
+    private void syncStorageIndexItem(@Nonnull AssetEntity asset,
+                                      @Nullable String filename,
+                                      @Nullable String contentType,
+                                      @Nullable StorageItemMetadata metadata) throws ResponseException {
+        var indexItem = storageIndexItemRepository
+                .findByStorageProviderIdAndPathFromRootAndDirectoryIsFalse(asset.getStorageProviderId(), asset.getStoragePathFromRoot())
+                .orElseThrow(() -> ResponseException.internalServerError(
+                        "Der Speicherindex-Eintrag für das Asset %s wurde nicht gefunden.",
+                        asset.getKey()
+                ));
+
+        if (!StringUtils.isNullOrEmpty(filename)) {
+            indexItem.setFilename(filename);
+        }
+        if (!StringUtils.isNullOrEmpty(contentType)) {
+            indexItem.setMimeType(contentType);
+        }
+        if (metadata != null) {
+            indexItem.setMetadata(metadata);
+        }
+
+        storageIndexItemRepository.save(indexItem);
+    }
+
+    @Nonnull
+    private static String resolveAssetStoragePathForCreate(@Nonnull AssetEntity entity) throws ResponseException {
+        var providedPath = entity.getStoragePathFromRoot();
+        if (StringUtils.isNullOrEmpty(providedPath)) {
+            throw ResponseException.badRequest("Der Speicherpfad des Assets ist erforderlich.");
+        }
+
+        return normalizeAssetStoragePath(providedPath);
+    }
+
+    @Nonnull
+    private static String normalizeAssetStoragePath(@Nonnull String rawPath) throws ResponseException {
+        var normalized = rawPath.trim();
+
+        if (normalized.isEmpty()) {
+            throw ResponseException.badRequest("Der Speicherpfad des Assets darf nicht leer sein.");
+        }
+
+        if (!normalized.startsWith("/")) {
+            normalized = "/" + normalized;
+        }
+
+        if (normalized.endsWith("/")) {
+            throw ResponseException.badRequest("Der Speicherpfad des Assets muss auf eine Datei verweisen und darf nicht auf / enden.");
+        }
+
+        if ("/".equals(normalized)) {
+            throw ResponseException.badRequest("Der Speicherpfad des Assets darf nicht auf das Wurzelverzeichnis zeigen.");
+        }
+
+        return normalized;
     }
 
 }

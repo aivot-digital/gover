@@ -32,6 +32,22 @@ public class AssetFilter implements Filter<AssetEntity> {
         return storageProviderId;
     }
 
+    public String getFilename() {
+        return filename;
+    }
+
+    public String getUploaderId() {
+        return uploaderId;
+    }
+
+    public String getContentType() {
+        return contentType;
+    }
+
+    public Boolean getPrivate() {
+        return isPrivate;
+    }
+
     public AssetFilter setStorageProviderId(Integer storageProviderId) {
         this.storageProviderId = storageProviderId;
         return this;

@@ -13,11 +13,11 @@ export const assetsRoutes: RouteObject[] = [
         element: <AssetListPage />,
     },
     {
-        path: '/assets/providers/:storageProviderId/:key',
+        path: '/assets/providers/:storageProviderId/files',
         element: <AssetDetailsPage />,
         children: [
             {
-                index: true,
+                path: '*',
                 element: <AssetDetailsPageIndex />,
             },
         ],

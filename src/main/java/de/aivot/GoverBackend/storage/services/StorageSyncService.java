@@ -219,6 +219,8 @@ public class StorageSyncService {
                 storageIndexItemRepository.save(item
                         .setMissing(true)
                         .setUpdated(LocalDateTime.now()));
+
+                removeAssetEntityForMissingDocument(storageProvider, item);
             }
         }
     }
@@ -291,11 +293,20 @@ public class StorageSyncService {
                         .setStorageProviderId(storageProvider.getId())
                         .setStoragePathFromRoot(documentIndexItem.getPathFromRoot()));
 
-        asset.setFilename(documentIndexItem.getFilename());
-        asset.setContentType(documentIndexItem.getMimeType());
         asset.setStorageProviderId(storageProvider.getId());
         asset.setStoragePathFromRoot(documentIndexItem.getPathFromRoot());
 
         assetRepository.save(asset);
+    }
+
+    private void removeAssetEntityForMissingDocument(@Nonnull StorageProviderEntity storageProvider,
+                                                     @Nonnull StorageIndexItemEntity indexItem) {
+        if (storageProvider.getType() != StorageProviderType.Assets || Boolean.TRUE.equals(indexItem.getDirectory())) {
+            return;
+        }
+
+        assetRepository
+                .findByStorageProviderIdAndStoragePathFromRoot(storageProvider.getId(), indexItem.getPathFromRoot())
+                .ifPresent(assetRepository::delete);
     }
 }

@@ -42,7 +42,7 @@ export const AssetSchema = yup.object({
 export function AssetDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const {storageProviderId} = useParams<{ storageProviderId?: string }>();
+    const {storageProviderId} = useParams<{ storageProviderId?: string; key?: string }>();
 
     const api = useApi();
     const {
@@ -136,15 +136,18 @@ export function AssetDetailsPageIndex() {
             return;
         }
 
-        if (file == null || file.length === 0) {
+        if (file == null || file.length === 0 || parsedStorageProviderId == null) {
             return;
         }
+
+        const filename = file[0].name;
+        const storagePathFromRoot = `/${filename}`;
 
         setIsBusy(true);
         dispatch(showLoadingOverlay('Datei wird hochgeladen…'));
 
         new AssetsApiService(api)
-            .upload(file[0], parsedStorageProviderId)
+            .upload(file[0], parsedStorageProviderId, storagePathFromRoot, asset)
             .then((newAsset) => {
                 setItem(newAsset);
                 reset();
@@ -155,8 +158,8 @@ export function AssetDetailsPageIndex() {
                 // use setTimeout instead of useEffect to prevent unnecessary rerender
                 setTimeout(() => {
                     const detailsRoute = parsedStorageProviderId != null
-                        ? `/assets/providers/${parsedStorageProviderId}/${newAsset.key}`
-                        : `/assets/${newAsset.key}`;
+                        ? `/assets/providers/${parsedStorageProviderId}/files/${AssetsApiService.encodeStoragePathForRoute(newAsset.storagePathFromRoot)}`
+                        : '/assets';
                     navigate(detailsRoute, {replace: true});
                 }, 0);
 
@@ -196,8 +199,14 @@ export function AssetDetailsPageIndex() {
 
             setIsBusy(true);
 
+            if (parsedStorageProviderId == null) {
+                dispatch(showErrorSnackbar('Es wurde kein Speicheranbieter ausgewählt.'));
+                setIsBusy(false);
+                return;
+            }
+
             apiService
-                .updateInStorageProvider(asset.key, asset, parsedStorageProviderId)
+                .updateInStorageProvider(asset.storagePathFromRoot, asset, parsedStorageProviderId)
                 .then((updatedAsset) => {
                     setItem(updatedAsset);
                     reset();
@@ -223,7 +232,13 @@ export function AssetDetailsPageIndex() {
         if (asset.key === '') return;
 
         setIsBusy(true);
-        apiService.destroyInStorageProvider(asset.key, parsedStorageProviderId)
+        if (parsedStorageProviderId == null) {
+            dispatch(showErrorSnackbar('Es wurde kein Speicheranbieter ausgewählt.'));
+            setIsBusy(false);
+            return;
+        }
+
+        apiService.destroyInStorageProvider(asset.storagePathFromRoot, parsedStorageProviderId)
             .then(() => {
                 reset(); // prevent change blocker by resetting unsaved changes
                 navigate(parentRoute, {

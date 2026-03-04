@@ -1,11 +1,11 @@
 package de.aivot.GoverBackend.asset.controllers;
 
 import de.aivot.GoverBackend.asset.dtos.AssetRequestDTO;
+import de.aivot.GoverBackend.asset.dtos.AssetCreateRequestDTO;
 import de.aivot.GoverBackend.asset.dtos.AssetResponseDTO;
 import de.aivot.GoverBackend.asset.dtos.AssetFolderGroupResponseDTO;
 import de.aivot.GoverBackend.asset.entities.AssetEntity;
 import de.aivot.GoverBackend.asset.filters.AssetFilter;
-import de.aivot.GoverBackend.asset.repositories.AssetRepository;
 import de.aivot.GoverBackend.asset.services.AssetService;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
@@ -16,6 +16,7 @@ import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.permissions.data.Permissions;
 import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.av.services.AVService;
+import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -32,6 +33,8 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.util.AntPathMatcher;
+import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -41,8 +44,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-
 @RestController
 @RequestMapping("/api/assets/")
 @Tag(
@@ -51,10 +52,10 @@ import java.util.UUID;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class AssetController {
+    private static final AntPathMatcher pathMatcher = new AntPathMatcher();
     private final ScopedAuditService auditService;
 
     private final AssetService assetService;
-    private final AssetRepository assetRepository;
     private final AVService avService;
     private final UserService userService;
     private final PermissionService permissionService;
@@ -62,14 +63,12 @@ public class AssetController {
     @Autowired
     public AssetController(AuditService auditService,
                            AssetService assetService,
-                           AssetRepository assetRepository,
                            AVService avService,
                            UserService userService,
                            PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(AssetController.class);
 
         this.assetService = assetService;
-        this.assetRepository = assetRepository;
         this.avService = avService;
         this.userService = userService;
         this.permissionService = permissionService;
@@ -87,9 +86,7 @@ public class AssetController {
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid AssetFilter filter
     ) throws ResponseException {
-        return assetService
-                .list(pageable, filter)
-                .map(AssetResponseDTO::fromEntity);
+        return assetService.listWithMetadata(pageable, filter);
     }
 
     @GetMapping(value = {
@@ -116,7 +113,7 @@ public class AssetController {
     }
 
     @PostMapping(
-            value = "",
+            value = "path/**",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
@@ -127,10 +124,10 @@ public class AssetController {
     )
     public AssetResponseDTO create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull HttpServletRequest request,
             @Nonnull @RequestPart(value = "file", required = true) MultipartFile file,
-            @Nullable @RequestPart(value = "filename", required = false) String explicitFilename,
-            @Nullable @RequestPart(value = "private", required = false) Boolean privateAsset,
-            @Nullable @RequestParam(value = "storageProviderId", required = false) Integer storageProviderId
+            @Nonnull @Valid @RequestPart(value = "data", required = true) AssetCreateRequestDTO requestDTO,
+            @Nonnull @RequestParam(value = "storageProviderId", required = true) Integer storageProviderId
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
@@ -141,53 +138,63 @@ public class AssetController {
 
         avService.testFile(file);
 
-        String filename = explicitFilename != null ? explicitFilename : file.getOriginalFilename();
+        var storagePathFromRoot = getNormalizedAssetPath(request);
+        ensureMatchingPath(requestDTO.storagePathFromRoot(), storagePathFromRoot);
+
+        String filename = file.getOriginalFilename();
 
         if (filename == null) {
             throw ResponseException.badRequest("Der Dateiname konnte nicht ermittelt werden.");
         }
 
+        var contentType = file.getContentType() != null ? file.getContentType() : "application/octet-stream";
+        var isPrivate = requestDTO.isPrivate();
+        var metadata = requestDTO.metadata() != null
+                ? requestDTO.metadata()
+                : StorageItemMetadata.empty();
+
         var asset = new AssetEntity();
+        asset.setStoragePathFromRoot(storagePathFromRoot);
         asset.setFilename(filename);
         asset.setCreated(LocalDateTime.now());
         asset.setUploaderId(execUser.getId());
-        asset.setContentType(file.getContentType() != null ? file.getContentType() : "application/octet-stream");
-        asset.setPrivate(privateAsset != null ? privateAsset : true);
+        asset.setContentType(contentType);
+        asset.setPrivate(isPrivate);
 
-        AssetEntity createdAsset;
         try {
-            createdAsset = assetService.create(asset, file.getInputStream(), storageProviderId);
+            var createdAssetResponse = assetService.createWithResponse(asset, file.getInputStream(), storageProviderId, metadata);
+
+            auditService.logAction(execUser, AuditAction.Create, AssetEntity.class, Map.of(
+                    "key", createdAssetResponse.key(),
+                    "filename", createdAssetResponse.filename()
+            ));
+
+            return createdAssetResponse;
         } catch (IOException e) {
             throw ResponseException.internalServerError(e, "Die Dateidaten des Uploads konnten nicht gelesen werden.");
         }
-
-        auditService.logAction(execUser, AuditAction.Create, AssetEntity.class, Map.of(
-                "key", createdAsset.getKey(),
-                "filename", createdAsset.getFilename()
-        ));
-
-        return AssetResponseDTO.fromEntity(createdAsset);
     }
 
     @GetMapping(
-            value = "{assetId}/",
+            value = "path/**",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @Operation(
             summary = "Retrieve an asset",
-            description = "Retrieve details of a specific asset by its ID."
+            description = "Retrieve details of a specific asset by its path and storage provider."
     )
     public AssetResponseDTO retrieve(
-            @Nonnull @PathVariable UUID assetId
+            @Nonnull HttpServletRequest request,
+            @Nonnull @RequestParam(value = "storageProviderId", required = true) Integer storageProviderId
     ) throws ResponseException {
+        var storagePathFromRoot = getNormalizedAssetPath(request);
         return assetService
-                .retrieve(assetId)
-                .map(AssetResponseDTO::fromEntity)
+                .retrieveResponseByPath(storageProviderId, storagePathFromRoot)
                 .orElseThrow(ResponseException::notFound);
     }
 
     @PutMapping(
-            value = "{assetId}/",
+            value = "path/**",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @Operation(
@@ -197,97 +204,110 @@ public class AssetController {
     )
     public AssetResponseDTO update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable UUID assetId,
+            @Nonnull HttpServletRequest request,
             @Nonnull @RequestBody @Valid AssetRequestDTO requestDTO,
-            @Nullable @RequestParam(value = "storageProviderId", required = false) Integer storageProviderId
+            @Nonnull @RequestParam(value = "storageProviderId", required = true) Integer storageProviderId
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (storageProviderId != null) {
-            var existingAsset = assetRepository
-                    .findById(assetId)
-                    .orElseThrow(ResponseException::notFound);
-
-            validateStorageProviderContext(storageProviderId, existingAsset);
-        }
-
-        var updatedAsset = assetService
-                .update(assetId, requestDTO.toEntity());
+        var storagePathFromRoot = getNormalizedAssetPath(request);
+        ensureMatchingPath(requestDTO.storagePathFromRoot(), storagePathFromRoot);
+        var updatedAssetResponse = assetService
+                .updateByPath(storageProviderId, storagePathFromRoot, requestDTO.toEntity(), requestDTO.metadata());
 
         auditService.logAction(user, AuditAction.Update, AssetEntity.class, Map.of(
-                "key", updatedAsset.getKey(),
-                "filename", updatedAsset.getFilename(),
-                "isPrivate", updatedAsset.getPrivate()
+                "key", updatedAssetResponse.key(),
+                "filename", updatedAssetResponse.filename(),
+                "isPrivate", updatedAssetResponse.isPrivate()
         ));
 
-        return AssetResponseDTO
-                .fromEntity(updatedAsset);
+        return updatedAssetResponse;
     }
 
-    @DeleteMapping("{assetId}/")
+    @DeleteMapping("path/**")
     @Operation(
             summary = "Delete an asset",
-            description = "Delete a specific asset by its ID. " +
+            description = "Delete a specific asset by its path and storage provider. " +
                     "This will remove both the asset record and the associated file from storage."
     )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable UUID assetId,
-            @Nullable @RequestParam(value = "storageProviderId", required = false) Integer storageProviderId
+            @Nonnull HttpServletRequest request,
+            @Nonnull @RequestParam(value = "storageProviderId", required = true) Integer storageProviderId
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var asset = assetRepository
-                .findById(assetId)
-                .orElseThrow(ResponseException::notFound);
-
-        if (storageProviderId != null) {
-            validateStorageProviderContext(storageProviderId, asset);
-        }
+        var storagePathFromRoot = getNormalizedAssetPath(request);
+        var assetResponse = assetService.deleteByPath(storageProviderId, storagePathFromRoot);
 
         auditService.logAction(user, AuditAction.Delete, AssetEntity.class, Map.of(
-                "key", asset.getKey(),
-                "filename", asset.getFilename()
+                "key", assetResponse.key(),
+                "filename", assetResponse.filename()
         ));
-
-        assetService.delete(assetId);
     }
 
     @Nonnull
     private static String getNormalizedFolderPath(@Nonnull HttpServletRequest request) {
-        var pathParts = request
-                .getRequestURL()
-                .toString()
-                .split("/folders/");
+        var normalizedPath = extractNormalizedPathFromRequest(request, "folders");
+        if (!normalizedPath.endsWith("/")) {
+            normalizedPath = normalizedPath + "/";
+        }
+        return normalizedPath;
+    }
+
+    @Nonnull
+    private static String getNormalizedAssetPath(@Nonnull HttpServletRequest request) throws ResponseException {
+        var normalizedPath = extractNormalizedPathFromRequest(request, "path");
+        if (normalizedPath.equals("/")) {
+            throw ResponseException.badRequest("Der Pfad der Asset-Datei darf nicht leer sein.");
+        }
+        return normalizedPath;
+    }
+
+    @Nonnull
+    private static String extractNormalizedPathFromRequest(@Nonnull HttpServletRequest request,
+                                                           @Nonnull String marker) {
+        var bestMatchingPattern = (String) request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
+        var pathWithinHandlerMapping = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
+        String extractedPath = null;
+
+        if (bestMatchingPattern != null && pathWithinHandlerMapping != null) {
+            extractedPath = pathMatcher.extractPathWithinPattern(bestMatchingPattern, pathWithinHandlerMapping);
+        }
+
+        if (extractedPath == null) {
+            var requestUri = request.getRequestURI();
+            var markerWithSlash = "/" + marker + "/";
+            var markerIndex = requestUri.indexOf(markerWithSlash);
+            if (markerIndex >= 0) {
+                extractedPath = requestUri.substring(markerIndex + markerWithSlash.length());
+            }
+        }
 
         var normalizedPath = "/";
-        if (pathParts.length > 1) {
-            normalizedPath = pathParts[1];
-
+        if (extractedPath != null && !extractedPath.isBlank()) {
+            normalizedPath = extractedPath;
             if (!normalizedPath.startsWith("/")) {
                 normalizedPath = "/" + normalizedPath;
-            }
-
-            if (!normalizedPath.endsWith("/")) {
-                normalizedPath = normalizedPath + "/";
             }
         }
 
         return URLDecoder.decode(normalizedPath, StandardCharsets.UTF_8);
     }
 
-    private static void validateStorageProviderContext(@Nonnull Integer requestedStorageProviderId,
-                                                       @Nonnull AssetEntity asset) throws ResponseException {
-        if (asset.getStorageProviderId() == null) {
-            throw ResponseException.notFound();
+    private static void ensureMatchingPath(@Nonnull String requestBodyPath,
+                                           @Nonnull String routePath) throws ResponseException {
+        var normalizedBodyPath = requestBodyPath.trim();
+        if (!normalizedBodyPath.startsWith("/")) {
+            normalizedBodyPath = "/" + normalizedBodyPath;
         }
 
-        if (!requestedStorageProviderId.equals(asset.getStorageProviderId())) {
-            throw ResponseException.notFound();
+        if (!normalizedBodyPath.equals(routePath)) {
+            throw ResponseException.badRequest("Der Pfad im Request-Body muss mit dem Pfad in der URL übereinstimmen.");
         }
     }
 }
