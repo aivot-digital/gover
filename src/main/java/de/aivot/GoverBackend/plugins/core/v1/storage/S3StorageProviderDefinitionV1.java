@@ -239,7 +239,17 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 var metadata = new StorageItemMetadata();
 
                 if (item.userMetadata() != null) {
-                    metadata.putAll(item.userMetadata());
+                    // Normalize the metadata keys to lowercase
+                    for (var entry : item.userMetadata().entrySet()) {
+                        var val = entry.getValue();
+                        var key = entry.getKey().toLowerCase();
+
+                        if (!key.startsWith("x-amz-meta-")) {
+                            metadata.put("x-amz-meta-" + key, val);
+                        } else {
+                            metadata.put(key, val);
+                        }
+                    }
                 }
 
                 folder.addDocument(new StorageDocument(
@@ -378,9 +388,19 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
             throw new StorageException(e, "Fehler beim Abrufen des Dokuments aus dem S3-kompatiblen Speicher.");
         }
 
+        // Normalize the metadata keys to lowercase
         var metadata = new StorageItemMetadata();
         if (response.userMetadata() != null) {
-            metadata.putAll(response.userMetadata());
+            for (var entry : response.userMetadata().entrySet()) {
+                var val = entry.getValue();
+                var key = entry.getKey().toLowerCase();
+
+                if (!key.startsWith("x-amz-meta-")) {
+                    metadata.put("x-amz-meta-" + key, val);
+                } else {
+                    metadata.put(key, val);
+                }
+            }
         }
 
         return Optional.of(new StorageDocument(

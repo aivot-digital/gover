@@ -300,6 +300,31 @@ export function AssetDetailsPageIndex() {
                         disabled={!canCreateAsset}
                         hint={!canCreateAsset ? `${readOnlyHint} Neue Dateien können nicht hochgeladen werden.` : undefined}
                     />
+
+                    {
+                        storageProvider != null && storageProvider.metadataAttributes.length > 0 && (
+                            <Box sx={{mt: 3, maxWidth: 900}}>
+                                <Typography variant="h6" sx={{mb: 1}}>
+                                    Metadaten
+                                </Typography>
+                                <Typography sx={{mb: 2}}>
+                                    Hinterlegen Sie optional zusätzliche Metadaten für die Datei entsprechend den
+                                    konfigurierten Attributen des Speicheranbieters.
+                                </Typography>
+                                <StorageMetadataAttributesEditor
+                                    storageProvider={storageProvider}
+                                    metadata={assetMetadata}
+                                    disabled={!canCreateAsset || !hasSelectedFile}
+                                    onChange={(metadata) => handleInputChange('metadata')(metadata as any)}
+                                />
+                                {canCreateAsset && !hasSelectedFile && (
+                                    <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
+                                        Metadaten sind bearbeitbar, sobald eine Datei ausgewählt wurde.
+                                    </Typography>
+                                )}
+                            </Box>
+                        )
+                    }
                 </>
             }
             {

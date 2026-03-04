@@ -59,3 +59,7 @@ set storage_provider_id    = (select value
 alter table assets
     alter column storage_provider_id set not null,
     alter column storage_path_from_root set not null;
+
+-- add a unique constraint to the assets table to ensure that each combination of storage_provider_id and storage_path_from_root is unique.
+alter table assets
+    add unique (storage_provider_id, storage_path_from_root);
