@@ -8,16 +8,20 @@ import {AlertComponent} from '../../../../../components/alert/alert-component';
 import {AppInfo} from '../../../../../app-info';
 import {StatusTable} from '../../../../../components/status-table/status-table';
 import {StatusTablePropsItem} from '../../../../../components/status-table/status-table-props';
+import {DebugInformationDialog} from '../../../../../dialogs/debug-information-dialog/debug-information-dialog';
 
 import TagIcon from '@mui/icons-material/Tag';
 import EventIcon from '@mui/icons-material/Event';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import {downloadTextFile} from '../../../../../utils/download-utils';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
+import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
 import {SystemApiService} from '../../../../../modules/system/system-api-service';
+import BugReport from '@aivot/mui-material-symbols-400-outlined/dist/bug-report/BugReport';
 
 export function SystemInformation() {
     const [health, setHealth] = useState<HealthData | 'error'>();
+    const [isDebugInformationDialogOpen, setDebugInformationDialogOpen] = useState(false);
 
     useEffect(() => {
         new SystemApiService()
@@ -129,23 +133,28 @@ export function SystemInformation() {
         },
     ];
 
-    let systemInformationItems: StatusTablePropsItem[] = [];
-    try {
-        systemInformationItems = [
-            {
-                label: 'Version',
-                icon: <TagIcon />,
-                children: `${AppInfo.version} (Build ${AppInfo.number})`,
-            },
-            {
-                label: 'Compile-Datum',
-                icon: <EventIcon />,
-                children: format(new Date(AppInfo.date), 'dd.MM.yyyy'),
-            },
-        ];
-    } catch (err) {
-        console.error('Error while creating system information items:', err);
-    }
+    const hasBuildVersion = AppInfo.version !== '@buildVersion';
+    const hasBuildNumber = AppInfo.number !== '@buildNumber';
+    const parsedBuildDate = new Date(AppInfo.date);
+    const hasBuildDate = AppInfo.date !== '@buildTimestamp' && !Number.isNaN(parsedBuildDate.getTime());
+
+    const versionLabel = hasBuildVersion
+        ? (hasBuildNumber ? `${AppInfo.version} (Build ${AppInfo.number})` : AppInfo.version)
+        : '5.x (DEV)';
+    const compileDate = hasBuildDate ? parsedBuildDate : new Date();
+
+    const systemInformationItems: StatusTablePropsItem[] = [
+        {
+            label: 'Version',
+            icon: <TagIcon />,
+            children: versionLabel,
+        },
+        {
+            label: 'Compile-Datum',
+            icon: <EventIcon />,
+            children: format(compileDate, 'dd.MM.yyyy'),
+        },
+    ];
 
     return (
         <>
@@ -197,6 +206,40 @@ export function SystemInformation() {
                     Der Systemstatus konnte nicht abgerufen werden.
                 </AlertComponent>
             }
+            <Box
+                sx={{
+                    mt: 4,
+                }}
+            >
+                <Typography
+                    variant="subtitle1"
+                    component="h2"
+                >
+                    Debug-Informationen
+                </Typography>
+                <Typography
+                    sx={{maxWidth: 900}}
+                >
+                    Hier können Sie Debug-Informationen zu dieser Gover-Instanz und ihrem Gerät einsehen, kopieren oder als Datei herunterladen. Diese Informationen können z. B. dem technischen Support dabei unterstützen, Probleme zu analysieren und zu beheben.
+                </Typography>
+                <Button
+                    variant="outlined"
+                    sx={{mt: 2.5}}
+                    startIcon={<BugReport />}
+                    onClick={() => {
+                        setDebugInformationDialogOpen(true);
+                    }}
+                >
+                    Debug-Informationen öffnen
+                </Button>
+            </Box>
+            <DebugInformationDialog
+                open={isDebugInformationDialogOpen}
+                healthData={health}
+                onClose={() => {
+                    setDebugInformationDialogOpen(false);
+                }}
+            />
             <Box
                 sx={{
                     mt: 4,
