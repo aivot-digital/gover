@@ -16,7 +16,6 @@ import de.aivot.GoverBackend.storage.permissions.StoragePermissionProvider;
 import de.aivot.GoverBackend.storage.repositories.StorageIndexItemRepository;
 import de.aivot.GoverBackend.storage.services.StorageProviderDefinitionService;
 import de.aivot.GoverBackend.storage.services.StorageProviderService;
-import de.aivot.GoverBackend.storage.services.StorageService;
 import de.aivot.GoverBackend.storage.services.StorageSyncWorker;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,19 +28,13 @@ import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.InvalidMediaTypeException;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -62,7 +55,6 @@ public class StorageProviderController {
     private final PermissionService permissionService;
     private final RabbitTemplate rabbitTemplate;
     private final StorageIndexItemRepository storageIndexItemRepository;
-    private final StorageService storageService;
     private final StorageProviderDefinitionService storageProviderDefinitionService;
 
     @Autowired
@@ -72,7 +64,6 @@ public class StorageProviderController {
                                      PermissionService permissionService,
                                      RabbitTemplate rabbitTemplate,
                                      StorageIndexItemRepository storageIndexItemRepository,
-                                     StorageService storageService,
                                      StorageProviderDefinitionService storageProviderDefinitionService) {
         this.auditService = auditService.createScopedAuditService(StorageProviderController.class);
         this.userService = userService;
@@ -80,7 +71,6 @@ public class StorageProviderController {
         this.permissionService = permissionService;
         this.rabbitTemplate = rabbitTemplate;
         this.storageIndexItemRepository = storageIndexItemRepository;
-        this.storageService = storageService;
         this.storageProviderDefinitionService = storageProviderDefinitionService;
     }
 
