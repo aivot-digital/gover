@@ -220,7 +220,8 @@ export function SystemInformation() {
                 <Typography
                     sx={{maxWidth: 900}}
                 >
-                    Hier können Sie Debug-Informationen zu dieser Gover-Instanz und ihrem Gerät einsehen, kopieren oder als Datei herunterladen. Diese Informationen können z. B. dem technischen Support dabei unterstützen, Probleme zu analysieren und zu beheben.
+                    Im Debug-Dialog finden Sie System-, Browser-, Health-, Plugin- und Benutzerinformationen.
+                    Die Informationen können eingesehen, kopiert oder als Datei heruntergeladen werden und helfen dem technischen Support bei der Analyse.
                 </Typography>
                 <Button
                     variant="outlined"
