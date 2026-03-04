@@ -2,9 +2,7 @@ package de.aivot.GoverBackend.plugins.core.v1.payment;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.common.contenttype.ContentType;
-import de.aivot.GoverBackend.asset.repositories.AssetRepository;
 import de.aivot.GoverBackend.asset.repositories.VStorageIndexItemWithAssetRepository;
-import de.aivot.GoverBackend.asset.services.AssetService;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
@@ -32,7 +30,6 @@ import org.springframework.stereotype.Component;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -54,17 +51,14 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
 
     private static final String CERTIFICATE_MIME_TYPE = "application/x-pkcs12";
 
-    private final AssetRepository assetRepository;
     private final SecretService secretService;
     private final StorageService assetStorageService;
     private final VStorageIndexItemWithAssetRepository vStorageIndexItemWithAssetRepository;
 
     @Autowired
-    public ePayBLPaymentProviderDefinitionV1(AssetRepository assetRepository,
-                                             SecretService secretService,
+    public ePayBLPaymentProviderDefinitionV1(SecretService secretService,
                                              StorageService assetStorageService,
                                              VStorageIndexItemWithAssetRepository vStorageIndexItemWithAssetRepository) {
-        this.assetRepository = assetRepository;
         this.secretService = secretService;
         this.assetStorageService = assetStorageService;
         this.vStorageIndexItemWithAssetRepository = vStorageIndexItemWithAssetRepository;
@@ -398,7 +392,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
                 .retrieve(paymentProviderPasswordSecretKey)
                 .orElseThrow(() -> new PaymentException("Certificate password secret for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey()));
 
-        String paymentProviderClientCertPass = null;
+        String paymentProviderClientCertPass;
         try {
             paymentProviderClientCertPass = secretService
                     .decrypt(paymentProviderClientCertPassSecret);
@@ -422,30 +416,28 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
                 .findByAssetKey(key)
                 .orElseThrow(() -> new PaymentException("Certificate for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey()));
 
-        InputStream paymentProviderClientCertStream;
         try {
-            paymentProviderClientCertStream = assetStorageService
+            InputStream paymentProviderClientCertStream = assetStorageService
                     .getDocumentContent(paymentProviderClientCertAsset.getStorageProviderId(), paymentProviderClientCertAsset.getPathFromRoot());
+            try (paymentProviderClientCertStream) {
+                KeyStore clientKeyStore = KeyStore.getInstance("PKCS12");
+                clientKeyStore.load(paymentProviderClientCertStream, paymentProviderClientCertPass.toCharArray());
+
+                var keyManagerFactory = KeyManagerFactory
+                        .getInstance(KeyManagerFactory.getDefaultAlgorithm());
+                keyManagerFactory.init(clientKeyStore, paymentProviderClientCertPass.toCharArray());
+
+                var sslContext = SSLContext.getInstance("TLS");
+                sslContext.init(
+                        keyManagerFactory.getKeyManagers(),
+                        null,
+                        null
+                );
+
+                return sslContext;
+            }
         } catch (ResponseException e) {
             throw new PaymentException(e, "Failed to retrieve certificate for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
-        }
-
-        try {
-            KeyStore clientKeyStore = KeyStore.getInstance("PKCS12");
-            clientKeyStore.load(paymentProviderClientCertStream, paymentProviderClientCertPass.toCharArray());
-
-            var keyManagerFactory = KeyManagerFactory
-                    .getInstance(KeyManagerFactory.getDefaultAlgorithm());
-            keyManagerFactory.init(clientKeyStore, paymentProviderClientCertPass.toCharArray());
-
-            var sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(
-                    keyManagerFactory.getKeyManagers(),
-                    null,
-                    null
-            );
-
-            return sslContext;
         } catch (Exception e) {
             throw new PaymentException(e, "Failed to create SSL context for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
