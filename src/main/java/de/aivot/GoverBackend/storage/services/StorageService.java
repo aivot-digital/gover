@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.storage.services;
 
 import com.beust.jcommander.Strings;
+import de.aivot.GoverBackend.av.services.AVService;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.storage.exceptions.StorageException;
@@ -19,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,16 +36,19 @@ public class StorageService {
     private final StorageProviderDefinitionService storageProviderDefinitionService;
     private final StorageIndexItemRepository storageIndexItemRepository;
     private final KnownExtensionsService knownExtensionsService;
+    private final AVService avService;
 
     @Autowired
     public StorageService(StorageProviderRepository storageProviderRepository,
                           StorageProviderDefinitionService storageProviderDefinitionService,
                           StorageIndexItemRepository storageIndexItemRepository,
-                          KnownExtensionsService knownExtensionsService) {
+                          KnownExtensionsService knownExtensionsService,
+                          AVService avService) {
         this.storageProviderRepository = storageProviderRepository;
         this.storageProviderDefinitionService = storageProviderDefinitionService;
         this.storageIndexItemRepository = storageIndexItemRepository;
         this.knownExtensionsService = knownExtensionsService;
+        this.avService = avService;
     }
 
     @Nonnull
@@ -171,7 +176,25 @@ public class StorageService {
                     );
         }
 
-        var limitedContent = withProviderFileSizeLimit(provider, content);
+        byte[] contentBytes;
+        try (var limitedContent = withProviderFileSizeLimit(provider, content);
+             var contentBuffer = new ByteArrayOutputStream()) {
+            limitedContent.transferTo(contentBuffer);
+            contentBytes = contentBuffer.toByteArray();
+        } catch (IOException e) {
+            if (isCausedByMaxFileSizeExceeded(e)) {
+                throw ResponseException
+                        .badRequest(
+                                "Der Speicheranbieter %s (ID %d) erlaubt Dateien mit einer maximalen Größe von %d Bytes. Die übermittelte Datei überschreitet dieses Limit.",
+                                StringUtils.quote(provider.getName()),
+                                provider.getId(),
+                                provider.getMaxFileSizeInBytes()
+                        );
+            }
+            throw ResponseException.internalServerError(e, "Der Inhalt des Dokuments %s konnte nicht gelesen werden.", StringUtils.quote(path));
+        }
+
+        avService.testFile(new ByteArrayInputStream(contentBytes), path);
 
         // Only respect metadata attributes if the provider definition supports them.
         // Additionally, filter out any metadata attributes that are not supported by the provider definition.
@@ -184,7 +207,7 @@ public class StorageService {
         StorageDocument createdDocument;
         try {
             createdDocument = definition
-                    .storeDocument(config, path, limitedContent, filteredMetadata);
+                    .storeDocument(config, path, new ByteArrayInputStream(contentBytes), filteredMetadata);
         } catch (StorageException e) {
             if (isCausedByMaxFileSizeExceeded(e)) {
                 throw ResponseException
