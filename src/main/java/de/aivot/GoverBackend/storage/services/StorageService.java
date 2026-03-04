@@ -120,13 +120,15 @@ public class StorageService {
 
         definition.deleteFolder(config, path);
 
-        // TODO: Find all subfolders and documents and delete them as well
+        var normalizedFolderPath = path.trim();
+        if (!normalizedFolderPath.startsWith("/")) {
+            normalizedFolderPath = "/" + normalizedFolderPath;
+        }
+        if (!normalizedFolderPath.endsWith("/")) {
+            normalizedFolderPath = normalizedFolderPath + "/";
+        }
 
-        storageIndexItemRepository
-                .deleteById(StorageIndexItemEntityId.of(
-                        provider.getId(),
-                        path
-                ));
+        storageIndexItemRepository.deleteFolderTree(provider.getId(), normalizedFolderPath);
     }
 
     public Optional<StorageDocument> getDocument(@Nonnull Integer providerId, @Nonnull String path) throws ResponseException {
