@@ -111,7 +111,7 @@ export function AssetDetailsPage() {
                             : "Neue Datei hochladen";
                     }
                     return storageProviderReadOnly
-                        ? `Datei ansehen: ${item?.filename ?? "Unbenannt"}`
+                        ? `Datei bearbeiten (eingeschränkt): ${item?.filename ?? "Unbenannt"}`
                         : `Datei: ${item?.filename ?? "Unbenannt"}`;
                 }}
                 idParam="*"

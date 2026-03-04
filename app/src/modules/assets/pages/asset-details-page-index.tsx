@@ -54,7 +54,6 @@ export function AssetDetailsPageIndex() {
         additionalData,
         isBusy,
         setIsBusy,
-        isEditable,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<Asset, AssetDetailsPageAdditionalData>;
 
     const {
@@ -86,8 +85,8 @@ export function AssetDetailsPageIndex() {
     const parentRoute = parsedStorageProviderId != null
         ? `/assets/providers/${parsedStorageProviderId}?path=${encodeURIComponent(AssetsApiService.normalizeFolderPath(searchParams.get('path') ?? '/'))}`
         : '/assets';
-    const isReadOnlyStorageProvider = !isEditable;
-    const readOnlyHint = 'Der ausgewählte Speicheranbieter ist schreibgeschützt. Änderungen sind nicht möglich.';
+    const isStorageReadOnly = additionalData?.storageProvider.readOnlyStorage ?? false;
+    const readOnlyHint = 'Der ausgewählte Speicheranbieter ist schreibgeschützt.';
 
     const combinedEditedState = {
         ...currentItem,
@@ -129,6 +128,10 @@ export function AssetDetailsPageIndex() {
     const assetMetadata = (asset?.metadata ?? {}) as Record<string, unknown>;
     const hasSelectedFile = file != null && file.length > 0;
     const isNewAsset = asset?.filename === '';
+    const canCreateAsset = !isStorageReadOnly;
+    const canReplaceFile = !isStorageReadOnly;
+    const canDeleteAsset = !isStorageReadOnly;
+    const canEditPrivacy = !isNewAsset;
 
     if (asset == null) {
         return (
@@ -139,8 +142,8 @@ export function AssetDetailsPageIndex() {
     const handleSubmit = (event: FormEvent): void => {
         event.preventDefault();
 
-        if (isReadOnlyStorageProvider) {
-            dispatch(showErrorSnackbar(readOnlyHint));
+        if (!canCreateAsset) {
+            dispatch(showErrorSnackbar(`${readOnlyHint} Neue Dateien können nicht hochgeladen werden.`));
             return;
         }
 
@@ -194,11 +197,6 @@ export function AssetDetailsPageIndex() {
 
     const handleSave = () => {
         if (asset != null) {
-            if (isReadOnlyStorageProvider) {
-                dispatch(showErrorSnackbar(readOnlyHint));
-                return;
-            }
-
             const validationResult = validate();
 
             if (!validationResult) {
@@ -239,8 +237,8 @@ export function AssetDetailsPageIndex() {
     };
 
     const confirmDelete = () => {
-        if (isReadOnlyStorageProvider) {
-            dispatch(showErrorSnackbar(readOnlyHint));
+        if (!canDeleteAsset) {
+            dispatch(showErrorSnackbar(`${readOnlyHint} Dateien können nicht gelöscht werden.`));
             return;
         }
 
@@ -278,8 +276,8 @@ export function AssetDetailsPageIndex() {
                     </Typography>
 
                     <Typography sx={{mb: 2, maxWidth: 900}}>
-                        {isReadOnlyStorageProvider
-                            ? readOnlyHint
+                        {!canCreateAsset
+                            ? `${readOnlyHint} Neue Dateien können nicht hochgeladen werden.`
                             : 'Wählen Sie eine einzelne Datei zum Hochladen aus oder ziehen Sie die Datei in das Feld.'}
                     </Typography>
 
@@ -287,7 +285,7 @@ export function AssetDetailsPageIndex() {
                         id="asset-upload"
                         value={file}
                         onChange={file => {
-                            if (isReadOnlyStorageProvider) {
+                            if (!canCreateAsset) {
                                 return;
                             }
                             setFile(file);
@@ -299,8 +297,8 @@ export function AssetDetailsPageIndex() {
                         maxFiles={1}
                         required={true}
                         error={uploadError}
-                        disabled={isReadOnlyStorageProvider}
-                        hint={isReadOnlyStorageProvider ? readOnlyHint : undefined}
+                        disabled={!canCreateAsset}
+                        hint={!canCreateAsset ? `${readOnlyHint} Neue Dateien können nicht hochgeladen werden.` : undefined}
                     />
                 </>
             }
@@ -315,8 +313,8 @@ export function AssetDetailsPageIndex() {
                     </Typography>
 
                     <Typography sx={{mb: 2, maxWidth: 900}}>
-                        {isReadOnlyStorageProvider
-                            ? 'Der Speicheranbieter ist schreibgeschützt. Sie können Dateiinformationen einsehen, aber nicht bearbeiten.'
+                        {isStorageReadOnly
+                            ? 'Der Speicheranbieter ist schreibgeschützt. Sie können den Dateiinhalt nicht ersetzen, aber den öffentlichen Zugriff (Privatsphäre) weiterhin anpassen.'
                             : 'Ersetzen Sie optional die Datei und bearbeiten Sie Datenschutzangaben. Metadaten können nur zusammen mit einem Datei-Upload geändert werden.'}
                     </Typography>
 
@@ -324,7 +322,7 @@ export function AssetDetailsPageIndex() {
                         id="asset-upload-replace"
                         value={file}
                         onChange={nextFile => {
-                            if (isReadOnlyStorageProvider) {
+                            if (!canReplaceFile) {
                                 return;
                             }
                             setFile(nextFile);
@@ -336,9 +334,9 @@ export function AssetDetailsPageIndex() {
                         maxFiles={1}
                         required={false}
                         error={uploadError}
-                        disabled={isReadOnlyStorageProvider}
-                        hint={isReadOnlyStorageProvider
-                            ? readOnlyHint
+                        disabled={!canReplaceFile}
+                        hint={!canReplaceFile
+                            ? `${readOnlyHint} Der Dateiinhalt kann nicht ersetzt werden.`
                             : 'Wählen Sie die neue Datei aus, die den aktuellen Inhalt ersetzen soll.'}
                     />
 
@@ -388,7 +386,7 @@ export function AssetDetailsPageIndex() {
                             label="Öffentlichen (nicht authentifizierten) Zugriff zulassen"
                             value={!asset.isPrivate}
                             onChange={(val) => handleInputChange('isPrivate')(!val)}
-                            disabled={isReadOnlyStorageProvider}
+                            disabled={!canEditPrivacy}
                             variant="switch"
                             hint="Wenn diese Option aktiviert ist, kann die Datei über einen öffentlichen Link ohne Authentifizierung abgerufen werden.
                                     Nutzen Sie diese Option nur für Dateien, die öffentlich sein müssen und niemals für sicherheitsrelevante
@@ -409,12 +407,17 @@ export function AssetDetailsPageIndex() {
                                 <StorageMetadataAttributesEditor
                                     storageProvider={storageProvider}
                                     metadata={assetMetadata}
-                                    disabled={isReadOnlyStorageProvider || !hasSelectedFile}
+                                    disabled={!canReplaceFile || !hasSelectedFile}
                                     onChange={(metadata) => handleInputChange('metadata')(metadata as any)}
                                 />
-                                {!isReadOnlyStorageProvider && !hasSelectedFile && (
+                                {canReplaceFile && !hasSelectedFile && (
                                     <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
                                         Metadaten sind nur bearbeitbar, wenn eine neue Datei zum Ersetzen ausgewählt wurde.
+                                    </Typography>
+                                )}
+                                {!canReplaceFile && (
+                                    <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
+                                        Metadaten können bei schreibgeschützten Speicheranbietern nicht geändert werden.
                                     </Typography>
                                 )}
                             </Box>
@@ -455,12 +458,12 @@ export function AssetDetailsPageIndex() {
             >
                 <Button
                     onClick={asset?.filename !== '' ? handleSave : handleSubmit}
-                    disabled={isBusy || isReadOnlyStorageProvider || (isNewAsset ? !hasSelectedFile : hasNotChanged)}
+                    disabled={isBusy || (isNewAsset ? (!canCreateAsset || !hasSelectedFile) : hasNotChanged)}
                     variant="contained"
                     color="primary"
                     startIcon={<SaveOutlinedIcon />}
                 >
-                    {isReadOnlyStorageProvider ? 'Nur Ansicht' : 'Speichern'}
+                    Speichern
                 </Button>
 
                 {
@@ -469,7 +472,7 @@ export function AssetDetailsPageIndex() {
                         onClick={() => {
                             reset();
                         }}
-                        disabled={isBusy || isReadOnlyStorageProvider || hasNotChanged}
+                        disabled={isBusy || hasNotChanged}
                         color="error"
                     >
                         Zurücksetzen
@@ -481,7 +484,7 @@ export function AssetDetailsPageIndex() {
                     <Button
                         variant={'outlined'}
                         onClick={() => setConfirmDeleteAction(() => confirmDelete)}
-                        disabled={isBusy || isReadOnlyStorageProvider}
+                        disabled={isBusy || !canDeleteAsset}
                         color="error"
                         sx={{
                             marginLeft: 'auto',

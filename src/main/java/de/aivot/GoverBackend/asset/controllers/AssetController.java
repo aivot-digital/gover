@@ -295,6 +295,10 @@ public class AssetController {
                 .orElseThrow(ResponseException::notFound);
 
         if (newAssetFile != null && !newAssetFile.isEmpty()) {
+            if (storageProvider.getReadOnlyStorage()) {
+                throw ResponseException.badRequest("Der Speicheranbieter ist schreibgeschützt. Der Dateiinhalt kann nicht aktualisiert werden.");
+            }
+
             try {
                 storageService
                         .storeDocument(
