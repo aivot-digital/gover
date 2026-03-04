@@ -6,7 +6,7 @@ import {AssetsApiService} from '../assets-api-service';
 import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
 import React, {useMemo, useState} from 'react';
 import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
-import {useParams} from 'react-router-dom';
+import {useParams, useSearchParams} from 'react-router-dom';
 import {StorageProvidersApiService} from '../../storage/storage-providers-api-service';
 import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
@@ -15,6 +15,7 @@ import {AssetDetailsPageAdditionalData} from './asset-details-page-additional-da
 export function AssetDetailsPage() {
     const dispatch = useAppDispatch();
     const {storageProviderId} = useParams<{ storageProviderId: string }>();
+    const [searchParams] = useSearchParams();
     const [storageProviderReadOnly, setStorageProviderReadOnly] = useState(false);
 
     const parsedStorageProviderId = useMemo(() => {
@@ -30,7 +31,7 @@ export function AssetDetailsPage() {
         return parsed;
     }, [storageProviderId]);
 
-    const parentRoute = `/assets/providers/${storageProviderId}`;
+    const parentRoute = `/assets/providers/${storageProviderId}?path=${encodeURIComponent(AssetsApiService.normalizeFolderPath(searchParams.get('path') ?? '/'))}`;
     const detailsPath = `/assets/providers/${storageProviderId}/files/*`;
 
     return (

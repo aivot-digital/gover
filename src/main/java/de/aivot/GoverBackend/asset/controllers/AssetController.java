@@ -369,7 +369,7 @@ public class AssetController {
         }
 
         if (!normalizedPath.startsWith("/")) {
-            throw ResponseException.notAcceptable("Der Pfad eines Ordners muss mit einem Schrägstrich (/) beginnen.");
+            normalizedPath = "/" + normalizedPath;
         }
 
         if (!normalizedPath.endsWith("/")) {
@@ -397,7 +397,7 @@ public class AssetController {
         }
 
         if (!normalizedPath.startsWith("/")) {
-            throw ResponseException.notAcceptable("Der Pfad einer Datei muss mit einem Schrägstrich (/) beginnen.");
+            normalizedPath = "/" + normalizedPath;
         }
 
         if (normalizedPath.endsWith("/")) {

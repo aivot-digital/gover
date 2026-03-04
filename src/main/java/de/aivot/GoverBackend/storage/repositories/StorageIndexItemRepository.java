@@ -18,9 +18,9 @@ public interface StorageIndexItemRepository extends JpaRepository<StorageIndexIt
 
     @Query(
             value = """
-                        SELECT * FROM assets_with_metadata
+                        SELECT * FROM storage_index_items
                         WHERE storage_provider_id = :storageProviderId AND
-                              storage_path_from_root ~ :path AND
+                              path_from_root ~ :path AND
                               (missing = false OR :includeMissing = true)
                         ORDER BY directory DESC
             """,

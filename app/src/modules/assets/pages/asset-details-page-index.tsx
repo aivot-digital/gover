@@ -3,7 +3,7 @@ import React, {type FormEvent, useContext, useEffect, useMemo, useState} from 'r
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {useApi} from '../../../hooks/use-api';
-import {useNavigate, useParams} from 'react-router-dom';
+import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
@@ -44,6 +44,7 @@ export const AssetSchema = yup.object({
 export function AssetDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const {storageProviderId} = useParams<{ storageProviderId?: string; key?: string }>();
 
     const api = useApi();
@@ -83,7 +84,7 @@ export function AssetDetailsPageIndex() {
         return parsed;
     }, [storageProviderId]);
     const parentRoute = parsedStorageProviderId != null
-        ? `/assets/providers/${parsedStorageProviderId}`
+        ? `/assets/providers/${parsedStorageProviderId}?path=${encodeURIComponent(AssetsApiService.normalizeFolderPath(searchParams.get('path') ?? '/'))}`
         : '/assets';
     const isReadOnlyStorageProvider = !isEditable;
     const readOnlyHint = 'Der ausgewählte Speicheranbieter ist schreibgeschützt. Änderungen sind nicht möglich.';
@@ -126,6 +127,8 @@ export function AssetDetailsPageIndex() {
     }, [item]);
     const storageProvider = additionalData?.storageProvider;
     const assetMetadata = (asset?.metadata ?? {}) as Record<string, unknown>;
+    const hasSelectedFile = file != null && file.length > 0;
+    const isNewAsset = asset?.filename === '';
 
     if (asset == null) {
         return (
@@ -146,7 +149,8 @@ export function AssetDetailsPageIndex() {
         }
 
         const filename = file[0].name;
-        const storagePathFromRoot = `/${filename}`;
+        const targetFolderPath = AssetsApiService.normalizeFolderPath(searchParams.get('path') ?? '/');
+        const storagePathFromRoot = `${targetFolderPath}${filename}`;
 
         setIsBusy(true);
         dispatch(showLoadingOverlay('Datei wird hochgeladen…'));
@@ -163,7 +167,7 @@ export function AssetDetailsPageIndex() {
                 // use setTimeout instead of useEffect to prevent unnecessary rerender
                 setTimeout(() => {
                     const detailsRoute = parsedStorageProviderId != null
-                        ? `/assets/providers/${parsedStorageProviderId}/files/${AssetsApiService.encodeStoragePathForRoute(newAsset.storagePathFromRoot)}`
+                        ? `/assets/providers/${parsedStorageProviderId}/files/${AssetsApiService.encodeStoragePathForRoute(newAsset.storagePathFromRoot)}?path=${encodeURIComponent(targetFolderPath)}`
                         : '/assets';
                     navigate(detailsRoute, {replace: true});
                 }, 0);
@@ -210,11 +214,18 @@ export function AssetDetailsPageIndex() {
                 return;
             }
 
+            if (file == null || file.length === 0) {
+                dispatch(showErrorSnackbar('Für das Aktualisieren muss eine neue Datei ausgewählt werden.'));
+                setIsBusy(false);
+                return;
+            }
+
             apiService
-                .updateInStorageProvider(asset.storagePathFromRoot, asset, parsedStorageProviderId)
+                .updateInStorageProvider(asset.storagePathFromRoot, file[0], asset, parsedStorageProviderId)
                 .then((updatedAsset) => {
                     setItem(updatedAsset);
                     reset();
+                    setFile([]);
 
                     dispatch(showSuccessSnackbar('Änderungen an Datei erfolgreich gespeichert.'));
                 })
@@ -307,8 +318,30 @@ export function AssetDetailsPageIndex() {
                     <Typography sx={{mb: 2, maxWidth: 900}}>
                         {isReadOnlyStorageProvider
                             ? 'Der Speicheranbieter ist schreibgeschützt. Sie können Dateiinformationen einsehen, aber nicht bearbeiten.'
-                            : 'Bearbeiten Sie den Dateinamen und sehen Sie ergänzende Informationen ein, wie z. B. den öffentlichen Link zur Datei.'}
+                            : 'Ersetzen Sie die Datei, bearbeiten Sie Datenschutz- und Metadatenangaben und sehen Sie ergänzende Informationen ein.'}
                     </Typography>
+
+                    <FileUploadComponent
+                        id="asset-upload-replace"
+                        value={file}
+                        onChange={nextFile => {
+                            if (isReadOnlyStorageProvider) {
+                                return;
+                            }
+                            setFile(nextFile);
+                            setUploadError(undefined);
+                        }}
+                        label="Datei ersetzen"
+                        isMultifile={false}
+                        minFiles={1}
+                        maxFiles={1}
+                        required={!isReadOnlyStorageProvider}
+                        error={uploadError}
+                        disabled={isReadOnlyStorageProvider}
+                        hint={isReadOnlyStorageProvider
+                            ? readOnlyHint
+                            : 'Wählen Sie die neue Datei aus, die den aktuellen Inhalt ersetzen soll.'}
+                    />
 
                     <Grid
                         container
@@ -324,12 +357,12 @@ export function AssetDetailsPageIndex() {
                                 value={asset?.filename}
                                 onChange={handleInputChange('filename')}
                                 onBlur={handleInputBlur('filename')}
-                                disabled={isReadOnlyStorageProvider}
+                                disabled
                                 required
                                 maxCharacters={255}
                                 minCharacters={1}
                                 error={errors.filename}
-                                hint="Der Dateiname wird als Titel des Dokuments / Medieninhalts verwendet."
+                                hint="Der Dateiname wird aus dem Speicherindex abgeleitet und kann in diesem Schritt nicht direkt geändert werden."
                             />
                         </Grid>
                     </Grid>
@@ -418,7 +451,7 @@ export function AssetDetailsPageIndex() {
             >
                 <Button
                     onClick={asset?.filename !== '' ? handleSave : handleSubmit}
-                    disabled={isBusy || isReadOnlyStorageProvider || (file == null && hasNotChanged)}
+                    disabled={isBusy || isReadOnlyStorageProvider || !hasSelectedFile}
                     variant="contained"
                     color="primary"
                     startIcon={<SaveOutlinedIcon />}
