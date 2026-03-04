@@ -693,6 +693,16 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             <Typography>
                 Das Kartenpunkt-Element ermöglicht die Erfassung eines Standorts auf einer Karte.
             </Typography>
+            <Typography sx={{mt: 2}}>
+                Der aktuelle Stand ist eine technische Preview. Ein produktiver Einsatz wird derzeit nicht empfohlen.
+            </Typography>
+            <AlertComponent
+                color="warning"
+                sx={{mt: 2}}
+            >
+                Die technische Preview nutzt öffentliche OpenStreetMap- und Nominatim-Dienste.
+                Dadurch bestehen insbesondere Risiken bei Datenschutz, Verfügbarkeit und Rate Limits.
+            </AlertComponent>
 
             <Divider sx={{my: 4}}>
                 Beispiele

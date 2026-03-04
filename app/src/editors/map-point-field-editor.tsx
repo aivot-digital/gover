@@ -3,6 +3,7 @@ import {MapPointFieldElement} from '../models/elements/form/input/map-point-fiel
 import {ElementTreeEntity} from '../components/element-tree/element-tree-entity';
 import {Grid} from '@mui/material';
 import {NumberFieldComponent} from '../components/number-field/number-field-component';
+import {AlertComponent} from '../components/alert/alert-component';
 
 export function MapPointFieldEditor(props: BaseEditorProps<MapPointFieldElement, ElementTreeEntity>) {
     const {
@@ -17,6 +18,19 @@ export function MapPointFieldEditor(props: BaseEditorProps<MapPointFieldElement,
             columnSpacing={4}
             rowSpacing={2}
         >
+            <Grid size={{xs: 12}}>
+                <AlertComponent
+                    color="warning"
+                    sx={{my: 0}}
+                    title="Technische Preview"
+                    text={
+                        'Das Kartenpunkt-Element befindet sich aktuell in einer technischen Preview.\n' +
+                        'Ein produktiver Einsatz wird derzeit nicht empfohlen.\n\n' +
+                        'Die aktuelle Implementierung nutzt öffentliche OpenStreetMap- und Nominatim-Dienste. ' +
+                        'Bitte beachten Sie insbesondere mögliche Auswirkungen auf Datenschutz, Verfügbarkeit und Rate Limits.'
+                    }
+                />
+            </Grid>
             <Grid size={{xs: 12, lg: 4}}>
                 <NumberFieldComponent
                     label="Start-Breitengrad"

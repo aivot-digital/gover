@@ -14,6 +14,7 @@ export function generateComponentTitle(component: AnyElement | null | undefined)
     }
 
     const defaultElementDescriptor = getElementNameForType(component.type);
+    const mapPointPreviewSuffix = ' (Technische Preview)';
 
     switch (component.type) {
         case ElementType.FormLayout:
@@ -48,7 +49,6 @@ export function generateComponentTitle(component: AnyElement | null | undefined)
         case ElementType.Text:
         case ElementType.FileUpload:
         case ElementType.ChipInput:
-        case ElementType.MapPoint:
         case ElementType.DomainAndUserSelect:
         case ElementType.AssignmentContext:
         case ElementType.DataModelSelect:
@@ -56,6 +56,10 @@ export function generateComponentTitle(component: AnyElement | null | undefined)
         case ElementType.RichTextInput:
         case ElementType.ReplicatingContainer:
             return stringOrDefault(component.label, defaultElementDescriptor);
+        case ElementType.MapPoint: {
+            const title = stringOrDefault(component.label, defaultElementDescriptor);
+            return title.toLowerCase().includes('technische preview') ? title : `${title}${mapPointPreviewSuffix}`;
+        }
         default:
             return stringOrDefault(defaultElementDescriptor, 'Unbekanntes Element');
     }
