@@ -29,6 +29,8 @@ import {BadgeOutlined} from '@mui/icons-material';
 import {getFileTypeIcon} from '../../../utils/file-type-icon';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {copyToClipboardText} from '../../../utils/copy-to-clipboard';
+import {AssetDetailsPageAdditionalData} from './asset-details-page-additional-data';
+import {StorageMetadataAttributesEditor} from '../../storage/components/storage-metadata-attributes-editor';
 
 export const AssetSchema = yup.object({
     filename: yup.string()
@@ -48,10 +50,11 @@ export function AssetDetailsPageIndex() {
     const {
         item,
         setItem,
+        additionalData,
         isBusy,
         setIsBusy,
         isEditable,
-    } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<Asset, undefined>;
+    } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<Asset, AssetDetailsPageAdditionalData>;
 
     const {
         currentItem,
@@ -121,6 +124,8 @@ export function AssetDetailsPageIndex() {
         }
         return new Date(item.created);
     }, [item]);
+    const storageProvider = additionalData?.storageProvider;
+    const assetMetadata = (asset?.metadata ?? {}) as Record<string, unknown>;
 
     if (asset == null) {
         return (
@@ -358,6 +363,26 @@ export function AssetDetailsPageIndex() {
                                     Dateien wie Zertifikate. Änderungen werden erst nach dem Speichern wirksam."
                         />
                     </Box>
+
+                    {
+                        storageProvider != null && storageProvider.metadataAttributes.length > 0 && (
+                            <Box sx={{mt: 3, maxWidth: 900}}>
+                                <Typography variant="h6" sx={{mb: 1}}>
+                                    Metadaten
+                                </Typography>
+                                <Typography sx={{mb: 2}}>
+                                    Hinterlegen Sie optional zusätzliche Metadaten für die Datei entsprechend den
+                                    konfigurierten Attributen des Speicheranbieters.
+                                </Typography>
+                                <StorageMetadataAttributesEditor
+                                    storageProvider={storageProvider}
+                                    metadata={assetMetadata}
+                                    disabled={isReadOnlyStorageProvider}
+                                    onChange={(metadata) => handleInputChange('metadata')(metadata as any)}
+                                />
+                            </Box>
+                        )
+                    }
 
                     {(!asset.isPrivate && item?.isPrivate === false) && (
                         <Box sx={{mt: 1}}>

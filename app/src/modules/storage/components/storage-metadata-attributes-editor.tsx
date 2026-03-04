@@ -1,11 +1,13 @@
 import {Box, Stack, Typography} from '@mui/material';
-import React, {useEffect, useMemo, useState} from 'react';
+import React from 'react';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {StorageProviderEntity} from '../entities/storage-provider-entity';
 
 interface StorageMetadataAttributesEditorProps {
     storageProvider: StorageProviderEntity;
     metadata: Record<string, unknown>;
+    onChange: (metadata: Record<string, unknown>) => void;
+    disabled?: boolean;
 }
 
 function normalizeMetadataValue(value: unknown): string {
@@ -18,21 +20,7 @@ function normalizeMetadataValue(value: unknown): string {
     return String(value);
 }
 
-export function StorageMetadataAttributesEditor({storageProvider, metadata}: StorageMetadataAttributesEditorProps) {
-    const initialValues = useMemo<Record<string, string>>(() => {
-        const values: Record<string, string> = {};
-        for (const attribute of storageProvider.metadataAttributes) {
-            values[attribute.key] = normalizeMetadataValue(metadata[attribute.key]);
-        }
-        return values;
-    }, [storageProvider, metadata]);
-
-    const [values, setValues] = useState<Record<string, string>>(initialValues);
-
-    useEffect(() => {
-        setValues(initialValues);
-    }, [initialValues]);
-
+export function StorageMetadataAttributesEditor({storageProvider, metadata, onChange, disabled}: StorageMetadataAttributesEditorProps) {
     if (storageProvider.metadataAttributes.length === 0) {
         return (
             <Typography color="text.secondary">
@@ -47,13 +35,21 @@ export function StorageMetadataAttributesEditor({storageProvider, metadata}: Sto
                 <Box key={attribute.key}>
                     <TextFieldComponent
                         label={attribute.label}
-                        value={values[attribute.key] ?? ''}
+                        value={normalizeMetadataValue(metadata[attribute.key])}
                         hint={attribute.description}
+                        disabled={disabled}
                         onChange={(value) => {
-                            setValues((prev) => ({
-                                ...prev,
-                                [attribute.key]: value ?? '',
-                            }));
+                            const nextMetadata = {
+                                ...metadata,
+                            };
+
+                            if (value == null || value.trim().length === 0) {
+                                delete nextMetadata[attribute.key];
+                            } else {
+                                nextMetadata[attribute.key] = value;
+                            }
+
+                            onChange(nextMetadata);
                         }}
                     />
                 </Box>

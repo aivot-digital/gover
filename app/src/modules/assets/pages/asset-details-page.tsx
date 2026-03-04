@@ -4,12 +4,13 @@ import {GenericDetailsPage} from '../../../components/generic-details-page/gener
 import {Asset} from '../models/asset';
 import {AssetsApiService} from '../assets-api-service';
 import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
 import {useParams} from 'react-router-dom';
 import {StorageProvidersApiService} from '../../storage/storage-providers-api-service';
 import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {AssetDetailsPageAdditionalData} from './asset-details-page-additional-data';
 
 export function AssetDetailsPage() {
     const dispatch = useAppDispatch();
@@ -29,23 +30,6 @@ export function AssetDetailsPage() {
         return parsed;
     }, [storageProviderId]);
 
-    useEffect(() => {
-        if (parsedStorageProviderId == null) {
-            setStorageProviderReadOnly(false);
-            return;
-        }
-
-        new StorageProvidersApiService()
-            .retrieve(parsedStorageProviderId)
-            .then((provider) => {
-                setStorageProviderReadOnly(provider.readOnlyStorage);
-            })
-            .catch((err) => {
-                setStorageProviderReadOnly(false);
-                dispatch(showApiErrorSnackbar(err, 'Der Speicheranbieter konnte nicht geladen werden.'));
-            });
-    }, [dispatch, parsedStorageProviderId]);
-
     const parentRoute = `/assets/providers/${storageProviderId}`;
     const detailsPath = `/assets/providers/${storageProviderId}/files/*`;
 
@@ -55,7 +39,7 @@ export function AssetDetailsPage() {
             fullWidth
             background
         >
-            <GenericDetailsPage<Asset, string, undefined>
+            <GenericDetailsPage<Asset, string, AssetDetailsPageAdditionalData>
                 header={{
                     icon: <InsertDriveFileOutlinedIcon />,
                     title: storageProviderReadOnly ? 'Datei ansehen' : 'Datei bearbeiten',
@@ -93,6 +77,23 @@ export function AssetDetailsPage() {
                         AssetsApiService.decodeStoragePathFromRoute(key),
                         parsedStorageProviderId,
                     );
+                }}
+                fetchAdditionalData={{
+                    storageProvider: async () => {
+                        if (parsedStorageProviderId == null) {
+                            throw new Error('No storage provider selected');
+                        }
+
+                        try {
+                            const provider = await new StorageProvidersApiService().retrieve(parsedStorageProviderId);
+                            setStorageProviderReadOnly(provider.readOnlyStorage);
+                            return provider;
+                        } catch (err) {
+                            setStorageProviderReadOnly(false);
+                            dispatch(showApiErrorSnackbar(err, 'Der Speicheranbieter konnte nicht geladen werden.'));
+                            throw err;
+                        }
+                    }
                 }}
                 getTabTitle={(item: Asset) => {
                     if (item.key === "") {

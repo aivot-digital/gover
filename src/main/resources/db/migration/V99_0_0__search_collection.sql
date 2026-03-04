@@ -55,15 +55,15 @@ CREATE INDEX idx_themes_name_full_text
         USING GIN (to_tsvector('german', name));
 
 CREATE VIEW search_items AS
-SELECT text 'assets'                   AS origin_table,
-       filename                        AS label,
-       key::varchar                    AS id,
-       to_tsvector('german', filename) AS searchable_element
-FROM assets_with_metadata
+SELECT text 'assets'                                         AS origin_table,
+       filename                                              AS label,
+       storage_provider_id::varchar || ',' || path_from_root AS id,
+       to_tsvector('german', filename)                       AS searchable_element
+FROM v_storage_index_items_with_assets
 UNION ALL
-SELECT text 'data_object_items'  AS origin_table,
-       id                        AS label,
-       schema_key || ',' || id   AS id,
+SELECT text 'data_object_items'                                 AS origin_table,
+       id                                                       AS label,
+       schema_key || ',' || id                                  AS id,
        to_tsvector('german', id) || to_tsvector('german', data) AS searchable_element
 FROM data_object_items
 UNION ALL

@@ -24,9 +24,7 @@ export class AssetsApiService extends CrudApiService<Asset, Asset, Asset, Asset,
         const normalizedPath = AssetsApiService.normalizeStoragePath(storagePathFromRoot);
         const data = {
             storagePathFromRoot: normalizedPath,
-            filename: existingAsset?.filename ?? file.name,
             isPrivate: existingAsset?.isPrivate ?? true,
-            contentType: existingAsset?.contentType ?? file.type ?? 'application/octet-stream',
             metadata: existingAsset?.metadata ?? {},
         };
         formData.set('data', new Blob([JSON.stringify(data)], {type: 'application/json'}));

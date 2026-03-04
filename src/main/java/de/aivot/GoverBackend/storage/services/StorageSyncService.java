@@ -289,7 +289,6 @@ public class StorageSyncService {
                         .setKey(UUID.randomUUID())
                         .setUploaderId(SYSTEM_SYNC_UPLOADER_ID)
                         .setPrivate(true)
-                        .setCreated(LocalDateTime.now())
                         .setStorageProviderId(storageProvider.getId())
                         .setStoragePathFromRoot(documentIndexItem.getPathFromRoot()));
 

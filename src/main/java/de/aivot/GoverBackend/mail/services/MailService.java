@@ -193,8 +193,8 @@ public class MailService {
         for (DepartmentEntity department : departments) {
             context.put("department", department);
 
-           var theme = departmentService
-                   .getDepartmentTheme(department);
+            var theme = departmentService
+                    .getDepartmentTheme(department);
 
             if (StringUtils.isNotNullOrEmpty(department.getDepartmentMail())) {
                 String[] mails = department.getDepartmentMail().split(",");
@@ -248,14 +248,15 @@ public class MailService {
 
     /**
      * Send a mail to a user
-     * @param userId The ID of the user
-     * @param subject The subject of the mail
+     *
+     * @param userId   The ID of the user
+     * @param subject  The subject of the mail
      * @param template The mail template
-     * @param context The context for the mail template
+     * @param context  The context for the mail template
      * @return True if the mail was sent, false if the user is deleted, inactive, has no email. If the user has disabled mail notifications, the sending will be seen as successful.
      * @throws MessagingException If the mail could not be sent
-     * @throws IOException If the mail template could not be loaded
-     * @throws ResponseException If the user config definition is not found
+     * @throws IOException        If the mail template could not be loaded
+     * @throws ResponseException  If the user config definition is not found
      */
     public boolean sendMailToUser(
             ThemeEntity theme,
@@ -273,14 +274,15 @@ public class MailService {
 
     /**
      * Send a mail to a user
-     * @param user The user entity
-     * @param subject The subject of the mail
+     *
+     * @param user     The user entity
+     * @param subject  The subject of the mail
      * @param template The mail template
-     * @param context The context for the mail template
+     * @param context  The context for the mail template
      * @return True if the mail was sent, false if the user is deleted, inactive, has no email. If the user has disabled mail notifications, the sending will be seen as successful.
      * @throws MessagingException If the mail could not be sent
-     * @throws IOException If the mail template could not be loaded
-     * @throws ResponseException If the user config definition is not found
+     * @throws IOException        If the mail template could not be loaded
+     * @throws ResponseException  If the user config definition is not found
      */
     public boolean sendMailToUser(
             ThemeEntity theme,
@@ -452,7 +454,8 @@ public class MailService {
             var assetKeyUUID = UUID.fromString(logoAssetKey.toString());
             context.put("logoAssetName", assetRepository
                     .findById(assetKeyUUID)
-                    .map(AssetEntity::getFilename)
+                    .map(AssetEntity::getKey)
+                    .map(UUID::toString)
                     .orElse("")
             );
         } catch (Exception e) {

@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.plugins.core.v1.payment;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.common.contenttype.ContentType;
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
+import de.aivot.GoverBackend.asset.repositories.VStorageIndexItemWithAssetRepository;
 import de.aivot.GoverBackend.asset.services.AssetService;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.ElementData;
@@ -51,17 +52,22 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
     private final static String CERTIFICATE_PASSWORD_FIELD = "certificatePassword";
     private final static String PAYMENT_TRANSACTION_URL_FIELD = "paymentTransactionUrl";
 
+    private static final String CERTIFICATE_MIME_TYPE = "application/x-pkcs12";
+
     private final AssetRepository assetRepository;
     private final SecretService secretService;
-    private final AssetService assetStorageService;
+    private final StorageService assetStorageService;
+    private final VStorageIndexItemWithAssetRepository vStorageIndexItemWithAssetRepository;
 
     @Autowired
     public ePayBLPaymentProviderDefinitionV1(AssetRepository assetRepository,
                                              SecretService secretService,
-                                             AssetService assetStorageService) {
+                                             StorageService assetStorageService,
+                                             VStorageIndexItemWithAssetRepository vStorageIndexItemWithAssetRepository) {
         this.assetRepository = assetRepository;
         this.secretService = secretService;
         this.assetStorageService = assetStorageService;
+        this.vStorageIndexItemWithAssetRepository = vStorageIndexItemWithAssetRepository;
     }
 
     @Nonnull
@@ -138,12 +144,11 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
         clientCertificateInput.setLabel("Zertifikat");
         clientCertificateInput.setPlaceholder("ePayBL Zertifikat");
         clientCertificateInput.setHint("Das .p12-Zertifikat wird vom Zahlungsdienstleister bereitgestellt. Es muss zuvor unter \"Dateien & Medien\" hochgeladen werden, um hier auswählbar zu sein.");
-        var clientCertificateInputOptions = assetRepository
-                .findAll()
+        var clientCertificateInputOptions = vStorageIndexItemWithAssetRepository
+                .findAllByMimeType(CERTIFICATE_MIME_TYPE)
                 .stream()
-                .filter(secret -> "application/x-pkcs12".equals(secret.getContentType()))
                 .map(secret -> new RadioInputElementOption()
-                        .setValue(secret.getKey().toString())
+                        .setValue(secret.getAssetKey().toString())
                         .setLabel(secret.getFilename())
                 )
                 .toList();
@@ -410,23 +415,24 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
             throw new PaymentException("Certificate asset key for payment provider %s (%s) is not specified", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
-        var key = UUID.fromString(paymentProviderClientCertificateAssetKey);
-        var paymentProviderClientCertAsset = assetRepository
-                .findById(key)
+        var key = UUID
+                .fromString(paymentProviderClientCertificateAssetKey);
+
+        var paymentProviderClientCertAsset = vStorageIndexItemWithAssetRepository
+                .findByAssetKey(key)
                 .orElseThrow(() -> new PaymentException("Certificate for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey()));
 
-        byte[] paymentProviderClientCertBytes;
+        InputStream paymentProviderClientCertStream;
         try {
-            paymentProviderClientCertBytes = assetStorageService
-                    .getAssetContentBytes(paymentProviderClientCertAsset);
+            paymentProviderClientCertStream = assetStorageService
+                    .getDocumentContent(paymentProviderClientCertAsset.getStorageProviderId(), paymentProviderClientCertAsset.getPathFromRoot());
         } catch (ResponseException e) {
             throw new PaymentException(e, "Failed to retrieve certificate for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
         try {
             KeyStore clientKeyStore = KeyStore.getInstance("PKCS12");
-            InputStream certStream = new ByteArrayInputStream(paymentProviderClientCertBytes);
-            clientKeyStore.load(certStream, paymentProviderClientCertPass.toCharArray());
+            clientKeyStore.load(paymentProviderClientCertStream, paymentProviderClientCertPass.toCharArray());
 
             var keyManagerFactory = KeyManagerFactory
                     .getInstance(KeyManagerFactory.getDefaultAlgorithm());
