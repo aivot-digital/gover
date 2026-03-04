@@ -31,7 +31,7 @@ const typeMap: Record<ElementType, string> = {
     [ElementType.StepperLayout]: 'undefined',
     [ElementType.ConfigLayout]: 'undefined',
     [ElementType.FunctionInput]: 'undefined',
-    [ElementType.CodeInput]: 'undefined',
+    [ElementType.CodeInput]: 'string',
     [ElementType.RichTextInput]: 'string',
     [ElementType.UiDefinitionInput]: 'undefined',
     [ElementType.IdentityInput]: 'undefined',

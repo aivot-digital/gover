@@ -41,6 +41,7 @@ import {AssignmentContextFieldElement} from '../models/elements/form/input/assig
 import {DataModelSelectFieldElement} from '../models/elements/form/input/data-model-select-field-element';
 import {DataObjectSelectFieldElement} from '../models/elements/form/input/data-object-select-field-element';
 import {RichTextInputElement} from '../models/elements/form/input/rich-text-input-element';
+import {CodeInputElement, CodeInputFieldLanguage} from '../models/elements/form/input/code-input-element';
 
 function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
     return {
@@ -102,7 +103,7 @@ const elementConstructors: {
     [ElementType.StepperLayout]: (id: string) => void;
     [ElementType.ConfigLayout]: (id: string) => void;
     [ElementType.FunctionInput]: (id: string) => void;
-    [ElementType.CodeInput]: (id: string) => void;
+    [ElementType.CodeInput]: (id: string) => CodeInputElement;
     [ElementType.RichTextInput]: (id: string) => RichTextInputElement;
     [ElementType.UiDefinitionInput]: (id: string) => void;
     [ElementType.IdentityInput]: (id: string) => void;
@@ -336,7 +337,13 @@ const elementConstructors: {
     [ElementType.StepperLayout]: (id) => ({}),
     [ElementType.ConfigLayout]: (id) => ({}),
     [ElementType.FunctionInput]: (id) => ({}),
-    [ElementType.CodeInput]: (id) => ({}),
+    [ElementType.CodeInput]: (id) => ({
+        ...makeInputBase(ElementType.CodeInput, id),
+        label: 'Codeeingabe',
+        language: CodeInputFieldLanguage.Javascript,
+        editorHeight: 320,
+        wordWrap: false,
+    }),
     [ElementType.RichTextInput]: (id) => ({
         ...makeInputBase(ElementType.RichTextInput, id),
         label: 'Markdown-Eingabe',

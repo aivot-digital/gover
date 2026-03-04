@@ -39,6 +39,7 @@ import {AssignmentContextFieldEditor} from './assignment-context-field-editor';
 import {DataModelSelectFieldEditor} from './data-model-select-field-editor';
 import {DataObjectSelectFieldEditor} from './data-object-select-field-editor';
 import {RichTextInputFieldEditor} from './rich-text-input-field-editor';
+import {CodeInputFieldEditor} from './code-input-field-editor';
 
 export interface EditorTab {
     label: string;
@@ -134,7 +135,9 @@ export const editors: ElementTypesMap<EditorSet | null> = {
     [ElementType.StepperLayout]: null,
     [ElementType.ConfigLayout]: null,
     [ElementType.FunctionInput]: null,
-    [ElementType.CodeInput]: null,
+    [ElementType.CodeInput]: {
+        default: CodeInputFieldEditor,
+    },
     [ElementType.RichTextInput]: {
         default: RichTextInputFieldEditor,
     },

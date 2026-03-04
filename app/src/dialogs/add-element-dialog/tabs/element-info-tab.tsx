@@ -22,6 +22,7 @@ import {TimeRangeFieldComponent} from '../../../components/time-range-field/time
 import {DateTimeRangeFieldComponent} from '../../../components/date-time-range-field/date-time-range-field-component';
 import {MapPointFieldComponent} from '../../../components/map-point-field/map-point-field-component';
 import {RichTextInputComponent} from '../../../components/rich-text-input-component/rich-text-input-component';
+import {CodeInputFieldComponent} from '../../../components/code-input-field/code-input-field-component';
 import {DomainUserSelectFieldComponent} from '../../../components/domain-user-select-field/domain-user-select-field-component';
 import {AssignmentContextFieldComponent} from '../../../components/assignment-context-field/assignment-context-field-component';
 import {DataModelSelectFieldComponent} from '../../../components/data-model-select-field/data-model-select-field-component';
@@ -942,7 +943,29 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.StepperLayout]: null,
     [ElementType.ConfigLayout]: null,
     [ElementType.FunctionInput]: null,
-    [ElementType.CodeInput]: null,
+    [ElementType.CodeInput]: (
+        <Box>
+            <Typography>
+                Das Element „Codeeingabe“ stellt einen integrierten Code-Editor auf Basis von Monaco bereit.
+                Damit können Nutzer:innen mehrzeiligen Quelltext strukturiert erfassen.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <CodeInputFieldComponent
+                    label="JavaScript-Code"
+                    value={'function greet(name) {\n    return `Hallo ${name}`;\n}'}
+                    onChange={() => {
+                    }}
+                    hint="Die Eingabe wird als Text gespeichert."
+                    height="240px"
+                />
+            </Box>
+        </Box>
+    ),
     [ElementType.RichTextInput]: (
         <Box>
             <Typography>

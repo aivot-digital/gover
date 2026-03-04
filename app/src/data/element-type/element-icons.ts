@@ -28,6 +28,7 @@ import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined';
 import FolderData from '@aivot/mui-material-symbols-400-outlined/dist/folder-data/FolderData';
 import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
+import CodeOutlinedIcon from '@mui/icons-material/CodeOutlined';
 
 import {type SvgIcon} from '@mui/material';
 import {type AnyElement} from '../../models/elements/any-element';
@@ -61,7 +62,7 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.StepperLayout]: UploadFileOutlinedIcon,
     [ElementType.ConfigLayout]: UploadFileOutlinedIcon,
     [ElementType.FunctionInput]: UploadFileOutlinedIcon,
-    [ElementType.CodeInput]: UploadFileOutlinedIcon,
+    [ElementType.CodeInput]: CodeOutlinedIcon,
     [ElementType.RichTextInput]: UploadFileOutlinedIcon,
     [ElementType.UiDefinitionInput]: UploadFileOutlinedIcon,
     [ElementType.IdentityInput]: UploadFileOutlinedIcon,

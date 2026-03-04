@@ -79,7 +79,7 @@ const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
     [ElementType.StepperLayout]: null,
     [ElementType.ConfigLayout]: null,
     [ElementType.FunctionInput]: null,
-    [ElementType.CodeInput]: null,
+    [ElementType.CodeInput]: ElementTypeGroups.Input,
     [ElementType.UiDefinitionInput]: null,
     [ElementType.IdentityInput]: null,
     [ElementType.TabLayout]: null,
