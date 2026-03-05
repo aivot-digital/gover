@@ -56,21 +56,33 @@ const useSetPrivacyErrorWithSnackbar = (setPrivacyError: (message: string) => vo
 export function Submitted(props: SubmittedProps) {
     const api = useApi();
     const submitStep = props.version.rootElement.submitStep;
+    const confettiDisabled = submitStep?.disableConfetti === true;
 
     const [status, setStatus] = useState<SubmissionStatusResponseDTO>();
 
     const [qrCode, setQrCode] = useState<string>();
+    const [shouldRenderConfetti, setShouldRenderConfetti] = useState(false);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const animationInstance = useRef<ReturnType<typeof confetti.create> | null>(null);
+    const intervalId = useRef<ReturnType<typeof setInterval> | null>(null);
 
     useEffect(() => {
+        if (!shouldRenderConfetti || confettiDisabled) {
+            if (intervalId.current) {
+                clearInterval(intervalId.current);
+                intervalId.current = null;
+            }
+            animationInstance.current = null;
+            return;
+        }
+
         if (canvasRef.current && !animationInstance.current) {
             animationInstance.current = confetti.create(canvasRef.current, {
                 resize: true,
                 useWorker: true,
             });
         }
-    }, []);
+    }, [shouldRenderConfetti, confettiDisabled]);
 
     const nextTickAnimation = useCallback(() => {
         animationInstance.current?.({
@@ -93,12 +105,12 @@ export function Submitted(props: SubmittedProps) {
         });
     }, []);
 
-    const intervalId = useRef<NodeJS.Timeout | null>(null);
-
     const startAnimation = useCallback(() => {
-        if (!intervalId.current) {
-            intervalId.current = setInterval(nextTickAnimation, 16);
+        if (!animationInstance.current || intervalId.current) {
+            return;
         }
+
+        intervalId.current = setInterval(nextTickAnimation, 16);
     }, [nextTickAnimation]);
 
     const pauseAnimation = useCallback(() => {
@@ -109,26 +121,54 @@ export function Submitted(props: SubmittedProps) {
     }, []);
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            startAnimation();
-        }, animationStartDelay);
-        return () => clearTimeout(timer);
-    }, [startAnimation]);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
+        return () => {
             pauseAnimation();
-        }, animationDuration);
-        return () => clearTimeout(timer);
+        };
     }, [pauseAnimation]);
 
     useEffect(() => {
+        if (confettiDisabled || !shouldRenderConfetti) {
+            pauseAnimation();
+            return;
+        }
+
+        const timeoutId = setTimeout(() => {
+            startAnimation();
+        }, animationStartDelay);
         return () => {
-            if (intervalId.current) {
-                clearInterval(intervalId.current);
-            }
+            clearTimeout(timeoutId);
         };
-    }, []);
+    }, [confettiDisabled, shouldRenderConfetti, startAnimation, pauseAnimation]);
+
+    useEffect(() => {
+        if (confettiDisabled || !shouldRenderConfetti) {
+            return;
+        }
+
+        const timeoutId = setTimeout(() => {
+            pauseAnimation();
+        }, animationDuration);
+        return () => {
+            clearTimeout(timeoutId);
+        };
+    }, [confettiDisabled, shouldRenderConfetti, pauseAnimation]);
+
+    useEffect(() => {
+        if (confettiDisabled) {
+            setShouldRenderConfetti(false);
+            return;
+        }
+
+        const mediaQuery = window.matchMedia('(prefers-reduced-motion: no-preference)');
+        const handleChange = () => {
+            setShouldRenderConfetti(mediaQuery.matches);
+        };
+        handleChange();
+        mediaQuery.addEventListener('change', handleChange);
+        return () => {
+            mediaQuery.removeEventListener('change', handleChange);
+        };
+    }, [confettiDisabled]);
 
     useEffect(() => {
         new SubmissionsApiService()
@@ -494,21 +534,24 @@ export function Submitted(props: SubmittedProps) {
                     }}
                 />
             </Box>
-            <canvas
-                ref={canvasRef}
-                style={{
-                    position: 'fixed',
-                    pointerEvents: 'none',
-                    width: '100%',
-                    height: '100%',
-                    top: 0,
-                    left: 0,
-                    zIndex: 9999,
-                    display: 'block',
-                    background: 'transparent',
-                }}
-                aria-hidden="true"
-            />
+            {!confettiDisabled && shouldRenderConfetti && (
+                <canvas
+                    ref={canvasRef}
+                    style={{
+                        position: 'fixed',
+                        pointerEvents: 'none',
+                        width: '100%',
+                        height: '100%',
+                        top: 0,
+                        left: 0,
+                        zIndex: 9999,
+                        display: 'block',
+                        background: 'transparent',
+                    }}
+                    aria-hidden="true"
+                />
+            )}
+
             <InfoDialog
                 title="E-Mail versendet"
                 severity="success"

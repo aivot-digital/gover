@@ -5,6 +5,7 @@ import {TextFieldComponent} from '../text-field/text-field-component';
 import {StringListInput} from '../string-list-input/string-list-input';
 import {RichTextEditorComponentView} from '../richt-text-editor/rich-text-editor.component.view';
 import {LoadedForm} from '../../slices/app-slice';
+import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 
 export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement, LoadedForm>) {
     return (
@@ -58,6 +59,18 @@ export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement, 
                 allowEmpty
                 addLabel="Dokument hinzufügen"
                 noItemsHint="Keine Dokumente angegeben"
+            />
+
+            <CheckboxFieldComponent
+                label="Konfetti nach dem Absenden deaktivieren"
+                value={props.element.disableConfetti ?? false}
+                onChange={(val) => {
+                    props.onPatch({
+                        disableConfetti: val,
+                    });
+                }}
+                disabled={!props.editable}
+                hint="Wenn aktiviert, wird nach erfolgreicher Antragseinreichung keine Konfetti-Animation angezeigt."
             />
         </>
     );
