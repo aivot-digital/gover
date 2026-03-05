@@ -57,7 +57,7 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps) {
                                                 }}
                                             >
                                                 {provider.name}
-                                                <Chip size="small" label={`Version ${provider.version}`} sx={{ml: 'auto'}}/>
+                                                <Chip size="small" label={`Version ${provider.majorVersion}`} sx={{ml: 'auto'}}/>
                                             </Box>
                                         }
                                         secondary={provider.description}

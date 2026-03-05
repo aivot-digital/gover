@@ -3,3 +3,9 @@
         stroke-dashoffset: -20;
     }
 }
+
+@keyframes active-handle-dash-scroll {
+    to {
+        background-position-y: 16px;
+    }
+}

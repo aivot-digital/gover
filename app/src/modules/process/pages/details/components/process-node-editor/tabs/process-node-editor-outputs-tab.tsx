@@ -34,7 +34,7 @@ export function ProcessNodeEditorOutputsTab() {
                                     ...node.outputMappings,
                                     [output.key]: val,
                                 },
-                            });
+                            }, false);
                         }}
                         muiPassTroughProps={{
                             margin: 'none',
