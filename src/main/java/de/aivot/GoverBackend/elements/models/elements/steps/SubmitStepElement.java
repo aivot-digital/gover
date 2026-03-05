@@ -22,6 +22,8 @@ public class SubmitStepElement extends BaseInputElement<Map<String, Object>> imp
     private String textProcessingTime;
     @Nullable
     private Collection<String> documentsToReceive;
+    @Nullable
+    private Boolean disableConfetti;
 
     public SubmitStepElement() {
         super(ElementType.SubmitStep);
@@ -103,19 +105,13 @@ public class SubmitStepElement extends BaseInputElement<Map<String, Object>> imp
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
-
         SubmitStepElement that = (SubmitStepElement) o;
-        return Objects.equals(textPreSubmit, that.textPreSubmit) && Objects.equals(textPostSubmit, that.textPostSubmit) && Objects.equals(textProcessingTime, that.textProcessingTime) && Objects.equals(documentsToReceive, that.documentsToReceive);
+        return Objects.equals(textPreSubmit, that.textPreSubmit) && Objects.equals(textPostSubmit, that.textPostSubmit) && Objects.equals(textProcessingTime, that.textProcessingTime) && Objects.equals(documentsToReceive, that.documentsToReceive) && Objects.equals(disableConfetti, that.disableConfetti);
     }
 
     @Override
     public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + Objects.hashCode(textPreSubmit);
-        result = 31 * result + Objects.hashCode(textPostSubmit);
-        result = 31 * result + Objects.hashCode(textProcessingTime);
-        result = 31 * result + Objects.hashCode(documentsToReceive);
-        return result;
+        return Objects.hash(super.hashCode(), textPreSubmit, textPostSubmit, textProcessingTime, documentsToReceive, disableConfetti);
     }
 
     // endregion
@@ -159,6 +155,16 @@ public class SubmitStepElement extends BaseInputElement<Map<String, Object>> imp
 
     public SubmitStepElement setDocumentsToReceive(@Nullable Collection<String> documentsToReceive) {
         this.documentsToReceive = documentsToReceive;
+        return this;
+    }
+
+    @Nullable
+    public Boolean getDisableConfetti() {
+        return disableConfetti;
+    }
+
+    public SubmitStepElement setDisableConfetti(@Nullable Boolean disableConfetti) {
+        this.disableConfetti = disableConfetti;
         return this;
     }
 
