@@ -6,4 +6,5 @@ export interface SubmitStepElement extends BaseElement<ElementType.SubmitStep> {
     textPostSubmit?: string;
     textProcessingTime?: string;
     documentsToReceive?: string[];
+    disableConfetti?: boolean;
 }

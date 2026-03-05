@@ -55,6 +55,7 @@ export function Submitted(props: SubmittedProps): JSX.Element {
     const api = useApi();
     const application = useSelector(selectLoadedForm);
     const submitStep = application?.root.submitStep;
+    const confettiDisabled = submitStep?.disableConfetti === true;
 
     const [status, setStatus] = useState<SubmissionStatusResponseDTO>();
 
@@ -222,18 +223,31 @@ export function Submitted(props: SubmittedProps): JSX.Element {
     }, [intervalId]);
 
     useEffect(() => {
+        if (confettiDisabled) {
+            return;
+        }
+
         setTimeout(() => {
             startAnimation();
         }, animationStartDelay);
-    }, []);
+    }, [confettiDisabled, startAnimation]);
 
     useEffect(() => {
+        if (confettiDisabled) {
+            return;
+        }
+
         setTimeout(() => {
             pauseAnimation();
         }, animationDuration);
-    }, []);
+    }, [confettiDisabled, pauseAnimation]);
 
     useEffect(() => {
+        if (confettiDisabled) {
+            setShouldRenderConfetti(false);
+            return;
+        }
+
         const mediaQuery = window.matchMedia('(prefers-reduced-motion: no-preference)');
         const handleChange = () => {
             setShouldRenderConfetti(mediaQuery.matches);
@@ -243,7 +257,7 @@ export function Submitted(props: SubmittedProps): JSX.Element {
         return () => {
             mediaQuery.removeEventListener('change', handleChange);
         };
-    }, []);
+    }, [confettiDisabled]);
 
     return (
         <>
@@ -549,7 +563,7 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                 />
             </Box>
 
-            {shouldRenderConfetti && (
+            {!confettiDisabled && shouldRenderConfetti && (
                 <ReactCanvasConfetti
                     refConfetti={getInstance}
                     // @ts-expect-error
