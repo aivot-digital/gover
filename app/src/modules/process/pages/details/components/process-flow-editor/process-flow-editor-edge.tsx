@@ -99,6 +99,7 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
             />
 
             <EdgeLabelRenderer>
+                {/*
                 <Box
                     sx={{
                         position: 'absolute',
@@ -120,6 +121,7 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
                         onDelete={editable ? handleDeleteEdge : undefined}
                     />
                 </Box>
+                */}
 
                 <Box
                     sx={{
