@@ -1,5 +1,5 @@
 import React, {type ReactNode, useEffect, useMemo, useState} from 'react';
-import {Box, Paper, Typography} from '@mui/material';
+import {Box, Chip, Paper, Typography} from '@mui/material';
 import {Outlet, useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {type ProcessEntity} from '../../entities/process-entity';
 import {ProcessDefinitionVersionApiService} from '../../services/process-definition-version-api-service';
@@ -50,6 +50,12 @@ import {type ProcessInstanceTaskEntity} from '../../entities/process-instance-ta
 import {type ProcessInstanceEventEntity} from '../../entities/process-instance-event-entity';
 import {ProcessInstanceApiService} from '../../services/process-instance-api-service';
 import {ProcessInstanceTaskApiService} from '../../services/process-instance-task-api-service';
+import {BaseApiService} from '../../../../services/base-api-service';
+
+interface RuntimeAttachment {
+    key: string;
+    fileName: string;
+}
 
 export interface ProcessFlow {
     definition: ProcessEntity;
@@ -88,6 +94,73 @@ export function ProcessDetailsPage(): ReactNode {
     } | null>(null);
 
     const [showMenuAtEl, setShowMenuAtEl] = useState<HTMLElement | null>(null);
+
+    const runtimeAttachments = useMemo(() => {
+        if (runtimeData == null) {
+            return [];
+        }
+
+        const collected = new Map<string, RuntimeAttachment>();
+
+        const addAttachment = (attachmentLike: any): void => {
+            if (attachmentLike == null || typeof attachmentLike !== 'object') {
+                return;
+            }
+
+            const key = typeof attachmentLike.attachmentKey === 'string'
+                ? attachmentLike.attachmentKey
+                : typeof attachmentLike.key === 'string'
+                    ? attachmentLike.key
+                    : null;
+            if (key == null || key.trim().length === 0 || collected.has(key)) {
+                return;
+            }
+
+            const fileName = typeof attachmentLike.fileName === 'string'
+                ? attachmentLike.fileName
+                : typeof attachmentLike.filename === 'string'
+                    ? attachmentLike.filename
+                    : `Anhang ${collected.size + 1}`;
+
+            collected.set(key, {
+                key,
+                fileName,
+            });
+        };
+
+        for (const task of runtimeData.tasks) {
+            addAttachment(task?.nodeData);
+        }
+
+        const payloadAttachments = runtimeData.instance.initialPayload?.attachments;
+        if (Array.isArray(payloadAttachments)) {
+            for (const payloadAttachment of payloadAttachments) {
+                addAttachment(payloadAttachment);
+            }
+        }
+
+        return Array.from(collected.values());
+    }, [runtimeData]);
+
+    const handleDownloadAttachment = async (attachment: RuntimeAttachment): Promise<void> => {
+        try {
+            const blob = await new BaseApiService().getBlob(`/api/process-instance-attachments/${encodeURIComponent(attachment.key)}/file/?download=true`);
+            const objectUrl = URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = objectUrl;
+            link.download = attachment.fileName;
+            link.style.display = 'none';
+
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            URL.revokeObjectURL(objectUrl);
+        } catch (error) {
+            dispatch(showApiErrorSnackbar(error, 'Der Anhang konnte nicht heruntergeladen werden.'));
+        }
+    };
 
     // Fetch the available node providers on mount to display them in the add node dialog
     useEffect(() => {
@@ -632,7 +705,8 @@ export function ProcessDetailsPage(): ReactNode {
 
                     <Box
                         sx={{
-                            height: '100%',
+                            flex: 1,
+                            minHeight: 0,
                             borderRadius: 1,
                             mt: 2,
                         }}
@@ -706,6 +780,45 @@ export function ProcessDetailsPage(): ReactNode {
                             />
                         </ReactFlowProvider>
                     </Box>
+
+                    {
+                        runtimeData != null && runtimeAttachments.length > 0 &&
+                        <Paper
+                            sx={{
+                                mt: 2,
+                                p: 2,
+                                display: 'flex',
+                                flexWrap: 'wrap',
+                                alignItems: 'center',
+                                gap: 1,
+                            }}
+                        >
+                            <Typography variant="h6">
+                                Anhänge
+                            </Typography>
+
+                            {
+                                runtimeAttachments.map((attachment) => (
+                                    <Chip
+                                        key={attachment.key}
+                                        clickable
+                                        variant="outlined"
+                                        label={attachment.fileName}
+                                        sx={{
+                                            maxWidth: 320,
+                                            '& .MuiChip-label': {
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                            },
+                                        }}
+                                        onClick={() => {
+                                            void handleDownloadAttachment(attachment);
+                                        }}
+                                    />
+                                ))
+                            }
+                        </Paper>
+                    }
                 </Box>
 
                 <Paper
