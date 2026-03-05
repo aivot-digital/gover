@@ -253,6 +253,63 @@ public class StorageService {
         return storeDocument(providerId, path, new ByteArrayInputStream(content), metadata);
     }
 
+    @Nonnull
+    public StorageDocument moveDocument(@Nonnull Integer providerId,
+                                        @Nonnull String sourcePath,
+                                        @Nonnull String targetPath) throws ResponseException {
+        var provider = retrieveProvider(providerId);
+        var definition = retrieveDefinition(provider);
+        var config = createConfig(provider, definition);
+
+        if (provider.getReadOnlyStorage()) {
+            throw ResponseException
+                    .badRequest(
+                            "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Es können keine Dokumente verschoben werden.",
+                            StringUtils.quote(provider.getName()),
+                            provider.getId()
+                    );
+        }
+
+        var movedDocument = definition.moveDocument(config, sourcePath, targetPath);
+        var movedDocumentFilteredMetadata = filterMetadataByRegisteredAttributes(provider, movedDocument.getMetadata());
+        movedDocument.setMetadata(movedDocumentFilteredMetadata);
+
+        upsertDocumentIndexItem(provider, movedDocument);
+        var normalizedSourcePath = normalizeDocumentPath(sourcePath);
+        var normalizedTargetPath = normalizeDocumentPath(movedDocument.getPathFromRoot());
+        if (!normalizedSourcePath.equals(normalizedTargetPath)) {
+            storageIndexItemRepository.deleteById(StorageIndexItemEntityId.of(provider.getId(), normalizedSourcePath));
+        }
+
+        return movedDocument;
+    }
+
+    @Nonnull
+    public StorageDocument copyDocument(@Nonnull Integer providerId,
+                                        @Nonnull String sourcePath,
+                                        @Nonnull String targetPath) throws ResponseException {
+        var provider = retrieveProvider(providerId);
+        var definition = retrieveDefinition(provider);
+        var config = createConfig(provider, definition);
+
+        if (provider.getReadOnlyStorage()) {
+            throw ResponseException
+                    .badRequest(
+                            "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Es können keine Dokumente kopiert werden.",
+                            StringUtils.quote(provider.getName()),
+                            provider.getId()
+                    );
+        }
+
+        var copiedDocument = definition.copyDocument(config, sourcePath, targetPath);
+        var copiedDocumentFilteredMetadata = filterMetadataByRegisteredAttributes(provider, copiedDocument.getMetadata());
+        copiedDocument.setMetadata(copiedDocumentFilteredMetadata);
+
+        upsertDocumentIndexItem(provider, copiedDocument);
+
+        return copiedDocument;
+    }
+
     public void deleteDocument(@Nonnull Integer providerId, @Nonnull String path) throws ResponseException {
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
@@ -274,6 +331,40 @@ public class StorageService {
                         provider.getId(),
                         path
                 ));
+    }
+
+    private void upsertDocumentIndexItem(@Nonnull StorageProviderEntity provider,
+                                         @Nonnull StorageDocument document) {
+        var normalizedPath = normalizeDocumentPath(document.getPathFromRoot());
+
+        var indexItem = new StorageIndexItemEntity(
+                provider.getId(),
+                provider.getType(),
+                normalizedPath,
+                false,
+                document.getName(),
+                document.getSizeInBytes(),
+                knownExtensionsService
+                        .determineMimeType(document.getName())
+                        .orElse(UNKNOWN_MIME_TYPE),
+                false,
+                document.getMetadata(),
+                LocalDateTime.now(),
+                LocalDateTime.now()
+        );
+        storageIndexItemRepository.save(indexItem);
+    }
+
+    @Nonnull
+    private static String normalizeDocumentPath(@Nonnull String path) {
+        var normalizedPath = path.trim();
+        if (!normalizedPath.startsWith("/")) {
+            normalizedPath = "/" + normalizedPath;
+        }
+        if (normalizedPath.endsWith("/")) {
+            normalizedPath = normalizedPath.substring(0, normalizedPath.length() - 1);
+        }
+        return normalizedPath;
     }
 
     private StorageProviderEntity retrieveProvider(@Nonnull Integer providerId) throws ResponseException {

@@ -189,6 +189,42 @@ class LocalDiskStorageProviderDefinitionTest {
     }
 
     @Test
+    void moveDocument() {
+        var provider = new LocalDiskStorageProviderDefinitionV1();
+        var sourcePath = "/documents/source.txt";
+        var targetPath = "/documents/moved.txt";
+        var documentData = "This document will be moved.".getBytes();
+
+        provider.storeDocument(config, sourcePath, new ByteArrayInputStream(documentData), new StorageItemMetadata());
+        assertTrue(provider.documentExists(config, sourcePath));
+
+        var movedDocument = provider.moveDocument(config, sourcePath, targetPath);
+
+        assertNotNull(movedDocument);
+        assertEquals(targetPath, movedDocument.getPathFromRoot());
+        assertTrue(provider.documentExists(config, targetPath));
+        assertFalse(provider.documentExists(config, sourcePath));
+    }
+
+    @Test
+    void copyDocument() {
+        var provider = new LocalDiskStorageProviderDefinitionV1();
+        var sourcePath = "/documents/source-copy.txt";
+        var targetPath = "/documents/copied.txt";
+        var documentData = "This document will be copied.".getBytes();
+
+        provider.storeDocument(config, sourcePath, new ByteArrayInputStream(documentData), new StorageItemMetadata());
+        assertTrue(provider.documentExists(config, sourcePath));
+
+        var copiedDocument = provider.copyDocument(config, sourcePath, targetPath);
+
+        assertNotNull(copiedDocument);
+        assertEquals(targetPath, copiedDocument.getPathFromRoot());
+        assertTrue(provider.documentExists(config, sourcePath));
+        assertTrue(provider.documentExists(config, targetPath));
+    }
+
+    @Test
     void getSecurePath() {
         var base = Path.of("/tmp/storage");
 

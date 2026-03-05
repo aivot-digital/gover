@@ -363,6 +363,44 @@ public interface StorageProviderDefinition<T> extends PluginComponent {
     boolean documentExists(@Nonnull T config, @Nonnull String pathFromRoot) throws StorageException;
 
     /**
+     * Verschiebt ein Dokument innerhalb des Speicheranbieters von einem Quellpfad zu einem Zielpfad. Quell- und Zielpfad sind relativ zum Stammverzeichnis und müssen jeweils mit
+     * einem Schrägstrich ("/") beginnen.
+     * <p>
+     * Wenn das Quelldokument nicht existiert, soll eine {@link StorageException} geworfen werden.
+     * <p>
+     * Wenn am Zielpfad bereits ein Dokument existiert, darf dieses überschrieben werden.
+     *
+     * @param config             Die Konfigurationsdaten für die Verbindung zum Speichersystem.
+     * @param sourcePathFromRoot Der Quellpfad des zu verschiebenden Dokuments, relativ zum Stammverzeichnis.
+     * @param targetPathFromRoot Der Zielpfad, relativ zum Stammverzeichnis.
+     * @return Das {@link StorageDocument}-Objekt des verschobenen Dokuments am Zielpfad.
+     * @throws StorageException Wird geworfen, wenn das Dokument nicht verschoben werden konnte, z.B. bei ungültigen Pfaden, fehlendem Quelldokument oder Verbindungsfehlern.
+     */
+    @Nonnull
+    StorageDocument moveDocument(@Nonnull T config,
+                                 @Nonnull String sourcePathFromRoot,
+                                 @Nonnull String targetPathFromRoot) throws StorageException;
+
+    /**
+     * Kopiert ein Dokument innerhalb des Speicheranbieters von einem Quellpfad zu einem Zielpfad. Quell- und Zielpfad sind relativ zum Stammverzeichnis und müssen jeweils mit
+     * einem Schrägstrich ("/") beginnen.
+     * <p>
+     * Wenn das Quelldokument nicht existiert, soll eine {@link StorageException} geworfen werden.
+     * <p>
+     * Wenn am Zielpfad bereits ein Dokument existiert, darf dieses überschrieben werden.
+     *
+     * @param config             Die Konfigurationsdaten für die Verbindung zum Speichersystem.
+     * @param sourcePathFromRoot Der Quellpfad des zu kopierenden Dokuments, relativ zum Stammverzeichnis.
+     * @param targetPathFromRoot Der Zielpfad, relativ zum Stammverzeichnis.
+     * @return Das {@link StorageDocument}-Objekt des kopierten Dokuments am Zielpfad.
+     * @throws StorageException Wird geworfen, wenn das Dokument nicht kopiert werden konnte, z.B. bei ungültigen Pfaden, fehlendem Quelldokument oder Verbindungsfehlern.
+     */
+    @Nonnull
+    StorageDocument copyDocument(@Nonnull T config,
+                                 @Nonnull String sourcePathFromRoot,
+                                 @Nonnull String targetPathFromRoot) throws StorageException;
+
+    /**
      * Löscht das Dokument im Speicheranbieter, das durch den angegebenen Pfad identifiziert wird. Der Pfad ist relativ zum Stammverzeichnis des Speicheranbieters und muss mit
      * einem Schrägstrich ("/") beginnen. Beispielsweise würde der Pfad {@code "/ordner1/dokument.pdf"} das Dokument namens "dokument.pdf" innerhalb von "ordner1" löschen.
      * <p>

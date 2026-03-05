@@ -458,6 +458,60 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         }
     }
 
+    @Nonnull
+    @Override
+    public StorageDocument moveDocument(@Nonnull Config config,
+                                        @Nonnull String sourcePathFromRoot,
+                                        @Nonnull String targetPathFromRoot) throws StorageException {
+        if (sourcePathFromRoot.equals(targetPathFromRoot)) {
+            return retrieveDocument(config, sourcePathFromRoot)
+                    .orElseThrow(() -> new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot)));
+        }
+
+        var copiedDocument = copyDocument(config, sourcePathFromRoot, targetPathFromRoot);
+        deleteDocument(config, sourcePathFromRoot);
+        return copiedDocument;
+    }
+
+    @Nonnull
+    @Override
+    public StorageDocument copyDocument(@Nonnull Config config,
+                                        @Nonnull String sourcePathFromRoot,
+                                        @Nonnull String targetPathFromRoot) throws StorageException {
+        var client = getClient(config);
+
+        var copyObjectArgs = CopyObjectArgs
+                .builder()
+                .bucket(config.bucket)
+                .object(targetPathFromRoot.substring(1))
+                .source(
+                        CopySource.builder()
+                                .bucket(config.bucket)
+                                .object(sourcePathFromRoot.substring(1))
+                                .build()
+                )
+                .build();
+
+        try {
+            client.copyObject(copyObjectArgs);
+        } catch (ErrorResponseException e) {
+            if ("NoSuchKey".equals(e.errorResponse().code())) {
+                throw new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot));
+            }
+            throw new StorageException(e, "Das Dokument konnte nicht im S3-kompatiblen Speicher kopiert werden.");
+        } catch (InsufficientDataException | XmlParserException | ServerException | NoSuchAlgorithmException |
+                 IOException | InvalidResponseException | InvalidKeyException | InternalException e) {
+            throw new StorageException(e, "Das Dokument konnte nicht im S3-kompatiblen Speicher kopiert werden.");
+        }
+
+        return retrieveDocument(config, targetPathFromRoot).orElseGet(() -> new StorageDocument(
+                targetPathFromRoot,
+                StringUtils.getLastPathSegment(targetPathFromRoot),
+                0L,
+                StorageItemMetadata.empty()
+        ));
+    }
+
     @Override
     public void deleteDocument(@Nonnull Config config, @Nonnull String path) {
         var client = getClient(config);

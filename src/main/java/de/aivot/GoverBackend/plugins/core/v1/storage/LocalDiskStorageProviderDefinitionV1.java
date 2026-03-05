@@ -409,6 +409,76 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
         return Files.exists(documentPathReal) && Files.isRegularFile(documentPathReal);
     }
 
+    @Nonnull
+    @Override
+    public StorageDocument moveDocument(@Nonnull Config config,
+                                        @Nonnull String sourcePathFromRoot,
+                                        @Nonnull String targetPathFromRoot) throws StorageException {
+        var sourcePathReal = getSecurePath(config.getRealRootPath(), sourcePathFromRoot);
+        var targetPathReal = getSecurePath(config.getRealRootPath(), targetPathFromRoot);
+
+        if (!Files.exists(sourcePathReal) || !Files.isRegularFile(sourcePathReal)) {
+            throw new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot));
+        }
+
+        var targetParentDirectoryReal = targetPathReal.getParent();
+        if (targetParentDirectoryReal == null || !Files.exists(targetParentDirectoryReal) || !Files.isDirectory(targetParentDirectoryReal)) {
+            throw new StorageException("Das Zielverzeichnis für das Dokument %s existiert nicht.", StringUtils.quote(targetPathFromRoot));
+        }
+
+        var sanitizedTargetFilename = sanitizeFilename(targetPathReal.getFileName().toString());
+        var sanitizedTargetPathReal = targetParentDirectoryReal.resolve(sanitizedTargetFilename);
+
+        try {
+            Files.move(sourcePathReal, sanitizedTargetPathReal, StandardCopyOption.REPLACE_EXISTING);
+            var relativeTargetPathFromRoot = config.getRealRootPath().relativize(sanitizedTargetPathReal).toString();
+            relativeTargetPathFromRoot = toPrefixWithSlash(relativeTargetPathFromRoot);
+            var sizeInBytes = Files.size(sanitizedTargetPathReal);
+            return new StorageDocument(relativeTargetPathFromRoot, sanitizedTargetFilename, sizeInBytes, StorageItemMetadata.empty());
+        } catch (IOException e) {
+            throw new StorageException(e,
+                    "Fehler beim Verschieben des Dokuments von %s nach %s: %s.",
+                    StringUtils.quote(sourcePathFromRoot),
+                    StringUtils.quote(targetPathFromRoot),
+                    e.getMessage());
+        }
+    }
+
+    @Nonnull
+    @Override
+    public StorageDocument copyDocument(@Nonnull Config config,
+                                        @Nonnull String sourcePathFromRoot,
+                                        @Nonnull String targetPathFromRoot) throws StorageException {
+        var sourcePathReal = getSecurePath(config.getRealRootPath(), sourcePathFromRoot);
+        var targetPathReal = getSecurePath(config.getRealRootPath(), targetPathFromRoot);
+
+        if (!Files.exists(sourcePathReal) || !Files.isRegularFile(sourcePathReal)) {
+            throw new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot));
+        }
+
+        var targetParentDirectoryReal = targetPathReal.getParent();
+        if (targetParentDirectoryReal == null || !Files.exists(targetParentDirectoryReal) || !Files.isDirectory(targetParentDirectoryReal)) {
+            throw new StorageException("Das Zielverzeichnis für das Dokument %s existiert nicht.", StringUtils.quote(targetPathFromRoot));
+        }
+
+        var sanitizedTargetFilename = sanitizeFilename(targetPathReal.getFileName().toString());
+        var sanitizedTargetPathReal = targetParentDirectoryReal.resolve(sanitizedTargetFilename);
+
+        try {
+            Files.copy(sourcePathReal, sanitizedTargetPathReal, StandardCopyOption.REPLACE_EXISTING);
+            var relativeTargetPathFromRoot = config.getRealRootPath().relativize(sanitizedTargetPathReal).toString();
+            relativeTargetPathFromRoot = toPrefixWithSlash(relativeTargetPathFromRoot);
+            var sizeInBytes = Files.size(sanitizedTargetPathReal);
+            return new StorageDocument(relativeTargetPathFromRoot, sanitizedTargetFilename, sizeInBytes, StorageItemMetadata.empty());
+        } catch (IOException e) {
+            throw new StorageException(e,
+                    "Fehler beim Kopieren des Dokuments von %s nach %s: %s.",
+                    StringUtils.quote(sourcePathFromRoot),
+                    StringUtils.quote(targetPathFromRoot),
+                    e.getMessage());
+        }
+    }
+
     @Override
     public void deleteDocument(@Nonnull Config config, @Nonnull String path) {
         var documentPathReal = getSecurePath(config.getRealRootPath(), path);
