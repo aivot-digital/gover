@@ -1,4 +1,4 @@
-import {Avatar, Box, Container, Paper, Skeleton, Typography, useTheme} from '@mui/material';
+import {Avatar, Box, Breadcrumbs, Container, Paper, Skeleton, Typography, useTheme} from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {GenericPageHeader} from '../../../../components/generic-page-header/generic-page-header';
@@ -6,6 +6,7 @@ import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import {Link} from 'react-router-dom';
 import Add from '@aivot/mui-material-symbols-400-outlined/dist/add/Add';
 import {Actions} from '../../../../components/actions/actions';
+import {type Action} from '../../../../components/actions/actions-props';
 import {NewParentIdQueryParam} from '../details/departments-details-page';
 import {VDepartmentShadowedApiService} from '../../services/v-department-shadowed-api-service';
 import {type VDepartmentShadowedEntityWithChildren} from '../../entities/v-department-shadowed-entity';
@@ -22,6 +23,9 @@ interface SearchableDepartment {
     name: string;
     address: string;
     type: string;
+    path: string;
+    pathParts: string[];
+    department: VDepartmentShadowedEntityWithChildren;
 }
 
 interface DepartmentTreeSkeletonNode {
@@ -80,37 +84,31 @@ function formatAddress(value?: string | null): string {
         .join(', ');
 }
 
-function flattenDepartments(nodes: VDepartmentShadowedEntityWithChildren[]): VDepartmentShadowedEntityWithChildren[] {
-    const flattened: VDepartmentShadowedEntityWithChildren[] = [];
-
-    for (const node of nodes) {
-        flattened.push(node);
-        if (node.children != null && node.children.length > 0) {
-            flattened.push(...flattenDepartments(node.children));
-        }
-    }
-
-    return flattened;
-}
-
-function filterDepartmentTree(
-    nodes: VDepartmentShadowedEntityWithChildren[],
-    matchedIds: Set<number>,
-): VDepartmentShadowedEntityWithChildren[] {
-    const filteredNodes: VDepartmentShadowedEntityWithChildren[] = [];
-
-    for (const node of nodes) {
-        const filteredChildren = filterDepartmentTree(node.children ?? [], matchedIds);
-
-        if (matchedIds.has(node.id) || filteredChildren.length > 0) {
-            filteredNodes.push({
-                ...node,
-                children: filteredChildren,
-            });
-        }
-    }
-
-    return filteredNodes;
+function getDepartmentActions(department: VDepartmentShadowedEntityWithChildren): Action[] {
+    return [
+        {
+            tooltip: `${getDepartmentTypeLabel(department.depth + 1)} hinzufügen`,
+            icon: <Add />,
+            to: `/departments/new?${NewParentIdQueryParam}=${department.id}`,
+            variant: 'contained',
+        },
+        {
+            tooltip: 'Bearbeiten',
+            icon: <EditOutlined />,
+            to: `/departments/${department.id}`,
+            variant: 'contained',
+        },
+        {
+            tooltip: 'Mitarbeiter:innen verwalten',
+            icon: <GroupOutlined />,
+            to: `/departments/${department.id}/members`,
+        },
+        {
+            tooltip: 'Formulare des Fachbereichs ansehen',
+            icon: <DescriptionOutlined />,
+            to: `/departments/${department.id}/forms`,
+        },
+    ];
 }
 
 export function DepartmentTree(): React.ReactElement {
@@ -146,13 +144,32 @@ export function DepartmentTree(): React.ReactElement {
             return [];
         }
 
-        return flattenDepartments(rootOrgs)
-            .map((department) => ({
-                id: department.id,
-                name: department.name,
-                address: formatAddress(department.address),
-                type: getDepartmentTypeLabel(department.depth),
-            }));
+        const flattened: SearchableDepartment[] = [];
+        const appendDepartments = (nodes: VDepartmentShadowedEntityWithChildren[], parentPath: string[]): void => {
+            for (const department of nodes) {
+                const pathSegments = [
+                    ...parentPath,
+                    department.name,
+                ];
+
+                flattened.push({
+                    id: department.id,
+                    name: department.name,
+                    address: formatAddress(department.address),
+                    type: getDepartmentTypeLabel(department.depth),
+                    path: pathSegments.join(' > '),
+                    pathParts: pathSegments,
+                    department,
+                });
+
+                if (department.children != null && department.children.length > 0) {
+                    appendDepartments(department.children, pathSegments);
+                }
+            }
+        };
+
+        appendDepartments(rootOrgs, []);
+        return flattened;
     }, [rootOrgs]);
 
     const fuse = useMemo(() => {
@@ -161,6 +178,7 @@ export function DepartmentTree(): React.ReactElement {
                 'name',
                 'address',
                 'type',
+                'path',
             ],
             threshold: 0.3,
             shouldSort: true,
@@ -169,26 +187,18 @@ export function DepartmentTree(): React.ReactElement {
         });
     }, [searchableDepartments]);
 
-    const filteredRootOrgs = useMemo(() => {
-        if (rootOrgs == null) {
-            return undefined;
-        }
+    const cleanedSearch = search.trim();
 
-        const cleanedSearch = search.trim();
+    const searchResults = useMemo(() => {
         if (cleanedSearch.length === 0) {
-            return rootOrgs;
+            return [];
         }
 
-        const matchedIds = new Set(
-            fuse
-                .search(cleanedSearch)
-                .map((result) => result.item.id),
-        );
-
-        return filterDepartmentTree(rootOrgs, matchedIds);
+        return fuse
+            .search(cleanedSearch)
+            .map((result) => result.item);
     }, [
-        rootOrgs,
-        search,
+        cleanedSearch,
         fuse,
     ]);
 
@@ -252,28 +262,43 @@ export function DepartmentTree(): React.ReactElement {
                     />
 
                     {
-                        filteredRootOrgs != null ?
-                            <Box
-                                sx={{
-                                    display: 'grid',
-                                    gap: 2.5,
-                                }}
-                            >
-                                {
-                                    filteredRootOrgs.map((orgUnit) => (
-                                        <DepartmentTreeItem
-                                            key={orgUnit.id}
-                                            department={orgUnit}
-                                        />
-                                    ))
-                                }
-                            </Box> :
-                            <DepartmentTreeLoadingSkeleton />
+                        rootOrgs == null ?
+                            <DepartmentTreeLoadingSkeleton /> :
+                            cleanedSearch.length > 0 ?
+                                <Box
+                                    sx={{
+                                        display: 'grid',
+                                        gap: 2.25,
+                                    }}
+                                >
+                                    {
+                                        searchResults.map((result) => (
+                                            <DepartmentSearchResultItem
+                                                key={result.id}
+                                                result={result}
+                                            />
+                                        ))
+                                    }
+                                </Box> :
+                                <Box
+                                    sx={{
+                                        display: 'grid',
+                                        gap: 2.25,
+                                    }}
+                                >
+                                    {
+                                        rootOrgs.map((orgUnit) => (
+                                            <DepartmentTreeItem
+                                                key={orgUnit.id}
+                                                department={orgUnit}
+                                            />
+                                        ))
+                                    }
+                                </Box>
                     }
-
                     {
-                        filteredRootOrgs != null &&
-                        filteredRootOrgs.length === 0 &&
+                        cleanedSearch.length > 0 &&
+                        searchResults.length === 0 &&
                         <AlertComponent
                             color="info"
                             sx={{my: 1}}
@@ -301,8 +326,178 @@ interface DepartmentTreeItemProps {
     department: VDepartmentShadowedEntityWithChildren;
 }
 
+interface DepartmentSearchResultItemProps {
+    result: SearchableDepartment;
+}
+
 interface DepartmentTreeSkeletonItemProps {
     node: DepartmentTreeSkeletonNode;
+}
+
+function DepartmentSearchResultItem(props: DepartmentSearchResultItemProps): React.ReactElement {
+    const theme = useTheme();
+    const {
+        result,
+    } = props;
+
+    const {
+        department,
+    } = result;
+    const addressText = result.address.length > 0 ? result.address : 'Keine Adresse hinterlegt';
+
+    return (
+        <Box>
+            <Breadcrumbs
+                separator="›"
+                maxItems={5}
+                itemsBeforeCollapse={2}
+                itemsAfterCollapse={2}
+                sx={{
+                    'ml': 1,
+                    'mb': 0.75,
+                    'color': 'text.secondary',
+                    '& .MuiBreadcrumbs-ol': {
+                        flexWrap: 'nowrap',
+                        overflow: 'hidden',
+                    },
+                }}
+            >
+                {
+                    result.pathParts.map((segment, index) => (
+                        <Typography
+                            key={`${result.id}-${index}`}
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{
+                                maxWidth: 220,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                            }}
+                            title={segment}
+                        >
+                            {segment}
+                        </Typography>
+                    ))
+                }
+            </Breadcrumbs>
+
+            <Box
+                sx={{
+                    'display': 'flex',
+                    'alignItems': 'center',
+                    'gap': 1.5,
+                    'py': 1.75,
+                    'px': 2,
+                    'border': '1px solid',
+                    'borderColor': 'divider',
+                    'borderRadius': 2,
+                    'bgcolor': 'background.paper',
+                    'transition': 'background-color .2s ease',
+                    '&:hover': {
+                        bgcolor: 'action.hover',
+                    },
+                }}
+            >
+                <Avatar
+                    sx={{
+                        width: 38,
+                        height: 38,
+                        bgcolor: theme.palette.mode === 'dark' ? theme.palette.grey[700] : theme.palette.grey[200],
+                        color: 'text.primary',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                    }}
+                >
+                    {getDepartmentTypeIcons(department.depth)}
+                </Avatar>
+
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        minWidth: 0,
+                        flex: 1,
+                    }}
+                >
+                    <Box
+                        component={Link}
+                        to={`/departments/${department.id}`}
+                        sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            textDecoration: 'none',
+                            minWidth: 0,
+                            flex: 1,
+                            mr: 1,
+                        }}
+                    >
+                        <Typography
+                            variant="subtitle1"
+                            color="text.primary"
+                            title={department.name}
+                            sx={{
+                                'fontWeight': 700,
+                                'overflow': 'hidden',
+                                'textOverflow': 'ellipsis',
+                                'whiteSpace': 'nowrap',
+                                'textDecoration': 'none',
+                                '&:hover': {
+                                    textDecoration: 'underline',
+                                },
+                            }}
+                        >
+                            {department.name}
+                        </Typography>
+
+                        <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{
+                                alignSelf: 'flex-start',
+                                mt: -0.25,
+                            }}
+                        >
+                            {result.type}
+                        </Typography>
+                    </Box>
+                </Box>
+
+                <Typography
+                    sx={{
+                        ml: 1,
+                        display: {
+                            xs: 'none',
+                            md: 'flex',
+                        },
+                        alignItems: 'center',
+                        whiteSpace: 'nowrap',
+                        maxWidth: {
+                            md: 220,
+                            lg: 320,
+                        },
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                    }}
+                    variant="body2"
+                    color="text.secondary"
+                    title={addressText}
+                >
+                    {addressText}
+                </Typography>
+
+                <Actions
+                    size="small"
+                    dense={true}
+                    actions={getDepartmentActions(department)}
+                    sx={{
+                        ml: 2,
+                        flexShrink: 0,
+                    }}
+                />
+            </Box>
+        </Box>
+    );
 }
 
 function DepartmentTreeLoadingSkeleton(): React.ReactElement {
@@ -641,30 +836,7 @@ function DepartmentTreeItem(props: DepartmentTreeItemProps): React.ReactElement 
                 <Actions
                     size="small"
                     dense={true}
-                    actions={[
-                        {
-                            tooltip: `${getDepartmentTypeLabel(department.depth + 1)} hinzufügen`,
-                            icon: <Add />,
-                            to: `/departments/new?${NewParentIdQueryParam}=${department.id}`,
-                            variant: 'contained',
-                        },
-                        {
-                            tooltip: 'Bearbeiten',
-                            icon: <EditOutlined />,
-                            to: `/departments/${department.id}`,
-                            variant: 'contained',
-                        },
-                        {
-                            tooltip: 'Mitarbeiter:innen verwalten',
-                            icon: <GroupOutlined />,
-                            to: `/departments/${department.id}/members`,
-                        },
-                        {
-                            tooltip: 'Formulare des Fachbereichs ansehen',
-                            icon: <DescriptionOutlined />,
-                            to: `/departments/${department.id}/forms`,
-                        },
-                    ]}
+                    actions={getDepartmentActions(department)}
                     sx={{
                         ml: 2,
                         flexShrink: 0,
