@@ -2,7 +2,7 @@ import {createContext, useContext} from 'react';
 
 export interface GenericDetailsPageContextType<ItemType, AdditionalData> {
     item?: ItemType;
-    setItem: (item: ItemType) => void;
+    setItem: (item: ItemType | ((item: ItemType) => ItemType)) => void;
     isNewItem?: boolean;
     isExistingItem?: boolean;
     additionalData?: AdditionalData;
