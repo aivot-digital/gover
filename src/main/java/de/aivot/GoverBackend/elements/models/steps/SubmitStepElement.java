@@ -14,6 +14,7 @@ public class SubmitStepElement extends BaseElement {
     private String textPostSubmit;
     private String textProcessingTime;
     private Collection<String> documentsToReceive;
+    private Boolean disableConfetti;
 
     public SubmitStepElement(Map<String, Object> data) {
         super(data);
@@ -25,6 +26,7 @@ public class SubmitStepElement extends BaseElement {
         textPostSubmit = MapUtils.getString(values, "textPostSubmit");
         textProcessingTime = MapUtils.getString(values, "textProcessingTime");
         documentsToReceive = MapUtils.getStringCollection(values, "documentsToReceive");
+        disableConfetti = MapUtils.getBoolean(values, "disableConfetti", false);
     }
 
     @Override
@@ -41,7 +43,9 @@ public class SubmitStepElement extends BaseElement {
             return false;
         if (!Objects.equals(textProcessingTime, that.textProcessingTime))
             return false;
-        return Objects.equals(documentsToReceive, that.documentsToReceive);
+        if (!Objects.equals(documentsToReceive, that.documentsToReceive))
+            return false;
+        return Objects.equals(disableConfetti, that.disableConfetti);
     }
 
     @Override
@@ -51,6 +55,7 @@ public class SubmitStepElement extends BaseElement {
         result = 31 * result + (textPostSubmit != null ? textPostSubmit.hashCode() : 0);
         result = 31 * result + (textProcessingTime != null ? textProcessingTime.hashCode() : 0);
         result = 31 * result + (documentsToReceive != null ? documentsToReceive.hashCode() : 0);
+        result = 31 * result + (disableConfetti != null ? disableConfetti.hashCode() : 0);
         return result;
     }
 
@@ -86,6 +91,14 @@ public class SubmitStepElement extends BaseElement {
 
     public void setDocumentsToReceive(Collection<String> documentsToReceive) {
         this.documentsToReceive = documentsToReceive;
+    }
+
+    public Boolean getDisableConfetti() {
+        return disableConfetti;
+    }
+
+    public void setDisableConfetti(Boolean disableConfetti) {
+        this.disableConfetti = disableConfetti;
     }
 
     // endregion
