@@ -10,7 +10,7 @@ import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {type StorageProviderAdditionalData} from './storage-provider-details-page-additional-data';
 import {useFormManager} from '../../../../hooks/use-form-manager';
-import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
+import {useChangeBlocker} from '../../../../hooks/use-change-blocker-2';
 import * as yup from 'yup';
 import {goverSchemaToYup2 as goverSchemaToYup} from '../../../../utils/gover-schema-to-yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
@@ -106,8 +106,8 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     const [storageProviderSchema, setStorageProviderSchema] = useState<any>(_StorageProviderSchema);
 
     const {
-        item,
-        setItem,
+        item: originalStorageProvider,
+        setItem: setOriginalStorageProvider,
         additionalData,
         setAdditionalData,
         isBusy,
@@ -116,6 +116,21 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         isExistingItem,
     } = useGenericDetailsPageContext<StorageProviderEntity, StorageProviderAdditionalData>();
 
+    // Extract the id of the storage provider for later usage.
+    const {
+        id: storageProviderId
+    } = originalStorageProvider ?? {
+        id: null,
+    };
+
+    // Store the state of the initial derivation to prevent the change blocker from firing after the first derivation.
+    const [initialDerivationDone, setInitialDerivationDone] = useState(false);
+
+    // Reset the initial derivation done, when the id of the storage provider is changed.
+    useEffect(() => {
+        setInitialDerivationDone(false);
+    }, [storageProviderId]);
+
     useEffect(() => {
         if (isEditable) {
             return;
@@ -123,30 +138,30 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
 
         dispatch(addSnackbarMessage({
             key: 'storage-provider-no-access',
-            message: 'Dieser Zahlungsdienstleister kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
+            message: 'Dieser Speicheranbieter kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
             severity: SnackbarSeverity.Warning,
             type: SnackbarType.Dismissable,
         }));
 
         return () => {
-            dispatch(removeSnackbarMessage('payment-provider-no-access'));
+            dispatch(removeSnackbarMessage('storage-provider-no-access'));
         };
     }, [isEditable]);
 
     const {
-        currentItem: storageProvider,
+        currentItem: editedStorageProvider,
         errors,
         hasNotChanged,
         handleInputBlur,
         handleInputChange,
         validate,
         reset,
-    } = useFormManager<StorageProviderEntity>(item, yup.object(storageProviderSchema) as any, true);
+    } = useFormManager<StorageProviderEntity>(originalStorageProvider, yup.object(storageProviderSchema) as any, true);
 
     const {
         storageProviderDefinitionKey,
         storageProviderDefinitionVersion,
-    } = storageProvider ?? {
+    } = editedStorageProvider ?? {
         storageProviderDefinitionKey: '',
         storageProviderDefinitionVersion: 0,
     };
@@ -175,17 +190,24 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         }
     }, [definition]);
 
-    const changeBlocker = useChangeBlocker(item, storageProvider, undefined, undefined, true);
+    const {
+        dialog: changeBlockerDialog
+    } = useChangeBlocker({
+        original: originalStorageProvider,
+        edited: editedStorageProvider,
+        useDeepEquals: true,
+    });
+
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-    if (storageProvider == null) {
+    if (editedStorageProvider == null) {
         return (
             <GenericDetailsSkeleton />
         );
     }
 
     const handleSave = async (): Promise<void> => {
-        if (storageProvider != null) {
+        if (editedStorageProvider != null) {
             const validationResult = validate();
 
             if (!validationResult) {
@@ -199,10 +221,10 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
             const apiService = new StorageProvidersApiService();
 
             try {
-                if (storageProvider.id === 0) {
-                    const newProvider = await apiService.create(storageProvider);
+                if (editedStorageProvider.id === 0) {
+                    const newProvider = await apiService.create(editedStorageProvider);
 
-                    setItem(newProvider);
+                    setOriginalStorageProvider(newProvider);
                     reset();
 
                     dispatch(showSuccessSnackbar('Neuer Speicheranbieter erfolgreich angelegt.'));
@@ -211,9 +233,9 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         navigate(`/storage-providers/${newProvider.id}`, {replace: true});
                     }, 0);
                 } else {
-                    const updatedProvider = await apiService.update(storageProvider.id, storageProvider);
+                    const updatedProvider = await apiService.update(editedStorageProvider.id, editedStorageProvider);
 
-                    setItem(updatedProvider);
+                    setOriginalStorageProvider(updatedProvider);
                     reset();
 
                     dispatch(showSuccessSnackbar('Änderungen am Speicheranbieter erfolgreich gespeichert.'));
@@ -227,14 +249,14 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     };
 
     const handleDelete = async (): Promise<void> => {
-        if (storageProvider.id === 0) {
+        if (editedStorageProvider.id === 0) {
             return;
         }
 
         setIsBusy(true);
 
         try {
-            await new StorageProvidersApiService().destroy(storageProvider.id);
+            await new StorageProvidersApiService().destroy(editedStorageProvider.id);
         } catch (error) {
             dispatch(showApiErrorSnackbar(error, 'Beim Löschen des Speicheranbieters ist ein Fehler aufgetreten.'));
         }
@@ -262,7 +284,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
             setIsBusy(false);
         }
     };
-    const inputsDisabled = storageProvider.systemProvider || isBusy || !isEditable;
+    const inputsDisabled = editedStorageProvider.systemProvider || isBusy || !isEditable;
     const attributesError = getIndexedFieldError(
         errors,
         'metadataAttributes',
@@ -271,7 +293,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
 
     // Build StatusTable items array in a type-safe way
     const statusTableItems = [];
-    if (storageProvider.systemProvider) {
+    if (editedStorageProvider.systemProvider) {
         statusTableItems.push({
             label: 'Systemanbieter',
             icon: <HelpIconOutlined color="primary" />,
@@ -281,15 +303,15 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     statusTableItems.push({
         label: 'Zuletzt synchronisiert',
         icon: <Sync />,
-        children: storageProvider.lastSync
-            ? format(new Date(storageProvider.lastSync), 'dd.MM.yyyy – HH:mm:ss') + ' Uhr'
+        children: editedStorageProvider.lastSync
+            ? format(new Date(editedStorageProvider.lastSync), 'dd.MM.yyyy – HH:mm:ss') + ' Uhr'
             : 'Noch nicht synchronisiert',
     });
 
     return (
         <Box>
             {
-                storageProvider.statusMessage != null &&
+                editedStorageProvider.statusMessage != null &&
                 <AlertComponent
                     color="error"
                     title="Fehler bei der Synchronisation des Speicheranbieters"
@@ -302,7 +324,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     Die folgende Fehlermeldung wurde protokolliert:
 
                     <ExpandableCodeBlock
-                        value={storageProvider.statusMessage}
+                        value={editedStorageProvider.statusMessage}
                         sx={{
                             my: 2,
                         }}
@@ -343,7 +365,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     <SelectFieldComponent
                         label="Speichertyp"
                         required={true}
-                        value={storageProvider.storageProviderDefinitionKey}
+                        value={editedStorageProvider.storageProviderDefinitionKey}
                         onChange={handleInputChange('storageProviderDefinitionKey')}
                         options={definitions.map((def) => ({
                             value: def.key,
@@ -364,7 +386,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     <SelectFieldComponent
                         label="Version"
                         required={true}
-                        value={storageProvider.storageProviderDefinitionVersion.toString()}
+                        value={editedStorageProvider.storageProviderDefinitionVersion.toString()}
                         onChange={(val) => {
                             if (val == null) {
                                 handleInputChange('storageProviderDefinitionVersion')(0);
@@ -373,7 +395,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                             }
                         }}
                         options={definitions.filter((def) => {
-                            return def.key === storageProvider.storageProviderDefinitionKey;
+                            return def.key === editedStorageProvider.storageProviderDefinitionKey;
                         }).map((def) => ({
                             value: def.version.toString(),
                             label: `Version ${def.version.toString()}`,
@@ -398,7 +420,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     <TextFieldComponent
                         label="Name des Speicheranbieters"
                         required
-                        value={storageProvider.name}
+                        value={editedStorageProvider.name}
                         onChange={handleInputChange('name')}
                         onBlur={handleInputBlur('name')}
                         disabled={inputsDisabled}
@@ -415,7 +437,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     <SelectFieldComponent
                         label="Verwendungszweck"
                         required={true}
-                        value={storageProvider.type}
+                        value={editedStorageProvider.type}
                         onChange={(val) => {
                             if (val == null) {
                                 handleInputChange('type')(StorageProviderType.Assets);
@@ -441,7 +463,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     <TextFieldComponent
                         label="Interne Beschreibung"
                         required
-                        value={storageProvider.description}
+                        value={editedStorageProvider.description}
                         onChange={handleInputChange('description')}
                         onBlur={handleInputBlur('description')}
                         multiline={true}
@@ -460,7 +482,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 >
                     <CheckboxFieldComponent
                         label="Es handelt sich um einen read-only Speicher, von welchem Dateien nur gelesen, aber nicht geschrieben werden können."
-                        value={storageProvider.readOnlyStorage}
+                        value={editedStorageProvider.readOnlyStorage}
                         onChange={handleInputChange('readOnlyStorage')}
                         variant="switch"
                         error={errors.readOnlyStorage}
@@ -469,7 +491,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
 
                     <CheckboxFieldComponent
                         label="Es handelt sich um eine vorproduktive Konfiguration"
-                        value={storageProvider.testProvider}
+                        value={editedStorageProvider.testProvider}
                         onChange={handleInputChange('testProvider')}
                         variant="switch"
                         error={errors.testProvider}
@@ -485,7 +507,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 >
                     <NumberFieldComponent
                         label="Maximale Dateigröße (in MB)"
-                        value={bytesToMegabytes(storageProvider.maxFileSizeInBytes)}
+                        value={bytesToMegabytes(editedStorageProvider.maxFileSizeInBytes)}
                         onChange={(mb) => handleInputChange('maxFileSizeInBytes')(megabytesToBytes(mb) as any)}
                         onBlur={(mb) => handleInputBlur('maxFileSizeInBytes')(megabytesToBytes(mb) as any)}
                         disabled={inputsDisabled}
@@ -502,9 +524,23 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 definition.providerConfigLayout != null &&
                 <ElementDerivationContext
                     element={definition.providerConfigLayout}
-                    elementData={storageProvider.configuration}
+                    elementData={editedStorageProvider.configuration}
                     onElementDataChange={handleInputChange('configuration')}
                     disabled={inputsDisabled}
+                    onDerivationFinished={(derivedElementData) => {
+                        if (originalStorageProvider == null) {
+                            return
+                        }
+
+                        if (!initialDerivationDone) {
+                            setOriginalStorageProvider((prev) => ({
+                                ...prev,
+                                configuration: derivedElementData,
+                            }));
+                        }
+
+                        setInitialDerivationDone(true);
+                    }}
                 />
             }
 
@@ -539,7 +575,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         key: '',
                         description: '',
                     })}
-                    value={storageProvider.metadataAttributes}
+                    value={editedStorageProvider.metadataAttributes}
                     onChange={(value) => {
                         handleInputChange('metadataAttributes')(value ?? []);
                     }}
@@ -609,8 +645,8 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 </Tooltip>
 
                 {
-                    storageProvider.id !== 0 &&
-                    item != null &&
+                    editedStorageProvider.id !== 0 &&
+                    originalStorageProvider != null &&
                     <Button
                         variant={'outlined'}
                         onClick={() => setShowConfirmDialog(true)}
@@ -626,13 +662,13 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 }
             </Box>
 
-            {changeBlocker.dialog}
+            {changeBlockerDialog}
 
             <ConfirmDialog
                 title="Speicheranbieter löschen"
                 onCancel={() => setShowConfirmDialog(false)}
                 onConfirm={showConfirmDialog ? handleDelete : undefined}
-                confirmationText={storageProvider.name ?? ''}
+                confirmationText={editedStorageProvider.name ?? ''}
                 isDestructive
                 confirmButtonText="Ja, endgültig löschen"
             >
