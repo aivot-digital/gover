@@ -155,7 +155,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
 
     @Nonnull
     @Override
-    public Optional<StorageFolder> retrieveFolder(@Nonnull Config config, @Nonnull String pathFromRoot, boolean recursive) {
+    public Optional<StorageFolder> retrieveFolder(@Nonnull Config config, @Nonnull String pathFromRoot, boolean recursive) throws StorageException {
         // Get the path to the real root directory on the filesystem
         var rootPathReal = config.getRealRootPath();
 
@@ -179,7 +179,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
 
     private StorageFolder retrieveFolderRecursive(@Nonnull Path rootPathReal,
                                                   @Nonnull Path folderToRetrievePathReal,
-                                                  @Nonnull String pathFromRoot) {
+                                                  @Nonnull String pathFromRoot) throws StorageException {
         // Extract the name of this folder based on the real path
         var folderToRetrieveName = folderToRetrievePathReal
                 .getFileName()
@@ -195,7 +195,8 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
         );
 
         try (var files = Files.list(folderToRetrievePathReal)) {
-            files.forEach(childPathReal -> {
+            var children = files.toList();
+            for (var childPathReal : children) {
                 var pathFromRootToChild = rootPathReal.relativize(childPathReal).toString();
                 pathFromRootToChild = toPrefixWithSlash(pathFromRootToChild);
                 var filename = childPathReal.getFileName().toString();
@@ -218,7 +219,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
                     var document = new StorageDocument(pathFromRootToChild, filename, size, StorageItemMetadata.empty());
                     folderObject.addDocument(document);
                 }
-            });
+            }
         } catch (IOException e) {
             throw new StorageException(e,
                     "Fehler beim Lesen des Verzeichnisses %s: %s.",
@@ -239,7 +240,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
      */
     private StorageFolder retrieveFolderFlat(@Nonnull Path rootPathReal,
                                              @Nonnull Path folderToRetrievePathReal,
-                                             @Nonnull String pathFromRoot) {
+                                             @Nonnull String pathFromRoot) throws StorageException {
         // Extract the name of this folder based on the real path
         var folderToRetrieveName = folderToRetrievePathReal
                 .getFileName()
@@ -259,45 +260,50 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
         folderObject.setName(folderName);
 
         // List all files and directories in the folder
-        var dirFiles = folderToRetrievePathReal
-                .toFile()
-                .listFiles();
+        try (var dirEntries = Files.list(folderToRetrievePathReal)) {
+            for (var childPathReal : dirEntries.toList()) {
+                var pathFromTheRootToThisFile = rootPathReal
+                        .relativize(childPathReal)
+                        .toString();
+                pathFromTheRootToThisFile = toPrefixWithSlash(pathFromTheRootToThisFile);
+                var filename = childPathReal.getFileName().toString();
 
-        // If there are no files, return the empty folder object
-        if (dirFiles == null) {
-            return folderObject;
-        }
+                if (Files.isDirectory(childPathReal)) {
+                    var subfolder = new StorageFolder(
+                            toSuffixWithSlash(pathFromTheRootToThisFile),
+                            filename,
+                            new LinkedList<>(),
+                            new LinkedList<>(),
+                            false
+                    );
+                    folderObject.addSubfolder(subfolder);
+                } else if (Files.isRegularFile(childPathReal)) {
+                    long size;
+                    try {
+                        size = Files.size(childPathReal);
+                    } catch (IOException e) {
+                        throw new StorageException(
+                                e,
+                                "Fehler beim Lesen der Dateigröße für %s: %s.",
+                                StringUtils.quote(childPathReal.toString()),
+                                e.getMessage()
+                        );
+                    }
 
-        // Iterate over all files and directories
-        for (var file : dirFiles) {
-            // Build the absolute pathFromRoot of this file, relative to the root pathFromRoot
-            var pathFromTheRootToThisFile = rootPathReal
-                    .relativize(file.toPath())
-                    .toString();
-            pathFromTheRootToThisFile = toPrefixWithSlash(pathFromTheRootToThisFile);
-            // Extract the filename
-            var filename =
-                    file.getName();
-
-            if (file.isDirectory()) {
-                var subfolder = new StorageFolder(
-                        toSuffixWithSlash(pathFromTheRootToThisFile),
-                        filename,
-                        new LinkedList<>(),
-                        new LinkedList<>(),
-                        false
-                );
-                folderObject.addSubfolder(subfolder);
-            } else if (file.isFile()) {
-
-                var document = new StorageDocument(
-                        pathFromTheRootToThisFile,
-                        filename,
-                        file.length(),
-                        StorageItemMetadata.empty()
-                );
-                folderObject.addDocument(document);
+                    var document = new StorageDocument(
+                            pathFromTheRootToThisFile,
+                            filename,
+                            size,
+                            StorageItemMetadata.empty()
+                    );
+                    folderObject.addDocument(document);
+                }
             }
+        } catch (IOException e) {
+            throw new StorageException(e,
+                    "Fehler beim Lesen des Verzeichnisses %s: %s.",
+                    StringUtils.quote(folderToRetrievePathReal.toString()),
+                    e.getMessage());
         }
 
         return folderObject;
@@ -390,7 +396,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
         }
 
         try (var sourceEntries = Files.walk(sourcePathReal)) {
-            sourceEntries.forEach(sourceEntry -> {
+            for (var sourceEntry : sourceEntries.toList()) {
                 try {
                     var relative = sourcePathReal.relativize(sourceEntry);
                     var targetEntry = targetPathReal.resolve(relative);
@@ -407,7 +413,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
                             StringUtils.quote(targetPathFromRoot),
                             e.getMessage());
                 }
-            });
+            }
         } catch (IOException e) {
             throw new StorageException(e,
                     "Fehler beim Kopieren des Ordners von %s nach %s: %s.",
@@ -431,17 +437,19 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
         var folderToDeletePathReal = getSecurePath(config.getRealRootPath(), path);
 
         try {
-            Files.walk(folderToDeletePathReal)
+            var filesToDelete = Files.walk(folderToDeletePathReal)
                     .map(Path::toFile)
                     .sorted((a, b) -> -a.compareTo(b)) // Delete files before directories
-                    .forEach(file -> {
-                        if (!file.delete()) {
-                            throw new StorageException(
-                                    "Fehler beim Löschen der Datei/Verzeichnis %s.",
-                                    StringUtils.quote(file.getAbsolutePath())
-                            );
-                        }
-                    });
+                    .toList();
+
+            for (var file : filesToDelete) {
+                if (!file.delete()) {
+                    throw new StorageException(
+                            "Fehler beim Löschen der Datei/Verzeichnis %s.",
+                            StringUtils.quote(file.getAbsolutePath())
+                    );
+                }
+            }
         } catch (NoSuchFileException e) {
             // If the folder does not exist, we can consider it as already deleted, so we ignore this exception
             return;
@@ -455,7 +463,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
 
     @Nonnull
     @Override
-    public StorageDocument storeDocument(@Nonnull Config config, @Nonnull String path, @Nonnull InputStream data, @Nonnull StorageItemMetadata metadata) {
+    public StorageDocument storeDocument(@Nonnull Config config, @Nonnull String path, @Nonnull InputStream data, @Nonnull StorageItemMetadata metadata) throws StorageException {
         // Check if the parent directory exists
         var documentPathReal = getSecurePath(config.getRealRootPath(), path);
         var parentDirectoryReal = documentPathReal.getParent();
@@ -597,7 +605,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
     }
 
     @Override
-    public void deleteDocument(@Nonnull Config config, @Nonnull String path) {
+    public void deleteDocument(@Nonnull Config config, @Nonnull String path) throws StorageException {
         var documentPathReal = getSecurePath(config.getRealRootPath(), path);
         try {
             Files.delete(documentPathReal);

@@ -9,6 +9,7 @@ import de.aivot.GoverBackend.storage.entities.StorageIndexItemEntityId;
 import de.aivot.GoverBackend.storage.enums.StorageProviderType;
 import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
 import de.aivot.GoverBackend.storage.enums.StorageProviderStatus;
+import de.aivot.GoverBackend.storage.exceptions.StorageException;
 import de.aivot.GoverBackend.storage.models.StorageDocument;
 import de.aivot.GoverBackend.storage.models.StorageFolder;
 import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
@@ -242,11 +243,20 @@ public class StorageSyncService {
                             " für die Speicheranbieter-Definition konnte nicht verarbeitet werden. Bitte stellen Sie sicher, dass der Speicheranbieter korrekt konfiguriert ist.", ex);
         }
 
-        // Initialize provider for usage
-        def.initializeProvider(config);
+        try {
+            // Initialize provider for usage
+            def.initializeProvider(config);
 
-        // Retrieve root folder recursively
-        return def.rootFolder(config, true);
+            // Retrieve root folder recursively
+            return def.rootFolder(config, true);
+        } catch (StorageException ex) {
+            throw new IllegalStateException(
+                    "Der Speicheranbieter " +
+                            e.getName() +
+                            " (" + e.getId() + ") konnte nicht synchronisiert werden, da auf den Speicher nicht zugegriffen werden konnte.",
+                    ex
+            );
+        }
     }
 
     private static StorageItemMetadata filterMetadataByRegisteredAttributes(@Nonnull StorageProviderEntity provider,

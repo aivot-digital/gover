@@ -201,7 +201,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
 
     @Nonnull
     @Override
-    public Optional<StorageFolder> retrieveFolder(@Nonnull Config config, @Nonnull String pathFromRoot, boolean recursive) {
+    public Optional<StorageFolder> retrieveFolder(@Nonnull Config config, @Nonnull String pathFromRoot, boolean recursive) throws StorageException {
         var client = getClient(config);
 
         var listObjectsArgs = ListObjectsArgs
@@ -222,7 +222,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 recursive
         );
 
-        objects.forEach(object -> {
+        for (var object : objects) {
             Item item;
             try {
                 item = object.get();
@@ -259,7 +259,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                         metadata
                 ));
             }
-        });
+        }
 
         if (folder.getDocuments().isEmpty() && folder.getSubfolders().isEmpty()) {
             return Optional.empty();
@@ -397,20 +397,19 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 .build();
 
         List<DeleteObject> objectsToDelete = new LinkedList<>();
-        client
-                .listObjects(listArgs)
-                .forEach((object) -> {
-                    Item item;
-                    try {
-                        item = object.get();
-                    } catch (ErrorResponseException | InsufficientDataException | XmlParserException | ServerException |
-                             NoSuchAlgorithmException | IOException | InvalidResponseException | InvalidKeyException |
-                             InternalException e) {
-                        throw new StorageException(e, "Fehler beim Auflisten der Objekte im S3-kompatiblen Speicher.");
-                    }
+        var objects = client.listObjects(listArgs);
+        for (var object : objects) {
+            Item item;
+            try {
+                item = object.get();
+            } catch (ErrorResponseException | InsufficientDataException | XmlParserException | ServerException |
+                     NoSuchAlgorithmException | IOException | InvalidResponseException | InvalidKeyException |
+                     InternalException e) {
+                throw new StorageException(e, "Fehler beim Auflisten der Objekte im S3-kompatiblen Speicher.");
+            }
 
-                    objectsToDelete.add(new DeleteObject(item.objectName()));
-                });
+            objectsToDelete.add(new DeleteObject(item.objectName()));
+        }
 
         var removeArgs = RemoveObjectsArgs
                 .builder()
@@ -424,7 +423,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
 
     @Nonnull
     @Override
-    public StorageDocument storeDocument(@Nonnull Config config, @Nonnull String path, @Nonnull InputStream data, @Nonnull StorageItemMetadata metadata) {
+    public StorageDocument storeDocument(@Nonnull Config config, @Nonnull String path, @Nonnull InputStream data, @Nonnull StorageItemMetadata metadata) throws StorageException {
         var mimeType = knownExtensionsService
                 .determineMimeType(path)
                 .orElse(StorageService.UNKNOWN_MIME_TYPE);
@@ -466,7 +465,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
 
     @Nonnull
     @Override
-    public Optional<StorageDocument> retrieveDocument(@Nonnull Config config, @Nonnull String path) {
+    public Optional<StorageDocument> retrieveDocument(@Nonnull Config config, @Nonnull String path) throws StorageException {
         var client = getClient(config);
 
         var statObjectArgs = StatObjectArgs
@@ -535,7 +534,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
     }
 
     @Override
-    public boolean documentExists(@Nonnull Config config, @Nonnull String path) {
+    public boolean documentExists(@Nonnull Config config, @Nonnull String path) throws StorageException {
         var client = getClient(config);
 
         var statObjectArgs = StatObjectArgs
@@ -613,7 +612,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
     }
 
     @Override
-    public void deleteDocument(@Nonnull Config config, @Nonnull String path) {
+    public void deleteDocument(@Nonnull Config config, @Nonnull String path) throws StorageException {
         var client = getClient(config);
 
         var removeObjectArgs = RemoveObjectArgs
@@ -631,7 +630,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         }
     }
 
-    private MinioClient getClient(@Nonnull Config config) {
+    private MinioClient getClient(@Nonnull Config config) throws StorageException {
         UUID secretUUID;
         try {
             secretUUID = UUID

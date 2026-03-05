@@ -70,8 +70,13 @@ public class StorageService {
                     );
         }
 
-        var createdFolder = definition
-                .createFolder(config, path);
+        StorageFolder createdFolder;
+        try {
+            createdFolder = definition
+                    .createFolder(config, path);
+        } catch (StorageException e) {
+            throw wrapStorageException(e);
+        }
 
         var createdFolderPathParts = StringUtils
                 .getPathSegments(createdFolder.getPathFromRoot());
@@ -116,7 +121,11 @@ public class StorageService {
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
 
-        return definition.retrieveFolder(config, path, recursive);
+        try {
+            return definition.retrieveFolder(config, path, recursive);
+        } catch (StorageException e) {
+            throw wrapStorageException(e);
+        }
     }
 
     @Nonnull
@@ -184,7 +193,11 @@ public class StorageService {
                     );
         }
 
-        definition.deleteFolder(config, path);
+        try {
+            definition.deleteFolder(config, path);
+        } catch (StorageException e) {
+            throw wrapStorageException(e);
+        }
 
         var normalizedFolderPath = normalizeFolderPath(path);
 
@@ -208,11 +221,21 @@ public class StorageService {
                     );
         }
 
-        var movedFolder = definition.moveFolder(config, sourcePath, targetPath);
+        StorageFolder movedFolder;
+        try {
+            movedFolder = definition.moveFolder(config, sourcePath, targetPath);
+        } catch (StorageException e) {
+            throw wrapStorageException(e);
+        }
         var targetFolderPath = normalizeFolderPath(movedFolder.getPathFromRoot());
-        var targetFolderTree = definition
-                .retrieveFolder(config, targetFolderPath, true)
-                .orElse(movedFolder);
+        StorageFolder targetFolderTree;
+        try {
+            targetFolderTree = definition
+                    .retrieveFolder(config, targetFolderPath, true)
+                    .orElse(movedFolder);
+        } catch (StorageException e) {
+            throw wrapStorageException(e);
+        }
 
         upsertFolderTreeIndex(provider, targetFolderTree);
 
@@ -241,11 +264,21 @@ public class StorageService {
                     );
         }
 
-        var copiedFolder = definition.copyFolder(config, sourcePath, targetPath);
+        StorageFolder copiedFolder;
+        try {
+            copiedFolder = definition.copyFolder(config, sourcePath, targetPath);
+        } catch (StorageException e) {
+            throw wrapStorageException(e);
+        }
         var targetFolderPath = normalizeFolderPath(copiedFolder.getPathFromRoot());
-        var targetFolderTree = definition
-                .retrieveFolder(config, targetFolderPath, true)
-                .orElse(copiedFolder);
+        StorageFolder targetFolderTree;
+        try {
+            targetFolderTree = definition
+                    .retrieveFolder(config, targetFolderPath, true)
+                    .orElse(copiedFolder);
+        } catch (StorageException e) {
+            throw wrapStorageException(e);
+        }
 
         upsertFolderTreeIndex(provider, targetFolderTree);
 
@@ -257,7 +290,12 @@ public class StorageService {
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
 
-        var doc = definition.retrieveDocument(config, path);
+        Optional<StorageDocument> doc;
+        try {
+            doc = definition.retrieveDocument(config, path);
+        } catch (StorageException e) {
+            throw wrapStorageException(e);
+        }
 
         doc.ifPresent(d -> {
             d.setMetadata(filterMetadataByRegisteredAttributes(provider, d.getMetadata()));
@@ -271,7 +309,11 @@ public class StorageService {
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
 
-        return definition.retrieveDocumentContent(config, path);
+        try {
+            return definition.retrieveDocumentContent(config, path);
+        } catch (StorageException e) {
+            throw wrapStorageException(e);
+        }
     }
 
     public StorageDocument storeDocument(@Nonnull Integer providerId,
@@ -334,7 +376,7 @@ public class StorageService {
                                 provider.getMaxFileSizeInBytes()
                         );
             }
-            throw e;
+            throw wrapStorageException(e);
         }
 
         var createdDocumentFilteredMetadata = filterMetadataByRegisteredAttributes(provider, createdDocument.getMetadata());
@@ -386,7 +428,12 @@ public class StorageService {
                     );
         }
 
-        var movedDocument = definition.moveDocument(config, sourcePath, targetPath);
+        StorageDocument movedDocument;
+        try {
+            movedDocument = definition.moveDocument(config, sourcePath, targetPath);
+        } catch (StorageException e) {
+            throw wrapStorageException(e);
+        }
         var movedDocumentFilteredMetadata = filterMetadataByRegisteredAttributes(provider, movedDocument.getMetadata());
         movedDocument.setMetadata(movedDocumentFilteredMetadata);
 
@@ -417,7 +464,12 @@ public class StorageService {
                     );
         }
 
-        var copiedDocument = definition.copyDocument(config, sourcePath, targetPath);
+        StorageDocument copiedDocument;
+        try {
+            copiedDocument = definition.copyDocument(config, sourcePath, targetPath);
+        } catch (StorageException e) {
+            throw wrapStorageException(e);
+        }
         var copiedDocumentFilteredMetadata = filterMetadataByRegisteredAttributes(provider, copiedDocument.getMetadata());
         copiedDocument.setMetadata(copiedDocumentFilteredMetadata);
 
@@ -440,7 +492,11 @@ public class StorageService {
                     );
         }
 
-        definition.deleteDocument(config, path);
+        try {
+            definition.deleteDocument(config, path);
+        } catch (StorageException e) {
+            throw wrapStorageException(e);
+        }
 
         storageIndexItemRepository
                 .deleteById(StorageIndexItemEntityId.of(
@@ -539,6 +595,11 @@ public class StorageService {
             return "/";
         }
         return withoutTrailingSlash.substring(0, lastSlash + 1);
+    }
+
+    @Nonnull
+    private static ResponseException wrapStorageException(@Nonnull StorageException e) {
+        return ResponseException.internalServerError(e, e.getMessage());
     }
 
     private StorageProviderEntity retrieveProvider(@Nonnull Integer providerId) throws ResponseException {
