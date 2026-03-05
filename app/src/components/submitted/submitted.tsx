@@ -61,17 +61,28 @@ export function Submitted(props: SubmittedProps) {
     const [status, setStatus] = useState<SubmissionStatusResponseDTO>();
 
     const [qrCode, setQrCode] = useState<string>();
+    const [shouldRenderConfetti, setShouldRenderConfetti] = useState(false);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const animationInstance = useRef<ReturnType<typeof confetti.create> | null>(null);
+    const intervalId = useRef<ReturnType<typeof setInterval> | null>(null);
 
     useEffect(() => {
+        if (!shouldRenderConfetti || confettiDisabled) {
+            if (intervalId.current) {
+                clearInterval(intervalId.current);
+                intervalId.current = null;
+            }
+            animationInstance.current = null;
+            return;
+        }
+
         if (canvasRef.current && !animationInstance.current) {
             animationInstance.current = confetti.create(canvasRef.current, {
                 resize: true,
                 useWorker: true,
             });
         }
-    }, []);
+    }, [shouldRenderConfetti, confettiDisabled]);
 
     const nextTickAnimation = useCallback(() => {
         animationInstance.current?.({
@@ -94,33 +105,53 @@ export function Submitted(props: SubmittedProps) {
         });
     }, []);
 
-    const intervalId = useRef<NodeJS.Timeout | null>(null);
+    const startAnimation = useCallback(() => {
+        if (!animationInstance.current || intervalId.current) {
+            return;
+        }
+
+        intervalId.current = setInterval(nextTickAnimation, 16);
+    }, [nextTickAnimation]);
+
+    const pauseAnimation = useCallback(() => {
+        if (intervalId.current) {
+            clearInterval(intervalId.current);
+            intervalId.current = null;
+        }
+    }, []);
 
     useEffect(() => {
         return () => {
-            clearInterval(intervalId);
+            pauseAnimation();
         };
-    }, [intervalId]);
+    }, [pauseAnimation]);
 
     useEffect(() => {
-        if (confettiDisabled) {
+        if (confettiDisabled || !shouldRenderConfetti) {
+            pauseAnimation();
             return;
         }
 
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
             startAnimation();
         }, animationStartDelay);
-    }, [confettiDisabled, startAnimation]);
+        return () => {
+            clearTimeout(timeoutId);
+        };
+    }, [confettiDisabled, shouldRenderConfetti, startAnimation, pauseAnimation]);
 
     useEffect(() => {
-        if (confettiDisabled) {
+        if (confettiDisabled || !shouldRenderConfetti) {
             return;
         }
 
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
             pauseAnimation();
         }, animationDuration);
-    }, [confettiDisabled, pauseAnimation]);
+        return () => {
+            clearTimeout(timeoutId);
+        };
+    }, [confettiDisabled, shouldRenderConfetti, pauseAnimation]);
 
     useEffect(() => {
         if (confettiDisabled) {
@@ -138,14 +169,6 @@ export function Submitted(props: SubmittedProps) {
             mediaQuery.removeEventListener('change', handleChange);
         };
     }, [confettiDisabled]);
-
-    useEffect(() => {
-        return () => {
-            if (intervalId.current) {
-                clearInterval(intervalId.current);
-            }
-        };
-    }, []);
 
     useEffect(() => {
         new SubmissionsApiService()
@@ -215,36 +238,6 @@ export function Submitted(props: SubmittedProps) {
             }
         }
     };
-
-    useEffect(() => {
-        return () => {
-            clearInterval(intervalId);
-        };
-    }, [intervalId]);
-
-    useEffect(() => {
-        setTimeout(() => {
-            startAnimation();
-        }, animationStartDelay);
-    }, []);
-
-    useEffect(() => {
-        setTimeout(() => {
-            pauseAnimation();
-        }, animationDuration);
-    }, []);
-
-    useEffect(() => {
-        const mediaQuery = window.matchMedia('(prefers-reduced-motion: no-preference)');
-        const handleChange = () => {
-            setShouldRenderConfetti(mediaQuery.matches);
-        };
-        handleChange();
-        mediaQuery.addEventListener('change', handleChange);
-        return () => {
-            mediaQuery.removeEventListener('change', handleChange);
-        };
-    }, []);
 
     return (
         <>
@@ -541,27 +534,21 @@ export function Submitted(props: SubmittedProps) {
                     }}
                 />
             </Box>
-            <canvas
-                ref={canvasRef}
-                style={{
-                    position: 'fixed',
-                    pointerEvents: 'none',
-                    width: '100%',
-                    height: '100%',
-                    top: 0,
-                    left: 0,
-                    zIndex: 9999,
-                    display: 'block',
-                    background: 'transparent',
-                }}
-                aria-hidden="true"
-            />
-
             {!confettiDisabled && shouldRenderConfetti && (
-                <ReactCanvasConfetti
-                    refConfetti={getInstance}
-                    // @ts-expect-error
-                    style={canvasStyles}
+                <canvas
+                    ref={canvasRef}
+                    style={{
+                        position: 'fixed',
+                        pointerEvents: 'none',
+                        width: '100%',
+                        height: '100%',
+                        top: 0,
+                        left: 0,
+                        zIndex: 9999,
+                        display: 'block',
+                        background: 'transparent',
+                    }}
+                    aria-hidden="true"
                 />
             )}
 

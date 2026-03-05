@@ -63,7 +63,7 @@ export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement, 
 
             <CheckboxFieldComponent
                 label="Konfetti nach dem Absenden deaktivieren"
-                value={props.element.disableConfetti}
+                value={props.element.disableConfetti ?? false}
                 onChange={(val) => {
                     props.onPatch({
                         disableConfetti: val,
