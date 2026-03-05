@@ -175,6 +175,7 @@ export function ProcessNodeEditor(): ReactNode {
         if (editedNode != null) {
             onSave(editedNode)
                 .then(() => {
+                    setOriginalNode(editedNode);
                     dispatch(showSuccessSnackbar('Der Knoten wurde erfolgreich gespeichert.'));
                 })
                 .catch((err: any) => {

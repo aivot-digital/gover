@@ -512,8 +512,6 @@ export function ProcessDetailsPage(): ReactNode {
 
         const updated = await new ProcessNodeApiService().update(node.id, node);
 
-        dispatch(showSuccessSnackbar('Der Knoten wurde erfolgreich gespeichert.'));
-
         setProcessFlow({
             ...processFlow,
             nodes: processFlow.nodes.map((n) => n.id === updated.id ? updated : n),
