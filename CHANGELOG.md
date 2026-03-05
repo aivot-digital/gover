@@ -5,6 +5,9 @@
 ### Bug Fixes
 * **App:** Fix issue with restricted url patterns for destinations.
 
+### Features
+* **App:** Add a new destination type for OZG-Cloud.
+
 ### Improvements
 * **Services:** Updated minor versions of all services in the docker compose setup.
 * **Image:** Updated base image to `eclipse-temurin:21.0.10_7-jre`.
