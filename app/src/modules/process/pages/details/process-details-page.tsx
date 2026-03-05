@@ -51,6 +51,7 @@ import {type ProcessInstanceEventEntity} from '../../entities/process-instance-e
 import {ProcessInstanceApiService} from '../../services/process-instance-api-service';
 import {ProcessInstanceTaskApiService} from '../../services/process-instance-task-api-service';
 import {BaseApiService} from '../../../../services/base-api-service';
+import Download from '@aivot/mui-material-symbols-400-outlined/dist/download/Download';
 
 interface RuntimeAttachment {
     key: string;
@@ -801,7 +802,6 @@ export function ProcessDetailsPage(): ReactNode {
                                 runtimeAttachments.map((attachment) => (
                                     <Chip
                                         key={attachment.key}
-                                        clickable
                                         variant="outlined"
                                         label={attachment.fileName}
                                         sx={{
@@ -811,9 +811,12 @@ export function ProcessDetailsPage(): ReactNode {
                                                 textOverflow: 'ellipsis',
                                             },
                                         }}
-                                        onClick={() => {
+                                        onDelete={() => {
                                             void handleDownloadAttachment(attachment);
                                         }}
+                                        deleteIcon={
+                                            <Download color="primary"/>
+                                        }
                                     />
                                 ))
                             }
