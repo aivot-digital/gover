@@ -5,7 +5,6 @@ import {ProcessNodeApiService} from '../../../../services/process-node-api-servi
 import {Box, Button, IconButton, Skeleton, Tab, Tabs} from '@mui/material';
 import {Link, Outlet, useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {useProcessDetailsPageContext} from '../../process-details-page-context';
-import {withDelay} from '../../../../../../utils/with-delay';
 import {ProviderTypeStyles} from '../../../../data/provider-type-styles';
 import {
     type ProcessNodeProvider,
@@ -77,60 +76,73 @@ export function ProcessNodeEditor(): ReactNode {
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Die Testansprüche für das Prozesselement konnten nicht geladen werden.'));
             });
-    }, [originalNode]);
+    }, [originalNode?.processId, originalNode?.processVersion]);
 
     const {
         dialog: changeBlockerDialog,
     } = useChangeBlocker(originalNode, editedNode);
 
     useEffect(() => {
-        // Reset state
+        let isCancelled = false;
+
+        // Reset state for newly selected node
         setOriginalNode(null);
         setEditedNode(null);
+        setLayout(null);
+        setProvider(null);
+        setTestClaim(null);
 
-        // Fetch node details
-        new ProcessNodeApiService()
-            .retrieve(nodeId)
-            .then((node) => {
+        Promise.all([
+            new ProcessNodeApiService().retrieve(nodeId),
+            new ProcessNodeApiService().getConfigurationLayout(nodeId),
+        ])
+            .then(([node, configurationLayout]) => {
+                if (isCancelled) {
+                    return;
+                }
                 setOriginalNode(node);
-                setEditedNode(null);
+                setEditedNode(node);
+                setLayout(configurationLayout);
             })
             .catch((error) => {
+                if (isCancelled) {
+                    return;
+                }
                 dispatch(showApiErrorSnackbar(error, 'Die Details für das Prozesselement konnten nicht geladen werden.'));
             });
 
-        // Fetch the configuration layout
-        new ProcessNodeApiService()
-            .getConfigurationLayout(nodeId)
-            .then(setLayout)
-            .catch((error) => {
-                dispatch(showApiErrorSnackbar(error, 'Die Konfigurationsoberfläche für das Prozesselement konnte nicht geladen werden.'));
-            });
+        return () => {
+            isCancelled = true;
+        };
     }, [nodeId]);
 
     useEffect(() => {
         if (originalNode == null) {
-            setLayout(null);
-            setEditedNode(null);
+            setProvider(null);
             return;
         }
 
-        setEditedNode(originalNode);
-
-        withDelay(new ProcessNodeApiService()
-            .getConfigurationLayout(originalNode.id), 500)
-            .then(setLayout)
-            .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Die Konfigurationsoberfläche für das Prozesselement konnte nicht geladen werden.'));
-            });
+        let isCancelled = false;
 
         new ProcessNodeProviderApiService()
             .getNodeProvider(originalNode.processNodeDefinitionKey, originalNode.processNodeDefinitionVersion)
-            .then(setProvider)
+            .then((nodeProvider) => {
+                if (isCancelled) {
+                    return;
+                }
+                setProvider(nodeProvider);
+            })
             .catch((err) => {
+                if (isCancelled) {
+                    return;
+                }
                 dispatch(showApiErrorSnackbar(err, 'Der Anbietertyp für das Prozesselement konnte nicht geladen werden.'));
             });
-    }, [originalNode]);
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [originalNode?.processNodeDefinitionKey, originalNode?.processNodeDefinitionVersion]);
 
     const {
         Icon: TypeIcon,
