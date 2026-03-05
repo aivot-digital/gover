@@ -336,7 +336,12 @@ export function ProcessNodeEditor(): ReactNode {
                                 layout,
                                 testClaim,
                                 node: editedNode ?? originalNode,
-                                setNode: setEditedNode,
+                                setNode: (node, updateOriginal) => {
+                                    if (updateOriginal) {
+                                        setOriginalNode(node);
+                                    }
+                                    setEditedNode(node);
+                                },
                                 isEditable: true,
                             }}
                         >
