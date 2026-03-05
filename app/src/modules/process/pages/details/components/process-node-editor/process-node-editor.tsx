@@ -267,7 +267,7 @@ export function ProcessNodeEditor(): ReactNode {
                                 component="div"
                             >
                                 {provider.name} <Chip
-                                    label={`Version ${provider.version}`}
+                                    label={`Version ${provider.majorVersion}`}
                                     size="small"
                                     sx={{
                                         ml: 1,
