@@ -1,4 +1,4 @@
-import {Avatar, Box, Button, Divider, ListItem, ListItemAvatar, ListItemButton, ListItemText, Paper, Skeleton, Stack, Typography} from '@mui/material';
+import {Box, Button, Divider, ListItem, ListItemAvatar, ListItemButton, ListItemText, Paper, Skeleton, Stack, Typography} from '@mui/material';
 import {alpha, useTheme} from '@mui/material/styles';
 import FamilyHistory from '@aivot/mui-material-symbols-400-outlined/dist/family-history/FamilyHistory';
 import Groups from '@aivot/mui-material-symbols-400-outlined/dist/groups/Groups';
@@ -435,16 +435,22 @@ function DepartmentNode(props: DepartmentNodeProps): React.ReactElement {
                         borderBottom: `1px solid ${theme.palette.divider}`,
                     }}
                 >
-                    <Avatar
+                    <StringAvatar
+                        name={department.name}
+                        backgroundMode={'oklch'}
+                        showInitials={false}
                         sx={{
-                            bgcolor: department.color,
-                            color: theme.palette.getContrastText(department.color),
                             width: 38,
                             height: 38,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            '& svg': {
+                                fontSize: 22,
+                            },
                         }}
                     >
                         {getDepartmentTypeIcons(department.depth)}
-                    </Avatar>
+                    </StringAvatar>
 
                     <Box
                         sx={{
@@ -629,16 +635,22 @@ function TeamNode(props: TeamNodeProps): React.ReactElement {
                     borderBottom: `1px solid ${theme.palette.divider}`,
                 }}
             >
-                <Avatar
+                <StringAvatar
+                    name={team.name}
+                    backgroundMode={'oklch'}
+                    showInitials={false}
                     sx={{
-                        bgcolor: team.color,
-                        color: theme.palette.getContrastText(team.color),
                         width: 38,
                         height: 38,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        '& svg': {
+                            fontSize: 22,
+                        },
                     }}
                 >
                     <Groups />
-                </Avatar>
+                </StringAvatar>
                 <Box sx={{display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1}}>
                     <Typography
                         component={RouterLink}
@@ -753,7 +765,7 @@ function MembersList(props: MembersListProps): React.ReactElement {
                                     <StringAvatar
                                         name={memberName}
                                         sx={{width: 28, height: 28, fontSize: 12}}
-                                        backgroundMode={'theme'}
+                                        backgroundMode={'oklch'}
                                         showInitials={true}
                                     />
                                 </ListItemAvatar>

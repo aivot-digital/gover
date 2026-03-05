@@ -20,7 +20,7 @@ export function stringToPastelColor(input: string): string {
 }
 
 type MarblePalette = readonly [string, string, string, string, string];
-export type StringAvatarBackgroundMode = 'preset' | 'theme' | 'pastel';
+export type StringAvatarBackgroundMode = 'preset' | 'theme' | 'pastel' | 'oklch';
 export const DEFAULT_STRING_AVATAR_BACKGROUND_MODE: StringAvatarBackgroundMode = 'preset';
 
 const MARBLE_PALETTES: readonly MarblePalette[] = [
@@ -50,6 +50,26 @@ function createThemeMarblePalette(theme: Theme): MarblePalette {
     ];
 }
 
+function normalizeHue(hue: number): number {
+    return (hue % 360 + 360) % 360;
+}
+
+function createOklchPastelPalette(input: string): MarblePalette {
+    const hash = hashString(input);
+    const baseHue = hash % 360;
+    const hueStep = 36 + (hash % 17); // 24–40° broader analogous spread
+    const lightness = 84; // pastel
+    const chroma = 0.08; // pastel, slightly more vivid
+
+    return [
+        `oklch(${lightness}% ${chroma} ${normalizeHue(baseHue - (hueStep * 2))})`,
+        `oklch(${lightness}% ${chroma} ${normalizeHue(baseHue - hueStep)})`,
+        `oklch(${lightness}% ${chroma} ${normalizeHue(baseHue)})`,
+        `oklch(${lightness}% ${chroma} ${normalizeHue(baseHue + hueStep)})`,
+        `oklch(${lightness}% ${chroma} ${normalizeHue(baseHue + (hueStep * 2))})`,
+    ];
+}
+
 type MarbleBlob = {
     colorIndex: number;
     x: number;
@@ -68,6 +88,16 @@ type MarbleSpec = {
 function seededUnit(seed: number, salt: number): number {
     const value = Math.sin(seed * 12.9898 + salt * 78.233) * 43758.5453123;
     return value - Math.floor(value);
+}
+
+function withAlpha(color: string, opacity: number): string {
+    if (color.startsWith('oklch(') && color.endsWith(')')) {
+        const normalizedOpacity = Math.max(0, Math.min(1, opacity));
+        const colorBody = color.slice('oklch('.length, -1).trim();
+        return `oklch(${colorBody} / ${normalizedOpacity})`;
+    }
+
+    return alpha(color, opacity);
 }
 
 function createMarbleSpec(input: string): MarbleSpec {
@@ -111,18 +141,19 @@ function mergeSx(base: SxProps<Theme>, extra?: SxProps<Theme>): SxProps<Theme> {
     return [...baseArr, ...extraArr];
 }
 
-export type StringAvatarProps = Omit<MuiAvatarProps, 'children'> & {
+export type StringAvatarProps = MuiAvatarProps & {
     name: string;
     backgroundMode?: StringAvatarBackgroundMode;
     showInitials?: boolean;
 };
 
 export function StringAvatar(props: StringAvatarProps) {
-    const { name, sx, backgroundMode = DEFAULT_STRING_AVATAR_BACKGROUND_MODE, showInitials = true, ...rest } = props;
+    const { name, sx, backgroundMode = DEFAULT_STRING_AVATAR_BACKGROUND_MODE, showInitials = true, children, ...rest } = props;
 
     const safeName = (name ?? '').trim() || 'Unbekannte Nutzer:in';
     const marbleSpec = React.useMemo(() => createMarbleSpec(safeName), [safeName]);
     const pastelColor = React.useMemo(() => stringToPastelColor(safeName), [safeName]);
+    const oklchPalette = React.useMemo(() => createOklchPastelPalette(safeName), [safeName]);
     const initials = React.useMemo(() => getInitials(safeName), [safeName]);
 
     const baseSx: SxProps<Theme> = React.useMemo(
@@ -138,32 +169,37 @@ export function StringAvatar(props: StringAvatarProps) {
 
             const marblePalette = backgroundMode === 'theme'
                 ? createThemeMarblePalette(theme)
-                : (MARBLE_PALETTES[marbleSpec.paletteIndex] ?? MARBLE_PALETTES[0]);
+                : backgroundMode === 'oklch'
+                    ? oklchPalette
+                    : (MARBLE_PALETTES[marbleSpec.paletteIndex] ?? MARBLE_PALETTES[0]);
             const baseColor = marblePalette[marbleSpec.baseColorIndex] ?? marblePalette[0];
+            const useDarkText = backgroundMode === 'oklch';
+            const linearOverlayOpacity = useDarkText ? 0.3 : 0.18;
+            const radialOverlayOpacity = useDarkText ? 0.34 : 0.2;
             const blobGradients = marbleSpec.blobs
                 .map((blob) => {
                     const color = marblePalette[blob.colorIndex] ?? marblePalette[0];
-                    return `radial-gradient(circle at ${blob.x}% ${blob.y}%, ${alpha(color, blob.opacity)} 0%, ${alpha(color, blob.opacity * 0.8)} ${blob.size * 0.58}%, ${alpha(color, 0)} ${blob.size}%)`;
+                    return `radial-gradient(circle at ${blob.x}% ${blob.y}%, ${withAlpha(color, blob.opacity)} 0%, ${withAlpha(color, blob.opacity * 0.8)} ${blob.size * 0.58}%, ${withAlpha(color, 0)} ${blob.size}%)`;
                 })
                 .join(', ');
 
             return {
-                backgroundColor: alpha(baseColor, 0.16),
+                backgroundColor: withAlpha(baseColor, useDarkText ? 0.34 : 0.16),
                 backgroundImage: [
-                    `linear-gradient(${marbleSpec.tiltDeg}deg, ${alpha(marblePalette[1], 0.18)} 0%, ${alpha(marblePalette[3], 0)} 58%)`,
-                    `radial-gradient(circle at 24% 22%, ${alpha(marblePalette[4], 0.2)} 0%, ${alpha(marblePalette[4], 0)} 42%)`,
+                    `linear-gradient(${marbleSpec.tiltDeg}deg, ${withAlpha(marblePalette[1], linearOverlayOpacity)} 0%, ${withAlpha(marblePalette[3], 0)} 58%)`,
+                    `radial-gradient(circle at 24% 22%, ${withAlpha(marblePalette[4], radialOverlayOpacity)} 0%, ${withAlpha(marblePalette[4], 0)} 42%)`,
                     blobGradients,
                 ].join(', '),
                 backgroundSize: '140% 140%',
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat',
-                color: '#ffffff',
+                color: useDarkText ? theme.palette.text.primary : '#ffffff',
                 fontWeight: 700,
-                textShadow: `0 2px 3px ${alpha('#000000', 0.55)}, 0 0 8px ${alpha('#000000', 0.35)}`,
+                textShadow: useDarkText ? 'none' : `0 2px 3px ${alpha('#000000', 0.55)}, 0 0 8px ${alpha('#000000', 0.35)}`,
                 overflow: 'hidden',
             };
         },
-        [backgroundMode, marbleSpec, pastelColor]
+        [backgroundMode, marbleSpec, oklchPalette, pastelColor]
     );
 
     return (
@@ -173,7 +209,7 @@ export function StringAvatar(props: StringAvatarProps) {
             aria-label={`Avatar für ${safeName}`}
             title={safeName}
         >
-            {showInitials ? initials : '\u00A0'}
+            {children ?? (showInitials ? initials : '\u00A0')}
         </MuiAvatar>
     );
 }

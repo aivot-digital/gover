@@ -13,6 +13,7 @@ import {type VDepartmentShadowedEntityWithChildren} from '../../entities/v-depar
 import {getDepartmentTypeIcons, getDepartmentTypeLabel} from '../../utils/department-utils';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import {SearchInput} from '../../../../components/search-input/search-input';
+import {StringAvatar} from '../../../../components/avatar/string-avatar';
 import Fuse from 'fuse.js';
 import EditOutlined from '@mui/icons-material/EditOutlined';
 import GroupOutlined from '@mui/icons-material/GroupOutlined';
@@ -42,6 +43,8 @@ const TREE_CONNECTOR = {
     iconCenterY: 33,
     elbowSize: 14,
 };
+
+const MAX_DEPARTMENT_DEPTH = 2;
 
 const DEPARTMENT_TREE_LOADING_SKELETON: DepartmentTreeSkeletonNode = {
     id: 'root',
@@ -85,12 +88,16 @@ function formatAddress(value?: string | null): string {
 }
 
 function getDepartmentActions(department: VDepartmentShadowedEntityWithChildren): Action[] {
+    const canAddChildDepartment = department.depth < MAX_DEPARTMENT_DEPTH;
+
     return [
         {
             tooltip: `${getDepartmentTypeLabel(department.depth + 1)} hinzufügen`,
+            disabledTooltip: `Organisationseinheiten sind auf ${MAX_DEPARTMENT_DEPTH + 1} Ebenen beschränkt.`,
             icon: <Add />,
             to: `/departments/new?${NewParentIdQueryParam}=${department.id}`,
             variant: 'contained',
+            disabled: !canAddChildDepartment,
         },
         {
             tooltip: 'Bearbeiten',
@@ -399,18 +406,22 @@ function DepartmentSearchResultItem(props: DepartmentSearchResultItemProps): Rea
                     },
                 }}
             >
-                <Avatar
+                <StringAvatar
+                    name={department.name}
+                    backgroundMode={'oklch'}
+                    showInitials={false}
                     sx={{
                         width: 38,
                         height: 38,
-                        bgcolor: theme.palette.mode === 'dark' ? theme.palette.grey[700] : theme.palette.grey[200],
-                        color: 'text.primary',
                         border: '1px solid',
                         borderColor: 'divider',
+                        '& svg': {
+                            fontSize: 22,
+                        },
                     }}
                 >
                     {getDepartmentTypeIcons(department.depth)}
-                </Avatar>
+                </StringAvatar>
 
                 <Box
                     sx={{
@@ -744,18 +755,22 @@ function DepartmentTreeItem(props: DepartmentTreeItemProps): React.ReactElement 
                     },
                 }}
             >
-                <Avatar
+                <StringAvatar
+                    name={department.name}
+                    backgroundMode={'oklch'}
+                    showInitials={false}
                     sx={{
                         width: 38,
                         height: 38,
-                        bgcolor: theme.palette.mode === 'dark' ? theme.palette.grey[700] : theme.palette.grey[200],
-                        color: 'text.primary',
                         border: '1px solid',
                         borderColor: 'divider',
+                        '& svg': {
+                            fontSize: 22,
+                        },
                     }}
                 >
                     {getDepartmentTypeIcons(department.depth)}
-                </Avatar>
+                </StringAvatar>
 
 
                 <Box
