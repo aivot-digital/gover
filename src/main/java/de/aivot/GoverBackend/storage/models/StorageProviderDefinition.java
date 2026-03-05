@@ -244,6 +244,40 @@ public interface StorageProviderDefinition<T> extends PluginComponent {
     boolean folderExists(@Nonnull T config, @Nonnull String pathFromRoot) throws StorageException;
 
     /**
+     * Verschiebt einen Ordner innerhalb des Speicheranbieters von einem Quellpfad zu einem Zielpfad. Quell- und Zielpfad sind relativ zum Stammverzeichnis und müssen jeweils mit
+     * einem Schrägstrich ("/") beginnen.
+     * <p>
+     * Wenn der Quellordner nicht existiert, soll eine {@link StorageException} geworfen werden.
+     *
+     * @param config             Die Konfigurationsdaten für die Verbindung zum Speichersystem.
+     * @param sourcePathFromRoot Der Quellpfad des zu verschiebenden Ordners, relativ zum Stammverzeichnis.
+     * @param targetPathFromRoot Der Zielpfad, relativ zum Stammverzeichnis.
+     * @return Das {@link StorageFolder}-Objekt des verschobenen Ordners am Zielpfad.
+     * @throws StorageException Wird geworfen, wenn der Ordner nicht verschoben werden konnte, z.B. bei ungültigen Pfaden, fehlendem Quellordner oder Verbindungsfehlern.
+     */
+    @Nonnull
+    StorageFolder moveFolder(@Nonnull T config,
+                             @Nonnull String sourcePathFromRoot,
+                             @Nonnull String targetPathFromRoot) throws StorageException;
+
+    /**
+     * Kopiert einen Ordner innerhalb des Speicheranbieters von einem Quellpfad zu einem Zielpfad. Quell- und Zielpfad sind relativ zum Stammverzeichnis und müssen jeweils mit
+     * einem Schrägstrich ("/") beginnen.
+     * <p>
+     * Wenn der Quellordner nicht existiert, soll eine {@link StorageException} geworfen werden.
+     *
+     * @param config             Die Konfigurationsdaten für die Verbindung zum Speichersystem.
+     * @param sourcePathFromRoot Der Quellpfad des zu kopierenden Ordners, relativ zum Stammverzeichnis.
+     * @param targetPathFromRoot Der Zielpfad, relativ zum Stammverzeichnis.
+     * @return Das {@link StorageFolder}-Objekt des kopierten Ordners am Zielpfad.
+     * @throws StorageException Wird geworfen, wenn der Ordner nicht kopiert werden konnte, z.B. bei ungültigen Pfaden, fehlendem Quellordner oder Verbindungsfehlern.
+     */
+    @Nonnull
+    StorageFolder copyFolder(@Nonnull T config,
+                             @Nonnull String sourcePathFromRoot,
+                             @Nonnull String targetPathFromRoot) throws StorageException;
+
+    /**
      * Löscht den Ordner im Speicheranbieter, der durch den angegebenen Pfad identifiziert wird. Der Pfad ist relativ zum Stammverzeichnis des Speicheranbieters und muss mit einem
      * Schrägstrich ("/") beginnen. Beispielsweise würde der Pfad {@code "/ordner1/ordner2"} den Ordner namens "ordner2" innerhalb von "ordner1" löschen.
      * <p>

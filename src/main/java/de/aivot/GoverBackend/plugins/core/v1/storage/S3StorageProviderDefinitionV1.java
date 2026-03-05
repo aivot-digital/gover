@@ -285,6 +285,106 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         return true;
     }
 
+    @Nonnull
+    @Override
+    public StorageFolder moveFolder(@Nonnull Config config,
+                                    @Nonnull String sourcePathFromRoot,
+                                    @Nonnull String targetPathFromRoot) throws StorageException {
+        var normalizedSourcePath = toSuffixWithSlash(toPrefixWithSlash(sourcePathFromRoot));
+        var normalizedTargetPath = toSuffixWithSlash(toPrefixWithSlash(targetPathFromRoot));
+
+        if (normalizedSourcePath.equals(normalizedTargetPath)) {
+            return retrieveFolder(config, normalizedTargetPath, true).orElseGet(() -> new StorageFolder(
+                    normalizedTargetPath,
+                    StringUtils.getLastPathSegment(normalizedTargetPath),
+                    new LinkedList<>(),
+                    new LinkedList<>(),
+                    true
+            ));
+        }
+
+        var copiedFolder = copyFolder(config, normalizedSourcePath, normalizedTargetPath);
+        deleteFolder(config, normalizedSourcePath);
+
+        return copiedFolder;
+    }
+
+    @Nonnull
+    @Override
+    public StorageFolder copyFolder(@Nonnull Config config,
+                                    @Nonnull String sourcePathFromRoot,
+                                    @Nonnull String targetPathFromRoot) throws StorageException {
+        var normalizedSourcePath = toSuffixWithSlash(toPrefixWithSlash(sourcePathFromRoot));
+        var normalizedTargetPath = toSuffixWithSlash(toPrefixWithSlash(targetPathFromRoot));
+
+        if (normalizedTargetPath.startsWith(normalizedSourcePath) && !normalizedTargetPath.equals(normalizedSourcePath)) {
+            throw new StorageException("Der Zielordner %s darf nicht innerhalb des Quellordners %s liegen.", StringUtils.quote(normalizedTargetPath), StringUtils.quote(normalizedSourcePath));
+        }
+
+        var sourcePrefix = normalizedSourcePath.substring(1);
+        var targetPrefix = normalizedTargetPath.substring(1);
+        var client = getClient(config);
+
+        if (!normalizedSourcePath.equals(normalizedTargetPath)) {
+            deleteFolder(config, normalizedTargetPath);
+        }
+
+        var listArgs = ListObjectsArgs
+                .builder()
+                .bucket(config.bucket)
+                .prefix(sourcePrefix)
+                .recursive(true)
+                .build();
+
+        boolean foundAtLeastOneObject = false;
+        var objects = client.listObjects(listArgs);
+        for (var objectResult : objects) {
+            Item object;
+            try {
+                object = objectResult.get();
+            } catch (ErrorResponseException | InsufficientDataException | XmlParserException | ServerException |
+                     NoSuchAlgorithmException | IOException | InvalidResponseException | InvalidKeyException |
+                     InternalException e) {
+                throw new StorageException(e, "Fehler beim Auflisten der Objekte im S3-kompatiblen Speicher.");
+            }
+
+            foundAtLeastOneObject = true;
+            var sourceObjectName = object.objectName();
+            var relativeObjectName = sourceObjectName.substring(sourcePrefix.length());
+            var targetObjectName = targetPrefix + relativeObjectName;
+
+            var copyArgs = CopyObjectArgs
+                    .builder()
+                    .bucket(config.bucket)
+                    .object(targetObjectName)
+                    .source(CopySource.builder()
+                            .bucket(config.bucket)
+                            .object(sourceObjectName)
+                            .build())
+                    .build();
+
+            try {
+                client.copyObject(copyArgs);
+            } catch (ErrorResponseException | InsufficientDataException | XmlParserException | ServerException |
+                     NoSuchAlgorithmException | IOException | InvalidResponseException | InvalidKeyException |
+                     InternalException e) {
+                throw new StorageException(e, "Der Ordner konnte nicht im S3-kompatiblen Speicher kopiert werden.");
+            }
+        }
+
+        if (!foundAtLeastOneObject) {
+            throw new StorageException("Der Quellordner %s konnte nicht gefunden werden.", StringUtils.quote(normalizedSourcePath));
+        }
+
+        return retrieveFolder(config, normalizedTargetPath, true).orElseGet(() -> new StorageFolder(
+                normalizedTargetPath,
+                StringUtils.getLastPathSegment(normalizedTargetPath),
+                new LinkedList<>(),
+                new LinkedList<>(),
+                true
+        ));
+    }
+
     @Override
     public void deleteFolder(@Nonnull Config config, @Nonnull String path) throws StorageException {
         var client = getClient(config);
@@ -567,6 +667,13 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
             return "/";
         }
         return path.startsWith("/") ? path : "/" + path;
+    }
+
+    private static String toSuffixWithSlash(String path) {
+        if (path == null || path.isEmpty()) {
+            return "/";
+        }
+        return path.endsWith("/") ? path : path + "/";
     }
 
 

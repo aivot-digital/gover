@@ -125,15 +125,70 @@ public class StorageService {
 
         definition.deleteFolder(config, path);
 
-        var normalizedFolderPath = path.trim();
-        if (!normalizedFolderPath.startsWith("/")) {
-            normalizedFolderPath = "/" + normalizedFolderPath;
-        }
-        if (!normalizedFolderPath.endsWith("/")) {
-            normalizedFolderPath = normalizedFolderPath + "/";
-        }
+        var normalizedFolderPath = normalizeFolderPath(path);
 
         storageIndexItemRepository.deleteFolderTree(provider.getId(), normalizedFolderPath);
+    }
+
+    @Nonnull
+    public StorageFolder moveFolder(@Nonnull Integer providerId,
+                                    @Nonnull String sourcePath,
+                                    @Nonnull String targetPath) throws ResponseException {
+        var provider = retrieveProvider(providerId);
+        var definition = retrieveDefinition(provider);
+        var config = createConfig(provider, definition);
+
+        if (provider.getReadOnlyStorage()) {
+            throw ResponseException
+                    .badRequest(
+                            "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Es können keine Ordner verschoben werden.",
+                            StringUtils.quote(provider.getName()),
+                            provider.getId()
+                    );
+        }
+
+        var movedFolder = definition.moveFolder(config, sourcePath, targetPath);
+        var targetFolderPath = normalizeFolderPath(movedFolder.getPathFromRoot());
+        var targetFolderTree = definition
+                .retrieveFolder(config, targetFolderPath, true)
+                .orElse(movedFolder);
+
+        upsertFolderTreeIndex(provider, targetFolderTree);
+
+        var normalizedSourcePath = normalizeFolderPath(sourcePath);
+        if (!normalizedSourcePath.equals(targetFolderPath)) {
+            storageIndexItemRepository.deleteFolderTree(provider.getId(), normalizedSourcePath);
+        }
+
+        return movedFolder;
+    }
+
+    @Nonnull
+    public StorageFolder copyFolder(@Nonnull Integer providerId,
+                                    @Nonnull String sourcePath,
+                                    @Nonnull String targetPath) throws ResponseException {
+        var provider = retrieveProvider(providerId);
+        var definition = retrieveDefinition(provider);
+        var config = createConfig(provider, definition);
+
+        if (provider.getReadOnlyStorage()) {
+            throw ResponseException
+                    .badRequest(
+                            "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Es können keine Ordner kopiert werden.",
+                            StringUtils.quote(provider.getName()),
+                            provider.getId()
+                    );
+        }
+
+        var copiedFolder = definition.copyFolder(config, sourcePath, targetPath);
+        var targetFolderPath = normalizeFolderPath(copiedFolder.getPathFromRoot());
+        var targetFolderTree = definition
+                .retrieveFolder(config, targetFolderPath, true)
+                .orElse(copiedFolder);
+
+        upsertFolderTreeIndex(provider, targetFolderTree);
+
+        return copiedFolder;
     }
 
     public Optional<StorageDocument> getDocument(@Nonnull Integer providerId, @Nonnull String path) throws ResponseException {
@@ -355,6 +410,37 @@ public class StorageService {
         storageIndexItemRepository.save(indexItem);
     }
 
+    private void upsertFolderTreeIndex(@Nonnull StorageProviderEntity provider,
+                                       @Nonnull StorageFolder folderTree) {
+        folderTree.apply(folder -> {
+            upsertFolderIndexItem(provider, folder);
+            for (var document : folder.getDocuments()) {
+                var filteredMetadata = filterMetadataByRegisteredAttributes(provider, document.getMetadata());
+                document.setMetadata(filteredMetadata);
+                upsertDocumentIndexItem(provider, document);
+            }
+        });
+    }
+
+    private void upsertFolderIndexItem(@Nonnull StorageProviderEntity provider,
+                                       @Nonnull StorageFolder folder) {
+        var normalizedPath = normalizeFolderPath(folder.getPathFromRoot());
+        var indexItem = new StorageIndexItemEntity(
+                provider.getId(),
+                provider.getType(),
+                normalizedPath,
+                true,
+                StringUtils.getLastPathSegment(normalizedPath),
+                0L,
+                FOLDER_MIME_TYPE,
+                false,
+                StorageItemMetadata.empty(),
+                LocalDateTime.now(),
+                LocalDateTime.now()
+        );
+        storageIndexItemRepository.save(indexItem);
+    }
+
     @Nonnull
     private static String normalizeDocumentPath(@Nonnull String path) {
         var normalizedPath = path.trim();
@@ -363,6 +449,18 @@ public class StorageService {
         }
         if (normalizedPath.endsWith("/")) {
             normalizedPath = normalizedPath.substring(0, normalizedPath.length() - 1);
+        }
+        return normalizedPath;
+    }
+
+    @Nonnull
+    private static String normalizeFolderPath(@Nonnull String path) {
+        var normalizedPath = path.trim();
+        if (!normalizedPath.startsWith("/")) {
+            normalizedPath = "/" + normalizedPath;
+        }
+        if (!normalizedPath.endsWith("/")) {
+            normalizedPath = normalizedPath + "/";
         }
         return normalizedPath;
     }

@@ -309,6 +309,123 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
         return Files.exists(folderToCheckPathReal) && Files.isDirectory(folderToCheckPathReal);
     }
 
+    @Nonnull
+    @Override
+    public StorageFolder moveFolder(@Nonnull Config config,
+                                    @Nonnull String sourcePathFromRoot,
+                                    @Nonnull String targetPathFromRoot) throws StorageException {
+        var sourcePathReal = getSecurePath(config.getRealRootPath(), sourcePathFromRoot);
+        var targetPathReal = getSecurePath(config.getRealRootPath(), targetPathFromRoot);
+
+        if (!Files.exists(sourcePathReal) || !Files.isDirectory(sourcePathReal)) {
+            throw new StorageException("Der Quellordner %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot));
+        }
+
+        if (sourcePathReal.equals(targetPathReal)) {
+            return retrieveFolder(config, toSuffixWithSlash(toPrefixWithSlash(targetPathFromRoot)), true)
+                    .orElseThrow(() -> new StorageException("Der Ordner %s konnte nicht abgerufen werden.", StringUtils.quote(targetPathFromRoot)));
+        }
+
+        if (targetPathReal.startsWith(sourcePathReal)) {
+            throw new StorageException("Der Zielordner %s darf nicht innerhalb des Quellordners %s liegen.", StringUtils.quote(targetPathFromRoot), StringUtils.quote(sourcePathFromRoot));
+        }
+
+        var targetParentDirectoryReal = targetPathReal.getParent();
+        if (targetParentDirectoryReal == null || !Files.exists(targetParentDirectoryReal) || !Files.isDirectory(targetParentDirectoryReal)) {
+            throw new StorageException("Das Zielverzeichnis für den Ordner %s existiert nicht.", StringUtils.quote(targetPathFromRoot));
+        }
+
+        if (Files.exists(targetPathReal)) {
+            deleteFolder(config, targetPathFromRoot);
+        }
+
+        try {
+            Files.move(sourcePathReal, targetPathReal, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new StorageException(e,
+                    "Fehler beim Verschieben des Ordners von %s nach %s: %s.",
+                    StringUtils.quote(sourcePathFromRoot),
+                    StringUtils.quote(targetPathFromRoot),
+                    e.getMessage());
+        }
+
+        return retrieveFolder(config, toSuffixWithSlash(toPrefixWithSlash(targetPathFromRoot)), true)
+                .orElseGet(() -> new StorageFolder(
+                        toSuffixWithSlash(toPrefixWithSlash(targetPathFromRoot)),
+                        StringUtils.getLastPathSegment(targetPathFromRoot),
+                        new LinkedList<>(),
+                        new LinkedList<>(),
+                        true
+                ));
+    }
+
+    @Nonnull
+    @Override
+    public StorageFolder copyFolder(@Nonnull Config config,
+                                    @Nonnull String sourcePathFromRoot,
+                                    @Nonnull String targetPathFromRoot) throws StorageException {
+        var sourcePathReal = getSecurePath(config.getRealRootPath(), sourcePathFromRoot);
+        var targetPathReal = getSecurePath(config.getRealRootPath(), targetPathFromRoot);
+
+        if (!Files.exists(sourcePathReal) || !Files.isDirectory(sourcePathReal)) {
+            throw new StorageException("Der Quellordner %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot));
+        }
+
+        if (sourcePathReal.equals(targetPathReal)) {
+            return retrieveFolder(config, toSuffixWithSlash(toPrefixWithSlash(targetPathFromRoot)), true)
+                    .orElseThrow(() -> new StorageException("Der Ordner %s konnte nicht abgerufen werden.", StringUtils.quote(targetPathFromRoot)));
+        }
+
+        if (targetPathReal.startsWith(sourcePathReal)) {
+            throw new StorageException("Der Zielordner %s darf nicht innerhalb des Quellordners %s liegen.", StringUtils.quote(targetPathFromRoot), StringUtils.quote(sourcePathFromRoot));
+        }
+
+        var targetParentDirectoryReal = targetPathReal.getParent();
+        if (targetParentDirectoryReal == null || !Files.exists(targetParentDirectoryReal) || !Files.isDirectory(targetParentDirectoryReal)) {
+            throw new StorageException("Das Zielverzeichnis für den Ordner %s existiert nicht.", StringUtils.quote(targetPathFromRoot));
+        }
+
+        if (Files.exists(targetPathReal)) {
+            deleteFolder(config, targetPathFromRoot);
+        }
+
+        try (var sourceEntries = Files.walk(sourcePathReal)) {
+            sourceEntries.forEach(sourceEntry -> {
+                try {
+                    var relative = sourcePathReal.relativize(sourceEntry);
+                    var targetEntry = targetPathReal.resolve(relative);
+
+                    if (Files.isDirectory(sourceEntry)) {
+                        Files.createDirectories(targetEntry);
+                    } else {
+                        Files.copy(sourceEntry, targetEntry, StandardCopyOption.REPLACE_EXISTING);
+                    }
+                } catch (IOException e) {
+                    throw new StorageException(e,
+                            "Fehler beim Kopieren des Ordners von %s nach %s: %s.",
+                            StringUtils.quote(sourcePathFromRoot),
+                            StringUtils.quote(targetPathFromRoot),
+                            e.getMessage());
+                }
+            });
+        } catch (IOException e) {
+            throw new StorageException(e,
+                    "Fehler beim Kopieren des Ordners von %s nach %s: %s.",
+                    StringUtils.quote(sourcePathFromRoot),
+                    StringUtils.quote(targetPathFromRoot),
+                    e.getMessage());
+        }
+
+        return retrieveFolder(config, toSuffixWithSlash(toPrefixWithSlash(targetPathFromRoot)), true)
+                .orElseGet(() -> new StorageFolder(
+                        toSuffixWithSlash(toPrefixWithSlash(targetPathFromRoot)),
+                        StringUtils.getLastPathSegment(targetPathFromRoot),
+                        new LinkedList<>(),
+                        new LinkedList<>(),
+                        true
+                ));
+    }
+
     @Override
     public void deleteFolder(@Nonnull Config config, @Nonnull String path) throws StorageException {
         var folderToDeletePathReal = getSecurePath(config.getRealRootPath(), path);

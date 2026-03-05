@@ -109,6 +109,47 @@ class LocalDiskStorageProviderDefinitionTest {
     }
 
     @Test
+    void moveFolder() {
+        var provider = new LocalDiskStorageProviderDefinitionV1();
+        var sourceFolderPath = "/documents/source-folder/";
+        var targetFolderPath = "/documents/moved-folder/";
+        var sourceDocumentPath = "/documents/source-folder/file.txt";
+        var sourceDocumentData = "Moved folder content.".getBytes();
+
+        provider.createFolder(config, sourceFolderPath);
+        provider.storeDocument(config, sourceDocumentPath, new ByteArrayInputStream(sourceDocumentData), new StorageItemMetadata());
+
+        var movedFolder = provider.moveFolder(config, sourceFolderPath, targetFolderPath);
+
+        assertNotNull(movedFolder);
+        assertEquals("/documents/moved-folder/", movedFolder.getPathFromRoot());
+        assertFalse(provider.folderExists(config, sourceFolderPath));
+        assertTrue(provider.folderExists(config, targetFolderPath));
+        assertTrue(provider.documentExists(config, "/documents/moved-folder/file.txt"));
+    }
+
+    @Test
+    void copyFolder() {
+        var provider = new LocalDiskStorageProviderDefinitionV1();
+        var sourceFolderPath = "/documents/source-copy-folder/";
+        var targetFolderPath = "/documents/copied-folder/";
+        var sourceDocumentPath = "/documents/source-copy-folder/file.txt";
+        var sourceDocumentData = "Copied folder content.".getBytes();
+
+        provider.createFolder(config, sourceFolderPath);
+        provider.storeDocument(config, sourceDocumentPath, new ByteArrayInputStream(sourceDocumentData), new StorageItemMetadata());
+
+        var copiedFolder = provider.copyFolder(config, sourceFolderPath, targetFolderPath);
+
+        assertNotNull(copiedFolder);
+        assertEquals("/documents/copied-folder/", copiedFolder.getPathFromRoot());
+        assertTrue(provider.folderExists(config, sourceFolderPath));
+        assertTrue(provider.folderExists(config, targetFolderPath));
+        assertTrue(provider.documentExists(config, "/documents/source-copy-folder/file.txt"));
+        assertTrue(provider.documentExists(config, "/documents/copied-folder/file.txt"));
+    }
+
+    @Test
     void storeDocument() {
         var provider = new LocalDiskStorageProviderDefinitionV1();
         var documentPath = "/documents/test-document.txt";
