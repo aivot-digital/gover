@@ -214,6 +214,8 @@ public class AssetController {
                             filePath,
                             newAssetFile.getInputStream(),
                             newAsset.metadata() != null ? newAsset.metadata() : StorageItemMetadata.empty());
+        } catch (ResponseException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

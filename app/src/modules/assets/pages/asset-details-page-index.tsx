@@ -6,7 +6,7 @@ import {useApi} from '../../../hooks/use-api';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import {useChangeBlocker} from '../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../hooks/use-form-manager';
 import {ConfirmDialog} from '../../../dialogs/confirm-dialog/confirm-dialog';
@@ -177,17 +177,7 @@ export function AssetDetailsPageIndex() {
 
             })
             .catch((err) => {
-                dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
-                if (err.status === 406) {
-                    setUploadError('Die von Ihnen hochgeladene Datei hat einen ungültigen Dateinamen. Bitte benennen Sie die Datei um und versuchen Sie es erneut. Es sind nur Groß- und Kleinbuchstaben, Zahlen, Bindestriche, Unterstriche und Punkte erlaubt.');
-                } else if (err.status === 409) {
-                    setUploadError('Die von Ihnen hochgeladene Datei weist die Signatur eines Virus auf und wurde abgelehnt. Probieren Sie eine andere Datei.');
-                } else if (err.status === 413) {
-                    setUploadError(`Die von Ihnen hochgeladene Datei überschreitet das Limit von ${AppInfo.maxFileSizeMB}MB. Probieren Sie eine andere Datei.`);
-                } else {
-                    console.error(err);
-                    setUploadError('Die Datei konnte nicht hochgeladen werden. Probieren Sie eine andere Datei.');
-                }
+                dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
             })
             .finally(() => {
                 setIsBusy(false);
@@ -227,8 +217,7 @@ export function AssetDetailsPageIndex() {
                     dispatch(showSuccessSnackbar('Änderungen an Datei erfolgreich gespeichert.'));
                 })
                 .catch(err => {
-                    console.error(err);
-                    dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                    dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
                 })
                 .finally(() => {
                     setIsBusy(false);
@@ -251,7 +240,8 @@ export function AssetDetailsPageIndex() {
             return;
         }
 
-        apiService.destroyInStorageProvider(asset.storagePathFromRoot, parsedStorageProviderId)
+        apiService
+            .destroyInStorageProvider(asset.storagePathFromRoot, parsedStorageProviderId)
             .then(() => {
                 reset(); // prevent change blocker by resetting unsaved changes
                 navigate(parentRoute, {
@@ -259,7 +249,9 @@ export function AssetDetailsPageIndex() {
                 });
                 dispatch(showSuccessSnackbar('Die Datei wurde erfolgreich gelöscht.'));
             })
-            .catch(() => dispatch(showErrorSnackbar('Beim Löschen ist ein Fehler aufgetreten.')))
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Beim Löschen ist ein Fehler aufgetreten.'))
+            })
             .finally(() => setIsBusy(false));
     };
 
