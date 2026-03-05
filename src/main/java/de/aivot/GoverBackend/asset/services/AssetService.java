@@ -1,9 +1,10 @@
 package de.aivot.GoverBackend.asset.services;
 
 import de.aivot.GoverBackend.asset.entities.AssetEntity;
+import de.aivot.GoverBackend.asset.repositories.AssetRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
-import de.aivot.GoverBackend.lib.services.EntityService;
+import de.aivot.GoverBackend.lib.services.ReadEntityService;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -16,61 +17,45 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-public class AssetService implements EntityService<AssetEntity, UUID> {
+public class AssetService implements ReadEntityService<AssetEntity, UUID> {
 
     private final GoverConfig goverConfig;
+    private final AssetRepository assetRepository;
 
-    public AssetService(GoverConfig goverConfig) {
+    public AssetService(GoverConfig goverConfig, AssetRepository assetRepository) {
         this.goverConfig = goverConfig;
+        this.assetRepository = assetRepository;
     }
 
-    @Nonnull
-    @Override
-    public AssetEntity create(@Nonnull AssetEntity entity) throws ResponseException {
-        return null;
-    }
-
-    @Override
-    public void performDelete(@Nonnull AssetEntity entity) throws ResponseException {
-
-    }
 
     @Nullable
     @Override
     public Page<AssetEntity> performList(@Nonnull Pageable pageable,
                                          @Nullable Specification<AssetEntity> specification,
                                          @Nullable Filter<AssetEntity> filter) throws ResponseException {
-        return null;
-    }
-
-    @Nonnull
-    @Override
-    public AssetEntity performUpdate(@Nonnull UUID id,
-                                     @Nonnull AssetEntity entity,
-                                     @Nonnull AssetEntity existingEntity) throws ResponseException {
-        return null;
+        return assetRepository.findAll(specification, pageable);
     }
 
     @Nonnull
     @Override
     public Optional<AssetEntity> retrieve(@Nonnull UUID id) throws ResponseException {
-        return Optional.empty();
+        return assetRepository.findById(id);
     }
 
     @Nonnull
     @Override
     public Optional<AssetEntity> retrieve(@Nonnull Specification<AssetEntity> specification) throws ResponseException {
-        return Optional.empty();
+        return assetRepository.findOne(specification);
     }
 
     @Override
     public boolean exists(@Nonnull UUID id) {
-        return false;
+        return assetRepository.existsById(id);
     }
 
     @Override
     public boolean exists(@Nonnull Specification<AssetEntity> specification) {
-        return false;
+        return assetRepository.exists(specification);
     }
 
     public String createUrl(AssetEntity asset) {
