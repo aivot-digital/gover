@@ -5,7 +5,7 @@ alter table assets
     alter column uploader_id drop not null,
     add column storage_provider_id    integer null,
     add column storage_path_from_root text    null,
-    add foreign key (storage_provider_id, storage_path_from_root) references storage_index_items (storage_provider_id, path_from_root) on delete cascade;
+    add foreign key (storage_provider_id, storage_path_from_root) references storage_index_items (storage_provider_id, path_from_root) on delete cascade on update cascade;
 
 -- copy all assets to the default asset storage provider and mark them as missing.
 insert into storage_index_items

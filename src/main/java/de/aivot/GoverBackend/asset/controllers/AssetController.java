@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.asset.controllers;
 
 import de.aivot.GoverBackend.asset.dtos.AssetCreateRequestDTO;
+import de.aivot.GoverBackend.asset.dtos.AssetMoveRequestDTO;
 import de.aivot.GoverBackend.asset.dtos.AssetRequestDTO;
 import de.aivot.GoverBackend.asset.entities.AssetEntity;
 import de.aivot.GoverBackend.asset.entities.VStorageIndexItemWithAssetEntity;
@@ -349,6 +350,68 @@ public class AssetController {
                 .orElseThrow(ResponseException::internalServerError);
     }
 
+    @PostMapping(
+            value = "move-file/",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @Operation(
+            summary = "Move an asset",
+            description = "Move an asset file from a source path to a target path in the same storage provider."
+    )
+    public VStorageIndexItemWithAssetEntity moveFile(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer storageProviderId,
+            @Nonnull @Valid @RequestBody AssetMoveRequestDTO moveRequest
+    ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .testSystemPermission(user.getId(), AssetPermissionProvider.ASSET_UPDATE);
+
+        var storageProvider = getStorageProvider(storageProviderId);
+        if (storageProvider.getReadOnlyStorage()) {
+            throw ResponseException.badRequest("Der Speicheranbieter ist schreibgeschützt. Die Datei kann nicht verschoben werden.");
+        }
+
+        var sourcePath = normalizeFilePathInput(moveRequest.sourcePath());
+        var targetPath = normalizeFilePathInput(moveRequest.targetPath());
+
+        if (sourcePath.equals(targetPath)) {
+            return storageIndexItemWithAssetRepository
+                    .findById(VStorageIndexItemWithAssetEntityId.of(
+                            storageProvider.getId(),
+                            sourcePath
+                    ))
+                    .orElseThrow(ResponseException::internalServerError);
+        }
+
+        var conflictingAsset = assetRepository
+                .findByStorageProviderIdAndStoragePathFromRoot(storageProvider.getId(), targetPath);
+        if (conflictingAsset.isPresent()) {
+            throw ResponseException.conflict("Am Zielpfad existiert bereits eine Datei.");
+        }
+
+        // After the move, there is no need to update the asset because the asset path from root is updated automatically by the database because of the foreign key reference.
+        var movedDocument = storageService.moveDocument(storageProvider.getId(), sourcePath, targetPath);
+
+        auditService.logAction(user, AuditAction.Update, AssetEntity.class, Map.of(
+                "folder", false,
+                "pathFrom", sourcePath,
+                "pathTo", movedDocument.getPathFromRoot(),
+                "moved", true
+        ));
+
+        return storageIndexItemWithAssetRepository
+                .findById(VStorageIndexItemWithAssetEntityId.of(
+                        storageProvider.getId(),
+                        movedDocument.getPathFromRoot()
+                ))
+                .orElseThrow(ResponseException::internalServerError);
+    }
+
     @DeleteMapping("files/**")
     @Operation(
             summary = "Delete an asset",
@@ -432,6 +495,21 @@ public class AssetController {
         }
 
         return URLDecoder.decode(normalizedPath, StandardCharsets.UTF_8);
+    }
+
+    @Nonnull
+    private static String normalizeFilePathInput(@Nonnull String path) throws ResponseException {
+        var normalizedPath = path.trim();
+        if (normalizedPath.isBlank()) {
+            throw ResponseException.notAcceptable("Der Pfad einer Datei darf nicht leer sein.");
+        }
+        if (!normalizedPath.startsWith("/")) {
+            normalizedPath = "/" + normalizedPath;
+        }
+        if (normalizedPath.endsWith("/")) {
+            throw ResponseException.notAcceptable("Der Pfad einer Datei darf nicht mit einem Schrägstrich (/) enden.");
+        }
+        return normalizedPath;
     }
 
     @Nonnull
