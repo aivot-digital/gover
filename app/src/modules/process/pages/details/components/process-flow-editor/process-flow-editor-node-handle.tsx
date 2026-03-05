@@ -40,7 +40,7 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
     const confirm = useConfirm();
 
     const handleDeleteEdge = (): void => {
-        confirm({
+        void confirm({
             title: 'Verbindung aufheben',
             children: (
                 <Typography>
@@ -73,7 +73,12 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
                     sx={{
                         height: ADD_BUTTON_DISTANCE,
                         width: `${HANDLE_WIDTH}px`,
-                        backgroundColor: HANDLE_COLOR,
+                        backgroundColor: wasPerformed ? undefined : HANDLE_COLOR,
+                        backgroundImage: wasPerformed ?
+                            `repeating-linear-gradient(to bottom, ${theme.palette.primary.main} 0 8px, transparent 8px 16px)` :
+                            undefined,
+                        backgroundSize: wasPerformed ? '100% 16px' : undefined,
+                        animation: wasPerformed ? 'active-handle-dash-scroll 1s linear infinite' : undefined,
                     }}
                 />
 
@@ -94,7 +99,12 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
                         minHeight: ADD_BUTTON_DISTANCE,
                         flex: 1,
                         width: `${HANDLE_WIDTH}px`,
-                        backgroundColor: HANDLE_COLOR,
+                        backgroundColor: wasPerformed ? undefined : HANDLE_COLOR,
+                        backgroundImage: wasPerformed ?
+                            `repeating-linear-gradient(to bottom, ${theme.palette.primary.main} 0 8px, transparent 8px 16px)` :
+                            undefined,
+                        backgroundSize: wasPerformed ? '100% 16px' : undefined,
+                        animation: wasPerformed ? 'active-handle-dash-scroll 1s linear infinite' : undefined,
                     }}
                 />
 
@@ -128,10 +138,13 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
                     sx={{
                         minHeight: ADD_BUTTON_DISTANCE * 1.25,
                         flex: 1,
-                        borderLeftWidth: `${HANDLE_WIDTH}px`,
-                        borderLeftColor: wasPerformed ? theme.palette.primary.main : HANDLE_COLOR,
-                        borderLeftStyle: wasPerformed ? 'dashed' : 'solid',
-                        animation: wasPerformed ? 'active-edge-dash-scroll 2s linear infinite' : undefined,
+                        width: `${HANDLE_WIDTH}px`,
+                        backgroundColor: wasPerformed ? undefined : HANDLE_COLOR,
+                        backgroundImage: wasPerformed ?
+                            `repeating-linear-gradient(to bottom, ${theme.palette.primary.main} 0 8px, transparent 8px 16px)` :
+                            undefined,
+                        backgroundSize: wasPerformed ? '100% 16px' : undefined,
+                        animation: wasPerformed ? 'active-handle-dash-scroll 1s linear infinite' : undefined,
                     }}
                 />
             </Box>
