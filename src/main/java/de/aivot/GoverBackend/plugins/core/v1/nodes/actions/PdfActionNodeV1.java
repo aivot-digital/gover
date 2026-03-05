@@ -10,6 +10,7 @@ import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
@@ -22,6 +23,7 @@ import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.GoverBackend.process.models.ProcessNodeOutput;
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
+import de.aivot.GoverBackend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.GoverBackend.process.services.ProcessDataService;
 import de.aivot.GoverBackend.services.PdfService;
 import de.aivot.GoverBackend.utils.StringUtils;
@@ -29,7 +31,6 @@ import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
 import java.net.URISyntaxException;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 
@@ -41,16 +42,21 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
 
     private static final String OUTPUT_NAME_FILE_NAME = "fileName";
     private static final String OUTPUT_NAME_MIME_TYPE = "mimeType";
-    private static final String OUTPUT_NAME_PDF_BASE64 = "base64";
     private static final String OUTPUT_NAME_SIZE_BYTES = "sizeBytes";
+    private static final String OUTPUT_NAME_ATTACHMENT_KEY = "attachmentKey";
+    private static final String OUTPUT_NAME_STORAGE_PROVIDER_ID = "storageProviderId";
+    private static final String OUTPUT_NAME_STORAGE_PATH_FROM_ROOT = "storagePathFromRoot";
 
     private final PdfService pdfService;
     private final ProcessDataService processDataService;
+    private final ProcessInstanceAttachmentService processInstanceAttachmentService;
 
     public PdfActionNodeV1(PdfService pdfService,
-                           ProcessDataService processDataService) {
+                           ProcessDataService processDataService,
+                           ProcessInstanceAttachmentService processInstanceAttachmentService) {
         this.pdfService = pdfService;
         this.processDataService = processDataService;
+        this.processInstanceAttachmentService = processInstanceAttachmentService;
     }
 
     @Nonnull
@@ -131,9 +137,19 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
                         "Der MIME-Typ des erzeugten Dokuments."
                 ),
                 new ProcessNodeOutput(
-                        OUTPUT_NAME_PDF_BASE64,
-                        "PDF als Base64",
-                        "Das erzeugte PDF, Base64-kodiert."
+                        OUTPUT_NAME_ATTACHMENT_KEY,
+                        "Anhangs-Schlüssel",
+                        "Der Schlüssel des erzeugten Prozess-Anhangs."
+                ),
+                new ProcessNodeOutput(
+                        OUTPUT_NAME_STORAGE_PROVIDER_ID,
+                        "Speicheranbieter-ID",
+                        "Die ID des Speicheranbieters des erzeugten Prozess-Anhangs."
+                ),
+                new ProcessNodeOutput(
+                        OUTPUT_NAME_STORAGE_PATH_FROM_ROOT,
+                        "Speicherpfad",
+                        "Der Pfad zum erzeugten Prozess-Anhang im Speicheranbieter."
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_SIZE_BYTES,
@@ -208,11 +224,35 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
             );
         }
 
+        ProcessInstanceAttachmentEntity attachment;
+        try {
+            attachment = processInstanceAttachmentService.create(
+                    new ProcessInstanceAttachmentEntity(
+                            null,
+                            fileName,
+                            context.getThisProcessInstance().getId(),
+                            null,
+                            null,
+                            null,
+                            null,
+                            pdfBytes
+                    )
+            );
+        } catch (ResponseException e) {
+            throw new ProcessNodeExecutionExceptionUnknown(
+                    e,
+                    "Fehler beim Speichern des erzeugten PDFs als Prozess-Anhang: %s",
+                    e.getMessage()
+            );
+        }
+
         var metadata = new HashMap<String, Object>();
         metadata.put(OUTPUT_NAME_FILE_NAME, fileName);
         metadata.put(OUTPUT_NAME_MIME_TYPE, "application/pdf");
         metadata.put(OUTPUT_NAME_SIZE_BYTES, pdfBytes.length);
-        metadata.put(OUTPUT_NAME_PDF_BASE64, Base64.getEncoder().encodeToString(pdfBytes));
+        metadata.put(OUTPUT_NAME_ATTACHMENT_KEY, attachment.getKey());
+        metadata.put(OUTPUT_NAME_STORAGE_PROVIDER_ID, attachment.getStorageProviderId());
+        metadata.put(OUTPUT_NAME_STORAGE_PATH_FROM_ROOT, attachment.getStoragePathFromRoot());
 
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_NAME)
