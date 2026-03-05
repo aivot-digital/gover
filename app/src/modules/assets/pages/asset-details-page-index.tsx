@@ -177,7 +177,7 @@ export function AssetDetailsPageIndex() {
 
             })
             .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.', true));
             })
             .finally(() => {
                 setIsBusy(false);
@@ -217,7 +217,7 @@ export function AssetDetailsPageIndex() {
                     dispatch(showSuccessSnackbar('Änderungen an Datei erfolgreich gespeichert.'));
                 })
                 .catch(err => {
-                    dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                    dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.', true));
                 })
                 .finally(() => {
                     setIsBusy(false);
