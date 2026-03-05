@@ -56,6 +56,7 @@ const useSetPrivacyErrorWithSnackbar = (setPrivacyError: (message: string) => vo
 export function Submitted(props: SubmittedProps) {
     const api = useApi();
     const submitStep = props.version.rootElement.submitStep;
+    const confettiDisabled = submitStep?.disableConfetti === true;
 
     const [status, setStatus] = useState<SubmissionStatusResponseDTO>();
 
@@ -95,32 +96,48 @@ export function Submitted(props: SubmittedProps) {
 
     const intervalId = useRef<NodeJS.Timeout | null>(null);
 
-    const startAnimation = useCallback(() => {
-        if (!intervalId.current) {
-            intervalId.current = setInterval(nextTickAnimation, 16);
-        }
-    }, [nextTickAnimation]);
-
-    const pauseAnimation = useCallback(() => {
-        if (intervalId.current) {
-            clearInterval(intervalId.current);
-            intervalId.current = null;
-        }
-    }, []);
+    useEffect(() => {
+        return () => {
+            clearInterval(intervalId);
+        };
+    }, [intervalId]);
 
     useEffect(() => {
-        const timer = setTimeout(() => {
+        if (confettiDisabled) {
+            return;
+        }
+
+        setTimeout(() => {
             startAnimation();
         }, animationStartDelay);
-        return () => clearTimeout(timer);
-    }, [startAnimation]);
+    }, [confettiDisabled, startAnimation]);
 
     useEffect(() => {
-        const timer = setTimeout(() => {
+        if (confettiDisabled) {
+            return;
+        }
+
+        setTimeout(() => {
             pauseAnimation();
         }, animationDuration);
-        return () => clearTimeout(timer);
-    }, [pauseAnimation]);
+    }, [confettiDisabled, pauseAnimation]);
+
+    useEffect(() => {
+        if (confettiDisabled) {
+            setShouldRenderConfetti(false);
+            return;
+        }
+
+        const mediaQuery = window.matchMedia('(prefers-reduced-motion: no-preference)');
+        const handleChange = () => {
+            setShouldRenderConfetti(mediaQuery.matches);
+        };
+        handleChange();
+        mediaQuery.addEventListener('change', handleChange);
+        return () => {
+            mediaQuery.removeEventListener('change', handleChange);
+        };
+    }, [confettiDisabled]);
 
     useEffect(() => {
         return () => {
@@ -198,6 +215,36 @@ export function Submitted(props: SubmittedProps) {
             }
         }
     };
+
+    useEffect(() => {
+        return () => {
+            clearInterval(intervalId);
+        };
+    }, [intervalId]);
+
+    useEffect(() => {
+        setTimeout(() => {
+            startAnimation();
+        }, animationStartDelay);
+    }, []);
+
+    useEffect(() => {
+        setTimeout(() => {
+            pauseAnimation();
+        }, animationDuration);
+    }, []);
+
+    useEffect(() => {
+        const mediaQuery = window.matchMedia('(prefers-reduced-motion: no-preference)');
+        const handleChange = () => {
+            setShouldRenderConfetti(mediaQuery.matches);
+        };
+        handleChange();
+        mediaQuery.addEventListener('change', handleChange);
+        return () => {
+            mediaQuery.removeEventListener('change', handleChange);
+        };
+    }, []);
 
     return (
         <>
@@ -509,6 +556,15 @@ export function Submitted(props: SubmittedProps) {
                 }}
                 aria-hidden="true"
             />
+
+            {!confettiDisabled && shouldRenderConfetti && (
+                <ReactCanvasConfetti
+                    refConfetti={getInstance}
+                    // @ts-expect-error
+                    style={canvasStyles}
+                />
+            )}
+
             <InfoDialog
                 title="E-Mail versendet"
                 severity="success"

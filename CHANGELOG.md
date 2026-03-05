@@ -26,6 +26,7 @@
 ### Features
 
 * **App:** Add a new destination type for OZG-Cloud.
+* **App:** Add a new flag to toggle the confetti effect on form submission.
 
 ### Improvements
 
