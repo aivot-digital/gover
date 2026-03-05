@@ -412,6 +412,74 @@ public class AssetController {
                 .orElseThrow(ResponseException::internalServerError);
     }
 
+    @PostMapping(
+            value = "copy-file/",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @Operation(
+            summary = "Copy an asset",
+            description = "Copy an asset file from a source path to a target path in the same storage provider."
+    )
+    public VStorageIndexItemWithAssetEntity copyFile(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer storageProviderId,
+            @Nonnull @Valid @RequestBody AssetMoveRequestDTO copyRequest
+    ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .testSystemPermission(user.getId(), AssetPermissionProvider.ASSET_UPDATE);
+
+        var storageProvider = getStorageProvider(storageProviderId);
+        if (storageProvider.getReadOnlyStorage()) {
+            throw ResponseException.badRequest("Der Speicheranbieter ist schreibgeschützt. Die Datei kann nicht kopiert werden.");
+        }
+
+        var sourcePath = normalizeFilePathInput(copyRequest.sourcePath());
+        var targetPath = normalizeFilePathInput(copyRequest.targetPath());
+
+        var sourceAsset = assetRepository
+                .findByStorageProviderIdAndStoragePathFromRoot(storageProvider.getId(), sourcePath)
+                .orElseThrow(ResponseException::notFound);
+
+        if (sourcePath.equals(targetPath)) {
+            throw ResponseException.conflict("Quell- und Zielpfad dürfen nicht identisch sein.");
+        }
+
+        var conflictingAsset = assetRepository
+                .findByStorageProviderIdAndStoragePathFromRoot(storageProvider.getId(), targetPath);
+        if (conflictingAsset.isPresent()) {
+            throw ResponseException.conflict("Am Zielpfad existiert bereits eine Datei.");
+        }
+
+        var copiedDocument = storageService.copyDocument(storageProvider.getId(), sourcePath, targetPath);
+
+        var copiedAsset = new AssetEntity()
+                .setKey(UUID.randomUUID())
+                .setUploaderId(user.getId())
+                .setPrivate(sourceAsset.getPrivate())
+                .setStorageProviderId(storageProvider.getId())
+                .setStoragePathFromRoot(copiedDocument.getPathFromRoot());
+        assetRepository.save(copiedAsset);
+
+        auditService.logAction(user, AuditAction.Create, AssetEntity.class, Map.of(
+                "folder", false,
+                "pathFrom", sourcePath,
+                "pathTo", copiedDocument.getPathFromRoot(),
+                "copied", true
+        ));
+
+        return storageIndexItemWithAssetRepository
+                .findById(VStorageIndexItemWithAssetEntityId.of(
+                        storageProvider.getId(),
+                        copiedDocument.getPathFromRoot()
+                ))
+                .orElseThrow(ResponseException::internalServerError);
+    }
+
     @DeleteMapping("files/**")
     @Operation(
             summary = "Delete an asset",

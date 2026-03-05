@@ -4,7 +4,8 @@ import {GenericDetailsPage} from '../../../components/generic-details-page/gener
 import {Asset} from '../models/asset';
 import {AssetsApiService} from '../assets-api-service';
 import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
-import DriveFileMoveOutlinedIcon from '@mui/icons-material/DriveFileMoveOutlined';
+import DriveFileMoveOutlinedIcon from '@aivot/mui-material-symbols-400-outlined/dist/drive-file-move/DriveFileMove';
+import ContentCopyOutlinedIcon from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
 import React, {useMemo, useState} from 'react';
 import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
@@ -23,6 +24,7 @@ export function AssetDetailsPage() {
     const [searchParams] = useSearchParams();
     const [storageProviderReadOnly, setStorageProviderReadOnly] = useState(false);
     const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
+    const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
 
     const parsedStorageProviderId = useMemo(() => {
         if (storageProviderId == null) {
@@ -53,7 +55,14 @@ export function AssetDetailsPage() {
         }
         return normalizedCurrentStoragePath;
     }, [normalizedCurrentStoragePath]);
+    const defaultCopyTargetPath = useMemo(() => {
+        if (normalizedCurrentStoragePath == null) {
+            return '';
+        }
+        return normalizedCurrentStoragePath;
+    }, [normalizedCurrentStoragePath]);
     const canMoveAsset = parsedStorageProviderId != null && normalizedCurrentStoragePath != null && !storageProviderReadOnly;
+    const canCopyAsset = parsedStorageProviderId != null && normalizedCurrentStoragePath != null && !storageProviderReadOnly;
 
     const parentRoute = `/assets/providers/${storageProviderId}?path=${encodeURIComponent(AssetsApiService.normalizeFolderPath(searchParams.get('path') ?? '/'))}`;
     const detailsPath = `/assets/providers/${storageProviderId}/files/*`;
@@ -68,8 +77,17 @@ export function AssetDetailsPage() {
                     ? 'Der Speicheranbieter ist schreibgeschützt. Dateien können nicht verschoben werden.'
                     : 'Die Datei muss zuerst gespeichert werden, bevor sie verschoben werden kann.',
             },
+            {
+                icon: <ContentCopyOutlinedIcon />,
+                tooltip: 'Datei kopieren',
+                onClick: () => setIsCopyDialogOpen(true),
+                disabled: !canCopyAsset,
+                disabledTooltip: storageProviderReadOnly
+                    ? 'Der Speicheranbieter ist schreibgeschützt. Dateien können nicht kopiert werden.'
+                    : 'Die Datei muss zuerst gespeichert werden, bevor sie kopiert werden kann.',
+            },
         ];
-    }, [canMoveAsset, storageProviderReadOnly]);
+    }, [canMoveAsset, canCopyAsset, storageProviderReadOnly]);
 
     const handleConfirmMove = async (targetPathInput: string) => {
         setIsMoveDialogOpen(false);
@@ -101,6 +119,39 @@ export function AssetDetailsPage() {
             );
         } catch (err) {
             dispatch(showApiErrorSnackbar(err, 'Die Datei konnte nicht verschoben werden.'));
+        }
+    };
+
+    const handleConfirmCopy = async (targetPathInput: string) => {
+        setIsCopyDialogOpen(false);
+
+        if (!canCopyAsset || parsedStorageProviderId == null || normalizedCurrentStoragePath == null) {
+            return;
+        }
+
+        const normalizedTargetPath = AssetsApiService.normalizeStoragePath(targetPathInput);
+        if (normalizedTargetPath === normalizedCurrentStoragePath) {
+            return;
+        }
+
+        try {
+            const copiedAsset = await new AssetsApiService(api).copyInStorageProvider(
+                parsedStorageProviderId,
+                normalizedCurrentStoragePath,
+                normalizedTargetPath,
+            );
+
+            const parentFolder = copiedAsset.storagePathFromRoot.includes('/')
+                ? AssetsApiService.normalizeFolderPath(copiedAsset.storagePathFromRoot.substring(0, copiedAsset.storagePathFromRoot.lastIndexOf('/')))
+                : '/';
+
+            dispatch(showSuccessSnackbar('Datei erfolgreich kopiert.'));
+            navigate(
+                `/assets/providers/${parsedStorageProviderId}/files/${AssetsApiService.encodeStoragePathForRoute(copiedAsset.storagePathFromRoot)}?path=${encodeURIComponent(parentFolder)}`,
+                {replace: true},
+            );
+        } catch (err) {
+            dispatch(showApiErrorSnackbar(err, 'Die Datei konnte nicht kopiert werden.'));
         }
     };
 
@@ -206,6 +257,20 @@ export function AssetDetailsPage() {
                     cancelButtonText="Abbrechen"
                     onConfirm={handleConfirmMove}
                     onCancel={() => setIsMoveDialogOpen(false)}
+                />
+            }
+            {
+                isCopyDialogOpen &&
+                <PromptDialog
+                    title="Datei kopieren"
+                    message="Geben Sie den Zielpfad der Datei innerhalb des Speicheranbieters an."
+                    inputLabel="Zielpfad"
+                    inputPlaceholder="/ordner/datei.ext"
+                    defaultValue={defaultCopyTargetPath}
+                    confirmButtonText="Kopieren"
+                    cancelButtonText="Abbrechen"
+                    onConfirm={handleConfirmCopy}
+                    onCancel={() => setIsCopyDialogOpen(false)}
                 />
             }
         </PageWrapper>

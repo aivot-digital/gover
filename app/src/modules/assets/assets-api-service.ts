@@ -95,6 +95,18 @@ export class AssetsApiService extends CrudApiService<Asset, Asset, Asset, Asset,
         );
     }
 
+    public async copyInStorageProvider(storageProviderId: number, sourcePathFromRoot: string, targetPathFromRoot: string): Promise<Asset> {
+        return AssetsApiService.mapViewItemToAsset(
+            await this.api.post<any>(
+                `assets/${storageProviderId}/copy-file/`,
+                {
+                    sourcePath: AssetsApiService.normalizeStoragePath(sourcePathFromRoot),
+                    targetPath: AssetsApiService.normalizeStoragePath(targetPathFromRoot),
+                },
+            ),
+        );
+    }
+
     public static useAssetLink(key: string) {
         return createApiPath(`/api/public/assets/${key}/`);
     }
