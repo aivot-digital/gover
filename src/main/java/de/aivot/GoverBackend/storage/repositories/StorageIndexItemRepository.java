@@ -16,6 +16,8 @@ import java.util.Optional;
 public interface StorageIndexItemRepository extends JpaRepository<StorageIndexItemEntity, StorageIndexItemEntityId>, JpaSpecificationExecutor<StorageIndexItemEntity> {
     List<StorageIndexItemEntity> findAllByStorageProviderId(Integer storageProviderId);
 
+    List<StorageIndexItemEntity> findAllByStorageProviderIdAndDirectoryIsTrue(Integer storageProviderId);
+
     @Query(
             value = """
                         SELECT * FROM storage_index_items

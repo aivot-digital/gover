@@ -25,6 +25,10 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -102,11 +106,68 @@ public class StorageService {
     }
 
     public Optional<StorageFolder> getFolder(@Nonnull Integer providerId, @Nonnull String path) throws ResponseException {
+        return getFolder(providerId, path, false);
+    }
+
+    public Optional<StorageFolder> getFolder(@Nonnull Integer providerId,
+                                             @Nonnull String path,
+                                             boolean recursive) throws ResponseException {
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
 
-        return definition.retrieveFolder(config, path);
+        return definition.retrieveFolder(config, path, recursive);
+    }
+
+    @Nonnull
+    public StorageFolder getFolderTreeFromIndex(@Nonnull Integer providerId) throws ResponseException {
+        var provider = retrieveProvider(providerId);
+        var indexedItems = storageIndexItemRepository.findAllByStorageProviderIdAndDirectoryIsTrue(provider.getId());
+
+        Map<String, StorageFolder> foldersByPath = new HashMap<>();
+        var rootFolder = new StorageFolder("/", "Root", new LinkedList<>(), new LinkedList<>(), true);
+        foldersByPath.put("/", rootFolder);
+
+        for (var item : indexedItems) {
+            if (item.getMissing()) {
+                continue;
+            }
+
+            var folderPath = normalizeFolderPath(item.getPathFromRoot());
+            foldersByPath.computeIfAbsent(folderPath, p -> new StorageFolder(
+                    p,
+                    "/".equals(p) ? "Root" : StringUtils.getLastPathSegment(p),
+                    new LinkedList<>(),
+                    new LinkedList<>(),
+                    true
+            ));
+        }
+
+        foldersByPath
+                .keySet()
+                .stream()
+                .sorted(Comparator.comparingInt(String::length))
+                .filter(path -> !"/".equals(path))
+                .forEach(path -> {
+                    var folder = foldersByPath.get(path);
+                    var parentPath = getParentFolderPath(path);
+                    var parentFolder = foldersByPath.computeIfAbsent(parentPath, p -> new StorageFolder(
+                            p,
+                            "/".equals(p) ? "Root" : StringUtils.getLastPathSegment(p),
+                            new LinkedList<>(),
+                            new LinkedList<>(),
+                            true
+                    ));
+
+                    var alreadyAdded = parentFolder.getSubfolders()
+                            .stream()
+                            .anyMatch(subfolder -> subfolder.getPathFromRoot().equals(folder.getPathFromRoot()));
+                    if (!alreadyAdded) {
+                        parentFolder.addSubfolder(folder);
+                    }
+                });
+
+        return rootFolder;
     }
 
     public void deleteFolder(@Nonnull Integer providerId, @Nonnull String path) throws ResponseException {
@@ -463,6 +524,21 @@ public class StorageService {
             normalizedPath = normalizedPath + "/";
         }
         return normalizedPath;
+    }
+
+    @Nonnull
+    private static String getParentFolderPath(@Nonnull String folderPath) {
+        var normalizedPath = normalizeFolderPath(folderPath);
+        if ("/".equals(normalizedPath)) {
+            return "/";
+        }
+
+        var withoutTrailingSlash = normalizedPath.substring(0, normalizedPath.length() - 1);
+        var lastSlash = withoutTrailingSlash.lastIndexOf('/');
+        if (lastSlash <= 0) {
+            return "/";
+        }
+        return withoutTrailingSlash.substring(0, lastSlash + 1);
     }
 
     private StorageProviderEntity retrieveProvider(@Nonnull Integer providerId) throws ResponseException {

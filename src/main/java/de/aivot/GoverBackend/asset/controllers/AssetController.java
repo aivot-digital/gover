@@ -105,6 +105,25 @@ public class AssetController {
                 .listAllInFolder(storageProvider.getId(), "^" + normalizedPath + "([^/]+$|[^/]+/$)", false);
     }
 
+    @GetMapping(value = "folders-tree/", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Retrieve full folder tree",
+            description = "Retrieves the complete folder tree for the storage provider, starting at root. " +
+                    "This endpoint is intended for folder selection UIs (e.g. copy/move destinations)."
+    )
+    public StorageFolder getFolderTree(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer storageProviderId
+    ) throws ResponseException {
+        permissionService
+                .testSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
+
+        var storageProvider = getStorageProvider(storageProviderId);
+
+        return storageService
+                .getFolderTreeFromIndex(storageProvider.getId());
+    }
+
     @PostMapping(
             value = "folders/**",
             consumes = MediaType.APPLICATION_JSON_VALUE,
