@@ -20,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -126,6 +127,13 @@ public class ProcessInstanceAttachmentService implements EntityService<ProcessIn
     @Override
     public Optional<ProcessInstanceAttachmentEntity> retrieve(@Nonnull Specification<ProcessInstanceAttachmentEntity> specification) throws ResponseException {
         return processInstanceAttachmentRepository.findOne(specification);
+    }
+
+    @Nonnull
+    public List<ProcessInstanceAttachmentEntity> findAllByProcessInstanceIdAndFileName(@Nonnull Long processInstanceId,
+                                                                                         @Nonnull String fileName) {
+        return processInstanceAttachmentRepository
+                .findAllByProcessInstanceIdAndFileName(processInstanceId, fileName);
     }
 
     @Override
