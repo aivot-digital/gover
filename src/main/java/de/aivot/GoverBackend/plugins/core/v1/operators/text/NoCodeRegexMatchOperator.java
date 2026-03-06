@@ -87,7 +87,12 @@ public class NoCodeRegexMatchOperator extends NoCodeOperator {
         String input = castToString(args[0]);
         String regex = castToString(args[1]);
 
-        boolean matches = Pattern.matches(regex, input);
+        boolean matches;
+        try {
+            matches = Pattern.matches(regex, input);
+        } catch (Exception e) {
+            throw new NoCodeException("Ungültiger regulärer Ausdruck: " + regex);
+        }
         return new NoCodeResult(matches);
     }
 }

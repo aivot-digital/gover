@@ -92,11 +92,16 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
         int month = castToNumber(args[1]).intValue();
         int year = castToNumber(args[2]).intValue();
 
-        var date = ZonedDateTime.of(
-                year, month, day,
-                0, 0, 0, 0,
-                ZoneId.systemDefault()
-        );
+        final ZonedDateTime date;
+        try {
+            date = ZonedDateTime.of(
+                    year, month, day,
+                    0, 0, 0, 0,
+                    ZoneId.systemDefault()
+            );
+        } catch (Exception e) {
+            throw new NoCodeException("Ungültiges Datum: " + day + "." + month + "." + year);
+        }
 
         return new NoCodeResult(date);
     }

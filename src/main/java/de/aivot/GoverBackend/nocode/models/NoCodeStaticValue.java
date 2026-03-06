@@ -3,7 +3,6 @@ package de.aivot.GoverBackend.nocode.models;
 import jakarta.annotation.Nullable;
 import de.aivot.GoverBackend.utils.StringUtils;
 
-import jakarta.annotation.Nullable;
 import java.util.Objects;
 
 /**

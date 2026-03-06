@@ -4,7 +4,6 @@ import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.*;
 import de.aivot.GoverBackend.nocode.providers.NoCodeOperatorsProvider;
-import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,7 +54,11 @@ public class NoCodeEvaluationService {
      * @param identifier The identifier of the operator
      * @return The operator
      */
-    private NoCodeOperator getNoCodeOperator(String identifier) {
+    private NoCodeOperator getNoCodeOperator(@Nullable String identifier) {
+        if (identifier == null) {
+            throw new IllegalArgumentException("NoCodeOperatorProvider identifier must not be null");
+        }
+
         if (!noCodeOperatorProviders.containsKey(identifier)) {
             throw new IllegalArgumentException("NoCodeOperatorProvider with identifier " + identifier + " does not exist");
         }
@@ -84,9 +87,11 @@ public class NoCodeEvaluationService {
 
             // Referenced elements resolve based on their visibility and the values map
             case NoCodeReference reference -> {
-                var value = elementData
-                    .get(reference.getElementId())
-                    .getValue();
+                var elementId = reference.getElementId();
+                var dataObject = elementId == null ? null : elementData.get(elementId);
+                var value = dataObject == null
+                        ? null
+                        : dataObject.getValue();
                 yield new NoCodeResult(value);
             }
 
@@ -116,7 +121,10 @@ public class NoCodeEvaluationService {
         try {
             return operator.evaluate(elementData, operandValues);
         } catch (NoCodeException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(
+                    "Failed to evaluate no-code operator '" + expression.getOperatorIdentifier() + "'",
+                    e
+            );
         }
     }
 }

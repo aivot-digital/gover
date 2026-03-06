@@ -64,7 +64,7 @@ public class NoCodeRegexExtractOperator extends NoCodeOperator {
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
-                        NoCodeDataType.String,
+                        NoCodeDataType.List,
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 "Text",
@@ -88,7 +88,12 @@ public class NoCodeRegexExtractOperator extends NoCodeOperator {
         String input = castToString(args[0]);
         String regex = castToString(args[1]);
 
-        Pattern pattern = Pattern.compile(regex);
+        Pattern pattern;
+        try {
+            pattern = Pattern.compile(regex);
+        } catch (Exception e) {
+            throw new NoCodeException("Ungültiger regulärer Ausdruck: " + regex);
+        }
         Matcher matcher = pattern.matcher(input);
 
         List<String> matches = new ArrayList<>();

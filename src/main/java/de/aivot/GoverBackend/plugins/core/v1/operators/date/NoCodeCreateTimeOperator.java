@@ -56,7 +56,7 @@ public class NoCodeCreateTimeOperator extends NoCodeOperator {
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
-                        NoCodeDataType.Date,
+                        NoCodeDataType.Time,
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Stunde",
@@ -76,10 +76,20 @@ public class NoCodeCreateTimeOperator extends NoCodeOperator {
         int hour = castToNumber(args[0]).intValue();
         int minute = castToNumber(args[1]).intValue();
 
+        if (hour < 0 || hour > 23) {
+            throw new NoCodeException("Ungültige Stunde: " + hour + ". Erwartet 0-23.");
+        }
+
+        if (minute < 0 || minute > 59) {
+            throw new NoCodeException("Ungültige Minute: " + minute + ". Erwartet 0-59.");
+        }
+
         var time = ZonedDateTime
                 .now()
                 .withHour(hour)
-                .withMinute(minute);
+                .withMinute(minute)
+                .withSecond(0)
+                .withNano(0);
 
         return new NoCodeResult(time);
     }

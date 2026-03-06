@@ -6,6 +6,8 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException;
 import de.aivot.GoverBackend.nocode.models.*;
 
+import java.util.Locale;
+
 public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
     @Override
     public String getIdentifier() {
@@ -89,9 +91,9 @@ public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
 
         var date = castToDateTime(args[0]);
         var amount = castToNumber(args[1]).intValue();
-        var unit = castToString(args[2]);
+        var unit = castToString(args[2]).trim().toLowerCase(Locale.ROOT);
 
-        date = switch (unit.toLowerCase()) {
+        date = switch (unit) {
             case NoCodeAddToDateOperator.DAYS_UNIT -> date.minusDays(amount);
             case NoCodeAddToDateOperator.WEEKS_UNIT -> date.minusWeeks(amount);
             case NoCodeAddToDateOperator.MONTHS_UNIT -> date.minusMonths(amount);

@@ -51,7 +51,11 @@ public class NoCodeExpression extends NoCodeOperand {
         for (NoCodeOperand operand : operands) {
             if (operand != null) {
                 switch (operand) {
-                    case NoCodeReference reference -> referencedIds.add(reference.getElementId());
+                    case NoCodeReference reference -> {
+                        if (reference.getElementId() != null) {
+                            referencedIds.add(reference.getElementId());
+                        }
+                    }
                     case NoCodeExpression expression -> referencedIds.addAll(expression.getReferencedIds());
                     default -> {
                     }

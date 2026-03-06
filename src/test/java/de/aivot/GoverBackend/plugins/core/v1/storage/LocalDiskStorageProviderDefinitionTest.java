@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.plugins.core.v1.storage;
 
+import de.aivot.GoverBackend.storage.exceptions.StorageException;
 import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,7 +43,7 @@ class LocalDiskStorageProviderDefinitionTest {
     }
 
     @Test
-    void rootFolder() {
+    void rootFolder() throws StorageException {
         var root = new LocalDiskStorageProviderDefinitionV1()
                 .rootFolder(config, true);
         assertNotNull(root);
@@ -53,7 +54,7 @@ class LocalDiskStorageProviderDefinitionTest {
     }
 
     @Test
-    void createFolder() {
+    void createFolder() throws StorageException {
         var target = new LocalDiskStorageProviderDefinitionV1()
                 .createFolder(config, "/new-folder");
 
@@ -67,7 +68,7 @@ class LocalDiskStorageProviderDefinitionTest {
     }
 
     @Test
-    void retrieveFolder() {
+    void retrieveFolder() throws StorageException {
         var target = new LocalDiskStorageProviderDefinitionV1()
                 .retrieveFolder(config, "/" + documentsFolder, true)
                 .orElse(null);
@@ -95,7 +96,7 @@ class LocalDiskStorageProviderDefinitionTest {
     }
 
     @Test
-    void deleteFolder() {
+    void deleteFolder() throws StorageException {
         var provider = new LocalDiskStorageProviderDefinitionV1();
         var folderPath = "/folder-to-delete";
 
@@ -109,7 +110,7 @@ class LocalDiskStorageProviderDefinitionTest {
     }
 
     @Test
-    void moveFolder() {
+    void moveFolder() throws StorageException {
         var provider = new LocalDiskStorageProviderDefinitionV1();
         var sourceFolderPath = "/documents/source-folder/";
         var targetFolderPath = "/documents/moved-folder/";
@@ -129,7 +130,7 @@ class LocalDiskStorageProviderDefinitionTest {
     }
 
     @Test
-    void copyFolder() {
+    void copyFolder() throws StorageException {
         var provider = new LocalDiskStorageProviderDefinitionV1();
         var sourceFolderPath = "/documents/source-copy-folder/";
         var targetFolderPath = "/documents/copied-folder/";
@@ -150,7 +151,7 @@ class LocalDiskStorageProviderDefinitionTest {
     }
 
     @Test
-    void storeDocument() {
+    void storeDocument() throws StorageException {
         var provider = new LocalDiskStorageProviderDefinitionV1();
         var documentPath = "/documents/test-document.txt";
         var documentData = "This is a test document.".getBytes();
@@ -162,7 +163,7 @@ class LocalDiskStorageProviderDefinitionTest {
     }
 
     @Test
-    void retrieveDocument() {
+    void retrieveDocument() throws StorageException {
         var provider = new LocalDiskStorageProviderDefinitionV1();
         var documentPath = "/documents/test-document.txt";
         var documentData = "This is a test document.".getBytes();
@@ -180,7 +181,7 @@ class LocalDiskStorageProviderDefinitionTest {
     }
 
      @Test
-    void retrieveDocumentContent() {
+    void retrieveDocumentContent() throws StorageException {
         var provider = new LocalDiskStorageProviderDefinitionV1();
         var documentPath = "/documents/test-document.txt";
         var documentData = "This is a test document.".getBytes();
@@ -198,7 +199,7 @@ class LocalDiskStorageProviderDefinitionTest {
      }
 
     @Test
-    void documentExists() {
+    void documentExists() throws StorageException {
         var provider = new LocalDiskStorageProviderDefinitionV1();
         var documentPath = "/documents/test-document.txt";
         var documentData = "This is a test document.".getBytes();
@@ -215,7 +216,7 @@ class LocalDiskStorageProviderDefinitionTest {
     }
 
     @Test
-    void deleteDocument() {
+    void deleteDocument() throws StorageException {
         var provider = new LocalDiskStorageProviderDefinitionV1();
         var documentPath = "/documents/document-to-delete.txt";
         var documentData = "This document will be deleted.".getBytes();
@@ -230,7 +231,7 @@ class LocalDiskStorageProviderDefinitionTest {
     }
 
     @Test
-    void moveDocument() {
+    void moveDocument() throws StorageException {
         var provider = new LocalDiskStorageProviderDefinitionV1();
         var sourcePath = "/documents/source.txt";
         var targetPath = "/documents/moved.txt";
@@ -248,7 +249,7 @@ class LocalDiskStorageProviderDefinitionTest {
     }
 
     @Test
-    void copyDocument() {
+    void copyDocument() throws StorageException {
         var provider = new LocalDiskStorageProviderDefinitionV1();
         var sourcePath = "/documents/source-copy.txt";
         var targetPath = "/documents/copied.txt";

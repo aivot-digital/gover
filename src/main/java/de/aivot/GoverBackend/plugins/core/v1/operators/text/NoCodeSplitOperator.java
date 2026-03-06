@@ -10,6 +10,7 @@ import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class NoCodeSplitOperator extends NoCodeOperator {
     @Override
@@ -86,6 +87,10 @@ public class NoCodeSplitOperator extends NoCodeOperator {
         var input = castToString(args[0]);
         var separator = castToString(args[1]);
 
-        return new NoCodeResult(List.of(input.split(separator)));
+        if (separator.isEmpty()) {
+            return new NoCodeResult(List.of(input));
+        }
+
+        return new NoCodeResult(List.of(input.split(Pattern.quote(separator))));
     }
 }

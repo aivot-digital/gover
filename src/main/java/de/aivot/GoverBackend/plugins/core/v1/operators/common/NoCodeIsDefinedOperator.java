@@ -8,6 +8,9 @@ import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 
+import java.util.Collection;
+import java.util.Map;
+
 public class NoCodeIsDefinedOperator extends NoCodeOperator {
     @Override
     public String getIdentifier() {
@@ -70,6 +73,15 @@ public class NoCodeIsDefinedOperator extends NoCodeOperator {
 
     @Override
     public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
-        return new NoCodeResult(args[0] != null);
+        if (args[0] == null) {
+            return new NoCodeResult(false);
+        }
+
+        return switch (args[0]) {
+            case String value -> new NoCodeResult(!value.isBlank());
+            case Collection<?> value -> new NoCodeResult(!value.isEmpty());
+            case Map<?, ?> value -> new NoCodeResult(!value.isEmpty());
+            default -> new NoCodeResult(true);
+        };
     }
 }

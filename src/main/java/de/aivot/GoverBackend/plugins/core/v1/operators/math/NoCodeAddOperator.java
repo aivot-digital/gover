@@ -85,6 +85,11 @@ public class NoCodeAddOperator extends NoCodeOperator {
     }
 
     @Override
+    protected boolean supportsVariableArgumentCount() {
+        return true;
+    }
+
+    @Override
     public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
         if (args.length < 2) {
             throw new NoCodeWrongArgumentCountException(2, args.length);

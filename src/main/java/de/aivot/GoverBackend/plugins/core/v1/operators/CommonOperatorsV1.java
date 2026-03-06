@@ -11,6 +11,7 @@ import de.aivot.GoverBackend.plugins.core.v1.operators.date.*;
 import de.aivot.GoverBackend.plugins.core.v1.operators.list.*;
 import de.aivot.GoverBackend.plugins.core.v1.operators.math.*;
 import de.aivot.GoverBackend.plugins.core.v1.operators.object.NoCodeObjectGetOperator;
+import de.aivot.GoverBackend.plugins.core.v1.operators.text.NoCodeConcatOperator;
 import de.aivot.GoverBackend.plugins.core.v1.operators.text.NoCodeRegexExtractOperator;
 import de.aivot.GoverBackend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
 import de.aivot.GoverBackend.plugins.core.v1.operators.text.NoCodeSplitOperator;
@@ -101,6 +102,7 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
                 new NoCodeObjectGetOperator(),
 
                 // Text
+                new NoCodeConcatOperator(),
                 new NoCodeRegexExtractOperator(),
                 new NoCodeRegexMatchOperator(),
                 new NoCodeSplitOperator(),

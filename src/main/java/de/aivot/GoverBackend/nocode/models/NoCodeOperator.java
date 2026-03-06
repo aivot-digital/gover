@@ -95,11 +95,23 @@ public abstract class NoCodeOperator {
             throw new NullPointerException("Arguments are null. Needs to be at least an empty array");
         }
 
+        var signatures = getSignatures();
+        if (signatures == null || signatures.length == 0) {
+            throw new NoCodeWrongArgumentCountException(0, args.length);
+        }
+
         var actualParametersLength = args.length;
         var someMatch = false;
-        for (var signature : getSignatures()) {
+        var minimumExpectedParametersLength = Integer.MAX_VALUE;
+        for (var signature : signatures) {
             var expectedParametersLength = signature.parameters().length;
+            minimumExpectedParametersLength = Math.min(minimumExpectedParametersLength, expectedParametersLength);
             if (actualParametersLength == expectedParametersLength) {
+                someMatch = true;
+                break;
+            }
+
+            if (supportsVariableArgumentCount() && actualParametersLength > expectedParametersLength) {
                 someMatch = true;
                 break;
             }
@@ -107,7 +119,7 @@ public abstract class NoCodeOperator {
 
 
         if (!someMatch) {
-            throw new NoCodeWrongArgumentCountException(getSignatures()[0].parameters().length, actualParametersLength);
+            throw new NoCodeWrongArgumentCountException(minimumExpectedParametersLength, actualParametersLength);
         }
 
         return performEvaluation(data, args);
@@ -136,6 +148,10 @@ public abstract class NoCodeOperator {
      */
     public String getDeprecatedMessage() {
         return null;
+    }
+
+    protected boolean supportsVariableArgumentCount() {
+        return false;
     }
 
     @Nullable
@@ -176,7 +192,7 @@ public abstract class NoCodeOperator {
                 return castToDateTime(objectToCast);
             }
             case LocalDateTime lReferenceObject -> {
-                return castToDateTime(lReferenceObject);
+                return castToDateTime(objectToCast);
             }
             default -> {
                 return null;

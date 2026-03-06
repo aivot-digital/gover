@@ -64,7 +64,7 @@ public class NoCodeListContainsOperator extends NoCodeOperator {
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
-                        NoCodeDataType.Number,
+                        NoCodeDataType.Boolean,
                         new NoCodeParameter(
                                 NoCodeDataType.Runtime,
                                 "Liste",
@@ -84,7 +84,15 @@ public class NoCodeListContainsOperator extends NoCodeOperator {
         var list = castToList(args[0]);
         var value = args[1];
 
+        if (value == null) {
+            return new NoCodeResult(list.stream().anyMatch(Objects::isNull));
+        }
+
         for (Object item : list) {
+            if (item == null) {
+                continue;
+            }
+
             var castedItem = castToTypeOfReference(value, item);
             if (Objects.equals(castedItem, value)) {
                 return new NoCodeResult(true);
