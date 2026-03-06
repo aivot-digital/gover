@@ -114,8 +114,7 @@ const DrawerGroups: DrawerGroup[] = [
                 icon: ModuleIcons.organization,
                 label: 'Organisation',
                 children: [
-                    {icon: ModuleIcons.departments, label: 'Fachbereiche', to: '/departments'},
-                    {icon: ModuleIcons.departments, label: 'Fachbereiche (Baum)', to: '/departments-tree'},
+                    {icon: ModuleIcons.departments, label: 'Organisationseinheiten', to: '/departments'},
                     {icon: ModuleIcons.teams, label: 'Teams', to: '/teams'},
                     {icon: ModuleIcons.users, label: 'Mitarbeiter:innen', to: '/users'},
                     {

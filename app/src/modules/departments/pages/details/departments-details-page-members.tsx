@@ -92,10 +92,9 @@ export function DepartmentsDetailsPageMembers() {
                             <>
                                 <Typography>
                                     Durch das Entfernen der
-                                    Mitarbeiter:in <strong>{membershipItem.userFullName}</strong> aus dem
-                                    Fachbereich <strong>{item?.name}</strong> verliert diese alle zugewiesenen Rollen
-                                    und Berechtigungen in diesem
-                                    Fachbereich.
+                                    Mitarbeiter:in <strong>{membershipItem.userFullName}</strong> aus der
+                                    Organisationseinheit <strong>{item?.name}</strong> verliert diese alle zugewiesenen Rollen
+                                    und Berechtigungen in dieser Organisationseinheit.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
                                     Diese Aktion kann nicht rückgängig gemacht werden. Stellen Sie sicher, dass Sie die
@@ -111,7 +110,7 @@ export function DepartmentsDetailsPageMembers() {
                             }
 
                             dispatch(setLoadingMessage({
-                                message: `Entferne Mitarbeiter:in ${membershipItem.userFullName} aus dem Fachbereich`,
+                                message: `Entferne Mitarbeiter:in ${membershipItem.userFullName} aus der Organisationseinheit`,
                                 blocking: true,
                                 estimatedTime: 5000,
                             }));
@@ -127,7 +126,7 @@ export function DepartmentsDetailsPageMembers() {
                                         dispatch(showErrorSnackbar(error.message));
                                     } else {
                                         console.error(error);
-                                        dispatch(showErrorSnackbar('Fehler beim Entfernen der Mitarbeiter:in aus dem Fachbereich'));
+                                        dispatch(showErrorSnackbar('Fehler beim Entfernen der Mitarbeiter:in aus der Organisationseinheit'));
                                     }
                                 })
                                 .finally(() => {
@@ -162,7 +161,7 @@ export function DepartmentsDetailsPageMembers() {
         }
 
         dispatch(setLoadingMessage({
-            message: `Füge Mitarbeiter:in ${user.fullName} zum Fachbereich hinzu`,
+            message: `Füge Mitarbeiter:in ${user.fullName} zur Organisationseinheit hinzu`,
             blocking: true,
             estimatedTime: 5000,
         }));
@@ -194,7 +193,7 @@ export function DepartmentsDetailsPageMembers() {
                     dispatch(showErrorSnackbar(error.message));
                 } else {
                     console.error(error);
-                    dispatch(showErrorSnackbar('Fehler beim Hinzufügen der Mitarbeiter:in zum Fachbereich'));
+                    dispatch(showErrorSnackbar('Fehler beim Hinzufügen der Mitarbeiter:in zur Organisationseinheit'));
                 }
             })
             .finally(() => {
@@ -262,7 +261,7 @@ export function DepartmentsDetailsPageMembers() {
                     mb: 1,
                 }}
             >
-                Mitarbeiter:innen des Fachbereichs
+                Mitarbeiter:innen der Organisationseinheit
             </Typography>
 
             <Typography
@@ -271,8 +270,8 @@ export function DepartmentsDetailsPageMembers() {
                     maxWidth: 900,
                 }}
             >
-                Eine Liste der Mitarbeiter:innen, die diesem Fachbereich zugeordnet sind. Mitarbeiter:innen können
-                unterschiedliche Rollen besitzen, die ihre Berechtigungen innerhalb des Fachbereichs definieren.
+                Eine Liste der Mitarbeiter:innen, die dieser Organisationseinheit zugeordnet sind. Mitarbeiter:innen können
+                unterschiedliche Rollen besitzen, die ihre Berechtigungen innerhalb der Organisationseinheit definieren.
             </Typography>
 
             <GenericList<VDepartmentMembershipWithDetailsEntity>

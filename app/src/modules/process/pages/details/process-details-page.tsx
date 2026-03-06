@@ -233,7 +233,7 @@ export function ProcessDetailsPage(): ReactNode {
                 processId: processFlow.definition.id,
                 processVersion: processFlow.version.processVersion,
                 processNodeDefinitionKey: nodeProvider.key,
-                processNodeDefinitionVersion: nodeProvider.version,
+                processNodeDefinitionVersion: nodeProvider.version ?? 1,
             })
             .then((newNode) => {
                 setProcessFlow((prevProcess) => {
@@ -284,7 +284,7 @@ export function ProcessDetailsPage(): ReactNode {
                 processId: processFlow.definition.id,
                 processVersion: processFlow.version.processVersion,
                 processNodeDefinitionKey: nodeProvider.key,
-                processNodeDefinitionVersion: nodeProvider.version,
+                processNodeDefinitionVersion: nodeProvider.version ?? 1,
             });
 
         const edgeApi = new ProcessDefinitionEdgeApiService();
@@ -363,7 +363,7 @@ export function ProcessDetailsPage(): ReactNode {
                 processId: processFlow.definition.id,
                 processVersion: processFlow.version.processVersion,
                 processNodeDefinitionKey: nodeProvider.key,
-                processNodeDefinitionVersion: nodeProvider.version,
+                processNodeDefinitionVersion: nodeProvider.version ?? 1,
             });
 
         const newEdgeToNewNode = await edgeApi

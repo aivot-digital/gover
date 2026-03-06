@@ -1,4 +1,4 @@
-import {Box, Button, Grid, Typography} from '@mui/material';
+import {Box, Breadcrumbs, Button, Grid, Tooltip, Typography} from '@mui/material';
 import React, {ComponentType, useContext, useEffect, useMemo, useState} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
@@ -28,14 +28,17 @@ import {DepartmentApiService} from '../../services/department-api-service';
 import {getDepartmentTypeLabelGenitiv} from '../../utils/department-utils';
 import {FormApiService} from '../../../forms/services/form-api-service';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import MoveGroup from '@aivot/mui-material-symbols-400-outlined/dist/move-group/MoveGroup';
+import {MoveDepartmentDialog} from '../../dialogs/move-department-dialog';
+import {VDepartmentShadowedApiService} from '../../services/v-department-shadowed-api-service';
 
 
 export const DepartmentSchema = yup.object({
     name: yup.string()
         .trim()
-        .min(3, 'Der Name des Fachbereichs muss mindestens 3 Zeichen lang sein.')
-        .max(96, 'Der Name des Fachbereichs darf maximal 96 Zeichen lang sein.')
-        .required('Der Name des Fachbereichs ist ein Pflichtfeld.'),
+        .min(3, 'Der Name der Organisationseinheit muss mindestens 3 Zeichen lang sein.')
+        .max(96, 'Der Name der Organisationseinheit darf maximal 96 Zeichen lang sein.')
+        .required('Der Name der Organisationseinheit ist ein Pflichtfeld.'),
     address: yup.string()
         .trim()
         .min(3, 'Die Adresse muss mindestens 3 Zeichen lang sein.')
@@ -101,6 +104,7 @@ export function DepartmentsDetailsPageIndex() {
     const {
         item,
         setItem,
+        setAdditionalData,
         isBusy,
         setIsBusy,
         isEditable,
@@ -115,7 +119,7 @@ export function DepartmentsDetailsPageIndex() {
         dispatch(addSnackbarMessage({
             severity: SnackbarSeverity.Warning,
             type: SnackbarType.Dismissable,
-            message: 'Dieser Fachbereich kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
+            message: 'Diese Organisationseinheit kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
             key: 'no-edit-permission-department',
         }));
 
@@ -142,6 +146,7 @@ export function DepartmentsDetailsPageIndex() {
     const [confirmDeleteAction, setConfirmDeleteAction] = useState<(() => void) | undefined>(undefined);
     const [relatedApplications, setRelatedApplications] = useState<ConstraintLinkProps[] | undefined>(undefined);
     const [availableThemes, setAvailableThemes] = useState<ThemeResponseDTO[]>();
+    const [showMoveDialog, setShowMoveDialog] = useState(false);
 
     useEffect(() => {
         new ThemesApiService(api)
@@ -190,7 +195,7 @@ export function DepartmentsDetailsPageIndex() {
                     setItem(newDepartment);
                     reset();
 
-                    dispatch(showSuccessSnackbar('Neuer Fachbereich erfolgreich angelegt.'));
+                    dispatch(showSuccessSnackbar('Neue Organisationseinheit erfolgreich angelegt.'));
 
                     // use setTimeout instead of useEffect to prevent unnecessary rerender
                     setTimeout(() => {
@@ -213,7 +218,7 @@ export function DepartmentsDetailsPageIndex() {
                     setItem(updatedDepartment);
                     reset();
 
-                    dispatch(showSuccessSnackbar('Änderungen an Fachbereich erfolgreich gespeichert.'));
+                    dispatch(showSuccessSnackbar('Änderungen an der Organisationseinheit erfolgreich gespeichert.'));
                 })
                 .catch(err => {
                     console.error(err);
@@ -276,13 +281,39 @@ export function DepartmentsDetailsPageIndex() {
                 navigate('/departments', {
                     replace: true,
                 });
-                dispatch(showSuccessSnackbar('Der Fachbereich wurde erfolgreich gelöscht.'));
+                dispatch(showSuccessSnackbar('Die Organisationseinheit wurde erfolgreich gelöscht.'));
             })
             .catch(() => dispatch(showErrorSnackbar('Beim Löschen ist ein Fehler aufgetreten.')))
             .finally(() => setIsBusy(false));
     };
 
     const doNotShadow = department.depth === 0 && parentOrgUnitId == null;
+    const canMoveDepartment = department.id !== 0 && isEditable && hasNotChanged;
+    const moveDisabledReason = isBusy
+        ? 'Bitte warten, bis die aktuelle Aktion abgeschlossen ist.'
+        : department.id === 0
+            ? 'Die Organisationseinheit kann erst nach dem Anlegen verschoben werden.'
+            : !isEditable
+                ? 'Die Organisationseinheit kann nur von Administrator:innen verschoben werden.'
+                : !hasNotChanged
+                    ? 'Bitte speichern oder verwerfen Sie zuerst Ihre Änderungen.'
+                    : null;
+
+    const orgUnitPathParts = (() => {
+        const safeName = department.name?.trim() || 'Unbenannt';
+
+        if (department.id === 0 && parentOrgUnitId != null && additionalData?.shadowedDepartment != null) {
+            const parentPath = [
+                ...(additionalData.shadowedDepartment.parentNames ?? []),
+                additionalData.shadowedDepartment.name,
+            ].filter(Boolean);
+
+            return [...parentPath, safeName];
+        }
+
+        const parentPath = additionalData?.shadowedDepartment?.parentNames ?? [];
+        return [...parentPath, safeName];
+    })();
 
     return (
         <Box>
@@ -301,7 +332,7 @@ export function DepartmentsDetailsPageIndex() {
                     maxWidth: 900,
                 }}
             >
-                Hinterlegen Sie grundsätzliche Informationen über diesen Fachbereich. Diese Informationen werden in der Anwendung angezeigt und sind für die Nutzer:innen sichtbar.
+                Hinterlegen Sie grundsätzliche Informationen über diese Organisationseinheit. Diese Informationen werden in der Anwendung angezeigt und sind für die Nutzer:innen sichtbar.
             </Typography>
             <Grid
                 container
@@ -314,7 +345,7 @@ export function DepartmentsDetailsPageIndex() {
                     }}
                 >
                     <TextFieldComponent
-                        label="Name des Fachbereichs"
+                        label="Name der Organisationseinheit"
                         value={department.name}
                         onChange={handleInputChange('name')}
                         onBlur={handleInputBlur('name')}
@@ -324,6 +355,50 @@ export function DepartmentsDetailsPageIndex() {
                         error={errors.name}
                         disabled={!isEditable}
                     />
+                    <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{
+                            mt: 0.25,
+                            display: 'block',
+                        }}
+                    >
+                        Pfad der Organisationseinheit:
+                    </Typography>
+                    <Breadcrumbs
+                        separator="›"
+                        maxItems={5}
+                        itemsBeforeCollapse={2}
+                        itemsAfterCollapse={2}
+                        sx={{
+                            mt: 0,
+                            mb: 2,
+                            color: 'text.secondary',
+                            '& .MuiBreadcrumbs-ol': {
+                                flexWrap: 'nowrap',
+                                overflow: 'hidden',
+                            },
+                        }}
+                    >
+                        {
+                            orgUnitPathParts.map((segment, index) => (
+                                <Typography
+                                    key={`${department.id}-${index}`}
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{
+                                        maxWidth: 220,
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                    }}
+                                    title={segment}
+                                >
+                                    {segment}
+                                </Typography>
+                            ))
+                        }
+                    </Breadcrumbs>
                 </Grid>
                 <Grid
                     size={{
@@ -336,6 +411,7 @@ export function DepartmentsDetailsPageIndex() {
                         xs: 12,
                         lg: 6,
                     }}
+                    sx={{mt: 2}}
                 >
                     <ShadowedInput<TextFieldComponentProps, typeof TextFieldComponent>
                         doNotShadow={doNotShadow}
@@ -352,7 +428,7 @@ export function DepartmentsDetailsPageIndex() {
                             value: additionalData?.shadowedDepartment.address ?? '',
                             disabled: true,
                         }}
-                        label="Adresse des Fachbereichs"
+                        label="Adresse der Organisationseinheit"
                         value={department.address}
                         onChange={handleInputChange('address')}
                         onBlur={handleInputBlur('address')}
@@ -372,10 +448,10 @@ export function DepartmentsDetailsPageIndex() {
                     mb: 1,
                 }}
             >
-                Farbschema des Fachbereichs
+                Farbschema der Organisationseinheit
             </Typography>
             <Typography sx={{mb: 2, maxWidth: 900}}>
-                Hinterlegen Sie das Standard-Farbschema, das für Formulare dieses Fachbereichs verwendet werden soll.
+                Hinterlegen Sie das Standard-Farbschema, das für Formulare dieser Organisationseinheit verwendet werden soll.
                 Dieses überschreibt das System-Farbschema.
                 Bearbeiter:innen können für Formulare weiterhin ein individuelles Farbschema auswählen.
                 Wenn Sie kein Farbschema auswählen, wird das System-Farbschema verwendet.
@@ -405,7 +481,7 @@ export function DepartmentsDetailsPageIndex() {
                             value: additionalData?.shadowedDepartment.themeId?.toString() ?? undefined,
                             disabled: true,
                         }}
-                        label="Farbschema des Fachbereichs"
+                        label="Farbschema der Organisationseinheit"
                         value={department.themeId?.toString()}
                         onChange={(val) => {
                             if (val == null) {
@@ -714,7 +790,7 @@ export function DepartmentsDetailsPageIndex() {
             </Typography>
 
             <Typography sx={{mb: 2, maxWidth: 900}}>
-                Systembenachrichtigungen (wie z.B. Eingang eines neuen Antrags) werden grundsätzlich an jede Mitarbeiter:in im Fachbereich gesendet.
+                Systembenachrichtigungen (wie z.B. Eingang eines neuen Antrags) werden grundsätzlich an jede Mitarbeiter:in in der Organisationseinheit gesendet.
                 Wenn Sie hier eine oder mehrere zentrale E-Mail-Adressen hinterlegen, erhalten nur noch diese die Systembenachrichtigungen.
             </Typography>
 
@@ -775,25 +851,47 @@ export function DepartmentsDetailsPageIndex() {
 
                 {
                     department.id !== 0 &&
-                    <Button
-                        variant="outlined"
-                        onClick={checkAndHandleDelete}
-                        disabled={isBusy || !isEditable}
-                        color="error"
+                    <Box
                         sx={{
+                            display: 'flex',
+                            gap: 2,
                             marginLeft: 'auto',
                         }}
-                        startIcon={<Delete />}
                     >
-                        Löschen
-                    </Button>
+                        <Tooltip
+                            title={moveDisabledReason ?? ''}
+                            disableHoverListener={moveDisabledReason == null}
+                        >
+                            <span>
+                                <Button
+                                    variant="outlined"
+                                    onClick={() => {
+                                        setShowMoveDialog(true);
+                                    }}
+                                    disabled={isBusy || !canMoveDepartment}
+                                    startIcon={<MoveGroup />}
+                                >
+                                    Verschieben
+                                </Button>
+                            </span>
+                        </Tooltip>
+                        <Button
+                            variant="outlined"
+                            onClick={checkAndHandleDelete}
+                            disabled={isBusy || !isEditable}
+                            color="error"
+                            startIcon={<Delete />}
+                        >
+                            Löschen
+                        </Button>
+                    </Box>
                 }
             </Box>
 
             {changeBlocker.dialog}
 
             <ConfirmDialog
-                title="Fachbereich löschen"
+                title="Organisationseinheit löschen"
                 onCancel={() => setConfirmDeleteAction(undefined)}
                 onConfirm={confirmDeleteAction}
                 confirmationText={department.name}
@@ -801,17 +899,44 @@ export function DepartmentsDetailsPageIndex() {
                 confirmButtonText="Ja, endgültig löschen"
             >
                 <Typography>
-                    Möchten Sie diesen Fachbereich wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+                    Möchten Sie diese Organisationseinheit wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
                 </Typography>
             </ConfirmDialog>
 
             <ConstraintDialog
                 open={showConstraintDialog}
                 onClose={() => setShowConstraintDialog(false)}
-                message="Dieser Fachbereich kann (noch) nicht gelöscht werden, da er noch für Formulare als entwickelnder, zuständiger oder bewirtschaftender Fachbereich zugewiesen ist."
-                solutionText="Bitte übertragen Sie die Formulare an einen anderen Fachbereich und versuchen Sie es erneut:"
+                message="Diese Organisationseinheit kann (noch) nicht gelöscht werden, da sie noch für Formulare als entwickelnde, zuständige oder bewirtschaftende Organisationseinheit zugewiesen ist."
+                solutionText="Bitte übertragen Sie die Formulare an eine andere Organisationseinheit und versuchen Sie es erneut:"
                 links={relatedApplications}
             />
+
+            // TODO: The move does currently not correctly refresh this page.
+            {
+                showMoveDialog &&
+                <MoveDepartmentDialog
+                    department={department}
+                    onClose={() => {
+                        setShowMoveDialog(false);
+                    }}
+                    onMoved={(updatedDepartment) => {
+                        setItem(updatedDepartment);
+                        reset();
+                        setShowMoveDialog(false);
+
+                        new VDepartmentShadowedApiService()
+                            .retrieve(updatedDepartment.id)
+                            .then((shadowedDepartment) => {
+                                setAdditionalData({
+                                    shadowedDepartment,
+                                });
+                            })
+                            .catch((error) => {
+                                console.error(error);
+                            });
+                    }}
+                />
+            }
         </Box>
     );
 }

@@ -37,7 +37,7 @@ ProcessDefinitionNodeFilter
             processId: 0,
             processVersion: 0,
             processNodeDefinitionKey: '',
-            processNodeDefinitionVersion: 0,
+            processNodeDefinitionVersion: 1,
             name: null,
             description: null,
             dataKey: generateId(5),

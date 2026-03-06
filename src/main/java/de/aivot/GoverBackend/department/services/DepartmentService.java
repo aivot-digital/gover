@@ -20,7 +20,9 @@ import org.springframework.stereotype.Service;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class DepartmentService implements EntityService<DepartmentEntity, Integer> {
@@ -107,7 +109,8 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
         entity.setId(existingDepartment.getId());
         entity.setCreated(existingDepartment.getCreated());
         entity.setUpdated(LocalDateTime.now());
-        entity.setParentDepartmentId(existingDepartment.getParentDepartmentId());
+        entity.setDepth(existingDepartment.getDepth());
+        validateParentHierarchy(id, entity.getParentDepartmentId());
 
         // Check theme existence and set to null if not exists
         var themeId = entity.getThemeId();
@@ -120,8 +123,42 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
             }
         }
 
+        entity.setParentDepartmentId(entity.getParentDepartmentId());
+
         return departmentRepository
                 .save(entity);
+    }
+
+    private void validateParentHierarchy(
+            @Nonnull Integer departmentId,
+            @Nullable Integer requestedParentDepartmentId
+    ) throws ResponseException {
+        if (requestedParentDepartmentId == null) {
+            return;
+        }
+
+        if (requestedParentDepartmentId.equals(departmentId)) {
+            throw ResponseException.badRequest("Eine Organisationseinheit kann nicht sich selbst als übergeordnete Organisationseinheit haben.");
+        }
+
+        var currentParentId = requestedParentDepartmentId;
+        Set<Integer> visited = new HashSet<>();
+
+        while (currentParentId != null) {
+            if (!visited.add(currentParentId)) {
+                throw ResponseException.badRequest("Die Hierarchie der Organisationseinheiten enthält einen Zyklus.");
+            }
+
+            if (currentParentId.equals(departmentId)) {
+                throw ResponseException.badRequest("Die ausgewählte übergeordnete Organisationseinheit befindet sich in der Hierarchie unterhalb der zu verschiebenden Organisationseinheit.");
+            }
+
+            var currentParent = departmentRepository
+                    .findById(currentParentId)
+                    .orElseThrow(() -> ResponseException.badRequest("Die ausgewählte übergeordnete Organisationseinheit existiert nicht."));
+
+            currentParentId = currentParent.getParentDepartmentId();
+        }
     }
 
     @Override

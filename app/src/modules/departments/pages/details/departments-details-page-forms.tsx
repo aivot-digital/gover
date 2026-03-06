@@ -67,11 +67,11 @@ export function DepartmentsDetailsPageForms() {
                 variant="h5"
                 sx={{mt: 1.5, mb: 1}}
             >
-                Formulare des Fachbereichs
+                Formulare der Organisationseinheit
             </Typography>
 
             <Typography sx={{mb: 3, maxWidth: 900}}>
-                Eine Liste aller Formulare, die von diesem Fachbereich entwickelt, bewirtschaftet oder verwaltet werden.
+                Eine Liste aller Formulare, die von dieser Organisationseinheit entwickelt, bewirtschaftet oder verwaltet werden.
             </Typography>
 
             <GenericList<FormEntity>
