@@ -270,22 +270,28 @@ export function Organigram(): React.ReactElement {
                         <OrganigramLoadingSkeleton />
                     ) : (
                         <Stack spacing={5} sx={{mt: 2.5, pb: 7}}>
-                            <Box
-                                sx={getCardGridSx(rootDepartments.length)}
-                            >
-                                {
-                                    rootDepartments.map((dept) => (
-                                        <Box
-                                            key={dept.id}
-                                            sx={getRootCardItemSx(rootDepartments.length)}
-                                        >
-                                            <DepartmentNode
-                                                department={dept}
-                                            />
-                                        </Box>
-                                    ))
-                                }
-                            </Box>
+                            {
+                                rootDepartments.length === 0 ? (
+                                    <OrganigramSectionEmptyState message="Keine Organisationseinheiten vorhanden." />
+                                ) : (
+                                    <Box
+                                        sx={getCardGridSx(rootDepartments.length)}
+                                    >
+                                        {
+                                            rootDepartments.map((dept) => (
+                                                <Box
+                                                    key={dept.id}
+                                                    sx={getRootCardItemSx(rootDepartments.length)}
+                                                >
+                                                    <DepartmentNode
+                                                        department={dept}
+                                                    />
+                                                </Box>
+                                            ))
+                                        }
+                                    </Box>
+                                )
+                            }
 
                             <Divider />
 
@@ -293,34 +299,62 @@ export function Organigram(): React.ReactElement {
                                 <Typography variant="h6" sx={{mb: 2.5, fontWeight: 700}}>
                                     Teams
                                 </Typography>
-                                <Box
-                                    sx={getCardGridSx(teams.length)}
-                                >
-                                    {
-                                        teams.length === 0 ? (
-                                            <Typography color="text.secondary">
-                                                Keine Teams vorhanden.
-                                            </Typography>
-                                        ) : (
-                                            teams.map((team) => (
-                                                <Box
-                                                    key={team.id}
-                                                    sx={getCardItemSx(teams.length)}
-                                                >
-                                                    <TeamNode
-                                                        team={team}
-                                                    />
-                                                </Box>
-                                            ))
-                                        )
-                                    }
-                                </Box>
+                                {
+                                    teams.length === 0 ? (
+                                        <OrganigramSectionEmptyState message="Keine Teams vorhanden." />
+                                    ) : (
+                                        <Box
+                                            sx={getCardGridSx(teams.length)}
+                                        >
+                                            {
+                                                teams.map((team) => (
+                                                    <Box
+                                                        key={team.id}
+                                                        sx={getCardItemSx(teams.length)}
+                                                    >
+                                                        <TeamNode
+                                                            team={team}
+                                                        />
+                                                    </Box>
+                                                ))
+                                            }
+                                        </Box>
+                                    )
+                                }
                             </Box>
                         </Stack>
                     )
                 }
             </Box>
         </PageWrapper>
+    );
+}
+
+interface OrganigramSectionEmptyStateProps {
+    message: string;
+}
+
+function OrganigramSectionEmptyState(props: OrganigramSectionEmptyStateProps): React.ReactElement {
+    const {message} = props;
+
+    return (
+        <Paper
+            variant="outlined"
+            sx={{
+                borderColor: 'divider',
+                borderRadius: 2,
+                px: 2,
+                py: 2,
+                bgcolor: 'background.paper',
+            }}
+        >
+            <Typography
+                variant="body2"
+                color="text.secondary"
+            >
+                {message}
+            </Typography>
+        </Paper>
     );
 }
 
@@ -466,11 +500,20 @@ function DepartmentNode(props: DepartmentNodeProps): React.ReactElement {
                 </Box>
 
                 {
-                    department.members.length > 0 &&
-                    <MembersList
-                        members={department.members}
-                        managementLinkTo={`/departments/${department.id}/members`}
-                    />
+                    department.members.length > 0 ? (
+                        <MembersList
+                            members={department.members}
+                            managementLinkTo={`/departments/${department.id}/members`}
+                        />
+                    ) : (
+                        <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{mt: 0.5}}
+                        >
+                            Keine Mitarbeiter:innen zugewiesen.
+                        </Typography>
+                    )
                 }
             </Paper>
 
@@ -650,7 +693,7 @@ function TeamNode(props: TeamNodeProps): React.ReactElement {
                         color="text.secondary"
                         sx={{mt: 0.5}}
                     >
-                        Keine Mitglieder zugewiesen.
+                        Keine Mitarbeiter:innen zugewiesen.
                     </Typography>
                 )
             }
@@ -710,6 +753,8 @@ function MembersList(props: MembersListProps): React.ReactElement {
                                     <StringAvatar
                                         name={memberName}
                                         sx={{width: 28, height: 28, fontSize: 12}}
+                                        backgroundMode={'theme'}
+                                        showInitials={true}
                                     />
                                 </ListItemAvatar>
                                 <ListItemText

@@ -1,6 +1,7 @@
 import React from 'react';
 import {Box, DialogContent, Divider, IconButton, Tooltip, Typography} from '@mui/material';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
+import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
 import {getElementNameForType} from '../../../data/element-type/element-names';
 import {type ElementTypesMap} from '../../../data/element-type/element-types-map';
 import {ElementType} from '../../../data/element-type/element-type';
@@ -14,6 +15,26 @@ import {NumberFieldComponent} from '../../../components/number-field/number-fiel
 import {RadioFieldComponent} from '../../../components/radio-field/radio-field-component';
 import {SelectFieldComponent} from '../../../components/select-field/select-field-component';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
+import {ChipInputFieldComponent} from '../../../components/chip-input-field/chip-input-field-component';
+import {DateTimeFieldComponent} from '../../../components/date-time-field/date-time-field-component';
+import {DateRangeFieldComponent} from '../../../components/date-range-field/date-range-field-component';
+import {TimeRangeFieldComponent} from '../../../components/time-range-field/time-range-field-component';
+import {DateTimeRangeFieldComponent} from '../../../components/date-time-range-field/date-time-range-field-component';
+import {MapPointFieldComponent} from '../../../components/map-point-field/map-point-field-component';
+import {RichTextInputComponent} from '../../../components/rich-text-input-component/rich-text-input-component';
+import {CodeInputFieldComponent} from '../../../components/code-input-field/code-input-field-component';
+import {DomainUserSelectFieldComponent} from '../../../components/domain-user-select-field/domain-user-select-field-component';
+import {AssignmentContextFieldComponent} from '../../../components/assignment-context-field/assignment-context-field-component';
+import {DataModelSelectFieldComponent} from '../../../components/data-model-select-field/data-model-select-field-component';
+import {DataObjectSelectFieldComponent} from '../../../components/data-object-select-field/data-object-select-field-component';
+import {
+    createDomainAndUserSelectValueKey,
+    createOrgUnitOptionValue,
+    createTeamOptionValue,
+    createUserOptionValue,
+} from '../../../components/domain-user-select-field/domain-user-select-options';
+import {getDepartmentTypeIcons} from '../../../modules/departments/utils/department-utils';
+import {ModuleIcons} from '../../../shells/staff/data/module-icons';
 
 const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Alert]: (
@@ -541,6 +562,361 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             </Box>
         </Box>
     ),
+    [ElementType.ChipInput]: (
+        <Box>
+            <Typography>
+                Das Tag-Liste (Schlagwörter)-Element dient zur Erfassung mehrerer kurzer Freitext-Einträge, z. B. Schlagwörter
+                oder Stichpunkte.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <ChipInputFieldComponent
+                    label="Schlagwörter"
+                    value={['Wohnen', 'Familie']}
+                    onChange={() => {
+                    }}
+                    placeholder="Eintrag hinzufügen"
+                    hint="Drücken Sie Enter, um einen Eintrag zu übernehmen."
+                />
+            </Box>
+
+            <Box sx={{mt: 2}}>
+                <ChipInputFieldComponent
+                    label="Schlagwörter"
+                    value={[]}
+                    onChange={() => {
+                    }}
+                    error="Bitte geben Sie mindestens einen Eintrag an."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.DateTime]: (
+        <Box>
+            <Typography>
+                Das Datum und Uhrzeit-Element dient Ihnen dazu, einen konkreten Zeitpunkt abzufragen.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <DateTimeFieldComponent
+                    label="Datum und Uhrzeit"
+                    value={new Date().toISOString()}
+                    onChange={() => {
+                    }}
+                    hint="Bitte wählen Sie Datum und Uhrzeit."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.DateRange]: (
+        <Box>
+            <Typography>
+                Das Element „Datumsspanne“ ermöglicht die Erfassung eines Start- und Enddatums.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <DateRangeFieldComponent
+                    label="Datumsspanne"
+                    value={{
+                        start: new Date().toISOString(),
+                        end: new Date().toISOString(),
+                    }}
+                    onChange={() => {
+                    }}
+                    hint="Bitte geben Sie den Zeitraum an."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.TimeRange]: (
+        <Box>
+            <Typography>
+                Das Element „Zeitspanne“ ermöglicht die Erfassung einer Start- und Enduhrzeit.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <TimeRangeFieldComponent
+                    label="Zeitspanne"
+                    value={{
+                        start: new Date().toISOString(),
+                        end: new Date().toISOString(),
+                    }}
+                    onChange={() => {
+                    }}
+                    hint="Bitte geben Sie die Uhrzeitspanne an."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.DateTimeRange]: (
+        <Box>
+            <Typography>
+                Das Element „Datum- und Zeitspanne“ ermöglicht die Erfassung eines Start- und Endzeitpunkts.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <DateTimeRangeFieldComponent
+                    label="Datum- und Zeitspanne"
+                    value={{
+                        start: new Date().toISOString(),
+                        end: new Date().toISOString(),
+                    }}
+                    onChange={() => {
+                    }}
+                    hint="Bitte geben Sie den Zeitraum an."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.MapPoint]: (
+        <Box>
+            <Typography>
+                Das Kartenpunkt-Element ermöglicht die Erfassung eines Standorts auf einer Karte.
+            </Typography>
+            <Typography sx={{mt: 2}}>
+                Der aktuelle Stand ist eine technische Preview. Ein produktiver Einsatz wird derzeit nicht empfohlen.
+            </Typography>
+            <AlertComponent
+                color="warning"
+                sx={{mt: 2}}
+            >
+                Die technische Preview nutzt öffentliche OpenStreetMap- und Nominatim-Dienste.
+                Dadurch bestehen insbesondere Risiken bei Datenschutz, Verfügbarkeit und Rate Limits.
+            </AlertComponent>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <MapPointFieldComponent
+                    label="Standort"
+                    value={{
+                        latitude: 52.52,
+                        longitude: 13.405,
+                        address: 'Berlin, Deutschland',
+                    }}
+                    onChange={() => {
+                    }}
+                    hint="Klicken Sie in die Karte oder suchen Sie nach einer Adresse."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.DomainAndUserSelect]: (
+        <Box>
+            <Typography>
+                Das Domänen- und Mitarbeitendenauswahl-Element ermöglicht die Mehrfachauswahl von
+                Organisationseinheiten, Teams und Mitarbeitenden.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <DomainUserSelectFieldComponent
+                    label="Personenkreis"
+                    value={[
+                        {
+                            type: 'orgUnit',
+                            id: '1',
+                        },
+                        {
+                            type: 'user',
+                            id: 'user_123',
+                        },
+                    ]}
+                    onChange={() => {
+                    }}
+                    options={[
+                        {
+                            value: createOrgUnitOptionValue(1),
+                            key: createDomainAndUserSelectValueKey(createOrgUnitOptionValue(1)),
+                            label: 'Ordnungsamt',
+                            subLabel: 'Bereich',
+                            group: 'Organisationseinheiten',
+                            icon: getDepartmentTypeIcons(3),
+                        },
+                        {
+                            value: createTeamOptionValue(7),
+                            key: createDomainAndUserSelectValueKey(createTeamOptionValue(7)),
+                            label: 'Bürgerbüro Nord',
+                            group: 'Teams',
+                            icon: ModuleIcons.teams,
+                        },
+                        {
+                            value: createUserOptionValue('user_123'),
+                            key: createDomainAndUserSelectValueKey(createUserOptionValue('user_123')),
+                            label: 'Wagner, Marie-Therese',
+                            subLabel: 'm.wagner@example.org',
+                            group: 'Mitarbeitende',
+                            icon: <PersonOutlineOutlinedIcon />,
+                        },
+                    ]}
+                    hint="Optionen werden im Formular asynchron geladen und nach Kategorien gruppiert."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.AssignmentContext]: (
+        <Box>
+            <Typography>
+                Das Element „Verantwortlicher Personenkreis“ kombiniert die Auswahl von Organisationseinheiten,
+                Teams und Mitarbeitenden mit zusätzlichen Zuweisungspräferenzen.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <AssignmentContextFieldComponent
+                    domainAndUserSelectionLabel="Verantwortlicher Personenkreis"
+                    value={{
+                        domainAndUserSelection: [
+                            {
+                                type: 'orgUnit',
+                                id: '1',
+                            },
+                            {
+                                type: 'user',
+                                id: 'user_123',
+                            },
+                        ],
+                        preferPreviousTaskAssignee: true,
+                        preferUninvolvedUser: false,
+                        preferProcessInstanceAssignee: false,
+                    }}
+                    onChange={() => {
+                    }}
+                    options={[
+                        {
+                            value: createOrgUnitOptionValue(1),
+                            key: createDomainAndUserSelectValueKey(createOrgUnitOptionValue(1)),
+                            label: 'Ordnungsamt',
+                            subLabel: 'Bereich',
+                            group: 'Organisationseinheiten',
+                            icon: getDepartmentTypeIcons(3),
+                        },
+                        {
+                            value: createTeamOptionValue(7),
+                            key: createDomainAndUserSelectValueKey(createTeamOptionValue(7)),
+                            label: 'Bürgerbüro Nord',
+                            group: 'Teams',
+                            icon: ModuleIcons.teams,
+                        },
+                        {
+                            value: createUserOptionValue('user_123'),
+                            key: createDomainAndUserSelectValueKey(createUserOptionValue('user_123')),
+                            label: 'Wagner, Marie-Therese',
+                            subLabel: 'Mitarbeiter:in',
+                            group: 'Mitarbeitende',
+                            icon: <PersonOutlineOutlinedIcon />,
+                        },
+                    ]}
+                    domainAndUserSelectionHint="Die Zuweisung erfolgt auf Basis der Auslastung betroffener Personen."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.DataModelSelect]: (
+        <Box>
+            <Typography>
+                Das Element „Datenmodell-Auswahl“ ermöglicht die Auswahl genau eines Datenmodells.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <DataModelSelectFieldComponent
+                    label="Datenmodell"
+                    value="adressen"
+                    onChange={() => {
+                    }}
+                    options={[
+                        {
+                            key: 'adressen',
+                            value: 'adressen',
+                            label: 'Adressbuch',
+                            subLabel: 'adressen',
+                            icon: ModuleIcons.dataModels,
+                        },
+                        {
+                            key: 'anliegen',
+                            value: 'anliegen',
+                            label: 'Anliegen',
+                            subLabel: 'anliegen',
+                            icon: ModuleIcons.dataModels,
+                        },
+                    ]}
+                    hint="Die Optionen werden im Formular asynchron geladen."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.DataObjectSelect]: (
+        <Box>
+            <Typography>
+                Das Element „Datenobjekt-Auswahl“ ermöglicht die Auswahl genau eines Datenobjekts.
+                Die verfügbaren Einträge richten sich nach dem konfigurierten Datenmodell.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <DataObjectSelectFieldComponent
+                    label="Datenobjekt"
+                    value="obj_001"
+                    dataModelKey="adressen"
+                    dataLabelAttributeKey="name"
+                    onChange={() => {
+                    }}
+                    options={[
+                        {
+                            key: 'obj_001',
+                            value: 'obj_001',
+                            label: 'Max Mustermann',
+                            subLabel: 'adressen · obj_001',
+                            icon: ModuleIcons.dataObjects,
+                        },
+                        {
+                            key: 'obj_002',
+                            value: 'obj_002',
+                            label: 'Erika Mustermann',
+                            subLabel: 'adressen · obj_002',
+                            icon: ModuleIcons.dataObjects,
+                        },
+                    ]}
+                    hint="Die Optionen werden im Formular asynchron geladen."
+                />
+            </Box>
+        </Box>
+    ),
     [ElementType.Time]: (
         <Box>
             <Typography>
@@ -577,8 +953,51 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.StepperLayout]: null,
     [ElementType.ConfigLayout]: null,
     [ElementType.FunctionInput]: null,
-    [ElementType.CodeInput]: null,
-    [ElementType.RichTextInput]: null,
+    [ElementType.CodeInput]: (
+        <Box>
+            <Typography>
+                Das Element „Codeeingabe“ stellt einen integrierten Code-Editor auf Basis von Monaco bereit.
+                Damit können Nutzer:innen mehrzeiligen Quelltext strukturiert erfassen.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <CodeInputFieldComponent
+                    label="JavaScript-Code"
+                    value={'function greet(name) {\n    return `Hallo ${name}`;\n}'}
+                    onChange={() => {
+                    }}
+                    hint="Die Eingabe wird als Text gespeichert."
+                    height="240px"
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.RichTextInput]: (
+        <Box>
+            <Typography>
+                Das Element „Markdown-Eingabe“ erlaubt die Erfassung formatierter Texte (z. B. mit Überschriften,
+                Listen und Links).
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <RichTextInputComponent
+                    label="Beschreibung"
+                    value={'## Beispiel\n\n- Erster Punkt\n- Zweiter Punkt'}
+                    onChange={() => {
+                    }}
+                    hint="Die Eingabe wird als Markdown gespeichert."
+                />
+            </Box>
+        </Box>
+    ),
     [ElementType.UiDefinitionInput]: null,
     [ElementType.IdentityInput]: null,
     [ElementType.TabLayout]: null,

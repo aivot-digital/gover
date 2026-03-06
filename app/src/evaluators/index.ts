@@ -9,6 +9,14 @@ import {NumberEvaluator} from './number-evaluator';
 import {TimeEvaluator} from './time-evaluator';
 import {TextEvaluator} from './text-evaluator';
 import {ReplicatingContainerEvaluator} from './replicating-container-evaluator';
+import {ChipInputEvaluator} from './chip-input-evaluator';
+import {DateTimeEvaluator} from './date-time-evaluator';
+import {DateRangeEvaluator} from './date-range-evaluator';
+import {TimeRangeEvaluator} from './time-range-evaluator';
+import {DateTimeRangeEvaluator} from './date-time-range-evaluator';
+import {MapPointEvaluator} from './map-point-evaluator';
+import {DomainUserSelectEvaluator} from './domain-user-select-evaluator';
+import {AssignmentContextFieldEvaluator} from './assignment-context-field-evaluator';
 
 export const evaluators: {
     [key in ElementType]: BaseEvaluator<any> | null;
@@ -41,8 +49,18 @@ export const evaluators: {
     [ElementType.ConfigLayout]: null,
     [ElementType.FunctionInput]: null,
     [ElementType.CodeInput]: null,
-    [ElementType.RichTextInput]: null,
+    [ElementType.RichTextInput]: TextEvaluator,
     [ElementType.UiDefinitionInput]: null,
     [ElementType.IdentityInput]: null,
     [ElementType.TabLayout]: null,
+    [ElementType.ChipInput]: ChipInputEvaluator,
+    [ElementType.DateTime]: DateTimeEvaluator,
+    [ElementType.DateRange]: DateRangeEvaluator,
+    [ElementType.TimeRange]: TimeRangeEvaluator,
+    [ElementType.DateTimeRange]: DateTimeRangeEvaluator,
+    [ElementType.MapPoint]: MapPointEvaluator,
+    [ElementType.DomainAndUserSelect]: DomainUserSelectEvaluator,
+    [ElementType.AssignmentContext]: AssignmentContextFieldEvaluator,
+    [ElementType.DataModelSelect]: SelectEvaluator,
+    [ElementType.DataObjectSelect]: SelectEvaluator,
 };

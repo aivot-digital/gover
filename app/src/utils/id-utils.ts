@@ -71,6 +71,16 @@ const prefixMap: Record<ElementType, string> = {
     [ElementType.UiDefinitionInput]: 'ui',
     [ElementType.IdentityInput]: 'ii',
     [ElementType.TabLayout]: 'tl',
+    [ElementType.ChipInput]: 'ch',
+    [ElementType.DateTime]: 'zt',
+    [ElementType.DateRange]: 'zr',
+    [ElementType.TimeRange]: 'tr',
+    [ElementType.DateTimeRange]: 'dz',
+    [ElementType.MapPoint]: 'mp',
+    [ElementType.DomainAndUserSelect]: 'du',
+    [ElementType.AssignmentContext]: 'ac',
+    [ElementType.DataModelSelect]: 'dm',
+    [ElementType.DataObjectSelect]: 'do',
 };
 
 export function generateElementIdForType(type: ElementType): string {

@@ -46,6 +46,17 @@ const relevantElementTypes = [
     ElementType.Radio,
     ElementType.Checkbox,
     ElementType.MultiCheckbox,
+    ElementType.ChipInput,
+    ElementType.DateTime,
+    ElementType.DateRange,
+    ElementType.TimeRange,
+    ElementType.DateTimeRange,
+    ElementType.MapPoint,
+    ElementType.DomainAndUserSelect,
+    ElementType.AssignmentContext,
+    ElementType.DataModelSelect,
+    ElementType.DataObjectSelect,
+    ElementType.RichTextInput,
 ];
 
 const MAX_LINK_LENGTH = 2000; // Most sources suggest 2048 maximum for URLs, but some browsers may have lower limits, so playing safe here.

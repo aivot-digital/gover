@@ -115,15 +115,30 @@ function elementToValueType(element: AnyElement): string {
             return 'boolean';
         case ElementType.Text:
         case ElementType.Date:
+        case ElementType.DateTime:
         case ElementType.Time:
+        case ElementType.DataModelSelect:
+        case ElementType.DataObjectSelect:
+        case ElementType.RichTextInput:
             return 'string';
+        case ElementType.DateRange:
+        case ElementType.TimeRange:
+        case ElementType.DateTimeRange:
+            return '{start: string | null | undefined; end: string | null | undefined}';
+        case ElementType.MapPoint:
+            return '{latitude: number | null | undefined; longitude: number | null | undefined; address: string | null | undefined}';
         case ElementType.Radio:
         case ElementType.Select:
             return element.options?.map(option => `'${option.value}'`).join(' | ') ?? 'string';
         case ElementType.Number:
             return 'number';
         case ElementType.MultiCheckbox:
+        case ElementType.ChipInput:
             return 'string[]';
+        case ElementType.DomainAndUserSelect:
+            return '{type: \'orgUnit\' | \'team\' | \'user\'; id: string}[]';
+        case ElementType.AssignmentContext:
+            return '{domainAndUserSelection: {type: \'orgUnit\' | \'team\' | \'user\'; id: string}[] | null | undefined; preferPreviousTaskAssignee: boolean | null | undefined; preferUninvolvedUser: boolean | null | undefined; preferProcessInstanceAssignee: boolean | null | undefined}';
         case ElementType.FileUpload:
             return '{name: string; uri: string; size: number;}[]';
         case ElementType.IntroductionStep:

@@ -33,6 +33,11 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
 
     const monacoRef = useRef<Monaco>(undefined);
     const editorRef = useRef<editor.IStandaloneCodeEditor>(undefined);
+    const onBlurRef = useRef<CodeEditorProps['onBlur']>(props.onBlur);
+
+    useEffect(() => {
+        onBlurRef.current = props.onBlur;
+    }, [props.onBlur]);
 
     useEffect(() => {
         new JavascriptApiService()
@@ -56,18 +61,31 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
     const handleEditorMount = useCallback((editor: editor.IStandaloneCodeEditor, monaco: Monaco) => {
         monacoRef.current = monaco;
         editorRef.current = editor;
-        editorRef.current.setValue(value ?? '');
 
         if (onEditorMount) {
             onEditorMount(editor);
         }
 
+        editor.onDidBlurEditorText(() => {
+            onBlurRef.current?.(editor.getValue());
+        });
+
         monacoApplyTypeHints(monaco, typeHints);
-    }, []);
+    }, [onEditorMount, typeHints]);
 
     useEffect(() => {
         monacoApplyTypeHints(monacoRef.current, typeHints);
     }, [typeHints]);
+
+    useEffect(() => {
+        const activeEditor = editorRef.current;
+        const nextValue = value ?? '';
+        if (activeEditor == null || activeEditor.getValue() === nextValue) {
+            return;
+        }
+
+        activeEditor.setValue(nextValue);
+    }, [value]);
 
     const handleEditorChange = useCallback((value: string | undefined) => {
         onChange(value ?? '');
@@ -105,18 +123,21 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
                 sx={{
                     mt: hasTopContent ? 2 : 0,
                     py: 2,
-                    border: '1px solid rgba(0, 0, 0, 0.23)',
+                    border: '1px solid',
+                    borderColor: props.error ? 'error.main' : 'rgba(0, 0, 0, 0.23)',
                     borderRadius: 1,
                 }}
             >
                 <Editor
                     height={props.height ?? 'max(100vh - 768px, 320px)'}
-                    defaultLanguage={props.language ?? 'javascript'}
+                    language={props.language ?? 'javascript'}
+                    value={value ?? ''}
                     options={{
                         minimap: {
                             enabled: false,
                         },
-                        readOnly: props.disabled,
+                        readOnly: props.disabled || props.readOnly,
+                        wordWrap: props.wordWrap ? 'on' : 'off',
                     }}
                     onMount={handleEditorMount}
                     onChange={handleEditorChange}

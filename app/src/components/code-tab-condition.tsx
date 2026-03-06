@@ -43,6 +43,9 @@ export function CodeTabCondition({
             case ElementType.MultiCheckbox:
                 availableValueOptions = [...(referencedElement.element.options ?? [])];
                 break;
+            case ElementType.ChipInput:
+                availableValueOptions = [...(referencedElement.element.suggestions ?? [])];
+                break;
             case ElementType.Checkbox:
                 availableValueOptions = ['Ja (True)', 'Nein (False)'];
                 break;

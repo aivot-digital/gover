@@ -37,6 +37,7 @@
     "altcha": "^2.0.5",
     "date-fns": "^4.1.0",
     "fuse.js": "^7.1.0",
+    "leaflet": "^1.9.4",
     "notistack": "^3.0.2",
     "qrcode": "^1.5.4",
     "react": "^19.1.0",
@@ -46,6 +47,7 @@
     "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "^19.1.0",
     "react-hotkeys-hook": "^5.2.1",
+    "react-leaflet": "^5.0.0",
     "react-markdown": "^10.1.0",
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.6.3",
@@ -58,6 +60,7 @@
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
+    "@types/leaflet": "^1.9.21",
     "@types/node": "^24.0.12",
     "@types/qrcode": "^1.5.5",
     "@types/react": "^19.1.0",

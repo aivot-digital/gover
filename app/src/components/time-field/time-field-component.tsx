@@ -2,9 +2,9 @@ import {LocalizationProvider, TimePicker} from '@mui/x-date-pickers';
 import {AdapterDateFns} from '@mui/x-date-pickers/AdapterDateFns';
 import {de} from 'date-fns/locale/de';
 import {useEffect, useRef, useState} from 'react';
-import {renderTimeViewClock} from '@mui/x-date-pickers/timeViewRenderers';
 import {SxProps, Theme} from '@mui/material';
 import type {Locale} from 'date-fns';
+import {TimeFieldComponentModelMode} from '../../models/elements/form/input/time-field-element';
 
 const deLocale = de as unknown as Locale;
 
@@ -22,9 +22,11 @@ interface TimeFieldComponentProps {
     sx?: SxProps<Theme>;
     bufferInputUntilBlur?: boolean;
     debounce?: number;
+    mode?: TimeFieldComponentModelMode;
 }
 
 export function TimeFieldComponent(props: TimeFieldComponentProps) {
+    const mode = props.mode ?? TimeFieldComponentModelMode.Minute;
     const dateValue = props.value ? new Date(props.value) : null;
     const [localValue, setLocalValue] = useState<Date | null>(dateValue);
     const [lastInputWasTyping, setLastInputWasTyping] = useState(false);
@@ -102,6 +104,8 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
             adapterLocale={deLocale}
         >
             <TimePicker
+                format={mode === TimeFieldComponentModelMode.Second ? "HH:mm:ss 'Uhr'" : "HH:mm 'Uhr'"}
+                views={mode === TimeFieldComponentModelMode.Second ? ['hours', 'minutes', 'seconds'] : ['hours', 'minutes']}
                 label={`${props.label}${props.required ? ' *' : ''}`}
                 value={localValue}
                 onChange={handleChange}
@@ -125,11 +129,6 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
                     actionBar: {
                         actions: ['accept', 'cancel', 'clear'],
                     },
-                }}
-                viewRenderers={{
-                    hours: renderTimeViewClock,
-                    minutes: renderTimeViewClock,
-                    seconds: renderTimeViewClock,
                 }}
                 sx={{
                     ...props.sx,

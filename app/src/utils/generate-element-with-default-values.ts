@@ -28,6 +28,20 @@ import {ImageElement} from '../models/elements/form/content/image-element';
 import {SubmittedStepElement} from '../models/elements/steps/submitted-step-element';
 import {FileUploadElement} from '../models/elements/form/input/file-upload-element';
 import {AppInfo} from '../app-info';
+import {ChipInputFieldElement} from '../models/elements/form/input/chip-input-field-element';
+import {DateTimeFieldElement} from '../models/elements/form/input/date-time-field-element';
+import {DateRangeFieldElement} from '../models/elements/form/input/date-range-field-element';
+import {TimeRangeFieldElement} from '../models/elements/form/input/time-range-field-element';
+import {DateTimeRangeFieldElement} from '../models/elements/form/input/date-time-range-field-element';
+import {TimeFieldComponentModelMode} from '../models/elements/form/input/time-field-element';
+import {MapPointFieldElement} from '../models/elements/form/input/map-point-field-element';
+import {DomainUserSelectFieldElement} from '../models/elements/form/input/domain-user-select-field-element';
+import {DomainAndUserSelectItemTypes} from '../models/elements/form/input/domain-user-select-field-element';
+import {AssignmentContextFieldElement} from '../models/elements/form/input/assignment-context-field-element';
+import {DataModelSelectFieldElement} from '../models/elements/form/input/data-model-select-field-element';
+import {DataObjectSelectFieldElement} from '../models/elements/form/input/data-object-select-field-element';
+import {RichTextInputElement} from '../models/elements/form/input/rich-text-input-element';
+import {CodeInputElement, CodeInputFieldLanguage} from '../models/elements/form/input/code-input-element';
 
 function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
     return {
@@ -89,11 +103,21 @@ const elementConstructors: {
     [ElementType.StepperLayout]: (id: string) => void;
     [ElementType.ConfigLayout]: (id: string) => void;
     [ElementType.FunctionInput]: (id: string) => void;
-    [ElementType.CodeInput]: (id: string) => void;
-    [ElementType.RichTextInput]: (id: string) => void;
+    [ElementType.CodeInput]: (id: string) => CodeInputElement;
+    [ElementType.RichTextInput]: (id: string) => RichTextInputElement;
     [ElementType.UiDefinitionInput]: (id: string) => void;
     [ElementType.IdentityInput]: (id: string) => void;
     [ElementType.TabLayout]: (id: string) => void;
+    [ElementType.ChipInput]: (id: string) => ChipInputFieldElement;
+    [ElementType.DateTime]: (id: string) => DateTimeFieldElement;
+    [ElementType.DateRange]: (id: string) => DateRangeFieldElement;
+    [ElementType.TimeRange]: (id: string) => TimeRangeFieldElement;
+    [ElementType.DateTimeRange]: (id: string) => DateTimeRangeFieldElement;
+    [ElementType.MapPoint]: (id: string) => MapPointFieldElement;
+    [ElementType.DomainAndUserSelect]: (id: string) => DomainUserSelectFieldElement;
+    [ElementType.AssignmentContext]: (id: string) => AssignmentContextFieldElement;
+    [ElementType.DataModelSelect]: (id: string) => DataModelSelectFieldElement;
+    [ElementType.DataObjectSelect]: (id: string) => DataObjectSelectFieldElement;
 } = {
     [ElementType.FormLayout]: (id) => ({
         ...makeBase(ElementType.FormLayout, id),
@@ -266,6 +290,7 @@ const elementConstructors: {
     [ElementType.Time]: (id) => ({
         ...makeInputBase(ElementType.Time, id),
         label: 'Uhrzeit',
+        mode: TimeFieldComponentModelMode.Minute,
     }),
     [ElementType.IntroductionStep]: (id) => ({
         ...makeFormBase(ElementType.IntroductionStep, id),
@@ -313,11 +338,95 @@ const elementConstructors: {
     [ElementType.StepperLayout]: (id) => ({}),
     [ElementType.ConfigLayout]: (id) => ({}),
     [ElementType.FunctionInput]: (id) => ({}),
-    [ElementType.CodeInput]: (id) => ({}),
-    [ElementType.RichTextInput]: (id) => ({}),
+    [ElementType.CodeInput]: (id) => ({
+        ...makeInputBase(ElementType.CodeInput, id),
+        label: 'Codeeingabe',
+        language: CodeInputFieldLanguage.Javascript,
+        editorHeight: 320,
+        wordWrap: false,
+    }),
+    [ElementType.RichTextInput]: (id) => ({
+        ...makeInputBase(ElementType.RichTextInput, id),
+        label: 'Markdown-Eingabe',
+        reducedMode: false,
+    }),
     [ElementType.UiDefinitionInput]: (id) => ({}),
     [ElementType.IdentityInput]: (id) => ({}),
     [ElementType.TabLayout]: (id) => ({}),
+    [ElementType.ChipInput]: (id) => ({
+        ...makeInputBase(ElementType.ChipInput, id),
+        label: 'Tag-Liste (Schlagwörter)',
+        placeholder: 'Eintrag hinzufügen',
+        suggestions: undefined,
+        minItems: undefined,
+        maxItems: undefined,
+        allowDuplicates: false,
+    }),
+    [ElementType.DateTime]: (id) => ({
+        ...makeInputBase(ElementType.DateTime, id),
+        label: 'Datum und Uhrzeit',
+        placeholder: undefined,
+        mode: TimeFieldComponentModelMode.Minute,
+    }),
+    [ElementType.DateRange]: (id) => ({
+        ...makeInputBase(ElementType.DateRange, id),
+        label: 'Datumsspanne',
+        mode: DateFieldComponentModelMode.Day,
+        placeholder: undefined,
+        allowOpenRange: false,
+    }),
+    [ElementType.TimeRange]: (id) => ({
+        ...makeInputBase(ElementType.TimeRange, id),
+        label: 'Zeitspanne',
+        allowOpenRange: false,
+        mode: TimeFieldComponentModelMode.Minute,
+    }),
+    [ElementType.DateTimeRange]: (id) => ({
+        ...makeInputBase(ElementType.DateTimeRange, id),
+        label: 'Datum- und Zeitspanne',
+        placeholder: undefined,
+        allowOpenRange: false,
+        mode: TimeFieldComponentModelMode.Minute,
+    }),
+    [ElementType.MapPoint]: (id) => ({
+        ...makeInputBase(ElementType.MapPoint, id),
+        label: 'Kartenpunkt',
+        zoom: 14,
+        centerLatitude: 52.52,
+        centerLongitude: 13.405,
+    }),
+    [ElementType.DomainAndUserSelect]: (id) => ({
+        ...makeInputBase(ElementType.DomainAndUserSelect, id),
+        label: 'Personenkreis',
+        placeholder: 'Organisationseinheit, Team oder Mitarbeiter:in suchen',
+        minItems: undefined,
+        maxItems: undefined,
+        allowedTypes: DomainAndUserSelectItemTypes,
+        processAccessConstraint: undefined,
+    }),
+    [ElementType.AssignmentContext]: (id) => ({
+        ...makeInputBase(ElementType.AssignmentContext, id),
+        label: 'Verantwortlicher Personenkreis',
+        headline: 'Verantwortlicher Personenkreis',
+        text: 'Definieren Sie den Personenkreis, der für diese Aufgabe herangezogen werden kann.',
+        placeholder: 'Organisationseinheit, Team oder Mitarbeiter:in suchen',
+        minItems: undefined,
+        maxItems: undefined,
+        allowedTypes: DomainAndUserSelectItemTypes,
+        processAccessConstraint: undefined,
+    }),
+    [ElementType.DataModelSelect]: (id) => ({
+        ...makeInputBase(ElementType.DataModelSelect, id),
+        label: 'Datenmodell',
+        placeholder: 'Datenmodell auswählen',
+    }),
+    [ElementType.DataObjectSelect]: (id) => ({
+        ...makeInputBase(ElementType.DataObjectSelect, id),
+        label: 'Datenobjekt',
+        placeholder: 'Datenobjekt auswählen',
+        dataModelKey: undefined,
+        dataLabelAttributeKey: undefined,
+    }),
 };
 
 export function generateElementWithDefaultValues<T extends ElementType>(type: T): AnyElementType<T> {

@@ -34,6 +34,9 @@ public class VPotentialProcessInstanceAccessEntity {
     private String userId;
 
     @Nullable
+    private Boolean userIsEnabled;
+
+    @Nullable
     private Integer userViaDepartmentId;
 
     @Nullable
@@ -53,6 +56,7 @@ public class VPotentialProcessInstanceAccessEntity {
                                                  @Nullable Integer departmentId,
                                                  @Nullable Integer teamId,
                                                  @Nullable String userId,
+                                                 @Nullable Boolean userIsEnabled,
                                                  @Nullable Integer userViaDepartmentId,
                                                  @Nullable Integer userViaTeamId,
                                                  @Nullable Integer viaProcessInstanceAccessPresetId,
@@ -62,6 +66,7 @@ public class VPotentialProcessInstanceAccessEntity {
         this.departmentId = departmentId;
         this.teamId = teamId;
         this.userId = userId;
+        this.userIsEnabled = userIsEnabled;
         this.userViaDepartmentId = userViaDepartmentId;
         this.userViaTeamId = userViaTeamId;
         this.viaProcessInstanceAccessPresetId = viaProcessInstanceAccessPresetId;
@@ -115,6 +120,16 @@ public class VPotentialProcessInstanceAccessEntity {
 
     public VPotentialProcessInstanceAccessEntity setUserId(@Nullable String userId) {
         this.userId = userId;
+        return this;
+    }
+
+    @Nullable
+    public Boolean getUserIsEnabled() {
+        return userIsEnabled;
+    }
+
+    public VPotentialProcessInstanceAccessEntity setUserIsEnabled(@Nullable Boolean userIsEnabled) {
+        this.userIsEnabled = userIsEnabled;
         return this;
     }
 

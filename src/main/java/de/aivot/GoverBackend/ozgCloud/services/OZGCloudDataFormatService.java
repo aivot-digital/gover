@@ -47,6 +47,21 @@ public class OZGCloudDataFormatService {
                     List.of(buildReplicatingContainerLayout(replicatingContainerLayout, elementData));
             case CheckboxInputElement cbx -> List.of(buildCheckboxField(cbx, elementData));
             case DateInputElement dateField -> List.of(buildDateField(dateField, elementData));
+            case DateTimeInputElement dateTimeField -> List.of(buildDateTimeField(dateTimeField, elementData));
+            case DateRangeInputElement dateRangeField -> List.of(buildDateRangeField(dateRangeField, elementData));
+            case TimeRangeInputElement timeRangeField -> List.of(buildTimeRangeField(timeRangeField, elementData));
+            case DateTimeRangeInputElement dateTimeRangeField -> List.of(buildDateTimeRangeField(dateTimeRangeField, elementData));
+            case MapPointInputElement mapPointField -> List.of(buildMapPointField(mapPointField, elementData));
+            case DomainAndUserSelectInputElement domainAndUserSelectField ->
+                    List.of(buildDomainAndUserSelectField(domainAndUserSelectField, elementData));
+            case AssignmentContextInputElement assignmentContextField ->
+                    List.of(buildAssignmentContextField(assignmentContextField, elementData));
+            case RichTextInputElement richTextInputField -> List.of(buildRichTextInputField(richTextInputField, elementData));
+            case CodeInputElement codeInputField -> List.of(buildCodeInputField(codeInputField, elementData));
+            case DataModelSelectInputElement dataModelSelectField ->
+                    List.of(buildDataModelSelectField(dataModelSelectField, elementData));
+            case DataObjectSelectInputElement dataObjectSelectField ->
+                    List.of(buildDataObjectSelectField(dataObjectSelectField, elementData));
             case FileUploadInputElement fileUploadField -> List.of(buildFileUploadField(fileUploadField, elementData));
             case MultiCheckboxInputElement multiCheckboxField ->
                     List.of(buildMultiCheckboxField(multiCheckboxField, elementData));
@@ -55,6 +70,7 @@ public class OZGCloudDataFormatService {
             case RadioInputElement radioField -> List.of(buildRadioField(radioField, elementData));
             case TableInputElement tableField -> List.of(buildTableField(tableField, elementData));
             case TextInputElement textField -> List.of(buildTextField(textField, elementData));
+            case ChipInputElement chipInputField -> List.of(buildChipInputField(chipInputField, elementData));
             case TimeInputElement timeField -> List.of(buildTimeField(timeField, elementData));
             default -> List.of();
         };
@@ -359,6 +375,96 @@ public class OZGCloudDataFormatService {
         );
     }
 
+    private OZGCloudFormDataItem buildDateTimeField(
+            @Nonnull DateTimeInputElement dateTimeField,
+            @Nonnull ElementData elementData
+    ) {
+        var edo = elementData.mustGet(dateTimeField);
+
+        var dateTime = dateTimeField.formatValue(edo.getValue());
+
+        var displayValue = dateTimeField.toDisplayValue(dateTime);
+
+        return new OZGCloudFormDataItem(
+                dateTimeField.getId(),
+                dateTimeField.getLabel(),
+                displayValue,
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
+    private OZGCloudFormDataItem buildDateRangeField(
+            @Nonnull DateRangeInputElement dateRangeField,
+            @Nonnull ElementData elementData
+    ) {
+        var edo = elementData.mustGet(dateRangeField);
+
+        return new OZGCloudFormDataItem(
+                dateRangeField.getId(),
+                dateRangeField.getLabel(),
+                dateRangeField.toDisplayValue(dateRangeField.formatValue(edo.getValue())),
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
+    private OZGCloudFormDataItem buildTimeRangeField(
+            @Nonnull TimeRangeInputElement timeRangeField,
+            @Nonnull ElementData elementData
+    ) {
+        var edo = elementData.mustGet(timeRangeField);
+
+        return new OZGCloudFormDataItem(
+                timeRangeField.getId(),
+                timeRangeField.getLabel(),
+                timeRangeField.toDisplayValue(timeRangeField.formatValue(edo.getValue())),
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
+    private OZGCloudFormDataItem buildDateTimeRangeField(
+            @Nonnull DateTimeRangeInputElement dateTimeRangeField,
+            @Nonnull ElementData elementData
+    ) {
+        var edo = elementData.mustGet(dateTimeRangeField);
+
+        return new OZGCloudFormDataItem(
+                dateTimeRangeField.getId(),
+                dateTimeRangeField.getLabel(),
+                dateTimeRangeField.toDisplayValue(dateTimeRangeField.formatValue(edo.getValue())),
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
+    private OZGCloudFormDataItem buildMapPointField(
+            @Nonnull MapPointInputElement mapPointField,
+            @Nonnull ElementData elementData
+    ) {
+        var edo = elementData.mustGet(mapPointField);
+        var value = mapPointField.formatValue(edo.getValue());
+
+        return new OZGCloudFormDataItem(
+                mapPointField.getId(),
+                mapPointField.getLabel(),
+                mapPointField.toDisplayValue(value),
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
     private OZGCloudFormDataItem buildFileUploadField(
             @Nonnull FileUploadInputElement fileUploadField,
             @Nonnull ElementData elementData
@@ -529,6 +635,132 @@ public class OZGCloudDataFormatService {
                 textField.getId(),
                 textField.getLabel(),
                 textField.toDisplayValue(edo.getValue(String.class, null)),
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
+    private OZGCloudFormDataItem buildChipInputField(
+            @Nonnull ChipInputElement chipInputField,
+            @Nonnull ElementData elementData
+    ) {
+        var edo = elementData.mustGet(chipInputField);
+
+        var items = chipInputField.formatValue(edo.getValue());
+
+        var displayValue = chipInputField
+                .toDisplayValue(items);
+
+        return new OZGCloudFormDataItem(
+                chipInputField.getId(),
+                chipInputField.getLabel(),
+                displayValue,
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
+    private OZGCloudFormDataItem buildDomainAndUserSelectField(
+            @Nonnull DomainAndUserSelectInputElement domainAndUserSelectField,
+            @Nonnull ElementData elementData
+    ) {
+        var edo = elementData.mustGet(domainAndUserSelectField);
+        var value = domainAndUserSelectField.formatValue(edo.getValue());
+
+        return new OZGCloudFormDataItem(
+                domainAndUserSelectField.getId(),
+                domainAndUserSelectField.getLabel(),
+                domainAndUserSelectField.toDisplayValue(value),
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
+    private OZGCloudFormDataItem buildAssignmentContextField(
+            @Nonnull AssignmentContextInputElement assignmentContextField,
+            @Nonnull ElementData elementData
+    ) {
+        var edo = elementData.mustGet(assignmentContextField);
+        var value = assignmentContextField.formatValue(edo.getValue());
+
+        return new OZGCloudFormDataItem(
+                assignmentContextField.getId(),
+                assignmentContextField.getLabel(),
+                assignmentContextField.toDisplayValue(value),
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
+    private OZGCloudFormDataItem buildRichTextInputField(
+            @Nonnull RichTextInputElement richTextInputField,
+            @Nonnull ElementData elementData
+    ) {
+        var edo = elementData.mustGet(richTextInputField);
+
+        return new OZGCloudFormDataItem(
+                richTextInputField.getId(),
+                richTextInputField.getLabel(),
+                richTextInputField.toDisplayValue(richTextInputField.formatValue(edo.getValue())),
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
+    private OZGCloudFormDataItem buildCodeInputField(
+            @Nonnull CodeInputElement codeInputField,
+            @Nonnull ElementData elementData
+    ) {
+        var edo = elementData.mustGet(codeInputField);
+
+        return new OZGCloudFormDataItem(
+                codeInputField.getId(),
+                codeInputField.getLabel(),
+                codeInputField.toDisplayValue(codeInputField.formatValue(edo.getValue())),
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
+    private OZGCloudFormDataItem buildDataModelSelectField(
+            @Nonnull DataModelSelectInputElement dataModelSelectField,
+            @Nonnull ElementData elementData
+    ) {
+        var edo = elementData.mustGet(dataModelSelectField);
+
+        return new OZGCloudFormDataItem(
+                dataModelSelectField.getId(),
+                dataModelSelectField.getLabel(),
+                dataModelSelectField.toDisplayValue(dataModelSelectField.formatValue(edo.getValue())),
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
+    private OZGCloudFormDataItem buildDataObjectSelectField(
+            @Nonnull DataObjectSelectInputElement dataObjectSelectField,
+            @Nonnull ElementData elementData
+    ) {
+        var edo = elementData.mustGet(dataObjectSelectField);
+
+        return new OZGCloudFormDataItem(
+                dataObjectSelectField.getId(),
+                dataObjectSelectField.getLabel(),
+                dataObjectSelectField.toDisplayValue(dataObjectSelectField.formatValue(edo.getValue())),
                 null,
                 null,
                 null,

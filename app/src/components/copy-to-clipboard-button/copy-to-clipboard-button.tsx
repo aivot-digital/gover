@@ -1,9 +1,10 @@
 import React from 'react';
-import {IconButton, SxProps, Theme, Tooltip} from '@mui/material';
+import {Box, IconButton, SxProps, Theme, Tooltip, Zoom} from '@mui/material';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {copyToClipboardText} from '../../utils/copy-to-clipboard';
 import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
+import Check from '@aivot/mui-material-symbols-400-outlined/dist/check/Check';
 
 interface CopyToClipboardButtonProps {
     text: string;
@@ -86,7 +87,32 @@ export function CopyToClipboardButton(props: CopyToClipboardButtonProps): React.
                     sx={sx}
                     aria-label={ariaLabel ?? tooltip}
                 >
-                    {icon ?? <ContentCopy fontSize={size === 'small' ? 'small' : 'medium'} />}
+                    <Box
+                        sx={{
+                            position: 'relative',
+                            width: size === 'small' ? 20 : 24,
+                            height: size === 'small' ? 20 : 24,
+                        }}
+                    >
+                        <Zoom
+                            in={!hasCopied}
+                            timeout={200}
+                            unmountOnExit
+                        >
+                            <Box sx={{position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                                {icon ?? <ContentCopy fontSize={size === 'small' ? 'small' : 'medium'} />}
+                            </Box>
+                        </Zoom>
+                        <Zoom
+                            in={hasCopied}
+                            timeout={200}
+                            unmountOnExit
+                        >
+                            <Box sx={{position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                                <Check fontSize={size === 'small' ? 'small' : 'medium'} sx={{color: 'success.main'}}/>
+                            </Box>
+                        </Zoom>
+                    </Box>
                 </IconButton>
             </span>
         </Tooltip>

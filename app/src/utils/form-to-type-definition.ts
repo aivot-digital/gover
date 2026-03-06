@@ -31,11 +31,21 @@ const typeMap: Record<ElementType, string> = {
     [ElementType.StepperLayout]: 'undefined',
     [ElementType.ConfigLayout]: 'undefined',
     [ElementType.FunctionInput]: 'undefined',
-    [ElementType.CodeInput]: 'undefined',
-    [ElementType.RichTextInput]: 'undefined',
+    [ElementType.CodeInput]: 'string',
+    [ElementType.RichTextInput]: 'string',
     [ElementType.UiDefinitionInput]: 'undefined',
     [ElementType.IdentityInput]: 'undefined',
     [ElementType.TabLayout]: 'undefined',
+    [ElementType.ChipInput]: 'string[]',
+    [ElementType.DateTime]: 'string',
+    [ElementType.DateRange]: '{start: string | null | undefined; end: string | null | undefined;}',
+    [ElementType.TimeRange]: '{start: string | null | undefined; end: string | null | undefined;}',
+    [ElementType.DateTimeRange]: '{start: string | null | undefined; end: string | null | undefined;}',
+    [ElementType.MapPoint]: '{latitude: number | null | undefined; longitude: number | null | undefined; address: string | null | undefined;}',
+    [ElementType.DomainAndUserSelect]: '{type: \'orgUnit\' | \'team\' | \'user\'; id: string;}[]',
+    [ElementType.AssignmentContext]: '{domainAndUserSelection: {type: \'orgUnit\' | \'team\' | \'user\'; id: string;}[] | null | undefined; preferPreviousTaskAssignee: boolean | null | undefined; preferUninvolvedUser: boolean | null | undefined; preferProcessInstanceAssignee: boolean | null | undefined;}',
+    [ElementType.DataModelSelect]: 'string',
+    [ElementType.DataObjectSelect]: 'string',
 };
 
 export function formToTypeDefinition(form: FormVersionEntity): string {
