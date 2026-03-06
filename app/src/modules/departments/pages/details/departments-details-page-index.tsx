@@ -911,7 +911,7 @@ export function DepartmentsDetailsPageIndex() {
                 links={relatedApplications}
             />
 
-            // TODO: The move does currently not correctly refresh this page.
+            {/* TODO: The move does currently not correctly refresh this page. */}
             {
                 showMoveDialog &&
                 <MoveDepartmentDialog
