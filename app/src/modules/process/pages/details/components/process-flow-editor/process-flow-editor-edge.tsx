@@ -55,7 +55,7 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
         return optData;
     }, [optData]);
 
-    const associatedTask = useMemo(() => {
+    const nextTaskForEdge = useMemo(() => {
         if (runtimeData == null) {
             return null;
         }
@@ -63,14 +63,15 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
         return runtimeData
             .tasks
             .find((task) => (
-                task.processNodeId === treeEdge.edge.fromNodeId
+                task.previousProcessNodeId === treeEdge.edge.fromNodeId &&
+                task.processNodeId === treeEdge.edge.toNodeId
             )) ?? null;
     }, [
         runtimeData,
         treeEdge,
     ]);
 
-    const wasPerformed = associatedTask != null;
+    const wasPerformed = nextTaskForEdge != null;
 
     return (
         <>
@@ -98,7 +99,7 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
                 >
                     {
                         editable &&
-                        associatedTask == null &&
+                        nextTaskForEdge == null &&
                         <IconButton
                             sx={{
                                 'cursor': 'pointer',
@@ -124,7 +125,7 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
                     }
 
                     {
-                        associatedTask != null &&
+                        nextTaskForEdge != null &&
                         <IconButton
                             sx={{
                                 'cursor': 'pointer',
@@ -149,7 +150,7 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
                                                 Die weitergereichte Vorgangsdatenebene
                                             </Typography>
                                             <ExpandableCodeBlock
-                                                value={JSON.stringify(associatedTask?.processData, null, 2)}
+                                                value={JSON.stringify(nextTaskForEdge?.processData, null, 2)}
                                             />
                                         </>
                                     ),
