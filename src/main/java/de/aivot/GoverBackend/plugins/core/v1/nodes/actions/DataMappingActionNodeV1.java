@@ -145,6 +145,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
         var outputRoot = deepCopyMap(sourceRootMap);
 
         var rules = parseRules(context);
+        var mappedValues = new ArrayList<Map<String, Object>>();
 
         try (var engine = javascriptEngineFactoryService.getEngine()) {
             ProcessDataService.fillJsEngineWithData(context.getProcessData(), engine);
@@ -167,6 +168,13 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
                 );
 
                 writePath(outputRoot, targetPath, transformedValue, rowIndex);
+
+                mappedValues.add(Map.of(
+                        "originalPath", rule.fromField(),
+                        "newPath", rule.toField(),
+                        "original", sourceValue,
+                        "mapped", transformedValue
+                ));
             }
         } catch (ProcessNodeExecutionException e) {
             throw e;
@@ -181,7 +189,10 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_NAME)
                 .setProcessData(outputRoot)
-                .setNodeData(Map.of("mappedRuleCount", rules.size()));
+                .setNodeData(Map.of(
+                        "mappedRuleCount", rules.size(),
+                        "mappedValues", mappedValues
+                ));
     }
 
     @Nonnull
