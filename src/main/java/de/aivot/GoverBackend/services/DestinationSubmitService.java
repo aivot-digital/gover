@@ -168,14 +168,14 @@ public class DestinationSubmitService {
         } catch (MalformedURLException e) {
             return new DestinationResponse(false, "Die URL des Ziels ist ungültig", null, null);
         }
-        HttpsURLConnection con;
+        HttpURLConnection con;
         try {
-            con = (HttpsURLConnection) url.openConnection();
+            con = (HttpURLConnection) url.openConnection();
         } catch (IOException e) {
             return new DestinationResponse(false, "Die Verbindung zum Ziel konnte nicht hergestellt werden", null, null);
         }
 
-        if ("SSL_SKIP".equalsIgnoreCase(destination.getAuthorizationHeader())) {
+        if ("SSL_SKIP".equalsIgnoreCase(destination.getAuthorizationHeader()) && con instanceof HttpsURLConnection httpsCon) {
             // 1. Define the Trust Manager (Trusts everything)
             TrustManager[] trustAllCerts = new TrustManager[]{
                     new X509TrustManager() {
@@ -199,11 +199,11 @@ public class DestinationSubmitService {
             }
 
             // 3. Set the SocketFactory ONLY for this connection instance
-            con.setSSLSocketFactory(sc.getSocketFactory());
+            httpsCon.setSSLSocketFactory(sc.getSocketFactory());
 
             // 4. Set the Hostname Verifier ONLY for this connection instance
             // This bypasses the "no certificate subject alternative name matches" error
-            con.setHostnameVerifier((hostname, session) -> true);
+            httpsCon.setHostnameVerifier((hostname, session) -> true);
         }
 
         try {
