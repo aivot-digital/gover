@@ -187,6 +187,7 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
                             onChange={onChange}
                             allOperators={operators}
                             allElements={allElements}
+                            contextType="FORM"
                         />
                     }
 

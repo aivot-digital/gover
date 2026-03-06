@@ -4,8 +4,11 @@ import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
+import de.aivot.GoverBackend.nocode.models.NoCodeInstanceDataReference;
+import de.aivot.GoverBackend.nocode.models.NoCodeNodeDataReference;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
+import de.aivot.GoverBackend.nocode.models.NoCodeProcessDataReference;
 import de.aivot.GoverBackend.nocode.models.NoCodeReference;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
@@ -14,6 +17,7 @@ import de.aivot.GoverBackend.nocode.providers.NoCodeOperatorsProvider;
 import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -214,5 +218,52 @@ class NoCodeEvaluationServiceHardeningTest {
 
         assertTrue(ex.getMessage().contains("explode"));
         assertTrue(ex.getCause() instanceof NoCodeException);
+    }
+
+    @Test
+    void shouldResolveProcessDataReferencesFromContext() {
+        var service = new NoCodeEvaluationService(List.of());
+        var context = Map.<String, Object>of(
+                "$", Map.of("applicant", Map.of("name", "Ada")),
+                "$$", Map.of("instanceId", "i-1"),
+                "_", Map.of(
+                        "nodeA", Map.of("score", 7),
+                        "nodeB", List.of("x", "y")
+                )
+        );
+
+        var processResult = service.evaluate(
+                new NoCodeProcessDataReference()
+                        .setPath("applicant.name"),
+                new ElementData(),
+                context
+        );
+        assertEquals("Ada", processResult.getValue());
+
+        var instanceResult = service.evaluate(
+                new NoCodeInstanceDataReference()
+                        .setPath("instanceId"),
+                new ElementData(),
+                context
+        );
+        assertEquals("i-1", instanceResult.getValue());
+
+        var nodeResult = service.evaluate(
+                new NoCodeNodeDataReference()
+                        .setNodeDataKey("nodeA")
+                        .setPath("score"),
+                new ElementData(),
+                context
+        );
+        assertEquals(7, nodeResult.getValue());
+
+        var nodeListIndexResult = service.evaluate(
+                new NoCodeNodeDataReference()
+                        .setNodeDataKey("nodeB")
+                        .setPath("[1]"),
+                new ElementData(),
+                context
+        );
+        assertEquals("y", nodeListIndexResult.getValue());
     }
 }

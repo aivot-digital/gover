@@ -21,6 +21,9 @@ import java.util.Objects;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = NoCodeExpression.class, name = NoCodeExpression.TYPE_ID),
         @JsonSubTypes.Type(value = NoCodeReference.class, name = NoCodeReference.TYPE_ID),
+        @JsonSubTypes.Type(value = NoCodeProcessDataReference.class, name = NoCodeProcessDataReference.TYPE_ID),
+        @JsonSubTypes.Type(value = NoCodeInstanceDataReference.class, name = NoCodeInstanceDataReference.TYPE_ID),
+        @JsonSubTypes.Type(value = NoCodeNodeDataReference.class, name = NoCodeNodeDataReference.TYPE_ID),
         @JsonSubTypes.Type(value = NoCodeStaticValue.class, name = NoCodeStaticValue.TYPE_ID),
 })
 public abstract class NoCodeOperand implements Serializable {

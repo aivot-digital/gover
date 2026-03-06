@@ -1,6 +1,19 @@
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import Functions from '@aivot/mui-material-symbols-400-outlined/dist/functions/Functions';
-import {isNoCodeExpression, isNoCodeReference, isNoCodeStaticValue, NoCodeExpression, NoCodeOperand, NoCodeReference} from '../../../models/functions/no-code-expression';
+import {
+    isNoCodeExpression,
+    isNoCodeInstanceDataReference,
+    isNoCodeNodeDataReference,
+    isNoCodeProcessDataReference,
+    isNoCodeReference,
+    isNoCodeStaticValue,
+    NoCodeInstanceDataReference,
+    NoCodeNodeDataReference,
+    NoCodeExpression,
+    NoCodeOperand,
+    NoCodeProcessDataReference,
+    NoCodeReference,
+} from '../../../models/functions/no-code-expression';
 import {NoCodeDataType} from '../../../data/no-code-data-type';
 import {ElementWithParents} from '../../../utils/flatten-elements';
 import {useMemo, useState} from 'react';
@@ -19,6 +32,7 @@ import {generateComponentTitle} from '../../../utils/generate-component-title';
 import {isStringNullOrEmpty} from '../../../utils/string-utils';
 import {ElementType} from '../../../data/element-type/element-type';
 import {BOOL_DEFAULT_OPTIONS} from './no-code-operand-editor-static-value';
+import {NoCodeOperandEditorContextType} from './no-code-operand-editor';
 
 interface NoCodeOperandEditorExpressionProps {
     allElements: ElementWithParents[];
@@ -27,13 +41,77 @@ interface NoCodeOperandEditorExpressionProps {
     hint?: string;
     value: NoCodeExpression;
     onChange: (value: NoCodeOperand | undefined) => void;
-    desiredType: NoCodeDataType;
+    contextType?: NoCodeOperandEditorContextType;
     onAddEnclosingExpression: () => void;
 }
 
 interface ResolvedParameter {
     parameter: NoCodeParameter;
     operand: NoCodeOperand | undefined | null;
+}
+
+interface TreeConnectorProps {
+    up: boolean;
+    down: boolean;
+}
+
+function TreeConnector(props: TreeConnectorProps) {
+    const {
+        up,
+        down,
+    } = props;
+
+    return (
+        <Box
+            sx={{
+                position: 'relative',
+                width: '1.5rem',
+                flexShrink: 0,
+            }}
+        >
+            {
+                up &&
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        left: '50%',
+                        transform: 'translateX(-0.5px)',
+                        top: 0,
+                        bottom: '50%',
+                        width: '1px',
+                        bgcolor: 'grey.400',
+                    }}
+                />
+            }
+
+            {
+                down &&
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        left: '50%',
+                        transform: 'translateX(-0.5px)',
+                        top: '50%',
+                        bottom: 0,
+                        width: '1px',
+                        bgcolor: 'grey.400',
+                    }}
+                />
+            }
+
+            <Box
+                sx={{
+                    position: 'absolute',
+                    left: '50%',
+                    right: 0,
+                    top: '50%',
+                    transform: 'translateY(-0.5px)',
+                    height: '1px',
+                    bgcolor: 'grey.400',
+                }}
+            />
+        </Box>
+    );
 }
 
 export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressionProps) {
@@ -44,7 +122,7 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
         hint,
         value: operand,
         onChange,
-        desiredType,
+        contextType = 'BOTH',
         onAddEnclosingExpression,
     } = props;
 
@@ -163,7 +241,7 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                     onChange({
                         type: 'NoCodeExpression',
                         operatorIdentifier: op.identifier,
-                        operands: [],
+                        operands: operand.operands ?? [],
                     });
                 }}
                 onClose={() => {
@@ -186,36 +264,12 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                             paddingLeft: '0.25rem',
                         }}
                     >
-                        <Box
-                            sx={{
-                                position: 'relative',
-                                width: '1.5rem',
-                            }}
-                        >
-                            <Box
-                                sx={{
-                                    position: 'absolute',
-                                    height: '1px',
-                                    top: 'calc(50% - 1px)',
-                                    width: '100%',
-                                    bgcolor: 'grey.400',
-                                }}
-                            />
-
-                            <Box
-                                sx={{
-                                    position: 'absolute',
-                                    height: '50%',
-                                    top: 'calc(50% - 1px)',
-                                    width: '1px',
-                                    bgcolor: 'grey.400',
-                                }}
-                            />
-                        </Box>
+                        <TreeConnector up={false} down={true} />
 
                         <Box
                             sx={{
                                 pb: 2,
+                                pl: 1,
                                 flex: 1,
                             }}
                         >
@@ -233,6 +287,7 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                                 }}
                                 allOperators={allOperators}
                                 allElements={allElements}
+                                contextType={contextType}
                             />
                         </Box>
                     </Box>
@@ -241,121 +296,136 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                 <Box
                     sx={{
                         display: 'flex',
-                        gap: 2,
+                        alignItems: 'stretch',
+                        paddingLeft: '0.25rem',
                     }}
                 >
+                    <TreeConnector
+                        up={leadingParameter != null}
+                        down={trailingParameters.length > 0}
+                    />
+
                     <Box
                         sx={{
-                            position: 'relative',
-                            bgcolor: 'grey.200',
-                            pl: 1,
-                            pr: 2,
-                            py: 1,
-                            borderRadius: 1,
                             display: 'flex',
                             alignItems: 'center',
+                            gap: 2,
+                            flex: 1,
                         }}
                     >
-                        {
-                            false &&
-                            <Typography
+                        <Box
+                            sx={{
+                                position: 'relative',
+                                bgcolor: 'grey.200',
+                                pl: 1,
+                                pr: 2,
+                                py: 1,
+                                borderRadius: 1,
+                                display: 'flex',
+                                alignItems: 'center',
+                            }}
+                        >
+                            {
+                                false &&
+                                <Typography
+                                    sx={{
+                                        position: 'absolute',
+                                        top: -8,
+                                        left: 8,
+                                        backgroundColor: 'background.paper',
+                                        paddingX: 0.75,
+                                        color: 'text.secondary',
+                                    }}
+                                    variant="caption"
+                                >
+                                    {label} — (Ausdruck)
+                                </Typography>
+                            }
+
+                            <Functions
+                                fontSize="small"
                                 sx={{
-                                    position: 'absolute',
-                                    top: -8,
-                                    left: 8,
-                                    backgroundColor: 'background.paper',
-                                    paddingX: 0.75,
-                                    color: 'text.secondary',
+                                    color: 'grey.800',
                                 }}
+                            />
+
+                            <Typography
                                 variant="caption"
+                                sx={{
+                                    ml: 0.5,
+                                }}
                             >
-                                {label} — (Ausdruck)
+                                {operator.label}
+                            </Typography>
+                        </Box>
+
+                        {
+                            operator.abstractDescription != null &&
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{
+                                    mt: 1,
+                                    flex: 1,
+                                }}
+                            >
+                                {operator.abstractDescription}
                             </Typography>
                         }
 
-                        <Functions
-                            fontSize="small"
+                        <Actions
+                            dense={true}
+                            size="small"
                             sx={{
-                                color: 'grey.800',
+                                ml: 1,
+                                color: 'text.secondary',
                             }}
+                            color="inherit"
+                            actions={[
+                                {
+                                    icon: <Delete />,
+                                    tooltip: 'Diesen Ausdruck löschen',
+                                    onClick: () => {
+                                        onChange(operands[0] ?? undefined);
+                                    },
+                                },
+                                {
+                                    icon: <SwapHoriz />,
+                                    tooltip: 'Ausdrucksoperator austauschen',
+                                    onClick: () => {
+                                        setShowOperatorSwitcher(true);
+                                    },
+                                },
+                                {
+                                    icon: <SwapVert />,
+                                    tooltip: 'Parameterreihenfolge ändern',
+                                    onClick: () => {
+                                        setShowReorderParameters(true);
+                                    },
+                                },
+                                {
+                                    icon: <Help />,
+                                    tooltip: 'Hilfe zum Ausdruckstyp',
+                                    onClick: () => {
+                                        setShowOperatorInfo(true);
+                                    },
+                                },
+                                {
+                                    icon: <Functions />,
+                                    tooltip: 'Diesen Ausdruck mit einem anderen Ausdruck verknüpfen',
+                                    onClick: () => {
+                                        onChange({
+                                            type: 'NoCodeExpression',
+                                            operatorIdentifier: null,
+                                            operands: [
+                                                operand,
+                                            ],
+                                        });
+                                    },
+                                },
+                            ]}
                         />
-
-                        <Typography
-                            variant="caption"
-                            sx={{
-                                ml: 0.5,
-                            }}
-                        >
-                            {operator.label}
-                        </Typography>
                     </Box>
-
-                    {
-                        operator.abstractDescription != null &&
-                        <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{
-                                mt: 1,
-                                flex: 1,
-                            }}
-                        >
-                            {operator.abstractDescription}
-                        </Typography>
-                    }
-
-                    <Actions
-                        dense={true}
-                        size="small"
-                        sx={{
-                            ml: 1,
-                            color: 'text.secondary',
-                        }}
-                        color="inherit"
-                        actions={[
-                            {
-                                icon: <Delete />,
-                                tooltip: 'Diesen Ausdruck löschen',
-                                onClick: () => {
-                                    onChange(operands[0] ?? undefined);
-                                },
-                            },
-                            {
-                                icon: <SwapHoriz />,
-                                tooltip: 'Ausdrucksoperator austauschen',
-                                onClick: () => {
-                                    setShowOperatorSwitcher(true);
-                                },
-                            },
-                            {
-                                icon: <SwapVert />,
-                                tooltip: 'Parameterreihenfolge ändern',
-                                onClick: () => {
-                                    setShowReorderParameters(true);
-                                },
-                            },
-                            {
-                                icon: <Help />,
-                                tooltip: 'Hilfe zum Ausdruckstyp',
-                                onClick: () => {
-                                    setShowOperatorInfo(true);
-                                },
-                            },
-                            {
-                                icon: <Functions />,
-                                tooltip: 'Diesen Ausdruck mit einem anderen Ausdruck verknüpfen',
-                                onClick: () => {
-                                    onChange({
-                                        type: 'NoCodeExpression',
-                                        operatorIdentifier: null,
-                                        operands: [
-                                            operand,
-                                        ],
-                                    });
-                                },
-                            },
-                        ]}
-                    />
                 </Box>
 
                 {
@@ -368,51 +438,13 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                                 paddingLeft: '0.25rem',
                             }}
                         >
-                            <Box
-                                sx={{
-                                    position: 'relative',
-                                    width: '1.5rem',
-                                }}
-                            >
-                                <Box
-                                    sx={{
-                                        position: 'absolute',
-                                        height: '50%',
-                                        bottom: '50%',
-                                        width: '1px',
-                                        bgcolor: 'grey.400',
-                                    }}
-                                />
-
-                                <Box
-                                    sx={{
-                                        position: 'absolute',
-                                        height: '1px',
-                                        top: 'calc(50% - 1px)',
-                                        width: '100%',
-                                        bgcolor: 'grey.400',
-                                    }}
-                                />
-
-                                {
-                                    index < all.length - 1 &&
-                                    <Box
-                                        sx={{
-                                            position: 'absolute',
-                                            height: '50%',
-                                            bottom: 'calc(50% - 1px)',
-                                            width: '1px',
-                                            bgcolor: 'grey.400',
-                                        }}
-                                    />
-                                }
-
-                            </Box>
+                            <TreeConnector up={true} down={index < all.length - 1} />
 
                             <Box
                                 sx={{
-                                    paddingTop: index === 0 ? 2.5 : 2,
+                                    paddingTop: 2,
                                     flex: 1,
+                                    pl: 1,
                                 }}
                             >
                                 <NoCodeOperandEditor
@@ -428,6 +460,7 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                                     }}
                                     allOperators={allOperators}
                                     allElements={allElements}
+                                    contextType={contextType}
                                 />
                             </Box>
                         </Box>
@@ -483,6 +516,27 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                         };
                     }
 
+                    if (isNoCodeProcessDataReference(p.operand)) {
+                        return {
+                            primary: getProcessDataOperandLabel(p.operand, 'PROCESS'),
+                            secondary: p.parameter.label,
+                        };
+                    }
+
+                    if (isNoCodeInstanceDataReference(p.operand)) {
+                        return {
+                            primary: getProcessDataOperandLabel(p.operand, 'INSTANCE'),
+                            secondary: p.parameter.label,
+                        };
+                    }
+
+                    if (isNoCodeNodeDataReference(p.operand)) {
+                        return {
+                            primary: getProcessDataOperandLabel(p.operand, 'NODE'),
+                            secondary: p.parameter.label,
+                        };
+                    }
+
                     return {
                         primary: p.parameter.label,
                     };
@@ -529,4 +583,21 @@ function getExpressionOperandLabel(operand: NoCodeExpression, allOperators: NoCo
     }
 
     return operator.label;
+}
+
+function getProcessDataOperandLabel(
+    operand: NoCodeProcessDataReference | NoCodeInstanceDataReference | NoCodeNodeDataReference,
+    source: 'PROCESS' | 'INSTANCE' | 'NODE',
+): string {
+    const sourceLabel = source === 'INSTANCE'
+        ? 'Instanzdaten'
+        : source === 'NODE'
+            ? `Knotendaten (${(operand as NoCodeNodeDataReference).nodeDataKey ?? 'kein Schlüssel'})`
+            : 'Prozessdaten';
+
+    if (isStringNullOrEmpty(operand.path)) {
+        return sourceLabel;
+    }
+
+    return `${sourceLabel} → ${operand.path}`;
 }

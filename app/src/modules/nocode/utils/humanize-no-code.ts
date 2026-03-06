@@ -1,4 +1,12 @@
-import {isNoCodeExpression, isNoCodeReference, isNoCodeStaticValue, NoCodeOperand} from '../../../models/functions/no-code-expression';
+import {
+    isNoCodeExpression,
+    isNoCodeInstanceDataReference,
+    isNoCodeNodeDataReference,
+    isNoCodeProcessDataReference,
+    isNoCodeReference,
+    isNoCodeStaticValue,
+    NoCodeOperand,
+} from '../../../models/functions/no-code-expression';
 import {ElementWithParents} from '../../../utils/flatten-elements';
 import {NoCodeOperatorDetailsDTO} from '../../../models/dtos/no-code-operator-details-dto';
 import {generateComponentTitle} from '../../../utils/generate-component-title';
@@ -17,6 +25,25 @@ export function humanizeNoCode(operand: NoCodeOperand, allElements: ElementWithP
             : `Unbekanntes Element (ID: ${operand.elementId})`;
 
         return `Wert von „${elementTitle}”`;
+    }
+
+    if (isNoCodeProcessDataReference(operand)) {
+        return operand.path != null && operand.path.length > 0
+            ? `Prozessdaten → ${operand.path}`
+            : 'Prozessdaten';
+    }
+
+    if (isNoCodeInstanceDataReference(operand)) {
+        return operand.path != null && operand.path.length > 0
+            ? `Instanzdaten → ${operand.path}`
+            : 'Instanzdaten';
+    }
+
+    if (isNoCodeNodeDataReference(operand)) {
+        const sourceLabel = `Knotendaten (${operand.nodeDataKey ?? 'kein Schlüssel'})`;
+        return operand.path != null && operand.path.length > 0
+            ? `${sourceLabel} → ${operand.path}`
+            : sourceLabel;
     }
 
     if (isNoCodeExpression(operand)) {
