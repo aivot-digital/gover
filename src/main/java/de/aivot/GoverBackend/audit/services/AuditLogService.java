@@ -16,7 +16,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -36,23 +35,20 @@ public class AuditLogService implements CreateEntityService<AuditLogEntity>, Lis
 
         entity.setId(null);
 
-        if (entity.getEventTs() == null) {
-            entity.setEventTs(now);
-        }
-        if (entity.getCreatedAt() == null) {
-            entity.setCreatedAt(now);
-        }
-        if (entity.getTags() == null) {
-            entity.setTags(List.of());
+        if (entity.getTimestamp() == null) {
+            entity.setTimestamp(now);
         }
         if (entity.getMetadata() == null) {
             entity.setMetadata(Map.of());
         }
-        if (entity.getActionResult() == null) {
-            entity.setActionResult("success");
-        }
         if (entity.getActorType() == null) {
-            entity.setActorType("SYSTEM");
+            entity.setActorType("System");
+        }
+        if (entity.getTriggerType() == null) {
+            entity.setTriggerType("Message");
+        }
+        if (entity.getModule() == null) {
+            entity.setModule("General");
         }
 
         return auditLogRepository.save(entity);
