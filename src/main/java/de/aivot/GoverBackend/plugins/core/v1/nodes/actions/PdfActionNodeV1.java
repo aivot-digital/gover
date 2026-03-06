@@ -278,21 +278,24 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
         @InputElementPOJOBinding(id = CONTENT_HTML_FIELD_ID, type = ElementType.CodeInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "HTML-Inhalt"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "HTML-Template fuer die PDF-Seiten."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "language", strValue = "html")
         })
         public String contentHtml;
 
         @InputElementPOJOBinding(id = HEADER_HTML_FIELD_ID, type = ElementType.CodeInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Header HTML (optional)"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Optionales HTML fuer den Seitenkopf."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = false)
+                @ElementPOJOBindingProperty(key = "required", boolValue = false),
+                @ElementPOJOBindingProperty(key = "language", strValue = "html")
         })
         public String headerHtml;
 
         @InputElementPOJOBinding(id = FOOTER_HTML_FIELD_ID, type = ElementType.CodeInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Footer HTML (optional)"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Optionales HTML fuer die Seitenfusszeile."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = false)
+                @ElementPOJOBindingProperty(key = "required", boolValue = false),
+                @ElementPOJOBindingProperty(key = "language", strValue = "html")
         })
         public String footerHtml;
 
