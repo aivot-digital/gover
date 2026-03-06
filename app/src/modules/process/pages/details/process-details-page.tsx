@@ -1,4 +1,4 @@
-import React, {type ReactNode, useEffect, useMemo, useState} from 'react';
+import React, {type ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
 import {Box, Chip, Paper, Typography} from '@mui/material';
 import {Outlet, useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {type ProcessEntity} from '../../entities/process-entity';
@@ -52,6 +52,7 @@ import {ProcessInstanceApiService} from '../../services/process-instance-api-ser
 import {ProcessInstanceTaskApiService} from '../../services/process-instance-task-api-service';
 import {BaseApiService} from '../../../../services/base-api-service';
 import Download from '@aivot/mui-material-symbols-400-outlined/dist/download/Download';
+import Refresh from '@mui/icons-material/Refresh';
 
 interface RuntimeAttachment {
     key: string;
@@ -79,6 +80,7 @@ export function ProcessDetailsPage(): ReactNode {
         tasks: ProcessInstanceTaskEntity[];
         events: ProcessInstanceEventEntity[];
     } | null>(null);
+    const [isRefreshingRuntimeData, setIsRefreshingRuntimeData] = useState(false);
     const [availableNodeProviders, setAvailableNodeProviders] = useState<ProcessNodeProvider[]>([]);
 
     const [showAddTriggerDialog, setShowAddTriggerDialog] = useState(false);
@@ -257,12 +259,19 @@ export function ProcessDetailsPage(): ReactNode {
             });
     }, [processId, processVersion]);
 
-    useEffect(() => {
+    const loadRuntimeData = useCallback(() => {
         if (instanceId == null) {
             setRuntimeData(null);
-            return;
+            return Promise.resolve();
         }
 
+        dispatch(setLoadingMessage({
+            message: 'Lade Laufzeitdaten',
+            blocking: false,
+            estimatedTime: 1000,
+        }));
+
+        setIsRefreshingRuntimeData(true);
         new ProcessInstanceApiService()
             .retrieve(instanceId)
             .then((instance) => {
@@ -285,8 +294,16 @@ export function ProcessDetailsPage(): ReactNode {
             })
             .catch((error) => {
                 dispatch(showApiErrorSnackbar(error, 'Die Prozessinstanz konnte nicht geladen werden.'));
+            })
+            .finally(() => {
+                setIsRefreshingRuntimeData(false);
+                dispatch(clearLoadingMessage());
             });
-    }, [instanceId]);
+    }, [instanceId, dispatch]);
+
+    useEffect(() => {
+        void loadRuntimeData();
+    }, [loadRuntimeData]);
 
     const handleAddFlowTrigger = (nodeProvider: ProcessNodeProvider): void => {
         if (processFlow == null) {
@@ -672,6 +689,15 @@ export function ProcessDetailsPage(): ReactNode {
                         }
                         icon={ModuleIcons.processes}
                         actions={[
+                            {
+                                tooltip: 'Laufzeitdaten neu laden',
+                                icon: <Refresh/>,
+                                onClick: () => {
+                                    void loadRuntimeData();
+                                },
+                                visible: instanceId != null,
+                                disabled: isRefreshingRuntimeData,
+                            },
                             'separator',
                             /*
                             {
