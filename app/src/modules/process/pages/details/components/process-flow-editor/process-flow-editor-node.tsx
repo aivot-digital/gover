@@ -60,7 +60,26 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
             )) ?? null;
     }, [runtimeData]);
 
-    const wasPerformed = associatedTask != null;
+    const performedPortKeys = useMemo(() => {
+        if (runtimeData == null) {
+            return new Set<string>();
+        }
+
+        const result = new Set<string>();
+
+        for (const child of data.treeNode.children) {
+            const hasMatchingNextTask = runtimeData.tasks.some((task) => (
+                task.previousProcessNodeId === node.id &&
+                task.processNodeId === child.childNode.node.id
+            ));
+
+            if (hasMatchingNextTask) {
+                result.add(child.port.key);
+            }
+        }
+
+        return result;
+    }, [runtimeData, data.treeNode.children, node.id]);
 
     const {
         Icon: TypeIcon,
@@ -266,7 +285,7 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
                                 <ProcessFlowEditorNodeHandle
                                     key={port.key}
                                     editable={editable}
-                                    wasPerformed={wasPerformed}
+                                    wasPerformed={performedPortKeys.has(port.key)}
                                     isConnected={data.treeNode.children.some((c) => c.port.key === port.key)}
                                     port={port}
                                     onClick={() => {

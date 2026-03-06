@@ -18,15 +18,21 @@ import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
@@ -42,14 +48,17 @@ public class ProcessInstanceAttachmentController {
     private final ScopedAuditService auditService;
     private final UserService userService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
+    private final de.aivot.GoverBackend.storage.services.StorageService storageService;
 
     @Autowired
     public ProcessInstanceAttachmentController(AuditService auditService,
                                                UserService userService,
-                                               ProcessInstanceAttachmentService processInstanceAttachmentService) {
+                                               ProcessInstanceAttachmentService processInstanceAttachmentService,
+                                               de.aivot.GoverBackend.storage.services.StorageService storageService) {
         this.auditService = auditService.createScopedAuditService(ProcessInstanceAttachmentController.class);
         this.userService = userService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
+        this.storageService = storageService;
     }
 
     @GetMapping("")
@@ -125,6 +134,41 @@ public class ProcessInstanceAttachmentController {
                 .orElseThrow(ResponseException::notFound);
     }
 
+    @GetMapping("{key}/file/")
+    @Operation(
+            summary = "Download Process Instance Attachment",
+            description = "Streams the file of a process instance attachment by its key."
+    )
+    public ResponseEntity<InputStreamResource> download(
+            @Nonnull @PathVariable UUID key,
+            @RequestParam(defaultValue = "true") boolean download
+    ) throws ResponseException {
+        var attachment = processInstanceAttachmentService
+                .retrieve(key)
+                .orElseThrow(ResponseException::notFound);
+
+        var inputStream = storageService
+                .getDocumentContent(attachment.getStorageProviderId(), attachment.getStoragePathFromRoot());
+
+        MediaType mediaType;
+        try {
+            var mimeType = URLConnection.guessContentTypeFromName(attachment.getFileName());
+            mediaType = mimeType != null ? MediaType.parseMediaType(mimeType) : MediaType.APPLICATION_OCTET_STREAM;
+        } catch (InvalidMediaTypeException e) {
+            mediaType = MediaType.APPLICATION_OCTET_STREAM;
+        }
+
+        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok().contentType(mediaType);
+        var contentDispositionType = download ? "attachment" : "inline";
+        var contentDisposition = ContentDisposition
+                .builder(contentDispositionType)
+                .filename(attachment.getFileName(), StandardCharsets.UTF_8)
+                .build();
+        responseBuilder.header("Content-Disposition", contentDisposition.toString());
+
+        return responseBuilder.body(new InputStreamResource(inputStream));
+    }
+
     @PutMapping("{key}/")
     @Operation(
             summary = "Update Process Instance Attachment",
@@ -184,4 +228,3 @@ public class ProcessInstanceAttachmentController {
         ));
     }
 }
-

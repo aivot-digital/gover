@@ -29,6 +29,8 @@ import de.aivot.GoverBackend.submission.entities.Submission;
 import de.aivot.GoverBackend.theme.entities.ThemeEntity;
 import de.aivot.GoverBackend.utils.MultipartUtils;
 import de.aivot.GoverBackend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -192,15 +194,42 @@ public class PdfService {
         String headerTemplate = loadTemplate("pp_form_header.html", dto);
         String footerTemplate = loadTemplate("pp_form_footer.html", dto);
 
+        return generatePdfFromHtml(
+                template,
+                headerTemplate,
+                footerTemplate,
+                "210mm",
+                "297mm"
+        );
+    }
+
+    public byte[] generatePdfFromHtml(@Nonnull String contentHtml,
+                                      @Nullable String headerHtml,
+                                      @Nullable String footerHtml,
+                                      @Nullable String paperWidth,
+                                      @Nullable String paperHeight) throws IOException, InterruptedException, URISyntaxException {
+        var resolvedHeader = StringUtils.isNotNullOrEmpty(headerHtml)
+                ? headerHtml
+                : "<html><body></body></html>";
+        var resolvedFooter = StringUtils.isNotNullOrEmpty(footerHtml)
+                ? footerHtml
+                : "<html><body></body></html>";
+        var resolvedPaperWidth = StringUtils.isNotNullOrEmpty(paperWidth)
+                ? paperWidth
+                : "210mm";
+        var resolvedPaperHeight = StringUtils.isNotNullOrEmpty(paperHeight)
+                ? paperHeight
+                : "297mm";
+
         var multipart = new MultipartUtils.MultipartBodyPublisher()
-                .addPart("files", "index.html", template)
-                .addPart("files", "header.html", headerTemplate)
-                .addPart("files", "footer.html", footerTemplate)
+                .addPart("files", "index.html", contentHtml)
+                .addPart("files", "header.html", resolvedHeader)
+                .addPart("files", "footer.html", resolvedFooter)
                 .addPart("index", "index.html")
                 .addPart("header", "header.html")
                 .addPart("footer", "footer.html")
-                .addPart("paperHeight", "297mm")
-                .addPart("paperWidth", "210mm");
+                .addPart("paperHeight", resolvedPaperHeight)
+                .addPart("paperWidth", resolvedPaperWidth);
 
         var convertUri = new URI("http://" + gotenbergConfig.getHost() + ":" + gotenbergConfig.getPort() + "/forms/chromium/convert/html");
 

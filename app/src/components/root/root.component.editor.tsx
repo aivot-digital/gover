@@ -24,10 +24,14 @@ import {withDelay} from '../../utils/with-delay';
 import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
 import {LoadedForm} from '../../slices/app-slice';
 import {copyToClipboardText} from '../../utils/copy-to-clipboard';
+import {useAppSelector} from '../../hooks/use-app-selector';
+import {selectSystemConfigValue} from '../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../data/system-config-keys';
 
 export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedForm>) {
     const dispatch = useAppDispatch();
     const api = useApi();
+    const defaultAssetStorageProviderId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.storage.assets.default_storage_provider));
 
     const [departments, setDepartments] = useState<SelectFieldComponentOption[] | null>(null);
     const [themes, setThemes] = useState<SelectFieldComponentOption[] | null>(null);
@@ -68,19 +72,75 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
                 console.error(err);
                 dispatch(showErrorSnackbar('Fehler beim Laden der Farbschemata!'));
             });
+    }, [api, dispatch]);
 
-        withDelay(new AssetsApiService(api)
-            .listAll({contentType: 'text/html'}), 600)
-            .then((assets) => assets.content.map((asset) => ({
-                value: asset.key,
-                label: asset.filename,
-            })))
+    useEffect(() => {
+        const providerIdRaw = defaultAssetStorageProviderId?.trim() ?? '';
+        if (providerIdRaw.length === 0) {
+            setTemplateOptions([]);
+            return;
+        }
+
+        const providerId = Number.parseInt(providerIdRaw, 10);
+        if (Number.isNaN(providerId)) {
+            setTemplateOptions([]);
+            return;
+        }
+
+        const loadTemplateAssets = async () => {
+            const assetsApiService = new AssetsApiService(api);
+            const visitedFolders = new Set<string>();
+            const foldersToVisit: string[] = ['/'];
+            const assets: Array<{ key: string; filename: string; contentType: string }> = [];
+
+            while (foldersToVisit.length > 0) {
+                const folder = foldersToVisit.shift();
+                if (folder == null) {
+                    continue;
+                }
+
+                const normalizedFolder = AssetsApiService.normalizeFolderPath(folder);
+                if (visitedFolders.has(normalizedFolder)) {
+                    continue;
+                }
+                visitedFolders.add(normalizedFolder);
+
+                const items = await assetsApiService.listFolderContent(providerId, normalizedFolder);
+                for (const item of items) {
+                    if (item.directory === true) {
+                        foldersToVisit.push(AssetsApiService.normalizeFolderPath(item.storagePathFromRoot));
+                        continue;
+                    }
+
+                    assets.push({
+                        key: item.key,
+                        filename: item.filename,
+                        contentType: item.contentType ?? '',
+                    });
+                }
+            }
+
+            return assets;
+        };
+
+        withDelay(loadTemplateAssets(), 600)
+            .then((assets) => assets
+                .filter((asset) =>
+                    asset.key.length > 0 &&
+                    asset.contentType.toLowerCase().startsWith('text/html'),
+                )
+                .sort((a, b) => a.filename.localeCompare(b.filename, 'de', {sensitivity: 'base'}))
+                .map((asset) => ({
+                    value: asset.key,
+                    label: asset.filename,
+                })),
+            )
             .then(setTemplateOptions)
             .catch((err) => {
                 console.error(err);
                 dispatch(showErrorSnackbar('Fehler beim Laden der PDF-Vorlagen!'));
             });
-    }, []);
+    }, [api, defaultAssetStorageProviderId, dispatch]);
 
     const generalLink = createCustomerPath(`${props.entity?.form.slug ?? ''}`);
     const versionedLink = createCustomerPath(`${props.entity?.form.slug ?? ''}/${props.entity?.version ?? ''}`);

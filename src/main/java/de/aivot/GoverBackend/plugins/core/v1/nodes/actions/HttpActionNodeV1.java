@@ -4,12 +4,18 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
+import de.aivot.GoverBackend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.GoverBackend.elements.models.elements.form.input.CheckboxInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.CodeInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
+import de.aivot.GoverBackend.nocode.models.NoCodeReference;
+import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
 import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
@@ -30,6 +36,7 @@ import java.util.Map;
 public class HttpActionNodeV1 implements ProcessNodeDefinition {
     private static final String METHOD_FIELD_ID = "method";
     private static final String URL_FIELD_ID = "url";
+    private static final String PAYLOAD_FIELD_ID = "payload";
     private static final String IS_JSON_FIELD_ID = "isJson";
 
     private static final String PORT_NAME = "output";
@@ -110,6 +117,22 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition {
         url.setHint("Die URL, von der die Daten geladen werden sollen.");
         url.setRequired(true);
         layout.addChild(url);
+
+        var payload = new CodeInputElement();
+        payload.setId(PAYLOAD_FIELD_ID);
+        payload.setLabel("JSON-Payload");
+        payload.setHint("Der JSON-Request-Body für POST-Anfragen. Sie können Platzhalter zur String-Interpolation verwenden.");
+        payload.setLanguage("json");
+        payload.setVisibility(
+                ElementVisibilityFunctions
+                        .of(NoCodeExpression.of(
+                                NoCodeEqualsOperator.OPERATOR_ID,
+                                new NoCodeReference(METHOD_FIELD_ID),
+                                new NoCodeStaticValue("POST")
+                        ))
+                        .recalculateReferencedIds()
+        );
+        layout.addChild(payload);
 
 
         var isJSON = new CheckboxInputElement();
@@ -197,8 +220,22 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition {
                 );
             }
         } else {
+            var payload = processDataService
+                    .interpolate(
+                            context.getProcessData(),
+                            configuration
+                                    .get(PAYLOAD_FIELD_ID)
+                                    .getOptionalValue()
+                                    .orElse("{}")
+                                    .toString()
+                    );
+
+            if (StringUtils.isNullOrEmpty(payload)) {
+                payload = "{}";
+            }
+
             try {
-                response = httpService.post(uri, "{}");
+                response = httpService.post(uri, payload);
             } catch (HttpConnectionException e) {
                 throw new ProcessNodeExecutionExceptionUnknown(
                         e,
