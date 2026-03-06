@@ -824,7 +824,7 @@ export function ProcessDetailsPage(): ReactNode {
 
                 <Paper
                     sx={{
-                        width: 480,
+                        width: '33%',
                         height: '100vh',
                         borderLeft: '1px solid #ccc',
                     }}
