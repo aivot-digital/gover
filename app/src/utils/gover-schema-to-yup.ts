@@ -23,6 +23,7 @@ import {
 } from '../models/elements/form/input/assignment-context-field-element';
 import {DataModelSelectFieldElement} from '../models/elements/form/input/data-model-select-field-element';
 import {DataObjectSelectFieldElement} from '../models/elements/form/input/data-object-select-field-element';
+import {NoCodeInputFieldElement} from '../models/elements/form/input/no-code-input-field-element';
 import {
     createDomainAndUserSelectValueKey,
     normalizeDomainAndUserSelectItem,
@@ -96,6 +97,9 @@ export function goverSchemaToYup(elem: AnyElement): any {
                 } else {
                     fieldSchema = fieldSchema.nullable();
                 }
+                break;
+            case ElementType.NoCodeInput:
+                fieldSchema = noCodeInputFieldToYup(elem);
                 break;
 
             case ElementType.ReplicatingContainer:
@@ -205,6 +209,7 @@ const YupSchemaMap: {
     [ElementType.AssignmentContext]: assignmentContextFieldToYup,
     [ElementType.DataModelSelect]: dynamicSelectFieldToYup,
     [ElementType.DataObjectSelect]: dynamicSelectFieldToYup,
+    [ElementType.NoCodeInput]: noCodeInputFieldToYup,
     [ElementType.ReplicatingContainer]: replicatingContainerToYup,
 };
 
@@ -510,6 +515,31 @@ function mapPointFieldToYup(elem: MapPointFieldElement): Schema {
     }
 
     return mapPointSchema;
+}
+
+function noCodeInputFieldToYup(elem: NoCodeInputFieldElement): Schema {
+    const requiredMessage = `${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`;
+
+    let noCodeSchema: Schema = yup
+        .object()
+        .shape({
+            noCode: yup.mixed().nullable(),
+        });
+
+    if (elem.required) {
+        noCodeSchema = noCodeSchema
+            .required(requiredMessage)
+            .test(
+                'no-code-required',
+                requiredMessage,
+                (value: any) => value?.noCode != null,
+            );
+    } else {
+        noCodeSchema = noCodeSchema
+            .nullable();
+    }
+
+    return noCodeSchema;
 }
 
 function createDomainAndUserSelectionSchema(

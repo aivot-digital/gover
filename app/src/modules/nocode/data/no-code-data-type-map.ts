@@ -44,4 +44,5 @@ export const NoCodeDataTypeMap: Record<ElementType, NoCodeDataType> = {
     [ElementType.AssignmentContext]: NoCodeDataType.Object,
     [ElementType.DataModelSelect]: NoCodeDataType.String,
     [ElementType.DataObjectSelect]: NoCodeDataType.String,
+    [ElementType.NoCodeInput]: NoCodeDataType.Runtime,
 }

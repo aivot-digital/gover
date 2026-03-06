@@ -43,4 +43,5 @@ export const ElementIsInput: Record<ElementType, boolean> = {
     [ElementType.AssignmentContext]: true,
     [ElementType.DataModelSelect]: true,
     [ElementType.DataObjectSelect]: true,
+    [ElementType.NoCodeInput]: true,
 };

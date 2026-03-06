@@ -17,6 +17,7 @@ import {DateTimeRangeEvaluator} from './date-time-range-evaluator';
 import {MapPointEvaluator} from './map-point-evaluator';
 import {DomainUserSelectEvaluator} from './domain-user-select-evaluator';
 import {AssignmentContextFieldEvaluator} from './assignment-context-field-evaluator';
+import {NoCodeInputEvaluator} from './no-code-input-evaluator';
 
 export const evaluators: {
     [key in ElementType]: BaseEvaluator<any> | null;
@@ -63,4 +64,5 @@ export const evaluators: {
     [ElementType.AssignmentContext]: AssignmentContextFieldEvaluator,
     [ElementType.DataModelSelect]: SelectEvaluator,
     [ElementType.DataObjectSelect]: SelectEvaluator,
+    [ElementType.NoCodeInput]: NoCodeInputEvaluator,
 };

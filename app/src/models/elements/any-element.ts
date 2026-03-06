@@ -35,6 +35,7 @@ import {DomainUserSelectFieldElement} from './form/input/domain-user-select-fiel
 import {AssignmentContextFieldElement} from './form/input/assignment-context-field-element';
 import {DataModelSelectFieldElement} from './form/input/data-model-select-field-element';
 import {DataObjectSelectFieldElement} from './form/input/data-object-select-field-element';
+import {NoCodeInputFieldElement} from './form/input/no-code-input-field-element';
 
 export type AnyElement =
     RootElement |
@@ -81,4 +82,5 @@ export type AnyElementType<T extends ElementType> =
                                                                                                                             T extends ElementType.DomainAndUserSelect ? DomainUserSelectFieldElement :
                                                                                                                                 T extends ElementType.AssignmentContext ? AssignmentContextFieldElement :
                                                                                                                                     T extends ElementType.DataModelSelect ? DataModelSelectFieldElement :
-                                                                                                                                        T extends ElementType.DataObjectSelect ? DataObjectSelectFieldElement : never;
+                                                                                                                                        T extends ElementType.DataObjectSelect ? DataObjectSelectFieldElement :
+                                                                                                                                            T extends ElementType.NoCodeInput ? NoCodeInputFieldElement : never;

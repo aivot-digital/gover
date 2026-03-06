@@ -953,6 +953,19 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.StepperLayout]: null,
     [ElementType.ConfigLayout]: null,
     [ElementType.FunctionInput]: null,
+    [ElementType.NoCodeInput]: (
+        <Box>
+            <Typography>
+                Das Element „No-Code-Eingabe“ ermöglicht die Modellierung von Ausdrücken über den integrierten
+                No-Code-Editor.
+            </Typography>
+
+            <Typography sx={{mt: 2}}>
+                Das Ergebnis wird als strukturierter Ausdruck gespeichert und kann in Folgeprozessen ausgewertet
+                werden.
+            </Typography>
+        </Box>
+    ),
     [ElementType.CodeInput]: (
         <Box>
             <Typography>

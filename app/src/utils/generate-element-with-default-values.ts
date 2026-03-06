@@ -42,6 +42,10 @@ import {DataModelSelectFieldElement} from '../models/elements/form/input/data-mo
 import {DataObjectSelectFieldElement} from '../models/elements/form/input/data-object-select-field-element';
 import {RichTextInputElement} from '../models/elements/form/input/rich-text-input-element';
 import {CodeInputElement, CodeInputFieldLanguage} from '../models/elements/form/input/code-input-element';
+import {
+    NoCodeInputFieldElement,
+    NoCodeInputFieldReturnType
+} from '../models/elements/form/input/no-code-input-field-element';
 
 function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
     return {
@@ -118,6 +122,7 @@ const elementConstructors: {
     [ElementType.AssignmentContext]: (id: string) => AssignmentContextFieldElement;
     [ElementType.DataModelSelect]: (id: string) => DataModelSelectFieldElement;
     [ElementType.DataObjectSelect]: (id: string) => DataObjectSelectFieldElement;
+    [ElementType.NoCodeInput]: (id: string) => NoCodeInputFieldElement;
 } = {
     [ElementType.FormLayout]: (id) => ({
         ...makeBase(ElementType.FormLayout, id),
@@ -426,6 +431,11 @@ const elementConstructors: {
         placeholder: 'Datenobjekt auswählen',
         dataModelKey: undefined,
         dataLabelAttributeKey: undefined,
+    }),
+    [ElementType.NoCodeInput]: (id) => ({
+        ...makeInputBase(ElementType.NoCodeInput, id),
+        label: 'No-Code-Eingabe',
+        returnType: NoCodeInputFieldReturnType.BOOLEAN,
     }),
 };
 

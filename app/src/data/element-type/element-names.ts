@@ -44,6 +44,7 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.AssignmentContext]: 'Verantwortlicher Personenkreis',
     [ElementType.DataModelSelect]: 'Datenmodell-Auswahl',
     [ElementType.DataObjectSelect]: 'Datenobjekt-Auswahl',
+    [ElementType.NoCodeInput]: 'No-Code-Eingabe',
 };
 
 export function getElementName(element: AnyElement): string {
