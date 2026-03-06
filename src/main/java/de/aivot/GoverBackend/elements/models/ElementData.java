@@ -224,26 +224,43 @@ public class ElementData extends HashMap<String, ElementDataObject> implements S
      * @return a map of values, where the keys are the element IDs and the values are the values of the elements.
      */
     public static Map<String, Object> toValueMap(BaseElement element, ElementData elementData) {
+        var dataObject = elementData
+                .getOrDefault(element.getId(), ElementDataObject.of(element));
+
+        if (!dataObject.getIsVisible()) {
+            return new HashMap<>();
+        }
+
+        var resolvedElement = dataObject
+                .getComputedOverrideOrDefault(element);
+
         var map = new HashMap<String, Object>();
 
         Consumer<BaseInputElement<?>> addValueToMap = (baseInputElement) -> {
             if (baseInputElement == null) {
                 return;
             }
-            var dataObject = elementData.get(baseInputElement.getId());
-            if (dataObject != null) {
-                map.put(baseInputElement.getId(), dataObject.getValue());
+
+            ElementDataObject valueDataObject;
+            if (baseInputElement.getId().equals(element.getId())) {
+                valueDataObject = dataObject;
+            } else {
+                valueDataObject = elementData.get(baseInputElement.getId());
+            }
+
+            if (valueDataObject != null) {
+                map.put(baseInputElement.getId(), valueDataObject.getValue());
             } else {
                 map.put(baseInputElement.getId(), null);
             }
         };
 
         // Add the input value for the element to the map, if the element is a BaseInputElement.
-        if (element instanceof BaseInputElement<?> baseInputElement) {
+        if (resolvedElement instanceof BaseInputElement<?> baseInputElement) {
             addValueToMap.accept(baseInputElement);
         }
 
-        switch (element) {
+        switch (resolvedElement) {
             case FormLayoutElement _rootElement -> {
                 addValueToMap.accept(_rootElement.getIntroductionStep());
                 addValueToMap.accept(_rootElement.getSummaryStep());
@@ -270,8 +287,12 @@ public class ElementData extends HashMap<String, ElementDataObject> implements S
                 }
             }
             case ReplicatingContainerLayoutElement repl -> {
-                var childDataObject = elementData
-                        .get(repl.getId());
+                ElementDataObject childDataObject;
+                if (repl.getId().equals(element.getId())) {
+                    childDataObject = dataObject;
+                } else {
+                    childDataObject = elementData.get(repl.getId());
+                }
 
                 // Reset previously set value
                 map.put(repl.getId(), null);

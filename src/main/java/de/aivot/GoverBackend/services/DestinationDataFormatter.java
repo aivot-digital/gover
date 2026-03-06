@@ -1,6 +1,8 @@
 package de.aivot.GoverBackend.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.GoverBackend.core.converters.ElementDataConverter;
+import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
@@ -21,12 +23,12 @@ import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -155,7 +157,7 @@ public class DestinationDataFormatter {
                 .getCustomerInput()
                 .get(IdentityValueKey.IdCustomerInputKey);
 
-        if (rawIdpData == null || rawIdpData.getInputValue() == null) {
+        if (rawIdpData == null || rawIdpData.getValue() == null) {
             insertValue("authentication.is_authenticated", false);
             return;
         }
@@ -163,7 +165,7 @@ public class DestinationDataFormatter {
         IdentityData identityValue = null;
         try {
             identityValue = new ObjectMapper()
-                    .convertValue(rawIdpData.getInputValue(), IdentityData.class);
+                    .convertValue(rawIdpData.getValue(), IdentityData.class);
         } catch (IllegalArgumentException e) {
             logger.error("Could not convert IdentityData to IdentityData", e);
         }
@@ -180,7 +182,7 @@ public class DestinationDataFormatter {
 
     private void createCustomerData() {
         Map<String, Object> customerData = new HashMap<>();
-        extractDataFromElement(customerData, form.getRootElement(), null);
+        extractDataFromElement(customerData, form.getRootElement(), submission.getCustomerInput());
         data.put("data", customerData);
     }
 
@@ -207,20 +209,31 @@ public class DestinationDataFormatter {
         }
     }
 
-    private void extractDataFromElement(Map<String, Object> resultContainer, BaseElement element, String idPrefix) {
-        Consumer<BaseElement> extractChildData = (e) -> extractDataFromElement(resultContainer, e, idPrefix);
+    private void extractDataFromElement(Map<String, Object> resultContainer,
+                                        BaseElement element,
+                                        ElementData contextData) {
+        var elementDataObject = contextData
+                .getOrDefault(element.getId(), new ElementDataObject(element));
 
-        switch (element) {
+        if (!elementDataObject.getIsVisible()) {
+            return;
+        }
+
+        var resolvedElement = elementDataObject
+                .getComputedOverrideOrDefault(element);
+
+        Consumer<BaseElement> extractChildData = (e) -> extractDataFromElement(resultContainer, e, contextData);
+
+        switch (resolvedElement) {
             case BaseFormElement formElement -> {
                 switch (formElement) {
-                    case GroupLayoutElement groupLayout -> {
-                        groupLayout.getChildren().forEach(extractChildData);
-                    }
-                    case ReplicatingContainerLayoutElement replicatingContainerLayout -> extractReplicatingContainer(resultContainer, replicatingContainerLayout, idPrefix);
-                    case FileUploadInputElement fileUploadField -> extractFileUploadField(resultContainer, fileUploadField, idPrefix);
-                    case BaseInputElement<?> baseInputElement -> {
-                        extractBaseInput(resultContainer, baseInputElement, idPrefix);
-                    }
+                    case GroupLayoutElement groupLayout -> groupLayout.getChildren().forEach(extractChildData);
+                    case ReplicatingContainerLayoutElement replicatingContainerLayout ->
+                            extractReplicatingContainer(resultContainer, replicatingContainerLayout, elementDataObject);
+                    case FileUploadInputElement fileUploadField ->
+                            extractFileUploadField(resultContainer, fileUploadField, elementDataObject);
+                    case BaseInputElement<?> baseInputElement ->
+                            extractBaseInput(resultContainer, baseInputElement, elementDataObject);
                     default -> {
                         // Do nothing
                     }
@@ -234,82 +247,90 @@ public class DestinationDataFormatter {
         }
     }
 
-    private void extractReplicatingContainer(Map<String, Object> resultContainer, ReplicatingContainerLayoutElement element, String idPrefix) {
-        var resolvedElementId = getResolvedElementId(idPrefix, element.getId());
-        var rawChildIds = submission.getCustomerInput().get(resolvedElementId);
+    private void extractReplicatingContainer(Map<String, Object> resultContainer,
+                                             ReplicatingContainerLayoutElement element,
+                                             ElementDataObject containerDataObject) {
+        var rawDataSets = containerDataObject.getValue();
 
-        // Check if children exist
-        if (!(rawChildIds instanceof Collection<?>)) {
+        if (!(rawDataSets instanceof Collection<?> dataSets)) {
             return;
         }
 
-        // Extract destination key and determine if this container should be skipped
-        var elementDestinationKey = element.getDestinationKey() != null ? element.getDestinationKey() : resolvedElementId;
+        var elementDestinationKey = element.getDestinationKey() != null ? element.getDestinationKey() : element.getId();
         if (destinationSkipKey.equals(elementDestinationKey)) {
             return;
         }
 
-        // Create extracted child data list to store extracted data into
-        var extractedChildDataList = new LinkedList<>();
-        for (var childId : (Collection<?>) rawChildIds) {
-            var childData = new HashMap<String, Object>();
-            for (var child : element.getChildren()) {
-                extractDataFromElement(childData, child, resolvedElementId + "_" + childId + "_");
+        var elementDataConverter = new ElementDataConverter();
+        var extractedChildDataList = new ArrayList<Map<String, Object>>();
+
+        for (var dataSetObj : dataSets) {
+            ElementData childDataSet;
+            if (dataSetObj instanceof ElementData elementData) {
+                childDataSet = elementData;
+            } else if (dataSetObj instanceof Map<?, ?> mapObj) {
+                childDataSet = elementDataConverter.convertObjectToEntityAttribute(mapObj);
+            } else {
+                continue;
             }
-            extractedChildDataList.add(childData);
+
+            var childResult = new HashMap<String, Object>();
+            for (var child : element.getChildren()) {
+                extractDataFromElement(childResult, child, childDataSet);
+            }
+            extractedChildDataList.add(childResult);
         }
 
-        // Insert extracted data into result container
         insertValue(resultContainer, elementDestinationKey, extractedChildDataList);
     }
 
-    private void extractFileUploadField(Map<String, Object> resultContainer, FileUploadInputElement element, String idPrefix) {
+    private void extractFileUploadField(Map<String, Object> resultContainer,
+                                        FileUploadInputElement element,
+                                        ElementDataObject elementDataObject) {
         if (!includeAttachments()) {
             return;
         }
 
-        var resolvedElementId = getResolvedElementId(idPrefix, element.getId());
-        var values = submission.getCustomerInput().get(resolvedElementId);
+        var valuesObj = elementDataObject.getValue();
 
-        // Check if values is a collection and not null
-        if (!(values instanceof Collection<?>)) {
+        if (!(valuesObj instanceof Collection<?> values)) {
             return;
         }
 
-        // Extract destination key and determine if this element should be skipped
-        var elementDestinationKey = element.getDestinationKey() != null ? element.getDestinationKey() : resolvedElementId;
+        var elementDestinationKey = element.getDestinationKey() != null ? element.getDestinationKey() : element.getId();
         if (destinationSkipKey.equals(elementDestinationKey)) {
             return;
         }
 
-        // Annotate file upload values with base64 encoded file content
-        for (var fileUploadValueItem : (Collection<?>) values) {
+        var annotatedValues = new LinkedList<Object>();
+        for (var fileUploadValueItem : values) {
             if (fileUploadValueItem instanceof Map<?, ?> fileUploadValueItemMap) {
-                var fileName = fileUploadValueItemMap.get("name");
-
-                if (fileName != null && attachmentBytes.containsKey(fileName)) {
-                    var bytes = attachmentBytes.get(fileName);
+                var mutableItem = castStringObjectMap(fileUploadValueItemMap);
+                var fileNameObj = mutableItem.get("name");
+                if (fileNameObj != null && attachmentBytes.containsKey(fileNameObj)) {
+                    var bytes = attachmentBytes.get(fileNameObj);
                     var attachmentBase64 = loadBytesAsBase64(bytes);
-                    ((Map<String, Object>) fileUploadValueItemMap).put("base64", attachmentBase64);
+                    mutableItem.put("base64", attachmentBase64);
                 }
+                annotatedValues.add(mutableItem);
+            } else {
+                annotatedValues.add(fileUploadValueItem);
             }
         }
 
-        // Insert annotated values into result container
-        insertValue(resultContainer, elementDestinationKey, values);
+        insertValue(resultContainer, elementDestinationKey, annotatedValues);
     }
 
-    private void extractBaseInput(Map<String, Object> resultContainer, BaseInputElement<?> element, String idPrefix) {
-        var resolvedElementId = getResolvedElementId(idPrefix, element.getId());
-        var value = submission.getCustomerInput().get(resolvedElementId);
+    private void extractBaseInput(Map<String, Object> resultContainer,
+                                  BaseInputElement<?> element,
+                                  ElementDataObject elementDataObject) {
+        var value = elementDataObject.getValue();
 
-        // Check if value is a collection and not null
         if (value == null) {
             return;
         }
 
-        // Extract destination key and determine if this element should be skipped
-        var elementDestinationKey = element.getDestinationKey() != null ? element.getDestinationKey() : resolvedElementId;
+        var elementDestinationKey = element.getDestinationKey() != null ? element.getDestinationKey() : element.getId();
         if (destinationSkipKey.equals(elementDestinationKey)) {
             return;
         }
@@ -344,7 +365,13 @@ public class DestinationDataFormatter {
         currentMap.put(pathLayers[pathLayers.length - 1], value);
     }
 
-    private static String getResolvedElementId(String idPrefix, String element) {
-        return (idPrefix != null ? idPrefix : "") + element;
+    private static Map<String, Object> castStringObjectMap(Map<?, ?> raw) {
+        var result = new HashMap<String, Object>();
+        for (var entry : raw.entrySet()) {
+            if (entry.getKey() instanceof String key) {
+                result.put(key, entry.getValue());
+            }
+        }
+        return result;
     }
 }
