@@ -49,7 +49,13 @@ import java.util.List;
 public class EMailActionNodeV1 implements ProcessNodeDefinition {
     public static final String NODE_KEY = "mail";
 
-    private static final String SUCCESS_PORT_NAME = "output";
+    private static final String PORT_NAME = "output";
+
+    private static final String OUTPUT_NAME_TO = "to";
+    private static final String OUTPUT_NAME_BCC = "bcc";
+    private static final String OUTPUT_NAME_SUBJECT = "subject";
+    private static final String OUTPUT_NAME_CONTENT = "content";
+    private static final String OUTPUT_NAME_ATTACHMENT_FILE_NAMES = "attachmentFileNames";
 
     private final GoverConfig goverConfig;
     private final ProcessDataService processDataService;
@@ -165,9 +171,41 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
     public List<ProcessNodePort> getPorts() {
         return List.of(
                 new ProcessNodePort(
-                        SUCCESS_PORT_NAME,
+                        PORT_NAME,
                         "Versendet",
                         "Der Prozess wird hier fortgesetzt, nachdem die E-Mail versendet wurde."
+                )
+        );
+    }
+
+    @Nonnull
+    @Override
+    public List<ProcessNodeOutput> getOutputs() {
+        return List.of(
+                new ProcessNodeOutput(
+                        OUTPUT_NAME_TO,
+                        "Empfänger:innen",
+                        "Die Empfänger:innen der versendeten E-Mail."
+                ),
+                new ProcessNodeOutput(
+                        OUTPUT_NAME_BCC,
+                        "BCC-Empfänger:innen",
+                        "Die BCC-Empfänger:innen der versendeten E-Mail."
+                ),
+                new ProcessNodeOutput(
+                        OUTPUT_NAME_SUBJECT,
+                        "Betreff",
+                        "Der Betreff der versendeten E-Mail."
+                ),
+                new ProcessNodeOutput(
+                        OUTPUT_NAME_CONTENT,
+                        "Inhalt",
+                        "Der HTML-Inhalt der versendeten E-Mail."
+                ),
+                new ProcessNodeOutput(
+                        OUTPUT_NAME_ATTACHMENT_FILE_NAMES,
+                        "Anhang-Dateinamen",
+                        "Die Dateinamen der als E-Mail-Anhang versendeten Prozess-Anhänge."
                 )
         );
     }
@@ -334,14 +372,14 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
         }
 
         var metadata = new HashMap<String, Object>();
-        metadata.put("to", recipients);
-        metadata.put("bcc", recipientsBCC);
-        metadata.put("subject", subject);
-        metadata.put("content", content);
-        metadata.put("attachmentFileNames", attachmentFileNames);
+        metadata.put(OUTPUT_NAME_TO, recipients);
+        metadata.put(OUTPUT_NAME_BCC, recipientsBCC);
+        metadata.put(OUTPUT_NAME_SUBJECT, subject);
+        metadata.put(OUTPUT_NAME_CONTENT, content);
+        metadata.put(OUTPUT_NAME_ATTACHMENT_FILE_NAMES, attachmentFileNames);
 
         return new ProcessNodeExecutionResultTaskCompleted()
-                .setViaPort(SUCCESS_PORT_NAME)
+                .setViaPort(PORT_NAME)
                 .setNodeData(metadata);
     }
 
