@@ -382,24 +382,8 @@ public class StorageService {
         var createdDocumentFilteredMetadata = filterMetadataByRegisteredAttributes(provider, createdDocument.getMetadata());
         createdDocument.setMetadata(createdDocumentFilteredMetadata);
 
-        // Create or update the index item for the stored document.
-        var indexItem = new StorageIndexItemEntity(
-                provider.getId(),
-                provider.getType(),
-                path,
-                false,
-                createdDocument.getName(),
-                createdDocument.getSizeInBytes(),
-                knownExtensionsService
-                        .determineMimeType(createdDocument.getName())
-                        .orElse(UNKNOWN_MIME_TYPE),
-                false,
-                createdDocumentFilteredMetadata,
-                LocalDateTime.now(),
-                LocalDateTime.now()
-        );
-        storageIndexItemRepository
-                .save(indexItem);
+        // Index the effective persisted path returned by the provider.
+        upsertDocumentIndexItem(provider, createdDocument);
 
         return createdDocument;
     }
