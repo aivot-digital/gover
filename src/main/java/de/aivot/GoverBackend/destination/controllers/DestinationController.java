@@ -88,8 +88,7 @@ public class DestinationController {
         var entity = destinationService
                 .create(requestDTO.toEntity());
 
-        auditService
-                .logAction(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
                         execUser,
                         AuditAction.Create,
                         Destination.class,
@@ -97,7 +96,7 @@ public class DestinationController {
                                 "id", entity.getId(),
                                 "name", entity.getName()
                         )
-                );
+                ));
 
         return DestinationResponseDTO
                 .fromEntity(entity);
@@ -133,8 +132,7 @@ public class DestinationController {
         var entity = destinationService
                 .update(id, requestDTO.toEntity());
 
-        auditService
-                .logAction(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
                         execUser,
                         AuditAction.Update,
                         Destination.class,
@@ -142,7 +140,7 @@ public class DestinationController {
                                 "id", entity.getId(),
                                 "name", entity.getName()
                         )
-                );
+                ));
 
         return DestinationResponseDTO
                 .fromEntity(entity);
@@ -167,8 +165,7 @@ public class DestinationController {
         var entity = destinationService
                 .delete(id);
 
-        auditService
-                .logAction(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
                         user,
                         AuditAction.Delete,
                         Destination.class,
@@ -176,6 +173,6 @@ public class DestinationController {
                                 "id", entity.getId(),
                                 "name", entity.getName()
                         )
-                );
+                ));
     }
 }

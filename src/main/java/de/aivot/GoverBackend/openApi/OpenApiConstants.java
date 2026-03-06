@@ -2,6 +2,9 @@ package de.aivot.GoverBackend.openApi;
 
 public class OpenApiConstants {
     public static class Tags {
+        public static final String AuditLogsName = "Audit Logs";
+        public static final String AuditLogsDescription = "Audit logs record relevant actions performed in the system, including metadata such as actor, component, action type, and optional data diffs.";
+
         public static final String AssetsName = "Assets";
         public static final String AssetsDescription = "Assets are files uploaded to the system, such as images or documents. " +
                 "They can be associated with various entities within the application and should be used if you need to provides files to citizens publicly.";

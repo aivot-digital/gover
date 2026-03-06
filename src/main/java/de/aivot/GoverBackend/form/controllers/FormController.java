@@ -167,12 +167,12 @@ public class FormController {
                 .create(newForm);
 
         // Write the audit log
-        auditService.logAction(user, AuditAction.Create, FormEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Create, FormEntity.class, Map.of(
                 "id", cratedForm.getId(),
                 "slug", cratedForm.getSlug(),
                 "title", cratedForm.getInternalTitle(),
                 "developingDepartmentId", cratedForm.getDevelopingDepartmentId()
-        ));
+        )));
 
         return cratedForm;
     }
@@ -250,11 +250,11 @@ public class FormController {
                 .update(formId, patchedForm);
 
         // Log the form update
-        auditService.logAction(user, AuditAction.Update, FormEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Update, FormEntity.class, Map.of(
                 "formId", updatedForm.getId(),
                 "formSlug", updatedForm.getSlug(),
                 "developingDepartmentId", updatedForm.getDevelopingDepartmentId()
-        ));
+        )));
 
         // TODO: Create revision formRevisionService.create(user, form, existingForm);
 
@@ -358,7 +358,7 @@ public class FormController {
         // Delete the form
         var deletedForm = formService.delete(formId);
 
-        auditService.logAction(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
                 user,
                 AuditAction.Delete,
                 FormEntity.class,
@@ -367,12 +367,24 @@ public class FormController {
                         "formSlug", deletedForm.getSlug(),
                         "developingDepartmentId", deletedForm.getDevelopingDepartmentId()
                 )
-        );
+        ));
 
         try {
             formMailService.sendDeleted(user, deletedForm);
         } catch (MessagingException | IOException | NoValidUserEMailsInDepartmentException e) {
-            auditService.logException("Failed to send message about form deletion", e);
+            auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload
+                    .create()
+                    .setTriggeringUser(user)
+                    .setActionType("Exception")
+                    .setSeverity("error")
+                    .setActionResult("failure")
+                    .setReason(e.getMessage())
+                    .setMessage("Failed to send message about form deletion")
+                    .setMetadata(Map.of(
+                            "exceptionType", e.getClass().getName(),
+                            "formId", deletedForm.getId(),
+                            "formSlug", deletedForm.getSlug()
+                    )));
             exceptionMailService.send(e);
         }
     }

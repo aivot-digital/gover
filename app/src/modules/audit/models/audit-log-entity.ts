@@ -1,0 +1,32 @@
+export interface AuditLogEntity {
+    id: number;
+    eventTs: string;
+    triggeringUserId?: string;
+    actorType: string;
+    actorId?: string;
+    actorLabel?: string;
+    triggerType?: string;
+    triggerRef?: string;
+    serviceName?: string;
+    instanceId?: string;
+    actionType: string;
+    component: string;
+    entityType?: string;
+    entityId?: string;
+    message: string;
+    changedData: boolean;
+    beforeData?: Record<string, unknown>;
+    afterData?: Record<string, unknown>;
+    dataDiff?: Record<string, unknown>;
+    actionResult: string;
+    reason?: string;
+    source?: string;
+    requestId?: string;
+    sessionId?: string;
+    ipAddress?: string;
+    userAgent?: string;
+    severity?: string;
+    tags: string[];
+    metadata: Record<string, unknown>;
+    createdAt: string;
+}

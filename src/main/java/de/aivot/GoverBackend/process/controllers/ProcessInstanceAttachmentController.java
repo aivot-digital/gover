@@ -112,11 +112,11 @@ public class ProcessInstanceAttachmentController {
 
         processInstanceAttachmentService.create(attachment);
 
-        auditService.logAction(execUser, AuditAction.Create, ProcessInstanceAttachmentEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, ProcessInstanceAttachmentEntity.class, Map.of(
                 "key", attachment.getKey(),
                 "processInstanceId", attachment.getProcessInstanceId(),
                 "processInstanceTaskId", attachment.getProcessInstanceTaskId()
-        ));
+        )));
 
         return attachment;
     }
@@ -194,11 +194,11 @@ public class ProcessInstanceAttachmentController {
         var result = processInstanceAttachmentService
                 .update(key, updateDTO);
 
-        auditService.logAction(execUser, AuditAction.Update, ProcessInstanceAttachmentEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, ProcessInstanceAttachmentEntity.class, Map.of(
                 "key", result.getKey(),
                 "processInstanceId", result.getProcessInstanceId(),
                 "processInstanceTaskId", result.getProcessInstanceTaskId()
-        ));
+        )));
 
         return result;
     }
@@ -221,10 +221,10 @@ public class ProcessInstanceAttachmentController {
         var deleted = processInstanceAttachmentService
                 .delete(key);
 
-        auditService.logAction(user, AuditAction.Delete, ProcessInstanceAttachmentEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, ProcessInstanceAttachmentEntity.class, Map.of(
                 "key", deleted.getKey(),
                 "processInstanceId", deleted.getProcessInstanceId(),
                 "processInstanceTaskId", deleted.getProcessInstanceTaskId()
-        ));
+        )));
     }
 }

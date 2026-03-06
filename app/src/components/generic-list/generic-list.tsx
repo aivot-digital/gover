@@ -416,7 +416,22 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                 display: 'none',
             },
         },
-    }), [lastColIndex]);
+        ...(dynamicRowHeight
+            ? {
+                // Let rows grow with multiline/custom cell content instead of clipping.
+                '& .MuiDataGrid-cell': {
+                    alignItems: 'flex-start',
+                    py: 0.75,
+                },
+                '& .MuiDataGrid-cellContent': {
+                    whiteSpace: 'normal',
+                    overflow: 'visible',
+                    textOverflow: 'unset',
+                    lineHeight: 1.35,
+                },
+            }
+            : {}),
+    }), [lastColIndex, dynamicRowHeight]);
 
     return (
         <Box
@@ -561,6 +576,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                         noRowsOverlay: NoRowsOverlay,
                     }}
                     getRowHeight={dynamicRowHeight ? () => 'auto' : undefined}
+                    getEstimatedRowHeight={dynamicRowHeight ? () => 80 : undefined}
                 />
             </Box>
 

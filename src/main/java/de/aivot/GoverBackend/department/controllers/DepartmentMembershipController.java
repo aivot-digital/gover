@@ -115,11 +115,11 @@ public class DepartmentMembershipController {
         var createdMembership = departmentMembershipService
                 .create(newMembership);
 
-        auditService.logAction(execUser, AuditAction.Create, DepartmentMembershipEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, DepartmentMembershipEntity.class, Map.of(
                 "id", createdMembership.getId(),
                 "departmentId", createdMembership.getDepartmentId(),
                 "userId", createdMembership.getUserId()
-        ));
+        )));
 
         if (!execUser.getId().equals(createdMembership.getUserId())) {
             try {
@@ -186,11 +186,11 @@ public class DepartmentMembershipController {
         var savedMembership = departmentMembershipService
                 .update(id, updatedMembership);
 
-        auditService.logAction(execUser, AuditAction.Update, DepartmentMembershipEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, DepartmentMembershipEntity.class, Map.of(
                 "id", savedMembership.getId(),
                 "departmentId", savedMembership.getDepartmentId(),
                 "userId", savedMembership.getUserId()
-        ));
+        )));
 
         return savedMembership;
     }
@@ -232,11 +232,11 @@ public class DepartmentMembershipController {
         var deletedMembership = departmentMembershipService
                 .deleteEntity(existingMembership);
 
-        auditService.logAction(user, AuditAction.Delete, DepartmentMembershipEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, DepartmentMembershipEntity.class, Map.of(
                 "id", deletedMembership.getId(),
                 "orgUnitId", deletedMembership.getDepartmentId(),
                 "userId", deletedMembership.getUserId()
-        ));
+        )));
 
         if (!user.getId().equals(deletedMembership.getUserId())) {
             try {

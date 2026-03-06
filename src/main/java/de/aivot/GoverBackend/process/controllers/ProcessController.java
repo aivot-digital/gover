@@ -131,10 +131,10 @@ public class ProcessController {
         var result = processDefinitionService
                 .create(newProcessDefinition);
 
-        auditService.logAction(execUser, AuditAction.Create, ProcessEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, ProcessEntity.class, Map.of(
                 "id", result.getId(),
                 "name", result.getInternalTitle()
-        ));
+        )));
 
         return result;
     }
@@ -211,10 +211,10 @@ public class ProcessController {
                     );
         }
 
-        auditService.logAction(execUser, AuditAction.Create, ProcessEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, ProcessEntity.class, Map.of(
                 "id", newProcess.getId(),
                 "name", newProcess.getInternalTitle()
-        ));
+        )));
 
         return newProcess;
     }
@@ -275,10 +275,10 @@ public class ProcessController {
         var result = processDefinitionService
                 .update(id, updateDTO);
 
-        auditService.logAction(execUser, AuditAction.Update, ProcessEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, ProcessEntity.class, Map.of(
                 "id", result.getId(),
                 "name", result.getInternalTitle()
-        ));
+        )));
 
         return result;
     }
@@ -302,10 +302,10 @@ public class ProcessController {
         var deleted = processDefinitionService
                 .delete(id);
 
-        auditService.logAction(user, AuditAction.Delete, TeamEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, TeamEntity.class, Map.of(
                 "id", deleted.getId(),
                 "name", deleted.getInternalTitle()
-        ));
+        )));
     }
 
     @GetMapping("{id}/export/latest/")
@@ -354,11 +354,11 @@ public class ProcessController {
         var result = processExportService
                 .export(id, version);
 
-        auditService.logAction(execUser, AuditAction.Retrieve, ProcessEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Retrieve, ProcessEntity.class, Map.of(
                 "id", existing.getId(),
                 "name", existing.getInternalTitle(),
                 "export", true
-        ));
+        )));
 
         return result;
     }

@@ -111,12 +111,21 @@ public class PaymentTransactionService implements
             );
         } catch (PaymentException e) {
             // Log exception and rethrow
-            auditService.logException("Failed to create payment request", e, Map.of(
+            var metadata = new HashMap<String, Object>(Map.of(
                     "paymentProviderKey", paymentProviderEntity.getKey(),
                     "purpose", purpose,
                     "description", description,
                     "paymentItems", paymentItems
             ));
+            metadata.put("exceptionType", e.getClass().getName());
+            auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload
+                    .create()
+                    .setActionType("Exception")
+                    .setSeverity("error")
+                    .setActionResult("failure")
+                    .setReason(e.getMessage())
+                    .setMessage("Failed to create payment request")
+                    .setMetadata(metadata));
             throw e;
         }
         transactionEntity.setPaymentRequest(paymentRequest);
@@ -131,12 +140,21 @@ public class PaymentTransactionService implements
             );
         } catch (PaymentException e) {
             // Log exception and rethrow
-            auditService.logException("Failed to initiate payment", e, Map.of(
+            var metadata = new HashMap<String, Object>(Map.of(
                     "paymentProviderKey", paymentProviderEntity.getKey(),
                     "purpose", purpose,
                     "description", description,
                     "paymentItems", paymentItems
             ));
+            metadata.put("exceptionType", e.getClass().getName());
+            auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload
+                    .create()
+                    .setActionType("Exception")
+                    .setSeverity("error")
+                    .setActionResult("failure")
+                    .setReason(e.getMessage())
+                    .setMessage("Failed to initiate payment")
+                    .setMetadata(metadata));
             throw e;
         }
         transactionEntity.setPaymentInformation(xBezahldienstePaymentTransaction.getPaymentInformation());
@@ -281,12 +299,27 @@ public class PaymentTransactionService implements
                 .findAll(spec);
 
         for (var transactionEntity : pendingTransactions) {
-            auditService.debugMessage("Polling transaction " + transactionEntity.getKey(), Map.of("transactionKey", transactionEntity.getKey()));
+            auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload
+                    .create()
+                    .setActionType("Debug")
+                    .setSeverity("debug")
+                    .setMessage("Polling transaction " + transactionEntity.getKey())
+                    .setMetadata(Map.of("transactionKey", transactionEntity.getKey())));
 
             try {
                 processCallback(transactionEntity, null);
             } catch (PaymentException e) {
-                auditService.logException("Error polling transaction " + transactionEntity.getKey(), e);
+                auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload
+                        .create()
+                        .setActionType("Exception")
+                        .setSeverity("error")
+                        .setActionResult("failure")
+                        .setReason(e.getMessage())
+                        .setMessage("Error polling transaction " + transactionEntity.getKey())
+                        .setMetadata(Map.of(
+                                "transactionKey", transactionEntity.getKey(),
+                                "exceptionType", e.getClass().getName()
+                        )));
                 // TODO: Set error flag on transaction
             }
         }

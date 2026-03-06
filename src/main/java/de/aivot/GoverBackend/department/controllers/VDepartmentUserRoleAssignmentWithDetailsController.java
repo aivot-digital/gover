@@ -122,11 +122,10 @@ public class VDepartmentUserRoleAssignmentWithDetailsController {
         var created = userRoleAssignmentService
                 .create(newAssignment);
 
-        auditService
-                .logAction(user, AuditAction.Create, UserRoleAssignmentEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Create, UserRoleAssignmentEntity.class, Map.of(
                         "id", created.getId(),
                         "userRoleId", created.getUserRoleId()
-                ));
+                )));
 
         return vDepartmentUserRoleAssignmentWithDetailsService
                 .retrieve(created.getId())
@@ -191,11 +190,10 @@ public class VDepartmentUserRoleAssignmentWithDetailsController {
         userRoleAssignmentService
                 .deleteEntity(entity);
 
-        auditService
-                .logAction(user, AuditAction.Delete, UserRoleAssignmentEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, UserRoleAssignmentEntity.class, Map.of(
                         "id", entity.getId(),
                         "userRoleId", entity.getUserRoleId()
-                ));
+                )));
     }
 }
 

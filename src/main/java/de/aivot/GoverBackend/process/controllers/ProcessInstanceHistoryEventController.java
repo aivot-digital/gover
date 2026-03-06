@@ -83,11 +83,11 @@ public class ProcessInstanceHistoryEventController {
         var result = processInstanceHistoryEventService
                 .create(newEvent);
 
-        auditService.logAction(execUser, AuditAction.Create, ProcessInstanceEventEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, ProcessInstanceEventEntity.class, Map.of(
                 "id", result.getId(),
                 "processInstanceId", result.getProcessInstanceId(),
                 "processInstanceTaskId", result.getProcessInstanceTaskId()
-        ));
+        )));
 
         return result;
     }
@@ -130,11 +130,11 @@ public class ProcessInstanceHistoryEventController {
         var result = processInstanceHistoryEventService
                 .update(id, updateDTO);
 
-        auditService.logAction(execUser, AuditAction.Update, ProcessInstanceEventEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, ProcessInstanceEventEntity.class, Map.of(
                 "id", result.getId(),
                 "processInstanceId", result.getProcessInstanceId(),
                 "processInstanceTaskId", result.getProcessInstanceTaskId()
-        ));
+        )));
 
         return result;
     }
@@ -157,11 +157,11 @@ public class ProcessInstanceHistoryEventController {
         var deleted = processInstanceHistoryEventService
                 .delete(id);
 
-        auditService.logAction(user, AuditAction.Delete, ProcessInstanceEventEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, ProcessInstanceEventEntity.class, Map.of(
                 "id", deleted.getId(),
                 "processInstanceId", deleted.getProcessInstanceId(),
                 "processInstanceTaskId", deleted.getProcessInstanceTaskId()
-        ));
+        )));
     }
 }
 

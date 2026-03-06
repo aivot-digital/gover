@@ -85,10 +85,9 @@ public class UserSyncService {
             if (!hasSuperAdmin &&
                     goverConfig.getBootstrapAdminMail() != null &&
                     goverConfig.getBootstrapAdminMail().contains(userEntity.getEmail())) {
-                auditService
-                        .logMessage("User with id " + userEntity.getId() + " was promoted to a super admin because no super admin exists and their e-mail address is in the list of bootstrapAdminMail", Map.of(
+                auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyMessage("User with id " + userEntity.getId() + " was promoted to a super admin because no super admin exists and their e-mail address is in the list of bootstrapAdminMail", Map.of(
                                 "userId", userEntity.getId()
-                        ));
+                        )));
 
                 userEntity.setSystemRoleId(superRoleId);
             }
@@ -98,10 +97,9 @@ public class UserSyncService {
 
             updatedUserIds.add(userEntity.getId());
 
-            auditService
-                    .logMessage("User with id " + userEntity.getId() + " was imported or updated from the IDP", Map.of(
+            auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyMessage("User with id " + userEntity.getId() + " was imported or updated from the IDP", Map.of(
                             "userId", userEntity.getId()
-                    ));
+                    )));
         }
 
         for (var localUser : alreadyImportedUsers) {
@@ -121,10 +119,9 @@ public class UserSyncService {
             userRepository
                     .save(localUser);
 
-            auditService
-                    .logMessage("User with id " + localUser.getId() + " was deleted in IDP", Map.of(
+            auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyMessage("User with id " + localUser.getId() + " was deleted in IDP", Map.of(
                             "userId", localUser.getId()
-                    ));
+                    )));
         }
     }
 }

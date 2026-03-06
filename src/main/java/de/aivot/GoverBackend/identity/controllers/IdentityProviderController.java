@@ -128,8 +128,7 @@ public class IdentityProviderController {
         var created = identityProviderService
                 .create(requestDTO.toEntity());
 
-        auditService
-                .logAction(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
                         user,
                         AuditAction.Create,
                         IdentityProviderEntity.class,
@@ -137,7 +136,7 @@ public class IdentityProviderController {
                                 "key", created.getKey(),
                                 "name", created.getName()
                         )
-                );
+                ));
 
         return IdentityProviderDetailsDTO
                 .from(created);
@@ -215,10 +214,10 @@ public class IdentityProviderController {
             }
         }
 
-        auditService.logAction(user, AuditAction.Update, IdentityProviderEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Update, IdentityProviderEntity.class, Map.of(
                 "key", updatedEntity.getKey(),
                 "name", updatedEntity.getName()
-        ));
+        )));
 
         return IdentityProviderDetailsDTO
                 .from(updatedEntity);
@@ -288,9 +287,9 @@ public class IdentityProviderController {
         var deletedEntity = identityProviderService
                 .delete(key);
 
-        auditService.logAction(user, AuditAction.Delete, IdentityProviderEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, IdentityProviderEntity.class, Map.of(
                 "key", deletedEntity.getKey(),
                 "name", deletedEntity.getName()
-        ));
+        )));
     }
 }

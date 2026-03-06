@@ -111,12 +111,12 @@ public class ProcessInstanceTaskController {
         var result = processInstanceTaskService
                 .create(newTask);
 
-        auditService.logAction(execUser, AuditAction.Create, ProcessInstanceTaskEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, ProcessInstanceTaskEntity.class, Map.of(
                 "id", result.getId(),
                 "processInstanceId", result.getProcessInstanceId(),
                 "processDefinitionId", result.getProcessId(),
                 "processDefinitionVersion", result.getProcessVersion()
-        ));
+        )));
 
         return result;
     }
@@ -172,12 +172,12 @@ public class ProcessInstanceTaskController {
         var result = processInstanceTaskService
                 .update(id, updateDTO);
 
-        auditService.logAction(execUser, AuditAction.Update, ProcessInstanceTaskEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, ProcessInstanceTaskEntity.class, Map.of(
                 "id", result.getId(),
                 "processInstanceId", result.getProcessInstanceId(),
                 "processDefinitionId", result.getProcessId(),
                 "processDefinitionVersion", result.getProcessVersion()
-        ));
+        )));
 
         return result;
     }
@@ -200,12 +200,12 @@ public class ProcessInstanceTaskController {
         var deleted = processInstanceTaskService
                 .delete(id);
 
-        auditService.logAction(user, AuditAction.Delete, ProcessInstanceTaskEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, ProcessInstanceTaskEntity.class, Map.of(
                 "id", deleted.getId(),
                 "processInstanceId", deleted.getProcessInstanceId(),
                 "processDefinitionId", deleted.getProcessId(),
                 "processDefinitionVersion", deleted.getProcessVersion()
-        ));
+        )));
     }
 
     @PutMapping("{id}/rerun-failed/")

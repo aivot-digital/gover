@@ -19,6 +19,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @Component
@@ -84,7 +85,14 @@ public class ExceptionMailService {
                 );
                 mailReached = true;
             } catch (MessagingException | IOException e) {
-                auditService.logException("Error sending exception mail to " + mail, e);
+                auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload
+                        .create()
+                        .setActionType("Exception")
+                        .setSeverity("error")
+                        .setActionResult("failure")
+                        .setReason(e.getMessage())
+                        .setMessage("Error sending exception mail to " + mail)
+                        .setMetadata(Map.of("exceptionType", e.getClass().getName(), "mail", mail)));
             } catch (ResponseException e) {
                 throw new RuntimeException(e);
             }

@@ -81,11 +81,11 @@ public class TeamMembershipController {
         var result = teamMembershipService
                 .create(createDTO);
 
-        auditService.logAction(execUser, AuditAction.Create, TeamMembershipEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, TeamMembershipEntity.class, Map.of(
                 "id", result.getId(),
                 "teamId", result.getTeamId(),
                 "userId", result.getUserId()
-        ));
+        )));
 
         return result;
     }
@@ -121,11 +121,11 @@ public class TeamMembershipController {
         var result = teamMembershipService
                 .update(id, updateDTO);
 
-        auditService.logAction(execUser, AuditAction.Update, TeamMembershipEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, TeamMembershipEntity.class, Map.of(
                 "id", result.getId(),
                 "teamId", result.getTeamId(),
                 "userId", result.getUserId()
-        ));
+        )));
 
         return result;
     }
@@ -151,10 +151,10 @@ public class TeamMembershipController {
         var deleted = teamMembershipService
                 .delete(id);
 
-        auditService.logAction(execUser, AuditAction.Delete, TeamMembershipEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Delete, TeamMembershipEntity.class, Map.of(
                 "id", deleted.getId(),
                 "teamId", deleted.getTeamId(),
                 "userId", deleted.getUserId()
-        ));
+        )));
     }
 }

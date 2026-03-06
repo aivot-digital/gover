@@ -106,7 +106,7 @@ public class SecretController {
         }
 
         // Log the action of creating a secret
-        auditService.logAction(user, AuditAction.Create, SecretEntity.class, Map.of("key", result.getKey()));
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Create, SecretEntity.class, Map.of("key", result.getKey())));
 
         // Construct and return the response
         return SecretEntityResponseDTO.fromEntity(result);
@@ -175,7 +175,7 @@ public class SecretController {
                 .update(key, secretDTO.toEntity());
 
         // Log the action of updating a secret
-        auditService.logAction(user, AuditAction.Update, SecretEntity.class, Map.of("key", result.getKey()));
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Update, SecretEntity.class, Map.of("key", result.getKey())));
 
         return SecretEntityResponseDTO
                 .fromEntity(result);
@@ -201,10 +201,10 @@ public class SecretController {
                 .delete(key);
 
         // Log the action of deleting a secret
-        auditService.logAction(user, AuditAction.Delete, SecretEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, SecretEntity.class, Map.of(
                 "key", key,
                 "name", entity.getName(),
                 "description", entity.getDescription()
-        ));
+        )));
     }
 }

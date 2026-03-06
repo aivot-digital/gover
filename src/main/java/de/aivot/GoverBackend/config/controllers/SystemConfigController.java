@@ -105,11 +105,10 @@ public class SystemConfigController {
                 .save(key, entity);
 
         // Log the action of updating the system configuration
-        auditService
-                .logAction(user, AuditAction.Update, SystemConfigEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Update, SystemConfigEntity.class, Map.of(
                         "key", key,
                         "value", updateRequest.value()
-                ));
+                )));
 
         return SystemConfigResponseDto
                 .fromEntity(config, def);

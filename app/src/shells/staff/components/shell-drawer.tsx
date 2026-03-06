@@ -32,6 +32,8 @@ import FamilyHistory from '@aivot/mui-material-symbols-400-outlined/dist/family-
 import SupervisedUserCircle from '@aivot/mui-material-symbols-400-outlined/dist/supervised-user-circle/SupervisedUserCircle';
 import {StorageProvidersApiService} from '../../../modules/storage/storage-providers-api-service';
 import {StorageProviderType} from '../../../modules/storage/enums/storage-provider-type';
+import {selectPermissions} from '../../../slices/user-slice';
+import {AUDIT_LOG_READ_PERMISSION} from '../../../modules/audit/constants/audit-permissions';
 
 /* -----------------------------
  * Types & Navigation Structure
@@ -48,6 +50,7 @@ export interface DrawerItem {
     children?: DrawerItem[];
     chipContent?: ReactNode;
     disabled?: boolean;
+    requiredSystemPermission?: string;
 }
 
 const BaseDrawerGroups: DrawerGroup[] = [
@@ -133,6 +136,12 @@ const BaseDrawerGroups: DrawerGroup[] = [
             },
             {icon: ModuleIcons.assets, label: 'Dateien & Medien', to: '/assets'},
             {
+                icon: ModuleIcons.audit,
+                label: 'Audit-Logs',
+                to: '/audit-logs',
+                requiredSystemPermission: AUDIT_LOG_READ_PERMISSION,
+            },
+            {
                 icon: ModuleIcons.dataModels,
                 label: 'Datenmodelle',
                 to: '/data-models',
@@ -171,6 +180,7 @@ const BaseDrawerGroups: DrawerGroup[] = [
 export function ShellDrawer() {
     const baseTheme = useTheme();
     const dispatch = useAppDispatch();
+    const permissions = useAppSelector(selectPermissions);
     const minimizeDrawer = useAppSelector(selectMinimizeDrawer) ?? false;
     const [userMenuAnchorEl, setUserMenuAnchorEl] = useState<null | HTMLElement>(null);
     const [notificationsAnchorEl, setNotificationsAnchorEl] = useState<null | HTMLElement>(null);
@@ -208,6 +218,33 @@ export function ShellDrawer() {
     }, [dispatch]);
 
     const drawerGroups = useMemo(() => {
+        const hasSystemPermission = (permission: string): boolean => {
+            return permissions?.systemPermissions
+                ?.some((entry) => entry.permissions.includes(permission)) ?? false;
+        };
+
+        const filterByPermission = (items: DrawerItem[]): DrawerItem[] => {
+            return items
+                .filter((item) => {
+                    if (item.requiredSystemPermission == null) {
+                        return true;
+                    }
+
+                    return hasSystemPermission(item.requiredSystemPermission);
+                })
+                .map((item) => {
+                    if (item.children == null) {
+                        return item;
+                    }
+
+                    return {
+                        ...item,
+                        children: filterByPermission(item.children),
+                    };
+                })
+                .filter((item) => item.children == null || item.children.length > 0);
+        };
+
         return BaseDrawerGroups.map((group) => ({
             ...group,
             items: group.items.map((item) => {
@@ -235,8 +272,13 @@ export function ShellDrawer() {
                     children: providerChildren,
                 };
             }),
-        }));
-    }, [assetStorageProviderItems, isLoadingAssetStorageProviders]);
+        }))
+            .map((group) => ({
+                ...group,
+                items: filterByPermission(group.items),
+            }))
+            .filter((group) => group.items.length > 0);
+    }, [assetStorageProviderItems, isLoadingAssetStorageProviders, permissions]);
 
     // responsive auto-minimize
     useEffect(() => {

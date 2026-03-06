@@ -87,10 +87,10 @@ public class UserController {
             throw ResponseException.badRequest("Fehler beim Anlegen der Mitarbeiter:in", e);
         }
 
-        auditService.logAction(execUser, AuditAction.Create, UserEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, UserEntity.class, Map.of(
                 "id", result.getId(),
                 "email", result.getEmail()
-        ));
+        )));
 
         return result;
     }
@@ -149,10 +149,10 @@ public class UserController {
             throw ResponseException.badRequest("Fehler beim Speichern der Mitarbeiter:in", e);
         }
 
-        auditService.logAction(execUser, AuditAction.Update, UserEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, UserEntity.class, Map.of(
                 "id", result.getId(),
                 "email", result.getEmail()
-        ));
+        )));
 
         return result;
     }
@@ -173,8 +173,7 @@ public class UserController {
                 .delete(id);
 
         // Log the action
-        auditService
-                .logAction(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
                         user,
                         AuditAction.Delete,
                         UserEntity.class,
@@ -184,7 +183,7 @@ public class UserController {
                                 "firstName", deletedUser.getFirstName(),
                                 "lastName", deletedUser.getLastName()
                         )
-                );
+                ));
     }
 
     @PutMapping("{id}/reset-password/")
@@ -212,11 +211,11 @@ public class UserController {
         keyCloakApiService
                 .triggerPasswordReset(id);
 
-        auditService.logAction(execUser, AuditAction.Update, UserEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, UserEntity.class, Map.of(
                 "id", user.getId(),
                 "email", user.getEmail(),
                 "passwordReset", true
-        ));
+        )));
 
         return Map.of(
                 "message", "Password reset triggered for user with ID: " + id
@@ -245,11 +244,11 @@ public class UserController {
         var result = userService
                 .updatePassword(id, passwordRequestDTO.password());
 
-        auditService.logAction(execUser, AuditAction.Update, UserEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, UserEntity.class, Map.of(
                 "id", result.getId(),
                 "email", result.getEmail(),
                 "passwordChanged", true
-        ));
+        )));
 
         return result;
     }

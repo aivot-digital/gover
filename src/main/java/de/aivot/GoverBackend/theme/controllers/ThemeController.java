@@ -80,10 +80,10 @@ public class ThemeController {
         var createdTheme = service
                 .create(newTheme);
 
-        auditService.logAction(user, AuditAction.Create, ThemeEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Create, ThemeEntity.class, Map.of(
                 "id", createdTheme.getId(),
                 "name", createdTheme.getName()
-        ));
+        )));
 
         return ThemeResponseDTO
                 .fromEntity(createdTheme);
@@ -126,10 +126,10 @@ public class ThemeController {
         var updatedTheme = service
                 .update(id, changedTheme);
 
-        auditService.logAction(user, AuditAction.Update, ThemeEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Update, ThemeEntity.class, Map.of(
                 "id", updatedTheme.getId(),
                 "name", updatedTheme.getName()
-        ));
+        )));
 
         return ThemeResponseDTO
                 .fromEntity(updatedTheme);
@@ -153,9 +153,9 @@ public class ThemeController {
         var deletedTheme = service
                 .delete(id);
 
-        auditService.logAction(user, AuditAction.Delete, ThemeEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, ThemeEntity.class, Map.of(
                 "id", deletedTheme.getId(),
                 "name", deletedTheme.getName()
-        ));
+        )));
     }
 }

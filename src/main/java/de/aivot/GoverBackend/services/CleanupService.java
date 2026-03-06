@@ -68,10 +68,16 @@ public class CleanupService {
                         .orElse(null);
 
                 if (form == null) {
-                    auditService.logError("Form with id " + submission.getFormId() + "not found for submission: " + submission.getId(), Map.of(
-                            "submissionId", submission.getId(),
-                            "formId", submission.getFormId()
-                    ));
+                    auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload
+                            .create()
+                            .setActionType("Error")
+                            .setSeverity("error")
+                            .setActionResult("failure")
+                            .setMessage("Form with id " + submission.getFormId() + "not found for submission: " + submission.getId())
+                            .setMetadata(Map.of(
+                                    "submissionId", submission.getId(),
+                                    "formId", submission.getFormId()
+                            )));
                     continue;
                 }
 

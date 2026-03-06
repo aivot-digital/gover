@@ -24,6 +24,7 @@ import Groups3 from '@aivot/mui-material-symbols-400-outlined/dist/groups-3/Grou
 import Rule from '@aivot/mui-material-symbols-400-outlined/dist/rule/Rule';
 import Storage from '@aivot/mui-material-symbols-400-outlined/dist/storage/Storage';
 import Payments from '@aivot/mui-material-symbols-400-outlined/dist/payments/Payments';
+import History from '@aivot/mui-material-symbols-400-outlined/dist/history/History';
 
 export const ModuleIcons = {
     dashboard: <Dashboard />,
@@ -51,4 +52,5 @@ export const ModuleIcons = {
     roles: <Rule />,
     extensions: <Extension />,
     storage: <Storage/>,
+    audit: <History/>,
 };

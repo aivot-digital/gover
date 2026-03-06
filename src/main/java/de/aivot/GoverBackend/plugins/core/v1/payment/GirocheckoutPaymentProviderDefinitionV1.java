@@ -181,7 +181,7 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
 
         var xFormUrlEncoded = giroPayPaymentRequest.toApplicationXWwwFormUrlEncoded();
 
-        auditService.logMessage("Payment Request to GiroCheckout: " + xFormUrlEncoded, Map.of());
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyMessage("Payment Request to GiroCheckout: " + xFormUrlEncoded, Map.of()));
 
         HttpResponse<String> response;
         try {

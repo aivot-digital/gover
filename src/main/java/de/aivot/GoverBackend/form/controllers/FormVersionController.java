@@ -150,10 +150,10 @@ public class FormVersionController {
                 .create(user, createdFormVersionDetails);
 
         // Log the form version creation
-        auditService.logAction(user, AuditAction.Create, FormVersionEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Create, FormVersionEntity.class, Map.of(
                 "formId", createdFormVersion.getFormId(),
                 "formVersion", createdFormVersion.getVersion()
-        ));
+        )));
 
         return createdFormVersion;
     }
@@ -261,10 +261,10 @@ public class FormVersionController {
                 .update(FormVersionEntityId.of(formId, version), patchedFormVersion);
 
         // Log the form version update
-        auditService.logAction(user, AuditAction.Update, FormEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Update, FormEntity.class, Map.of(
                 "formId", updatedFormVersion.getFormId(),
                 "formVersion", updatedFormVersion.getVersion()
-        ));
+        )));
 
         // Create a revision for the form
         var updatedFormVersionWithDetails = vFormVersionWithDetailsService
@@ -408,7 +408,7 @@ public class FormVersionController {
                 .publish(id);
 
         // Log the form publication
-        auditService.logAction(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
                 user,
                 AuditAction.Update,
                 FormVersionEntity.class,
@@ -417,19 +417,28 @@ public class FormVersionController {
                         "formVersion", publishedFormVersion.getVersion(),
                         "published", true
                 )
-        );
+        ));
 
         /*
         // Send a message about the form publication
         try {
             formMailService.sendPublished(user, form);
         } catch (MessagingException | IOException | NoValidUserEMailsInDepartmentException e) {
-            auditService.logException("Failed to send message about form publication", e, Map.of(
-                    "formId", form.getId(),
-                    "formSlug", form.getSlug(),
-                    "formVersion", form.getVersion(),
-                    "developingDepartmentId", form.getDevelopingDepartmentId()
-            ));
+            auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload
+                    .create()
+                    .setTriggeringUser(user)
+                    .setActionType("Exception")
+                    .setSeverity("error")
+                    .setActionResult("failure")
+                    .setReason(e.getMessage())
+                    .setMessage("Failed to send message about form publication")
+                    .setMetadata(Map.of(
+                            "exceptionType", e.getClass().getName(),
+                            "formId", form.getId(),
+                            "formSlug", form.getSlug(),
+                            "formVersion", form.getVersion(),
+                            "developingDepartmentId", form.getDevelopingDepartmentId()
+                    )));
             exceptionMailService.send(e);
         }
          */
@@ -497,7 +506,7 @@ public class FormVersionController {
                 .revoke(id);
 
         // Log the form publication
-        auditService.logAction(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
                 user,
                 AuditAction.Update,
                 FormVersionEntity.class,
@@ -506,19 +515,28 @@ public class FormVersionController {
                         "formVersion", revokedFormVersion.getVersion(),
                         "published", false
                 )
-        );
+        ));
 
         /*
         // Send a message about the form publication
         try {
             formMailService.sendPublished(user, form);
         } catch (MessagingException | IOException | NoValidUserEMailsInDepartmentException e) {
-            auditService.logException("Failed to send message about form publication", e, Map.of(
-                    "formId", form.getId(),
-                    "formSlug", form.getSlug(),
-                    "formVersion", form.getVersion(),
-                    "developingDepartmentId", form.getDevelopingDepartmentId()
-            ));
+            auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload
+                    .create()
+                    .setTriggeringUser(user)
+                    .setActionType("Exception")
+                    .setSeverity("error")
+                    .setActionResult("failure")
+                    .setReason(e.getMessage())
+                    .setMessage("Failed to send message about form publication")
+                    .setMetadata(Map.of(
+                            "exceptionType", e.getClass().getName(),
+                            "formId", form.getId(),
+                            "formSlug", form.getSlug(),
+                            "formVersion", form.getVersion(),
+                            "developingDepartmentId", form.getDevelopingDepartmentId()
+                    )));
             exceptionMailService.send(e);
         }
          */

@@ -96,10 +96,10 @@ public abstract class GenericCrudController<T, I, F extends Filter<T>> {
 
         var createdItem = performCreate(execUser, newItem);
 
-        auditService.logAction(execUser,
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser,
                 AuditAction.Create,
                 createdItem.getClass(),
-                Map.of(/* TODO: Create Data Map to Identify */));
+                Map.of(/* TODO: Create Data Map to Identify */)));
 
         return createdItem;
     }
@@ -162,10 +162,10 @@ public abstract class GenericCrudController<T, I, F extends Filter<T>> {
 
         var result = performUpdate(execUser, id, patchItem);
 
-        auditService.logAction(execUser,
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser,
                 AuditAction.Update,
                 result.getClass(),
-                Map.of(/* TODO: Create Data Map */));
+                Map.of(/* TODO: Create Data Map */)));
 
         return result;
     }
@@ -199,10 +199,10 @@ public abstract class GenericCrudController<T, I, F extends Filter<T>> {
 
         var deleted = performDelete(execUser, id);
 
-        auditService.logAction(execUser,
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser,
                 AuditAction.Delete,
                 deleted.getClass(),
-                Map.of(/* TODO: Create Data Map */));
+                Map.of(/* TODO: Create Data Map */)));
     }
 
     protected void checkDeletePermission(@Nonnull UserEntity execUser,

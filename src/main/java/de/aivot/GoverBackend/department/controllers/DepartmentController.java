@@ -93,10 +93,10 @@ public class DepartmentController {
         var createdDepartment = departmentService
                 .create(newDepartment);
 
-        auditService.logAction(execUser, AuditAction.Create, DepartmentEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, DepartmentEntity.class, Map.of(
                 "id", createdDepartment.getId(),
                 "name", createdDepartment.getName()
-        ));
+        )));
 
         return createdDepartment;
     }
@@ -147,10 +147,10 @@ public class DepartmentController {
         var savedDepartment = departmentService
                 .update(id, updatedDepartment);
 
-        auditService.logAction(user, AuditAction.Update, DepartmentEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Update, DepartmentEntity.class, Map.of(
                 "id", savedDepartment.getId(),
                 "name", savedDepartment.getName()
-        ));
+        )));
 
         return savedDepartment;
     }
@@ -174,10 +174,10 @@ public class DepartmentController {
                 .findById(id)
                 .orElseThrow(ResponseException::notFound);
 
-        auditService.logAction(user, AuditAction.Delete, DepartmentEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, DepartmentEntity.class, Map.of(
                 "id", dep.getId(),
                 "name", dep.getName()
-        ));
+        )));
 
         departmentService.delete(id);
     }

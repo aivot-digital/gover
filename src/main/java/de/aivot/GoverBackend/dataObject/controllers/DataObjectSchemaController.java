@@ -82,9 +82,9 @@ public class DataObjectSchemaController {
 
         var created = service.create(newDataObjectEntity);
 
-        auditService.logAction(execUser, AuditAction.Create, DataObjectItemEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, DataObjectItemEntity.class, Map.of(
                 "schemaKey", created.getKey()
-        ));
+        )));
 
         return created;
     }
@@ -122,9 +122,9 @@ public class DataObjectSchemaController {
         var updated = service
                 .update(key, updatedDataObjectEntity);
 
-        auditService.logAction(execUser, AuditAction.Update, DataObjectItemEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, DataObjectItemEntity.class, Map.of(
                 "schemaKey", updated.getKey()
-        ));
+        )));
 
         return updated;
     }
@@ -147,8 +147,8 @@ public class DataObjectSchemaController {
 
         var deleted = service.delete(key);
 
-        auditService.logAction(execUser, AuditAction.Delete, DataObjectItemEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Delete, DataObjectItemEntity.class, Map.of(
                 "schemaKey", deleted.getKey()
-        ));
+        )));
     }
 }

@@ -78,11 +78,10 @@ public class UserRoleController {
         var created = userRoleService
                 .create(requestDTO.toEntity());
 
-        auditService
-                .logAction(execUser, AuditAction.Create, UserRoleEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, UserRoleEntity.class, Map.of(
                         "id", created.getId(),
                         "name", created.getName()
-                ));
+                )));
 
         return UserRoleResponseDTO
                 .fromEntity(created);
@@ -121,11 +120,10 @@ public class UserRoleController {
         var result = userRoleService
                 .update(id, requestDTO.toEntity());
 
-        auditService
-                .logAction(execUser, AuditAction.Update, UserRoleEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, UserRoleEntity.class, Map.of(
                         "id", result.getId(),
                         "name", result.getName()
-                ));
+                )));
 
         return UserRoleResponseDTO
                 .fromEntity(result);
@@ -153,10 +151,9 @@ public class UserRoleController {
         userRoleService
                 .deleteEntity(entity);
 
-        auditService
-                .logAction(execUser, AuditAction.Delete, UserRoleEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Delete, UserRoleEntity.class, Map.of(
                         "id", entity.getId(),
                         "name", entity.getName()
-                ));
+                )));
     }
 }

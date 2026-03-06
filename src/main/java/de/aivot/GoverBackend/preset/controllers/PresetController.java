@@ -95,8 +95,7 @@ public class PresetController {
         var savedVersion = presetVersionRepository
                 .save(newVersion);
 
-        auditService
-                .logAction(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
                         user,
                         AuditAction.Create,
                         PresetEntity.class,
@@ -105,7 +104,7 @@ public class PresetController {
                                 "title", savedEntity.getTitle(),
                                 "version", savedVersion.getVersion()
                         )
-                );
+                ));
 
         return presetRepository
                 .findById(savedEntity.getKey())
@@ -160,12 +159,12 @@ public class PresetController {
         auditData.put("key", savePreset.getKey());
         auditData.put("title", savePreset.getTitle());
 
-        auditService.logAction(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
                 user,
                 AuditAction.Update,
                 PresetEntity.class,
                 auditData
-        );
+        ));
 
         return savePreset;
     }
@@ -196,7 +195,7 @@ public class PresetController {
 
         presetRepository.delete(preset);
 
-        auditService.logAction(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
                 user,
                 AuditAction.Delete,
                 PresetEntity.class,
@@ -204,6 +203,6 @@ public class PresetController {
                         "key", preset.getKey(),
                         "title", preset.getTitle()
                 )
-        );
+        ));
     }
 }

@@ -141,16 +141,16 @@ public class FormRevisionController {
         var rolledBackForm = formRevisionService
                 .rollback(formVersionEntity, revisionId);
 
-        auditService.logAction(user, AuditAction.Update, FormEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Update, FormEntity.class, Map.of(
                 "formId", rolledBackForm.getId(),
                 "formSlug", rolledBackForm.getSlug(),
                 "developingDepartmentId", rolledBackForm.getDevelopingDepartmentId()
-        ));
+        )));
 
-        auditService.logAction(user, AuditAction.Update, FormEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Update, FormEntity.class, Map.of(
                 "formId", rolledBackForm.getFormId(),
                 "formVersion", rolledBackForm.getVersion()
-        ));
+        )));
 
         // Create a revision for the form
         formRevisionService

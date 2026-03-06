@@ -153,10 +153,10 @@ public class AssetController {
 
         var created = storageService.createFolder(storageProvider.getId(), folderPath);
 
-        auditService.logAction(execUser, AuditAction.Create, AssetEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, AssetEntity.class, Map.of(
                 "folder", true,
                 "path", folderPath
-        ));
+        )));
 
         return created;
     }
@@ -189,10 +189,10 @@ public class AssetController {
 
         assetRepository.deleteAllByStoragePathFromRootStartingWith(folderPath);
 
-        auditService.logAction(execUser, AuditAction.Delete, AssetEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Delete, AssetEntity.class, Map.of(
                 "folder", true,
                 "path", folderPath
-        ));
+        )));
     }
 
     // endregion
@@ -337,10 +337,10 @@ public class AssetController {
         assetRepository
                 .save(asset.setPrivate(updatedAsset.isPrivate() != null && updatedAsset.isPrivate()));
 
-        auditService.logAction(user, AuditAction.Update, AssetEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Update, AssetEntity.class, Map.of(
                 "folder", false,
                 "path", filePath
-        ));
+        )));
 
         return storageIndexItemWithAssetRepository
                 .findById(VStorageIndexItemWithAssetEntityId.of(
@@ -397,12 +397,12 @@ public class AssetController {
         // After the move, there is no need to update the asset because the asset path from root is updated automatically by the database because of the foreign key reference.
         var movedDocument = storageService.moveDocument(storageProvider.getId(), sourcePath, targetPath);
 
-        auditService.logAction(user, AuditAction.Update, AssetEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Update, AssetEntity.class, Map.of(
                 "folder", false,
                 "pathFrom", sourcePath,
                 "pathTo", movedDocument.getPathFromRoot(),
                 "moved", true
-        ));
+        )));
 
         return storageIndexItemWithAssetRepository
                 .findById(VStorageIndexItemWithAssetEntityId.of(
@@ -465,12 +465,12 @@ public class AssetController {
                 .setStoragePathFromRoot(copiedDocument.getPathFromRoot());
         assetRepository.save(copiedAsset);
 
-        auditService.logAction(user, AuditAction.Create, AssetEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Create, AssetEntity.class, Map.of(
                 "folder", false,
                 "pathFrom", sourcePath,
                 "pathTo", copiedDocument.getPathFromRoot(),
                 "copied", true
-        ));
+        )));
 
         return storageIndexItemWithAssetRepository
                 .findById(VStorageIndexItemWithAssetEntityId.of(

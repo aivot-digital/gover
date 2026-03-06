@@ -108,10 +108,10 @@ public class ProcessVersionController {
         var result = processDefinitionVersionService
                 .create(newVersion);
 
-        auditService.logAction(execUser, AuditAction.Create, ProcessVersionEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, ProcessVersionEntity.class, Map.of(
                 "processDefinitionId", result.getProcessId(),
                 "processDefinitionVersion", result.getProcessVersion()
-        ));
+        )));
 
         return result;
     }
@@ -171,10 +171,10 @@ public class ProcessVersionController {
         var result = processDefinitionVersionService
                 .update(id, updateDTO);
 
-        auditService.logAction(execUser, AuditAction.Update, ProcessVersionEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, ProcessVersionEntity.class, Map.of(
                 "processDefinitionId", result.getProcessId(),
                 "processDefinitionVersion", result.getProcessVersion()
-        ));
+        )));
 
         return result;
     }
@@ -200,10 +200,10 @@ public class ProcessVersionController {
         var deleted = processDefinitionVersionService
                 .delete(id);
 
-        auditService.logAction(user, AuditAction.Delete, ProcessVersionEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, ProcessVersionEntity.class, Map.of(
                 "processDefinitionId", deleted.getProcessId(),
                 "processDefinitionVersion", deleted.getProcessVersion()
-        ));
+        )));
     }
 }
 

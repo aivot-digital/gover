@@ -97,11 +97,11 @@ public class ProcessNodeController {
         var result = processDefinitionNodeService
                 .create(newNode);
 
-        auditService.logAction(execUser, AuditAction.Create, ProcessNodeEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, ProcessNodeEntity.class, Map.of(
                 "id", result.getId(),
                 "processDefinitionId", result.getProcessId(),
                 "processDefinitionVersion", result.getProcessVersion()
-        ));
+        )));
 
         return result;
     }
@@ -142,11 +142,11 @@ public class ProcessNodeController {
         var result = processDefinitionNodeService
                 .update(id, updateDTO);
 
-        auditService.logAction(execUser, AuditAction.Update, ProcessNodeEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, ProcessNodeEntity.class, Map.of(
                 "id", result.getId(),
                 "processDefinitionId", result.getProcessId(),
                 "processDefinitionVersion", result.getProcessVersion()
-        ));
+        )));
 
         return result;
     }
@@ -169,11 +169,11 @@ public class ProcessNodeController {
         var deleted = processDefinitionNodeService
                 .delete(id);
 
-        auditService.logAction(user, AuditAction.Delete, ProcessNodeEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, ProcessNodeEntity.class, Map.of(
                 "id", deleted.getId(),
                 "processDefinitionId", deleted.getProcessId(),
                 "processDefinitionVersion", deleted.getProcessVersion()
-        ));
+        )));
     }
 
 

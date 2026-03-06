@@ -84,8 +84,7 @@ public class ProviderLinkController {
         var entity = providerLinkService
                 .create(requestDTO.toEntity());
 
-        auditService
-                .logAction(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
                         user,
                         AuditAction.Create,
                         ProviderLink.class,
@@ -94,7 +93,7 @@ public class ProviderLinkController {
                                 "text", entity.getText(),
                                 "link", entity.getLink()
                         )
-                );
+                ));
 
         return ProviderLinkResponseDTO
                 .fromEntity(entity);
@@ -134,7 +133,7 @@ public class ProviderLinkController {
         var entity = providerLinkService
                 .update(id, requestDTO.toEntity());
 
-        auditService.logAction(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
                 user,
                 AuditAction.Update,
                 ProviderLink.class,
@@ -143,7 +142,7 @@ public class ProviderLinkController {
                         "text", entity.getText(),
                         "link", entity.getLink()
                 )
-        );
+        ));
 
         return ProviderLinkResponseDTO
                 .fromEntity(entity);
@@ -167,7 +166,7 @@ public class ProviderLinkController {
         var link = providerLinkService
                 .delete(id);
 
-        auditService.logAction(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
                 user,
                 AuditAction.Delete,
                 ProviderLink.class,
@@ -176,6 +175,6 @@ public class ProviderLinkController {
                         "text", link.getText(),
                         "link", link.getLink()
                 )
-        );
+        ));
     }
 }

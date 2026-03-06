@@ -120,8 +120,7 @@ public class PresetVersionController {
         var savedVersion = versionRepository
                 .save(newVersion);
 
-        auditService
-                .logAction(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
                         user,
                         AuditAction.Create,
                         PresetVersionEntity.class,
@@ -130,7 +129,7 @@ public class PresetVersionController {
                                 "title", preset.getTitle(),
                                 "version", savedVersion.getVersion()
                         )
-                );
+                ));
 
         return savedVersion;
     }
@@ -199,8 +198,7 @@ public class PresetVersionController {
 
         presetVersion.setRootElement(updatedPreset.getRootElement());
 
-        auditService
-                .logAction(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
                         user,
                         AuditAction.Update,
                         PresetVersionEntity.class,
@@ -209,7 +207,7 @@ public class PresetVersionController {
                                 "title", preset.getTitle(),
                                 "version", presetVersion.getVersion()
                         )
-                );
+                ));
 
         return versionRepository.save(presetVersion);
     }
@@ -251,7 +249,7 @@ public class PresetVersionController {
 
         versionRepository.delete(presetVersion);
 
-        auditService.logAction(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
                 user,
                 AuditAction.Delete,
                 PresetEntity.class,
@@ -260,7 +258,7 @@ public class PresetVersionController {
                         "title", preset.getTitle(),
                         "version", presetVersion.getVersion()
                 )
-        );
+        ));
     }
 
     @PutMapping("{version}/publish/")
@@ -289,7 +287,7 @@ public class PresetVersionController {
 
         presetVersion.setStatus(FormStatus.Published);
 
-        auditService.logAction(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
                 user,
                 AuditAction.Update,
                 PresetVersionEntity.class,
@@ -298,7 +296,7 @@ public class PresetVersionController {
                         "version", presetVersion.getVersion(),
                         "status", presetVersion.getStatus().toString()
                 )
-        );
+        ));
 
         return versionRepository.save(presetVersion);
     }
@@ -329,7 +327,7 @@ public class PresetVersionController {
 
         presetVersion.setStatus(FormStatus.Revoked);
 
-        auditService.logAction(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
                 user,
                 AuditAction.Update,
                 PresetVersionEntity.class,
@@ -338,7 +336,7 @@ public class PresetVersionController {
                         "version", presetVersion.getVersion(),
                         "status", presetVersion.getStatus().toString()
                 )
-        );
+        ));
 
         return versionRepository.save(presetVersion);
     }

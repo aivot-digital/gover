@@ -102,11 +102,10 @@ public class SystemRoleController {
         var createdEntity = systemRoleService
                 .create(newEntity);
 
-        auditService
-                .logAction(execUser, AuditAction.Create, SystemRoleEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, SystemRoleEntity.class, Map.of(
                         "id", createdEntity.getId(),
                         "name", createdEntity.getName()
-                ));
+                )));
 
         return createdEntity;
     }
@@ -156,11 +155,10 @@ public class SystemRoleController {
         var updatedEntity = systemRoleService
                 .update(id, patchedEntity);
 
-        auditService
-                .logAction(execUser, AuditAction.Update, SystemRoleEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, SystemRoleEntity.class, Map.of(
                         "id", updatedEntity.getId(),
                         "name", updatedEntity.getName()
-                ));
+                )));
 
         return updatedEntity;
     }
@@ -191,10 +189,9 @@ public class SystemRoleController {
         userRoleService
                 .deleteEntity(entity);
 
-        auditService
-                .logAction(execUser, AuditAction.Delete, UserRoleEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Delete, UserRoleEntity.class, Map.of(
                         "id", entity.getId(),
                         "name", entity.getName()
-                ));
+                )));
     }
 }

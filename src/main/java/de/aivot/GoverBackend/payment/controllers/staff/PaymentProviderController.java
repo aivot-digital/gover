@@ -103,11 +103,10 @@ public class PaymentProviderController {
         var created = paymentProviderService
                 .create(requestDTO.toEntity());
 
-        auditService
-                .logAction(execUser, AuditAction.Create, PaymentProviderEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, PaymentProviderEntity.class, Map.of(
                         "key", created.getKey(),
                         "name", created.getName()
-                ));
+                )));
 
         return PaymentProviderResponseDTO
                 .fromEntity(created);
@@ -179,11 +178,10 @@ public class PaymentProviderController {
         var result = paymentProviderService
                 .update(key, requestDTO.toEntity());
 
-        auditService
-                .logAction(execUser, AuditAction.Update, PaymentProviderEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, PaymentProviderEntity.class, Map.of(
                         "key", result.getKey(),
                         "name", result.getName()
-                ));
+                )));
 
         return PaymentProviderResponseDTO
                 .fromEntity(result);
@@ -207,11 +205,10 @@ public class PaymentProviderController {
         var deleted = paymentProviderService
                 .delete(key);
 
-        auditService
-                .logAction(execUser, AuditAction.Delete, PaymentProviderEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Delete, PaymentProviderEntity.class, Map.of(
                         "key", deleted.getKey(),
                         "name", deleted.getName()
-                ));
+                )));
     }
 
     @PostMapping("{key}/test/")

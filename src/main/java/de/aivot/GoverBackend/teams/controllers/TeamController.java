@@ -82,10 +82,10 @@ public class TeamController {
         var result = teamService
                 .create(newTeam);
 
-        auditService.logAction(user, AuditAction.Create, TeamEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Create, TeamEntity.class, Map.of(
                 "id", result.getId(),
                 "name", result.getName()
-        ));
+        )));
 
         return result;
     }
@@ -127,10 +127,10 @@ public class TeamController {
             throw ResponseException.badRequest("Fehler beim Speichern des Teams", e);
         }
 
-        auditService.logAction(user, AuditAction.Update, TeamEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Update, TeamEntity.class, Map.of(
                 "id", result.getId(),
                 "name", result.getName()
-        ));
+        )));
 
         return result;
     }
@@ -153,9 +153,9 @@ public class TeamController {
         var deleted = teamService
                 .delete(id);
 
-        auditService.logAction(user, AuditAction.Delete, TeamEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, TeamEntity.class, Map.of(
                 "id", deleted.getId(),
                 "name", deleted.getName()
-        ));
+        )));
     }
 }

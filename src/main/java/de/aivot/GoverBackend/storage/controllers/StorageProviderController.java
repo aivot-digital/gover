@@ -108,11 +108,10 @@ public class StorageProviderController {
         var created = storageProviderService
                 .create(newStorageProvider);
 
-        auditService
-                .logAction(execUser, AuditAction.Create, StorageProviderEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, StorageProviderEntity.class, Map.of(
                         "id", created.getId(),
                         "name", created.getName()
-                ));
+                )));
 
         return created;
     }
@@ -152,11 +151,10 @@ public class StorageProviderController {
         var result = storageProviderService
                 .update(id, update);
 
-        auditService
-                .logAction(execUser, AuditAction.Update, StorageProviderEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, StorageProviderEntity.class, Map.of(
                         "id", result.getId(),
                         "name", result.getName()
-                ));
+                )));
 
         return result;
     }
@@ -178,11 +176,10 @@ public class StorageProviderController {
         var deleted = storageProviderService
                 .delete(id);
 
-        auditService
-                .logAction(execUser, AuditAction.Delete, StorageProviderEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Delete, StorageProviderEntity.class, Map.of(
                         "id", deleted.getId(),
                         "name", deleted.getName()
-                ));
+                )));
     }
 
     @PutMapping("{id}/resync/")
@@ -210,12 +207,11 @@ public class StorageProviderController {
         rabbitTemplate
                 .convertAndSend(StorageSyncWorker.DO_WORK_ON_STORAGE_SYNC_QUEUE, id);
 
-        auditService
-                .logAction(execUser, AuditAction.Update, StorageProviderEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, StorageProviderEntity.class, Map.of(
                         "id", updated.getId(),
                         "name", updated.getName(),
                         "resynced", true
-                ));
+                )));
 
         return updated;
     }
