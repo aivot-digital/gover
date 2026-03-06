@@ -169,12 +169,14 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
 
                 writePath(outputRoot, targetPath, transformedValue, rowIndex);
 
-                mappedValues.add(Map.of(
+                var data = Map.of(
                         "originalPath", rule.fromField(),
                         "newPath", rule.toField(),
-                        "original", sourceValue,
+                        "original", sourceValue != null ? sourceValue.toString() : "null",
                         "mapped", transformedValue
-                ));
+                );
+
+                mappedValues.add(data);
             }
         } catch (ProcessNodeExecutionException e) {
             throw e;
