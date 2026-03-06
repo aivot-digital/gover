@@ -55,6 +55,21 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
         return optData;
     }, [optData]);
 
+    const currentTaskForEdge = useMemo(() => {
+        if (runtimeData == null) {
+            return null;
+        }
+
+        return runtimeData
+            .tasks
+            .find((task) => (
+                task.processNodeId === treeEdge.edge.fromNodeId
+            )) ?? null;
+    }, [
+        runtimeData,
+        treeEdge,
+    ]);
+
     const nextTaskForEdge = useMemo(() => {
         if (runtimeData == null) {
             return null;
@@ -150,7 +165,7 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
                                                 Die weitergereichte Vorgangsdatenebene
                                             </Typography>
                                             <ExpandableCodeBlock
-                                                value={JSON.stringify(nextTaskForEdge?.processData, null, 2)}
+                                                value={JSON.stringify(currentTaskForEdge?.processData, null, 2)}
                                             />
                                         </>
                                     ),
