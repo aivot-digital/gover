@@ -267,7 +267,7 @@ export function ProcessNodeEditor(): ReactNode {
                                 component="div"
                             >
                                 {provider.name} <Chip
-                                    label={`Version ${provider.version}`}
+                                    label={`Version ${provider.majorVersion}`}
                                     size="small"
                                     sx={{
                                         ml: 1,
@@ -336,7 +336,12 @@ export function ProcessNodeEditor(): ReactNode {
                                 layout,
                                 testClaim,
                                 node: editedNode ?? originalNode,
-                                setNode: setEditedNode,
+                                setNode: (node, updateOriginal) => {
+                                    if (updateOriginal) {
+                                        setOriginalNode(node);
+                                    }
+                                    setEditedNode(node);
+                                },
                                 isEditable: true,
                             }}
                         >

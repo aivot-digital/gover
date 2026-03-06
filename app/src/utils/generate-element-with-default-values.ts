@@ -310,7 +310,8 @@ const elementConstructors: {
         textPostSubmit: 'Sie können Ihren Antrag herunterladen oder sich per E-Mail zuschicken lassen. Wir empfehlen Ihnen, den Antrag anschließend zu Ihren Unterlagen zu nehmen.',
         textProcessingTime: undefined,
         documentsToReceive: undefined,
-    }),
+    disableConfetti: false,
+            }),
     [ElementType.SummaryStep]: (id) => ({
         ...makeFormBase(ElementType.SummaryStep, id),
     }),

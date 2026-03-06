@@ -41,6 +41,7 @@ import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Component
 public class PdfService {
@@ -256,7 +257,8 @@ public class PdfService {
             if (logoAssetKey != null) {
                 logoAssetName = assetRepository
                         .findById(logoAssetKey)
-                        .map(AssetEntity::getFilename)
+                        .map(AssetEntity::getKey)
+                        .map(UUID::toString)
                         .orElse("");
             }
         } catch (Exception e) {

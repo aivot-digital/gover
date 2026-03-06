@@ -18,24 +18,27 @@ interface ProcessTemplate {
 }
 
 export const ProcessTemplates: ProcessTemplate[] = [
-    {
+    /*{
         name: "Formularverfahren",
         description: "Ein Formularverfahren zur Erfassung von Daten über ein Webformular.",
         Icon: Description,
         data: FormProcessTemplate,
     },
+     */
     {
         name: "API-gesteuertes Verfahren",
         description: "Ein Verfahren, das über eine API Schnittstelle gesteuert wird.",
         Icon: Webhook,
         data: ApiProcessTemplate,
     },
+    /*
     {
         name: "Periodisches Verfahren",
         description: "Ein Verfahren, das in regelmäßigen Abständen automatisch gestartet wird.",
         Icon: EventRepeat,
         data: ScheduledProcessTemplate,
     },
+     */
     {
         name: "Leeres Verfahren",
         description: "Ein leeres Verfahren ohne vordefinierte Schritte oder Logik.",

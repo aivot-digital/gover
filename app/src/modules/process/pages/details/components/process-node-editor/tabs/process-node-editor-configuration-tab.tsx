@@ -1,9 +1,9 @@
-import {Box} from "@mui/material";
-import {TextFieldComponent} from "../../../../../../../components/text-field/text-field-component";
-import {useProcessNodeEditorContext} from "../process-node-editor-context";
-import {ElementDerivationContext} from "../../../../../../elements/components/element-derivation-context";
-import Typography from "@mui/material/Typography";
-import {useEffect, useState} from "react";
+import {Box} from '@mui/material';
+import {TextFieldComponent} from '../../../../../../../components/text-field/text-field-component';
+import {useProcessNodeEditorContext} from '../process-node-editor-context';
+import {ElementDerivationContext} from '../../../../../../elements/components/element-derivation-context';
+import Typography from '@mui/material/Typography';
+import {useEffect, useState} from 'react';
 
 export function ProcessNodeEditorConfigurationTab() {
     const {
@@ -40,7 +40,7 @@ export function ProcessNodeEditorConfigurationTab() {
                     setLocalNode({
                         ...localNode,
                         dataKey: val ?? '',
-                    });
+                    }, false);
                 }}
                 required={true}
                 maxCharacters={32}
@@ -54,7 +54,7 @@ export function ProcessNodeEditorConfigurationTab() {
                     setLocalNode({
                         ...localNode,
                         name: val ?? null,
-                    });
+                    }, false);
                 }}
                 maxCharacters={96}
             />
@@ -67,14 +67,16 @@ export function ProcessNodeEditorConfigurationTab() {
                     setLocalNode({
                         ...localNode,
                         description: val ?? null,
-                    });
+                    }, false);
                 }}
                 multiline={true}
                 maxCharacters={512}
             />
 
-            <Typography variant="h6"
-                        mt={4}>
+            <Typography
+                variant="h6"
+                mt={4}
+            >
                 Spezifische Eigenschaften des Elements
             </Typography>
 
@@ -85,13 +87,15 @@ export function ProcessNodeEditorConfigurationTab() {
                     setLocalNode({
                         ...localNode,
                         configuration: elementData,
-                    });
+                    }, false);
                 }}
-                onDerivationFinished={() => {
+                onDerivationFinished={(elementData) => {
                     if (!firstDerivationDone) {
-                        setTimeout(() => {
-                            setFirstDerivationDone(true);
-                        }, 5000);
+                        setLocalNode({
+                            ...localNode,
+                            configuration: elementData,
+                        }, true);
+                        setFirstDerivationDone(true);
                     }
                 }}
             />

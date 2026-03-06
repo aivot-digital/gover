@@ -251,10 +251,12 @@ async function authenticateWithOidcCode(searchParams: URLSearchParams): Promise<
     const permissionSet = await new PermissionApiService()
         .getPermissionSetForUser(user.id);
 
-    console.log(permissionSet);
-
     const configsPage = await apiService
-        .get<Page<SystemConfigResponseDto>>('/api/system-configs/');
+        .get<Page<SystemConfigResponseDto>>('/api/system-configs/', {
+            query: {
+                size: 1000, // fetch all configs
+            }
+        });
 
     const configs = configsPage.content;
 

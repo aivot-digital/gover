@@ -34,11 +34,18 @@ import org.springframework.mail.MailException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -166,6 +173,37 @@ public class DestinationSubmitService {
             con = (HttpURLConnection) url.openConnection();
         } catch (IOException e) {
             return new DestinationResponse(false, "Die Verbindung zum Ziel konnte nicht hergestellt werden", null, null);
+        }
+
+        if ("SSL_SKIP".equalsIgnoreCase(destination.getAuthorizationHeader()) && con instanceof HttpsURLConnection httpsCon) {
+            // 1. Define the Trust Manager (Trusts everything)
+            TrustManager[] trustAllCerts = new TrustManager[]{
+                    new X509TrustManager() {
+                        public X509Certificate[] getAcceptedIssuers() { return null; }
+                        public void checkClientTrusted(X509Certificate[] certs, String authType) {}
+                        public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+                    }
+            };
+
+            // 2. Initialize an SSLContext for this specific connection
+            SSLContext sc;
+            try {
+                sc = SSLContext.getInstance("TLS");
+            } catch (NoSuchAlgorithmException e) {
+                return new DestinationResponse(false, "Die SSL-Konfiguration des Ziels konnte nicht initialisiert werden", null, null);
+            }
+            try {
+                sc.init(null, trustAllCerts, new java.security.SecureRandom());
+            } catch (KeyManagementException e) {
+                return new DestinationResponse(false, "Die SSL-Konfiguration des Ziels konnte nicht initialisiert werden", null, null);
+            }
+
+            // 3. Set the SocketFactory ONLY for this connection instance
+            httpsCon.setSSLSocketFactory(sc.getSocketFactory());
+
+            // 4. Set the Hostname Verifier ONLY for this connection instance
+            // This bypasses the "no certificate subject alternative name matches" error
+            httpsCon.setHostnameVerifier((hostname, session) -> true);
         }
 
         try {

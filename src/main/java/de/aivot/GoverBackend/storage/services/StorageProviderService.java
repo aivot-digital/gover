@@ -16,11 +16,13 @@ import jakarta.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.unit.DataSize;
 
 import java.util.Optional;
 
@@ -29,13 +31,17 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
     private final StorageProviderRepository storageProviderRepository;
     private final StorageProviderDefinitionService storageProviderDefinitionService;
     private final RabbitTemplate rabbitTemplate;
+    private final DataSize maxFileSize;
 
     @Autowired
     public StorageProviderService(StorageProviderRepository storageProviderRepository,
-                                  StorageProviderDefinitionService storageProviderDefinitionService, RabbitTemplate rabbitTemplate) {
+                                  StorageProviderDefinitionService storageProviderDefinitionService,
+                                  RabbitTemplate rabbitTemplate,
+                                  @Value("${spring.servlet.multipart.max-file-size}") DataSize maxFileSize) {
         this.storageProviderRepository = storageProviderRepository;
         this.storageProviderDefinitionService = storageProviderDefinitionService;
         this.rabbitTemplate = rabbitTemplate;
+        this.maxFileSize = maxFileSize;
     }
 
     @Nonnull
@@ -45,6 +51,8 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
         storageProviderDefinitionService
                 .retrieveProviderDefinition(entity.getStorageProviderDefinitionKey(), entity.getStorageProviderDefinitionVersion())
                 .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Der ausgewählte Speicheranbieter ist nicht vorhanden"));
+
+        validateMaxFileSize(entity);
 
         // Ensure the ID is null for creation
         entity.setId(null);
@@ -106,6 +114,8 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
             @Nonnull StorageProviderEntity entity,
             @Nonnull StorageProviderEntity existingEntity
     ) throws ResponseException {
+        validateMaxFileSize(entity);
+
         if (existingEntity.getSystemProvider()) {
             if (entity.getStatus() == StorageProviderStatus.SyncPending) {
                 storageProviderRepository.save(
@@ -198,5 +208,14 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
         }
 
         storageProviderRepository.delete(entity);
+    }
+
+    private void validateMaxFileSize(@Nonnull StorageProviderEntity entity) throws ResponseException {
+        if (entity.getMaxFileSizeInBytes() > maxFileSize.toBytes()) {
+            throw ResponseException.badRequest(
+                    "Die maximale Dateigröße des Speicheranbieters darf die systemweite Grenze für Uploads nicht überschreiten. Systemweit gelten %d Megabyte."
+                            .formatted(maxFileSize.toMegabytes())
+            );
+        }
     }
 }

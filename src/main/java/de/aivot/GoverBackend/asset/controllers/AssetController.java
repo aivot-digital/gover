@@ -1,48 +1,51 @@
 package de.aivot.GoverBackend.asset.controllers;
 
+import de.aivot.GoverBackend.asset.dtos.AssetCreateRequestDTO;
+import de.aivot.GoverBackend.asset.dtos.AssetMoveRequestDTO;
 import de.aivot.GoverBackend.asset.dtos.AssetRequestDTO;
-import de.aivot.GoverBackend.asset.dtos.AssetResponseDTO;
 import de.aivot.GoverBackend.asset.entities.AssetEntity;
-import de.aivot.GoverBackend.asset.filters.AssetFilter;
+import de.aivot.GoverBackend.asset.entities.VStorageIndexItemWithAssetEntity;
+import de.aivot.GoverBackend.asset.entities.VStorageIndexItemWithAssetEntityId;
+import de.aivot.GoverBackend.asset.permissions.AssetPermissionProvider;
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
-import de.aivot.GoverBackend.asset.services.AssetService;
+import de.aivot.GoverBackend.asset.repositories.VStorageIndexItemWithAssetRepository;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
-import de.aivot.GoverBackend.permissions.data.Permissions;
 import de.aivot.GoverBackend.permissions.services.PermissionService;
-import de.aivot.GoverBackend.services.AVService;
-import de.aivot.GoverBackend.services.storages.AssetStorageService;
+import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
+import de.aivot.GoverBackend.storage.enums.StorageProviderType;
+import de.aivot.GoverBackend.storage.models.StorageDocument;
+import de.aivot.GoverBackend.storage.models.StorageFolder;
+import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
+import de.aivot.GoverBackend.storage.services.StorageProviderService;
+import de.aivot.GoverBackend.storage.services.StorageService;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
-import java.io.IOException;
-import java.time.LocalDateTime;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/assets/")
+@RequestMapping("/api/assets/{storageProviderId}/")
 @Tag(
         name = OpenApiConstants.Tags.AssetsName,
         description = OpenApiConstants.Tags.AssetsDescription
@@ -51,185 +54,542 @@ import java.util.UUID;
 public class AssetController {
     private final ScopedAuditService auditService;
 
-    private final AssetService assetService;
-    private final AssetStorageService assetStorageService;
-    private final AssetRepository assetRepository;
-    private final AVService avService;
     private final UserService userService;
     private final PermissionService permissionService;
+    private final StorageProviderService storageProviderService;
+    private final VStorageIndexItemWithAssetRepository storageIndexItemWithAssetRepository;
+    private final StorageService storageService;
+    private final AssetRepository assetRepository;
 
     @Autowired
     public AssetController(AuditService auditService,
-                           AssetService assetService,
-                           AssetStorageService assetStorageService,
-                           AssetRepository assetRepository,
-                           AVService avService,
                            UserService userService,
-                           PermissionService permissionService) {
+                           PermissionService permissionService,
+                           StorageProviderService storageProviderService,
+                           VStorageIndexItemWithAssetRepository storageIndexItemWithAssetRepository,
+                           StorageService storageService,
+                           AssetRepository assetRepository) {
         this.auditService = auditService.createScopedAuditService(AssetController.class);
 
-        this.assetService = assetService;
-        this.assetStorageService = assetStorageService;
-        this.assetRepository = assetRepository;
-        this.avService = avService;
         this.userService = userService;
         this.permissionService = permissionService;
+        this.storageProviderService = storageProviderService;
+        this.storageIndexItemWithAssetRepository = storageIndexItemWithAssetRepository;
+        this.storageService = storageService;
+        this.assetRepository = assetRepository;
     }
 
-    @GetMapping(
-            value = "",
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
+    // region Folders
+
+    @GetMapping(value = {
+            "folders/",
+            "folders/**",
+    }, produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
-            summary = "List all assets",
-            description = "Retrieve a paginated list of assets with optional filtering."
+            summary = "List assets in a folder",
+            description = "Retrieves the list of all items in a specified folder path. This includes files as well as subfolders. " +
+                    "You can use this endpoint to navigate trough the filesystem for a specific storage provider."
     )
-    public Page<AssetResponseDTO> list(
-            @Nonnull @ParameterObject @PageableDefault Pageable pageable,
-            @Nonnull @ParameterObject @Valid AssetFilter filter
+    public List<VStorageIndexItemWithAssetEntity> listFolderContent(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer storageProviderId,
+            @Nonnull HttpServletRequest request
     ) throws ResponseException {
-        return assetService
-                .list(pageable, filter)
-                .map(AssetResponseDTO::fromEntity);
+        permissionService
+                .testSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
+
+        var storageProvider = getStorageProvider(storageProviderId);
+
+        var normalizedPath = getNormalizedFolderPath(request);
+
+        return storageIndexItemWithAssetRepository
+                .listAllInFolder(storageProvider.getId(), "^" + normalizedPath + "([^/]+$|[^/]+/$)", false);
+    }
+
+    @GetMapping(value = "folders-tree/", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Retrieve full folder tree",
+            description = "Retrieves the complete folder tree for the storage provider, starting at root. " +
+                    "This endpoint is intended for folder selection UIs (e.g. copy/move destinations)."
+    )
+    public StorageFolder getFolderTree(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer storageProviderId
+    ) throws ResponseException {
+        permissionService
+                .testSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
+
+        var storageProvider = getStorageProvider(storageProviderId);
+
+        return storageService
+                .getFolderTreeFromIndex(storageProvider.getId());
     }
 
     @PostMapping(
-            value = "",
+            value = "folders/**",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @Operation(
+            summary = "Create a new folder",
+            description = "Create a new folder at the given path in the storage provider. " +
+                    "You can use this to create new folders in the filesystem for assets to be placed in."
+    )
+    public StorageFolder createFolder(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer storageProviderId,
+            @Nonnull HttpServletRequest request
+    ) throws ResponseException {
+        var execUser = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .testSystemPermission(execUser.getId(), AssetPermissionProvider.ASSET_CREATE);
+
+        var storageProvider = getStorageProvider(storageProviderId);
+
+        var folderPath = getNormalizedFolderPath(request);
+
+        var created = storageService.createFolder(storageProvider.getId(), folderPath);
+
+        auditService.logAction(execUser, AuditAction.Create, AssetEntity.class, Map.of(
+                "folder", true,
+                "path", folderPath
+        ));
+
+        return created;
+    }
+
+    @DeleteMapping(
+            value = "folders/**"
+    )
+    @Operation(
+            summary = "Delete a folder",
+            description = "Delete the folder at the given path. " +
+                    "This will delete this folder, as well as all subfolders and assets in the subfolders."
+    )
+    public void deleteFolder(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer storageProviderId,
+            @Nonnull HttpServletRequest request
+    ) throws ResponseException {
+        var execUser = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .testSystemPermission(execUser.getId(), AssetPermissionProvider.ASSET_DELETE);
+
+        var storageProvider = getStorageProvider(storageProviderId);
+
+        var folderPath = getNormalizedFolderPath(request);
+
+        storageService.deleteFolder(storageProvider.getId(), folderPath);
+
+        assetRepository.deleteAllByStoragePathFromRootStartingWith(folderPath);
+
+        auditService.logAction(execUser, AuditAction.Delete, AssetEntity.class, Map.of(
+                "folder", true,
+                "path", folderPath
+        ));
+    }
+
+    // endregion
+
+    // region Files
+
+    @PostMapping(
+            value = "files/**",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @Operation(
             summary = "Create a new asset",
             description = "Upload a new asset file and create an asset record. " +
-                    "The uploaded file will be scanned for viruses before being stored."
+                    "This stores the file in the given storage provider, registers a storage index item and creates a new asset object."
     )
-    public AssetResponseDTO create(
+    public VStorageIndexItemWithAssetEntity createFile(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @RequestPart(value = "file", required = true) MultipartFile file,
-            @Nullable @RequestPart(value = "filename", required = false) String explicitFilename,
-            @Nullable @RequestPart(value = "private", required = false) Boolean privateAsset
+            @Nonnull @PathVariable Integer storageProviderId,
+            @Nonnull @RequestPart(value = "file", required = true) MultipartFile newAssetFile,
+            @Nonnull @Valid @RequestPart(value = "data", required = true) AssetCreateRequestDTO newAsset,
+            @Nonnull HttpServletRequest request
     ) throws ResponseException {
-        // TODO: Refactor with new AssetService.create method
         var execUser = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermissionThrows(execUser, Permissions.ASSET_CREATE);
+                .testSystemPermission(execUser.getId(), AssetPermissionProvider.ASSET_CREATE);
 
-        boolean isClean;
+        var filePath = getNormalizedFilePath(request);
+
+        var storageProvider = getStorageProvider(storageProviderId);
+
+        StorageDocument storedDocument;
         try {
-            isClean = avService.testFile(file);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        if (!isClean) {
-            throw ResponseException.badRequest("Die hochgeladene Datei enthält Schadsoftware.");
-        }
-
-        String filename = explicitFilename != null ? explicitFilename : file.getOriginalFilename();
-
-        if (filename == null) {
-            throw ResponseException.badRequest("Der Dateiname konnte nicht ermittelt werden.");
-        }
-
-        var asset = new AssetEntity();
-        asset.setKey(UUID.randomUUID());
-        asset.setFilename(filename);
-        asset.setCreated(LocalDateTime.now());
-        asset.setUploaderId(execUser.getId());
-        asset.setContentType(file.getContentType() != null ? file.getContentType() : "application/octet-stream");
-        asset.setPrivate(privateAsset != null ? privateAsset : true);
-
-        try {
-            assetStorageService.saveAsset(asset, file.getBytes());
-        } catch (IOException e) {
+            storedDocument = storageService
+                    .storeDocument(storageProvider.getId(),
+                            filePath,
+                            newAssetFile.getInputStream(),
+                            newAsset.metadata() != null ? newAsset.metadata() : StorageItemMetadata.empty());
+        } catch (ResponseException e) {
+            throw e;
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
-        var createdAsset = assetRepository.save(asset);
+        var asset = new AssetEntity()
+                .setKey(UUID.randomUUID())
+                .setUploaderId(execUser.getId())
+                .setPrivate(newAsset.isPrivate() != null && newAsset.isPrivate())
+                .setStorageProviderId(storageProvider.getId())
+                .setStoragePathFromRoot(storedDocument.getPathFromRoot());
+        assetRepository.save(asset);
 
-        auditService.logAction(execUser, AuditAction.Create, AssetEntity.class, Map.of(
-                "key", createdAsset.getKey(),
-                "filename", createdAsset.getFilename()
-        ));
-
-        return AssetResponseDTO.fromEntity(createdAsset);
+        return storageIndexItemWithAssetRepository
+                .findById(VStorageIndexItemWithAssetEntityId.of(
+                        asset.getStorageProviderId(),
+                        asset.getStoragePathFromRoot()
+                ))
+                .orElseThrow(ResponseException::internalServerError);
     }
 
     @GetMapping(
-            value = "{assetId}/",
+            value = "files/**",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @Operation(
             summary = "Retrieve an asset",
-            description = "Retrieve details of a specific asset by its ID."
+            description = "Retrieve details of a specific asset by its path and storage provider."
     )
-    public AssetResponseDTO retrieve(
-            @Nonnull @PathVariable UUID assetId
+    public VStorageIndexItemWithAssetEntity retrieveFile(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer storageProviderId,
+            @Nonnull HttpServletRequest request
     ) throws ResponseException {
-        return assetService
-                .retrieve(assetId)
-                .map(AssetResponseDTO::fromEntity)
+        permissionService
+                .testSystemPermission(jwt, AssetPermissionProvider.ASSET_CREATE);
+
+        var storageProvider = getStorageProvider(storageProviderId);
+
+        var filePath = getNormalizedFilePath(request);
+
+        return storageIndexItemWithAssetRepository
+                .findById(VStorageIndexItemWithAssetEntityId.of(
+                        storageProvider.getId(),
+                        filePath
+                ))
                 .orElseThrow(ResponseException::notFound);
     }
 
     @PutMapping(
-            value = "{assetId}/",
+            value = "files/**",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @Operation(
             summary = "Update an asset",
             description = "Update the details of an existing asset. " +
-                    "Note that the actual file content cannot be changed through this endpoint."
+                    "Note that the filename cannot be changed by this endpoint, because this needs a move."
     )
-    public AssetResponseDTO update(
+    public VStorageIndexItemWithAssetEntity updateFile(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable UUID assetId,
-            @Nonnull @RequestBody @Valid AssetRequestDTO requestDTO
+            @Nonnull @PathVariable Integer storageProviderId,
+            @Nullable @RequestPart(value = "file", required = false) MultipartFile newAssetFile,
+            @Nonnull @Valid @RequestPart(value = "data", required = true) AssetRequestDTO updatedAsset,
+            @Nonnull HttpServletRequest request
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var updatedAsset = assetService
-                .update(assetId, requestDTO.toEntity());
+        permissionService
+                .testSystemPermission(jwt, AssetPermissionProvider.ASSET_UPDATE);
 
-        auditService.logAction(user, AuditAction.Update, AssetEntity.class, Map.of(
-                "key", updatedAsset.getKey(),
-                "filename", updatedAsset.getFilename(),
-                "isPrivate", updatedAsset.getPrivate()
-        ));
+        var storageProvider = getStorageProvider(storageProviderId);
 
-        return AssetResponseDTO
-                .fromEntity(updatedAsset);
-    }
-
-    @DeleteMapping("{assetId}/")
-    @Operation(
-            summary = "Delete an asset",
-            description = "Delete a specific asset by its ID. " +
-                    "This will remove both the asset record and the associated file from storage."
-    )
-    public void delete(
-            @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable UUID assetId
-    ) throws ResponseException {
-        var user = userService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
+        var filePath = getNormalizedFilePath(request);
 
         var asset = assetRepository
-                .findById(assetId)
+                .findByStorageProviderIdAndStoragePathFromRoot(storageProvider.getId(), filePath)
                 .orElseThrow(ResponseException::notFound);
 
-        auditService.logAction(user, AuditAction.Delete, AssetEntity.class, Map.of(
-                "key", asset.getKey(),
-                "filename", asset.getFilename()
+        if (newAssetFile != null && !newAssetFile.isEmpty()) {
+            if (storageProvider.getReadOnlyStorage()) {
+                throw ResponseException.badRequest("Der Speicheranbieter ist schreibgeschützt. Der Dateiinhalt kann nicht aktualisiert werden.");
+            }
+
+            try {
+                storageService
+                        .storeDocument(
+                                storageProvider.getId(),
+                                filePath,
+                                newAssetFile.getInputStream(),
+                                updatedAsset.metadata() != null ? updatedAsset.metadata() : StorageItemMetadata.empty()
+                        );
+            } catch (Exception e) {
+                throw ResponseException.badRequest("Fehler beim Speichern des Datei-Inhalts.");
+            }
+        }
+
+        assetRepository
+                .save(asset.setPrivate(updatedAsset.isPrivate() != null && updatedAsset.isPrivate()));
+
+        auditService.logAction(user, AuditAction.Update, AssetEntity.class, Map.of(
+                "folder", false,
+                "path", filePath
         ));
 
-        assetService.delete(assetId);
-
-        assetStorageService.deleteAsset(asset);
+        return storageIndexItemWithAssetRepository
+                .findById(VStorageIndexItemWithAssetEntityId.of(
+                        asset.getStorageProviderId(),
+                        asset.getStoragePathFromRoot()
+                ))
+                .orElseThrow(ResponseException::internalServerError);
     }
+
+    @PostMapping(
+            value = "move-file/",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @Operation(
+            summary = "Move an asset",
+            description = "Move an asset file from a source path to a target path in the same storage provider."
+    )
+    public VStorageIndexItemWithAssetEntity moveFile(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer storageProviderId,
+            @Nonnull @Valid @RequestBody AssetMoveRequestDTO moveRequest
+    ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .testSystemPermission(user.getId(), AssetPermissionProvider.ASSET_UPDATE);
+
+        var storageProvider = getStorageProvider(storageProviderId);
+        if (storageProvider.getReadOnlyStorage()) {
+            throw ResponseException.badRequest("Der Speicheranbieter ist schreibgeschützt. Die Datei kann nicht verschoben werden.");
+        }
+
+        var sourcePath = normalizeFilePathInput(moveRequest.sourcePath());
+        var targetPath = normalizeFilePathInput(moveRequest.targetPath());
+
+        if (sourcePath.equals(targetPath)) {
+            return storageIndexItemWithAssetRepository
+                    .findById(VStorageIndexItemWithAssetEntityId.of(
+                            storageProvider.getId(),
+                            sourcePath
+                    ))
+                    .orElseThrow(ResponseException::internalServerError);
+        }
+
+        var conflictingAsset = assetRepository
+                .findByStorageProviderIdAndStoragePathFromRoot(storageProvider.getId(), targetPath);
+        if (conflictingAsset.isPresent()) {
+            throw ResponseException.conflict("Am Zielpfad existiert bereits eine Datei.");
+        }
+
+        // After the move, there is no need to update the asset because the asset path from root is updated automatically by the database because of the foreign key reference.
+        var movedDocument = storageService.moveDocument(storageProvider.getId(), sourcePath, targetPath);
+
+        auditService.logAction(user, AuditAction.Update, AssetEntity.class, Map.of(
+                "folder", false,
+                "pathFrom", sourcePath,
+                "pathTo", movedDocument.getPathFromRoot(),
+                "moved", true
+        ));
+
+        return storageIndexItemWithAssetRepository
+                .findById(VStorageIndexItemWithAssetEntityId.of(
+                        storageProvider.getId(),
+                        movedDocument.getPathFromRoot()
+                ))
+                .orElseThrow(ResponseException::internalServerError);
+    }
+
+    @PostMapping(
+            value = "copy-file/",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @Operation(
+            summary = "Copy an asset",
+            description = "Copy an asset file from a source path to a target path in the same storage provider."
+    )
+    public VStorageIndexItemWithAssetEntity copyFile(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer storageProviderId,
+            @Nonnull @Valid @RequestBody AssetMoveRequestDTO copyRequest
+    ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .testSystemPermission(user.getId(), AssetPermissionProvider.ASSET_UPDATE);
+
+        var storageProvider = getStorageProvider(storageProviderId);
+        if (storageProvider.getReadOnlyStorage()) {
+            throw ResponseException.badRequest("Der Speicheranbieter ist schreibgeschützt. Die Datei kann nicht kopiert werden.");
+        }
+
+        var sourcePath = normalizeFilePathInput(copyRequest.sourcePath());
+        var targetPath = normalizeFilePathInput(copyRequest.targetPath());
+
+        var sourceAsset = assetRepository
+                .findByStorageProviderIdAndStoragePathFromRoot(storageProvider.getId(), sourcePath)
+                .orElseThrow(ResponseException::notFound);
+
+        if (sourcePath.equals(targetPath)) {
+            throw ResponseException.conflict("Quell- und Zielpfad dürfen nicht identisch sein.");
+        }
+
+        var conflictingAsset = assetRepository
+                .findByStorageProviderIdAndStoragePathFromRoot(storageProvider.getId(), targetPath);
+        if (conflictingAsset.isPresent()) {
+            throw ResponseException.conflict("Am Zielpfad existiert bereits eine Datei.");
+        }
+
+        var copiedDocument = storageService.copyDocument(storageProvider.getId(), sourcePath, targetPath);
+
+        var copiedAsset = new AssetEntity()
+                .setKey(UUID.randomUUID())
+                .setUploaderId(user.getId())
+                .setPrivate(sourceAsset.getPrivate())
+                .setStorageProviderId(storageProvider.getId())
+                .setStoragePathFromRoot(copiedDocument.getPathFromRoot());
+        assetRepository.save(copiedAsset);
+
+        auditService.logAction(user, AuditAction.Create, AssetEntity.class, Map.of(
+                "folder", false,
+                "pathFrom", sourcePath,
+                "pathTo", copiedDocument.getPathFromRoot(),
+                "copied", true
+        ));
+
+        return storageIndexItemWithAssetRepository
+                .findById(VStorageIndexItemWithAssetEntityId.of(
+                        storageProvider.getId(),
+                        copiedDocument.getPathFromRoot()
+                ))
+                .orElseThrow(ResponseException::internalServerError);
+    }
+
+    @DeleteMapping("files/**")
+    @Operation(
+            summary = "Delete an asset",
+            description = "Delete a specific asset by its path and storage provider. " +
+                    "This will remove both the asset record and the associated file from storage."
+    )
+    public void deleteFile(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer storageProviderId,
+            @Nonnull HttpServletRequest request
+    ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .testSystemPermission(user.getId(), AssetPermissionProvider.ASSET_DELETE);
+
+        var storageProvider = getStorageProvider(storageProviderId);
+
+        var filePath = getNormalizedFilePath(request);
+
+        storageService.deleteDocument(storageProvider.getId(), filePath);
+    }
+
+    // endregion
+
+    // region Utilities
+
+    @Nonnull
+    private static String getNormalizedFolderPath(@Nonnull HttpServletRequest request) throws ResponseException {
+        var requestUrl = request
+                .getRequestURL()
+                .toString();
+
+        var marker = "/folders/";
+        var markerIndex = requestUrl.indexOf(marker);
+        if (markerIndex < 0) {
+            return "/";
+        }
+
+        var normalizedPath = requestUrl.substring(markerIndex + marker.length());
+        if (normalizedPath.isBlank()) {
+            return "/";
+        }
+
+        if (!normalizedPath.startsWith("/")) {
+            normalizedPath = "/" + normalizedPath;
+        }
+
+        if (!normalizedPath.endsWith("/")) {
+            throw ResponseException.notAcceptable("Der Pfad eines Ordners muss mit einem Schrägstrich (/) enden.");
+        }
+
+        return URLDecoder.decode(normalizedPath, StandardCharsets.UTF_8);
+    }
+
+    @Nonnull
+    private static String getNormalizedFilePath(@Nonnull HttpServletRequest request) throws ResponseException {
+        var requestUrl = request
+                .getRequestURL()
+                .toString();
+
+        var marker = "/files/";
+        var markerIndex = requestUrl.indexOf(marker);
+        if (markerIndex < 0) {
+            throw ResponseException.notAcceptable("Der Root eines Speichers kann keine Datei sein.");
+        }
+
+        var normalizedPath = requestUrl.substring(markerIndex + marker.length());
+        if (normalizedPath.isBlank()) {
+            throw ResponseException.notAcceptable("Der Root eines Speichers kann keine Datei sein.");
+        }
+
+        if (!normalizedPath.startsWith("/")) {
+            normalizedPath = "/" + normalizedPath;
+        }
+
+        if (normalizedPath.endsWith("/")) {
+            throw ResponseException.notAcceptable("Der Pfad einer Datei darf nicht mit einem Schrägstrich (/) enden.");
+        }
+
+        return URLDecoder.decode(normalizedPath, StandardCharsets.UTF_8);
+    }
+
+    @Nonnull
+    private static String normalizeFilePathInput(@Nonnull String path) throws ResponseException {
+        var normalizedPath = path.trim();
+        if (normalizedPath.isBlank()) {
+            throw ResponseException.notAcceptable("Der Pfad einer Datei darf nicht leer sein.");
+        }
+        if (!normalizedPath.startsWith("/")) {
+            normalizedPath = "/" + normalizedPath;
+        }
+        if (normalizedPath.endsWith("/")) {
+            throw ResponseException.notAcceptable("Der Pfad einer Datei darf nicht mit einem Schrägstrich (/) enden.");
+        }
+        return normalizedPath;
+    }
+
+    @Nonnull
+    private StorageProviderEntity getStorageProvider(@Nonnull Integer storageProviderId) throws ResponseException {
+        var storageProvider = storageProviderService
+                .retrieve(storageProviderId)
+                .orElseThrow(ResponseException::notFound);
+        if (storageProvider.getType() != StorageProviderType.Assets) {
+            throw ResponseException.forbidden("Der angegebene Speicheranbieter ist kein Asset-Speicher.");
+        }
+        return storageProvider;
+    }
+
+    // endregion
 }

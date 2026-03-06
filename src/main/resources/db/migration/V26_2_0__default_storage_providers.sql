@@ -27,7 +27,7 @@ values (1,
         '{
           "root": {
             "$type": 15,
-            "inputValue": "./default/"
+            "inputValue": "./data/default/"
           }
         }',
         10 * 1024 * 1024,
@@ -49,7 +49,7 @@ values (1,
         '{
           "root": {
             "$type": 15,
-            "inputValue": "./assets/"
+            "inputValue": "./data/assets/"
           }
         }',
         10 * 1024 * 1024,
@@ -71,7 +71,7 @@ values (1,
         '{
           "root": {
             "$type": 15,
-            "inputValue": "./attachments/"
+            "inputValue": "./data/attachments/"
           }
         }',
         10 * 1024 * 1024,
@@ -86,3 +86,11 @@ on conflict do nothing;
 -- fix id sequence for the storage providers
 select setval('storage_providers_id_seq',
               (select max(id) from storage_providers));
+
+-- set the default providers
+insert into system_configs (key,
+                            value)
+values ('storage.assets.default_storage_provider', '2'),
+       ('storage.attachments.default_storage_provider', '3')
+on conflict (key) do update
+    set value = excluded.value;

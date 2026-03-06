@@ -40,7 +40,7 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
     const confirm = useConfirm();
 
     const handleDeleteEdge = (): void => {
-        confirm({
+        void confirm({
             title: 'Verbindung aufheben',
             children: (
                 <Typography>
@@ -61,83 +61,93 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
                 position: 'relative',
             }}
         >
-            {
-                !isConnected &&
+            <Box
+                sx={{
+                    display: 'flex',
+                    height: '100%',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                }}
+            >
                 <Box
                     sx={{
-                        display: 'flex',
-                        height: '100%',
-                        flexDirection: 'column',
-                        alignItems: 'center',
+                        height: ADD_BUTTON_DISTANCE,
+                        width: `${HANDLE_WIDTH}px`,
+                        backgroundColor: wasPerformed ? undefined : HANDLE_COLOR,
+                        backgroundImage: wasPerformed ?
+                            `repeating-linear-gradient(to bottom, ${theme.palette.primary.main} 0 8px, transparent 8px 16px)` :
+                            undefined,
+                        backgroundSize: wasPerformed ? '100% 16px' : undefined,
+                        animation: wasPerformed ? 'active-handle-dash-scroll 1s linear infinite' : undefined,
                     }}
-                >
-                    <Box
-                        sx={{
-                            height: ADD_BUTTON_DISTANCE,
-                            width: `${HANDLE_WIDTH}px`,
-                            backgroundColor: HANDLE_COLOR,
-                        }}
-                    />
+                />
 
-                    <Chip
-                        label={port.label}
-                        size="small"
-                        variant="outlined"
+                <Chip
+                    label={port.label}
+                    size="small"
+                    variant="outlined"
+                    sx={{
+                        bgcolor: 'background.paper',
+                        borderColor: HANDLE_COLOR,
+                    }}
+                    deleteIcon={editable ? <Close/> : undefined}
+                    onDelete={isConnected && editable ? handleDeleteEdge : undefined}
+                />
+
+                <Box
+                    sx={{
+                        minHeight: ADD_BUTTON_DISTANCE,
+                        flex: 1,
+                        width: `${HANDLE_WIDTH}px`,
+                        backgroundColor: wasPerformed ? undefined : HANDLE_COLOR,
+                        backgroundImage: wasPerformed ?
+                            `repeating-linear-gradient(to bottom, ${theme.palette.primary.main} 0 8px, transparent 8px 16px)` :
+                            undefined,
+                        backgroundSize: wasPerformed ? '100% 16px' : undefined,
+                        animation: wasPerformed ? 'active-handle-dash-scroll 1s linear infinite' : undefined,
+                    }}
+                />
+
+                {
+                    !isConnected &&
+                    <IconButton
                         sx={{
                             bgcolor: 'background.paper',
+                            border: `${HANDLE_WIDTH}px solid`,
                             borderColor: HANDLE_COLOR,
+                            width: ADD_BUTTON_SIZE,
+                            height: ADD_BUTTON_SIZE,
                         }}
-                        deleteIcon={editable ? <Close/> : undefined}
-                        onDelete={isConnected && editable ? handleDeleteEdge : undefined}
-                    />
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            event.preventDefault();
 
-                    <Box
-                        sx={{
-                            minHeight: ADD_BUTTON_DISTANCE,
-                            flex: 1,
-                            width: `${HANDLE_WIDTH}px`,
-                            backgroundColor: HANDLE_COLOR,
+                            onClick();
                         }}
-                    />
-
-                    {
-                        !isConnected &&
-                        <IconButton
+                        disabled={!editable}
+                    >
+                        <Add
                             sx={{
-                                bgcolor: 'background.paper',
-                                border: `${HANDLE_WIDTH}px solid`,
-                                borderColor: HANDLE_COLOR,
-                                width: ADD_BUTTON_SIZE,
-                                height: ADD_BUTTON_SIZE,
+                                fontSize: ADD_BUTTON_SIZE - 2,
                             }}
-                            onClick={(event) => {
-                                event.stopPropagation();
-                                event.preventDefault();
+                        />
+                    </IconButton>
+                }
 
-                                onClick();
-                            }}
-                            disabled={!editable}
-                        >
-                            <Add
-                                sx={{
-                                    fontSize: ADD_BUTTON_SIZE - 2,
-                                }}
-                            />
-                        </IconButton>
-                    }
-
-                    <Box
-                        sx={{
-                            minHeight: ADD_BUTTON_DISTANCE * 1.25,
-                            flex: 1,
-                            borderLeftWidth: `${HANDLE_WIDTH}px`,
-                            borderLeftColor: wasPerformed ? theme.palette.primary.main : HANDLE_COLOR,
-                            borderLeftStyle: wasPerformed ? 'dashed' : 'solid',
-                            animation: wasPerformed ? 'active-edge-dash-scroll 2s linear infinite' : undefined,
-                        }}
-                    />
-                </Box>
-            }
+                <Box
+                    sx={{
+                        minHeight: ADD_BUTTON_DISTANCE * 1.25,
+                        flex: 1,
+                        width: `${HANDLE_WIDTH}px`,
+                        backgroundColor: wasPerformed ? undefined : HANDLE_COLOR,
+                        backgroundImage: wasPerformed ?
+                            `repeating-linear-gradient(to bottom, ${theme.palette.primary.main} 0 8px, transparent 8px 16px)` :
+                            undefined,
+                        backgroundSize: wasPerformed ? '100% 16px' : undefined,
+                        animation: wasPerformed ? 'active-handle-dash-scroll 1s linear infinite' : undefined,
+                    }}
+                />
+            </Box>
 
             <Handle
                 type="source"
@@ -149,7 +159,7 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
                     height: isConnected ? 0 : `${HANDLE_SIZE}px`,
                     backgroundColor: 'var(--xy-edge-stroke, var(--xy-edge-stroke-default))',
                     border: 'none',
-                    bottom: isConnected ? 0 : '-4px',
+                    bottom: isConnected ? '4px' : '-4px',
                 }}
             />
         </Box>

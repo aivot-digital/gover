@@ -201,7 +201,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
 
     @Nonnull
     @Override
-    public Optional<StorageFolder> retrieveFolder(@Nonnull Config config, @Nonnull String pathFromRoot, boolean recursive) {
+    public Optional<StorageFolder> retrieveFolder(@Nonnull Config config, @Nonnull String pathFromRoot, boolean recursive) throws StorageException {
         var client = getClient(config);
 
         var listObjectsArgs = ListObjectsArgs
@@ -222,7 +222,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 recursive
         );
 
-        objects.forEach(object -> {
+        for (var object : objects) {
             Item item;
             try {
                 item = object.get();
@@ -239,7 +239,17 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 var metadata = new StorageItemMetadata();
 
                 if (item.userMetadata() != null) {
-                    metadata.putAll(item.userMetadata());
+                    // Normalize the metadata keys to lowercase
+                    for (var entry : item.userMetadata().entrySet()) {
+                        var val = entry.getValue();
+                        var key = entry.getKey().toLowerCase();
+
+                        if (!key.startsWith("x-amz-meta-")) {
+                            metadata.put("x-amz-meta-" + key, val);
+                        } else {
+                            metadata.put(key, val);
+                        }
+                    }
                 }
 
                 folder.addDocument(new StorageDocument(
@@ -249,7 +259,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                         metadata
                 ));
             }
-        });
+        }
 
         if (folder.getDocuments().isEmpty() && folder.getSubfolders().isEmpty()) {
             return Optional.empty();
@@ -275,6 +285,106 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         return true;
     }
 
+    @Nonnull
+    @Override
+    public StorageFolder moveFolder(@Nonnull Config config,
+                                    @Nonnull String sourcePathFromRoot,
+                                    @Nonnull String targetPathFromRoot) throws StorageException {
+        var normalizedSourcePath = toSuffixWithSlash(toPrefixWithSlash(sourcePathFromRoot));
+        var normalizedTargetPath = toSuffixWithSlash(toPrefixWithSlash(targetPathFromRoot));
+
+        if (normalizedSourcePath.equals(normalizedTargetPath)) {
+            return retrieveFolder(config, normalizedTargetPath, true).orElseGet(() -> new StorageFolder(
+                    normalizedTargetPath,
+                    StringUtils.getLastPathSegment(normalizedTargetPath),
+                    new LinkedList<>(),
+                    new LinkedList<>(),
+                    true
+            ));
+        }
+
+        var copiedFolder = copyFolder(config, normalizedSourcePath, normalizedTargetPath);
+        deleteFolder(config, normalizedSourcePath);
+
+        return copiedFolder;
+    }
+
+    @Nonnull
+    @Override
+    public StorageFolder copyFolder(@Nonnull Config config,
+                                    @Nonnull String sourcePathFromRoot,
+                                    @Nonnull String targetPathFromRoot) throws StorageException {
+        var normalizedSourcePath = toSuffixWithSlash(toPrefixWithSlash(sourcePathFromRoot));
+        var normalizedTargetPath = toSuffixWithSlash(toPrefixWithSlash(targetPathFromRoot));
+
+        if (normalizedTargetPath.startsWith(normalizedSourcePath) && !normalizedTargetPath.equals(normalizedSourcePath)) {
+            throw new StorageException("Der Zielordner %s darf nicht innerhalb des Quellordners %s liegen.", StringUtils.quote(normalizedTargetPath), StringUtils.quote(normalizedSourcePath));
+        }
+
+        var sourcePrefix = normalizedSourcePath.substring(1);
+        var targetPrefix = normalizedTargetPath.substring(1);
+        var client = getClient(config);
+
+        if (!normalizedSourcePath.equals(normalizedTargetPath)) {
+            deleteFolder(config, normalizedTargetPath);
+        }
+
+        var listArgs = ListObjectsArgs
+                .builder()
+                .bucket(config.bucket)
+                .prefix(sourcePrefix)
+                .recursive(true)
+                .build();
+
+        boolean foundAtLeastOneObject = false;
+        var objects = client.listObjects(listArgs);
+        for (var objectResult : objects) {
+            Item object;
+            try {
+                object = objectResult.get();
+            } catch (ErrorResponseException | InsufficientDataException | XmlParserException | ServerException |
+                     NoSuchAlgorithmException | IOException | InvalidResponseException | InvalidKeyException |
+                     InternalException e) {
+                throw new StorageException(e, "Fehler beim Auflisten der Objekte im S3-kompatiblen Speicher.");
+            }
+
+            foundAtLeastOneObject = true;
+            var sourceObjectName = object.objectName();
+            var relativeObjectName = sourceObjectName.substring(sourcePrefix.length());
+            var targetObjectName = targetPrefix + relativeObjectName;
+
+            var copyArgs = CopyObjectArgs
+                    .builder()
+                    .bucket(config.bucket)
+                    .object(targetObjectName)
+                    .source(CopySource.builder()
+                            .bucket(config.bucket)
+                            .object(sourceObjectName)
+                            .build())
+                    .build();
+
+            try {
+                client.copyObject(copyArgs);
+            } catch (ErrorResponseException | InsufficientDataException | XmlParserException | ServerException |
+                     NoSuchAlgorithmException | IOException | InvalidResponseException | InvalidKeyException |
+                     InternalException e) {
+                throw new StorageException(e, "Der Ordner konnte nicht im S3-kompatiblen Speicher kopiert werden.");
+            }
+        }
+
+        if (!foundAtLeastOneObject) {
+            throw new StorageException("Der Quellordner %s konnte nicht gefunden werden.", StringUtils.quote(normalizedSourcePath));
+        }
+
+        return retrieveFolder(config, normalizedTargetPath, true).orElseGet(() -> new StorageFolder(
+                normalizedTargetPath,
+                StringUtils.getLastPathSegment(normalizedTargetPath),
+                new LinkedList<>(),
+                new LinkedList<>(),
+                true
+        ));
+    }
+
     @Override
     public void deleteFolder(@Nonnull Config config, @Nonnull String path) throws StorageException {
         var client = getClient(config);
@@ -287,20 +397,19 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 .build();
 
         List<DeleteObject> objectsToDelete = new LinkedList<>();
-        client
-                .listObjects(listArgs)
-                .forEach((object) -> {
-                    Item item;
-                    try {
-                        item = object.get();
-                    } catch (ErrorResponseException | InsufficientDataException | XmlParserException | ServerException |
-                             NoSuchAlgorithmException | IOException | InvalidResponseException | InvalidKeyException |
-                             InternalException e) {
-                        throw new StorageException(e, "Fehler beim Auflisten der Objekte im S3-kompatiblen Speicher.");
-                    }
+        var objects = client.listObjects(listArgs);
+        for (var object : objects) {
+            Item item;
+            try {
+                item = object.get();
+            } catch (ErrorResponseException | InsufficientDataException | XmlParserException | ServerException |
+                     NoSuchAlgorithmException | IOException | InvalidResponseException | InvalidKeyException |
+                     InternalException e) {
+                throw new StorageException(e, "Fehler beim Auflisten der Objekte im S3-kompatiblen Speicher.");
+            }
 
-                    objectsToDelete.add(new DeleteObject(item.objectName()));
-                });
+            objectsToDelete.add(new DeleteObject(item.objectName()));
+        }
 
         var removeArgs = RemoveObjectsArgs
                 .builder()
@@ -314,9 +423,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
 
     @Nonnull
     @Override
-    public StorageDocument storeDocument(@Nonnull Config config, @Nonnull String path, @Nonnull byte[] data, @Nonnull StorageItemMetadata metadata) {
-        var inputStream = new ByteArrayInputStream(data);
-
+    public StorageDocument storeDocument(@Nonnull Config config, @Nonnull String path, @Nonnull InputStream data, @Nonnull StorageItemMetadata metadata) throws StorageException {
         var mimeType = knownExtensionsService
                 .determineMimeType(path)
                 .orElse(StorageService.UNKNOWN_MIME_TYPE);
@@ -333,7 +440,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 .builder()
                 .bucket(config.bucket)
                 .object(path.substring(1))
-                .stream(inputStream, data.length, -1)
+                .stream(data, -1, 10 * 1024 * 1024)
                 .userMetadata(userMetadata)
                 .contentType(mimeType)
                 .build();
@@ -348,17 +455,17 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
             throw new StorageException(e, "Das Dokument konnte nicht im S3-kompatiblen Speicher gespeichert werden.");
         }
 
-        return new StorageDocument(
+        return retrieveDocument(config, path).orElseGet(() -> new StorageDocument(
                 path,
                 StringUtils.getLastPathSegment(path),
-                (long) data.length,
+                0L,
                 metadata
-        );
+        ));
     }
 
     @Nonnull
     @Override
-    public Optional<StorageDocument> retrieveDocument(@Nonnull Config config, @Nonnull String path) {
+    public Optional<StorageDocument> retrieveDocument(@Nonnull Config config, @Nonnull String path) throws StorageException {
         var client = getClient(config);
 
         var statObjectArgs = StatObjectArgs
@@ -380,9 +487,19 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
             throw new StorageException(e, "Fehler beim Abrufen des Dokuments aus dem S3-kompatiblen Speicher.");
         }
 
+        // Normalize the metadata keys to lowercase
         var metadata = new StorageItemMetadata();
         if (response.userMetadata() != null) {
-            metadata.putAll(response.userMetadata());
+            for (var entry : response.userMetadata().entrySet()) {
+                var val = entry.getValue();
+                var key = entry.getKey().toLowerCase();
+
+                if (!key.startsWith("x-amz-meta-")) {
+                    metadata.put("x-amz-meta-" + key, val);
+                } else {
+                    metadata.put(key, val);
+                }
+            }
         }
 
         return Optional.of(new StorageDocument(
@@ -417,7 +534,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
     }
 
     @Override
-    public boolean documentExists(@Nonnull Config config, @Nonnull String path) {
+    public boolean documentExists(@Nonnull Config config, @Nonnull String path) throws StorageException {
         var client = getClient(config);
 
         var statObjectArgs = StatObjectArgs
@@ -440,8 +557,62 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         }
     }
 
+    @Nonnull
     @Override
-    public void deleteDocument(@Nonnull Config config, @Nonnull String path) {
+    public StorageDocument moveDocument(@Nonnull Config config,
+                                        @Nonnull String sourcePathFromRoot,
+                                        @Nonnull String targetPathFromRoot) throws StorageException {
+        if (sourcePathFromRoot.equals(targetPathFromRoot)) {
+            return retrieveDocument(config, sourcePathFromRoot)
+                    .orElseThrow(() -> new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot)));
+        }
+
+        var copiedDocument = copyDocument(config, sourcePathFromRoot, targetPathFromRoot);
+        deleteDocument(config, sourcePathFromRoot);
+        return copiedDocument;
+    }
+
+    @Nonnull
+    @Override
+    public StorageDocument copyDocument(@Nonnull Config config,
+                                        @Nonnull String sourcePathFromRoot,
+                                        @Nonnull String targetPathFromRoot) throws StorageException {
+        var client = getClient(config);
+
+        var copyObjectArgs = CopyObjectArgs
+                .builder()
+                .bucket(config.bucket)
+                .object(targetPathFromRoot.substring(1))
+                .source(
+                        CopySource.builder()
+                                .bucket(config.bucket)
+                                .object(sourcePathFromRoot.substring(1))
+                                .build()
+                )
+                .build();
+
+        try {
+            client.copyObject(copyObjectArgs);
+        } catch (ErrorResponseException e) {
+            if ("NoSuchKey".equals(e.errorResponse().code())) {
+                throw new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot));
+            }
+            throw new StorageException(e, "Das Dokument konnte nicht im S3-kompatiblen Speicher kopiert werden.");
+        } catch (InsufficientDataException | XmlParserException | ServerException | NoSuchAlgorithmException |
+                 IOException | InvalidResponseException | InvalidKeyException | InternalException e) {
+            throw new StorageException(e, "Das Dokument konnte nicht im S3-kompatiblen Speicher kopiert werden.");
+        }
+
+        return retrieveDocument(config, targetPathFromRoot).orElseGet(() -> new StorageDocument(
+                targetPathFromRoot,
+                StringUtils.getLastPathSegment(targetPathFromRoot),
+                0L,
+                StorageItemMetadata.empty()
+        ));
+    }
+
+    @Override
+    public void deleteDocument(@Nonnull Config config, @Nonnull String path) throws StorageException {
         var client = getClient(config);
 
         var removeObjectArgs = RemoveObjectArgs
@@ -459,7 +630,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         }
     }
 
-    private MinioClient getClient(@Nonnull Config config) {
+    private MinioClient getClient(@Nonnull Config config) throws StorageException {
         UUID secretUUID;
         try {
             secretUUID = UUID
@@ -495,6 +666,13 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
             return "/";
         }
         return path.startsWith("/") ? path : "/" + path;
+    }
+
+    private static String toSuffixWithSlash(String path) {
+        if (path == null || path.isEmpty()) {
+            return "/";
+        }
+        return path.endsWith("/") ? path : path + "/";
     }
 
 

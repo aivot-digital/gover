@@ -31,7 +31,7 @@ export function ProcessNodeEditorMoreTab() {
                     setNode({
                         ...node,
                         timeLimitDays: val ?? null,
-                    });
+                    }, false);
                 }}
             />
 
@@ -43,7 +43,7 @@ export function ProcessNodeEditorMoreTab() {
                     setNode({
                         ...node,
                         requirements: val,
-                    });
+                    }, false);
                 }}
                 sx={{
                     mt: 2,
@@ -60,7 +60,7 @@ export function ProcessNodeEditorMoreTab() {
                     setNode({
                         ...node,
                         notes: val,
-                    });
+                    }, false);
                 }}
                 sx={{
                     mt: 2,

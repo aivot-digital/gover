@@ -1,8 +1,10 @@
 package de.aivot.GoverBackend.storage.services;
 
 import com.beust.jcommander.Strings;
+import de.aivot.GoverBackend.av.services.AVService;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.storage.exceptions.StorageException;
 import de.aivot.GoverBackend.storage.entities.StorageIndexItemEntity;
 import de.aivot.GoverBackend.storage.entities.StorageIndexItemEntityId;
 import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
@@ -17,8 +19,16 @@ import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.FilterInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -30,16 +40,19 @@ public class StorageService {
     private final StorageProviderDefinitionService storageProviderDefinitionService;
     private final StorageIndexItemRepository storageIndexItemRepository;
     private final KnownExtensionsService knownExtensionsService;
+    private final AVService avService;
 
     @Autowired
     public StorageService(StorageProviderRepository storageProviderRepository,
                           StorageProviderDefinitionService storageProviderDefinitionService,
                           StorageIndexItemRepository storageIndexItemRepository,
-                          KnownExtensionsService knownExtensionsService) {
+                          KnownExtensionsService knownExtensionsService,
+                          AVService avService) {
         this.storageProviderRepository = storageProviderRepository;
         this.storageProviderDefinitionService = storageProviderDefinitionService;
         this.storageIndexItemRepository = storageIndexItemRepository;
         this.knownExtensionsService = knownExtensionsService;
+        this.avService = avService;
     }
 
     @Nonnull
@@ -57,8 +70,13 @@ public class StorageService {
                     );
         }
 
-        var createdFolder = definition
-                .createFolder(config, path);
+        StorageFolder createdFolder;
+        try {
+            createdFolder = definition
+                    .createFolder(config, path);
+        } catch (StorageException e) {
+            throw wrapStorageException(e);
+        }
 
         var createdFolderPathParts = StringUtils
                 .getPathSegments(createdFolder.getPathFromRoot());
@@ -93,11 +111,72 @@ public class StorageService {
     }
 
     public Optional<StorageFolder> getFolder(@Nonnull Integer providerId, @Nonnull String path) throws ResponseException {
+        return getFolder(providerId, path, false);
+    }
+
+    public Optional<StorageFolder> getFolder(@Nonnull Integer providerId,
+                                             @Nonnull String path,
+                                             boolean recursive) throws ResponseException {
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
 
-        return definition.retrieveFolder(config, path);
+        try {
+            return definition.retrieveFolder(config, path, recursive);
+        } catch (StorageException e) {
+            throw wrapStorageException(e);
+        }
+    }
+
+    @Nonnull
+    public StorageFolder getFolderTreeFromIndex(@Nonnull Integer providerId) throws ResponseException {
+        var provider = retrieveProvider(providerId);
+        var indexedItems = storageIndexItemRepository.findAllByStorageProviderIdAndDirectoryIsTrue(provider.getId());
+
+        Map<String, StorageFolder> foldersByPath = new HashMap<>();
+        var rootFolder = new StorageFolder("/", "Root", new LinkedList<>(), new LinkedList<>(), true);
+        foldersByPath.put("/", rootFolder);
+
+        for (var item : indexedItems) {
+            if (item.getMissing()) {
+                continue;
+            }
+
+            var folderPath = normalizeFolderPath(item.getPathFromRoot());
+            foldersByPath.computeIfAbsent(folderPath, p -> new StorageFolder(
+                    p,
+                    "/".equals(p) ? "Root" : StringUtils.getLastPathSegment(p),
+                    new LinkedList<>(),
+                    new LinkedList<>(),
+                    true
+            ));
+        }
+
+        foldersByPath
+                .keySet()
+                .stream()
+                .sorted(Comparator.comparingInt(String::length))
+                .filter(path -> !"/".equals(path))
+                .forEach(path -> {
+                    var folder = foldersByPath.get(path);
+                    var parentPath = getParentFolderPath(path);
+                    var parentFolder = foldersByPath.computeIfAbsent(parentPath, p -> new StorageFolder(
+                            p,
+                            "/".equals(p) ? "Root" : StringUtils.getLastPathSegment(p),
+                            new LinkedList<>(),
+                            new LinkedList<>(),
+                            true
+                    ));
+
+                    var alreadyAdded = parentFolder.getSubfolders()
+                            .stream()
+                            .anyMatch(subfolder -> subfolder.getPathFromRoot().equals(folder.getPathFromRoot()));
+                    if (!alreadyAdded) {
+                        parentFolder.addSubfolder(folder);
+                    }
+                });
+
+        return rootFolder;
     }
 
     public void deleteFolder(@Nonnull Integer providerId, @Nonnull String path) throws ResponseException {
@@ -114,15 +193,96 @@ public class StorageService {
                     );
         }
 
-        definition.deleteFolder(config, path);
+        try {
+            definition.deleteFolder(config, path);
+        } catch (StorageException e) {
+            throw wrapStorageException(e);
+        }
 
-        // TODO: Find all subfolders and documents and delete them as well
+        var normalizedFolderPath = normalizeFolderPath(path);
 
-        storageIndexItemRepository
-                .deleteById(StorageIndexItemEntityId.of(
-                        provider.getId(),
-                        path
-                ));
+        storageIndexItemRepository.deleteFolderTree(provider.getId(), normalizedFolderPath);
+    }
+
+    @Nonnull
+    public StorageFolder moveFolder(@Nonnull Integer providerId,
+                                    @Nonnull String sourcePath,
+                                    @Nonnull String targetPath) throws ResponseException {
+        var provider = retrieveProvider(providerId);
+        var definition = retrieveDefinition(provider);
+        var config = createConfig(provider, definition);
+
+        if (provider.getReadOnlyStorage()) {
+            throw ResponseException
+                    .badRequest(
+                            "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Es können keine Ordner verschoben werden.",
+                            StringUtils.quote(provider.getName()),
+                            provider.getId()
+                    );
+        }
+
+        StorageFolder movedFolder;
+        try {
+            movedFolder = definition.moveFolder(config, sourcePath, targetPath);
+        } catch (StorageException e) {
+            throw wrapStorageException(e);
+        }
+        var targetFolderPath = normalizeFolderPath(movedFolder.getPathFromRoot());
+        StorageFolder targetFolderTree;
+        try {
+            targetFolderTree = definition
+                    .retrieveFolder(config, targetFolderPath, true)
+                    .orElse(movedFolder);
+        } catch (StorageException e) {
+            throw wrapStorageException(e);
+        }
+
+        upsertFolderTreeIndex(provider, targetFolderTree);
+
+        var normalizedSourcePath = normalizeFolderPath(sourcePath);
+        if (!normalizedSourcePath.equals(targetFolderPath)) {
+            storageIndexItemRepository.deleteFolderTree(provider.getId(), normalizedSourcePath);
+        }
+
+        return movedFolder;
+    }
+
+    @Nonnull
+    public StorageFolder copyFolder(@Nonnull Integer providerId,
+                                    @Nonnull String sourcePath,
+                                    @Nonnull String targetPath) throws ResponseException {
+        var provider = retrieveProvider(providerId);
+        var definition = retrieveDefinition(provider);
+        var config = createConfig(provider, definition);
+
+        if (provider.getReadOnlyStorage()) {
+            throw ResponseException
+                    .badRequest(
+                            "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Es können keine Ordner kopiert werden.",
+                            StringUtils.quote(provider.getName()),
+                            provider.getId()
+                    );
+        }
+
+        StorageFolder copiedFolder;
+        try {
+            copiedFolder = definition.copyFolder(config, sourcePath, targetPath);
+        } catch (StorageException e) {
+            throw wrapStorageException(e);
+        }
+        var targetFolderPath = normalizeFolderPath(copiedFolder.getPathFromRoot());
+        StorageFolder targetFolderTree;
+        try {
+            targetFolderTree = definition
+                    .retrieveFolder(config, targetFolderPath, true)
+                    .orElse(copiedFolder);
+        } catch (StorageException e) {
+            throw wrapStorageException(e);
+        }
+
+        upsertFolderTreeIndex(provider, targetFolderTree);
+
+        return copiedFolder;
     }
 
     public Optional<StorageDocument> getDocument(@Nonnull Integer providerId, @Nonnull String path) throws ResponseException {
@@ -130,7 +290,12 @@ public class StorageService {
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
 
-        var doc = definition.retrieveDocument(config, path);
+        Optional<StorageDocument> doc;
+        try {
+            doc = definition.retrieveDocument(config, path);
+        } catch (StorageException e) {
+            throw wrapStorageException(e);
+        }
 
         doc.ifPresent(d -> {
             d.setMetadata(filterMetadataByRegisteredAttributes(provider, d.getMetadata()));
@@ -144,12 +309,16 @@ public class StorageService {
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
 
-        return definition.retrieveDocumentContent(config, path);
+        try {
+            return definition.retrieveDocumentContent(config, path);
+        } catch (StorageException e) {
+            throw wrapStorageException(e);
+        }
     }
 
     public StorageDocument storeDocument(@Nonnull Integer providerId,
                                          @Nonnull String path,
-                                         @Nonnull byte[] content,
+                                         @Nonnull InputStream content,
                                          @Nonnull StorageItemMetadata metadata) throws ResponseException {
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
@@ -165,19 +334,25 @@ public class StorageService {
                     );
         }
 
-        // Check if the provider has a maximum file size defined and if the content exceeds it.
-        if (provider.getMaxFileSizeInBytes() != null &&
-                provider.getMaxFileSizeInBytes() != 0 &&
-                content.length > provider.getMaxFileSizeInBytes()) {
-            throw ResponseException
-                    .badRequest(
-                            "Der Speicheranbieter %s (ID %d) erlaubt Dateien mit einer maximalen Größe von %d Bytes. Die übermittelte Datei ist jedoch %d Bytes groß.",
-                            StringUtils.quote(provider.getName()),
-                            provider.getId(),
-                            provider.getMaxFileSizeInBytes(),
-                            content.length
-                    );
+        byte[] contentBytes;
+        try (var limitedContent = withProviderFileSizeLimit(provider, content);
+             var contentBuffer = new ByteArrayOutputStream()) {
+            limitedContent.transferTo(contentBuffer);
+            contentBytes = contentBuffer.toByteArray();
+        } catch (IOException e) {
+            if (isCausedByMaxFileSizeExceeded(e)) {
+                throw ResponseException
+                        .badRequest(
+                                "Der Speicheranbieter %s (ID %d) erlaubt Dateien mit einer maximalen Größe von %d Bytes. Die übermittelte Datei überschreitet dieses Limit.",
+                                StringUtils.quote(provider.getName()),
+                                provider.getId(),
+                                provider.getMaxFileSizeInBytes()
+                        );
+            }
+            throw ResponseException.internalServerError(e, "Der Inhalt des Dokuments %s konnte nicht gelesen werden.", StringUtils.quote(path));
         }
+
+        avService.testFile(new ByteArrayInputStream(contentBytes), path);
 
         // Only respect metadata attributes if the provider definition supports them.
         // Additionally, filter out any metadata attributes that are not supported by the provider definition.
@@ -187,8 +362,22 @@ public class StorageService {
         }
 
         // Store the document in the storage provider.
-        var createdDocument = definition
-                .storeDocument(config, path, content, filteredMetadata);
+        StorageDocument createdDocument;
+        try {
+            createdDocument = definition
+                    .storeDocument(config, path, new ByteArrayInputStream(contentBytes), filteredMetadata);
+        } catch (StorageException e) {
+            if (isCausedByMaxFileSizeExceeded(e)) {
+                throw ResponseException
+                        .badRequest(
+                                "Der Speicheranbieter %s (ID %d) erlaubt Dateien mit einer maximalen Größe von %d Bytes. Die übermittelte Datei überschreitet dieses Limit.",
+                                StringUtils.quote(provider.getName()),
+                                provider.getId(),
+                                provider.getMaxFileSizeInBytes()
+                        );
+            }
+            throw wrapStorageException(e);
+        }
 
         var createdDocumentFilteredMetadata = filterMetadataByRegisteredAttributes(provider, createdDocument.getMetadata());
         createdDocument.setMetadata(createdDocumentFilteredMetadata);
@@ -215,6 +404,80 @@ public class StorageService {
         return createdDocument;
     }
 
+    public StorageDocument storeDocument(@Nonnull Integer providerId,
+                                         @Nonnull String path,
+                                         @Nonnull byte[] content,
+                                         @Nonnull StorageItemMetadata metadata) throws ResponseException {
+        return storeDocument(providerId, path, new ByteArrayInputStream(content), metadata);
+    }
+
+    @Nonnull
+    public StorageDocument moveDocument(@Nonnull Integer providerId,
+                                        @Nonnull String sourcePath,
+                                        @Nonnull String targetPath) throws ResponseException {
+        var provider = retrieveProvider(providerId);
+        var definition = retrieveDefinition(provider);
+        var config = createConfig(provider, definition);
+
+        if (provider.getReadOnlyStorage()) {
+            throw ResponseException
+                    .badRequest(
+                            "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Es können keine Dokumente verschoben werden.",
+                            StringUtils.quote(provider.getName()),
+                            provider.getId()
+                    );
+        }
+
+        StorageDocument movedDocument;
+        try {
+            movedDocument = definition.moveDocument(config, sourcePath, targetPath);
+        } catch (StorageException e) {
+            throw wrapStorageException(e);
+        }
+        var movedDocumentFilteredMetadata = filterMetadataByRegisteredAttributes(provider, movedDocument.getMetadata());
+        movedDocument.setMetadata(movedDocumentFilteredMetadata);
+
+        upsertDocumentIndexItem(provider, movedDocument);
+        var normalizedSourcePath = normalizeDocumentPath(sourcePath);
+        var normalizedTargetPath = normalizeDocumentPath(movedDocument.getPathFromRoot());
+        if (!normalizedSourcePath.equals(normalizedTargetPath)) {
+            storageIndexItemRepository.deleteById(StorageIndexItemEntityId.of(provider.getId(), normalizedSourcePath));
+        }
+
+        return movedDocument;
+    }
+
+    @Nonnull
+    public StorageDocument copyDocument(@Nonnull Integer providerId,
+                                        @Nonnull String sourcePath,
+                                        @Nonnull String targetPath) throws ResponseException {
+        var provider = retrieveProvider(providerId);
+        var definition = retrieveDefinition(provider);
+        var config = createConfig(provider, definition);
+
+        if (provider.getReadOnlyStorage()) {
+            throw ResponseException
+                    .badRequest(
+                            "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Es können keine Dokumente kopiert werden.",
+                            StringUtils.quote(provider.getName()),
+                            provider.getId()
+                    );
+        }
+
+        StorageDocument copiedDocument;
+        try {
+            copiedDocument = definition.copyDocument(config, sourcePath, targetPath);
+        } catch (StorageException e) {
+            throw wrapStorageException(e);
+        }
+        var copiedDocumentFilteredMetadata = filterMetadataByRegisteredAttributes(provider, copiedDocument.getMetadata());
+        copiedDocument.setMetadata(copiedDocumentFilteredMetadata);
+
+        upsertDocumentIndexItem(provider, copiedDocument);
+
+        return copiedDocument;
+    }
+
     public void deleteDocument(@Nonnull Integer providerId, @Nonnull String path) throws ResponseException {
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
@@ -229,13 +492,114 @@ public class StorageService {
                     );
         }
 
-        definition.deleteDocument(config, path);
+        try {
+            definition.deleteDocument(config, path);
+        } catch (StorageException e) {
+            throw wrapStorageException(e);
+        }
 
         storageIndexItemRepository
                 .deleteById(StorageIndexItemEntityId.of(
                         provider.getId(),
                         path
                 ));
+    }
+
+    private void upsertDocumentIndexItem(@Nonnull StorageProviderEntity provider,
+                                         @Nonnull StorageDocument document) {
+        var normalizedPath = normalizeDocumentPath(document.getPathFromRoot());
+
+        var indexItem = new StorageIndexItemEntity(
+                provider.getId(),
+                provider.getType(),
+                normalizedPath,
+                false,
+                document.getName(),
+                document.getSizeInBytes(),
+                knownExtensionsService
+                        .determineMimeType(document.getName())
+                        .orElse(UNKNOWN_MIME_TYPE),
+                false,
+                document.getMetadata(),
+                LocalDateTime.now(),
+                LocalDateTime.now()
+        );
+        storageIndexItemRepository.save(indexItem);
+    }
+
+    private void upsertFolderTreeIndex(@Nonnull StorageProviderEntity provider,
+                                       @Nonnull StorageFolder folderTree) {
+        folderTree.apply(folder -> {
+            upsertFolderIndexItem(provider, folder);
+            for (var document : folder.getDocuments()) {
+                var filteredMetadata = filterMetadataByRegisteredAttributes(provider, document.getMetadata());
+                document.setMetadata(filteredMetadata);
+                upsertDocumentIndexItem(provider, document);
+            }
+        });
+    }
+
+    private void upsertFolderIndexItem(@Nonnull StorageProviderEntity provider,
+                                       @Nonnull StorageFolder folder) {
+        var normalizedPath = normalizeFolderPath(folder.getPathFromRoot());
+        var indexItem = new StorageIndexItemEntity(
+                provider.getId(),
+                provider.getType(),
+                normalizedPath,
+                true,
+                StringUtils.getLastPathSegment(normalizedPath),
+                0L,
+                FOLDER_MIME_TYPE,
+                false,
+                StorageItemMetadata.empty(),
+                LocalDateTime.now(),
+                LocalDateTime.now()
+        );
+        storageIndexItemRepository.save(indexItem);
+    }
+
+    @Nonnull
+    private static String normalizeDocumentPath(@Nonnull String path) {
+        var normalizedPath = path.trim();
+        if (!normalizedPath.startsWith("/")) {
+            normalizedPath = "/" + normalizedPath;
+        }
+        if (normalizedPath.endsWith("/")) {
+            normalizedPath = normalizedPath.substring(0, normalizedPath.length() - 1);
+        }
+        return normalizedPath;
+    }
+
+    @Nonnull
+    private static String normalizeFolderPath(@Nonnull String path) {
+        var normalizedPath = path.trim();
+        if (!normalizedPath.startsWith("/")) {
+            normalizedPath = "/" + normalizedPath;
+        }
+        if (!normalizedPath.endsWith("/")) {
+            normalizedPath = normalizedPath + "/";
+        }
+        return normalizedPath;
+    }
+
+    @Nonnull
+    private static String getParentFolderPath(@Nonnull String folderPath) {
+        var normalizedPath = normalizeFolderPath(folderPath);
+        if ("/".equals(normalizedPath)) {
+            return "/";
+        }
+
+        var withoutTrailingSlash = normalizedPath.substring(0, normalizedPath.length() - 1);
+        var lastSlash = withoutTrailingSlash.lastIndexOf('/');
+        if (lastSlash <= 0) {
+            return "/";
+        }
+        return withoutTrailingSlash.substring(0, lastSlash + 1);
+    }
+
+    @Nonnull
+    private static ResponseException wrapStorageException(@Nonnull StorageException e) {
+        return ResponseException.internalServerError(e, e.getMessage());
     }
 
     private StorageProviderEntity retrieveProvider(@Nonnull Integer providerId) throws ResponseException {
@@ -291,5 +655,68 @@ public class StorageService {
         }
 
         return filteredMetadata;
+    }
+
+    private static InputStream withProviderFileSizeLimit(@Nonnull StorageProviderEntity provider,
+                                                         @Nonnull InputStream content) {
+        var maxFileSize = provider.getMaxFileSizeInBytes() != null ? provider.getMaxFileSizeInBytes() : 0L;
+        if (maxFileSize <= 0) {
+            return content;
+        }
+
+        return new MaxFileSizeLimitedInputStream(content, maxFileSize);
+    }
+
+    private static boolean isCausedByMaxFileSizeExceeded(@Nonnull Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof MaxFileSizeExceededIOException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    private static final class MaxFileSizeExceededIOException extends IOException {
+        private MaxFileSizeExceededIOException() {
+            super("InputStream exceeds configured max file size.");
+        }
+    }
+
+    private static final class MaxFileSizeLimitedInputStream extends FilterInputStream {
+        private final long maxFileSizeInBytes;
+        private long bytesRead;
+
+        private MaxFileSizeLimitedInputStream(@Nonnull InputStream in, long maxFileSizeInBytes) {
+            super(in);
+            this.maxFileSizeInBytes = maxFileSizeInBytes;
+            this.bytesRead = 0;
+        }
+
+        @Override
+        public int read() throws IOException {
+            int value = super.read();
+            if (value != -1) {
+                incrementAndValidate(1);
+            }
+            return value;
+        }
+
+        @Override
+        public int read(@Nonnull byte[] b, int off, int len) throws IOException {
+            int read = super.read(b, off, len);
+            if (read > 0) {
+                incrementAndValidate(read);
+            }
+            return read;
+        }
+
+        private void incrementAndValidate(int delta) throws IOException {
+            bytesRead += delta;
+            if (bytesRead > maxFileSizeInBytes) {
+                throw new MaxFileSizeExceededIOException();
+            }
+        }
     }
 }

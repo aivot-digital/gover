@@ -1,10 +1,6 @@
 package de.aivot.GoverBackend.permissions.data;
 
 public class Permissions {
-        public static final String ASSET_CREATE = "asset.create";
-        public static final String ASSET_READ = "asset.read";
-        public static final String ASSET_UPDATE = "asset.update";
-        public static final String ASSET_DELETE = "asset.delete";
         public static final String OBJECT_SCHEMA_CREATE = "object_schema.create";
         public static final String OBJECT_SCHEMA_READ = "object_schema.read";
         public static final String OBJECT_SCHEMA_UPDATE = "object_schema.update";

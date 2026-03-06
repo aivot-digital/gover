@@ -1,5 +1,4 @@
 -- Remove views depending on forms or form_versions
-DROP VIEW IF EXISTS search_items;
 DROP VIEW IF EXISTS submissions_with_memberships;
 DROP VIEW IF EXISTS form_with_memberships;
 DROP VIEW IF EXISTS form_versions_with_memberships;

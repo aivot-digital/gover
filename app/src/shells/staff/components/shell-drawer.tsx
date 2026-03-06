@@ -4,6 +4,7 @@ import {Link, useLocation, useNavigate} from 'react-router-dom';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {selectMinimizeDrawer, selectShowAboutGoverDialog, setMinimizeDrawer, setShowAboutGoverDialog, setShowSearchDialog} from '../../../slices/shell-slice';
+import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
 import {ShellUserMenu} from './shell-user-menu';
 import {ModuleIcons} from '../data/module-icons';
 import {Actions} from '../../../components/actions/actions';
@@ -29,6 +30,8 @@ import Api from '@aivot/mui-material-symbols-400-outlined/dist/api/Api';
 import ReadinessScore from '@aivot/mui-material-symbols-400-outlined/dist/readiness-score/ReadinessScore';
 import FamilyHistory from '@aivot/mui-material-symbols-400-outlined/dist/family-history/FamilyHistory';
 import SupervisedUserCircle from '@aivot/mui-material-symbols-400-outlined/dist/supervised-user-circle/SupervisedUserCircle';
+import {StorageProvidersApiService} from '../../../modules/storage/storage-providers-api-service';
+import {StorageProviderType} from '../../../modules/storage/enums/storage-provider-type';
 
 /* -----------------------------
  * Types & Navigation Structure
@@ -47,7 +50,7 @@ export interface DrawerItem {
     disabled?: boolean;
 }
 
-const DrawerGroups: DrawerGroup[] = [
+const BaseDrawerGroups: DrawerGroup[] = [
     {
         title: null,
         items: [
@@ -173,6 +176,67 @@ export function ShellDrawer() {
     const [notificationsAnchorEl, setNotificationsAnchorEl] = useState<null | HTMLElement>(null);
     const [showBlockedMsg, setShowBlockedMsg] = useState(false);
     const showAboutGoverDialog = useAppSelector(selectShowAboutGoverDialog) ?? false;
+    const [assetStorageProviderItems, setAssetStorageProviderItems] = useState<DrawerItem[]>([]);
+    const [isLoadingAssetStorageProviders, setIsLoadingAssetStorageProviders] = useState(true);
+
+    useEffect(() => {
+        setIsLoadingAssetStorageProviders(true);
+
+        new StorageProvidersApiService()
+            .listAll({
+                type: StorageProviderType.Assets,
+            })
+            .then(({content: providers}) => {
+                const providerItems = providers
+                    .slice()
+                    .sort((a, b) => a.name.localeCompare(b.name, 'de'))
+                    .map((provider) => ({
+                        icon: ModuleIcons.storage,
+                        label: provider.name,
+                        to: `/assets/providers/${provider.id}`,
+                    }));
+
+                setAssetStorageProviderItems(providerItems);
+            })
+            .catch((err) => {
+                setAssetStorageProviderItems([]);
+                dispatch(showApiErrorSnackbar(err, 'Die Liste der Asset-Speicheranbieter konnte nicht geladen werden.'));
+            })
+            .finally(() => {
+                setIsLoadingAssetStorageProviders(false);
+            });
+    }, [dispatch]);
+
+    const drawerGroups = useMemo(() => {
+        return BaseDrawerGroups.map((group) => ({
+            ...group,
+            items: group.items.map((item) => {
+                if (item.label !== 'Dateien & Medien') {
+                    return item;
+                }
+
+                const providerChildren: DrawerItem[] = isLoadingAssetStorageProviders
+                    ? [{
+                        icon: ModuleIcons.storage,
+                        label: 'Speicheranbieter laden...',
+                        disabled: true,
+                    }]
+                    : assetStorageProviderItems.length > 0
+                        ? assetStorageProviderItems
+                        : [{
+                            icon: ModuleIcons.storage,
+                            label: 'Keine Asset-Speicheranbieter',
+                            disabled: true,
+                        }];
+
+                return {
+                    ...item,
+                    to: undefined,
+                    children: providerChildren,
+                };
+            }),
+        }));
+    }, [assetStorageProviderItems, isLoadingAssetStorageProviders]);
 
     // responsive auto-minimize
     useEffect(() => {
@@ -374,7 +438,7 @@ export function ShellDrawer() {
                             }}
                         >
                             {/* Navigation */}
-                            {DrawerGroups.map((group, index) => (
+                            {drawerGroups.map((group, index) => (
                                 <DrawerGroup
                                     key={group.title || index}
                                     group={group}
