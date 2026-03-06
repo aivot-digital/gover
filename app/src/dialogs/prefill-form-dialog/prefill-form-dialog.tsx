@@ -56,6 +56,7 @@ const relevantElementTypes = [
     ElementType.AssignmentContext,
     ElementType.DataModelSelect,
     ElementType.DataObjectSelect,
+    ElementType.NoCodeInput,
     ElementType.RichTextInput,
 ];
 

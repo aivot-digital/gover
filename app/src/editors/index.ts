@@ -40,6 +40,7 @@ import {DataModelSelectFieldEditor} from './data-model-select-field-editor';
 import {DataObjectSelectFieldEditor} from './data-object-select-field-editor';
 import {RichTextInputFieldEditor} from './rich-text-input-field-editor';
 import {CodeInputFieldEditor} from './code-input-field-editor';
+import {NoCodeInputFieldEditor} from './no-code-input-field-editor';
 
 export interface EditorTab {
     label: string;
@@ -173,5 +174,8 @@ export const editors: ElementTypesMap<EditorSet | null> = {
     },
     [ElementType.DataObjectSelect]: {
         default: DataObjectSelectFieldEditor,
+    },
+    [ElementType.NoCodeInput]: {
+        default: NoCodeInputFieldEditor,
     },
 };

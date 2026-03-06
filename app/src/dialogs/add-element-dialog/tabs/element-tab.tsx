@@ -67,6 +67,7 @@ const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
     [ElementType.AssignmentContext]: ElementTypeGroups.Input,
     [ElementType.DataModelSelect]: ElementTypeGroups.Input,
     [ElementType.DataObjectSelect]: ElementTypeGroups.Input,
+    [ElementType.NoCodeInput]: ElementTypeGroups.Input,
     [ElementType.FileUpload]: ElementTypeGroups.Input,
     [ElementType.RichTextInput]: ElementTypeGroups.Input,
 

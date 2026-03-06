@@ -58,6 +58,7 @@ public class OZGCloudDataFormatService {
                     List.of(buildAssignmentContextField(assignmentContextField, elementData));
             case RichTextInputElement richTextInputField -> List.of(buildRichTextInputField(richTextInputField, elementData));
             case CodeInputElement codeInputField -> List.of(buildCodeInputField(codeInputField, elementData));
+            case NoCodeInputElement noCodeInputField -> List.of(buildNoCodeInputField(noCodeInputField, elementData));
             case DataModelSelectInputElement dataModelSelectField ->
                     List.of(buildDataModelSelectField(dataModelSelectField, elementData));
             case DataObjectSelectInputElement dataObjectSelectField ->
@@ -727,6 +728,23 @@ public class OZGCloudDataFormatService {
                 codeInputField.getId(),
                 codeInputField.getLabel(),
                 codeInputField.toDisplayValue(codeInputField.formatValue(edo.getValue())),
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
+    private OZGCloudFormDataItem buildNoCodeInputField(
+            @Nonnull NoCodeInputElement noCodeInputField,
+            @Nonnull ElementData elementData
+    ) {
+        var edo = elementData.mustGet(noCodeInputField);
+
+        return new OZGCloudFormDataItem(
+                noCodeInputField.getId(),
+                noCodeInputField.getLabel(),
+                noCodeInputField.toDisplayValue(noCodeInputField.formatValue(edo.getValue())),
                 null,
                 null,
                 null,

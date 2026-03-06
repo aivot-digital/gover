@@ -176,19 +176,26 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
 
                     {
                         new_editor &&
-                        <NoCodeOperandEditor
-                            parameter={{
-                                label: label ?? '',
-                                description: hint ?? '',
-                                type: desiredReturnType,
-                                options: [],
+                        <Box
+                            sx={{
+                                pointerEvents: editable ? 'auto' : 'none',
+                                opacity: editable ? 1 : 0.65,
                             }}
-                            operand={noCode}
-                            onChange={onChange}
-                            allOperators={operators}
-                            allElements={allElements}
-                            contextType="FORM"
-                        />
+                        >
+                            <NoCodeOperandEditor
+                                parameter={{
+                                    label: label ?? '',
+                                    description: hint ?? '',
+                                    type: desiredReturnType,
+                                    options: [],
+                                }}
+                                operand={noCode}
+                                onChange={onChange}
+                                allOperators={operators}
+                                allElements={allElements}
+                                contextType="FORM"
+                            />
+                        </Box>
                     }
 
                     {

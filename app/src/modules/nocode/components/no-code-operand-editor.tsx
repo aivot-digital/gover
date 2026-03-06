@@ -79,6 +79,7 @@ export function NoCodeOperandEditor(props: NoCodeOperandEditorProps) {
                     hint={parameter.description ?? undefined}
                     value={operand}
                     onChange={onChange}
+                    desiredType={parameter.type}
                     onAddEnclosingExpression={() => {
                         setShowEnclosingOperatorPicker(true);
                     }}

@@ -28,6 +28,7 @@ const BaseComponents = [
     ElementType.Alert,
     ElementType.FileUpload,
     ElementType.ChipInput,
+    ElementType.NoCodeInput,
     ElementType.CodeInput,
     ElementType.RichTextInput,
 
@@ -79,4 +80,5 @@ export const ElementChildOptions: Record<ElementType, ElementType[] | null> = {
     [ElementType.AssignmentContext]: null,
     [ElementType.DataModelSelect]: null,
     [ElementType.DataObjectSelect]: null,
+    [ElementType.NoCodeInput]: null,
 };

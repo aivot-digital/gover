@@ -196,6 +196,7 @@ export const ConditionOperatorHint: Record<ElementType, Partial<Record<Condition
     [ElementType.AssignmentContext]: null,
     [ElementType.DataModelSelect]: null,
     [ElementType.DataObjectSelect]: null,
+    [ElementType.NoCodeInput]: null,
 };
 
 export function getConditionOperatorHint(elementType?: ElementType, operator?: ConditionOperator): string | null {

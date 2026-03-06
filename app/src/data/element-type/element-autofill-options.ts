@@ -83,6 +83,7 @@ export const ElementAutofillMapping: Record<ElementType, string[]> = {
     [ElementType.AssignmentContext]: [],
     [ElementType.DataModelSelect]: [],
     [ElementType.DataObjectSelect]: [],
+    [ElementType.NoCodeInput]: [],
 };
 
 export const getAutofillOptionsForElementType = (elementType: ElementType) => {

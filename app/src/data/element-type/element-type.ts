@@ -41,4 +41,5 @@ export enum ElementType {
     AssignmentContext = 39,
     DataModelSelect = 40,
     DataObjectSelect = 41,
+    NoCodeInput = 42,
 }

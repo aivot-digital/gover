@@ -23,6 +23,7 @@ import {DomainUserSelectFieldElement} from './domain-user-select-field-element';
 import {AssignmentContextFieldElement} from './assignment-context-field-element';
 import {DataModelSelectFieldElement} from './data-model-select-field-element';
 import {DataObjectSelectFieldElement} from './data-object-select-field-element';
+import {NoCodeInputFieldElement} from './no-code-input-field-element';
 
 export type AnyInputElement = (
     CheckboxFieldElement |
@@ -49,6 +50,7 @@ export type AnyInputElement = (
     AssignmentContextFieldElement |
     DataModelSelectFieldElement |
     DataObjectSelectFieldElement |
+    NoCodeInputFieldElement |
 
     ReplicatingContainerLayout
     );
@@ -78,6 +80,7 @@ export function isAnyInputElement(obj: any): obj is AnyInputElement {
         ElementType.AssignmentContext,
         ElementType.DataModelSelect,
         ElementType.DataObjectSelect,
+        ElementType.NoCodeInput,
         ElementType.ReplicatingContainer,
     ].includes(obj.type);
 }

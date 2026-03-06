@@ -29,6 +29,7 @@ import {DataModelSelectFieldSummary} from './data-model-select-field-summary';
 import {DataObjectSelectFieldSummary} from './data-object-select-field-summary';
 import {RichTextInputSummary} from './rich-text-input-summary';
 import {CodeInputSummary} from './code-input-summary';
+import {NoCodeInputSummary} from './no-code-input-summary';
 
 export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.FormLayout]: RootSummary,
@@ -73,4 +74,5 @@ export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.AssignmentContext]: AssignmentContextFieldSummary,
     [ElementType.DataModelSelect]: DataModelSelectFieldSummary,
     [ElementType.DataObjectSelect]: DataObjectSelectFieldSummary,
+    [ElementType.NoCodeInput]: NoCodeInputSummary,
 };
