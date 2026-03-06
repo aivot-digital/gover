@@ -88,7 +88,7 @@ export const DestinationSchema = yup.object({
                 .trim()
                 .max(255, 'Die API-Adresse darf maximal 255 Zeichen lang sein.')
                 .matches(
-                    /^https?:\/\/[\w.-]+(:\d+)?(\/[\w./-]*)?$/,
+                    /^https?:\/\/[\w.-]+(:\d+)?([^\s]*)$/,
                     'Bitte eine gültige API-URL eingeben (z. B. https://example.com/api).',
                 )
                 .required('Die API-Adresse ist erforderlich.'),
