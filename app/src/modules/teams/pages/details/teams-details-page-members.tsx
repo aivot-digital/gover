@@ -366,12 +366,12 @@ const Filters = [
 
 const Columns: Array<GridColDef<VTeamMembershipWithDetailsEntity>> = [
     {
-        field: 'fullName',
+        field: 'userFullName',
         headerName: 'Mitarbeiter:in',
         flex: 1,
     },
     {
-        field: 'email',
+        field: 'userEmail',
         headerName: 'E-Mail',
         flex: 1,
     },
