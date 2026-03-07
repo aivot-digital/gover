@@ -195,6 +195,7 @@ public class CitizenProcessInstanceTaskViewController {
                             event
                     );
         } catch (Exception e) {
+            logger.logException(e);
             throw ResponseException.internalServerError(e);
         }
 
@@ -221,7 +222,7 @@ public class CitizenProcessInstanceTaskViewController {
                             res.get()
                     );
         } catch (ProcessNodeExecutionException e) {
-            // TODO: Log error
+            logger.logException(e);
             throw ResponseException.internalServerError(e);
         }
 

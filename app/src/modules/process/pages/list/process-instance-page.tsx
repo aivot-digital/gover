@@ -12,7 +12,7 @@ import {
     type ListControlRef,
 } from '../../../../components/generic-list/generic-list-props';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
-import {ProcessInstanceHistoryEventDialog} from '../../dialogs/process-instance-history-event-dialog';
+import {ProcessInstanceEventDialog} from '../../dialogs/process-instance-event-dialog';
 import News from '@aivot/mui-material-symbols-400-outlined/dist/news/News';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../../slices/snackbar-slice';
@@ -237,7 +237,7 @@ export function ProcessInstanceListPage(): ReactNode {
                         },
                         {
                             icon: <News/>,
-                            tooltip: 'Aufgaben einsehen',
+                            tooltip: 'Ergeignisse einsehen',
                             onClick: () => {
                                 setShowEventsForInstanceId(item.id);
                             },
@@ -253,7 +253,7 @@ export function ProcessInstanceListPage(): ReactNode {
                 />
             </PageWrapper>
 
-            <ProcessInstanceHistoryEventDialog
+            <ProcessInstanceEventDialog
                 open={showEventsForInstanceId != null}
                 onClose={() => {
                     setShowEventsForInstanceId(null);

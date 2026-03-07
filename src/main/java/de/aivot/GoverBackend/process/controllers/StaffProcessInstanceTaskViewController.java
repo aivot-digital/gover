@@ -79,14 +79,14 @@ public class StaffProcessInstanceTaskViewController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var logger = processNodeExecutionLoggerFactory
-                .create(procId, procId, user.getId(), null);
-
         var taskViewData = fetchTaskViewData(
                 jwt,
                 procId,
                 taskId
         );
+
+        var logger = processNodeExecutionLoggerFactory
+                .create(taskViewData.instance().getId(), taskViewData.task().getId(), user.getId(), null);
 
         var context = new ProcessNodeExecutionContextUIStaff(logger,
                 taskViewData.node(),
@@ -133,14 +133,14 @@ public class StaffProcessInstanceTaskViewController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var logger = processNodeExecutionLoggerFactory
-                .create(procId, procId, user.getId(), null);
-
         var taskViewData = fetchTaskViewData(
                 jwt,
                 procId,
                 taskId
         );
+
+        var logger = processNodeExecutionLoggerFactory
+                .create(taskViewData.instance().getId(), taskViewData.task().getId(), user.getId(), identityId);
 
         var context = new ProcessNodeExecutionContextUIStaff(logger,
                 taskViewData.node(),
@@ -195,6 +195,7 @@ public class StaffProcessInstanceTaskViewController {
                     .provider
                     .onUpdateFromStaff(context, valueMap, event);
         } catch (Exception e) {
+            logger.logException(e);
             throw ResponseException.internalServerError(e);
         }
 
@@ -212,7 +213,7 @@ public class StaffProcessInstanceTaskViewController {
             processNodeExecutionResultHandler
                     .handleResult(
                             logger,
-                            null,
+                            user,
                             taskViewData.provider,
                             taskViewData.node,
                             taskViewData.instance,
@@ -221,7 +222,7 @@ public class StaffProcessInstanceTaskViewController {
                             res.get()
                     );
         } catch (ProcessNodeExecutionException e) {
-            // TODO: Handle properly
+            logger.logException(e);
             throw ResponseException.internalServerError(e);
         }
 

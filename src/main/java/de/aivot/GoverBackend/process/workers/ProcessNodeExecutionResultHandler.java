@@ -2,10 +2,8 @@ package de.aivot.GoverBackend.process.workers;
 
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
-import de.aivot.GoverBackend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
-import de.aivot.GoverBackend.process.enums.ProcessHistoryEventType;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
@@ -61,6 +59,13 @@ public class ProcessNodeExecutionResultHandler {
                              @Nullable ProcessInstanceTaskEntity previousTask,
                              @Nullable ProcessNodeExecutionResult executionResult) throws ProcessNodeExecutionException {
         if (executionResult == null) {
+            logger.logf(
+                    ProcessNodeExecutionLogLevel.Error,
+                    true,
+                    true,
+                    "Die Verarbeitung des Prozesselements '%s' liefert kein Ausfuehrungsergebnis.",
+                    currentNode.resolveName(provider)
+            );
             throw new ProcessNodeExecutionExceptionBrokenImplementation(
                     """
                             Der Prozesselement-Funktionsanbieter „%s“ des Prozesselementes „%s“ hat ein null-Ergebnis zurückgegeben.
@@ -70,6 +75,15 @@ public class ProcessNodeExecutionResultHandler {
                     currentNode.resolveName(provider)
             );
         }
+
+        logger.logf(
+                ProcessNodeExecutionLogLevel.Debug,
+                true,
+                false,
+                "Ergebnis '%s' fuer Prozesselement '%s' wird verarbeitet.",
+                executionResult.getClass().getSimpleName(),
+                currentNode.resolveName(provider)
+        );
 
         switch (executionResult) {
             case ProcessNodeExecutionResultTaskCompleted taskCompleted -> handleTaskComplete(
@@ -183,32 +197,22 @@ public class ProcessNodeExecutionResultHandler {
         processInstanceTaskRepository.save(processInstanceTask);
 
         if (triggeringUser != null) {
-            logger
-                    .logf(
-                            ProcessNodeExecutionLogLevel.Debug,
-                            false,
-                            true,
-                            "Die Aufgabe wurde durch „%s“ der Mitarbeiter:in „%s“ zugewiesen",
-                            triggeringUser.getFullName(),
-                            assignedUser.getFullName()
-                    );
+            logger.logf(
+                    ProcessNodeExecutionLogLevel.Info,
+                    false,
+                    true,
+                    "Die Aufgabe wurde durch '%s' der Mitarbeiter:in '%s' zugewiesen.",
+                    triggeringUser.getFullName(),
+                    assignedUser.getFullName()
+            );
         } else {
-            /*
-            processInstanceHistoryEventRepository
-                    .save(new ProcessInstanceEventEntity(
-                            null,
-                            ProcessHistoryEventType.Update,
-                            "Zuordnung einer Aufgabenbearbeiter:in",
-                            "Die Aufgabe wurde automatisch der Mitarbeiter:in „%s“ zugewiesen".formatted(
-                                    assignedUser.getFullName()
-                            ),
-                            Map.of(),
-                            LocalDateTime.now(),
-                            null,
-                            processInstance.getId(),
-                            processInstanceTask.getId()
-                    ));
-             */
+            logger.logf(
+                    ProcessNodeExecutionLogLevel.Info,
+                    true,
+                    true,
+                    "Die Aufgabe wurde automatisch der Mitarbeiter:in '%s' zugewiesen.",
+                    assignedUser.getFullName()
+            );
         }
 
         // TODO: send notification
@@ -302,21 +306,16 @@ public class ProcessNodeExecutionResultHandler {
                 outEdge.get().getToNodeId()
         );
 
-        rabbitTemplate.convertAndSend(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE, nextPayload);
+        logger.logf(
+                ProcessNodeExecutionLogLevel.Info,
+                true,
+                true,
+                "Das Prozesselement '%s' wurde abgeschlossen. Naechstes Prozesselement: %d.",
+                currentNode.resolveName(provider),
+                outEdge.get().getToNodeId()
+        );
 
-        /*
-        processInstanceHistoryEventRepository.save(new ProcessInstanceEventEntity(
-                null,
-                ProcessHistoryEventType.Complete,
-                "Abschluss des Prozesselements",
-                "Das Prozesselement „%s“ wurde abgeschlossen.".formatted(currentNode.resolveName(provider)),
-                Map.of(),
-                LocalDateTime.now(),
-                triggeringUser != null ? triggeringUser.getId() : null,
-                processInstance.getId(),
-                processInstanceTask.getId()
-        ));
-         */
+        rabbitTemplate.convertAndSend(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE, nextPayload);
     }
 
     private void handleInstanceComplete(@Nonnull ProcessNodeExecutionLogger logger,
@@ -368,19 +367,12 @@ public class ProcessNodeExecutionResultHandler {
         processInstance.setFinished(LocalDateTime.now());
         processInstanceRepository.save(processInstance);
 
-        /*
-        processInstanceHistoryEventRepository.save(new ProcessInstanceEventEntity(
-                null,
-                ProcessHistoryEventType.Complete,
-                "Abschluss des Vorgangs",
-                "Der Vorgang wurde abgeschlossen.",
-                Map.of(),
-                LocalDateTime.now(),
-                triggeringUser != null ? triggeringUser.getId() : null,
-                processInstance.getId(),
-                null
-        ));
-         */
+        logger.logf(
+                ProcessNodeExecutionLogLevel.Info,
+                true,
+                true,
+                "Der Vorgang wurde abgeschlossen."
+        );
     }
 
     private static Map<String, Object> applyOutputMappings(@Nonnull ProcessNodeDefinition provider,

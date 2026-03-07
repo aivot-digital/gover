@@ -25,7 +25,7 @@ import {clearLoadingMessage, setLoadingMessage} from "../../../../slices/shell-s
 import TaskAlt from "@aivot/mui-material-symbols-400-outlined/dist/task-alt/TaskAlt";
 import DataObject from "@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject";
 import FactCheck from "@aivot/mui-material-symbols-400-outlined/dist/fact-check/FactCheck";
-import {ProcessInstanceHistoryEventDialog} from "../../dialogs/process-instance-history-event-dialog";
+import {ProcessInstanceEventDialog} from "../../dialogs/process-instance-event-dialog";
 import News from "@aivot/mui-material-symbols-400-outlined/dist/news/News";
 
 interface ProcessInstanceTaskEntityWithNodeAndProvider extends ProcessInstanceTaskEntity {
@@ -297,7 +297,7 @@ export function ProcessInstanceTaskListPage() {
                 />
             </PageWrapper>
 
-            <ProcessInstanceHistoryEventDialog
+            <ProcessInstanceEventDialog
                 open={showEvents}
                 onClose={() => setShowEvents(false)}
                 instanceId={params.instanceId ? parseInt(params.instanceId) : 0}

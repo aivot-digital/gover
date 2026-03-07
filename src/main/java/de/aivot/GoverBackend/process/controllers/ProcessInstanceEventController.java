@@ -30,24 +30,24 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/process-instance-history-events/")
+@RequestMapping("/api/process-instance-events/")
 @Tag(
         name = OpenApiConstants.Tags.ProcessesDefinitionsName,
         description = "Operations for managing process instance history events."
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
-public class ProcessInstanceHistoryEventController {
+public class ProcessInstanceEventController {
     private final ScopedAuditService auditService;
     private final UserService userService;
     private final ProcessInstanceEventService processInstanceHistoryEventService;
 
     @Autowired
-    public ProcessInstanceHistoryEventController(AuditService auditService,
-                                                 UserService userService,
-                                                 ProcessInstanceEventService processInstanceHistoryEventService,
-                                                 DepartmentService departmentService,
-                                                 ProcessService processDefinitionService) {
-        this.auditService = auditService.createScopedAuditService(ProcessInstanceHistoryEventController.class);
+    public ProcessInstanceEventController(AuditService auditService,
+                                          UserService userService,
+                                          ProcessInstanceEventService processInstanceHistoryEventService,
+                                          DepartmentService departmentService,
+                                          ProcessService processDefinitionService) {
+        this.auditService = auditService.createScopedAuditService(ProcessInstanceEventController.class);
         this.userService = userService;
         this.processInstanceHistoryEventService = processInstanceHistoryEventService;
     }
