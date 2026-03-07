@@ -475,8 +475,8 @@ export function FormsListPage() {
                     onClose={() => {
                         setNewForm(undefined);
                     }}
-                    onSave={(created) => {
-                        navigate(`/forms/${created.id}/${created.draftedVersion}`);
+                    onSave={(createdForm, createdVersion) => {
+                        navigate(`/forms/${createdForm.id}/${createdVersion.version}`);
                     }}
                     open={true}
                     basis={newForm}
@@ -573,4 +573,3 @@ export function FormsListPage() {
         </>
     );
 }
-
