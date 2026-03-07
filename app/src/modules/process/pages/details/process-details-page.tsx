@@ -691,7 +691,14 @@ export function ProcessDetailsPage(): ReactNode {
                                                         .destroy(currentTestClaim.claim.id)
                                                         .then(() => {
                                                             setCurrentTestClaim(null);
+                                                            setRuntimeData(null);
                                                             dispatch(showSuccessSnackbar('Testanspruch wurde gelöscht.'));
+
+                                                            if (instanceId != null) {
+                                                                const nextSearchParams = new URLSearchParams(searchParams);
+                                                                nextSearchParams.delete('instanceId');
+                                                                setSearchParams(nextSearchParams);
+                                                            }
                                                         })
                                                         .catch((err) => {
                                                             dispatch(showApiErrorSnackbar(err, 'Der Testanspruch konnte nicht gelöscht werden.'));
