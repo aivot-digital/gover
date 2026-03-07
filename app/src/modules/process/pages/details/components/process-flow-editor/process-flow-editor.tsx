@@ -74,7 +74,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>([]);
 
-    const layoutNodes = useCallback(() => {
+    const layoutNodes = useCallback((shouldFitView: boolean = false) => {
         const {
             flowNodes: laidOutNodes,
             flowEdges: laidOutEdges,
@@ -83,12 +83,14 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         setNodes([...laidOutNodes]);
         setEdges([...laidOutEdges]);
 
-        fitView();
-    }, [processFlow]);
+        if (shouldFitView) {
+            fitView();
+        }
+    }, [fitView, nodeProviders, processFlow.edges, processFlow.nodes, setEdges, setNodes]);
 
     useEffect(() => {
         layoutNodes();
-    }, [processFlow]);
+    }, [layoutNodes]);
 
     return (
         // TODO: Move the provider upward to avoid unnecessary re-renders of the whole graph when only the context values change
@@ -127,7 +129,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                     actions={[
                         {
                             tooltip: 'layout',
-                            onClick: layoutNodes,
+                            onClick: () => layoutNodes(true),
                             icon: <MobileLayout/>,
                         },
                         {
@@ -150,7 +152,6 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                 nodesFocusable={false}
                 edgesFocusable={false}
                 edgesReconnectable={false}
-                fitView
                 nodeTypes={NodeTypes}
                 edgeTypes={EdgeTypes}
                 onNodeClick={(_, node) => {
@@ -159,7 +160,9 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                     }
                     onSelectNode(node.data.treeNode.node);
                 }}
-                onInit={layoutNodes}
+                onInit={() => {
+                    layoutNodes(true);
+                }}
                 onConnect={(a) => {
                     if (a.source == null || a.target == null || a.sourceHandle == null || onAddEdge == null) {
                         return;
@@ -184,4 +187,3 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         </ProcessFlowEditorProvider>
     );
 }
-
