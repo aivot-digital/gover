@@ -33,7 +33,11 @@ import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -303,7 +307,7 @@ public class AssetController {
             @Nonnull HttpServletRequest request
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, AssetPermissionProvider.ASSET_CREATE);
+                .testSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
 
         var storageProvider = getStorageProvider(storageProviderId);
 
@@ -398,6 +402,57 @@ public class AssetController {
                         asset.getStoragePathFromRoot()
                 ))
                 .orElseThrow(ResponseException::internalServerError);
+    }
+
+    @GetMapping("files-content/**")
+    @Operation(
+            summary = "Download an asset content",
+            description = "Streams the file content of an asset for authenticated users."
+    )
+    public ResponseEntity<InputStreamResource> downloadFileContent(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer storageProviderId,
+            @RequestParam(defaultValue = "true") boolean download,
+            @Nonnull HttpServletRequest request
+    ) throws ResponseException {
+        permissionService
+                .testSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
+
+        var storageProvider = getStorageProvider(storageProviderId);
+
+        var filePath = getNormalizedFileContentPath(request);
+
+        var storageIndexItem = storageIndexItemWithAssetRepository
+                .findById(VStorageIndexItemWithAssetEntityId.of(
+                        storageProvider.getId(),
+                        filePath
+                ))
+                .orElseThrow(ResponseException::notFound);
+
+        var inputStream = storageService
+                .getDocumentContent(storageProvider.getId(), filePath);
+
+        MediaType mediaType;
+        try {
+            mediaType = MediaType.parseMediaType(storageIndexItem.getMimeType());
+        } catch (InvalidMediaTypeException e) {
+            mediaType = MediaType.APPLICATION_OCTET_STREAM;
+        }
+
+        var filename = storageIndexItem.getFilename();
+        if (filename == null || filename.isBlank()) {
+            filename = filePath.substring(filePath.lastIndexOf('/') + 1);
+        }
+
+        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok().contentType(mediaType);
+        var contentDispositionType = download ? "attachment" : "inline";
+        var contentDisposition = ContentDisposition
+                .builder(contentDispositionType)
+                .filename(filename, StandardCharsets.UTF_8)
+                .build();
+        responseBuilder.header("Content-Disposition", contentDisposition.toString());
+
+        return responseBuilder.body(new InputStreamResource(inputStream));
     }
 
     @PostMapping(
@@ -627,6 +682,34 @@ public class AssetController {
                 .toString();
 
         var marker = "/files/";
+        var markerIndex = requestUrl.indexOf(marker);
+        if (markerIndex < 0) {
+            throw ResponseException.notAcceptable("Der Root eines Speichers kann keine Datei sein.");
+        }
+
+        var normalizedPath = requestUrl.substring(markerIndex + marker.length());
+        if (normalizedPath.isBlank()) {
+            throw ResponseException.notAcceptable("Der Root eines Speichers kann keine Datei sein.");
+        }
+
+        if (!normalizedPath.startsWith("/")) {
+            normalizedPath = "/" + normalizedPath;
+        }
+
+        if (normalizedPath.endsWith("/")) {
+            throw ResponseException.notAcceptable("Der Pfad einer Datei darf nicht mit einem Schrägstrich (/) enden.");
+        }
+
+        return URLDecoder.decode(normalizedPath, StandardCharsets.UTF_8);
+    }
+
+    @Nonnull
+    private static String getNormalizedFileContentPath(@Nonnull HttpServletRequest request) throws ResponseException {
+        var requestUrl = request
+                .getRequestURL()
+                .toString();
+
+        var marker = "/files-content/";
         var markerIndex = requestUrl.indexOf(marker);
         if (markerIndex < 0) {
             throw ResponseException.notAcceptable("Der Root eines Speichers kann keine Datei sein.");

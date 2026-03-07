@@ -70,6 +70,23 @@ export class AssetsApiService extends CrudApiService<Asset, Asset, Asset, Asset,
         return await this.api.destroy<void>(this.buildFileApiPath(storageProviderId, storagePathFromRoot));
     }
 
+    public async downloadContentInStorageProvider(storagePathFromRoot: string, storageProviderId: number, download: boolean = true): Promise<Blob> {
+        const normalized = AssetsApiService.normalizeStoragePath(storagePathFromRoot);
+        if (normalized === '/' || normalized.endsWith('/')) {
+            throw new Error('Invalid file path');
+        }
+
+        const encodedPath = AssetsApiService.encodeStoragePathForRoute(normalized);
+        return await this.api.getBlob(
+            `assets/${storageProviderId}/files-content/${encodedPath}`,
+            {
+                queryParams: {
+                    download,
+                },
+            },
+        );
+    }
+
     public async listFolderContent(storageProviderId: number, folderPath: string = '/'): Promise<Asset[]> {
         const items = await this.api.get<any[]>(this.buildFolderApiPath(storageProviderId, folderPath));
         return items.map(AssetsApiService.mapViewItemToAsset);

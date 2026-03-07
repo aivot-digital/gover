@@ -31,6 +31,8 @@ import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete'
 import {copyToClipboardText} from '../../../utils/copy-to-clipboard';
 import {AssetDetailsPageAdditionalData} from './asset-details-page-additional-data';
 import {StorageMetadataAttributesEditor} from '../../storage/components/storage-metadata-attributes-editor';
+import DownloadOutlined from '@mui/icons-material/DownloadOutlined';
+import {downloadBlobFile} from '../../../utils/download-utils';
 
 export const AssetSchema = yup.object({
     filename: yup.string()
@@ -253,6 +255,20 @@ export function AssetDetailsPageIndex() {
                 dispatch(showApiErrorSnackbar(err, 'Beim Löschen ist ein Fehler aufgetreten.'))
             })
             .finally(() => setIsBusy(false));
+    };
+
+    const handleDownload = async () => {
+        if (asset.key === '' || parsedStorageProviderId == null) {
+            dispatch(showErrorSnackbar('Es wurde kein Speicheranbieter ausgewählt.'));
+            return;
+        }
+
+        try {
+            const blob = await apiService.downloadContentInStorageProvider(asset.storagePathFromRoot, parsedStorageProviderId, true);
+            downloadBlobFile(asset.filename, blob);
+        } catch (err) {
+            dispatch(showApiErrorSnackbar(err, 'Beim Herunterladen ist ein Fehler aufgetreten.'));
+        }
     };
 
     return (
@@ -482,6 +498,18 @@ export function AssetDetailsPageIndex() {
                 >
                     Speichern
                 </Button>
+
+                {
+                    asset.key !== '' &&
+                    <Button
+                        variant="outlined"
+                        onClick={handleDownload}
+                        disabled={isBusy || asset.key.length === 0}
+                        startIcon={<DownloadOutlined />}
+                    >
+                        Herunterladen
+                    </Button>
+                }
 
                 {
                     asset.key !== '' &&
