@@ -27,6 +27,7 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
 
     const {
         editable,
+        onSelectedNode,
         selectedNode,
         onAddFollowUpNode,
         onDeleteEdge,

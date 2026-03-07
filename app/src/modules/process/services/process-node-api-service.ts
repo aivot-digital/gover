@@ -5,10 +5,11 @@ import {generateId} from '../../../utils/id-utils';
 
 interface ProcessDefinitionNodeFilter {
     id: number;
-    processDefinitionId: number;
-    processDefinitionVersion: number;
+    processId: number;
+    processVersion: number;
     dataKey: string;
-    codeKey: string;
+    processNodeDefinitionKey: string;
+    processNodeDefinitionVersion: number;
 }
 
 export class ProcessNodeApiService extends BaseCrudApiService<

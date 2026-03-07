@@ -119,8 +119,8 @@ export function ProcessInstanceTaskListPage() {
 
                                 new ProcessNodeApiService()
                                     .listAll({
-                                        processDefinitionId: parseInt(params.processId!),
-                                        processDefinitionVersion: parseInt(params.processVersion!),
+                                        processId: parseInt(params.processId!),
+                                        processVersion: parseInt(params.processVersion!),
                                     }),
 
                                 new ProcessInstanceTaskApiService()

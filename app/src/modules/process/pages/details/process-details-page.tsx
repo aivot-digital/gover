@@ -84,7 +84,6 @@ export function ProcessDetailsPage(): ReactNode {
     const [availableNodeProviders, setAvailableNodeProviders] = useState<ProcessNodeProvider[]>([]);
 
     const [showAddTriggerDialog, setShowAddTriggerDialog] = useState(false);
-    const [selectedNode, setSelectedNode] = useState<ProcessNodeEntity | null>(null);
     const [newNodeFor, setNewNodeFor] = useState<{
         fromNodeId: number;
         viaPort: string;
@@ -197,6 +196,24 @@ export function ProcessDetailsPage(): ReactNode {
         return parseInt(instanceIdParam);
     }, [searchParams]);
 
+    const selectedNode = useMemo(() => {
+        if (processFlow == null) {
+            return null;
+        }
+
+        const selectedNodeIdRaw = params.nodeId;
+        if (selectedNodeIdRaw == null) {
+            return null;
+        }
+
+        const selectedNodeId = parseInt(selectedNodeIdRaw, 10);
+        if (Number.isNaN(selectedNodeId)) {
+            return null;
+        }
+
+        return processFlow.nodes.find((node) => node.id === selectedNodeId) ?? null;
+    }, [params.nodeId, processFlow]);
+
     // Load the process flow whenever the process id or version changes
     useEffect(() => {
         if (processId == null || processVersion == null) {
@@ -211,8 +228,8 @@ export function ProcessDetailsPage(): ReactNode {
                 processDefinitionVersion: processVersion,
             }),
             new ProcessNodeApiService().listAll({
-                processDefinitionId: processId,
-                processDefinitionVersion: processVersion,
+                processId: processId,
+                processVersion: processVersion,
             }),
             new ProcessDefinitionEdgeApiService().listAll({
                 processDefinitionId: processId,
@@ -698,7 +715,6 @@ export function ProcessDetailsPage(): ReactNode {
                                 visible: instanceId != null,
                                 disabled: isRefreshingRuntimeData,
                             },
-                            'separator',
                             /*
                             {
                                 tooltip: 'Historie anzeigen',
@@ -710,13 +726,15 @@ export function ProcessDetailsPage(): ReactNode {
                             },
                              */
                             {
-                                tooltip: 'Auslöser hinzufügen',
+                                label: 'Auslöser',
+                                tooltip: 'Neuen Auslöser hinzufügen',
                                 disabledTooltip: 'Während des Tests können keine Auslöser hinzugefügt werden.',
                                 icon: <Add/>,
                                 onClick: () => {
                                     setShowAddTriggerDialog(true);
                                 },
                                 disabled: currentTestClaim != null,
+                                variant: 'contained',
                             },
                             {
                                 tooltip: 'Mehr',
@@ -744,10 +762,9 @@ export function ProcessDetailsPage(): ReactNode {
                                 selectedNode={selectedNode}
                                 onSelectNode={(node) => {
                                     if (node == null) {
-                                        setSelectedNode(null);
+                                        navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}?${searchParams.toString()}`);
                                         return;
                                     }
-                                    setSelectedNode(node);
                                     navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}/nodes/${node.id}?${searchParams.toString()}`);
                                 }}
                                 onAddFollowUpNode={(fromNodeId, viaPort) => {
