@@ -23,6 +23,10 @@ public class NoCodeStaticValue extends NoCodeOperand {
         this.value = value;
     }
 
+    public static NoCodeStaticValue of(@Nullable Object value) {
+        return new NoCodeStaticValue(value);
+    }
+
     // region Hash & Equals
 
     @Override
