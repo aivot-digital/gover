@@ -1,6 +1,5 @@
 import {
     Box,
-    Button,
     Collapse,
     Dialog,
     DialogContent, IconButton,
@@ -12,13 +11,13 @@ import {
     TableHead,
     TableRow
 } from "@mui/material";
-import {useEffect, useMemo, useState} from "react";
-import {ProcessInstanceHistoryEventEntity} from "../entities/process-instance-history-event-entity";
-import {ProcessInstanceHistoryEventApiService} from "../services/process-instance-history-event-api-service";
+import {FC, useEffect, useMemo, useState} from "react";
+import {SvgIconProps} from "@mui/material";
+import {ProcessInstanceEventEntity, ProcessNodeExecutionLogLevel} from "../entities/process-instance-event-entity";
+import {ProcessInstanceEventApiService} from "../services/process-instance-event-api-service";
 import {ProcessInstanceApiService} from "../services/process-instance-api-service";
 import {ProcessNodeEntity} from "../entities/process-node-entity";
 import {ProcessNodeProvider, ProcessNodeProviderApiService} from "../services/process-node-provider-api-service";
-import {ProcessDefinitionApiService} from "../services/process-definition-api-service";
 import {ProcessNodeApiService} from "../services/process-node-api-service";
 import {ProcessInstanceTaskApiService} from "../services/process-instance-task-api-service";
 import {ProcessInstanceTaskEntity} from "../entities/process-instance-task-entity";
@@ -26,28 +25,27 @@ import {getNodeName} from "../pages/details/components/process-flow-editor/utils
 import {UsersApiService} from "../../users/users-api-service";
 import {User} from "../../users/models/user";
 import {resolveUserName} from "../../users/utils/resolve-user-name";
-import {
-    ProcessHistoryEventType,
-    ProcessHistoryEventTypeIcons,
-    ProcessHistoryEventTypeLabels
-} from "../enums/process-history-event-type";
 import {format} from "date-fns/format";
 import Typography from "@mui/material/Typography";
 import AccountBox from "@aivot/mui-material-symbols-400-outlined/dist/account-box/AccountBox";
 import Memory from "@aivot/mui-material-symbols-400-outlined/dist/memory/Memory";
+import Info from "@aivot/mui-material-symbols-400-outlined/dist/info/Info";
+import Warning from "@aivot/mui-material-symbols-400-outlined/dist/warning/Warning";
+import EmergencyHome from "@aivot/mui-material-symbols-400-outlined/dist/emergency-home/EmergencyHome";
+import BugReport from "@aivot/mui-material-symbols-400-outlined/dist/bug-report/BugReport";
 import {DialogTitleWithClose} from "../../../components/dialog-title-with-close/dialog-title-with-close";
 import {withDelay} from "../../../utils/with-delay";
 import {ExpandableCodeBlock} from "../../../components/expandable-code-block/expandable-code-block";
 import ChevronLeft from "@aivot/mui-material-symbols-400-outlined/dist/chevron-left/ChevronLeft";
 
-interface ProcessInstanceHistoryEventDialogProps {
+interface ProcessInstanceEventDialogProps {
     open: boolean;
     onClose: () => void;
     instanceId: number;
     taskId: number | null;
 }
 
-export function ProcessInstanceHistoryEventDialog(props: ProcessInstanceHistoryEventDialogProps) {
+export function ProcessInstanceEventDialog(props: ProcessInstanceEventDialogProps) {
     const {
         open,
         onClose,
@@ -133,7 +131,7 @@ export function ProcessInstanceHistoryEventDialog(props: ProcessInstanceHistoryE
                                 items.length === 0 &&
                                 <TableRow>
                                     <TableCell
-                                        colSpan={5}
+                                        colSpan={6}
                                         align="center"
                                         sx={{
                                             py: 2,
@@ -147,7 +145,7 @@ export function ProcessInstanceHistoryEventDialog(props: ProcessInstanceHistoryE
                                 items == null &&
                                 <TableRow>
                                     {
-                                        new Array(5)
+                                        new Array(6)
                                             .fill(null)
                                             .map((_, index) => (
                                                 <TableCell
@@ -169,12 +167,26 @@ export function ProcessInstanceHistoryEventDialog(props: ProcessInstanceHistoryE
     );
 }
 
-interface Item extends ProcessInstanceHistoryEventEntity {
+interface Item extends ProcessInstanceEventEntity {
     scope: string | null; // The name of the node or process instance scope if null
     trigger: string | null; // The name of the user who triggered the event or null if the system triggered it
     startedAt: Date;
     endedAt: Date | null;
 }
+
+const ProcessNodeExecutionLogLevelLabels: Record<ProcessNodeExecutionLogLevel, string> = {
+    [ProcessNodeExecutionLogLevel.Debug]: "Debug",
+    [ProcessNodeExecutionLogLevel.Info]: "Info",
+    [ProcessNodeExecutionLogLevel.Warn]: "Warnung",
+    [ProcessNodeExecutionLogLevel.Error]: "Fehler",
+};
+
+const ProcessNodeExecutionLogLevelIcons: Record<ProcessNodeExecutionLogLevel, FC<SvgIconProps>> = {
+    [ProcessNodeExecutionLogLevel.Debug]: BugReport,
+    [ProcessNodeExecutionLogLevel.Info]: Info,
+    [ProcessNodeExecutionLogLevel.Warn]: Warning,
+    [ProcessNodeExecutionLogLevel.Error]: EmergencyHome,
+};
 
 async function getItems(instanceId: number, taskId: number | null): Promise<Item[]> {
     const processInstance = await new ProcessInstanceApiService()
@@ -185,9 +197,6 @@ async function getItems(instanceId: number, taskId: number | null): Promise<Item
             processInstanceId: instanceId,
         });
 
-    const processDefinition = await new ProcessDefinitionApiService()
-        .retrieve(processInstance.processId);
-
     const processDefinitionNodes = await new ProcessNodeApiService()
         .listAll({
             processId: processInstance.processId,
@@ -196,7 +205,7 @@ async function getItems(instanceId: number, taskId: number | null): Promise<Item
     const providers = await new ProcessNodeProviderApiService()
         .getNodeProviders();
 
-    const events = await new ProcessInstanceHistoryEventApiService()
+    const events = await new ProcessInstanceEventApiService()
         .listAllOrdered('timestamp', 'ASC', {
             processInstanceId: instanceId,
             processInstanceTaskId: taskId ?? undefined,
@@ -206,6 +215,9 @@ async function getItems(instanceId: number, taskId: number | null): Promise<Item
         .listAll();
 
     return events.content.map((event) => {
+        const isTechnical = event.isTechnical ?? event.technical ?? false;
+        const isAudit = event.isAudit ?? event.audit ?? false;
+
         let task: ProcessInstanceTaskEntity | null = null;
         if (event.processInstanceTaskId != null) {
             task = processTasks.content.find((t) => t.id === event.processInstanceTaskId)!;
@@ -228,6 +240,8 @@ async function getItems(instanceId: number, taskId: number | null): Promise<Item
 
         const item: Item = {
             ...event,
+            isTechnical,
+            isAudit,
             scope: node != null && provider != null ? getNodeName(node, provider) : null,
             trigger: user != null ? resolveUserName(user) : null,
             startedAt: new Date(task != null ? task.started : processInstance.started),
@@ -243,7 +257,7 @@ function EventTableRow(props: { event: Item }) {
         event,
     } = props;
 
-    const Icon = useMemo(() => ProcessHistoryEventTypeIcons[event.type], [event.type]);
+    const Icon = useMemo(() => ProcessNodeExecutionLogLevelIcons[event.level], [event.level]);
 
     const [expanded, setExpanded] = useState(false);
 
@@ -264,7 +278,7 @@ function EventTableRow(props: { event: Item }) {
                                 mr: 1,
                             }}
                         />
-                        {ProcessHistoryEventTypeLabels[event.type]}
+                        {ProcessNodeExecutionLogLevelLabels[event.level]}
                     </Box>
                 </TableCell>
                 <TableCell
@@ -410,8 +424,29 @@ function EventTableRow(props: { event: Item }) {
                                 </Box>
                             }
 
+                            <Box
+                                marginTop={2}
+                            >
+                                <Typography
+                                    variant="h6"
+                                    component="div"
+                                    gutterBottom={true}
+                                >
+                                    Klassifizierung
+                                </Typography>
+                                <Typography>
+                                    Level: {ProcessNodeExecutionLogLevelLabels[event.level]}
+                                </Typography>
+                                <Typography>
+                                    Technisch: {event.isTechnical ? "Ja" : "Nein"}
+                                </Typography>
+                                <Typography>
+                                    Audit-relevant: {event.isAudit ? "Ja" : "Nein"}
+                                </Typography>
+                            </Box>
+
                             {
-                                event.type === ProcessHistoryEventType.Complete &&
+                                event.endedAt != null &&
                                 <Box
                                     marginTop={2}
                                 >
@@ -427,10 +462,10 @@ function EventTableRow(props: { event: Item }) {
                                         Gestartet: {format(event.startedAt, 'dd.MM.yyyy HH:mm:ss')}
                                     </Typography>
                                     <Typography>
-                                        Beendet: {event.endedAt != null ? format(event.endedAt, 'dd.MM.yyyy HH:mm:ss') : 'Läuft noch'}
+                                        Beendet: {format(event.endedAt, 'dd.MM.yyyy HH:mm:ss')}
                                     </Typography>
                                     <Typography>
-                                        Dauer: {event.endedAt != null ? `${((event.endedAt.getTime() - event.startedAt.getTime()) / 1000).toFixed(2)} Sekunden` : 'Läuft noch'}
+                                        Dauer: {`${((event.endedAt.getTime() - event.startedAt.getTime()) / 1000).toFixed(2)} Sekunden`}
                                     </Typography>
                                 </Box>
                             }
