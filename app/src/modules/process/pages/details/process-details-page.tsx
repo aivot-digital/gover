@@ -715,7 +715,6 @@ export function ProcessDetailsPage(): ReactNode {
                                 visible: instanceId != null,
                                 disabled: isRefreshingRuntimeData,
                             },
-                            'separator',
                             /*
                             {
                                 tooltip: 'Historie anzeigen',
@@ -727,13 +726,15 @@ export function ProcessDetailsPage(): ReactNode {
                             },
                              */
                             {
-                                tooltip: 'Auslöser hinzufügen',
+                                label: 'Auslöser',
+                                tooltip: 'Neuen Auslöser hinzufügen',
                                 disabledTooltip: 'Während des Tests können keine Auslöser hinzugefügt werden.',
                                 icon: <Add/>,
                                 onClick: () => {
                                     setShowAddTriggerDialog(true);
                                 },
                                 disabled: currentTestClaim != null,
+                                variant: 'contained',
                             },
                             {
                                 tooltip: 'Mehr',
