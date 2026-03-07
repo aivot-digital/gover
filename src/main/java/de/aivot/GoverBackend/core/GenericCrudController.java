@@ -6,7 +6,6 @@ import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
-import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,8 +19,6 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 // TODO: Merge with GenericReadController?
 public abstract class GenericCrudController<T, I, F extends Filter<T>> {
@@ -104,8 +101,7 @@ public abstract class GenericCrudController<T, I, F extends Filter<T>> {
                         .withAuditAction(
                                 AuditAction.Create,
                                 createdItem.getClass(),
-                                getIdForEntity(createdItem).toString(),
-                                Map.of(/* TODO: Create Data Map to Identify */)
+                                getIdForEntity(createdItem)
                         )
         );
 
@@ -176,10 +172,8 @@ public abstract class GenericCrudController<T, I, F extends Filter<T>> {
 
         var result = performUpdate(execUser, id, patchItem);
 
-        var diff = AuditLogPayload.createDiff(
-                AuditLogPayload.toMap(before),
-                AuditLogPayload.toMap(result)
-        );
+        var beforeMap = AuditLogPayload.toMap(before);
+        var resultMap = AuditLogPayload.toMap(result);
 
         auditService.addAuditEntry(
                 AuditLogPayload
@@ -188,10 +182,9 @@ public abstract class GenericCrudController<T, I, F extends Filter<T>> {
                         .withAuditAction(
                                 AuditAction.Update,
                                 result.getClass(),
-                                id,
-                                Map.of(/* TODO: Create Data Map */)
+                                id
                         )
-                        .setDiff(diff)
+                        .withDiffUndefined(beforeMap, resultMap)
         );
 
         return result;
@@ -233,8 +226,7 @@ public abstract class GenericCrudController<T, I, F extends Filter<T>> {
                         .withAuditAction(
                                 AuditAction.Delete,
                                 deleted.getClass(),
-                                id,
-                                Map.of(/* TODO: Create Data Map */)
+                                id
                         )
         );
     }
