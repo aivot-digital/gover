@@ -53,6 +53,9 @@ import {ProcessInstanceTaskApiService} from '../../services/process-instance-tas
 import {BaseApiService} from '../../../../services/base-api-service';
 import Download from '@aivot/mui-material-symbols-400-outlined/dist/download/Download';
 import Refresh from '@mui/icons-material/Refresh';
+import BugReport from '@aivot/mui-material-symbols-400-outlined/dist/bug-report/BugReport';
+import {ProcessInstanceEventDialog} from '../../dialogs/process-instance-event-dialog';
+import News from '@aivot/mui-material-symbols-400-outlined/dist/news/News';
 
 interface RuntimeAttachment {
     key: string;
@@ -96,6 +99,7 @@ export function ProcessDetailsPage(): ReactNode {
     } | null>(null);
 
     const [showMenuAtEl, setShowMenuAtEl] = useState<HTMLElement | null>(null);
+    const [showProcessInstanceEventsDialog, setShowProcessInstanceEventsDialog] = useState(false);
 
     const runtimeAttachments = useMemo(() => {
         if (runtimeData == null) {
@@ -715,6 +719,14 @@ export function ProcessDetailsPage(): ReactNode {
                                 visible: instanceId != null,
                                 disabled: isRefreshingRuntimeData,
                             },
+                            {
+                                tooltip: 'Vorgangsereignisse anzeigen',
+                                icon: <News/>,
+                                onClick: () => {
+                                    setShowProcessInstanceEventsDialog(true);
+                                },
+                                visible: runtimeData != null,
+                            },
                             /*
                             {
                                 tooltip: 'Historie anzeigen',
@@ -921,6 +933,18 @@ export function ProcessDetailsPage(): ReactNode {
                 }}
                 onMenuEvent={handleMenuEvent}
             />
+
+            {
+                runtimeData != null &&
+                <ProcessInstanceEventDialog
+                    open={showProcessInstanceEventsDialog}
+                    onClose={() => {
+                        setShowProcessInstanceEventsDialog(false);
+                    }}
+                    instanceId={runtimeData.instance.id}
+                    taskId={null}
+                />
+            }
         </PageWrapper>
     );
 }

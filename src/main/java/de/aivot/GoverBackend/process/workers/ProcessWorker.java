@@ -190,7 +190,8 @@ public class ProcessWorker {
             taskEntity.setStatus(ProcessTaskStatus.Failed);
             taskEntity.setFinished(LocalDateTime.now());
             processInstanceTaskRepository.save(taskEntity);
-            throw e;
+            logger.logException(e);
+            return; // Leave early because of error
         }
 
         if (initResult == null) {

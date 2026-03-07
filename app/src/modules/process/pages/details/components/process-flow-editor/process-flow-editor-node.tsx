@@ -1,6 +1,6 @@
 import {Handle, type NodeProps, Position} from '@xyflow/react';
 import {Box, Divider, IconButton, Paper, useTheme} from '@mui/material';
-import React, {type ReactNode, useMemo} from 'react';
+import React, {type ReactNode, useMemo, useState} from 'react';
 import Typography from '@mui/material/Typography';
 import {ProcessNodeType} from '../../../../services/process-node-provider-api-service';
 import Assignment from '@aivot/mui-material-symbols-400-outlined/dist/assignment/Assignment';
@@ -15,10 +15,14 @@ import {ProcessInstanceTaskStatusIcon} from '../../../../components/process-inst
 import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
 import {useConfirm} from '../../../../../../providers/confirm-provider';
 import {ExpandableCodeBlock} from '../../../../../../components/expandable-code-block/expandable-code-block';
+import BugReport from '@aivot/mui-material-symbols-400-outlined/dist/bug-report/BugReport';
+import {ProcessInstanceEventDialog} from '../../../../dialogs/process-instance-event-dialog';
+import News from '@aivot/mui-material-symbols-400-outlined/dist/news/News';
 
 export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
     const theme = useTheme();
     const confirm = useConfirm();
+    const [showEventsDialog, setShowEventsDialog] = useState(false);
 
     const {
         data,
@@ -250,6 +254,32 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
                             <DataObject color="primary"/>
                         </IconButton>
                     }
+
+                    {
+                        associatedTask &&
+                        <IconButton
+                            sx={{
+                                position: 'absolute',
+                                bottom: '-1rem',
+                                left: '-1rem',
+                                padding: 0.5,
+                                bgcolor: 'white',
+                                border: `2px solid ${theme.palette.primary.main}`,
+                                '&:hover': {
+                                    bgcolor: '#efefef',
+                                },
+                                zIndex: 9999,
+                            }}
+                            size="small"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                event.preventDefault();
+                                setShowEventsDialog(true);
+                            }}
+                        >
+                            <News color="primary"/>
+                        </IconButton>
+                    }
                 </Paper>
             </Box>
 
@@ -306,6 +336,19 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
                             ))
                     }
                 </Box>
+            }
+
+            {
+                runtimeData != null &&
+                associatedTask != null &&
+                <ProcessInstanceEventDialog
+                    open={showEventsDialog}
+                    onClose={() => {
+                        setShowEventsDialog(false);
+                    }}
+                    instanceId={runtimeData.instance.id}
+                    taskId={associatedTask.id}
+                />
             }
         </Box>
     );

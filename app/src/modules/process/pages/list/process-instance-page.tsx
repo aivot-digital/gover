@@ -237,7 +237,7 @@ export function ProcessInstanceListPage(): ReactNode {
                         },
                         {
                             icon: <News/>,
-                            tooltip: 'Aufgaben einsehen',
+                            tooltip: 'Ergeignisse einsehen',
                             onClick: () => {
                                 setShowEventsForInstanceId(item.id);
                             },

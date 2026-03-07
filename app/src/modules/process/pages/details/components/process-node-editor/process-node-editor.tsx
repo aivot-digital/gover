@@ -384,7 +384,7 @@ export function ProcessNodeEditor(): ReactNode {
 
                     <Button
                         component={Link}
-                        to={`/processes/${params.processId}/versions/${params.processVersion}`}
+                        to={`/processes/${params.processId}/versions/${params.processVersion}?${searchParams.toString()}`}
                         color="error"
                     >
                         Abbrechen
@@ -399,7 +399,6 @@ export function ProcessNodeEditor(): ReactNode {
                 onClose={() => {
                     setMenuAnchorEl(null);
                 }}
-
                 onDeleteNode={handleDeleteSelected}
             />
         </>
