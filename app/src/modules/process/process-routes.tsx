@@ -19,6 +19,9 @@ import {
 import {
     ProcessNodeEditorTestingTab,
 } from './pages/details/components/process-node-editor/tabs/process-node-editor-testing-tab';
+import {
+    ProcessNodeEditorPlaceholder
+} from './pages/details/components/process-node-editor/process-node-editor-placeholder';
 
 export const processRoutes: RouteObject[] = [
     {
@@ -31,7 +34,7 @@ export const processRoutes: RouteObject[] = [
         children: [
             {
                 index: true,
-                element: <div>Placeholder</div>,
+                element: <ProcessNodeEditorPlaceholder/>,
             },
             {
                 path: '/processes/:processId/versions/:processVersion/nodes/:nodeId',

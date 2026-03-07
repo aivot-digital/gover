@@ -84,7 +84,6 @@ export function ProcessDetailsPage(): ReactNode {
     const [availableNodeProviders, setAvailableNodeProviders] = useState<ProcessNodeProvider[]>([]);
 
     const [showAddTriggerDialog, setShowAddTriggerDialog] = useState(false);
-    const [selectedNode, setSelectedNode] = useState<ProcessNodeEntity | null>(null);
     const [newNodeFor, setNewNodeFor] = useState<{
         fromNodeId: number;
         viaPort: string;
@@ -196,6 +195,24 @@ export function ProcessDetailsPage(): ReactNode {
         }
         return parseInt(instanceIdParam);
     }, [searchParams]);
+
+    const selectedNode = useMemo(() => {
+        if (processFlow == null) {
+            return null;
+        }
+
+        const selectedNodeIdRaw = params.nodeId;
+        if (selectedNodeIdRaw == null) {
+            return null;
+        }
+
+        const selectedNodeId = parseInt(selectedNodeIdRaw, 10);
+        if (Number.isNaN(selectedNodeId)) {
+            return null;
+        }
+
+        return processFlow.nodes.find((node) => node.id === selectedNodeId) ?? null;
+    }, [params.nodeId, processFlow]);
 
     // Load the process flow whenever the process id or version changes
     useEffect(() => {
@@ -744,10 +761,9 @@ export function ProcessDetailsPage(): ReactNode {
                                 selectedNode={selectedNode}
                                 onSelectNode={(node) => {
                                     if (node == null) {
-                                        setSelectedNode(null);
+                                        navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}?${searchParams.toString()}`);
                                         return;
                                     }
-                                    setSelectedNode(node);
                                     navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}/nodes/${node.id}?${searchParams.toString()}`);
                                 }}
                                 onAddFollowUpNode={(fromNodeId, viaPort) => {
