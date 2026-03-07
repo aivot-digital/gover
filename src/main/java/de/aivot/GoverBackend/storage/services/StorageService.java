@@ -421,12 +421,12 @@ public class StorageService {
         var movedDocumentFilteredMetadata = filterMetadataByRegisteredAttributes(provider, movedDocument.getMetadata());
         movedDocument.setMetadata(movedDocumentFilteredMetadata);
 
-        upsertDocumentIndexItem(provider, movedDocument);
         var normalizedSourcePath = normalizeDocumentPath(sourcePath);
         var normalizedTargetPath = normalizeDocumentPath(movedDocument.getPathFromRoot());
         if (!normalizedSourcePath.equals(normalizedTargetPath)) {
-            storageIndexItemRepository.deleteById(StorageIndexItemEntityId.of(provider.getId(), normalizedSourcePath));
+            storageIndexItemRepository.moveDocumentPath(provider.getId(), normalizedSourcePath, normalizedTargetPath);
         }
+        upsertDocumentIndexItem(provider, movedDocument);
 
         return movedDocument;
     }

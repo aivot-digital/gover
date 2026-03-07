@@ -41,6 +41,23 @@ public interface StorageIndexItemRepository extends JpaRepository<StorageIndexIt
     @Transactional
     @Query(
             value = """
+                    UPDATE storage_index_items
+                    SET path_from_root = CAST(:targetPath AS text),
+                        updated = now()
+                    WHERE storage_provider_id = :storageProviderId
+                      AND path_from_root = CAST(:sourcePath AS text)
+                      AND directory = false
+                    """,
+            nativeQuery = true
+    )
+    int moveDocumentPath(@Param("storageProviderId") Integer storageProviderId,
+                         @Param("sourcePath") String sourcePath,
+                         @Param("targetPath") String targetPath);
+
+    @Modifying
+    @Transactional
+    @Query(
+            value = """
                     DELETE FROM storage_index_items
                     WHERE storage_provider_id = :storageProviderId
                       AND (
