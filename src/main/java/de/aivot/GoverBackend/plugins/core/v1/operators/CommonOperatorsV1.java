@@ -79,6 +79,7 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
                 new NoCodeCreateDateOperator(),
                 new NoCodeCreateTimeOperator(),
                 new NoCodeCreateTodayOperator(),
+                new NoCodeFormatDateOperator(),
                 new NoCodeSubtractFromDateOperator(),
 
                 // List
