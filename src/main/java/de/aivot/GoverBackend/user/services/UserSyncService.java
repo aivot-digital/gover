@@ -19,8 +19,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 @EnableScheduling
@@ -80,52 +80,77 @@ public class UserSyncService {
 
             totalUsersFromIdp = keycloakUsersToImport.size();
 
-            var updatedUserIds = new HashSet<String>();
+            var seenUserIds = new HashSet<String>();
 
-            // Iterate over all keycloak users and import or update them in the local database.
+            // Iterate over all keycloak users and import/update only if data has changed.
             for (var keycloakUser : keycloakUsersToImport) {
-                var userEntity = userRepository
+                var existingUser = userRepository
                         .findById(keycloakUser.getId())
-                        .orElse(
-                                new UserEntity()
-                                        .setId(keycloakUser.getId())
-                        )
-                        .setDeletedInIdp(false)
-                        .setEnabled(keycloakUser.getEnabled())
-                        .setVerified(keycloakUser.getEmailVerified())
-                        .setEmail(keycloakUser.getEmail())
-                        .setFirstName(keycloakUser.getFirstName())
-                        .setLastName(keycloakUser.getLastName());
+                        .orElse(null);
+
+                var isCreate = existingUser == null;
+                var userEntity = existingUser != null
+                        ? existingUser
+                        : new UserEntity().setId(keycloakUser.getId());
+
+                var newDeletedInIdp = false;
+                var newEnabled = keycloakUser.getEnabled();
+                var newVerified = keycloakUser.getEmailVerified();
+                var newEmail = keycloakUser.getEmail();
+                var newFirstName = keycloakUser.getFirstName();
+                var newLastName = keycloakUser.getLastName();
+
+                var dataChanged =
+                        !Objects.equals(userEntity.getDeletedInIdp(), newDeletedInIdp) ||
+                        !Objects.equals(userEntity.getEnabled(), newEnabled) ||
+                        !Objects.equals(userEntity.getVerified(), newVerified) ||
+                        !Objects.equals(userEntity.getEmail(), newEmail) ||
+                        !Objects.equals(userEntity.getFirstName(), newFirstName) ||
+                        !Objects.equals(userEntity.getLastName(), newLastName);
+
+                userEntity
+                        .setDeletedInIdp(newDeletedInIdp)
+                        .setEnabled(newEnabled)
+                        .setVerified(newVerified)
+                        .setEmail(newEmail)
+                        .setFirstName(newFirstName)
+                        .setLastName(newLastName);
 
                 var promotedToSuperAdmin = false;
                 if (!hasSuperAdmin &&
                         goverConfig.getBootstrapAdminMail() != null &&
                         goverConfig.getBootstrapAdminMail().contains(userEntity.getEmail())) {
-                    userEntity.setSystemRoleId(superRoleId);
+                    if (!Objects.equals(userEntity.getSystemRoleId(), superRoleId)) {
+                        userEntity.setSystemRoleId(superRoleId);
+                        promotedToSuperAdmin = true;
+                        promotedToSuperAdminCount++;
+                    }
                     hasSuperAdmin = true;
-                    promotedToSuperAdmin = true;
-                    promotedToSuperAdminCount++;
                 }
 
-                userRepository
-                        .save(userEntity);
+                var hasChanged = isCreate || dataChanged || promotedToSuperAdmin;
+                if (hasChanged) {
+                    userRepository
+                            .save(userEntity);
 
-                importedOrUpdatedCount++;
-                updatedUserIds.add(userEntity.getId());
+                    importedOrUpdatedCount++;
 
-                syncedUsers.add(Map.of(
-                        "userId", userEntity.getId(),
-                        "email", userEntity.getEmail() != null ? userEntity.getEmail() : "",
-                        "enabled", userEntity.getEnabled(),
-                        "verified", userEntity.getVerified(),
-                        "deletedInIdp", userEntity.getDeletedInIdp(),
-                        "action", "imported_or_updated",
-                        "promotedToSuperAdmin", promotedToSuperAdmin
-                ));
+                    syncedUsers.add(Map.of(
+                            "userId", userEntity.getId(),
+                            "email", userEntity.getEmail() != null ? userEntity.getEmail() : "",
+                            "enabled", userEntity.getEnabled(),
+                            "verified", userEntity.getVerified(),
+                            "deletedInIdp", userEntity.getDeletedInIdp(),
+                            "action", isCreate ? "imported" : "updated",
+                            "promotedToSuperAdmin", promotedToSuperAdmin
+                    ));
+                }
+
+                seenUserIds.add(userEntity.getId());
             }
 
             for (var localUser : alreadyImportedUsers) {
-                if (updatedUserIds.contains(localUser.getId())) {
+                if (seenUserIds.contains(localUser.getId())) {
                     continue;
                 }
 
