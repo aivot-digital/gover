@@ -211,8 +211,8 @@ export function ProcessDetailsPage(): ReactNode {
                 processDefinitionVersion: processVersion,
             }),
             new ProcessNodeApiService().listAll({
-                processDefinitionId: processId,
-                processDefinitionVersion: processVersion,
+                processId: processId,
+                processVersion: processVersion,
             }),
             new ProcessDefinitionEdgeApiService().listAll({
                 processDefinitionId: processId,

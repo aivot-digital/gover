@@ -190,7 +190,7 @@ async function getItems(instanceId: number, taskId: number | null): Promise<Item
 
     const processDefinitionNodes = await new ProcessNodeApiService()
         .listAll({
-            processDefinitionId: processInstance.processId,
+            processId: processInstance.processId,
         });
 
     const providers = await new ProcessNodeProviderApiService()
