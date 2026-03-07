@@ -3,8 +3,10 @@ package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.core.converters.ElementDataConverter;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
+import de.aivot.GoverBackend.elements.enums.ValueFunctionType;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.ElementDataObject;
+import de.aivot.GoverBackend.elements.models.elements.ElementValueFunctions;
 import de.aivot.GoverBackend.elements.models.elements.form.input.NoCodeInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.NoCodeInputElementItem;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
@@ -13,6 +15,7 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElemen
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperand;
+import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
 import de.aivot.GoverBackend.nocode.services.NoCodeEvaluationService;
 import de.aivot.GoverBackend.plugins.core.Core;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
@@ -133,8 +136,12 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition {
         variableTargetTypeInput.setId(VARIABLE_TARGET_TYPE_FIELD_ID);
         variableTargetTypeInput.setLabel("Zieltyp");
         variableTargetTypeInput.setHint("Gibt an, in welchen Typ das Ergebnis umgewandelt wird.");
-        variableTargetTypeInput.setRequired(false);
+        variableTargetTypeInput.setRequired(true);
         variableTargetTypeInput.setWeight(4.0);
+        variableTargetTypeInput.setValue(new ElementValueFunctions()
+                .setType(ValueFunctionType.NoCode)
+                .setNoCode(new NoCodeStaticValue(TARGET_TYPE_ANY))
+        );
         variableTargetTypeInput.setOptions(List.of(
                 RadioInputElementOption.of(TARGET_TYPE_ANY, "Beliebig"),
                 RadioInputElementOption.of(TARGET_TYPE_STRING, "Text"),
