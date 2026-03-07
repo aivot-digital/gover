@@ -185,23 +185,25 @@ public class UserSyncService {
             failureMessage = e.getMessage() != null ? e.getMessage() : e.getClass().getName();
             syncFailure = e;
         } finally {
-            var metadata = new LinkedHashMap<String, Object>();
-            metadata.put("startedAt", startedAt);
-            metadata.put("finishedAt", LocalDateTime.now());
-            metadata.put("success", success);
-            metadata.put("totalUsersFromIdp", totalUsersFromIdp);
-            metadata.put("importedOrUpdatedCount", importedOrUpdatedCount);
-            metadata.put("deletedInIdpCount", deletedInIdpCount);
-            metadata.put("promotedToSuperAdminCount", promotedToSuperAdminCount);
-            metadata.put("failureMessage", failureMessage != null ? failureMessage : "");
-            metadata.put("syncedUsers", syncedUsers);
+            if (failureMessage != null || !syncedUsers.isEmpty()) {
+                var metadata = new LinkedHashMap<String, Object>();
+                metadata.put("startedAt", startedAt);
+                metadata.put("finishedAt", LocalDateTime.now());
+                metadata.put("success", success);
+                metadata.put("totalUsersFromIdp", totalUsersFromIdp);
+                metadata.put("importedOrUpdatedCount", importedOrUpdatedCount);
+                metadata.put("deletedInIdpCount", deletedInIdpCount);
+                metadata.put("promotedToSuperAdminCount", promotedToSuperAdminCount);
+                metadata.put("failureMessage", failureMessage != null ? failureMessage : "");
+                metadata.put("syncedUsers", syncedUsers);
 
-            auditService.addAuditEntry(AuditLogPayload
-                    .create()
-                    .withSystem()
-                    .setTriggerType("UserSync")
-                    .setMessage(success ? "User sync completed" : "User sync failed")
-                    .setMetadata(metadata));
+                auditService.addAuditEntry(AuditLogPayload
+                        .create()
+                        .withSystem()
+                        .setTriggerType("UserSync")
+                        .setMessage(success ? "User sync completed" : "User sync failed")
+                        .setMetadata(metadata));
+            }
         }
 
         if (syncFailure != null) {
