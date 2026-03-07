@@ -125,11 +125,12 @@ public class AuditLogPayload {
         }
 
         if (oldState == null || newState == null) {
+            var map = new HashMap<String, Object>();
+            map.put("old", oldState);
+            map.put("new", newState);
+
             return Map.of(
-                    "value", Map.of(
-                            "old", oldState,
-                            "new", newState
-                    )
+                    "value", map
             );
         }
 
@@ -168,10 +169,11 @@ public class AuditLogPayload {
             return null;
         }
 
-        return Map.of(
-                "old", oldValue,
-                "new", newValue
-        );
+        var map = new HashMap<String, Object>();
+        map.put("old", oldValue);
+        map.put("new", newValue);
+
+        return map;
     }
 
     public static AuditLogPayload ofLegacyAction(@Nonnull UserEntity user,
