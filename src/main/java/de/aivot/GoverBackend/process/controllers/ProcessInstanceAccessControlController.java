@@ -70,5 +70,10 @@ public class ProcessInstanceAccessControlController extends GenericCrudControlle
         );
     }
 
+    @Override
+    protected Integer getIdForEntity(ProcessInstanceAccessControlEntity entity) {
+        return entity.getId();
+    }
+
     // TODO: Implement Permission Checks
 }

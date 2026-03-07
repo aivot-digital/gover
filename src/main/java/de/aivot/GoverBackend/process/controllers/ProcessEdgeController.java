@@ -1,6 +1,8 @@
 package de.aivot.GoverBackend.process.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
+import de.aivot.GoverBackend.audit.models.AuditLogPayload;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -25,8 +27,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 @RestController
 @RequestMapping("/api/process-edges/")
 @Tag(
@@ -38,14 +38,17 @@ public class ProcessEdgeController {
     private final ScopedAuditService auditService;
     private final UserService userService;
     private final ProcessEdgeService processDefinitionEdgeService;
+    private final ObjectMapper objectMapper;
 
     @Autowired
     public ProcessEdgeController(AuditService auditService,
                                  UserService userService,
-                                 ProcessEdgeService processDefinitionEdgeService) {
+                                 ProcessEdgeService processDefinitionEdgeService,
+                                 ObjectMapper objectMapper) {
         this.auditService = auditService.createScopedAuditService(ProcessEdgeController.class);
         this.userService = userService;
         this.processDefinitionEdgeService = processDefinitionEdgeService;
+        this.objectMapper = objectMapper;
     }
 
     @GetMapping("")
@@ -77,11 +80,14 @@ public class ProcessEdgeController {
         var result = processDefinitionEdgeService
                 .create(newEdge);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, ProcessEdgeEntity.class, Map.of(
-                "id", result.getId(),
-                "processDefinitionId", result.getProcessId(),
-                "processDefinitionVersion", result.getProcessVersion()
-        )));
+        auditService.addAuditEntry(AuditLogPayload
+                .create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Create,
+                        ProcessEdgeEntity.class,
+                        result.getId()
+                ));
 
         return result;
     }
@@ -117,16 +123,26 @@ public class ProcessEdgeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
+        var existingMap = objectMapper
+                .convertValue(existing, java.util.Map.class);
+
         updateDTO.setId(existing.getId());
 
         var result = processDefinitionEdgeService
                 .update(id, updateDTO);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, ProcessEdgeEntity.class, Map.of(
-                "id", result.getId(),
-                "processDefinitionId", result.getProcessId(),
-                "processDefinitionVersion", result.getProcessVersion()
-        )));
+        var updatedMap = objectMapper
+                .convertValue(result, java.util.Map.class);
+
+        auditService.addAuditEntry(AuditLogPayload
+                .create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Update,
+                        ProcessEdgeEntity.class,
+                        result.getId()
+                )
+                .withDiffUndefined(existingMap, updatedMap));
 
         return result;
     }
@@ -149,11 +165,13 @@ public class ProcessEdgeController {
         var deleted = processDefinitionEdgeService
                 .delete(id);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, ProcessEdgeEntity.class, Map.of(
-                "id", deleted.getId(),
-                "processDefinitionId", deleted.getProcessId(),
-                "processDefinitionVersion", deleted.getProcessVersion()
-        )));
+        auditService.addAuditEntry(AuditLogPayload
+                .create()
+                .withUser(user)
+                .withAuditAction(
+                        AuditAction.Delete,
+                        ProcessEdgeEntity.class,
+                        deleted.getId()
+                ));
     }
 }
-

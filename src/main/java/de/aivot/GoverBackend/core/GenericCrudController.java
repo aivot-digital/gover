@@ -104,7 +104,7 @@ public abstract class GenericCrudController<T, I, F extends Filter<T>> {
                         .withAuditAction(
                                 AuditAction.Create,
                                 createdItem.getClass(),
-                                null,
+                                getIdForEntity(createdItem).toString(),
                                 Map.of(/* TODO: Create Data Map to Identify */)
                         )
         );
@@ -121,6 +121,8 @@ public abstract class GenericCrudController<T, I, F extends Filter<T>> {
                               @Nonnull T newItem) throws ResponseException {
         return service.create(newItem);
     }
+
+    abstract protected I getIdForEntity(T entity);
 
     @GetMapping("{itemId}/")
     @Operation(

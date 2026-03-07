@@ -1,15 +1,11 @@
 package de.aivot.GoverBackend.user.controllers;
 
 import de.aivot.GoverBackend.audit.services.AuditService;
-import de.aivot.GoverBackend.core.GenericCrudController;
 import de.aivot.GoverBackend.core.GenericReadController;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
-import de.aivot.GoverBackend.user.entities.UserDeputyEntity;
 import de.aivot.GoverBackend.user.entities.VUserDeputyWithDetailsEntity;
-import de.aivot.GoverBackend.user.filters.UserDeputyFilter;
 import de.aivot.GoverBackend.user.filters.VUserDeputyWithDetailsFilter;
-import de.aivot.GoverBackend.user.services.UserDeputyService;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.user.services.VUserDeputyWithDetailsService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;

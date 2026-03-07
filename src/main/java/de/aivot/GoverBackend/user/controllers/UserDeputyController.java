@@ -33,5 +33,10 @@ public class UserDeputyController extends GenericCrudController<UserDeputyEntity
                 service);
     }
 
+    @Override
+    protected Integer getIdForEntity(UserDeputyEntity entity) {
+        return entity.getId();
+    }
+
     // TODO: Implement Permission Checks
 }

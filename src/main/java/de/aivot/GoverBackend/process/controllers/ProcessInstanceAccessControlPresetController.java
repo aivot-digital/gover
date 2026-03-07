@@ -30,5 +30,10 @@ public class ProcessInstanceAccessControlPresetController extends GenericCrudCon
                 processInstanceAccessControlPresetService);
     }
 
+    @Override
+    protected Integer getIdForEntity(ProcessInstanceAccessControlPresetEntity entity) {
+        return entity.getId();
+    }
+
     // TODO: Implement Permission Checks
 }

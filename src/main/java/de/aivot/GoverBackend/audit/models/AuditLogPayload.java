@@ -80,6 +80,13 @@ public class AuditLogPayload {
 
     public AuditLogPayload withAuditAction(@Nonnull AuditAction action,
                                            @Nonnull Class<?> entityClass,
+                                           @Nullable Object entityId) {
+        return this
+                .withAuditAction(action, entityClass, entityId, Map.of());
+    }
+
+    public AuditLogPayload withAuditAction(@Nonnull AuditAction action,
+                                           @Nonnull Class<?> entityClass,
                                            @Nullable Object entityId,
                                            @Nullable Map<String, Object> metadata) {
         var me = new HashMap<String, Object>();
@@ -96,6 +103,12 @@ public class AuditLogPayload {
                 .setModule(entityClass.getSimpleName())
                 .setMessage(action.name() + " " + entityClass.getSimpleName() + (entityId != null ? " #" + entityId : ""))
                 .setMetadata(me);
+    }
+
+    @SuppressWarnings("unchecked")
+    public AuditLogPayload withDiffUndefined(@Nullable Map<?, ?> oldState,
+                                             @Nullable Map<?, ?> newState) {
+        return setDiff(createDiff((Map<String, Object>) oldState, (Map<String, Object>) newState));
     }
 
     public AuditLogPayload withDiff(@Nullable Map<String, Object> oldState,

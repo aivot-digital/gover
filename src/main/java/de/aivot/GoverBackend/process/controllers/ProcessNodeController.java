@@ -1,6 +1,8 @@
 package de.aivot.GoverBackend.process.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
+import de.aivot.GoverBackend.audit.models.AuditLogPayload;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
@@ -14,10 +16,10 @@ import de.aivot.GoverBackend.process.filters.ProcessNodeFilter;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextConfig;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextTesting;
 import de.aivot.GoverBackend.process.repositories.ProcessTestClaimRepository;
+import de.aivot.GoverBackend.process.services.ProcessNodeDefinitionService;
 import de.aivot.GoverBackend.process.services.ProcessNodeService;
 import de.aivot.GoverBackend.process.services.ProcessService;
 import de.aivot.GoverBackend.process.services.ProcessVersionService;
-import de.aivot.GoverBackend.process.services.ProcessNodeDefinitionService;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -51,6 +53,7 @@ public class ProcessNodeController {
     private final ProcessNodeDefinitionService processNodeProviderService;
     private final ProcessVersionService processDefinitionVersionService;
     private final ProcessTestClaimRepository processTestClaimRepository;
+    private final ObjectMapper objectMapper;
 
     @Autowired
     public ProcessNodeController(AuditService auditService,
@@ -58,7 +61,9 @@ public class ProcessNodeController {
                                  ProcessNodeService processDefinitionNodeService,
                                  ProcessService processDefinitionService,
                                  ProcessNodeDefinitionService processNodeProviderService,
-                                 ProcessVersionService processDefinitionVersionService, ProcessTestClaimRepository processTestClaimRepository) {
+                                 ProcessVersionService processDefinitionVersionService,
+                                 ProcessTestClaimRepository processTestClaimRepository,
+                                 ObjectMapper objectMapper) {
         this.auditService = auditService.createScopedAuditService(ProcessNodeController.class);
         this.userService = userService;
         this.processDefinitionNodeService = processDefinitionNodeService;
@@ -66,6 +71,7 @@ public class ProcessNodeController {
         this.processNodeProviderService = processNodeProviderService;
         this.processDefinitionVersionService = processDefinitionVersionService;
         this.processTestClaimRepository = processTestClaimRepository;
+        this.objectMapper = objectMapper;
     }
 
     @GetMapping("")
@@ -97,11 +103,14 @@ public class ProcessNodeController {
         var result = processDefinitionNodeService
                 .create(newNode);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, ProcessNodeEntity.class, Map.of(
-                "id", result.getId(),
-                "processDefinitionId", result.getProcessId(),
-                "processDefinitionVersion", result.getProcessVersion()
-        )));
+        auditService.addAuditEntry(AuditLogPayload
+                .create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Create,
+                        ProcessNodeEntity.class,
+                        result.getId()
+                ));
 
         return result;
     }
@@ -137,16 +146,26 @@ public class ProcessNodeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
+        var existingMap = objectMapper
+                .convertValue(existing, Map.class);
+
         updateDTO.setId(existing.getId());
 
         var result = processDefinitionNodeService
                 .update(id, updateDTO);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, ProcessNodeEntity.class, Map.of(
-                "id", result.getId(),
-                "processDefinitionId", result.getProcessId(),
-                "processDefinitionVersion", result.getProcessVersion()
-        )));
+        var updatedMap = objectMapper
+                .convertValue(result, Map.class);
+
+        auditService.addAuditEntry(AuditLogPayload
+                .create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Update,
+                        ProcessNodeEntity.class,
+                        result.getId()
+                )
+                .withDiffUndefined(existingMap, updatedMap));
 
         return result;
     }
@@ -169,11 +188,14 @@ public class ProcessNodeController {
         var deleted = processDefinitionNodeService
                 .delete(id);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, ProcessNodeEntity.class, Map.of(
-                "id", deleted.getId(),
-                "processDefinitionId", deleted.getProcessId(),
-                "processDefinitionVersion", deleted.getProcessVersion()
-        )));
+        auditService.addAuditEntry(AuditLogPayload
+                .create()
+                .withUser(user)
+                .withAuditAction(
+                        AuditAction.Delete,
+                        ProcessNodeEntity.class,
+                        deleted.getId()
+                ));
     }
 
 
@@ -262,4 +284,3 @@ public class ProcessNodeController {
                 .getTestingLayout(context);
     }
 }
-

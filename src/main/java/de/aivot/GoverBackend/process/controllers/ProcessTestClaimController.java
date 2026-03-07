@@ -55,4 +55,9 @@ public class ProcessTestClaimController extends GenericCrudController<ProcessTes
         newItem.setOwningUserId(execUser.getId());
         return super.performCreate(execUser, newItem);
     }
+
+    @Override
+    protected Integer getIdForEntity(ProcessTestClaimEntity entity) {
+        return entity.getId();
+    }
 }
