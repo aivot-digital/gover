@@ -1,25 +1,44 @@
-import {Button, Dialog, DialogActions, DialogContent} from '@mui/material';
-import {useCallback, useEffect, useState} from 'react';
+import {
+    Box,
+    Breadcrumbs,
+    Button,
+    Checkbox,
+    Chip,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    Divider,
+    List,
+    ListItemButton,
+    ListItemIcon,
+    ListItemText,
+    Stack,
+    Typography,
+} from '@mui/material';
+import {useCallback, useEffect, useMemo, useState} from 'react';
+import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import Deselect from '@aivot/mui-material-symbols-400-outlined/dist/deselect/Deselect';
+import SelectAll from '@aivot/mui-material-symbols-400-outlined/dist/select-all/SelectAll';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {UsersApiService} from '../../users/users-api-service';
 import {User} from '../../users/models/user';
 import {TeamsApiService} from '../../teams/services/teams-api-service';
 import {UserRolesApiService} from '../user-roles-api-service';
 import {UserRoleResponseDTO} from '../dtos/user-role-response-dto';
-import {CheckboxFieldComponent} from '../../../components/checkbox-field/checkbox-field-component';
 import {DepartmentEntity} from '../../departments/entities/department-entity';
 import {DepartmentApiService} from '../../departments/services/department-api-service';
-import {useAppDispatch} from "../../../hooks/use-app-dispatch";
-import {showApiErrorSnackbar} from "../../../slices/snackbar-slice";
-import {TeamEntity} from "../../teams/entities/team-entity";
+import {VDepartmentShadowedApiService} from '../../departments/services/v-department-shadowed-api-service';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
+import {TeamEntity} from '../../teams/entities/team-entity';
 import {
-    VDepartmentMembershipWithDetailsService
-} from "../../departments/services/v-department-membership-with-details-service";
-import {VTeamMembershipWithDetailsApiService} from "../../teams/services/v-team-membership-with-details-api-service";
+    VDepartmentMembershipWithDetailsService,
+} from '../../departments/services/v-department-membership-with-details-service';
+import {VTeamMembershipWithDetailsApiService} from '../../teams/services/v-team-membership-with-details-api-service';
 import {
-    VDepartmentMembershipWithDetailsEntity
-} from "../../departments/entities/v-department-membership-with-details-entity";
-import {VTeamMembershipWithDetailsEntity} from "../../teams/entities/v-team-membership-with-details-entity";
+    VDepartmentMembershipWithDetailsEntity,
+} from '../../departments/entities/v-department-membership-with-details-entity';
+import {VTeamMembershipWithDetailsEntity} from '../../teams/entities/v-team-membership-with-details-entity';
 
 interface UserRolesAssignmentDialogProps {
     open: boolean;
@@ -56,6 +75,7 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
     const [user, setUser] = useState<User>();
     const [parent, setParent] = useState<ParentType<typeof parentType>>();
     const [memberships, setMemberships] = useState<MembershipType<typeof parentType>[]>();
+    const [orgUnitPathParts, setOrgUnitPathParts] = useState<string[]>();
 
     const [activeRoleIds, setActiveRoleIds] = useState<Set<number>>();
 
@@ -65,9 +85,9 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
             .listAll()
             .then((rolesPage) => setRoles(rolesPage.content))
             .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Rollen konnten nicht geladen werden'))
+                dispatch(showApiErrorSnackbar(err, 'Rollen konnten nicht geladen werden'));
             });
-    }, []);
+    }, [dispatch]);
 
     // Load user details
     useEffect(() => {
@@ -80,14 +100,15 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
             .retrieve(userId)
             .then(setUser)
             .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Benutzer konnte nicht geladen werden'))
+                dispatch(showApiErrorSnackbar(err, 'Benutzer konnte nicht geladen werden'));
             });
-    }, [userId]);
+    }, [dispatch, userId]);
 
     // Load parent details
     useEffect(() => {
         if (parentId == null) {
             setParent(undefined);
+            setOrgUnitPathParts(undefined);
             return;
         }
 
@@ -98,15 +119,30 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                 .catch((err) => {
                     dispatch(showApiErrorSnackbar(err, 'Organisationseinheit konnte nicht geladen werden'));
                 });
+
+            new VDepartmentShadowedApiService()
+                .retrieve(parentId)
+                .then((shadowedDepartment) => {
+                    const path = [
+                        ...(shadowedDepartment.parentNames ?? []),
+                        shadowedDepartment.name,
+                    ].filter(Boolean);
+
+                    setOrgUnitPathParts(path);
+                })
+                .catch((err) => {
+                    dispatch(showApiErrorSnackbar(err, 'Pfad der Organisationseinheit konnte nicht geladen werden'));
+                });
         } else {
+            setOrgUnitPathParts(undefined);
             new TeamsApiService()
                 .retrieve(parentId)
                 .then(setParent)
                 .catch((err) => {
                     dispatch(showApiErrorSnackbar(err, 'Team konnte nicht geladen werden'));
-                })
+                });
         }
-    }, [parentId, parentType]);
+    }, [dispatch, parentId, parentType]);
 
     // Load assignments
     useEffect(() => {
@@ -125,7 +161,7 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                     setMemberships(membershipsPage.content);
                 })
                 .catch((err) => {
-                    dispatch(showApiErrorSnackbar(err, 'Rollen-Zuweisungen konnten nicht geladen werden'))
+                    dispatch(showApiErrorSnackbar(err, 'Rollen-Zuweisungen konnten nicht geladen werden'));
                 });
         } else {
             new VTeamMembershipWithDetailsApiService()
@@ -137,10 +173,10 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                     setMemberships(membershipsPage.content);
                 })
                 .catch((err) => {
-                    dispatch(showApiErrorSnackbar(err, 'Rollen-Zuweisungen konnten nicht geladen werden'))
+                    dispatch(showApiErrorSnackbar(err, 'Rollen-Zuweisungen konnten nicht geladen werden'));
                 });
         }
-    }, [userId, parentId, parentType]);
+    }, [dispatch, userId, parentId, parentType]);
 
     // Determine active role IDs
     useEffect(() => {
@@ -158,6 +194,69 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
         setActiveRoleIds(activeRoleIdsSet);
     }, [memberships]);
 
+    const assignedRoleIds = useMemo(() => {
+        return new Set(
+            (memberships ?? []).flatMap((membership) => membership.domainRoles.map((role) => role.id)),
+        );
+    }, [memberships]);
+
+    const sortedRoles = useMemo(() => {
+        return [...(roles ?? [])].sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
+    }, [roles]);
+
+    const selectedCount = activeRoleIds?.size ?? 0;
+    const isLoading = roles == null || activeRoleIds == null;
+    const totalRolesCount = sortedRoles.length;
+
+    const changes = useMemo(() => {
+        if (activeRoleIds == null) {
+            return {added: 0, removed: 0, hasChanges: false};
+        }
+
+        let added = 0;
+        let removed = 0;
+
+        activeRoleIds.forEach((roleId) => {
+            if (!assignedRoleIds.has(roleId)) {
+                added += 1;
+            }
+        });
+
+        assignedRoleIds.forEach((roleId) => {
+            if (!activeRoleIds.has(roleId)) {
+                removed += 1;
+            }
+        });
+
+        return {
+            added,
+            removed,
+            hasChanges: added > 0 || removed > 0,
+        };
+    }, [activeRoleIds, assignedRoleIds]);
+
+    const handleToggleRole = (roleId: number, checked: boolean): void => {
+        setActiveRoleIds((prev) => {
+            const next = new Set(prev ?? []);
+
+            if (checked) {
+                next.add(roleId);
+            } else {
+                next.delete(roleId);
+            }
+
+            return next;
+        });
+    };
+
+    const handleSelectAll = (): void => {
+        setActiveRoleIds(new Set(sortedRoles.map((role) => role.id)));
+    };
+
+    const handleDeselectAll = (): void => {
+        setActiveRoleIds(new Set());
+    };
+
     const handleSave = useCallback(() => {
         if (memberships == null) {
             return;
@@ -172,12 +271,12 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
 
                 const isCurrentlyAssigned = memberships
                     .flatMap((m) => m.domainRoles)
-                    .some(r => r.id === role.id);
+                    .some((r) => r.id === role.id);
 
                 if (isActive && !isCurrentlyAssigned) {
                     roleIdsToAdd.push(role.id);
                 } else if (!isActive && isCurrentlyAssigned) {
-                    const membership = memberships?.find((m) => m.domainRoles.some(r => r.id === role.id));
+                    const membership = memberships.find((m) => m.domainRoles.some((r) => r.id === role.id));
                     if (membership != null) {
                         userRoleAssignmentIdsToRemove.push(membership.membershipId!);
                     }
@@ -195,6 +294,7 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
             setParent(undefined);
             setMemberships(undefined);
             setActiveRoleIds(undefined);
+            setOrgUnitPathParts(undefined);
         }, 300);
     };
 
@@ -206,43 +306,232 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
             maxWidth="md"
         >
             <DialogTitleWithClose onClose={handleClose}>
-                Rollen von {user?.fullName} in {parent?.name}
+                Rollen zuweisen
             </DialogTitleWithClose>
 
             <DialogContent>
-                {
-                    roles != null &&
-                    roles.map((role) => (
-                        <CheckboxFieldComponent
-                            key={role.id}
-                            label={role.name ?? ''}
-                            hint={role.description ?? ''}
-                            value={activeRoleIds?.has(role.id) ?? false}
-                            onChange={(val) => {
-                                const newSet = new Set(activeRoleIds);
-                                if (val) {
-                                    newSet.add(role.id);
-                                } else {
-                                    newSet.delete(role.id);
-                                }
+                <Stack spacing={2}>
+                    <Box>
+                        <Typography variant="subtitle1">
+                            {user?.fullName ?? 'Benutzer:in'}
+                        </Typography>
+                        {parentType === 'orgUnit' ? (
+                            <Box>
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    sx={{mb: 0.25}}
+                                >
+                                    Organisationseinheit: {parent?.name ?? 'wird geladen...'}
+                                </Typography>
+                                {(orgUnitPathParts?.length ?? 0) > 0 && (
+                                    <Box
+                                        sx={{
+                                            mt: 0.25,
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            maxWidth: '100%',
+                                            color: 'text.secondary',
+                                        }}
+                                    >
+                                        <Typography
+                                            variant="caption"
+                                            color="text.secondary"
+                                            sx={{
+                                                mr: 0.5,
+                                                whiteSpace: 'nowrap',
+                                            }}
+                                        >
+                                            ( Pfad:
+                                        </Typography>
+                                        <Breadcrumbs
+                                            separator="›"
+                                            maxItems={5}
+                                            itemsBeforeCollapse={2}
+                                            itemsAfterCollapse={2}
+                                            sx={{
+                                                transform: 'translateY(-2px)',
+                                                color: 'text.secondary',
+                                                '& .MuiBreadcrumbs-separator': {
+                                                    mx: 0.5,
+                                                },
+                                                '& .MuiBreadcrumbs-li': {
+                                                    minWidth: 0,
+                                                },
+                                                '& .MuiBreadcrumbs-ol': {
+                                                    flexWrap: 'nowrap',
+                                                    overflow: 'hidden',
+                                                },
+                                            }}
+                                        >
+                                            {orgUnitPathParts?.map((segment, index) => (
+                                                <Typography
+                                                    key={`${parentId ?? 'org'}-${index}`}
+                                                    variant="caption"
+                                                    color="text.secondary"
+                                                    sx={{
+                                                        maxWidth: 180,
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                        whiteSpace: 'nowrap',
+                                                    }}
+                                                    title={segment}
+                                                >
+                                                    {segment}
+                                                </Typography>
+                                            ))}
+                                        </Breadcrumbs>
+                                        <Typography
+                                            variant="caption"
+                                            color="text.secondary"
+                                            sx={{
+                                                ml: 0.5,
+                                                whiteSpace: 'nowrap',
+                                            }}
+                                        >
+                                            )
+                                        </Typography>
+                                    </Box>
+                                )}
+                            </Box>
+                        ) : (
+                            <Typography
+                                variant="body2"
+                                color="text.secondary"
+                            >
+                                Team: {parent?.name ?? 'wird geladen...'}
+                            </Typography>
+                        )}
+                    </Box>
 
-                                setActiveRoleIds(newSet);
-                            }}
-                        />
-                    ))
-                }
+                    <Stack
+                        direction={{
+                            xs: 'column',
+                            sm: 'row',
+                        }}
+                        spacing={1}
+                        alignItems={{
+                            xs: 'stretch',
+                            sm: 'center',
+                        }}
+                        justifyContent="space-between"
+                    >
+                        <Stack
+                            direction="row"
+                            spacing={1}
+                            alignItems="center"
+                            flexWrap="wrap"
+                            useFlexGap
+                        >
+                            <Typography
+                                variant="body2"
+                                color="text.secondary"
+                            >
+                                {selectedCount} von {totalRolesCount} ausgewählt
+                            </Typography>
+                            <Chip
+                                size="small"
+                                label={`+${changes.added}`}
+                                variant={changes.added > 0 ? 'filled' : 'outlined'}
+                            />
+                            <Chip
+                                size="small"
+                                label={`-${changes.removed}`}
+                                variant={changes.removed > 0 ? 'filled' : 'outlined'}
+                            />
+                        </Stack>
+
+                        <Stack
+                            direction="row"
+                            spacing={1}
+                            sx={{ml: {sm: 'auto'}}}
+                        >
+                            <Button
+                                size="small"
+                                variant="outlined"
+                                onClick={handleSelectAll}
+                                disabled={isLoading || totalRolesCount === 0}
+                                startIcon={<SelectAll fontSize="small" />}
+                            >
+                                Alle auswählen
+                            </Button>
+                            <Button
+                                size="small"
+                                variant="outlined"
+                                onClick={handleDeselectAll}
+                                disabled={isLoading || selectedCount === 0}
+                                startIcon={<Deselect fontSize="small" />}
+                            >
+                                Alle abwählen
+                            </Button>
+                        </Stack>
+                    </Stack>
+
+                    {!isLoading && sortedRoles.length === 0 && (
+                        <Typography
+                            variant="body2"
+                            color="text.secondary"
+                        >
+                            Keine Rollen verfügbar.
+                        </Typography>
+                    )}
+
+                    <List
+                        dense
+                        disablePadding
+                        sx={{
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            borderRadius: 1,
+                            overflow: 'hidden',
+                        }}
+                    >
+                        {sortedRoles.map((role, index) => {
+                            const checked = activeRoleIds?.has(role.id) ?? false;
+
+                            return (
+                                <Box key={role.id}>
+                                    <ListItemButton
+                                        onClick={() => handleToggleRole(role.id, !checked)}
+                                        disabled={isLoading}
+                                        sx={{py: 1.25}}
+                                    >
+                                        <ListItemIcon sx={{minWidth: 40}}>
+                                            <Checkbox
+                                                edge="start"
+                                                checked={checked}
+                                                disableRipple
+                                                onClick={(event) => event.stopPropagation()}
+                                                onChange={(event) => handleToggleRole(role.id, event.target.checked)}
+                                            />
+                                        </ListItemIcon>
+                                        <ListItemText
+                                            primary={role.name ?? 'Unbenannte Rolle'}
+                                            secondary={role.description ?? 'Keine Beschreibung'}
+                                        />
+                                    </ListItemButton>
+
+                                    {index < sortedRoles.length - 1 && <Divider />}
+                                </Box>
+                            );
+                        })}
+                    </List>
+                </Stack>
             </DialogContent>
 
             <DialogActions>
                 <Button
                     variant="contained"
                     onClick={handleSave}
+                    disabled={isLoading || !changes.hasChanges || selectedCount === 0}
+                    startIcon={<SaveOutlinedIcon />}
                 >
                     Speichern
                 </Button>
                 <Button
-                    variant="contained"
+                    variant="outlined"
                     onClick={handleClose}
+                    sx={{ml: 'auto'}}
                 >
                     Abbrechen
                 </Button>
