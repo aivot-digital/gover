@@ -374,8 +374,8 @@ public class FormController {
         } catch (MessagingException | IOException | NoValidUserEMailsInDepartmentException e) {
             auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload
                     .create()
-                    .setTriggeringUser(user)
-                    .setActionType("Exception")
+                    .withUser(user)
+                    .setTriggerType("Exception")
                     .setSeverity("error")
                     .setActionResult("failure")
                     .setReason(e.getMessage())

@@ -50,6 +50,9 @@ public class AuditLogService implements CreateEntityService<AuditLogEntity>, Lis
         if (entity.getModule() == null) {
             entity.setModule("General");
         }
+        if (entity.getMessage() == null) {
+            entity.setMessage("Audit event");
+        }
 
         return auditLogRepository.save(entity);
     }

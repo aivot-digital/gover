@@ -37,6 +37,7 @@ public class ScopedAuditService {
         var triggerRefType = payload.getTriggerRefType();
 
         var module = firstNonBlank(payload.getModule(), component);
+        var message = firstNonBlank(payload.getMessage(), triggerType + " in " + module);
         var diff = payload.getDiff();
 
         var metadata = new HashMap<String, Object>();
@@ -54,12 +55,13 @@ public class ScopedAuditService {
                 .setTriggerRef(triggerRef)
                 .setTriggerRefType(triggerRefType)
                 .setModule(module)
+                .setMessage(message)
                 .setDiff(diff)
                 .setMetadata(metadata)
                 .setIpAddress(ipAddress);
 
         logger.atInfo()
-                .setMessage("Audit event")
+                .setMessage(message)
                 .addKeyValue("actorType", actorType)
                 .addKeyValue("actorId", actorId)
                 .addKeyValue("triggerType", triggerType)

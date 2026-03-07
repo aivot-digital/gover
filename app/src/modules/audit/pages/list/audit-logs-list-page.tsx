@@ -10,54 +10,34 @@ import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectPermissions} from '../../../../slices/user-slice';
 import {AUDIT_LOG_READ_PERMISSION} from '../../constants/audit-permissions';
+import {useConfirm} from '../../../../providers/confirm-provider';
+import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
 
 const actorFilters = [
     {label: 'Alle', value: 'all'},
-    {label: 'Benutzer', value: 'USER'},
-    {label: 'System', value: 'SYSTEM'},
-    {label: 'Job', value: 'JOB'},
-    {label: 'Integration', value: 'INTEGRATION'},
+    {label: 'User', value: 'User'},
+    {label: 'System', value: 'System'},
+    {label: 'Process', value: 'Process'},
 ];
 
-const actionTypeOptions = [
-    {label: 'Alle Aktionen', value: 'all'},
+const triggerTypeOptions = [
+    {label: 'Alle Trigger', value: 'all'},
     {label: 'Create', value: 'Create'},
-    {label: 'List', value: 'List'},
-    {label: 'Retrieve', value: 'Retrieve'},
     {label: 'Update', value: 'Update'},
     {label: 'Delete', value: 'Delete'},
+    {label: 'Error', value: 'Error'},
+    {label: 'PermissionDenied', value: 'PermissionDenied'},
+    {label: 'Export', value: 'Export'},
+    {label: 'Import', value: 'Import'},
     {label: 'Message', value: 'Message'},
 ];
 
-const resultOptions = [
-    {label: 'Alle Ergebnisse', value: 'all'},
-    {label: 'Erfolg', value: 'success'},
-    {label: 'Fehlgeschlagen', value: 'failed'},
-    {label: 'Abgelehnt', value: 'denied'},
-];
-
-const changedDataOptions = [
-    {label: 'Alle', value: 'all'},
-    {label: 'Mit Datenänderung', value: 'true'},
-    {label: 'Ohne Datenänderung', value: 'false'},
-];
-
-const severityOptions = [
-    {label: 'Alle Schweregrade', value: 'all'},
-    {label: 'Info', value: 'info'},
-    {label: 'Warnung', value: 'warn'},
-    {label: 'Fehler', value: 'error'},
-    {label: 'Hoch', value: 'high'},
-];
-
-function normalizeDate(dateString: string): Date | undefined {
-    if (dateString.trim().length === 0) {
+function parseDate(value: string): Date | undefined {
+    if (value.trim().length === 0) {
         return undefined;
     }
 
-    const normalized = dateString.replace(/(\.\d{3})\d+/, '$1');
-    const date = new Date(normalized);
-
+    const date = new Date(value);
     if (Number.isNaN(date.getTime())) {
         return undefined;
     }
@@ -65,8 +45,8 @@ function normalizeDate(dateString: string): Date | undefined {
     return date;
 }
 
-function formatDateTime(dateString: string): string {
-    const date = normalizeDate(dateString);
+function formatDateTime(value: string): string {
+    const date = parseDate(value);
     if (date == null) {
         return '-';
     }
@@ -77,8 +57,8 @@ function formatDateTime(dateString: string): string {
     }).format(date)} Uhr`;
 }
 
-function formatRelative(dateString: string): string {
-    const date = normalizeDate(dateString);
+function formatRelative(value: string): string {
+    const date = parseDate(value);
     if (date == null) {
         return '-';
     }
@@ -89,7 +69,6 @@ function formatRelative(dateString: string): string {
     if (diffMin < 1) {
         return 'gerade eben';
     }
-
     if (diffMin < 60) {
         return `vor ${diffMin} Min.`;
     }
@@ -103,16 +82,7 @@ function formatRelative(dateString: string): string {
     return `vor ${diffDays} Tag${diffDays === 1 ? '' : 'en'}`;
 }
 
-function shortenClassName(value?: string): string {
-    if (value == null || value.trim().length === 0) {
-        return '-';
-    }
-
-    const parts = value.split('.');
-    return parts[parts.length - 1] ?? value;
-}
-
-function trimValue(value?: string, maxLength: number = 24): string {
+function trimValue(value: string | undefined, maxLength: number = 28): string {
     if (value == null || value.length <= maxLength) {
         return value ?? '-';
     }
@@ -120,51 +90,62 @@ function trimValue(value?: string, maxLength: number = 24): string {
     return `${value.slice(0, maxLength - 1)}…`;
 }
 
-function actionChipColor(actionType?: string): 'default' | 'primary' | 'success' | 'warning' | 'error' {
-    switch (actionType) {
+function hasEntries(value: Record<string, unknown> | undefined): boolean {
+    return value != null && Object.keys(value).length > 0;
+}
+
+function previewJson(value: Record<string, unknown> | undefined): string {
+    if (!hasEntries(value)) {
+        return '-';
+    }
+
+    const entries = Object.entries(value!);
+    const preview = entries
+        .slice(0, 2)
+        .map(([key, entryValue]) => `${key}: ${String(entryValue)}`)
+        .join(', ');
+
+    return entries.length > 2 ? `${preview}…` : preview;
+}
+
+function prettyJson(value: Record<string, unknown> | undefined): string {
+    if (value == null) {
+        return '{}';
+    }
+
+    return JSON.stringify(value, null, 2);
+}
+
+function triggerColor(triggerType: string): 'default' | 'success' | 'warning' | 'error' | 'info' {
+    switch (triggerType) {
         case 'Create':
             return 'success';
         case 'Update':
             return 'warning';
         case 'Delete':
+        case 'Error':
             return 'error';
-        case 'List':
-        case 'Retrieve':
-            return 'primary';
-        default:
-            return 'default';
-    }
-}
-
-function resultChipColor(actionResult?: string): 'default' | 'success' | 'warning' | 'error' {
-    switch ((actionResult ?? '').toLowerCase()) {
-        case 'success':
-            return 'success';
-        case 'denied':
+        case 'PermissionDenied':
             return 'warning';
-        case 'failed':
-            return 'error';
+        case 'Import':
+        case 'Export':
+            return 'info';
         default:
             return 'default';
     }
-}
-
-function actorLabel(row: AuditLogEntity): string {
-    return row.actorLabel ?? row.actorId ?? row.triggeringUserId ?? '-';
 }
 
 export function AuditLogsListPage(): ReactNode {
     const permissions = useAppSelector(selectPermissions);
+
+    const confirm = useConfirm();
 
     const hasReadAccess = useMemo(() => {
         return permissions?.systemPermissions
             ?.some((entry) => entry.permissions.includes(AUDIT_LOG_READ_PERMISSION)) ?? false;
     }, [permissions]);
 
-    const [actionType, setActionType] = useState<string | undefined>(undefined);
-    const [actionResult, setActionResult] = useState<string | undefined>(undefined);
-    const [changedData, setChangedData] = useState<string | undefined>(undefined);
-    const [severity, setSeverity] = useState<string | undefined>(undefined);
+    const [triggerType, setTriggerType] = useState<string | undefined>(undefined);
 
     if (!hasReadAccess) {
         return (
@@ -177,221 +158,137 @@ export function AuditLogsListPage(): ReactNode {
     }
 
     return (
-        <PageWrapper
-            title="Audit-Logs"
-            fullWidth
-            background
-        >
+        <PageWrapper title="Audit-Logs"
+                     fullWidth
+                     background>
             <GenericListPage<AuditLogEntity>
                 defaultFilter="all"
                 filters={actorFilters}
                 header={{
                     icon: ModuleIcons.audit,
                     title: 'Audit-Logs',
-                    helpDialog: {
-                        title: 'Hilfe zu Audit-Logs',
-                        tooltip: 'Hilfe anzeigen',
-                        content: (
-                            <>
-                                <Typography variant="body1" paragraph>
-                                    Die Liste zeigt, wer was wann ausgelöst hat. Die wichtigsten Spalten sind Ereignis, Auslöser und Ergebnis.
-                                </Typography>
-                                <Typography variant="body1" paragraph>
-                                    Für technische Analyse können Sie per Tooltip die vollständigen Klassenpfade und Nachrichten einsehen.
-                                </Typography>
-                            </>
-                        ),
-                    },
                 }}
-                searchLabel="Komponente"
-                searchPlaceholder="z.B. ProcessController"
+                searchLabel="Modul"
+                searchPlaceholder="z.B. Assets, Process, UserRole"
                 preSearchElements={[
                     <SelectFieldComponent
-                        label="Aktion"
-                        value={actionType}
-                        onChange={setActionType}
-                        options={actionTypeOptions}
-                        placeholder="Alle Aktionen"
+                        label="Trigger"
+                        value={triggerType}
+                        onChange={setTriggerType}
+                        options={triggerTypeOptions}
+                        placeholder="Alle Trigger"
                         size="small"
-                        sx={{minWidth: '10rem'}}
-                    />,
-                    <SelectFieldComponent
-                        label="Ergebnis"
-                        value={actionResult}
-                        onChange={setActionResult}
-                        options={resultOptions}
-                        placeholder="Alle Ergebnisse"
-                        size="small"
-                        sx={{minWidth: '10rem'}}
-                    />,
-                    <SelectFieldComponent
-                        label="Datenänderung"
-                        value={changedData}
-                        onChange={setChangedData}
-                        options={changedDataOptions}
-                        placeholder="Alle"
-                        size="small"
-                        sx={{minWidth: '10rem'}}
-                    />,
-                    <SelectFieldComponent
-                        label="Schweregrad"
-                        value={severity}
-                        onChange={setSeverity}
-                        options={severityOptions}
-                        placeholder="Alle"
-                        size="small"
-                        sx={{minWidth: '9rem'}}
+                        sx={{minWidth: '11rem'}}
                     />,
                 ]}
                 fetch={(options) => {
                     const filter: Partial<AuditLogFilter> = {};
 
                     if (options.search != null && options.search.trim().length > 0) {
-                        filter.component = options.search;
+                        filter.module = options.search;
                     }
 
                     if (options.filter != null && options.filter !== 'all') {
                         filter.actorType = options.filter;
                     }
 
-                    if (actionType != null && actionType !== 'all') {
-                        filter.actionType = actionType;
+                    if (triggerType != null && triggerType !== 'all') {
+                        filter.triggerType = triggerType;
                     }
 
-                    if (actionResult != null && actionResult !== 'all') {
-                        filter.actionResult = actionResult;
-                    }
-
-                    if (changedData != null && changedData !== 'all') {
-                        filter.changedData = changedData === 'true';
-                    }
-
-                    if (severity != null && severity !== 'all') {
-                        filter.severity = severity;
-                    }
-
-                    const sortField = (options.sort as string | undefined) ?? 'eventTs';
+                    const sortField = (options.sort as string | undefined) ?? 'timestamp';
                     const sortOrder = options.order ?? 'DESC';
 
-                    return new AuditLogsApiService()
-                        .list(
-                            options.page,
-                            options.size,
-                            sortField,
-                            sortOrder,
-                            filter,
-                        );
+                    return new AuditLogsApiService().list(
+                        options.page,
+                        options.size,
+                        sortField,
+                        sortOrder,
+                        filter,
+                    );
                 }}
                 columnIcon={ModuleIcons.audit}
                 columnDefinitions={[
                     {
-                        field: 'eventTs',
+                        field: 'timestamp',
                         headerName: 'Zeitpunkt',
                         width: 200,
                         renderCell: (params) => (
                             <CellContentWrapper>
-                                <Tooltip title={formatDateTime(params.row.eventTs)}>
+                                <Tooltip title={formatDateTime(params.row.timestamp)}>
                                     <Box>
-                                        <Typography variant="body2" fontWeight={600}>{formatRelative(params.row.eventTs)}</Typography>
-                                        <Typography variant="caption" color="text.secondary">{formatDateTime(params.row.eventTs)}</Typography>
+                                        <Typography variant="body2"
+                                                    fontWeight={600}>{formatRelative(params.row.timestamp)}</Typography>
+                                        <Typography variant="caption"
+                                                    color="text.secondary">{formatDateTime(params.row.timestamp)}</Typography>
                                     </Box>
                                 </Tooltip>
                             </CellContentWrapper>
                         ),
                     },
                     {
-                        field: 'event',
-                        headerName: 'Ereignis',
-                        flex: 1,
-                        minWidth: 300,
-                        sortable: false,
-                        renderCell: (params) => (
-                            <CellContentWrapper>
-                                <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.4, width: '100%'}}>
-                                    <Box sx={{display: 'flex', alignItems: 'center', gap: 0.75}}>
-                                        <Chip
-                                            size="small"
-                                            label={params.row.actionType}
-                                            color={actionChipColor(params.row.actionType)}
-                                            variant="outlined"
-                                        />
-                                        <Typography variant="body2" fontWeight={600}>
-                                            {shortenClassName(params.row.entityType)}
-                                        </Typography>
-                                        {
-                                            params.row.entityId != null &&
-                                            <Typography variant="caption" color="text.secondary">
-                                                #{trimValue(params.row.entityId, 14)}
-                                            </Typography>
-                                        }
-                                    </Box>
-                                    <Tooltip title={params.row.message}>
-                                        <Typography variant="caption" color="text.secondary" noWrap>
-                                            {params.row.message}
-                                        </Typography>
-                                    </Tooltip>
-                                </Box>
-                            </CellContentWrapper>
-                        ),
-                    },
-                    {
-                        field: 'actorType',
-                        headerName: 'Auslöser',
-                        width: 240,
-                        renderCell: (params) => (
-                            <CellContentWrapper>
-                                <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.5}}>
-                                    <Chip label={params.row.actorType} size="small" variant="outlined" sx={{width: 'fit-content'}}/>
-                                    <Tooltip title={actorLabel(params.row)}>
-                                        <Typography variant="caption" noWrap>
-                                            {trimValue(actorLabel(params.row), 30)}
-                                        </Typography>
-                                    </Tooltip>
-                                </Box>
-                            </CellContentWrapper>
-                        ),
-                    },
-                    {
-                        field: 'component',
-                        headerName: 'Komponente',
-                        width: 220,
-                        renderCell: (params) => (
-                            <CellContentWrapper>
-                                <Tooltip title={String(params.value)}>
-                                    <Typography variant="body2" noWrap>
-                                        {shortenClassName(String(params.value))}
-                                    </Typography>
-                                </Tooltip>
-                            </CellContentWrapper>
-                        ),
-                    },
-                    {
-                        field: 'actionResult',
-                        headerName: 'Ergebnis',
-                        width: 130,
+                        field: 'triggerType',
+                        headerName: 'Trigger',
+                        width: 180,
                         renderCell: (params) => (
                             <CellContentWrapper>
                                 <Chip
                                     size="small"
-                                    label={String(params.value)}
-                                    color={resultChipColor(String(params.value))}
+                                    label={params.row.triggerType}
+                                    color={triggerColor(params.row.triggerType)}
                                     variant="outlined"
                                 />
                             </CellContentWrapper>
                         ),
                     },
                     {
-                        field: 'changedData',
-                        headerName: 'Änderung',
-                        width: 120,
+                        field: 'actorType',
+                        headerName: 'Akteur',
+                        width: 220,
                         renderCell: (params) => (
                             <CellContentWrapper>
-                                <Chip
-                                    size="small"
-                                    label={params.row.changedData ? 'Ja' : 'Nein'}
-                                    color={params.row.changedData ? 'warning' : 'default'}
-                                    variant={params.row.changedData ? 'filled' : 'outlined'}
-                                />
+                                <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.5}}>
+                                    <Chip label={params.row.actorType}
+                                          size="small"
+                                          variant="outlined"
+                                          sx={{width: 'fit-content'}}/>
+                                    <Tooltip title={params.row.actorId ?? '-'}>
+                                        <Typography variant="caption"
+                                                    noWrap>
+                                            {trimValue(params.row.actorId, 28)}
+                                        </Typography>
+                                    </Tooltip>
+                                </Box>
+                            </CellContentWrapper>
+                        ),
+                    },
+                    {
+                        field: 'reference',
+                        headerName: 'Referenz',
+                        width: 250,
+                        sortable: false,
+                        renderCell: (params) => (
+                            <CellContentWrapper>
+                                <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.4}}>
+                                    <Typography variant="body2">{trimValue(params.row.triggerRef, 32)}</Typography>
+                                    <Typography variant="caption"
+                                                color="text.secondary">
+                                        {params.row.triggerRefType ?? '-'}
+                                    </Typography>
+                                </Box>
+                            </CellContentWrapper>
+                        ),
+                    },
+                    {
+                        field: 'module',
+                        headerName: 'Modul',
+                        width: 190,
+                        renderCell: (params) => (
+                            <CellContentWrapper>
+                                <Typography variant="body2"
+                                            noWrap>
+                                    {String(params.value)}
+                                </Typography>
                             </CellContentWrapper>
                         ),
                     },
@@ -400,6 +297,74 @@ export function AuditLogsListPage(): ReactNode {
                 noDataPlaceholder="Keine Audit-Logs vorhanden"
                 noSearchResultsPlaceholder="Keine Audit-Logs für diese Filter gefunden"
                 dynamicRowHeight={true}
+                rowActionsCount={1}
+                rowActions={(row) => [
+                    {
+                        icon: <MoreVert/>,
+                        tooltip: 'Mehr Informationen',
+                        onClick: () => {
+                            confirm({
+                                title: 'Weitere Informationen',
+                                hideCancelButton: true,
+                                confirmButtonText: 'Schließen',
+                                children: (
+                                    <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
+                                        <Box>
+                                            <Typography variant="subtitle2">Basisdaten</Typography>
+                                            <Typography variant="body2">Zeitpunkt: {formatDateTime(row.timestamp)}</Typography>
+                                            <Typography variant="body2">Trigger: {row.triggerType}</Typography>
+                                            <Typography variant="body2">Akteur: {row.actorType} {row.actorId != null ? `(${row.actorId})` : ''}</Typography>
+                                            <Typography variant="body2">Referenz: {row.triggerRef ?? '-'}</Typography>
+                                            <Typography variant="body2">Referenz-Typ: {row.triggerRefType ?? '-'}</Typography>
+                                            <Typography variant="body2">Modul: {row.module}</Typography>
+                                            <Typography variant="body2">IP-Adresse: {row.ipAddress ?? '-'}</Typography>
+                                        </Box>
+
+                                        <Box>
+                                            <Typography variant="subtitle2">Diff</Typography>
+                                            <Box
+                                                component="pre"
+                                                sx={{
+                                                    m: 0,
+                                                    p: 1.25,
+                                                    borderRadius: 1,
+                                                    bgcolor: 'background.default',
+                                                    border: '1px solid',
+                                                    borderColor: 'divider',
+                                                    overflowX: 'auto',
+                                                    fontSize: '0.75rem',
+                                                    lineHeight: 1.5,
+                                                }}
+                                            >
+                                                {prettyJson(row.diff)}
+                                            </Box>
+                                        </Box>
+
+                                        <Box>
+                                            <Typography variant="subtitle2">Metadata</Typography>
+                                            <Box
+                                                component="pre"
+                                                sx={{
+                                                    m: 0,
+                                                    p: 1.25,
+                                                    borderRadius: 1,
+                                                    bgcolor: 'background.default',
+                                                    border: '1px solid',
+                                                    borderColor: 'divider',
+                                                    overflowX: 'auto',
+                                                    fontSize: '0.75rem',
+                                                    lineHeight: 1.5,
+                                                }}
+                                            >
+                                                {prettyJson(row.metadata)}
+                                            </Box>
+                                        </Box>
+                                    </Box>
+                                ),
+                            });
+                        },
+                    },
+                ]}
             />
         </PageWrapper>
     );

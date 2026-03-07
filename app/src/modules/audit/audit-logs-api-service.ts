@@ -4,27 +4,15 @@ import {AuditLogEntity} from './models/audit-log-entity';
 
 export interface AuditLogFilter {
     id: number;
-    triggeringUserId: string;
     actorType: string;
     actorId: string;
-    actorLabel: string;
     triggerType: string;
     triggerRef: string;
-    serviceName: string;
-    instanceId: string;
-    actionType: string;
-    component: string;
-    entityType: string;
-    entityId: string;
-    changedData: boolean;
-    actionResult: string;
-    source: string;
-    requestId: string;
-    sessionId: string;
-    severity: string;
-    tag: string;
-    eventTsFrom: string;
-    eventTsTo: string;
+    triggerRefType: string;
+    module: string;
+    ipAddress: string;
+    timestampFrom: string;
+    timestampTo: string;
 }
 
 export class AuditLogsApiService extends BaseApiService {

@@ -1,5 +1,7 @@
 package de.aivot.GoverBackend.audit.models;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import jakarta.annotation.Nonnull;
@@ -7,9 +9,13 @@ import jakarta.annotation.Nullable;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 
 public class AuditLogPayload {
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     public static final String ACTOR_TYPE_USER = "User";
     public static final String ACTOR_TYPE_SYSTEM = "System";
     public static final String ACTOR_TYPE_PROCESS = "Process";
@@ -36,6 +42,9 @@ public class AuditLogPayload {
 
     @Nullable
     private String module;
+
+    @Nullable
+    private String message;
 
     @Nullable
     private Map<String, Object> diff;
@@ -82,7 +91,131 @@ public class AuditLogPayload {
 
         return this
                 .setTriggerType(action.name())
+                .setTriggerRef(entityId != null ? String.valueOf(entityId) : null)
+                .setTriggerRefType(entityId != null ? TRIGGER_REF_TYPE : null)
+                .setModule(entityClass.getSimpleName())
+                .setMessage(action.name() + " " + entityClass.getSimpleName() + (entityId != null ? " #" + entityId : ""))
                 .setMetadata(me);
+    }
+
+    public AuditLogPayload withDiff(@Nullable Map<String, Object> oldState,
+                                    @Nullable Map<String, Object> newState) {
+        return setDiff(createDiff(oldState, newState));
+    }
+
+    @Nullable
+    @SuppressWarnings("unchecked")
+    public static Map<String, Object> createDiff(@Nullable Map<String, Object> oldState,
+                                                 @Nullable Map<String, Object> newState) {
+        if (oldState == null && newState == null) {
+            return null;
+        }
+
+        if (oldState == null || newState == null) {
+            return Map.of(
+                    "value", Map.of(
+                            "old", oldState,
+                            "new", newState
+                    )
+            );
+        }
+
+        var allKeys = new HashSet<String>();
+        allKeys.addAll(oldState.keySet());
+        allKeys.addAll(newState.keySet());
+
+        var diff = new HashMap<String, Object>();
+
+        for (var key : allKeys) {
+            var oldValue = oldState.get(key);
+            var newValue = newState.get(key);
+
+            var valueDiff = createValueDiff(oldValue, newValue);
+            if (valueDiff != null) {
+                diff.put(key, valueDiff);
+            }
+        }
+
+        return diff.isEmpty() ? null : diff;
+    }
+
+    @Nullable
+    @SuppressWarnings("unchecked")
+    private static Object createValueDiff(@Nullable Object oldValue,
+                                          @Nullable Object newValue) {
+        if (Objects.equals(oldValue, newValue)) {
+            return null;
+        }
+
+        if (oldValue instanceof Map<?, ?> && newValue instanceof Map<?, ?>) {
+            var nestedDiff = createDiff((Map<String, Object>) oldValue, (Map<String, Object>) newValue);
+            if (nestedDiff != null && !nestedDiff.isEmpty()) {
+                return nestedDiff;
+            }
+            return null;
+        }
+
+        return Map.of(
+                "old", oldValue,
+                "new", newValue
+        );
+    }
+
+    public static AuditLogPayload ofLegacyAction(@Nonnull UserEntity user,
+                                                 @Nonnull AuditAction action,
+                                                 @Nonnull Class<?> entityClass) {
+        return create()
+                .withUser(user)
+                .withAuditAction(action, entityClass, null, null);
+    }
+
+    public static AuditLogPayload ofLegacyAction(@Nonnull UserEntity user,
+                                                 @Nonnull AuditAction action,
+                                                 @Nonnull Class<?> entityClass,
+                                                 @Nullable Map<String, Object> metadata) {
+        return create()
+                .withUser(user)
+                .withAuditAction(action, entityClass, extractEntityId(metadata), metadata);
+    }
+
+    public static AuditLogPayload ofLegacyMessage(@Nonnull String message,
+                                                  @Nullable Map<String, Object> metadata) {
+        var me = new HashMap<String, Object>();
+        if (metadata != null) {
+            me.putAll(metadata);
+        }
+        me.put("message", message);
+
+        return create()
+                .withSystem()
+                .setTriggerType("Message")
+                .setMessage(message)
+                .setMetadata(me);
+    }
+
+    @Nullable
+    public static Map<String, Object> toMap(@Nullable Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        return OBJECT_MAPPER.convertValue(value, new TypeReference<>() {
+        });
+    }
+
+    @Nullable
+    private static Object extractEntityId(@Nullable Map<String, Object> metadata) {
+        if (metadata == null) {
+            return null;
+        }
+
+        if (metadata.containsKey("id")) {
+            return metadata.get("id");
+        }
+        if (metadata.containsKey("entityId")) {
+            return metadata.get("entityId");
+        }
+        return null;
     }
 
     // endregion
@@ -158,6 +291,16 @@ public class AuditLogPayload {
     }
 
     @Nullable
+    public String getMessage() {
+        return message;
+    }
+
+    public AuditLogPayload setMessage(@Nullable String message) {
+        this.message = message;
+        return this;
+    }
+
+    @Nullable
     public Map<String, Object> getDiff() {
         return diff;
     }
@@ -186,4 +329,110 @@ public class AuditLogPayload {
         this.ipAddress = ipAddress;
         return this;
     }
+
+    // region Compatibility setters
+
+    public AuditLogPayload setActionType(@Nullable String actionType) {
+        return setTriggerType(actionType);
+    }
+
+    public AuditLogPayload setAction(@Nullable AuditAction action) {
+        return setTriggerType(action != null ? action.name() : null);
+    }
+
+    public AuditLogPayload setTriggeringUser(@Nullable UserEntity user) {
+        if (user == null) {
+            return this;
+        }
+        return withUser(user);
+    }
+
+    public AuditLogPayload setResource(@Nullable Class<?> entityClass) {
+        if (entityClass == null) {
+            return this;
+        }
+        return setModule(entityClass.getSimpleName());
+    }
+
+    public AuditLogPayload setReason(@Nullable String reason) {
+        return appendMetadata("reason", reason);
+    }
+
+    public AuditLogPayload setSeverity(@Nullable String severity) {
+        return appendMetadata("severity", severity);
+    }
+
+    public AuditLogPayload setActionResult(@Nullable String actionResult) {
+        return appendMetadata("actionResult", actionResult);
+    }
+
+    public AuditLogPayload setComponent(@Nullable String component) {
+        return setModule(component);
+    }
+
+    public AuditLogPayload setEntityId(@Nullable String entityId) {
+        return this
+                .setTriggerRef(entityId)
+                .setTriggerRefType(entityId != null ? TRIGGER_REF_TYPE : null);
+    }
+
+    public AuditLogPayload setEntityType(@Nullable String entityType) {
+        return appendMetadata("entityType", entityType);
+    }
+
+    public AuditLogPayload setInstanceId(@Nullable String instanceId) {
+        if (instanceId == null) {
+            return this;
+        }
+
+        if (triggerRef == null) {
+            setTriggerRef(instanceId);
+            setTriggerRefType(TRIGGER_REF_TYPE);
+        }
+
+        return appendMetadata("instanceId", instanceId);
+    }
+
+    public AuditLogPayload setSource(@Nullable String source) {
+        return appendMetadata("source", source);
+    }
+
+    public AuditLogPayload setRequestId(@Nullable String requestId) {
+        return appendMetadata("requestId", requestId);
+    }
+
+    public AuditLogPayload setSessionId(@Nullable String sessionId) {
+        return appendMetadata("sessionId", sessionId);
+    }
+
+    public AuditLogPayload setUserAgent(@Nullable String userAgent) {
+        return appendMetadata("userAgent", userAgent);
+    }
+
+    public AuditLogPayload setBeforeData(@Nullable Map<String, Object> beforeData) {
+        return appendMetadata("beforeData", beforeData);
+    }
+
+    public AuditLogPayload setAfterData(@Nullable Map<String, Object> afterData) {
+        return appendMetadata("afterData", afterData);
+    }
+
+    public AuditLogPayload setChangedData(@Nullable Boolean changedData) {
+        return appendMetadata("changedData", changedData);
+    }
+
+    private AuditLogPayload appendMetadata(@Nonnull String key, @Nullable Object value) {
+        if (value == null) {
+            return this;
+        }
+
+        if (metadata == null) {
+            metadata = new HashMap<>();
+        }
+
+        metadata.put(key, value);
+        return this;
+    }
+
+    // endregion
 }

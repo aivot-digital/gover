@@ -8,6 +8,7 @@ create table audit_logs
     trigger_ref      varchar(255) null,
     trigger_ref_type varchar(64)  null,
     module           varchar(128) not null,
+    message          text         not null default '',
     diff             jsonb        null,
     metadata         jsonb        not null default '{}',
     ipaddress        varchar(64)  null,

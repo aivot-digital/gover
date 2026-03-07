@@ -54,6 +54,10 @@ public class AuditLogEntity {
     @Length(max = 128, message = "Das Modul darf maximal 128 Zeichen lang sein.")
     private String module;
 
+    @Nonnull
+    @NotNull(message = "Die Nachricht darf nicht null sein.")
+    private String message;
+
     @Nullable
     @Column(columnDefinition = "jsonb")
     @Convert(converter = JsonObjectConverter.class)
@@ -82,6 +86,7 @@ public class AuditLogEntity {
                 && Objects.equals(triggerRef, that.triggerRef)
                 && Objects.equals(triggerRefType, that.triggerRefType)
                 && Objects.equals(module, that.module)
+                && Objects.equals(message, that.message)
                 && Objects.equals(diff, that.diff)
                 && Objects.equals(metadata, that.metadata)
                 && Objects.equals(ipAddress, that.ipAddress);
@@ -89,7 +94,7 @@ public class AuditLogEntity {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, timestamp, actorType, actorId, triggerType, triggerRef, triggerRefType, module, diff, metadata, ipAddress);
+        return Objects.hash(id, timestamp, actorType, actorId, triggerType, triggerRef, triggerRefType, module, message, diff, metadata, ipAddress);
     }
 
     @Nonnull
@@ -169,6 +174,16 @@ public class AuditLogEntity {
 
     public AuditLogEntity setModule(@Nonnull String module) {
         this.module = module;
+        return this;
+    }
+
+    @Nonnull
+    public String getMessage() {
+        return message;
+    }
+
+    public AuditLogEntity setMessage(@Nonnull String message) {
+        this.message = message;
         return this;
     }
 

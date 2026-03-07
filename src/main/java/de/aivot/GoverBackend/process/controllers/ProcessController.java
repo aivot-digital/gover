@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.process.controllers;
 
 import de.aivot.GoverBackend.audit.enums.AuditAction;
+import de.aivot.GoverBackend.audit.models.AuditLogPayload;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.permissions.data.Permissions;
@@ -131,10 +132,13 @@ public class ProcessController {
         var result = processDefinitionService
                 .create(newProcessDefinition);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, ProcessEntity.class, Map.of(
-                "id", result.getId(),
-                "name", result.getInternalTitle()
-        )));
+        auditService.addAuditEntry(AuditLogPayload
+                .create()
+                .withUser(execUser)
+                .setInstanceId(result.getId().toString())
+                .setAction(AuditAction.Create)
+                .setResource(ProcessEntity.class)
+        );
 
         return result;
     }
