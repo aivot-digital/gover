@@ -11,7 +11,6 @@ import {useProcessFlowEditorContext} from './process-flow-editor-context';
 import {HANDLE_SIZE, NODE_WIDTH} from './data/process-flow-constants';
 import {type FlowNode} from './utils/layout-utils';
 import {getNodeDescription, getNodeName} from './utils/node-utils';
-import {ProcessTaskStatus} from '../../../../enums/process-task-status';
 import {ProcessInstanceTaskStatusIcon} from '../../../../components/process-instance-task-status-icon';
 import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
 import {useConfirm} from '../../../../../../providers/confirm-provider';
@@ -223,6 +222,7 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
                                 '&:hover': {
                                     bgcolor: '#efefef',
                                 },
+                                zIndex: 9999,
                             }}
                             size="small"
                             onClick={(event) => {
