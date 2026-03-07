@@ -1,6 +1,5 @@
 package de.aivot.GoverBackend.user.controllers;
 
-import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.core.GenericReadController;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
@@ -22,12 +21,9 @@ import org.springframework.web.bind.annotation.RestController;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class VUserDeputyWithDetailsController extends GenericReadController<VUserDeputyWithDetailsEntity, Integer, VUserDeputyWithDetailsFilter> {
-    public VUserDeputyWithDetailsController(AuditService auditService,
-                                            UserService userService,
+    public VUserDeputyWithDetailsController(UserService userService,
                                             VUserDeputyWithDetailsService service) {
-        super(auditService.createScopedAuditService(VUserDeputyWithDetailsController.class),
-                userService,
-                service);
+        super(userService, service);
     }
 
     // TODO: Implement Permission Checks
