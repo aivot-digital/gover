@@ -95,8 +95,12 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
     }, [provider.type]);
 
     const ProviderIcon = useMemo(() => {
-        return KnownProviderIcons[provider.key] || Assignment;
-    }, [provider.key]);
+        return (
+            KnownProviderIcons[provider.componentKey] ||
+            KnownProviderIcons[provider.key] ||
+            Assignment
+        );
+    }, [provider.componentKey, provider.key]);
 
     return (
         <Box

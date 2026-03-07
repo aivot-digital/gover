@@ -1,5 +1,14 @@
 import React, {useMemo} from 'react';
-import {FormControl, FormControlLabel, FormHelperText, FormLabel, Radio, RadioGroup} from '@mui/material';
+import {
+    FormControl,
+    FormControlLabel,
+    FormHelperText,
+    FormLabel,
+    Radio,
+    RadioGroup,
+    ToggleButton,
+    ToggleButtonGroup
+} from '@mui/material';
 import {type RadioFieldElement} from '../../models/elements/form/input/radio-field-element';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {type BaseViewProps} from '../../views/base-view';
@@ -20,6 +29,7 @@ export function RadioFieldComponentView(props: BaseViewProps<RadioFieldElement, 
         disabled,
         options: baseOptions,
         displayInline,
+        toggleButtons,
     } = element;
 
     const options = useMemo(() => {
@@ -73,52 +83,99 @@ export function RadioFieldComponentView(props: BaseViewProps<RadioFieldElement, 
         ));
     }, [options, displayInline, isDisabled, isBusy]);
 
+    const toggleOptionElements = useMemo(() => {
+        return options.map((option) => (
+            <ToggleButton
+                key={option.value}
+                value={option.value}
+                disabled={isDisabled}
+                size="small"
+                sx={{
+                    textTransform: 'none',
+                    ...(isBusy ? {
+                        color: "rgba(0, 0, 0, 0.38)!important",
+                        borderColor: "rgba(0, 0, 0, 0.12)!important",
+                        cursor: "not-allowed",
+                    } : {}),
+                }}
+            >
+                {option.label}
+            </ToggleButton>
+        ));
+    }, [options, isDisabled, isBusy]);
+
+    const formLabelId = 'label-' + element.id;
+
     return (
         <FormControl
             error={errors != null}
             disabled={isDisabled}
         >
             <FormLabel
-                id={'label-' + element.id}
+                id={formLabelId}
             >
                 {element.label} {element.required && ' *'}
             </FormLabel>
-            <RadioGroup
-                aria-labelledby={'label-' + element.id}
-                name={'radio-group-' + element.id}
-                value={value ?? ''}
-                onChange={(event) => {
-                    if (!isBusy) {
-                        if (isStringNullOrEmpty(event.target.value)) {
-                            setValue(undefined);
-                        } else {
-                            setValue(event.target.value ?? '');
-                        }
-                    }
-                }}
-                row={element.displayInline ?? false}
-            >
-                {
-                    !element.required &&
-                    <FormControlLabel
-                        value={''}
-                        control={<Radio
-                            sx={{color: isBusy ? "rgba(0, 0, 0, 0.26)!important" : undefined}}
-                        />}
-                        label="Keine Auswahl"
-                        disabled={isDisabled}
-                        sx={{
-                            ...(isBusy ? {
-                                color: "rgba(0, 0, 0, 0.38)!important",
-                                cursor: "not-allowed",
-                            } : {}),
-                            fontStyle: 'italic',
-                            mr: element.displayInline ? 3 : undefined
+            {
+                toggleButtons ?
+                    <ToggleButtonGroup
+                        aria-labelledby={formLabelId}
+                        exclusive
+                        value={value ?? null}
+                        onChange={(_, newValue: string | null) => {
+                            if (!isBusy) {
+                                setValue(isStringNullOrEmpty(newValue) ? undefined : newValue ?? undefined);
+                            }
                         }}
-                    />
-                }
-                {optionElements}
-            </RadioGroup>
+                        fullWidth={!displayInline}
+                        sx={{
+                            mt: 1,
+                            alignSelf: displayInline ? 'flex-start' : undefined,
+                            '& .MuiToggleButton-root': {
+                                textTransform: 'none',
+                            },
+                        }}
+                    >
+                        {toggleOptionElements}
+                    </ToggleButtonGroup>
+                    :
+                    <RadioGroup
+                        aria-labelledby={formLabelId}
+                        name={'radio-group-' + element.id}
+                        value={value ?? ''}
+                        onChange={(event) => {
+                            if (!isBusy) {
+                                if (isStringNullOrEmpty(event.target.value)) {
+                                    setValue(undefined);
+                                } else {
+                                    setValue(event.target.value ?? '');
+                                }
+                            }
+                        }}
+                        row={element.displayInline ?? false}
+                    >
+                        {
+                            !element.required &&
+                            <FormControlLabel
+                                value={''}
+                                control={<Radio
+                                    sx={{color: isBusy ? "rgba(0, 0, 0, 0.26)!important" : undefined}}
+                                />}
+                                label="Keine Auswahl"
+                                disabled={isDisabled}
+                                sx={{
+                                    ...(isBusy ? {
+                                        color: "rgba(0, 0, 0, 0.38)!important",
+                                        cursor: "not-allowed",
+                                    } : {}),
+                                    fontStyle: 'italic',
+                                    mr: element.displayInline ? 3 : undefined
+                                }}
+                            />
+                        }
+                        {optionElements}
+                    </RadioGroup>
+            }
             {
                 (element.hint != null || errors != null) &&
                 <FormHelperText sx={{ml: 0}}>

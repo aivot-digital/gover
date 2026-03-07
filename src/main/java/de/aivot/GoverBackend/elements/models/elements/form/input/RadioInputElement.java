@@ -19,6 +19,9 @@ public class RadioInputElement extends BaseInputElement<String> implements Print
     @Nullable
     private Boolean displayInline;
 
+    @Nullable
+    private Boolean toggleButtons;
+
     public RadioInputElement() {
         super(ElementType.Radio);
     }
@@ -112,7 +115,9 @@ public class RadioInputElement extends BaseInputElement<String> implements Print
         if (!super.equals(o)) return false;
 
         RadioInputElement that = (RadioInputElement) o;
-        return Objects.equals(options, that.options) && Objects.equals(displayInline, that.displayInline);
+        return Objects.equals(options, that.options)
+                && Objects.equals(displayInline, that.displayInline)
+                && Objects.equals(toggleButtons, that.toggleButtons);
     }
 
     @Override
@@ -120,6 +125,7 @@ public class RadioInputElement extends BaseInputElement<String> implements Print
         int result = super.hashCode();
         result = 31 * result + Objects.hashCode(options);
         result = 31 * result + Objects.hashCode(displayInline);
+        result = 31 * result + Objects.hashCode(toggleButtons);
         return result;
     }
 
@@ -144,6 +150,16 @@ public class RadioInputElement extends BaseInputElement<String> implements Print
 
     public RadioInputElement setDisplayInline(@Nullable Boolean displayInline) {
         this.displayInline = displayInline;
+        return this;
+    }
+
+    @Nullable
+    public Boolean getToggleButtons() {
+        return toggleButtons;
+    }
+
+    public RadioInputElement setToggleButtons(@Nullable Boolean toggleButtons) {
+        this.toggleButtons = toggleButtons;
         return this;
     }
 
