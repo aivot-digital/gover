@@ -128,7 +128,9 @@ values (1,
             'storage_provider.read',
             'storage_provider.update',
             'storage_provider.create',
-            'storage_provider.delete'
+            'storage_provider.delete',
+
+            'audit_log.read'
             ]),
        (2,
         'Systemadministrator:in',
