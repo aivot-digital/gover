@@ -80,7 +80,7 @@ public class ProcessNodeExecutionResultHandler {
                 ProcessNodeExecutionLogLevel.Debug,
                 true,
                 false,
-                "Ergebnis '%s' fuer Prozesselement '%s' wird verarbeitet.",
+                "Ergebnis '%s' für Prozesselement '%s' wird verarbeitet.",
                 executionResult.getClass().getSimpleName(),
                 currentNode.resolveName(provider)
         );

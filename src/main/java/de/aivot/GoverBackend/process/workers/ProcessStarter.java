@@ -78,7 +78,7 @@ public class ProcessStarter {
                         ProcessNodeExecutionLogLevel.Info,
                         true,
                         true,
-                        "Vorgang fuer Prozess '%s' gestartet. Erstes Prozesselement: '%s'.",
+                        "Vorgang für Prozess '%s' gestartet. Erstes Prozesselement: '%s'.",
                         process.getInternalTitle(),
                         initialNode.resolveName(provider)
                 );

@@ -244,7 +244,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
                 .interpolate(context.getProcessData(), configuration.fileName);
         if (StringUtils.isNullOrEmpty(fileName)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Der Dateiname fuer das PDF wurde nicht angegeben."
+                    "Der Dateiname für das PDF wurde nicht angegeben."
             );
         }
         if (!fileName.toLowerCase().endsWith(".pdf")) {
@@ -254,14 +254,23 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
         var contentHtml = resolveContentHtml(context, configuration);
         if (StringUtils.isNullOrEmpty(contentHtml)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Der HTML-Inhalt fuer das PDF wurde nicht angegeben."
+                    "Der HTML-Inhalt für das PDF wurde nicht angegeben."
+            );
+        }
+
+        var interpolatedContentHtml = processDataService
+                .interpolate(context.getProcessData(), contentHtml);
+
+        if (StringUtils.isNullOrEmpty(interpolatedContentHtml)) {
+            throw new ProcessNodeExecutionExceptionMissingValue(
+                    "Der HTML-Inhalt für das PDF konnte nicht interpoliert werden."
             );
         }
 
         byte[] pdfBytes;
         try {
             pdfBytes = pdfService.generatePdfFromHtml(
-                    contentHtml,
+                    interpolatedContentHtml,
                     "",
                     "",
                     "210mm",
@@ -334,7 +343,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
                     .interpolate(context.getProcessData(), configuration.contentHtmlAssetKey);
             if (StringUtils.isNullOrEmpty(assetKeyStr)) {
                 throw new ProcessNodeExecutionExceptionMissingValue(
-                        "Der Asset-Schluessel fuer die PDF-Vorlage wurde nicht angegeben."
+                        "Der Asset-Schluessel für die PDF-Vorlage wurde nicht angegeben."
                 );
             }
 
@@ -344,7 +353,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
             } catch (IllegalArgumentException e) {
                 throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                         e,
-                        "Der Asset-Schluessel fuer die PDF-Vorlage ist ungueltig: %s",
+                        "Der Asset-Schluessel für die PDF-Vorlage ist ungueltig: %s",
                         assetKeyStr
                 );
             }
@@ -416,7 +425,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
 
         @InputElementPOJOBinding(id = CONTENT_HTML_CODE_FIELD_ID, type = ElementType.CodeInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "HTML-Inhalt"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "HTML-Template fuer die PDF-Seiten."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "HTML-Template für die PDF-Seiten."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "language", strValue = "html")
         })
