@@ -19,10 +19,14 @@ import {StepElement} from '../../../../models/elements/steps/step-element';
 import {GroupLayout} from '../../../../models/elements/form/layout/group-layout';
 import {ReplicatingContainerLayout} from '../../../../models/elements/form/layout/replicating-container-layout';
 import {NoCodeDataType} from '../../../../data/no-code-data-type';
-import {NoCodeOperandEditor} from '../../../../modules/nocode/components/no-code-operand-editor';
+import {
+    NoCodeOperandEditor,
+    NoCodeOperandEditorContextType,
+} from '../../../../modules/nocode/components/no-code-operand-editor';
+import {AnyElement} from '../../../../models/elements/any-element';
 
 interface NoCodeEditorWrapperProps {
-    parents: Array<RootElement | StepElement | GroupLayout | ReplicatingContainerLayout>;
+    parents: Array<RootElement | StepElement | GroupLayout | ReplicatingContainerLayout | AnyElement>;
     noCode: NoCodeOperand | null | undefined;
     onChange: (expression: NoCodeOperand | null | undefined) => void;
     editable: boolean;
@@ -30,6 +34,7 @@ interface NoCodeEditorWrapperProps {
     hint?: string;
     error?: string;
     label?: string;
+    contextType?: NoCodeOperandEditorContextType;
 }
 
 const new_editor = localStorage.getItem('new_editor') != null;
@@ -43,7 +48,9 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
         hint,
         label,
         desiredReturnType,
+        contextType = 'FORM',
     } = props;
+    const useNewEditor = new_editor || contextType === 'PROCESS';
 
     const api = useApi();
     const dispatch = useAppDispatch();
@@ -154,7 +161,7 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
             ) : (
                 <>
                     {
-                        !new_editor &&
+                        !useNewEditor &&
                         <OperandEditor
                             allElements={allElements}
                             allOperators={operators}
@@ -175,7 +182,7 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
                     }
 
                     {
-                        new_editor &&
+                        useNewEditor &&
                         <Box
                             sx={{
                                 pointerEvents: editable ? 'auto' : 'none',
@@ -193,7 +200,7 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
                                 onChange={onChange}
                                 allOperators={operators}
                                 allElements={allElements}
-                                contextType="FORM"
+                                contextType={contextType}
                             />
                         </Box>
                     }

@@ -8,10 +8,11 @@ import {NoCodeDataType} from '../data/no-code-data-type';
 import {NoCodeInputFieldComponent} from '../components/no-code-input-field/no-code-input-field-component';
 import {useMemo} from 'react';
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
-import {RootElement} from '../models/elements/root-element';
 
 function mapReturnTypeToNoCodeDataType(returnType: NoCodeInputFieldReturnType | null | undefined): NoCodeDataType {
     switch (returnType) {
+        case NoCodeInputFieldReturnType.RUNTIME:
+            return NoCodeDataType.Runtime;
         case NoCodeInputFieldReturnType.BOOLEAN:
             return NoCodeDataType.Boolean;
         case NoCodeInputFieldReturnType.NUMBER:
@@ -52,7 +53,7 @@ export function NoCodeInputFieldView(props: BaseViewProps<NoCodeInputFieldElemen
 
     return (
         <NoCodeInputFieldComponent
-            rootElement={rootElement as RootElement}
+            rootElement={rootElement}
             label={element.label ?? ''}
             hint={element.hint}
             error={errors != null ? errors.join(' ') : undefined}

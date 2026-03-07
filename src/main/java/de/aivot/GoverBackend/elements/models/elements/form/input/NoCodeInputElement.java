@@ -89,6 +89,7 @@ public class NoCodeInputElement extends BaseInputElement<NoCodeInputElementItem>
     }
 
     public enum NoCodeInputReturnType {
+        RUNTIME,
         STRING,
         NUMBER,
         BOOLEAN,

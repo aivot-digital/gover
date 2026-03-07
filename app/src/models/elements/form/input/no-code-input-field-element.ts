@@ -7,6 +7,7 @@ export interface NoCodeInputFieldElement extends BaseInputElement<ElementType.No
 }
 
 export enum NoCodeInputFieldReturnType {
+    RUNTIME = 'RUNTIME',
     STRING = 'STRING',
     NUMBER = 'NUMBER',
     BOOLEAN = 'BOOLEAN',
