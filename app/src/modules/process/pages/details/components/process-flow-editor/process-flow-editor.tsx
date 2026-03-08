@@ -475,6 +475,13 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                     }
                     onSelectNode(node.data.graphNode.node);
                 }}
+                onPaneClick={() => {
+                    if (onSelectNode == null) {
+                        return;
+                    }
+
+                    onSelectNode(null);
+                }}
                 onConnect={(a) => {
                     if (a.source == null || a.target == null || a.sourceHandle == null || onAddEdge == null) {
                         return;
