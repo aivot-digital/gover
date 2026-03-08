@@ -44,7 +44,7 @@ public class DataObjectSchemaController {
     @Autowired
     public DataObjectSchemaController(AuditService auditService,
                                       DataObjectSchemaService service, UserService userService) {
-        this.auditService = auditService.createScopedAuditService(DataObjectSchemaController.class);
+        this.auditService = auditService.createScopedAuditService(DataObjectSchemaController.class, "Datenmodelle");
 
         this.service = service;
         this.userService = userService;
