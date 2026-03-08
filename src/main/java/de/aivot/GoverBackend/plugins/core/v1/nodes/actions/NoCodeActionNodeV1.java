@@ -128,7 +128,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition {
         var variableNameInput = new TextInputElement();
         variableNameInput.setId(VARIABLE_NAME_FIELD_ID);
         variableNameInput.setLabel("Variablenname");
-        variableNameInput.setHint("Dieser Name wird als Schlüssel in den Knotendaten gespeichert.");
+        variableNameInput.setHint("Dieser Name wird als Schlüssel in den Vorgangsdaten gespeichert.");
         variableNameInput.setRequired(true);
         variableNameInput.setWeight(8.0);
 
@@ -203,7 +203,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition {
         var sourceRoot = context.getProcessData().get("$");
         if (!(sourceRoot instanceof Map<?, ?> sourceRootRawMap)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Prozessdatenwurzel ($) ist kein Objekt."
+                    "Die Vorgangsdatenwurzel ($) ist kein Objekt."
             );
         }
 
