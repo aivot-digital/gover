@@ -26,12 +26,12 @@ export function ProcessNodeEditorConfigurationTab() {
                 pb: 2,
             }}
         >
-            <Typography variant="h6">
-                Allgemeine Eigenschaften des Elements
+            <Typography variant="h4">
+                Eigenschaften des Elements
             </Typography>
             <Typography variant="body1"
-                        mb={2}>
-                Konfigurieren Sie dieses Prozesselement gemäß Ihrer fachlichen Anforderungen.
+                        mt={1} mb={2} maxWidth={400}>
+                Konfigurieren Sie dieses Prozesselement gemäß ihrer fachlichen Anforderungen.
             </Typography>
 
             <TextFieldComponent
@@ -74,13 +74,6 @@ export function ProcessNodeEditorConfigurationTab() {
                 multiline={true}
                 maxCharacters={512}
             />
-
-            <Typography
-                variant="h6"
-                mt={4}
-            >
-                Spezifische Eigenschaften des Elements
-            </Typography>
 
             <ElementDerivationContext
                 element={layout}

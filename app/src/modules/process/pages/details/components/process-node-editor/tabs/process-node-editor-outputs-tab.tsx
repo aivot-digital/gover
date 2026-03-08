@@ -17,10 +17,11 @@ export function ProcessNodeEditorOutputsTab() {
                 pb: 2,
             }}
         >
-            <Typography variant="h6">
+            <Typography variant="h4">
                 Ausgangsdaten
             </Typography>
-            <Typography variant="body1" mb={2}>
+            <Typography variant="body1"
+                        mt={1} mb={2} maxWidth={400}>
                 Die Zuweisung von Datenvariablen für die Ausgangsdaten ist optional.
                 Ohne Zuweisung sind Ergebnisse ausschließlich über die Metadaten-Ebene zugänglich.
             </Typography>
@@ -51,10 +52,11 @@ export function ProcessNodeEditorOutputsTab() {
                 ))
             }
 
-            <Typography variant="h6" mt={4}>
+            <Typography variant="h4" mt={4}>
                 Datenstruktur der Ausgangsdaten
             </Typography>
-            <Typography variant="body1">
+            <Typography variant="body1"
+                        mt={1} mb={2} maxWidth={400}>
                 Struktur und Übersicht der von diesem Element erzeugten und zur Verfügung gestellten Datenvariablen.
             </Typography>
 

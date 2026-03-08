@@ -19,10 +19,11 @@ export function ProcessNodeEditorMoreTab() {
                 pb: 2,
             }}
         >
-            <Typography variant="h6">
+            <Typography variant="h4">
                 Weitere Eigenschaften des Elements
             </Typography>
-            <Typography variant="body1" mb={2}>
+            <Typography variant="body1"
+                        mt={1} mb={2} maxWidth={400}>
                 Konfigurieren Sie zusätzliche Eigenschaften dieses Prozesselementes.
             </Typography>
 

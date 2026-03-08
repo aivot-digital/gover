@@ -39,10 +39,11 @@ export function ProcessNodeEditorTestingTab(): ReactNode {
                     pb: 2,
                 }}
             >
-                <Typography component="h2" variant="h6" sx={{mb: 1.5}}>
+                <Typography variant="h4">
                     Prozesselement testen
                 </Typography>
-                <Typography>
+                <Typography variant="body1"
+                            mt={1} mb={2} maxWidth={400}>
                     Der Prozess befindet sich aktuell nicht in der Testphase.
                     Sobald der Prozess in die Testphase wechselt, können hier zusätzliche Eigenschaften des Elemente
                     konfiguriert werden.
@@ -59,7 +60,7 @@ export function ProcessNodeEditorTestingTab(): ReactNode {
                     pb: 2,
                 }}
             >
-                <Typography component="h2" variant="h6" sx={{mb: 1.5}}>
+                <Typography variant="h4" mb={2}>
                     Prozesselement testen
                 </Typography>
                 <Skeleton/>
@@ -74,7 +75,7 @@ export function ProcessNodeEditorTestingTab(): ReactNode {
                 pb: 2,
             }}
         >
-            <Typography component="h2" variant="h6" sx={{mb: 1.5}}>
+            <Typography variant="h4">
                 Prozesselement testen
             </Typography>
             <ElementDerivationContext
