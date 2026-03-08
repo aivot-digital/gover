@@ -21,7 +21,11 @@ import {type ProcessNodeEntity} from '../../../../entities/process-node-entity';
 import {ProcessFlowEditorNode} from './process-flow-editor-node';
 import {ProcessFlowEditorEdge} from './process-flow-editor-edge';
 import {ProcessFlowEditorProvider} from './process-flow-editor-context';
-import {DEFAULT_FLOW_EDGE_TYPE, DEFAULT_FLOW_NODE_TYPE} from './data/process-flow-constants';
+import {
+    DEFAULT_FLOW_EDGE_TYPE,
+    DEFAULT_FLOW_NODE_TYPE,
+    PROCESS_FLOW_EDGE_Z_INDEX,
+} from './data/process-flow-constants';
 import {
     createNodeMeasurementMap,
     type FlowEdge,
@@ -38,6 +42,7 @@ import CropFree from '@mui/icons-material/CropFree';
 import Lock from '@mui/icons-material/Lock';
 import LockOpen from '@mui/icons-material/LockOpen';
 import ViewRealSize from '@aivot/mui-material-symbols-400-outlined/dist/view-real-size/ViewRealSize';
+import {getLatestTaskForEdge} from './utils/runtime-task-utils';
 
 const FLOW_MIN_ZOOM = 0.25;
 const FLOW_MAX_ZOOM = 2;
@@ -76,6 +81,8 @@ interface ProcessFlowEditorProps {
         events: ProcessInstanceEventEntity[];
     } | null;
 }
+
+type ProcessFlowEditorRuntimeData = ProcessFlowEditorProps['runtimeData'];
 
 const NodeTypes = {
     [DEFAULT_FLOW_NODE_TYPE]: ProcessFlowEditorNode,
@@ -258,6 +265,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const hasResolvedInitialViewportRef = useRef<boolean>(false);
     const initialViewportNodeIdRef = useRef<number | null>(null);
     const layoutRequestIdRef = useRef<number>(0);
+    const runtimeDataRef = useRef<ProcessFlowEditorRuntimeData>(runtimeData);
 
     const isEditable = runtimeData == null && editable;
     const hasAllNodeProviders = useMemo(() => (
@@ -362,7 +370,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
             }
 
             setNodes([...laidOutNodes]);
-            setEdges([...laidOutEdges]);
+            setEdges(prioritizeRuntimeEdges(laidOutEdges, runtimeDataRef.current));
         } catch (error) {
             if (layoutRequestIdRef.current !== layoutRequestId) {
                 return;
@@ -379,6 +387,11 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
             setNeedsMeasuredLayout(true);
         }
     }, [onNodesChange]);
+
+    useEffect(() => {
+        runtimeDataRef.current = runtimeData;
+        setEdges((currentEdges) => prioritizeRuntimeEdges(currentEdges, runtimeData));
+    }, [runtimeData, setEdges]);
 
     useEffect(() => {
         hasResolvedInitialViewportRef.current = false;
@@ -538,4 +551,42 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
             </ReactFlow>
         </ProcessFlowEditorProvider>
     );
+}
+
+function prioritizeRuntimeEdges(
+    edges: FlowEdge[],
+    runtimeData: ProcessFlowEditorRuntimeData,
+): FlowEdge[] {
+    const decoratedEdges = edges.map((edge, index) => {
+        const graphEdge = edge.data?.graphEdge;
+        const wasPerformed = (
+            runtimeData != null &&
+            graphEdge != null &&
+            getLatestTaskForEdge(
+                runtimeData.tasks,
+                graphEdge.edge.fromNodeId,
+                graphEdge.edge.toNodeId,
+            ) != null
+        );
+        const targetZIndex = wasPerformed ? PROCESS_FLOW_EDGE_Z_INDEX + 1 : PROCESS_FLOW_EDGE_Z_INDEX;
+
+        return {
+            edge: edge.zIndex === targetZIndex ? edge : {
+                ...edge,
+                zIndex: targetZIndex,
+            },
+            index,
+            wasPerformed,
+        };
+    });
+
+    decoratedEdges.sort((a, b) => (
+        Number(a.wasPerformed) - Number(b.wasPerformed) ||
+        a.index - b.index
+    ));
+
+    const prioritizedEdges = decoratedEdges.map((entry) => entry.edge);
+    const wasChanged = prioritizedEdges.some((edge, index) => edge !== edges[index]);
+
+    return wasChanged ? prioritizedEdges : edges;
 }

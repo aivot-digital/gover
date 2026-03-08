@@ -379,7 +379,7 @@ export function ProcessNodeEditor(): ReactNode {
                         variant="contained"
                         startIcon={<Save/>}
                     >
-                        Knoten speichern
+                        Konfiguration speichern
                     </Button>
 
                     <Button

@@ -1,7 +1,8 @@
 import {Handle, type NodeProps, Position, useUpdateNodeInternals} from '@xyflow/react';
-import {Box, Divider, IconButton, Paper, useTheme} from '@mui/material';
+import {Box, Button, Divider, IconButton, Paper, useTheme} from '@mui/material';
 import React, {type ReactNode, useEffect, useMemo, useState} from 'react';
 import Typography from '@mui/material/Typography';
+import {alpha} from '@mui/material/styles';
 import {ProcessNodeType} from '../../../../services/process-node-provider-api-service';
 import Assignment from '@aivot/mui-material-symbols-400-outlined/dist/assignment/Assignment';
 import {ProviderTypeStyles} from '../../../../data/provider-type-styles';
@@ -21,6 +22,7 @@ import {getLatestTaskForEdge, getLatestTaskForNode} from './utils/runtime-task-u
 import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {Menu} from '../../../../../../components/menu/menu';
+import {ProcessTaskStatus} from '../../../../enums/process-task-status';
 
 function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
     const theme = useTheme();
@@ -102,6 +104,76 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
 
     const nodeName = useMemo(() => getNodeName(node, provider), [node, provider]);
     const nodeDescription = useMemo(() => getNodeDescription(node, provider), [node, provider]);
+    const runtimeStatusAccentColor = useMemo(() => {
+        if (associatedTask == null) {
+            return null;
+        }
+
+        if (associatedTask.statusOverride != null) {
+            return theme.palette.primary.main;
+        }
+
+        switch (associatedTask.status) {
+            case ProcessTaskStatus.Running:
+                return theme.palette.info.main;
+            case ProcessTaskStatus.Paused:
+                return theme.palette.primary.main;
+            case ProcessTaskStatus.Completed:
+                return theme.palette.success.main;
+            case ProcessTaskStatus.Aborted:
+            case ProcessTaskStatus.Failed:
+                return theme.palette.error.main;
+            default:
+                return null;
+        }
+    }, [associatedTask, theme.palette.error.main, theme.palette.info.main, theme.palette.primary.main, theme.palette.success.main]);
+    const nodeOutline = useMemo(() => {
+        if (selectedNode?.id === node.id) {
+            return `2px solid ${theme.palette.primary.light}`;
+        }
+
+        if (runtimeStatusAccentColor != null) {
+            return `1px solid ${alpha(runtimeStatusAccentColor, 0.48)}`;
+        }
+
+        return 'none';
+    }, [node.id, runtimeStatusAccentColor, selectedNode?.id, theme.palette.primary.light]);
+    const nodeShadow = useMemo(() => {
+        const neutralShadow = selectedNode?.id === node.id ?
+            '0px 4px 20px rgba(0, 0, 0, 0.15)' :
+            '0px 4px 20px rgba(0, 0, 0, 0.1)';
+
+        if (runtimeStatusAccentColor == null) {
+            return neutralShadow;
+        }
+
+        return selectedNode?.id === node.id ?
+            `0 12px 28px ${alpha(runtimeStatusAccentColor, 0.18)}, ${neutralShadow}` :
+            `0 10px 24px ${alpha(runtimeStatusAccentColor, 0.16)}, ${neutralShadow}`;
+    }, [node.id, runtimeStatusAccentColor, selectedNode?.id]);
+    const runtimeActionButtonSx = useMemo(() => ({
+        minWidth: 0,
+        height: 28,
+        px: 0.875,
+        py: 0.375,
+        borderRadius: '6px',
+        bgcolor: 'background.paper',
+        borderColor: alpha(theme.palette.primary.main, 0.28),
+        color: theme.palette.primary.main,
+        fontSize: '0.75rem',
+        fontWeight: 500,
+        lineHeight: 1,
+        textTransform: 'none',
+        whiteSpace: 'nowrap',
+        '& .MuiButton-startIcon': {
+            marginLeft: 0,
+            marginRight: 1,
+        },
+        '&:hover': {
+            borderColor: theme.palette.primary.main,
+            bgcolor: alpha(theme.palette.primary.main, 0.04),
+        },
+    }), [theme.palette.primary.main]);
     const handleLayoutSignature = useMemo(() => (
         provider.ports.map((port) => (
             `${port.key}:${outgoingEdges.some((outgoingEdge) => outgoingEdge.port?.key === port.key) ? '1' : '0'}`
@@ -178,10 +250,8 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                         width: '100%',
                         overflow: 'hidden',
                         borderRadius: '6px',
-                        outline: selectedNode?.id === node.id ? `2px solid ${theme.palette.primary.light}` : 'none',
-                        boxShadow: selectedNode?.id === node.id ?
-                            '0px 4px 20px rgba(0, 0, 0, 0.15)' :
-                            '0px 4px 20px rgba(0, 0, 0, 0.1)',
+                        outline: nodeOutline,
+                        boxShadow: nodeShadow,
                     }}
                 >
                     <Box
@@ -270,7 +340,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                     <Box
                         sx={{
                             p: 1.5,
-                            pb: 2,
+                            pb: associatedTask != null ? 1 : 2,
                             flex: 1,
                         }}
                     >
@@ -287,70 +357,61 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
 
                     {
                         associatedTask != null &&
-                        <IconButton
-                            sx={{
-                                position: 'absolute',
-                                bottom: '-1rem',
-                                right: '-1rem',
-                                padding: 0.5,
-                                bgcolor: 'white',
-                                border: `2px solid ${theme.palette.primary.main}`,
-                                '&:hover': {
-                                    bgcolor: '#efefef',
-                                },
-                                zIndex: 9999,
-                            }}
-                            size="small"
-                            onClick={(event) => {
-                                event.stopPropagation();
-                                event.preventDefault();
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    gap: 1,
+                                    px: 1.25,
+                                    pt: 0.75,
+                                    pb: 1.25,
+                                }}
+                            >
+                                <Button
+                                    variant="outlined"
+                                    size="small"
+                                    startIcon={<News sx={{fontSize: 16}}/>}
+                                    sx={runtimeActionButtonSx}
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        event.preventDefault();
+                                        setShowEventsDialog(true);
+                                    }}
+                                >
+                                    Ereignisse
+                                </Button>
 
-                                confirm({
-                                    title: 'Prozesselementdaten',
-                                    width: 'md',
-                                    hideCancelButton: true,
-                                    confirmButtonText: 'Schließen',
-                                    children: (
-                                        <>
-                                            <Typography variant="h6">
-                                                Die erzeugten Prozesselementdaten
-                                            </Typography>
-                                            <ExpandableCodeBlock
-                                                value={JSON.stringify(associatedTask?.nodeData, null, 2)}
-                                            />
-                                        </>
-                                    ),
-                                });
-                            }}
-                        >
-                            <DataObject color="primary"/>
-                        </IconButton>
-                    }
+                                <Button
+                                    variant="outlined"
+                                    size="small"
+                                    startIcon={<DataObject sx={{fontSize: 16}}/>}
+                                    sx={runtimeActionButtonSx}
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        event.preventDefault();
 
-                    {
-                        associatedTask &&
-                        <IconButton
-                            sx={{
-                                position: 'absolute',
-                                bottom: '-1rem',
-                                left: '-1rem',
-                                padding: 0.5,
-                                bgcolor: 'white',
-                                border: `2px solid ${theme.palette.primary.main}`,
-                                '&:hover': {
-                                    bgcolor: '#efefef',
-                                },
-                                zIndex: 9999,
-                            }}
-                            size="small"
-                            onClick={(event) => {
-                                event.stopPropagation();
-                                event.preventDefault();
-                                setShowEventsDialog(true);
-                            }}
-                        >
-                            <News color="primary"/>
-                        </IconButton>
+                                        confirm({
+                                            title: 'Prozesselementdaten',
+                                            width: 'md',
+                                            hideCancelButton: true,
+                                            confirmButtonText: 'Schließen',
+                                            children: (
+                                                <>
+                                                    <Typography variant="h6">
+                                                        Die erzeugten Prozesselementdaten
+                                                    </Typography>
+                                                    <ExpandableCodeBlock
+                                                        value={JSON.stringify(associatedTask?.nodeData, null, 2)}
+                                                    />
+                                                </>
+                                            ),
+                                        });
+                                    }}
+                                >
+                                    Daten
+                                </Button>
+                        </Box>
                     }
                 </Paper>
             </Box>

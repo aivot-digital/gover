@@ -12,6 +12,9 @@ import {useConfirm} from '../../../../../../providers/confirm-provider';
 import {ExpandableCodeBlock} from '../../../../../../components/expandable-code-block/expandable-code-block';
 import {getLatestTaskForEdge} from './utils/runtime-task-utils';
 
+const EDGE_ARROW_LENGTH = 8;
+const EDGE_ARROW_WIDTH = 12;
+
 function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
     const theme = useTheme();
     const confirm = useConfirm();
@@ -21,7 +24,6 @@ function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
         sourceY,
         targetX,
         targetY,
-        markerEnd,
         style,
         data: optData,
     } = props;
@@ -60,31 +62,45 @@ function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
     const wasPerformed = nextTaskForEdge != null;
     const {
         edgePath,
+        arrowPath,
         labelPoint,
     } = useMemo(() => {
         const renderedRoutePoints = buildRenderedRoutePoints(routePoints, sourceX, sourceY, targetX, targetY);
+        const trimmedRoutePoints = trimTerminalSegment(renderedRoutePoints, EDGE_ARROW_LENGTH);
 
         return {
-            edgePath: buildOrthogonalPath(renderedRoutePoints),
+            edgePath: buildOrthogonalPath(trimmedRoutePoints),
+            arrowPath: buildArrowPath(renderedRoutePoints, EDGE_ARROW_LENGTH, EDGE_ARROW_WIDTH),
             labelPoint: getPreferredLabelPoint(renderedRoutePoints),
         };
     }, [routePoints, sourceX, sourceY, targetX, targetY]);
+    const edgeColor = wasPerformed ? theme.palette.primary.main : HANDLE_COLOR;
 
     return (
         <>
             <BaseEdge
                 path={edgePath}
-                markerEnd={markerEnd}
                 style={{
                     ...style,
                     strokeWidth: `${HANDLE_WIDTH}px`,
                     strokeLinecap: 'round',
                     strokeLinejoin: 'round',
-                    stroke: wasPerformed ? theme.palette.primary.main : undefined,
+                    stroke: edgeColor,
                     strokeDasharray: wasPerformed ? '10 10' : undefined,
                     animation: wasPerformed ? 'active-edge-dash-scroll 2s linear infinite' : undefined,
                 }}
             />
+            {
+                arrowPath !== '' &&
+                <path
+                    d={arrowPath}
+                    fill={edgeColor}
+                    stroke={edgeColor}
+                    strokeWidth={HANDLE_WIDTH}
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                />
+            }
 
             <EdgeLabelRenderer>
                 <Box
@@ -448,4 +464,62 @@ function buildOrthogonalPath(points: PathPoint[]): string {
     }
 
     return path;
+}
+
+function trimTerminalSegment(points: PathPoint[], distance: number): PathPoint[] {
+    if (points.length < 2 || distance <= 0) {
+        return points;
+    }
+
+    const trimmedPoints = [...points];
+    const targetPoint = trimmedPoints[trimmedPoints.length - 1];
+    const previousPoint = trimmedPoints[trimmedPoints.length - 2];
+    const segmentLength = getSegmentLength(previousPoint, targetPoint);
+
+    if (segmentLength <= distance) {
+        return points;
+    }
+
+    trimmedPoints[trimmedPoints.length - 1] = movePointTowards(previousPoint, targetPoint, segmentLength - distance);
+    return trimmedPoints;
+}
+
+function buildArrowPath(points: PathPoint[], length: number, width: number): string {
+    if (points.length < 2) {
+        return '';
+    }
+
+    const tipPoint = points[points.length - 1];
+    const previousPoint = points[points.length - 2];
+    const segmentLength = getSegmentLength(previousPoint, tipPoint);
+
+    if (segmentLength === 0) {
+        return '';
+    }
+
+    const usableLength = Math.min(length, segmentLength);
+    const basePoint = movePointTowards(previousPoint, tipPoint, Math.max(segmentLength - usableLength, 0));
+    const halfWidth = width / 2;
+
+    if (previousPoint.x === tipPoint.x) {
+        return `M ${tipPoint.x} ${tipPoint.y} L ${tipPoint.x - halfWidth} ${basePoint.y} L ${tipPoint.x + halfWidth} ${basePoint.y} Z`;
+    }
+
+    return `M ${tipPoint.x} ${tipPoint.y} L ${basePoint.x} ${tipPoint.y - halfWidth} L ${basePoint.x} ${tipPoint.y + halfWidth} Z`;
+}
+
+function movePointTowards(startPoint: PathPoint, endPoint: PathPoint, distance: number): PathPoint {
+    const segmentLength = getSegmentLength(startPoint, endPoint);
+    if (segmentLength === 0) {
+        return {
+            ...startPoint,
+        };
+    }
+
+    const progress = distance / segmentLength;
+
+    return {
+        x: startPoint.x + ((endPoint.x - startPoint.x) * progress),
+        y: startPoint.y + ((endPoint.y - startPoint.y) * progress),
+    };
 }
