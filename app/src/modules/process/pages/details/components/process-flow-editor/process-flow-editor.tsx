@@ -10,6 +10,7 @@ import {
     Controls,
     MiniMap,
     type NodeChange,
+    Panel,
     ReactFlow,
     useEdgesState,
     useNodesInitialized,
@@ -80,6 +81,7 @@ interface ProcessFlowEditorProps {
         tasks: ProcessInstanceTaskEntity[];
         events: ProcessInstanceEventEntity[];
     } | null;
+    topLeftPanel?: ReactNode;
 }
 
 type ProcessFlowEditorRuntimeData = ProcessFlowEditorProps['runtimeData'];
@@ -244,6 +246,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onAddInbetweenNode,
 
         runtimeData,
+        topLeftPanel,
     } = props;
 
     const {
@@ -521,6 +524,15 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                     setShowTargetHandles(false);
                 }}
             >
+                {
+                    topLeftPanel != null &&
+                    <Panel
+                        position="top-left"
+                        className="process-flow-editor-status-panel"
+                    >
+                        {topLeftPanel}
+                    </Panel>
+                }
                 <Background
                     variant={BackgroundVariant.Dots}
                 />

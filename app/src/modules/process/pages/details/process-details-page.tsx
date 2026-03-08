@@ -1,5 +1,5 @@
 import React, {type ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
-import {Box, Chip, Paper, Typography} from '@mui/material';
+import {Box, Button, Chip, Divider, Paper, Typography} from '@mui/material';
 import {Outlet, useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {type ProcessEntity} from '../../entities/process-entity';
 import {ProcessDefinitionVersionApiService} from '../../services/process-definition-version-api-service';
@@ -787,6 +787,47 @@ export function ProcessDetailsPage(): ReactNode {
             });
     };
 
+    const handleEndTestClaim = useCallback((): void => {
+        if (currentTestClaim == null) {
+            return;
+        }
+
+        confirm({
+            title: 'Testanspruch löschen',
+            children: (
+                <Typography>
+                    Möchten Sie den Testanspruch wirklich löschen? Dadurch wird der
+                    Test für diesen Prozess sofort beendet und die Bearbeitung des
+                    Prozesses wieder freigegeben.
+                    Alle gestarteten Vorgänge werden dabei beendet und gelöscht.
+                </Typography>
+            ),
+            confirmButtonText: 'Testanspruch löschen',
+        })
+            .then((confirmed) => {
+                if (!confirmed) {
+                    return;
+                }
+
+                return new ProcessTestClaimApiService()
+                    .destroy(currentTestClaim.claim.id)
+                    .then(() => {
+                        setCurrentTestClaim(null);
+                        setRuntimeData(null);
+                        dispatch(showSuccessSnackbar('Testanspruch wurde gelöscht.'));
+
+                        if (instanceId != null) {
+                            const nextSearchParams = new URLSearchParams(searchParams);
+                            nextSearchParams.delete('instanceId');
+                            setSearchParams(nextSearchParams);
+                        }
+                    });
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Der Testanspruch konnte nicht gelöscht werden.'));
+            });
+    }, [confirm, currentTestClaim, dispatch, instanceId, searchParams, setSearchParams]);
+
     const handleMenuEvent = (event: ProcessDetailsPageMoreMenuEvent): void => {
         switch (event) {
             case 'export':
@@ -840,62 +881,10 @@ export function ProcessDetailsPage(): ReactNode {
                         >
                             <GenericPageHeader
                                 title={'Prozess: ' + processFlow.definition.internalTitle}
-                                badge={
-                                    currentTestClaim != null ?
-                                        [
-                                            {
-                                                color: 'default',
-                                                label: `Version ${processFlow.version.processVersion}`,
-                                            },
-                                            {
-                                                color: 'warning',
-                                                label: `Im Test durch ${resolveUserName(currentTestClaim.user)}`,
-                                                onDelete: () => {
-                                                    confirm({
-                                                        title: 'Testanspruch löschen',
-                                                        children: (
-                                                            <Typography>
-                                                                Möchten Sie den Testanspruch wirklich löschen? Dadurch wird der
-                                                                Test für diesen Prozess sofort beendet und die Bearbeitung des
-                                                                Prozesses wieder freigegeben.
-                                                                Alle gestarteten Vorgänge werden dabei beendet und gelöscht.
-                                                            </Typography>
-                                                        ),
-                                                        confirmButtonText: 'Testanspruch löschen',
-                                                    })
-                                                        .then((confirmed) => {
-                                                            if (!confirmed) {
-                                                                return;
-                                                            }
-
-                                                            new ProcessTestClaimApiService()
-                                                                .destroy(currentTestClaim.claim.id)
-                                                                .then(() => {
-                                                                    setCurrentTestClaim(null);
-                                                                    setRuntimeData(null);
-                                                                    dispatch(showSuccessSnackbar('Testanspruch wurde gelöscht.'));
-
-                                                                    if (instanceId != null) {
-                                                                        const nextSearchParams = new URLSearchParams(searchParams);
-                                                                        nextSearchParams.delete('instanceId');
-                                                                        setSearchParams(nextSearchParams);
-                                                                    }
-                                                                })
-                                                                .catch((err) => {
-                                                                    dispatch(showApiErrorSnackbar(err, 'Der Testanspruch konnte nicht gelöscht werden.'));
-                                                                });
-                                                        })
-                                                        .catch((err) => {
-                                                            dispatch(showApiErrorSnackbar(err, 'Der Testanspruch konnte nicht gelöscht werden.'));
-                                                        });
-                                                },
-                                            },
-                                        ] :
-                                        {
-                                            color: 'default',
-                                            label: `Version ${processFlow.version.processVersion}`,
-                                        }
-                                }
+                                badge={{
+                                    color: 'default',
+                                    label: `Version ${processFlow.version.processVersion}`,
+                                }}
                                 icon={ModuleIcons.processes}
                                 actions={[
                                     {
@@ -954,6 +943,90 @@ export function ProcessDetailsPage(): ReactNode {
                                                 editable={currentTestClaim == null}
                                                 processFlow={processFlow}
                                                 nodeProviders={flowNodeProviders}
+                                                topLeftPanel={
+                                                    currentTestClaim == null ? undefined : (
+                                                        <Box
+                                                            sx={{
+                                                                display: 'flex',
+                                                                flexDirection: 'column',
+                                                                alignItems: 'flex-start',
+                                                                gap: 0,
+                                                            }}
+                                                        >
+                                                            <Box
+                                                                sx={{
+                                                                    width: '100%',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: 0.75,
+                                                                }}
+                                                            >
+                                                                <Box
+                                                                    className="process-flow-editor-status-dot"
+                                                                    sx={{
+                                                                        width: 10,
+                                                                        height: 10,
+                                                                        borderRadius: '50%',
+                                                                        color: 'warning.main',
+                                                                        bgcolor: 'currentColor',
+                                                                        flexShrink: 0,
+                                                                        transform: 'translateY(-1px)',
+                                                                        mr: 0.25,
+                                                                    }}
+                                                                />
+                                                                <Typography
+                                                                    variant="caption"
+                                                                    sx={{
+                                                                        color: 'warning.dark',
+                                                                        fontWeight: 700,
+                                                                        letterSpacing: 0.3,
+                                                                        textTransform: 'uppercase',
+                                                                    }}
+                                                                >
+                                                                    Testmodus
+                                                                </Typography>
+                                                                <Button
+                                                                    size="small"
+                                                                    color="warning"
+                                                                    variant="text"
+                                                                    onClick={handleEndTestClaim}
+                                                                    sx={{
+                                                                        minWidth: 0,
+                                                                        ml: 'auto',
+                                                                        px: 0.5,
+                                                                        py: 0.125,
+                                                                        borderRadius: 1,
+                                                                        fontSize: '0.75rem',
+                                                                        fontWeight: 600,
+                                                                        lineHeight: 1.2,
+                                                                        textTransform: 'none',
+                                                                    }}
+                                                                >
+                                                                    Beenden
+                                                                </Button>
+                                                            </Box>
+                                                            <Divider
+                                                                sx={{
+                                                                    width: 'calc(100% + 24px)',
+                                                                    mx: '-12px',
+                                                                    mt: 1,
+                                                                    mb: 1.25,
+                                                                    borderColor: 'rgba(15, 23, 42, 0.12)',
+                                                                }}
+                                                            />
+                                                            <Typography
+                                                                variant="body2"
+                                                                sx={{
+                                                                    color: 'text.primary',
+                                                                    fontWeight: 600,
+                                                                    lineHeight: 1.4,
+                                                                }}
+                                                            >
+                                                                {resolveUserName(currentTestClaim.user)} testet diesen Prozess.
+                                                            </Typography>
+                                                        </Box>
+                                                    )
+                                                }
                                                 selectedNode={selectedNode}
                                                 onSelectNode={(node) => {
                                                     if (node == null) {

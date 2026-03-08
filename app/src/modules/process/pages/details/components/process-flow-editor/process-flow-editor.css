@@ -15,6 +15,52 @@
     margin: 16px;
 }
 
+.process-flow-editor-status-panel.react-flow__panel {
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 6px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+    padding: 10px 12px;
+    max-width: 288px;
+}
+
+.process-flow-editor-status-dot {
+    position: relative;
+}
+
+.process-flow-editor-status-dot::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 999px;
+    background: currentColor;
+    opacity: 0.28;
+    animation: process-flow-editor-status-pulse 1.8s ease-out infinite;
+}
+
+@keyframes process-flow-editor-status-pulse {
+    0% {
+        transform: scale(0.8);
+        opacity: 0.32;
+    }
+    70% {
+        transform: scale(1.9);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1.9);
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .process-flow-editor-status-dot::after {
+        animation: none;
+        opacity: 0.16;
+        transform: scale(1.35);
+    }
+}
+
 .process-flow-editor-control-tooltip-anchor {
     display: flex;
     width: 100%;
