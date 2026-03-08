@@ -57,10 +57,12 @@ import {ProcessDetailsPageSkeleton} from './components/process-details-page-skel
 import {useDelayedVisibility} from '../../../../hooks/use-delayed-visibility';
 import Undo from '@mui/icons-material/Undo';
 import Redo from '@mui/icons-material/Redo';
+import Refresh from '@mui/icons-material/Refresh';
 import DeleteOutline from '@mui/icons-material/DeleteOutline';
 import Settings from '@aivot/mui-material-symbols-400-outlined/dist/settings/Settings';
 import {type Action} from '../../../../components/actions/actions-props';
 import HomeStorage from '@aivot/mui-material-symbols-400-outlined/dist/home-storage/HomeStorage';
+import News from '@aivot/mui-material-symbols-400-outlined/dist/news/News';
 import {ProcessConnectExistingNodeDialog} from './components/process-connect-existing-node-dialog';
 
 const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 150;
@@ -910,8 +912,30 @@ export function ProcessDetailsPage(): ReactNode {
     }, [dispatch, processFlow]);
     const headerActions = useMemo<Action[]>(() => {
         const isInTestMode = currentTestClaim != null;
+        const runtimeActions: Action[] = instanceId == null ? [] : [
+            {
+                tooltip: 'Laufzeitdaten neu laden',
+                ariaLabel: 'Laufzeitdaten neu laden',
+                icon: <Refresh/>,
+                onClick: () => {
+                    void loadRuntimeData();
+                },
+                disabled: isRefreshingRuntimeData,
+            },
+            {
+                tooltip: 'Vorgangsereignisse anzeigen',
+                ariaLabel: 'Vorgangsereignisse anzeigen',
+                icon: <News/>,
+                onClick: () => {
+                    setShowProcessInstanceEventsDialog(true);
+                },
+                disabled: runtimeData == null,
+            },
+            'separator' as const,
+        ];
 
         return [
+            ...runtimeActions,
             ...(!isInTestMode ? [
                 {
                     tooltip: 'Rückgängig',
@@ -960,7 +984,14 @@ export function ProcessDetailsPage(): ReactNode {
                 activeStyle: {ml: 1}
             },
         ];
-    }, [currentTestClaim, showNotImplementedHeaderActionMessage]);
+    }, [
+        currentTestClaim,
+        instanceId,
+        isRefreshingRuntimeData,
+        loadRuntimeData,
+        runtimeData,
+        showNotImplementedHeaderActionMessage,
+    ]);
     const connectExistingNodeSource = useMemo(() => {
         if (processFlow == null || connectExistingNodeRequest == null) {
             return null;
