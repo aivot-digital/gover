@@ -97,7 +97,7 @@ export const PermissionLabelsDe: Record<Permission, string> = {
     [Permission.PROCESS_INSTANCE_UPDATE]: "Prozessinstanz bearbeiten",
     [Permission.PROCESS_INSTANCE_DELETE]: "Prozessinstanz löschen",
     [Permission.PROCESS_INSTANCE_PAUSE_RESUME]: "Prozessinstanz pausieren/fortsetzen",
-    [Permission.PROCESS_INSTANCE_EDIT_DATA]: "Prozessinstanzdaten bearbeiten",
+    [Permission.PROCESS_INSTANCE_EDIT_DATA]: "Geschützte Vorgangsdaten bearbeiten",
     [Permission.PROCESS_INSTANCE_REASSIGN]: "Prozessinstanz neu zuweisen",
     [Permission.PROCESS_INSTANCE_COMMUNICATION_INTERNAL]: "Interne Prozesskommunikation",
     [Permission.PROCESS_INSTANCE_COMMUNICATION_EXTERNAL]: "Externe Prozesskommunikation",
