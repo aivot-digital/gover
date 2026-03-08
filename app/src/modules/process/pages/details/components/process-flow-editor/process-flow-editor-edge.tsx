@@ -4,7 +4,7 @@ import {Add} from '@mui/icons-material';
 import React, {type ReactNode, useMemo} from 'react';
 import {useProcessFlowEditorContext} from './process-flow-editor-context';
 import {type FlowEdge, type FlowPathPoint} from './utils/layout-utils';
-import {ADD_BUTTON_SIZE, HANDLE_COLOR, HANDLE_WIDTH} from './data/process-flow-constants';
+import {ADD_BUTTON_ICON_SIZE, ADD_BUTTON_SIZE, HANDLE_COLOR, HANDLE_WIDTH} from './data/process-flow-constants';
 import './process-flow-editor-animations.css';
 import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
 import Typography from '@mui/material/Typography';
@@ -12,7 +12,7 @@ import {useConfirm} from '../../../../../../providers/confirm-provider';
 import {ExpandableCodeBlock} from '../../../../../../components/expandable-code-block/expandable-code-block';
 import {getLatestTaskForEdge} from './utils/runtime-task-utils';
 
-export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
+function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
     const theme = useTheme();
     const confirm = useConfirm();
 
@@ -105,6 +105,7 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
                                 'bgcolor': 'background.paper',
                                 'border': `${HANDLE_WIDTH}px solid`,
                                 'borderColor': HANDLE_COLOR,
+                                'padding': 0,
                                 'width': ADD_BUTTON_SIZE,
                                 'height': ADD_BUTTON_SIZE,
                                 '&:hover': {
@@ -117,7 +118,7 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
                         >
                             <Add
                                 sx={{
-                                    fontSize: ADD_BUTTON_SIZE - 2,
+                                    fontSize: ADD_BUTTON_ICON_SIZE,
                                 }}
                             />
                         </IconButton>
@@ -131,6 +132,7 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
                                 'bgcolor': 'background.paper',
                                 'border': `${HANDLE_WIDTH}px solid`,
                                 'borderColor': theme.palette.primary.main,
+                                'padding': 0,
                                 'width': ADD_BUTTON_SIZE,
                                 'height': ADD_BUTTON_SIZE,
                                 '&:hover': {
@@ -159,7 +161,7 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
                             <DataObject
                                 sx={{
                                     color: theme.palette.primary.main,
-                                    fontSize: ADD_BUTTON_SIZE - 2,
+                                    fontSize: ADD_BUTTON_ICON_SIZE,
                                 }}
                             />
                         </IconButton>
@@ -169,6 +171,9 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
         </>
     );
 }
+
+export const ProcessFlowEditorEdge = React.memo(ProcessFlowEditorEdgeComponent);
+ProcessFlowEditorEdge.displayName = 'ProcessFlowEditorEdge';
 
 interface PathPoint {
     x: number;

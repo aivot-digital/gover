@@ -22,6 +22,8 @@ import {
 const elk = new ELK();
 
 const ELK_TARGET_PORT_KEY = '__target__';
+const INCLUDED_PORTS_IN_MIN_WIDTH = 2;
+const ADDITIONAL_PORT_WIDTH = 72;
 const ELK_LAYOUT_OPTIONS = {
     'elk.algorithm': 'layered',
     'elk.direction': 'DOWN',
@@ -72,7 +74,7 @@ interface ResolvedLayoutNode {
 }
 
 export function getFlowNodeWidth(provider: ProcessNodeProvider): number {
-    return Math.max(MIN_NODE_WIDTH, 96 * (provider.ports.length + 1));
+    return MIN_NODE_WIDTH + (Math.max(provider.ports.length - INCLUDED_PORTS_IN_MIN_WIDTH, 0) * ADDITIONAL_PORT_WIDTH);
 }
 
 export function createNodeMeasurementMap(flowNodes: FlowNode[]): NodeMeasurementMap {

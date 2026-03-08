@@ -15,7 +15,7 @@ import {
     useNodesInitialized,
     useNodesState,
     useReactFlow,
-    useViewport,
+    useStore,
 } from '@xyflow/react';
 import {type ProcessNodeEntity} from '../../../../entities/process-node-entity';
 import {ProcessFlowEditorNode} from './process-flow-editor-node';
@@ -41,7 +41,18 @@ import ViewRealSize from '@aivot/mui-material-symbols-400-outlined/dist/view-rea
 
 const FLOW_MIN_ZOOM = 0.25;
 const FLOW_MAX_ZOOM = 2;
+const INITIAL_VIEWPORT_ZOOM = 1;
 const ZOOM_EPSILON = 0.001;
+const NOOP_ADD_EDGE = (_fromNodeId: number, _toNodeId: number, _viaPortKey: string): void => {
+};
+const NOOP_DELETE_EDGE = (_edgeId: number): void => {
+};
+const NOOP_DELETE_NODE = (_node: ProcessNodeEntity): void => {
+};
+const NOOP_ADD_FOLLOW_UP_NODE = (_fromNodeId: number, _viaPortKey: string): void => {
+};
+const NOOP_ADD_INBETWEEN_NODE = (_forEdgeId: number): void => {
+};
 
 interface ProcessFlowEditorProps {
     editable: boolean;
@@ -112,6 +123,102 @@ function ProcessFlowEditorControlButton(props: ProcessFlowEditorControlButtonPro
     );
 }
 
+interface ProcessFlowEditorViewportControlsProps {
+    fitViewOptions: {
+        padding: number;
+        duration: number;
+    };
+    isViewportLocked: boolean;
+    onToggleViewportLock: () => void;
+}
+
+function ProcessFlowEditorViewportControls(props: ProcessFlowEditorViewportControlsProps): ReactNode {
+    const {
+        fitViewOptions,
+        isViewportLocked,
+        onToggleViewportLock,
+    } = props;
+
+    const {
+        fitView,
+        zoomIn,
+        zoomOut,
+        zoomTo,
+    } = useReactFlow<FlowNode, FlowEdge>();
+    const zoom = useStore((store) => store.transform[2]);
+    const canZoomIn = zoom < FLOW_MAX_ZOOM - ZOOM_EPSILON;
+    const canZoomOut = zoom > FLOW_MIN_ZOOM + ZOOM_EPSILON;
+
+    return (
+        <Controls
+            className="process-flow-editor-controls"
+            position="bottom-left"
+            showZoom={false}
+            showFitView={false}
+            showInteractive={false}
+        >
+            <ProcessFlowEditorControlButton
+                className="process-flow-editor-control-button"
+                disabled={!canZoomIn}
+                onClick={() => {
+                    void zoomIn();
+                }}
+                ariaLabel="Vergrößern"
+                tooltip="Vergrößern"
+            >
+                <Add sx={{fontSize: 20}}/>
+            </ProcessFlowEditorControlButton>
+
+            <ProcessFlowEditorControlButton
+                className="process-flow-editor-control-button"
+                disabled={!canZoomOut}
+                onClick={() => {
+                    void zoomOut();
+                }}
+                ariaLabel="Verkleinern"
+                tooltip="Verkleinern"
+            >
+                <Remove sx={{fontSize: 20}}/>
+            </ProcessFlowEditorControlButton>
+
+            <ProcessFlowEditorControlButton
+                className="process-flow-editor-control-button"
+                onClick={() => {
+                    void fitView(fitViewOptions);
+                }}
+                ariaLabel="Ansicht einpassen"
+                tooltip="Ansicht einpassen"
+            >
+                <CropFree sx={{fontSize: 18}}/>
+            </ProcessFlowEditorControlButton>
+
+            <ProcessFlowEditorControlButton
+                className="process-flow-editor-control-button process-flow-editor-control-button-zoom-reset"
+                onClick={() => {
+                    void zoomTo(1);
+                }}
+                ariaLabel="Zoom auf Originalgröße (100 %)"
+                tooltip="Zoom auf Originalgröße (100 %)"
+            >
+                <ViewRealSize sx={{fontSize: 18}}/>
+            </ProcessFlowEditorControlButton>
+
+            <ProcessFlowEditorControlButton
+                className="process-flow-editor-control-button"
+                onClick={onToggleViewportLock}
+                ariaLabel={isViewportLocked ? 'Viewport entsperren' : 'Viewport sperren'}
+                tooltip={isViewportLocked ? 'Viewport entsperren' : 'Viewport sperren'}
+            >
+                {
+                    isViewportLocked ?
+                        <Lock sx={{fontSize: 18}}/> :
+                        <LockOpen sx={{fontSize: 18}}/>
+                }
+            </ProcessFlowEditorControlButton>
+        </Controls>
+    );
+}
+
 export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const {
         editable,
@@ -135,15 +242,12 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const {
         fitView,
         getNodes,
-        zoomIn,
-        zoomOut,
-        zoomTo,
+        setCenter,
     } = useReactFlow<FlowNode, FlowEdge>();
-    const {zoom} = useViewport();
 
     const [showTargetHandles, setShowTargetHandles] = useState<boolean>(false);
     const [needsMeasuredLayout, setNeedsMeasuredLayout] = useState<boolean>(false);
-    const [pendingFitView, setPendingFitView] = useState<boolean>(false);
+    const [pendingInitialViewport, setPendingInitialViewport] = useState<boolean>(false);
     const [isViewportLocked, setIsViewportLocked] = useState<boolean>(false);
 
     const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
@@ -151,7 +255,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const nodesInitialized = useNodesInitialized({
         includeHiddenNodes: true,
     });
-    const hasPerformedInitialFitRef = useRef<boolean>(false);
+    const hasQueuedInitialViewportRef = useRef<boolean>(false);
     const layoutRequestIdRef = useRef<number>(0);
 
     const isEditable = runtimeData == null && editable;
@@ -167,8 +271,68 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         padding: 0.16,
         duration: 200,
     }), []);
-    const canZoomIn = zoom < FLOW_MAX_ZOOM - ZOOM_EPSILON;
-    const canZoomOut = zoom > FLOW_MIN_ZOOM + ZOOM_EPSILON;
+    const contextValue = useMemo(() => ({
+        editable: isEditable,
+        showTargetHandles,
+
+        selectedNode: selectedNode ?? null,
+
+        onAddEdge: onAddEdge ?? NOOP_ADD_EDGE,
+        onDeleteEdge: onDeleteEdge ?? NOOP_DELETE_EDGE,
+        onDeleteNode: onDeleteNode ?? NOOP_DELETE_NODE,
+
+        onAddFollowUpNode: onAddFollowUpNode ?? NOOP_ADD_FOLLOW_UP_NODE,
+        onAddInbetweenNode: onAddInbetweenNode ?? NOOP_ADD_INBETWEEN_NODE,
+
+        runtimeData,
+    }), [
+        isEditable,
+        onAddEdge,
+        onAddFollowUpNode,
+        onAddInbetweenNode,
+        onDeleteEdge,
+        onDeleteNode,
+        runtimeData,
+        selectedNode,
+        showTargetHandles,
+    ]);
+    const handleToggleViewportLock = useCallback(() => {
+        setIsViewportLocked((current) => !current);
+    }, []);
+    const focusInitialViewport = useCallback(async (): Promise<boolean> => {
+        if (nodes.length === 0 || selectedNode == null) {
+            return false;
+        }
+
+        const initialZoom = Math.min(INITIAL_VIEWPORT_ZOOM, FLOW_MAX_ZOOM);
+        const selectedFlowNode = nodes.find((node) => node.id === String(selectedNode.id));
+        if (selectedFlowNode == null) {
+            return false;
+        }
+
+        const selectedNodeWidth = selectedFlowNode.measured?.width ?? 0;
+        const selectedNodeHeight = selectedFlowNode.measured?.height ?? 0;
+
+        await setCenter(
+            selectedFlowNode.position.x + (selectedNodeWidth / 2),
+            selectedFlowNode.position.y + (selectedNodeHeight / 2),
+            {
+                zoom: initialZoom,
+                duration: 200,
+            },
+        );
+
+        return true;
+    }, [nodes, selectedNode, setCenter]);
+
+    const queueInitialViewportForSelectedNode = useCallback(() => {
+        if (selectedNode == null || hasQueuedInitialViewportRef.current) {
+            return;
+        }
+
+        hasQueuedInitialViewportRef.current = true;
+        setPendingInitialViewport(true);
+    }, [selectedNode]);
 
     const layoutNodes = useCallback(async (nodeMeasurements?: ReturnType<typeof createNodeMeasurementMap>) => {
         if (!hasAllNodeProviders) {
@@ -213,13 +377,13 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     }, [onNodesChange]);
 
     useEffect(() => {
-        hasPerformedInitialFitRef.current = false;
+        hasQueuedInitialViewportRef.current = false;
     }, [processFlow.definition.id, processFlow.version.processVersion]);
 
     useEffect(() => {
         if (!hasAllNodeProviders) {
             setNeedsMeasuredLayout(false);
-            setPendingFitView(false);
+            setPendingInitialViewport(false);
             return;
         }
 
@@ -239,11 +403,8 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         void layoutNodes(hasAnyMeasuredNodes ? currentNodeMeasurements : undefined);
         setNeedsMeasuredLayout(!hasMeasurementsForAllNodes);
 
-        if (!hasPerformedInitialFitRef.current) {
-            hasPerformedInitialFitRef.current = true;
-            setPendingFitView(true);
-        }
-    }, [getNodes, hasAllNodeProviders, layoutNodes, processFlow.nodes]);
+        queueInitialViewportForSelectedNode();
+    }, [getNodes, hasAllNodeProviders, layoutNodes, processFlow.nodes, queueInitialViewportForSelectedNode]);
 
     useEffect(() => {
         if (!hasAllNodeProviders || !needsMeasuredLayout || !nodesInitialized) {
@@ -255,49 +416,35 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     }, [getNodes, hasAllNodeProviders, layoutNodes, needsMeasuredLayout, nodesInitialized]);
 
     useEffect(() => {
-        if (!pendingFitView || needsMeasuredLayout) {
+        if (!pendingInitialViewport || needsMeasuredLayout) {
             return;
         }
 
         const frameHandle = requestAnimationFrame(() => {
-            void fitView(fitViewOptions);
-            setPendingFitView(false);
+            void focusInitialViewport()
+                .then((wasApplied) => {
+                    if (wasApplied) {
+                        setPendingInitialViewport(false);
+                    }
+                });
         });
 
         return () => {
             cancelAnimationFrame(frameHandle);
         };
-    }, [edges, fitView, fitViewOptions, needsMeasuredLayout, nodes, pendingFitView]);
+    }, [focusInitialViewport, needsMeasuredLayout, pendingInitialViewport]);
 
     return (
-        // TODO: Move the provider upward to avoid unnecessary re-renders of the whole graph when only the context values change
         <ProcessFlowEditorProvider
-            value={{
-                editable: isEditable,
-                showTargetHandles,
-
-                selectedNode: selectedNode ?? null,
-
-                onAddEdge: onAddEdge ?? (() => {
-                }),
-                onDeleteEdge: onDeleteEdge ?? (() => {
-                }),
-                onDeleteNode: onDeleteNode ?? (() => {
-                }),
-
-                onAddFollowUpNode: onAddFollowUpNode ?? (() => {
-                }),
-                onAddInbetweenNode: onAddInbetweenNode ?? (() => {
-                }),
-
-                runtimeData,
-            }}
+            value={contextValue}
         >
             <ReactFlow
+                className="process-flow-editor"
                 nodes={nodes}
                 edges={edges}
                 onNodesChange={handleNodesChange}
                 onEdgesChange={onEdgesChange}
+                onlyRenderVisibleElements
                 nodesDraggable={false}
                 nodesConnectable={isEditable}
                 elementsSelectable={false}
@@ -351,78 +498,11 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                 <Background
                     variant={BackgroundVariant.Dots}
                 />
-                <Controls
-                    className="process-flow-editor-controls"
-                    position="bottom-left"
-                    showZoom={false}
-                    showFitView={false}
-                    showInteractive={false}
-                    style={{
-                        bottom: 16,
-                        left: 16,
-                    }}
-                >
-                    <ProcessFlowEditorControlButton
-                        className="process-flow-editor-control-button"
-                        disabled={!canZoomIn}
-                        onClick={() => {
-                            void zoomIn({duration: 180});
-                        }}
-                        ariaLabel="Vergrößern"
-                        tooltip="Vergrößern"
-                    >
-                        <Add sx={{fontSize: 20}}/>
-                    </ProcessFlowEditorControlButton>
-
-                    <ProcessFlowEditorControlButton
-                        className="process-flow-editor-control-button"
-                        disabled={!canZoomOut}
-                        onClick={() => {
-                            void zoomOut({duration: 180});
-                        }}
-                        ariaLabel="Verkleinern"
-                        tooltip="Verkleinern"
-                    >
-                        <Remove sx={{fontSize: 20}}/>
-                    </ProcessFlowEditorControlButton>
-
-                    <ProcessFlowEditorControlButton
-                        className="process-flow-editor-control-button"
-                        onClick={() => {
-                            void fitView(fitViewOptions);
-                        }}
-                        ariaLabel="Ansicht einpassen"
-                        tooltip="Ansicht einpassen"
-                    >
-                        <CropFree sx={{fontSize: 18}}/>
-                    </ProcessFlowEditorControlButton>
-
-                    <ProcessFlowEditorControlButton
-                        className="process-flow-editor-control-button process-flow-editor-control-button-zoom-reset"
-                        onClick={() => {
-                            void zoomTo(1, {duration: 180});
-                        }}
-                        ariaLabel="Zoom auf Originalgröße (100 %)"
-                        tooltip="Zoom auf Originalgröße (100 %)"
-                    >
-                        <ViewRealSize sx={{fontSize: 18}}/>
-                    </ProcessFlowEditorControlButton>
-
-                    <ProcessFlowEditorControlButton
-                        className="process-flow-editor-control-button"
-                        onClick={() => {
-                            setIsViewportLocked((current) => !current);
-                        }}
-                        ariaLabel={isViewportLocked ? 'Viewport entsperren' : 'Viewport sperren'}
-                        tooltip={isViewportLocked ? 'Viewport entsperren' : 'Viewport sperren'}
-                    >
-                        {
-                            isViewportLocked ?
-                                <Lock sx={{fontSize: 18}}/> :
-                                <LockOpen sx={{fontSize: 18}}/>
-                        }
-                    </ProcessFlowEditorControlButton>
-                </Controls>
+                <ProcessFlowEditorViewportControls
+                    fitViewOptions={fitViewOptions}
+                    isViewportLocked={isViewportLocked}
+                    onToggleViewportLock={handleToggleViewportLock}
+                />
                 <MiniMap
                     className="process-flow-editor-minimap"
                     position="bottom-right"
@@ -433,10 +513,11 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                     nodeStrokeWidth={1.5}
                     nodeColor={() => 'rgba(148, 163, 184, 0.34)'}
                     nodeStrokeColor={() => 'rgba(100, 116, 139, 0.28)'}
-                    maskColor="rgba(226, 232, 240, 0.42)"
+                    maskColor="rgba(248, 250, 252, 0.8)"
                     maskStrokeColor="rgba(100, 116, 139, 0.28)"
                     maskStrokeWidth={1}
                     style={{
+                        backgroundColor: '#ffffff',
                         width: 184,
                         height: 116,
                     }}

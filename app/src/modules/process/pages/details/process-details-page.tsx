@@ -906,6 +906,9 @@ export function ProcessDetailsPage(): ReactNode {
                             minHeight: 0,
                             borderRadius: 1,
                             mt: 2,
+                            mb: -2, // compensate for parent `py: 2`
+                            ml: -2, // compensate for parent `px: 2`
+                            mr: -2, // compensate for parent `px: 2`
                         }}
                     >
                         {

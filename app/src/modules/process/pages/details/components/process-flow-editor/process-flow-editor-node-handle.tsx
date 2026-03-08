@@ -9,6 +9,7 @@ import {Add} from '@mui/icons-material';
 import Close from '@aivot/mui-material-symbols-400-outlined/dist/close/Close';
 import {
     ADD_BUTTON_DISTANCE,
+    ADD_BUTTON_ICON_SIZE,
     ADD_BUTTON_SIZE,
     HANDLE_COLOR,
     HANDLE_SIZE,
@@ -160,6 +161,7 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
                                     bgcolor: 'background.paper',
                                     border: `${HANDLE_WIDTH}px solid`,
                                     borderColor: HANDLE_COLOR,
+                                    padding: 0,
                                     width: ADD_BUTTON_SIZE,
                                     height: ADD_BUTTON_SIZE,
                                 }}
@@ -173,7 +175,7 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
                             >
                                 <Add
                                     sx={{
-                                        fontSize: ADD_BUTTON_SIZE - 2,
+                                        fontSize: ADD_BUTTON_ICON_SIZE,
                                     }}
                                 />
                             </IconButton>

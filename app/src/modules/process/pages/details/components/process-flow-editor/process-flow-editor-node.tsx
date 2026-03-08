@@ -1,6 +1,6 @@
-import {Handle, type NodeProps, Position} from '@xyflow/react';
+import {Handle, type NodeProps, Position, useUpdateNodeInternals} from '@xyflow/react';
 import {Box, Divider, IconButton, Paper, useTheme} from '@mui/material';
-import React, {type ReactNode, useMemo, useState} from 'react';
+import React, {type ReactNode, useEffect, useMemo, useState} from 'react';
 import Typography from '@mui/material/Typography';
 import {ProcessNodeType} from '../../../../services/process-node-provider-api-service';
 import Assignment from '@aivot/mui-material-symbols-400-outlined/dist/assignment/Assignment';
@@ -22,9 +22,10 @@ import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/Mo
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {Menu} from '../../../../../../components/menu/menu';
 
-export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
+function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
     const theme = useTheme();
     const confirm = useConfirm();
+    const updateNodeInternals = useUpdateNodeInternals();
     const [showEventsDialog, setShowEventsDialog] = useState(false);
     const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
 
@@ -101,6 +102,15 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
 
     const nodeName = useMemo(() => getNodeName(node, provider), [node, provider]);
     const nodeDescription = useMemo(() => getNodeDescription(node, provider), [node, provider]);
+    const handleLayoutSignature = useMemo(() => (
+        provider.ports.map((port) => (
+            `${port.key}:${outgoingEdges.some((outgoingEdge) => outgoingEdge.port?.key === port.key) ? '1' : '0'}`
+        )).join('|')
+    ), [outgoingEdges, provider.ports]);
+
+    useEffect(() => {
+        updateNodeInternals(String(node.id));
+    }, [handleLayoutSignature, node.id, updateNodeInternals]);
 
     return (
         <Box
@@ -126,8 +136,8 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
                         color: typeTextColor,
                         display: 'inline-flex',
                         width: 'fit-content',
-                        maxWidth: 'calc(100% - 32px)',
-                        minHeight: '32px',
+                        maxWidth: 'calc(100% - 26px)',
+                        minHeight: '26px',
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: 0.75,
@@ -147,7 +157,7 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
 
                     <Typography
                         sx={{
-                            fontSize: '0.95rem',
+                            fontSize: '0.8125rem',
                             fontWeight: 600,
                             lineHeight: 1,
                             whiteSpace: 'nowrap',
@@ -179,9 +189,9 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
                             display: 'flex',
                             alignItems: 'center',
                             gap: 1.5,
-                            px: 1.875,
-                            pt: 1.5,
-                            pb: 1.5,
+                            px: 1.5,
+                            pt: 1,
+                            pb: 1.25,
                             width: '100%',
                         }}
                     >
@@ -259,7 +269,7 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
 
                     <Box
                         sx={{
-                            p: 1.875,
+                            p: 1.5,
                             pb: 2,
                             flex: 1,
                         }}
@@ -443,3 +453,6 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
         </Box>
     );
 }
+
+export const ProcessFlowEditorNode = React.memo(ProcessFlowEditorNodeComponent);
+ProcessFlowEditorNode.displayName = 'ProcessFlowEditorNode';
