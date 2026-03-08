@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.destination.controllers;
 
 import de.aivot.GoverBackend.audit.enums.AuditAction;
+import de.aivot.GoverBackend.audit.models.AuditLogPayload;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.destination.dtos.DestinationRequestDTO;
@@ -11,6 +12,7 @@ import de.aivot.GoverBackend.destination.services.DestinationService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,6 +30,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+
 import java.util.Map;
 
 @RestController
@@ -35,7 +38,7 @@ import java.util.Map;
 @Tag(
         name = "Destinations",
         description = "Destinations are used to define where data should be sent. " +
-                      "They can represent external systems, endpoints, or services that receive data from the application."
+                "They can represent external systems, endpoints, or services that receive data from the application."
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class DestinationController {
@@ -49,7 +52,7 @@ public class DestinationController {
                                  DestinationService destinationService,
                                  UserService userService) {
         this.auditService = auditService
-                .createScopedAuditService(DestinationController.class);
+                .createScopedAuditService(DestinationController.class, "Schnittstellen");
 
         this.destinationService = destinationService;
         this.userService = userService;
@@ -73,7 +76,7 @@ public class DestinationController {
     @Operation(
             summary = "Create Destination",
             description = "Create a new destination with the provided details. " +
-                          "Requires system administrator permissions."
+                    "Requires system administrator permissions."
     )
     public DestinationResponseDTO create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -88,10 +91,23 @@ public class DestinationController {
         var entity = destinationService
                 .create(requestDTO.toEntity());
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), Destination.class, "legacy", "legacy", Map.of(
-                                "id", entity.getId(),
+        auditService.create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Create,
+                        Destination.class,
+                        entity.getId(),
+                        "id",
+                        Map.of(
                                 "name", entity.getName()
-                        )));
+                        ))
+                .withMessage(
+                        "Die Schnittstelle %s mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(entity.getName()),
+                        StringUtils.quote(String.valueOf(entity.getId())),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
 
         return DestinationResponseDTO
                 .fromEntity(entity);
@@ -111,7 +127,7 @@ public class DestinationController {
     @Operation(
             summary = "Update Destination",
             description = "Update an existing destination identified by its ID. " +
-                          "Requires system administrator permissions."
+                    "Requires system administrator permissions."
     )
     public DestinationResponseDTO update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -127,10 +143,23 @@ public class DestinationController {
         var entity = destinationService
                 .update(id, requestDTO.toEntity());
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), Destination.class, "legacy", "legacy", Map.of(
-                                "id", entity.getId(),
+        auditService.create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Update,
+                        Destination.class,
+                        entity.getId(),
+                        "id",
+                        Map.of(
                                 "name", entity.getName()
-                        )));
+                        ))
+                .withMessage(
+                        "Die Schnittstelle %s mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(entity.getName()),
+                        StringUtils.quote(String.valueOf(entity.getId())),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log(); // TODO: Create Diff
 
         return DestinationResponseDTO
                 .fromEntity(entity);
@@ -140,7 +169,7 @@ public class DestinationController {
     @Operation(
             summary = "Delete Destination",
             description = "Delete an existing destination identified by its ID. " +
-                          "Requires system administrator permissions."
+                    "Requires system administrator permissions."
     )
     public void destroy(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -155,9 +184,22 @@ public class DestinationController {
         var entity = destinationService
                 .delete(id);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), Destination.class, "legacy", "legacy", Map.of(
-                                "id", entity.getId(),
+        auditService.create()
+                .withUser(user)
+                .withAuditAction(
+                        AuditAction.Delete,
+                        Destination.class,
+                        entity.getId(),
+                        "id",
+                        Map.of(
                                 "name", entity.getName()
-                        )));
+                        ))
+                .withMessage(
+                        "Die Schnittstelle %s mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
+                        StringUtils.quote(entity.getName()),
+                        StringUtils.quote(String.valueOf(entity.getId())),
+                        StringUtils.quote(user.getFullName())
+                )
+                .log();
     }
 }

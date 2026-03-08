@@ -16,6 +16,7 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -65,7 +66,7 @@ public class FormVersionController {
                                  FormRevisionService formRevisionService,
                                  VFormVersionWithDetailsService vFormVersionWithDetailsService,
                                  UserService userService) {
-        this.auditService = auditService.createScopedAuditService(FormVersionController.class);
+        this.auditService = auditService.createScopedAuditService(FormVersionController.class, "Formulare");
         this.formVersionService = formVersionService;
         this.formService = formService;
         this.formLockService = formLockService;
@@ -150,10 +151,17 @@ public class FormVersionController {
                 .create(user, createdFormVersionDetails);
 
         // Log the form version creation
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), FormVersionEntity.class, "legacy", "legacy", Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Create, FormVersionEntity.class, createdFormVersion.getFormId(), "formId", Map.of(
                 "formId", createdFormVersion.getFormId(),
                 "formVersion", createdFormVersion.getVersion()
-        )));
+        ))
+                .withMessage(
+                        "Die Formularversion %s des Formulars mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(String.valueOf(createdFormVersion.getVersion())),
+                        StringUtils.quote(String.valueOf(createdFormVersion.getFormId())),
+                        StringUtils.quote(user.getFullName())
+                )
+                .log();
 
         return createdFormVersion;
     }
@@ -261,10 +269,17 @@ public class FormVersionController {
                 .update(FormVersionEntityId.of(formId, version), patchedFormVersion);
 
         // Log the form version update
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), FormEntity.class, "legacy", "legacy", Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Update, FormEntity.class, updatedFormVersion.getFormId(), "formId", Map.of(
                 "formId", updatedFormVersion.getFormId(),
                 "formVersion", updatedFormVersion.getVersion()
-        )));
+        ))
+                .withMessage(
+                        "Die Formularversion %s des Formulars mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(String.valueOf(updatedFormVersion.getVersion())),
+                        StringUtils.quote(String.valueOf(updatedFormVersion.getFormId())),
+                        StringUtils.quote(user.getFullName())
+                )
+                .log();
 
         // Create a revision for the form
         var updatedFormVersionWithDetails = vFormVersionWithDetailsService
@@ -408,19 +423,25 @@ public class FormVersionController {
                 .publish(id);
 
         // Log the form publication
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), FormVersionEntity.class, "legacy", "legacy", Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Update, FormVersionEntity.class, publishedFormVersion.getFormId(), "formId", Map.of(
                         "formId", publishedFormVersion.getFormId(),
                         "formVersion", publishedFormVersion.getVersion(),
                         "published", true
-                )));
+                ))
+                .withMessage(
+                        "Die Formularversion %s des Formulars mit der ID %s wurde von der Mitarbeiter:in %s veröffentlicht.",
+                        StringUtils.quote(String.valueOf(publishedFormVersion.getVersion())),
+                        StringUtils.quote(String.valueOf(publishedFormVersion.getFormId())),
+                        StringUtils.quote(user.getFullName())
+                )
+                .log();
 
         /*
         // Send a message about the form publication
         try {
             formMailService.sendPublished(user, form);
         } catch (MessagingException | IOException | NoValidUserEMailsInDepartmentException e) {
-            auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload
-                    .create()
+            auditService.create()
                     .withUser(user)
                     .setTriggerType("Exception")
                     .setMessage("Failed to send message about form publication")
@@ -430,7 +451,7 @@ public class FormVersionController {
                             "formSlug", form.getSlug(),
                             "formVersion", form.getVersion(),
                             "developingDepartmentId", form.getDevelopingDepartmentId()
-                    )));
+                    )).log();
             exceptionMailService.send(e);
         }
          */
@@ -498,19 +519,25 @@ public class FormVersionController {
                 .revoke(id);
 
         // Log the form publication
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), FormVersionEntity.class, "legacy", "legacy", Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Update, FormVersionEntity.class, revokedFormVersion.getFormId(), "formId", Map.of(
                         "formId", revokedFormVersion.getFormId(),
                         "formVersion", revokedFormVersion.getVersion(),
                         "published", false
-                )));
+                ))
+                .withMessage(
+                        "Die Formularversion %s des Formulars mit der ID %s wurde von der Mitarbeiter:in %s zurückgezogen.",
+                        StringUtils.quote(String.valueOf(revokedFormVersion.getVersion())),
+                        StringUtils.quote(String.valueOf(revokedFormVersion.getFormId())),
+                        StringUtils.quote(user.getFullName())
+                )
+                .log();
 
         /*
         // Send a message about the form publication
         try {
             formMailService.sendPublished(user, form);
         } catch (MessagingException | IOException | NoValidUserEMailsInDepartmentException e) {
-            auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload
-                    .create()
+            auditService.create()
                     .withUser(user)
                     .setTriggerType("Exception")
                     .setMessage("Failed to send message about form publication")
@@ -520,7 +547,7 @@ public class FormVersionController {
                             "formSlug", form.getSlug(),
                             "formVersion", form.getVersion(),
                             "developingDepartmentId", form.getDevelopingDepartmentId()
-                    )));
+                    )).log();
             exceptionMailService.send(e);
         }
          */

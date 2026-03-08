@@ -25,6 +25,7 @@ import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.system.properties.BuildProperties;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -85,7 +86,7 @@ public class FormController {
                           FormVersionService formVersionService,
                           BuildProperties buildProperties,
                           UserService userService) {
-        this.auditService = auditService.createScopedAuditService(FormController.class);
+        this.auditService = auditService.createScopedAuditService(FormController.class, "Formulare");
 
         this.formMailService = formMailService;
         this.exceptionMailService = exceptionMailService;
@@ -169,13 +170,9 @@ public class FormController {
                 .create(newForm);
 
         // Write the audit log
-        auditService.addAuditEntry(AuditLogPayload
-                .create()
+        auditService.create()
                 .withUser(user)
-                .withAuditAction(
-                        AuditAction.Create,
-                        "Formulare",
-                        FormEntity.class,
+                .withAuditAction(AuditAction.Create, FormEntity.class,
                         cratedForm.getId(),
                         "id",
                         Map.of(
@@ -183,7 +180,15 @@ public class FormController {
                                 "slug", cratedForm.getSlug(),
                                 "title", cratedForm.getInternalTitle(),
                                 "developingDepartmentId", cratedForm.getDevelopingDepartmentId()
-                        )));
+                        ))
+                .withMessage(
+                        "Das Formular %s (Slug %s, ID %s) wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(cratedForm.getInternalTitle()),
+                        StringUtils.quote(cratedForm.getSlug()),
+                        StringUtils.quote(String.valueOf(cratedForm.getId())),
+                        StringUtils.quote(user.getFullName())
+                )
+                .log();
 
         return cratedForm;
     }
@@ -261,11 +266,19 @@ public class FormController {
                 .update(formId, patchedForm);
 
         // Log the form update
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), FormEntity.class, "legacy", "legacy", Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Update, FormEntity.class, updatedForm.getId(), "formId", Map.of(
                 "formId", updatedForm.getId(),
                 "formSlug", updatedForm.getSlug(),
                 "developingDepartmentId", updatedForm.getDevelopingDepartmentId()
-        )));
+        ))
+                .withMessage(
+                        "Das Formular %s (Slug %s, ID %s) wurde von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(updatedForm.getInternalTitle()),
+                        StringUtils.quote(updatedForm.getSlug()),
+                        StringUtils.quote(String.valueOf(updatedForm.getId())),
+                        StringUtils.quote(user.getFullName())
+                )
+                .log();
 
         // TODO: Create revision formRevisionService.create(user, form, existingForm);
 
@@ -369,17 +382,24 @@ public class FormController {
         // Delete the form
         var deletedForm = formService.delete(formId);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), FormEntity.class, "legacy", "legacy", Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Delete, FormEntity.class, deletedForm.getId(), "formId", Map.of(
                         "formId", deletedForm.getId(),
                         "formSlug", deletedForm.getSlug(),
                         "developingDepartmentId", deletedForm.getDevelopingDepartmentId()
-                )));
+                ))
+                .withMessage(
+                        "Das Formular %s (Slug %s, ID %s) wurde von der Mitarbeiter:in %s gelöscht.",
+                        StringUtils.quote(deletedForm.getInternalTitle()),
+                        StringUtils.quote(deletedForm.getSlug()),
+                        StringUtils.quote(String.valueOf(deletedForm.getId())),
+                        StringUtils.quote(user.getFullName())
+                )
+                .log();
 
         try {
             formMailService.sendDeleted(user, deletedForm);
         } catch (MessagingException | IOException | NoValidUserEMailsInDepartmentException e) {
-            auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload
-                    .create()
+            auditService.create()
                     .withUser(user)
                     .setTriggerType("Exception")
                     .setMessage("Failed to send message about form deletion")
@@ -387,7 +407,7 @@ public class FormController {
                             "exceptionType", e.getClass().getName(),
                             "formId", deletedForm.getId(),
                             "formSlug", deletedForm.getSlug()
-                    )));
+                    )).log();
             exceptionMailService.send(e);
         }
     }
