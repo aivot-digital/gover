@@ -30,7 +30,7 @@ const ELK_LAYOUT_OPTIONS = {
     'elk.edgeRouting': 'ORTHOGONAL',
     'elk.padding': '[top=32,left=32,bottom=32,right=32]',
     'elk.spacing.nodeNode': '100',
-    'elk.layered.spacing.nodeNodeBetweenLayers': '80',
+    'elk.layered.spacing.nodeNodeBetweenLayers': '52',
     'elk.layered.considerModelOrder.strategy': 'PREFER_EDGES',
     'elk.layered.considerModelOrder.longEdgeStrategy': 'DUMMY_NODE_UNDER',
     'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
