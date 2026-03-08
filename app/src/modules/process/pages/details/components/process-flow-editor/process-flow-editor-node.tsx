@@ -8,16 +8,16 @@ import {ProviderTypeStyles} from '../../../../data/provider-type-styles';
 import {KnownProviderIcons} from '../../../../data/known-provider-icons';
 import {ProcessFlowEditorNodeHandle} from './process-flow-editor-node-handle';
 import {useProcessFlowEditorContext} from './process-flow-editor-context';
-import {HANDLE_SIZE, NODE_WIDTH} from './data/process-flow-constants';
-import {type FlowNode} from './utils/layout-utils';
+import {HANDLE_SIZE} from './data/process-flow-constants';
+import {getFlowNodeWidth, type FlowNode} from './utils/layout-utils';
 import {getNodeDescription, getNodeName} from './utils/node-utils';
 import {ProcessInstanceTaskStatusIcon} from '../../../../components/process-instance-task-status-icon';
 import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
 import {useConfirm} from '../../../../../../providers/confirm-provider';
 import {ExpandableCodeBlock} from '../../../../../../components/expandable-code-block/expandable-code-block';
-import BugReport from '@aivot/mui-material-symbols-400-outlined/dist/bug-report/BugReport';
 import {ProcessInstanceEventDialog} from '../../../../dialogs/process-instance-event-dialog';
 import News from '@aivot/mui-material-symbols-400-outlined/dist/news/News';
+import {getLatestTaskForEdge, getLatestTaskForNode} from './utils/runtime-task-utils';
 
 export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
     const theme = useTheme();
@@ -30,7 +30,6 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
 
     const {
         editable,
-        onSelectedNode,
         selectedNode,
         onAddFollowUpNode,
         onDeleteEdge,
@@ -39,30 +38,22 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
     } = useProcessFlowEditorContext();
 
     const {
-        treeNode,
+        graphNode,
     } = data;
 
     const {
         node,
         provider,
-    } = treeNode;
+        outgoingEdges,
+    } = graphNode;
 
     const associatedTask = useMemo(() => {
         if (runtimeData == null) {
             return null;
         }
 
-        const treeNode = data?.treeNode;
-        if (treeNode == null) {
-            return null;
-        }
-
-        return runtimeData
-            .tasks
-            .find((task) => (
-                task.processNodeId === treeNode.node.id
-            )) ?? null;
-    }, [runtimeData]);
+        return getLatestTaskForNode(runtimeData.tasks, node.id);
+    }, [node.id, runtimeData]);
 
     const performedPortKeys = useMemo(() => {
         if (runtimeData == null) {
@@ -71,19 +62,20 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
 
         const result = new Set<string>();
 
-        for (const child of data.treeNode.children) {
-            const hasMatchingNextTask = runtimeData.tasks.some((task) => (
-                task.previousProcessNodeId === node.id &&
-                task.processNodeId === child.childNode.node.id
-            ));
+        for (const outgoingEdge of outgoingEdges) {
+            const latestTaskForEdge = getLatestTaskForEdge(
+                runtimeData.tasks,
+                outgoingEdge.edge.fromNodeId,
+                outgoingEdge.edge.toNodeId,
+            );
 
-            if (hasMatchingNextTask) {
-                result.add(child.port.key);
+            if (latestTaskForEdge != null && outgoingEdge.port != null) {
+                result.add(outgoingEdge.port.key);
             }
         }
 
         return result;
-    }, [runtimeData, data.treeNode.children, node.id]);
+    }, [node.id, outgoingEdges, runtimeData]);
 
     const {
         Icon: TypeIcon,
@@ -107,7 +99,7 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
             data-node-id={node.id}
             sx={{
                 position: 'relative',
-                width: `${Math.max(NODE_WIDTH * 2, NODE_WIDTH * (provider.ports.length + 1))}px`,
+                width: `${getFlowNodeWidth(provider)}px`,
             }}
         >
             <Box
@@ -321,16 +313,13 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
                                     key={port.key}
                                     editable={editable}
                                     wasPerformed={performedPortKeys.has(port.key)}
-                                    isConnected={data.treeNode.children.some((c) => c.port.key === port.key)}
+                                    isConnected={outgoingEdges.some((outgoingEdge) => outgoingEdge.port?.key === port.key)}
                                     port={port}
                                     onClick={() => {
                                         onAddFollowUpNode(node.id, port.key);
                                     }}
                                     onDeleteEdge={(port) => {
-                                        const edge = data
-                                            .treeNode
-                                            .children
-                                            .find((c) => c.port.key === port.key);
+                                        const edge = outgoingEdges.find((outgoingEdge) => outgoingEdge.port?.key === port.key);
 
                                         if (edge != null) {
                                             onDeleteEdge(edge.edge.id);

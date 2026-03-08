@@ -1,14 +1,28 @@
 import {type ProcessFlow} from '../../process-details-page';
 import {type ProcessNodeProvider} from '../../../../services/process-node-provider-api-service';
-import React, {type ReactNode, useCallback, useEffect, useState} from 'react';
+import React, {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import '@xyflow/react/dist/style.css';
-import {Background, BackgroundVariant, ReactFlow, useEdgesState, useNodesState, useReactFlow} from '@xyflow/react';
+import {
+    Background,
+    BackgroundVariant,
+    type NodeChange,
+    ReactFlow,
+    useEdgesState,
+    useNodesInitialized,
+    useNodesState,
+    useReactFlow,
+} from '@xyflow/react';
 import {type ProcessNodeEntity} from '../../../../entities/process-node-entity';
 import {ProcessFlowEditorNode} from './process-flow-editor-node';
 import {ProcessFlowEditorEdge} from './process-flow-editor-edge';
 import {ProcessFlowEditorProvider} from './process-flow-editor-context';
 import {DEFAULT_FLOW_EDGE_TYPE, DEFAULT_FLOW_NODE_TYPE} from './data/process-flow-constants';
-import {type FlowEdge, type FlowNode, layoutElements} from './utils/layout-utils';
+import {
+    createNodeMeasurementMap,
+    type FlowEdge,
+    type FlowNode,
+    layoutElements,
+} from './utils/layout-utils';
 import {Box} from '@mui/material';
 import {Actions} from '../../../../../../components/actions/actions';
 import MobileLayout from '@aivot/mui-material-symbols-400-outlined/dist/mobile-layout/MobileLayout';
@@ -67,41 +81,109 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
 
     const {
         fitView,
-    } = useReactFlow();
+        getNodes,
+    } = useReactFlow<FlowNode, FlowEdge>();
 
     const [showTargetHandles, setShowTargetHandles] = useState<boolean>(false);
+    const [needsMeasuredLayout, setNeedsMeasuredLayout] = useState<boolean>(false);
+    const [pendingFitView, setPendingFitView] = useState<boolean>(false);
 
     const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>([]);
+    const nodesInitialized = useNodesInitialized({
+        includeHiddenNodes: true,
+    });
+    const hasPerformedInitialFitRef = useRef<boolean>(false);
 
-    const layoutNodes = useCallback((shouldFitView: boolean = false) => {
+    const isEditable = runtimeData == null && editable;
+    const hasAllNodeProviders = useMemo(() => (
+        processFlow.nodes.every((node) => (
+            nodeProviders.some((provider) => (
+                provider.key === node.processNodeDefinitionKey &&
+                provider.majorVersion === node.processNodeDefinitionVersion
+            ))
+        ))
+    ), [nodeProviders, processFlow.nodes]);
+
+    const layoutNodes = useCallback((useMeasuredNodes: boolean = false) => {
+        if (!hasAllNodeProviders) {
+            return;
+        }
+
         const {
             flowNodes: laidOutNodes,
             flowEdges: laidOutEdges,
-        } = layoutElements(processFlow.nodes, processFlow.edges, nodeProviders);
+        } = layoutElements(
+            processFlow.nodes,
+            processFlow.edges,
+            nodeProviders,
+            useMeasuredNodes ? createNodeMeasurementMap(getNodes()) : undefined,
+        );
 
         setNodes([...laidOutNodes]);
         setEdges([...laidOutEdges]);
+    }, [getNodes, hasAllNodeProviders, nodeProviders, processFlow.edges, processFlow.nodes, setEdges, setNodes]);
 
-        if (shouldFitView) {
-            fitView();
+    const handleNodesChange = useCallback((changes: NodeChange<FlowNode>[]) => {
+        onNodesChange(changes);
+
+        if (changes.some((change) => change.type === 'dimensions')) {
+            setNeedsMeasuredLayout(true);
         }
-    }, [fitView, nodeProviders, processFlow.edges, processFlow.nodes, setEdges, setNodes]);
+    }, [onNodesChange]);
 
     useEffect(() => {
-        layoutNodes();
-    }, [layoutNodes]);
+        hasPerformedInitialFitRef.current = false;
+    }, [processFlow.definition.id, processFlow.version.processVersion]);
+
+    useEffect(() => {
+        if (!hasAllNodeProviders) {
+            setNeedsMeasuredLayout(false);
+            setPendingFitView(false);
+            return;
+        }
+
+        layoutNodes(false);
+        setNeedsMeasuredLayout(true);
+
+        if (!hasPerformedInitialFitRef.current) {
+            hasPerformedInitialFitRef.current = true;
+            setPendingFitView(true);
+        }
+    }, [hasAllNodeProviders, layoutNodes, setEdges, setNodes]);
+
+    useEffect(() => {
+        if (!hasAllNodeProviders || !needsMeasuredLayout || !nodesInitialized) {
+            return;
+        }
+
+        layoutNodes(true);
+        setNeedsMeasuredLayout(false);
+    }, [hasAllNodeProviders, layoutNodes, needsMeasuredLayout, nodesInitialized]);
+
+    useEffect(() => {
+        if (!pendingFitView || needsMeasuredLayout) {
+            return;
+        }
+
+        const frameHandle = requestAnimationFrame(() => {
+            void fitView();
+            setPendingFitView(false);
+        });
+
+        return () => {
+            cancelAnimationFrame(frameHandle);
+        };
+    }, [edges, fitView, needsMeasuredLayout, nodes, pendingFitView]);
 
     return (
         // TODO: Move the provider upward to avoid unnecessary re-renders of the whole graph when only the context values change
         <ProcessFlowEditorProvider
             value={{
-                editable: runtimeData == null && editable,
+                editable: isEditable,
                 showTargetHandles,
 
                 selectedNode: selectedNode ?? null,
-                onSelectedNode: onSelectNode ?? (() => {
-                }),
 
                 onAddEdge: onAddEdge ?? (() => {
                 }),
@@ -129,12 +211,23 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                     actions={[
                         {
                             tooltip: 'layout',
-                            onClick: () => layoutNodes(true),
+                            onClick: () => {
+                                if (nodesInitialized) {
+                                    layoutNodes(true);
+                                } else {
+                                    layoutNodes(false);
+                                    setNeedsMeasuredLayout(true);
+                                }
+
+                                setPendingFitView(true);
+                            },
                             icon: <MobileLayout/>,
                         },
                         {
                             tooltip: 'fit view',
-                            onClick: () => fitView(),
+                            onClick: () => {
+                                void fitView();
+                            },
                             icon: <FitScreen/>,
                         },
                     ]}
@@ -145,9 +238,10 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
-                onNodesChange={onNodesChange}
+                onNodesChange={handleNodesChange}
                 onEdgesChange={onEdgesChange}
                 nodesDraggable={false}
+                nodesConnectable={isEditable}
                 elementsSelectable={false}
                 nodesFocusable={false}
                 edgesFocusable={false}
@@ -158,25 +252,31 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                     if (onSelectNode == null) {
                         return;
                     }
-                    onSelectNode(node.data.treeNode.node);
-                }}
-                onInit={() => {
-                    layoutNodes(true);
+                    onSelectNode(node.data.graphNode.node);
                 }}
                 onConnect={(a) => {
                     if (a.source == null || a.target == null || a.sourceHandle == null || onAddEdge == null) {
                         return;
                     }
 
-                    const sourceId = parseInt(a.source);
-                    const targetId = parseInt(a.target);
+                    const sourceId = Number.parseInt(a.source, 10);
+                    const targetId = Number.parseInt(a.target, 10);
+                    if (Number.isNaN(sourceId) || Number.isNaN(targetId)) {
+                        return;
+                    }
 
                     onAddEdge(sourceId, targetId, a.sourceHandle);
                 }}
                 onConnectStart={() => {
+                    if (!isEditable) {
+                        return;
+                    }
                     setShowTargetHandles(true);
                 }}
                 onConnectEnd={() => {
+                    if (!isEditable) {
+                        return;
+                    }
                     setShowTargetHandles(false);
                 }}
             >

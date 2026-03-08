@@ -10,6 +10,7 @@ import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-objec
 import Typography from '@mui/material/Typography';
 import {useConfirm} from '../../../../../../providers/confirm-provider';
 import {ExpandableCodeBlock} from '../../../../../../components/expandable-code-block/expandable-code-block';
+import {getLatestTaskForEdge} from './utils/runtime-task-utils';
 
 export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
     const theme = useTheme();
@@ -47,7 +48,7 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
     });
 
     const {
-        treeEdge,
+        graphEdge,
     } = useMemo(() => {
         if (optData == null) {
             throw new Error('Edge data is required for ProcessFlowEditorEdge');
@@ -55,35 +56,19 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
         return optData;
     }, [optData]);
 
-    const currentTaskForEdge = useMemo(() => {
-        if (runtimeData == null) {
-            return null;
-        }
-
-        return runtimeData
-            .tasks
-            .find((task) => (
-                task.processNodeId === treeEdge.edge.fromNodeId
-            )) ?? null;
-    }, [
-        runtimeData,
-        treeEdge,
-    ]);
-
     const nextTaskForEdge = useMemo(() => {
         if (runtimeData == null) {
             return null;
         }
 
-        return runtimeData
-            .tasks
-            .find((task) => (
-                task.previousProcessNodeId === treeEdge.edge.fromNodeId &&
-                task.processNodeId === treeEdge.edge.toNodeId
-            )) ?? null;
+        return getLatestTaskForEdge(
+            runtimeData.tasks,
+            graphEdge.edge.fromNodeId,
+            graphEdge.edge.toNodeId,
+        );
     }, [
+        graphEdge,
         runtimeData,
-        treeEdge,
     ]);
 
     const wasPerformed = nextTaskForEdge != null;
@@ -128,7 +113,7 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
                                 },
                             }}
                             onClick={() => {
-                                onAddInbetweenNode(treeEdge.edge.id);
+                                onAddInbetweenNode(graphEdge.edge.id);
                             }}
                         >
                             <Add
@@ -165,7 +150,7 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
                                                 Die weitergereichte Vorgangsdatenebene
                                             </Typography>
                                             <ExpandableCodeBlock
-                                                value={JSON.stringify(currentTaskForEdge?.processData, null, 2)}
+                                                value={JSON.stringify(nextTaskForEdge?.processData, null, 2)}
                                             />
                                         </>
                                     ),

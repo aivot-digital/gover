@@ -9,7 +9,6 @@ export interface ProcessFlowEditorContextType {
     showTargetHandles: boolean;
 
     selectedNode: ProcessNodeEntity | null;
-    onSelectedNode: (node: ProcessNodeEntity | null) => void;
 
     onAddEdge: (fromNodeId: number, toNodeId: number, viaPortKey: string) => void;
     onDeleteEdge: (forEdgeId: number) => void;

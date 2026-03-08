@@ -53,9 +53,9 @@ import {ProcessInstanceTaskApiService} from '../../services/process-instance-tas
 import {BaseApiService} from '../../../../services/base-api-service';
 import Download from '@aivot/mui-material-symbols-400-outlined/dist/download/Download';
 import Refresh from '@mui/icons-material/Refresh';
-import BugReport from '@aivot/mui-material-symbols-400-outlined/dist/bug-report/BugReport';
 import {ProcessInstanceEventDialog} from '../../dialogs/process-instance-event-dialog';
 import News from '@aivot/mui-material-symbols-400-outlined/dist/news/News';
+import {getProcessNodeProviderKey} from './components/process-flow-editor/utils/process-flow-graph-utils';
 
 interface RuntimeAttachment {
     key: string;
@@ -85,6 +85,10 @@ export function ProcessDetailsPage(): ReactNode {
     } | null>(null);
     const [isRefreshingRuntimeData, setIsRefreshingRuntimeData] = useState(false);
     const [availableNodeProviders, setAvailableNodeProviders] = useState<ProcessNodeProvider[]>([]);
+    const [flowNodeProviderCache, setFlowNodeProviderCache] = useState<Record<string, ProcessNodeProvider>>({});
+    const [isLoadingFlowNodeProviders, setIsLoadingFlowNodeProviders] = useState(false);
+    const [hasFlowNodeProviderLoadError, setHasFlowNodeProviderLoadError] = useState(false);
+    const [readyFlowEditorKey, setReadyFlowEditorKey] = useState<string | null>(null);
 
     const [showAddTriggerDialog, setShowAddTriggerDialog] = useState(false);
     const [newNodeFor, setNewNodeFor] = useState<{
@@ -200,6 +204,46 @@ export function ProcessDetailsPage(): ReactNode {
         return parseInt(instanceIdParam);
     }, [searchParams]);
 
+    const requiredFlowNodeProviders = useMemo(() => {
+        if (processFlow == null) {
+            return [];
+        }
+
+        return Array.from(new Map(
+            processFlow.nodes.map((node) => [
+                getProcessNodeProviderKey(node.processNodeDefinitionKey, node.processNodeDefinitionVersion),
+                {
+                    key: node.processNodeDefinitionKey,
+                    version: node.processNodeDefinitionVersion,
+                },
+            ]),
+        ).values());
+    }, [processFlow?.nodes]);
+
+    const requiredFlowNodeProviderSignature = useMemo(() => (
+        requiredFlowNodeProviders
+            .map((providerReference) => getProcessNodeProviderKey(providerReference.key, providerReference.version))
+            .sort()
+            .join('|')
+    ), [requiredFlowNodeProviders]);
+
+    const flowEditorKey = useMemo(() => {
+        if (processFlow == null) {
+            return null;
+        }
+
+        return `${processFlow.definition.id}:${processFlow.version.processVersion}`;
+    }, [processFlow]);
+
+    const flowNodeProviders = useMemo(() => (
+        requiredFlowNodeProviders
+            .map((providerReference) => flowNodeProviderCache[getProcessNodeProviderKey(providerReference.key, providerReference.version)])
+            .filter((provider): provider is ProcessNodeProvider => provider != null)
+    ), [flowNodeProviderCache, requiredFlowNodeProviders]);
+
+    const isFlowEditorReady = requiredFlowNodeProviderSignature.length === 0 || flowNodeProviders.length === requiredFlowNodeProviders.length;
+    const shouldKeepFlowEditorMounted = flowEditorKey != null && readyFlowEditorKey === flowEditorKey;
+
     const selectedNode = useMemo(() => {
         if (processFlow == null) {
             return null;
@@ -279,6 +323,75 @@ export function ProcessDetailsPage(): ReactNode {
                 dispatch(showApiErrorSnackbar(err, 'Die Testansprüche konnten nicht geladen werden.'));
             });
     }, [processId, processVersion]);
+
+    useEffect(() => {
+        if (requiredFlowNodeProviders.length === 0) {
+            setIsLoadingFlowNodeProviders(false);
+            setHasFlowNodeProviderLoadError(false);
+            return;
+        }
+
+        const missingProviderReferences = requiredFlowNodeProviders.filter((providerReference) => (
+            flowNodeProviderCache[getProcessNodeProviderKey(providerReference.key, providerReference.version)] == null
+        ));
+
+        if (missingProviderReferences.length === 0) {
+            setIsLoadingFlowNodeProviders(false);
+            setHasFlowNodeProviderLoadError(false);
+            return;
+        }
+
+        let cancelled = false;
+
+        setIsLoadingFlowNodeProviders(true);
+        setHasFlowNodeProviderLoadError(false);
+
+        Promise.all(missingProviderReferences.map((providerReference) => (
+            new ProcessNodeProviderApiService().getNodeProvider(providerReference.key, providerReference.version)
+        )))
+            .then((providers) => {
+                if (cancelled) {
+                    return;
+                }
+
+                setFlowNodeProviderCache((previousCache) => {
+                    const nextCache = {
+                        ...previousCache,
+                    };
+
+                    for (const provider of providers) {
+                        nextCache[getProcessNodeProviderKey(provider.key, provider.majorVersion)] = provider;
+                    }
+
+                    return nextCache;
+                });
+            })
+            .catch((error) => {
+                if (cancelled) {
+                    return;
+                }
+
+                setHasFlowNodeProviderLoadError(true);
+                dispatch(showApiErrorSnackbar(error, 'Die für die Prozessansicht benötigten Knotendefinitionen konnten nicht geladen werden.'));
+            })
+            .finally(() => {
+                if (cancelled) {
+                    return;
+                }
+
+                setIsLoadingFlowNodeProviders(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [dispatch, flowNodeProviderCache, requiredFlowNodeProviders]);
+
+    useEffect(() => {
+        if (isFlowEditorReady && flowEditorKey != null && readyFlowEditorKey !== flowEditorKey) {
+            setReadyFlowEditorKey(flowEditorKey);
+        }
+    }, [flowEditorKey, isFlowEditorReady, readyFlowEditorKey]);
 
     const loadRuntimeData = useCallback(() => {
         if (instanceId == null) {
@@ -402,6 +515,17 @@ export function ProcessDetailsPage(): ReactNode {
         const edgeApi = new ProcessDefinitionEdgeApiService();
 
         if (existingEdge != null) {
+            if (nodeProvider.ports.length === 0) {
+                dispatch(addSnackbarMessage({
+                    key: 'process-follow-up-node-missing-port',
+                    type: SnackbarType.AutoHiding,
+                    severity: SnackbarSeverity.Warning,
+                    message: 'Dieser Knotentyp kann hier nicht eingefügt werden, da er keinen Ausgangsport besitzt.',
+                }));
+                dispatch(clearLoadingMessage());
+                return;
+            }
+
             await edgeApi.destroy(existingEdge.id);
         }
 
@@ -464,6 +588,17 @@ export function ProcessDetailsPage(): ReactNode {
             blocking: false,
             estimatedTime: 1000,
         }));
+
+        if (nodeProvider.ports.length === 0) {
+            dispatch(addSnackbarMessage({
+                key: 'process-inbetween-node-missing-port',
+                type: SnackbarType.AutoHiding,
+                severity: SnackbarSeverity.Warning,
+                message: 'Dieser Knotentyp kann hier nicht eingefügt werden, da er keinen Ausgangsport besitzt.',
+            }));
+            dispatch(clearLoadingMessage());
+            return;
+        }
 
         const edgeApi = new ProcessDefinitionEdgeApiService();
 
@@ -773,73 +908,95 @@ export function ProcessDetailsPage(): ReactNode {
                             mt: 2,
                         }}
                     >
-                        <ReactFlowProvider>
-                            <ProcessFlowEditor
-                                editable={currentTestClaim == null}
-                                processFlow={processFlow}
-                                nodeProviders={availableNodeProviders}
-                                selectedNode={selectedNode}
-                                onSelectNode={(node) => {
-                                    if (node == null) {
-                                        navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}?${searchParams.toString()}`);
-                                        return;
-                                    }
-                                    navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}/nodes/${node.id}?${searchParams.toString()}`);
-                                }}
-                                onAddFollowUpNode={(fromNodeId, viaPort) => {
-                                    setNewNodeFor({
-                                        fromNodeId,
-                                        viaPort,
-                                    });
-                                }}
-                                onAddInbetweenNode={(forEdgeId) => {
-                                    setNewNodeOnEdgeId(forEdgeId);
-                                }}
-                                onAddEdge={(fromNodeId, toNodeId, viaPortKey) => {
-                                    new ProcessDefinitionEdgeApiService()
-                                        .create({
-                                            id: 0,
-                                            processId: processFlow.definition.id,
-                                            processVersion: processFlow.version.processVersion,
-                                            fromNodeId,
-                                            toNodeId,
-                                            viaPort: viaPortKey,
-                                        })
-                                        .then((newEdge) => {
-                                            setProcessFlow((prevProcess) => {
-                                                if (prevProcess == null) {
-                                                    return prevProcess;
-                                                }
-
-                                                return {
-                                                    ...prevProcess,
-                                                    edges: [
-                                                        ...prevProcess.edges,
-                                                        newEdge,
-                                                    ],
-                                                };
+                        {
+                            isFlowEditorReady || shouldKeepFlowEditorMounted ?
+                                <ReactFlowProvider>
+                                    <ProcessFlowEditor
+                                        editable={currentTestClaim == null}
+                                        processFlow={processFlow}
+                                        nodeProviders={flowNodeProviders}
+                                        selectedNode={selectedNode}
+                                        onSelectNode={(node) => {
+                                            if (node == null) {
+                                                navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}?${searchParams.toString()}`);
+                                                return;
+                                            }
+                                            navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}/nodes/${node.id}?${searchParams.toString()}`);
+                                        }}
+                                        onAddFollowUpNode={(fromNodeId, viaPort) => {
+                                            setNewNodeFor({
+                                                fromNodeId,
+                                                viaPort,
                                             });
-                                        });
-                                }}
-                                onDeleteEdge={(edgeId) => {
-                                    new ProcessDefinitionEdgeApiService()
-                                        .destroy(edgeId)
-                                        .then(() => {
-                                            setProcessFlow((prevProcess) => {
-                                                if (prevProcess == null) {
-                                                    return prevProcess;
-                                                }
+                                        }}
+                                        onAddInbetweenNode={(forEdgeId) => {
+                                            setNewNodeOnEdgeId(forEdgeId);
+                                        }}
+                                        onAddEdge={(fromNodeId, toNodeId, viaPortKey) => {
+                                            new ProcessDefinitionEdgeApiService()
+                                                .create({
+                                                    id: 0,
+                                                    processId: processFlow.definition.id,
+                                                    processVersion: processFlow.version.processVersion,
+                                                    fromNodeId,
+                                                    toNodeId,
+                                                    viaPort: viaPortKey,
+                                                })
+                                                .then((newEdge) => {
+                                                    setProcessFlow((prevProcess) => {
+                                                        if (prevProcess == null) {
+                                                            return prevProcess;
+                                                        }
 
-                                                return {
-                                                    ...prevProcess,
-                                                    edges: prevProcess.edges.filter((edge) => edge.id !== edgeId),
-                                                };
-                                            });
-                                        });
-                                }}
-                                runtimeData={runtimeData}
-                            />
-                        </ReactFlowProvider>
+                                                        return {
+                                                            ...prevProcess,
+                                                            edges: [
+                                                                ...prevProcess.edges,
+                                                                newEdge,
+                                                            ],
+                                                        };
+                                                    });
+                                                });
+                                        }}
+                                        onDeleteEdge={(edgeId) => {
+                                            new ProcessDefinitionEdgeApiService()
+                                                .destroy(edgeId)
+                                                .then(() => {
+                                                    setProcessFlow((prevProcess) => {
+                                                        if (prevProcess == null) {
+                                                            return prevProcess;
+                                                        }
+
+                                                        return {
+                                                            ...prevProcess,
+                                                            edges: prevProcess.edges.filter((edge) => edge.id !== edgeId),
+                                                        };
+                                                    });
+                                                });
+                                        }}
+                                        runtimeData={runtimeData}
+                                    />
+                                </ReactFlowProvider> :
+                                <Paper
+                                    sx={{
+                                        height: '100%',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        p: 2,
+                                    }}
+                                >
+                                    <Typography color="text.secondary">
+                                        {
+                                            hasFlowNodeProviderLoadError ?
+                                                'Die versionierten Prozessknoten konnten nicht geladen werden.' :
+                                                isLoadingFlowNodeProviders ?
+                                                    'Lade versionierte Prozessknoten...' :
+                                                    'Bereite Prozessknoten vor...'
+                                        }
+                                    </Typography>
+                                </Paper>
+                        }
                     </Box>
 
                     {
@@ -916,7 +1073,22 @@ export function ProcessDetailsPage(): ReactNode {
             <SelectNodeProviderDialog
                 open={newNodeFor != null}
                 nodeProviders={availableNodeProviders}
-                filter={(provider) => provider.type !== ProcessNodeType.Trigger}
+                filter={(provider) => {
+                    if (provider.type === ProcessNodeType.Trigger) {
+                        return false;
+                    }
+
+                    if (newNodeFor == null) {
+                        return true;
+                    }
+
+                    const requiresOutgoingPort = processFlow.edges.some((edge) => (
+                        edge.fromNodeId === newNodeFor.fromNodeId &&
+                        edge.viaPort === newNodeFor.viaPort
+                    ));
+
+                    return !requiresOutgoingPort || provider.ports.length > 0;
+                }}
                 onClose={() => {
                     setNewNodeFor(null);
                 }}
@@ -926,7 +1098,10 @@ export function ProcessDetailsPage(): ReactNode {
             <SelectNodeProviderDialog
                 open={newNodeOnEdgeId != null}
                 nodeProviders={availableNodeProviders}
-                filter={(provider) => provider.type !== ProcessNodeType.Trigger && provider.type !== ProcessNodeType.Termination}
+                filter={(provider) => (
+                    provider.type !== ProcessNodeType.Trigger &&
+                    provider.ports.length > 0
+                )}
                 onClose={() => {
                     setNewNodeOnEdgeId(null);
                 }}
