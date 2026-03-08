@@ -590,10 +590,10 @@ function getProcessDataOperandLabel(
     source: 'PROCESS' | 'INSTANCE' | 'NODE',
 ): string {
     const sourceLabel = source === 'INSTANCE'
-        ? 'Instanzdaten'
+        ? 'Geschützte Vorgangsdaten'
         : source === 'NODE'
-            ? `Knotendaten (${(operand as NoCodeNodeDataReference).nodeDataKey ?? 'kein Schlüssel'})`
-            : 'Prozessdaten';
+            ? `Elementdaten (${(operand as NoCodeNodeDataReference).nodeDataKey ?? 'kein Schlüssel'})`
+            : 'Vorgangsdaten';
 
     if (isStringNullOrEmpty(operand.path)) {
         return sourceLabel;

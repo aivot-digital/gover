@@ -31,18 +31,18 @@ export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEdit
     const isProcessDataReference = isNoCodeProcessDataReference(value);
     const isNodeDataReference = isNoCodeNodeDataReference(value);
     const sourceLabel = isProcessDataReference
-        ? 'Prozessdaten ($)'
+        ? 'Vorgangsdaten ($)'
         : isNodeDataReference
-            ? 'Knotendaten (_)'
-            : 'Instanzdaten ($$)';
+            ? 'Elementdaten (_)'
+            : 'Geschützte Vorgangsdaten ($$)';
 
     return (
         <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
             {
                 isNodeDataReference &&
                 <TextFieldComponent
-                    label="Knotenschlüssel"
-                    hint="Der dataKey des Prozessknotens, dessen Ergebnis gelesen werden soll."
+                    label="Datenschlüssel"
+                    hint="Der Datenschlüssel des Prozessknotens, dessen Ergebnis gelesen werden soll."
                     value={value.nodeDataKey ?? undefined}
                     onChange={(nodeDataKey) => onChange({
                         ...value,
@@ -66,7 +66,7 @@ export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEdit
                 endAction={[
                     {
                         icon: <Delete />,
-                        tooltip: 'Diesen Prozessdaten-Verweis löschen',
+                        tooltip: 'Diesen Vorgangsdaten-Verweis löschen',
                         onClick: () => onChange(undefined),
                     },
                     {

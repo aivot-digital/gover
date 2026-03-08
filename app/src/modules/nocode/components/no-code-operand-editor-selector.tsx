@@ -109,7 +109,7 @@ export function NoCodeOperandEditorSelector(props: NoCodeOperandEditorSelectorPr
                                 });
                             }}
                         >
-                            Prozessdaten
+                            Vorgangsdaten
                         </Button>
                         <Button
                             onClick={() => setShowProcessDataReferenceHelp(true)}
@@ -131,7 +131,7 @@ export function NoCodeOperandEditorSelector(props: NoCodeOperandEditorSelectorPr
                                 });
                             }}
                         >
-                            Instanzdaten
+                            Geschützte Vorgangsdaten
                         </Button>
                         <Button
                             onClick={() => setShowInstanceDataReferenceHelp(true)}
@@ -154,7 +154,7 @@ export function NoCodeOperandEditorSelector(props: NoCodeOperandEditorSelectorPr
                                 });
                             }}
                         >
-                            Knotendaten
+                            Elementdaten
                         </Button>
                         <Button
                             onClick={() => setShowNodeDataReferenceHelp(true)}
@@ -229,16 +229,16 @@ export function NoCodeOperandEditorSelector(props: NoCodeOperandEditorSelectorPr
             </InfoDialog>
 
             <InfoDialog
-                title="Prozessdaten"
+                title="Vorgangsdaten"
                 severity="info"
                 open={showProcessDataReferenceHelp}
                 onClose={() => setShowProcessDataReferenceHelp(false)}
             >
                 <Typography gutterBottom>
-                    Mit der Option „Prozessdaten” können Sie auf Daten aus dem Prozesskontext zugreifen.
+                    Mit der Option „Vorgangsdaten” können Sie auf Daten aus dem Prozesskontext zugreifen.
                 </Typography>
                 <Typography gutterBottom>
-                    Diese Option greift auf den Prozessdaten-Kontext (`$`) zu.
+                    Diese Option greift auf den Vorgangsdaten-Kontext (`$`) zu.
                 </Typography>
                 <Typography>
                     Über einen optionalen Pfad können Sie gezielt verschachtelte Werte auslesen.
@@ -246,13 +246,13 @@ export function NoCodeOperandEditorSelector(props: NoCodeOperandEditorSelectorPr
             </InfoDialog>
 
             <InfoDialog
-                title="Instanzdaten"
+                title="Geschützte Vorgangsdaten"
                 severity="info"
                 open={showInstanceDataReferenceHelp}
                 onClose={() => setShowInstanceDataReferenceHelp(false)}
             >
                 <Typography gutterBottom>
-                    Diese Option greift auf Instanzdaten (`$$`) zu.
+                    Diese Option greift auf Geschützte Vorgangsdaten (`$$`) zu.
                 </Typography>
                 <Typography>
                     Über einen optionalen Pfad können Sie gezielt verschachtelte Werte auslesen.
@@ -260,16 +260,16 @@ export function NoCodeOperandEditorSelector(props: NoCodeOperandEditorSelectorPr
             </InfoDialog>
 
             <InfoDialog
-                title="Knotendaten"
+                title="Elementdaten"
                 severity="info"
                 open={showNodeDataReferenceHelp}
                 onClose={() => setShowNodeDataReferenceHelp(false)}
             >
                 <Typography gutterBottom>
-                    Diese Option greift auf Knotendaten (`_`) zu.
+                    Diese Option greift auf Elementdaten (`_`) zu.
                 </Typography>
                 <Typography>
-                    Für Knotendaten muss zusätzlich der Knotenschlüssel angegeben werden.
+                    Für Elementdaten muss zusätzlich der Datenschlüssel des Prozesselementes angegeben werden.
                 </Typography>
             </InfoDialog>
 
