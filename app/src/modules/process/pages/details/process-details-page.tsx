@@ -975,7 +975,7 @@ export function ProcessDetailsPage(): ReactNode {
             'separator',
             {
                 label: 'Veröffentlichen',
-                tooltip: 'Veröffentlichen',
+                tooltip: 'Prozessversion veröffentlichen',
                 disabledTooltip: 'Während des Tests kann der Prozess nicht veröffentlicht werden.',
                 icon: null,
                 onClick: showNotImplementedHeaderActionMessage,
