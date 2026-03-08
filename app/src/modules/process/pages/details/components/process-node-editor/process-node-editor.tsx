@@ -253,6 +253,7 @@ export function ProcessNodeEditor(): ReactNode {
                             gap: 2,
                             px: 2,
                             pt: 1,
+                            minWidth: 0,
                         }}
                     >
                         <Box
@@ -262,6 +263,10 @@ export function ProcessNodeEditor(): ReactNode {
                                 justifyContent: 'center',
                                 width: 32,
                                 height: 32,
+                                minWidth: 32,
+                                minHeight: 32,
+                                aspectRatio: '1 / 1',
+                                flexShrink: 0,
                                 borderRadius: '50%',
                                 backgroundColor: typeBgColor,
                                 color: typeTextColor,
@@ -270,32 +275,60 @@ export function ProcessNodeEditor(): ReactNode {
                             <TypeIcon/>
                         </Box>
 
-                        <Box>
-                            <Typography variant="caption">
+                        <Box
+                            sx={{
+                                flex: 1,
+                                minWidth: 0,
+                            }}
+                        >
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    display: 'block',
+                                    lineHeight: 1.2,
+                                }}
+                            >
                                 {typeLabel}
                             </Typography>
 
-                            <Typography
-                                fontWeight="bold"
-                                component="div"
+                            <Box
                                 sx={{
-                                    mt: -0.5,
+                                    mt: -0.25,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1,
+                                    minWidth: 0,
                                 }}
                             >
-                                {provider.name} <Chip
+                                <Typography
+                                    fontWeight="bold"
+                                    component="div"
+                                    title={provider.name}
+                                    sx={{
+                                        flex: 1,
+                                        minWidth: 0,
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                    }}
+                                >
+                                    {provider.name}
+                                </Typography>
+                                <Chip
                                     label={`Version ${provider.majorVersion}`}
                                     size="small"
                                     sx={{
-                                        ml: 1,
                                         fontWeight: 'normal',
+                                        flexShrink: 0,
                                     }}
                                 />
-                            </Typography>
+                            </Box>
                         </Box>
 
                         <IconButton
                             sx={{
                                 marginLeft: 'auto',
+                                flexShrink: 0,
                             }}
                             onClick={(event) => {
                                 setMenuAnchorEl(event.target as HTMLElement);

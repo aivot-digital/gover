@@ -111,7 +111,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition {
         var conditionTypeField = new RadioInputElement();
         conditionTypeField.setId(CONDITION_TYPE_FIELD_ID);
         conditionTypeField.setLabel("Bedingungsart");
-        conditionTypeField.setHint("Wählen Sie aus, ob die If-Bedingung mit No-Code oder Low-Code (JavaScript) definiert wird.");
+        conditionTypeField.setHint("Wählen Sie aus, mit welchem Typ/Editor die Bedingung definiert wird.");
         conditionTypeField.setRequired(false);
         conditionTypeField.setToggleButtons(true);
         conditionTypeField.setDisplayInline(true);
