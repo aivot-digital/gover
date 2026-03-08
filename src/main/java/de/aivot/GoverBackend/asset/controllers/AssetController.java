@@ -76,7 +76,7 @@ public class AssetController {
                            VStorageIndexItemWithAssetRepository storageIndexItemWithAssetRepository,
                            StorageService storageService,
                            AssetRepository assetRepository) {
-        this.auditService = auditService.createScopedAuditService(AssetController.class);
+        this.auditService = auditService.createScopedAuditService(AssetController.class, MODULE_NAME);
 
         this.userService = userService;
         this.permissionService = permissionService;
@@ -165,7 +165,6 @@ public class AssetController {
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Create,
-                        MODULE_NAME,
                         AssetEntity.class,
                         created.getPathFromRoot(),
                         "storagePathFromRoot",
@@ -211,7 +210,6 @@ public class AssetController {
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Delete,
-                        MODULE_NAME,
                         AssetEntity.class,
                         folderPath,
                         "storagePathFromRoot",
@@ -280,7 +278,6 @@ public class AssetController {
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Create,
-                        MODULE_NAME,
                         AssetEntity.class,
                         filePath,
                         "storagePathFromRoot",
@@ -387,7 +384,6 @@ public class AssetController {
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Update,
-                        MODULE_NAME,
                         AssetEntity.class,
                         filePath,
                         "storagePathFromRoot",
@@ -513,7 +509,6 @@ public class AssetController {
                 .withUser(user)
                 .withAuditAction(
                         AuditAction.Update,
-                        MODULE_NAME,
                         AssetEntity.class,
                         sourcePath,
                         "storagePathFromRoot",
@@ -593,7 +588,6 @@ public class AssetController {
                 .withUser(user)
                 .withAuditAction(
                         AuditAction.Create,
-                        MODULE_NAME,
                         AssetEntity.class,
                         targetPath,
                         "storagePathFromRoot",
@@ -641,7 +635,6 @@ public class AssetController {
                 .withUser(user)
                 .withAuditAction(
                         AuditAction.Delete,
-                        MODULE_NAME,
                         AssetEntity.class,
                         filePath,
                         "storagePathFromRoot",

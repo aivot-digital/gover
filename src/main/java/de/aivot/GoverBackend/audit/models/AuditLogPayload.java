@@ -42,9 +42,6 @@ public class AuditLogPayload {
     private String entityRefType;
 
     @Nullable
-    private String module;
-
-    @Nullable
     private String message;
 
     @Nullable
@@ -82,16 +79,14 @@ public class AuditLogPayload {
     }
 
     public AuditLogPayload withAuditAction(@Nonnull AuditAction action,
-                                           @Nonnull String module,
                                            @Nonnull Class<?> entityClass,
                                            @Nonnull Object entityId,
                                            @Nonnull String entityRefType) {
         return this
-                .withAuditAction(action, module, entityClass, entityId, entityRefType, Map.of());
+                .withAuditAction(action, entityClass, entityId, entityRefType, Map.of());
     }
 
     public AuditLogPayload withAuditAction(@Nonnull AuditAction action,
-                                           @Nonnull String module,
                                            @Nonnull Class<?> entityClass,
                                            @Nonnull Object entityId,
                                            @Nonnull String entityRefType,
@@ -108,16 +103,13 @@ public class AuditLogPayload {
                 .setEntityType(entityClass.getSimpleName())
                 .setEntityRef(String.valueOf(entityId))
                 .setEntityRefType(entityRefType)
-                .setModule(module)
                 .setMessage(action.name() + " " + entityClass.getSimpleName() + " #" + entityId)
                 .setMetadata(me);
     }
 
     public AuditLogPayload withException(@Nullable Throwable exception,
-                                         @Nonnull String module,
                                          @Nonnull Class<?> sourceClass) {
         return this
-                .setModule(module)
                 .setTriggerType("Exception")
                 .setEntityType("Exception")
                 .setMessage(exception != null ? exception.getMessage() : "Unknown exception")
@@ -279,16 +271,6 @@ public class AuditLogPayload {
 
     public AuditLogPayload setEntityRefType(@Nullable String entityRefType) {
         this.entityRefType = entityRefType;
-        return this;
-    }
-
-    @Nullable
-    public String getModule() {
-        return module;
-    }
-
-    public AuditLogPayload setModule(@Nullable String module) {
-        this.module = module;
         return this;
     }
 

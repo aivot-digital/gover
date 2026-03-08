@@ -4,6 +4,7 @@ create table audit_logs
     timestamp       timestamp    not null default now(),
     actor_type      varchar(32)  not null,
     actor_id        varchar(255) null,
+    origin          text         not null,
     trigger_type    varchar(64)  not null,
     entity_type     varchar(128) not null,
     entity_ref      varchar(255) null,
