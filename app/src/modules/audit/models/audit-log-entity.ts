@@ -8,6 +8,7 @@ export interface AuditLogEntity {
     entityRef?: string | null;
     entityRefType?: string | null;
     module: string;
+    message?: string | null;
     diff?: Record<string, unknown> | null;
     metadata: Record<string, unknown>;
     ipAddress?: string;

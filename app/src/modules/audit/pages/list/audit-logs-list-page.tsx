@@ -17,6 +17,7 @@ import {getTriggerTypeColor, getTriggerTypeIcon, getTriggerTypeLabel} from '../.
 import {getActorTypeColor, getActorTypeIcon, getActorTypeLabel} from '../../data/actor-type';
 import {UsersApiService} from '../../../users/users-api-service';
 import {User} from '../../../users/models/user';
+import {AuditLogDetailsDialogContent} from './audit-log-details-dialog-content';
 
 
 const actorFilters = [
@@ -94,18 +95,6 @@ function trimValue(value: string | undefined, maxLength: number = 28): string {
     }
 
     return `${value.slice(0, maxLength - 1)}…`;
-}
-
-function hasEntries(value: Record<string, unknown> | null | undefined): boolean {
-    return value != null && Object.keys(value).length > 0;
-}
-
-function prettyJson(value: Record<string, unknown> | null | undefined): string {
-    if (value == null) {
-        return '{}';
-    }
-
-    return JSON.stringify(value, null, 2);
 }
 
 export function AuditLogsListPage(): ReactNode {
@@ -321,65 +310,10 @@ export function AuditLogsListPage(): ReactNode {
                                 hideCancelButton: true,
                                 confirmButtonText: 'Schließen',
                                 children: (
-                                    <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-                                        <Box>
-                                            <Typography variant="subtitle2">Basisdaten</Typography>
-                                            <Typography variant="body2">Zeitpunkt: {formatDateTime(row.timestamp)}</Typography>
-                                            <Typography variant="body2">Trigger: {row.triggerType}</Typography>
-                                            <Typography variant="body2">
-                                                Akteur: {row.actorType === 'User'
-                                                ? (row.actorId != null
-                                                    ? (usersById[row.actorId.trim()]?.fullName?.trim() || row.actorId)
-                                                    : getActorTypeLabel(row.actorType))
-                                                : getActorTypeLabel(row.actorType)}
-                                                {row.actorId != null ? ` (${row.actorId})` : ''}
-                                            </Typography>
-                                            <Typography variant="body2">Referenz: {row.entityRef ?? '-'}</Typography>
-                                            <Typography variant="body2">Referenz-Typ: {row.entityRefType ?? '-'}</Typography>
-                                            <Typography variant="body2">Modul: {row.module}</Typography>
-                                            <Typography variant="body2">IP-Adresse: {row.ipAddress ?? '-'}</Typography>
-                                        </Box>
-
-                                        <Box>
-                                            <Typography variant="subtitle2">Diff</Typography>
-                                            <Box
-                                                component="pre"
-                                                sx={{
-                                                    m: 0,
-                                                    p: 1.25,
-                                                    borderRadius: 1,
-                                                    bgcolor: 'background.default',
-                                                    border: '1px solid',
-                                                    borderColor: 'divider',
-                                                    overflowX: 'auto',
-                                                    fontSize: '0.75rem',
-                                                    lineHeight: 1.5,
-                                                }}
-                                            >
-                                                {prettyJson(row.diff)}
-                                            </Box>
-                                        </Box>
-
-                                        <Box>
-                                            <Typography variant="subtitle2">Metadata</Typography>
-                                            <Box
-                                                component="pre"
-                                                sx={{
-                                                    m: 0,
-                                                    p: 1.25,
-                                                    borderRadius: 1,
-                                                    bgcolor: 'background.default',
-                                                    border: '1px solid',
-                                                    borderColor: 'divider',
-                                                    overflowX: 'auto',
-                                                    fontSize: '0.75rem',
-                                                    lineHeight: 1.5,
-                                                }}
-                                            >
-                                                {prettyJson(row.metadata)}
-                                            </Box>
-                                        </Box>
-                                    </Box>
+                                    <AuditLogDetailsDialogContent
+                                        row={row}
+                                        usersById={usersById}
+                                    />
                                 ),
                             });
                         },
