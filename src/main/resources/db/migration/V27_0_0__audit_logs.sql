@@ -6,7 +6,7 @@ create table audit_logs
     actor_id        varchar(255) null,
     origin          text         not null,
     trigger_type    varchar(64)  not null,
-    entity_type     varchar(128) not null,
+    entity_type     varchar(128) null,
     entity_ref      varchar(255) null,
     entity_ref_type varchar(64)  null,
     module          varchar(128) not null,
