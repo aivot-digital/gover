@@ -10,7 +10,6 @@ import {ProcessDefinitionEdgeApiService} from '../../services/process-definition
 import {type ProcessVersionEntity} from '../../entities/process-version-entity';
 import {ProcessNodeApiService} from '../../services/process-node-api-service';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
-import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {GenericPageHeader} from '../../../../components/generic-page-header/generic-page-header';
 import Add from '@aivot/mui-material-symbols-400-outlined/dist/add/Add';
@@ -57,6 +56,10 @@ import Refresh from '@mui/icons-material/Refresh';
 import {ProcessInstanceEventDialog} from '../../dialogs/process-instance-event-dialog';
 import News from '@aivot/mui-material-symbols-400-outlined/dist/news/News';
 import {getProcessNodeProviderKey} from './components/process-flow-editor/utils/process-flow-graph-utils';
+import {ProcessDetailsPageSkeleton} from './components/process-details-page-skeleton';
+import {useDelayedVisibility} from '../../../../hooks/use-delayed-visibility';
+
+const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 150;
 
 interface RuntimeAttachment {
     key: string;
@@ -105,6 +108,7 @@ export function ProcessDetailsPage(): ReactNode {
 
     const [showMenuAtEl, setShowMenuAtEl] = useState<HTMLElement | null>(null);
     const [showProcessInstanceEventsDialog, setShowProcessInstanceEventsDialog] = useState(false);
+    const showProcessDetailsPageSkeleton = useDelayedVisibility(processFlow == null, PROCESS_DETAILS_PAGE_SKELETON_DELAY);
 
     const runtimeAttachments = useMemo(() => {
         if (runtimeData == null) {
@@ -851,8 +855,22 @@ export function ProcessDetailsPage(): ReactNode {
     };
 
     if (processFlow == null) {
+        if (showProcessDetailsPageSkeleton) {
+            return <ProcessDetailsPageSkeleton/>;
+        }
+
         return (
-            <GenericDetailsSkeleton/>
+            <PageWrapper
+                title="Prozess"
+                fullWidth={true}
+                fullHeight={true}
+            >
+                <Box
+                    sx={{
+                        height: '100vh',
+                    }}
+                />
+            </PageWrapper>
         );
     }
 
