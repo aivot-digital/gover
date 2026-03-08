@@ -238,14 +238,14 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
                                 event.preventDefault();
 
                                 confirm({
-                                    title: 'Prozesselementdaten',
+                                    title: 'Elementdaten',
                                     width: 'md',
                                     hideCancelButton: true,
                                     confirmButtonText: 'Schließen',
                                     children: (
                                         <>
                                             <Typography variant="h6">
-                                                Die erzeugten Prozesselementdaten
+                                                Die erzeugten Elementdaten
                                             </Typography>
                                             <ExpandableCodeBlock
                                                 value={JSON.stringify(associatedTask?.nodeData, null, 2)}
