@@ -82,9 +82,6 @@ export function buildProcessFlowGraph(
         ));
     }
 
-    graphNodes.sort((a, b) => a.node.id - b.node.id);
-    graphEdges.sort((a, b) => a.edge.id - b.edge.id);
-
     return {
         nodes: graphNodes,
         edges: graphEdges,

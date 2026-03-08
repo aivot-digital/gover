@@ -94,6 +94,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         includeHiddenNodes: true,
     });
     const hasPerformedInitialFitRef = useRef<boolean>(false);
+    const layoutRequestIdRef = useRef<number>(0);
 
     const isEditable = runtimeData == null && editable;
     const hasAllNodeProviders = useMemo(() => (
@@ -105,23 +106,38 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         ))
     ), [nodeProviders, processFlow.nodes]);
 
-    const layoutNodes = useCallback((nodeMeasurements?: ReturnType<typeof createNodeMeasurementMap>) => {
+    const layoutNodes = useCallback(async (nodeMeasurements?: ReturnType<typeof createNodeMeasurementMap>) => {
         if (!hasAllNodeProviders) {
             return;
         }
 
-        const {
-            flowNodes: laidOutNodes,
-            flowEdges: laidOutEdges,
-        } = layoutElements(
-            processFlow.nodes,
-            processFlow.edges,
-            nodeProviders,
-            nodeMeasurements,
-        );
+        const layoutRequestId = layoutRequestIdRef.current + 1;
+        layoutRequestIdRef.current = layoutRequestId;
 
-        setNodes([...laidOutNodes]);
-        setEdges([...laidOutEdges]);
+        try {
+            const {
+                flowNodes: laidOutNodes,
+                flowEdges: laidOutEdges,
+            } = await layoutElements(
+                processFlow.nodes,
+                processFlow.edges,
+                nodeProviders,
+                nodeMeasurements,
+            );
+
+            if (layoutRequestIdRef.current !== layoutRequestId) {
+                return;
+            }
+
+            setNodes([...laidOutNodes]);
+            setEdges([...laidOutEdges]);
+        } catch (error) {
+            if (layoutRequestIdRef.current !== layoutRequestId) {
+                return;
+            }
+
+            console.error('Failed to layout process flow', error);
+        }
     }, [hasAllNodeProviders, nodeProviders, processFlow.edges, processFlow.nodes, setEdges, setNodes]);
 
     const handleNodesChange = useCallback((changes: NodeChange<FlowNode>[]) => {
@@ -156,7 +172,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
             );
         });
 
-        layoutNodes(hasAnyMeasuredNodes ? currentNodeMeasurements : undefined);
+        void layoutNodes(hasAnyMeasuredNodes ? currentNodeMeasurements : undefined);
         setNeedsMeasuredLayout(!hasMeasurementsForAllNodes);
 
         if (!hasPerformedInitialFitRef.current) {
@@ -170,7 +186,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
             return;
         }
 
-        layoutNodes(createNodeMeasurementMap(getNodes()));
+        void layoutNodes(createNodeMeasurementMap(getNodes()));
         setNeedsMeasuredLayout(false);
     }, [getNodes, hasAllNodeProviders, layoutNodes, needsMeasuredLayout, nodesInitialized]);
 
@@ -226,9 +242,9 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                             tooltip: 'layout',
                             onClick: () => {
                                 if (nodesInitialized) {
-                                    layoutNodes(createNodeMeasurementMap(getNodes()));
+                                    void layoutNodes(createNodeMeasurementMap(getNodes()));
                                 } else {
-                                    layoutNodes();
+                                    void layoutNodes();
                                     setNeedsMeasuredLayout(true);
                                 }
 

@@ -300,8 +300,9 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
                 <Box
                     sx={{
                         position: 'relative',
-                        display: 'flex',
-                        justifyContent: 'space-evenly',
+                        display: 'grid',
+                        gridTemplateColumns: `repeat(${Math.max(provider.ports.length, 1)}, minmax(0, 1fr))`,
+                        justifyItems: 'center',
                         alignItems: 'stretch',
                         width: '100%',
                     }}

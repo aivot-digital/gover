@@ -3,7 +3,7 @@ import {Box, IconButton, useTheme} from '@mui/material';
 import {Add} from '@mui/icons-material';
 import React, {type ReactNode, useMemo} from 'react';
 import {useProcessFlowEditorContext} from './process-flow-editor-context';
-import {type FlowEdge} from './utils/layout-utils';
+import {type FlowEdge, type FlowPathPoint} from './utils/layout-utils';
 import {ADD_BUTTON_SIZE, HANDLE_COLOR, HANDLE_WIDTH} from './data/process-flow-constants';
 import './process-flow-editor-animations.css';
 import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
@@ -34,7 +34,7 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
 
     const {
         graphEdge,
-        route,
+        routePoints,
     } = useMemo(() => {
         if (optData == null) {
             throw new Error('Edge data is required for ProcessFlowEditorEdge');
@@ -60,99 +60,15 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
     const wasPerformed = nextTaskForEdge != null;
     const {
         edgePath,
-        labelX,
-        labelY,
+        labelPoint,
     } = useMemo(() => {
-        if (route.kind === 'rail' && route.railX != null) {
-            const sourceBendY = sourceY + 28;
-            const targetBendY = targetY - 24;
-
-            return {
-                edgePath: buildOrthogonalPath([
-                    {
-                        x: sourceX,
-                        y: sourceY,
-                    },
-                    {
-                        x: sourceX,
-                        y: sourceBendY,
-                    },
-                    {
-                        x: route.railX,
-                        y: sourceBendY,
-                    },
-                    {
-                        x: route.railX,
-                        y: targetBendY,
-                    },
-                    {
-                        x: targetX,
-                        y: targetBendY,
-                    },
-                    {
-                        x: targetX,
-                        y: targetY,
-                    },
-                ]),
-                labelX: route.railX,
-                labelY: sourceBendY + ((targetBendY - sourceBendY) / 2),
-            };
-        }
-
-        if (Math.abs(targetX - sourceX) <= 12) {
-            const remainingHeight = targetY - sourceY;
-            const targetApproachY = targetY - Math.min(28, Math.max(18, remainingHeight / 3));
-
-            return {
-                edgePath: buildOrthogonalPath([
-                    {
-                        x: sourceX,
-                        y: sourceY,
-                    },
-                    {
-                        x: sourceX,
-                        y: targetApproachY,
-                    },
-                    {
-                        x: targetX,
-                        y: targetApproachY,
-                    },
-                    {
-                        x: targetX,
-                        y: targetY,
-                    },
-                ]),
-                labelX: sourceX,
-                labelY: sourceY + (remainingHeight / 2),
-            };
-        }
-
-        const availableHeight = targetY - sourceY;
-        const bendY = sourceY + Math.min(36, Math.max(20, availableHeight / 2));
+        const renderedRoutePoints = buildRenderedRoutePoints(routePoints, sourceX, sourceY, targetX, targetY);
 
         return {
-            edgePath: buildOrthogonalPath([
-                {
-                    x: sourceX,
-                    y: sourceY,
-                },
-                {
-                    x: sourceX,
-                    y: bendY,
-                },
-                {
-                    x: targetX,
-                    y: bendY,
-                },
-                {
-                    x: targetX,
-                    y: targetY,
-                },
-            ]),
-            labelX: (sourceX + targetX) / 2,
-            labelY: bendY,
+            edgePath: buildOrthogonalPath(renderedRoutePoints),
+            labelPoint: getPreferredLabelPoint(renderedRoutePoints),
         };
-    }, [route, sourceX, sourceY, targetX, targetY]);
+    }, [routePoints, sourceX, sourceY, targetX, targetY]);
 
     return (
         <>
@@ -163,6 +79,7 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
                     ...style,
                     strokeWidth: `${HANDLE_WIDTH}px`,
                     strokeLinecap: 'round',
+                    strokeLinejoin: 'round',
                     stroke: wasPerformed ? theme.palette.primary.main : undefined,
                     strokeDasharray: wasPerformed ? '10 10' : undefined,
                     animation: wasPerformed ? 'active-edge-dash-scroll 2s linear infinite' : undefined,
@@ -175,7 +92,7 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
                         position: 'absolute',
                         pointerEvents: 'all',
                         transformOrigin: 'center',
-                        transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+                        transform: `translate(-50%, -50%) translate(${labelPoint.x}px,${labelPoint.y}px)`,
                         zIndex: 100,
                     }}
                 >
@@ -258,6 +175,227 @@ interface PathPoint {
     y: number;
 }
 
+function buildRenderedRoutePoints(
+    routePoints: FlowPathPoint[],
+    sourceX: number,
+    sourceY: number,
+    targetX: number,
+    targetY: number,
+): PathPoint[] {
+    const rawPoints = routePoints.length > 0
+        ? routePoints.map((point) => ({...point}))
+        : [
+            {
+                x: sourceX,
+                y: sourceY,
+            },
+            {
+                x: targetX,
+                y: targetY,
+            },
+        ];
+
+    if (rawPoints.length === 1) {
+        rawPoints.push({
+            x: targetX,
+            y: targetY,
+        });
+    }
+
+    rawPoints[0] = {
+        x: sourceX,
+        y: sourceY,
+    };
+    rawPoints[rawPoints.length - 1] = {
+        x: targetX,
+        y: targetY,
+    };
+
+    return normalizeOrthogonalPoints(rawPoints);
+}
+
+function normalizeOrthogonalPoints(points: PathPoint[]): PathPoint[] {
+    const normalizedPoints: PathPoint[] = [];
+
+    points.forEach((point, index) => {
+        if (normalizedPoints.length === 0) {
+            pushPoint(normalizedPoints, point);
+            return;
+        }
+
+        const previousPoint = normalizedPoints[normalizedPoints.length - 1];
+        const isLastInputPoint = index === points.length - 1;
+        const isFirstSegment = normalizedPoints.length === 1;
+
+        if (previousPoint.x !== point.x && previousPoint.y !== point.y) {
+            if (isFirstSegment && isLastInputPoint) {
+                const bendY = previousPoint.y + ((point.y - previousPoint.y) / 2);
+                pushPoint(normalizedPoints, {
+                    x: previousPoint.x,
+                    y: bendY,
+                });
+                pushPoint(normalizedPoints, {
+                    x: point.x,
+                    y: bendY,
+                });
+            } else if (isFirstSegment) {
+                pushPoint(normalizedPoints, {
+                    x: previousPoint.x,
+                    y: point.y,
+                });
+            } else {
+                pushPoint(normalizedPoints, {
+                    x: point.x,
+                    y: previousPoint.y,
+                });
+            }
+        }
+
+        pushPoint(normalizedPoints, point);
+    });
+
+    return collapseCollinearPoints(normalizedPoints);
+}
+
+function pushPoint(points: PathPoint[], point: PathPoint): void {
+    const previousPoint = points[points.length - 1];
+    if (previousPoint != null && previousPoint.x === point.x && previousPoint.y === point.y) {
+        return;
+    }
+
+    points.push(point);
+}
+
+function collapseCollinearPoints(points: PathPoint[]): PathPoint[] {
+    if (points.length <= 2) {
+        return points;
+    }
+
+    const collapsedPoints: PathPoint[] = [points[0]];
+
+    for (let index = 1; index < points.length - 1; index += 1) {
+        const previousPoint = collapsedPoints[collapsedPoints.length - 1];
+        const currentPoint = points[index];
+        const nextPoint = points[index + 1];
+
+        if (
+            (previousPoint.x === currentPoint.x && currentPoint.x === nextPoint.x) ||
+            (previousPoint.y === currentPoint.y && currentPoint.y === nextPoint.y)
+        ) {
+            continue;
+        }
+
+        collapsedPoints.push(currentPoint);
+    }
+
+    collapsedPoints.push(points[points.length - 1]);
+    return collapsedPoints;
+}
+
+function getPolylineMidpoint(points: PathPoint[]): PathPoint {
+    if (points.length === 0) {
+        return {
+            x: 0,
+            y: 0,
+        };
+    }
+
+    if (points.length === 1) {
+        return points[0];
+    }
+
+    const totalLength = points.reduce((length, point, index) => {
+        if (index === 0) {
+            return length;
+        }
+
+        const previousPoint = points[index - 1];
+        return length + getSegmentLength(previousPoint, point);
+    }, 0);
+
+    if (totalLength === 0) {
+        return points[0];
+    }
+
+    const midpointDistance = totalLength / 2;
+    let travelledDistance = 0;
+
+    for (let index = 1; index < points.length; index += 1) {
+        const previousPoint = points[index - 1];
+        const currentPoint = points[index];
+        const segmentLength = getSegmentLength(previousPoint, currentPoint);
+
+        if (travelledDistance + segmentLength >= midpointDistance) {
+            const remainingDistance = midpointDistance - travelledDistance;
+            const progress = segmentLength === 0 ? 0 : remainingDistance / segmentLength;
+
+            return {
+                x: previousPoint.x + ((currentPoint.x - previousPoint.x) * progress),
+                y: previousPoint.y + ((currentPoint.y - previousPoint.y) * progress),
+            };
+        }
+
+        travelledDistance += segmentLength;
+    }
+
+    return points[points.length - 1];
+}
+
+function getPreferredLabelPoint(points: PathPoint[]): PathPoint {
+    const segments = getLineSegments(points);
+    if (segments.length === 0) {
+        return getPolylineMidpoint(points);
+    }
+
+    const preferredSegments = segments.length > 2
+        ? segments.filter((segment) => !segment.isFirst && !segment.isLast)
+        : segments;
+    const candidateSegments = preferredSegments.length > 0 ? preferredSegments : segments;
+    const minimumSegmentLength = (ADD_BUTTON_SIZE * 2) + 10;
+
+    const selectedSegment = [...candidateSegments]
+        .sort((a, b) => (
+            b.length - a.length ||
+            Math.abs(a.index - ((segments.length - 1) / 2)) - Math.abs(b.index - ((segments.length - 1) / 2))
+        ))
+        .find((segment) => segment.length >= minimumSegmentLength) ?? candidateSegments[0];
+
+    if (selectedSegment == null) {
+        return getPolylineMidpoint(points);
+    }
+
+    return {
+        x: (selectedSegment.start.x + selectedSegment.end.x) / 2,
+        y: (selectedSegment.start.y + selectedSegment.end.y) / 2,
+    };
+}
+
+function getSegmentLength(startPoint: PathPoint, endPoint: PathPoint): number {
+    return Math.abs(endPoint.x - startPoint.x) + Math.abs(endPoint.y - startPoint.y);
+}
+
+function getLineSegments(points: PathPoint[]): Array<{
+    start: PathPoint;
+    end: PathPoint;
+    length: number;
+    index: number;
+    isFirst: boolean;
+    isLast: boolean;
+}> {
+    if (points.length < 2) {
+        return [];
+    }
+
+    return points.slice(1).map((point, index, array) => ({
+        start: points[index],
+        end: point,
+        length: getSegmentLength(points[index], point),
+        index,
+        isFirst: index === 0,
+        isLast: index === array.length - 1,
+    }));
+}
+
 function buildOrthogonalPath(points: PathPoint[]): string {
     const normalizedPoints = points.filter((point, index) => (
         index === 0 ||
@@ -288,15 +426,16 @@ function buildOrthogonalPath(points: PathPoint[]): string {
 
         const previousSegmentLength = Math.abs(currentPoint.x - previousPoint.x) + Math.abs(currentPoint.y - previousPoint.y);
         const nextSegmentLength = Math.abs(nextPoint.x - currentPoint.x) + Math.abs(nextPoint.y - currentPoint.y);
-        const bendRadius = Math.min(radius, previousSegmentLength / 2, nextSegmentLength / 2);
+        const entryDistance = Math.min(radius, previousSegmentLength / 2);
+        const exitDistance = Math.min(radius, nextSegmentLength / 2);
 
         const entryPoint = {
-            x: currentPoint.x - (Math.sign(currentPoint.x - previousPoint.x) * bendRadius),
-            y: currentPoint.y - (Math.sign(currentPoint.y - previousPoint.y) * bendRadius),
+            x: currentPoint.x - (Math.sign(currentPoint.x - previousPoint.x) * entryDistance),
+            y: currentPoint.y - (Math.sign(currentPoint.y - previousPoint.y) * entryDistance),
         };
         const exitPoint = {
-            x: currentPoint.x + (Math.sign(nextPoint.x - currentPoint.x) * bendRadius),
-            y: currentPoint.y + (Math.sign(nextPoint.y - currentPoint.y) * bendRadius),
+            x: currentPoint.x + (Math.sign(nextPoint.x - currentPoint.x) * exitDistance),
+            y: currentPoint.y + (Math.sign(nextPoint.y - currentPoint.y) * exitDistance),
         };
 
         path += ` L ${entryPoint.x} ${entryPoint.y}`;

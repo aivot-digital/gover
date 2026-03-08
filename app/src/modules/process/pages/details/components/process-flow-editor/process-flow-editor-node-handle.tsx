@@ -16,6 +16,11 @@ import {
 } from './data/process-flow-constants';
 import './process-flow-editor-animations.css';
 
+const CHIP_HEIGHT = 24;
+const CONNECTED_PORT_STEM_HEIGHT = 4;
+const CONNECTED_SOURCE_HANDLE_TOP = ADD_BUTTON_DISTANCE + CHIP_HEIGHT + CONNECTED_PORT_STEM_HEIGHT;
+const CONNECTED_PORT_SPACER_HEIGHT = ADD_BUTTON_DISTANCE + ADD_BUTTON_SIZE + (ADD_BUTTON_DISTANCE * 1.25) - CONNECTED_PORT_STEM_HEIGHT;
+
 interface ProcessFlowEditorNodeHandleProps {
     editable: boolean;
     isConnected: boolean;
@@ -59,6 +64,9 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
         <Box
             sx={{
                 position: 'relative',
+                width: '100%',
+                display: 'flex',
+                justifyContent: 'center',
             }}
         >
             <Box
@@ -94,65 +102,87 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
                     onDelete={isConnected && editable ? handleDeleteEdge : undefined}
                 />
 
-                <Box
-                    sx={{
-                        minHeight: ADD_BUTTON_DISTANCE,
-                        flex: 1,
-                        width: `${HANDLE_WIDTH}px`,
-                        backgroundColor: wasPerformed ? undefined : HANDLE_COLOR,
-                        backgroundImage: wasPerformed ?
-                            `repeating-linear-gradient(to bottom, ${theme.palette.primary.main} 0 8px, transparent 8px 16px)` :
-                            undefined,
-                        backgroundSize: wasPerformed ? '100% 16px' : undefined,
-                        animation: wasPerformed ? 'active-handle-dash-scroll 1s linear infinite' : undefined,
-                    }}
-                />
-
                 {
-                    !isConnected &&
-                    <IconButton
-                        sx={{
-                            bgcolor: 'background.paper',
-                            border: `${HANDLE_WIDTH}px solid`,
-                            borderColor: HANDLE_COLOR,
-                            width: ADD_BUTTON_SIZE,
-                            height: ADD_BUTTON_SIZE,
-                        }}
-                        onClick={(event) => {
-                            event.stopPropagation();
-                            event.preventDefault();
+                    isConnected ?
+                        <>
+                            <Box
+                                sx={{
+                                    height: CONNECTED_PORT_STEM_HEIGHT,
+                                    width: `${HANDLE_WIDTH}px`,
+                                    backgroundColor: wasPerformed ? undefined : HANDLE_COLOR,
+                                    backgroundImage: wasPerformed ?
+                                        `repeating-linear-gradient(to bottom, ${theme.palette.primary.main} 0 8px, transparent 8px 16px)` :
+                                        undefined,
+                                    backgroundSize: wasPerformed ? '100% 16px' : undefined,
+                                    animation: wasPerformed ? 'active-handle-dash-scroll 1s linear infinite' : undefined,
+                                }}
+                            />
 
-                            onClick();
-                        }}
-                        disabled={!editable}
-                    >
-                        <Add
-                            sx={{
-                                fontSize: ADD_BUTTON_SIZE - 2,
-                            }}
-                        />
-                    </IconButton>
+                            <Box
+                                sx={{
+                                    height: CONNECTED_PORT_SPACER_HEIGHT,
+                                }}
+                            />
+                        </> :
+                        <>
+                            <Box
+                                sx={{
+                                    minHeight: ADD_BUTTON_DISTANCE,
+                                    flex: 1,
+                                    width: `${HANDLE_WIDTH}px`,
+                                    backgroundColor: wasPerformed ? undefined : HANDLE_COLOR,
+                                    backgroundImage: wasPerformed ?
+                                        `repeating-linear-gradient(to bottom, ${theme.palette.primary.main} 0 8px, transparent 8px 16px)` :
+                                        undefined,
+                                    backgroundSize: wasPerformed ? '100% 16px' : undefined,
+                                    animation: wasPerformed ? 'active-handle-dash-scroll 1s linear infinite' : undefined,
+                                }}
+                            />
+
+                            <IconButton
+                                sx={{
+                                    bgcolor: 'background.paper',
+                                    border: `${HANDLE_WIDTH}px solid`,
+                                    borderColor: HANDLE_COLOR,
+                                    width: ADD_BUTTON_SIZE,
+                                    height: ADD_BUTTON_SIZE,
+                                }}
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    event.preventDefault();
+
+                                    onClick();
+                                }}
+                                disabled={!editable}
+                            >
+                                <Add
+                                    sx={{
+                                        fontSize: ADD_BUTTON_SIZE - 2,
+                                    }}
+                                />
+                            </IconButton>
+
+                            <Box
+                                sx={{
+                                    minHeight: ADD_BUTTON_DISTANCE * 1.25,
+                                    flex: 1,
+                                    width: `${HANDLE_WIDTH}px`,
+                                    backgroundColor: wasPerformed ? undefined : HANDLE_COLOR,
+                                    backgroundImage: wasPerformed ?
+                                        `repeating-linear-gradient(to bottom, ${theme.palette.primary.main} 0 8px, transparent 8px 16px)` :
+                                        undefined,
+                                    backgroundSize: wasPerformed ? '100% 16px' : undefined,
+                                    animation: wasPerformed ? 'active-handle-dash-scroll 1s linear infinite' : undefined,
+                                }}
+                            />
+                        </>
                 }
-
-                <Box
-                    sx={{
-                        minHeight: ADD_BUTTON_DISTANCE * 1.25,
-                        flex: 1,
-                        width: `${HANDLE_WIDTH}px`,
-                        backgroundColor: wasPerformed ? undefined : HANDLE_COLOR,
-                        backgroundImage: wasPerformed ?
-                            `repeating-linear-gradient(to bottom, ${theme.palette.primary.main} 0 8px, transparent 8px 16px)` :
-                            undefined,
-                        backgroundSize: wasPerformed ? '100% 16px' : undefined,
-                        animation: wasPerformed ? 'active-handle-dash-scroll 1s linear infinite' : undefined,
-                    }}
-                />
             </Box>
 
             <Handle
                 type="source"
                 id={port.key}
-                position={Position.Bottom}
+                position={isConnected ? Position.Top : Position.Bottom}
                 style={{
                     opacity: isConnected ? 0 : 1,
                     pointerEvents: isConnected ? 'none' : 'all',
@@ -160,7 +190,12 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
                     height: `${HANDLE_SIZE}px`,
                     backgroundColor: 'var(--xy-edge-stroke, var(--xy-edge-stroke-default))',
                     border: 'none',
-                    bottom: '-4px',
+                    ...(isConnected ? {
+                        top: `${CONNECTED_SOURCE_HANDLE_TOP}px`,
+                        bottom: 'auto',
+                    } : {
+                        bottom: '-4px',
+                    }),
                 }}
             />
         </Box>
