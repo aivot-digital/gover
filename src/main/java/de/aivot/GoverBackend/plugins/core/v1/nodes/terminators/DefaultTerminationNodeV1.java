@@ -90,7 +90,7 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition {
                 .setId(RETENTION_VALUE_FIELD_KEY);
         retentionInput
                 .setLabel("Aufbewahrungsfrist")
-                .setHint("Geben Sie die Aufbewahrungsfrist für die Prozessdaten nach Abschluss des Prozesses an (z.B. '30 Tage', '6 Monate', '1 Jahr').")
+                .setHint("Geben Sie die Aufbewahrungsfrist für die Vorgangsdaten nach Abschluss des Vorgangs an (z.B. '30 Tage', '6 Monate', '1 Jahr').")
                 .setRequired(true);
         layout.addChild(retentionInput);
 
