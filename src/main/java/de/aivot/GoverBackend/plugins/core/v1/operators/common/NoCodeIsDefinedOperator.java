@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
+import jakarta.annotation.Nullable;
 
 import java.util.Collection;
 import java.util.Map;
@@ -83,5 +84,11 @@ public class NoCodeIsDefinedOperator extends NoCodeOperator {
             case Map<?, ?> value -> new NoCodeResult(!value.isEmpty());
             default -> new NoCodeResult(true);
         };
+    }
+
+    @Nullable
+    @Override
+    public String getHumanReadableTemplate() {
+        return "„#0“ ist nicht leer";
     }
 }

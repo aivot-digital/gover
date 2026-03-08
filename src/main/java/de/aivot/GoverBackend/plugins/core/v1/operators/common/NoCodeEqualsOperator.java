@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
+import jakarta.annotation.Nullable;
 
 import java.util.Objects;
 
@@ -92,5 +93,11 @@ public class NoCodeEqualsOperator extends NoCodeOperator {
 
         var castedArg1 = castToTypeOfReference(arg0, arg1);
         return new NoCodeResult(Objects.equals(arg0, castedArg1));
+    }
+
+    @Nullable
+    @Override
+    public String getHumanReadableTemplate() {
+        return "„#0“ ist gleich „#1“";
     }
 }

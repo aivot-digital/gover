@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
+import jakarta.annotation.Nullable;
 
 public class NoCodeValueOperator extends NoCodeOperator {
     @Override
@@ -61,5 +62,11 @@ public class NoCodeValueOperator extends NoCodeOperator {
     @Override
     public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
         return new NoCodeResult(args[0]);
+    }
+
+    @Nullable
+    @Override
+    public String getHumanReadableTemplate() {
+        return "der Wert des Feldes mit der ID „#0“";
     }
 }
