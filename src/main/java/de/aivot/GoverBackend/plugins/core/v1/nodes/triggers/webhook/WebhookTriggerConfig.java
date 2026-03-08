@@ -136,8 +136,8 @@ public class WebhookTriggerConfig {
         public String processingCode;
 
         @InputElementPOJOBinding(id = COPY_TO_PROCESS_DATA_CONFIG_KEY, type = ElementType.Checkbox, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Daten in Prozessdaten kopieren"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie an, ob die empfangenen Webhook-Daten in die Prozessdaten kopiert werden sollen."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Daten in Vorgangsdaten kopieren"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie an, ob die empfangenen Webhook-Daten in die Vorgangsdaten kopiert werden sollen."),
                 @ElementPOJOBindingProperty(key = "variant", strValue = "switch"),
         })
         public Boolean copyToProcessData;
