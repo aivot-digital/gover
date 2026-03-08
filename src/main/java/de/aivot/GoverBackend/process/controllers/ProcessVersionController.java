@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.process.controllers;
 
 import de.aivot.GoverBackend.audit.enums.AuditAction;
+import de.aivot.GoverBackend.audit.models.AuditLogPayload;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.department.services.DepartmentService;
@@ -40,6 +41,8 @@ import java.util.Map;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ProcessVersionController {
+    private static final String MODULE_NAME = "Prozesse";
+
     private final ScopedAuditService auditService;
     private final UserService userService;
     private final ProcessVersionService processDefinitionVersionService;
@@ -108,10 +111,19 @@ public class ProcessVersionController {
         var result = processDefinitionVersionService
                 .create(newVersion);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, ProcessVersionEntity.class, Map.of(
-                "processDefinitionId", result.getProcessId(),
-                "processDefinitionVersion", result.getProcessVersion()
-        )));
+        auditService.addAuditEntry(AuditLogPayload
+                .create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Create,
+                        MODULE_NAME,
+                        ProcessVersionEntity.class,
+                        result.getProcessVersion(),
+                        "processVersion",
+                        Map.of(
+                                "processId", result.getProcessId(),
+                                "processVersion", result.getProcessVersion()
+                        )));
 
         return result;
     }
@@ -152,6 +164,7 @@ public class ProcessVersionController {
         var existing = processDefinitionVersionService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
+        var existingMap = AuditLogPayload.toMap(existing);
 
         // Check department permission for the process definition this version belongs to
         var department = departmentService
@@ -170,11 +183,22 @@ public class ProcessVersionController {
 
         var result = processDefinitionVersionService
                 .update(id, updateDTO);
+        var resultMap = AuditLogPayload.toMap(result);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, ProcessVersionEntity.class, Map.of(
-                "processDefinitionId", result.getProcessId(),
-                "processDefinitionVersion", result.getProcessVersion()
-        )));
+        auditService.addAuditEntry(AuditLogPayload
+                .create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Update,
+                        MODULE_NAME,
+                        ProcessVersionEntity.class,
+                        result.getProcessVersion(),
+                        "processVersion",
+                        Map.of(
+                                "processId", result.getProcessId(),
+                                "processVersion", result.getProcessVersion()
+                        ))
+                .withDiff(existingMap, resultMap));
 
         return result;
     }
@@ -200,10 +224,18 @@ public class ProcessVersionController {
         var deleted = processDefinitionVersionService
                 .delete(id);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, ProcessVersionEntity.class, Map.of(
-                "processDefinitionId", deleted.getProcessId(),
-                "processDefinitionVersion", deleted.getProcessVersion()
-        )));
+        auditService.addAuditEntry(AuditLogPayload
+                .create()
+                .withUser(user)
+                .withAuditAction(
+                        AuditAction.Delete,
+                        MODULE_NAME,
+                        ProcessVersionEntity.class,
+                        deleted.getProcessVersion(),
+                        "processVersion",
+                        Map.of(
+                                "processId", deleted.getProcessId(),
+                                "processVersion", deleted.getProcessVersion()
+                        )));
     }
 }
-

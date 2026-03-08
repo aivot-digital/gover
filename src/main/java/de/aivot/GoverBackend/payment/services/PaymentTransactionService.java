@@ -120,10 +120,7 @@ public class PaymentTransactionService implements
             metadata.put("exceptionType", e.getClass().getName());
             auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload
                     .create()
-                    .setActionType("Exception")
-                    .setSeverity("error")
-                    .setActionResult("failure")
-                    .setReason(e.getMessage())
+                    .setTriggerType("Exception")
                     .setMessage("Failed to create payment request")
                     .setMetadata(metadata));
             throw e;
@@ -149,10 +146,7 @@ public class PaymentTransactionService implements
             metadata.put("exceptionType", e.getClass().getName());
             auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload
                     .create()
-                    .setActionType("Exception")
-                    .setSeverity("error")
-                    .setActionResult("failure")
-                    .setReason(e.getMessage())
+                    .setTriggerType("Exception")
                     .setMessage("Failed to initiate payment")
                     .setMetadata(metadata));
             throw e;
@@ -301,8 +295,7 @@ public class PaymentTransactionService implements
         for (var transactionEntity : pendingTransactions) {
             auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload
                     .create()
-                    .setActionType("Debug")
-                    .setSeverity("debug")
+                    .setTriggerType("Debug")
                     .setMessage("Polling transaction " + transactionEntity.getKey())
                     .setMetadata(Map.of("transactionKey", transactionEntity.getKey())));
 
@@ -311,10 +304,7 @@ public class PaymentTransactionService implements
             } catch (PaymentException e) {
                 auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload
                         .create()
-                        .setActionType("Exception")
-                        .setSeverity("error")
-                        .setActionResult("failure")
-                        .setReason(e.getMessage())
+                        .setTriggerType("Exception")
                         .setMessage("Error polling transaction " + transactionEntity.getKey())
                         .setMetadata(Map.of(
                                 "transactionKey", transactionEntity.getKey(),

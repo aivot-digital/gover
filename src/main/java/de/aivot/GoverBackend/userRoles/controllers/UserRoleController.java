@@ -78,7 +78,7 @@ public class UserRoleController {
         var created = userRoleService
                 .create(requestDTO.toEntity());
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, UserRoleEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), UserRoleEntity.class, "legacy", "legacy", Map.of(
                         "id", created.getId(),
                         "name", created.getName()
                 )));
@@ -120,7 +120,7 @@ public class UserRoleController {
         var result = userRoleService
                 .update(id, requestDTO.toEntity());
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, UserRoleEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), UserRoleEntity.class, "legacy", "legacy", Map.of(
                         "id", result.getId(),
                         "name", result.getName()
                 )));
@@ -151,7 +151,7 @@ public class UserRoleController {
         userRoleService
                 .deleteEntity(entity);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Delete, UserRoleEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), UserRoleEntity.class, "legacy", "legacy", Map.of(
                         "id", entity.getId(),
                         "name", entity.getName()
                 )));

@@ -105,7 +105,7 @@ public class ProcessChangeController {
         var result = processDefinitionChangeService
                 .create(newChange);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, ProcessChangeEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), ProcessChangeEntity.class, "legacy", "legacy", Map.of(
                 "id", result.getId(),
                 "processDefinitionId", result.getProcessId(),
                 "processDefinitionVersion", result.getProcessVersion()
@@ -165,7 +165,7 @@ public class ProcessChangeController {
         var result = processDefinitionChangeService
                 .update(id, updateDTO);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, ProcessChangeEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), ProcessChangeEntity.class, "legacy", "legacy", Map.of(
                 "id", result.getId(),
                 "processDefinitionId", result.getProcessId(),
                 "processDefinitionVersion", result.getProcessVersion()
@@ -192,7 +192,7 @@ public class ProcessChangeController {
         var deleted = processDefinitionChangeService
                 .delete(id);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, ProcessChangeEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), ProcessChangeEntity.class, "legacy", "legacy", Map.of(
                 "id", deleted.getId(),
                 "processDefinitionId", deleted.getProcessId(),
                 "processDefinitionVersion", deleted.getProcessVersion()

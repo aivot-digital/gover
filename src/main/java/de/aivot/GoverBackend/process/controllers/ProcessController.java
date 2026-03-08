@@ -44,6 +44,8 @@ import java.util.Map;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ProcessController {
+    private static final String MODULE_NAME = "Prozesse";
+
     private final ScopedAuditService auditService;
     private final UserService userService;
     private final ProcessService processDefinitionService;
@@ -139,8 +141,10 @@ public class ProcessController {
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Create,
+                        MODULE_NAME,
                         ProcessEntity.class,
-                        result.getId()
+                        result.getId(),
+                        "id"
                 ));
 
         return result;
@@ -230,8 +234,10 @@ public class ProcessController {
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Create,
+                        MODULE_NAME,
                         ProcessEntity.class,
                         newProcess.getId(),
+                        "id",
                         Map.of(
                                 "imported", true,
                                 "version", newVersion.getProcessVersion(),
@@ -310,8 +316,10 @@ public class ProcessController {
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Update,
+                        MODULE_NAME,
                         ProcessEntity.class,
-                        result.getId()
+                        result.getId(),
+                        "id"
                 )
                 .withDiffUndefined(existingMap, updatedMap));
 
@@ -342,8 +350,10 @@ public class ProcessController {
                 .withUser(user)
                 .withAuditAction(
                         AuditAction.Delete,
+                        MODULE_NAME,
                         ProcessEntity.class,
-                        deleted.getId()
+                        deleted.getId(),
+                        "id"
                 ));
     }
 
@@ -398,8 +408,10 @@ public class ProcessController {
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Export,
+                        MODULE_NAME,
                         ProcessEntity.class,
-                        existing.getId()
+                        existing.getId(),
+                        "id"
                 ));
 
         return result;

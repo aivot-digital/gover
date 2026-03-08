@@ -1,6 +1,8 @@
 package de.aivot.GoverBackend.department.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
+import de.aivot.GoverBackend.audit.models.AuditLogPayload;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.department.entities.DepartmentEntity;
@@ -28,6 +30,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+
 import java.util.Map;
 
 @RestController
@@ -35,31 +38,35 @@ import java.util.Map;
 @Tag(
         name = "Departments",
         description = "Departments are organisational units within the system. " +
-                      "They can represent different sub-organizations, departments, or divisions within an organisation. " +
-                      "Departments help in structuring users and managing permissions effectively. " +
-                      "They also own certain resources and can have specific settings that apply to all users within the department."
+                "They can represent different sub-organizations, departments, or divisions within an organisation. " +
+                "Departments help in structuring users and managing permissions effectively. " +
+                "They also own certain resources and can have specific settings that apply to all users within the department."
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class DepartmentController {
+    private static final String MODULE_NAME = "Organisationseinheiten";
+
     private final ScopedAuditService auditService;
 
     private final DepartmentService departmentService;
     private final DepartmentRepository departmentRepository;
     private final VDepartmentMembershipWithPermissionsService vDepartmentMembershipWithPermissionsService;
     private final UserService userService;
+    private final ObjectMapper objectMapper;
 
     @Autowired
     public DepartmentController(AuditService auditService,
                                 DepartmentService departmentService,
                                 DepartmentRepository departmentRepository,
                                 VDepartmentMembershipWithPermissionsService vDepartmentMembershipWithPermissionsService,
-                                UserService userService) {
+                                UserService userService, ObjectMapper objectMapper) {
         this.auditService = auditService.createScopedAuditService(DepartmentController.class);
 
         this.departmentService = departmentService;
         this.departmentRepository = departmentRepository;
         this.vDepartmentMembershipWithPermissionsService = vDepartmentMembershipWithPermissionsService;
         this.userService = userService;
+        this.objectMapper = objectMapper;
     }
 
     @GetMapping("")
@@ -93,10 +100,19 @@ public class DepartmentController {
         var createdDepartment = departmentService
                 .create(newDepartment);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, DepartmentEntity.class, Map.of(
-                "id", createdDepartment.getId(),
-                "name", createdDepartment.getName()
-        )));
+        auditService.addAuditEntry(AuditLogPayload
+                .create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Create,
+                        MODULE_NAME,
+                        DepartmentEntity.class,
+                        createdDepartment.getId(),
+                        "id",
+                        Map.of(
+                                "id", createdDepartment.getId(),
+                                "name", createdDepartment.getName()
+                        )));
 
         return createdDepartment;
     }
@@ -144,13 +160,31 @@ public class DepartmentController {
             }
         }
 
+        var existingDepartment = departmentService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        var existingMap = AuditLogPayload.toMap(existingDepartment);
+
         var savedDepartment = departmentService
                 .update(id, updatedDepartment);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Update, DepartmentEntity.class, Map.of(
-                "id", savedDepartment.getId(),
-                "name", savedDepartment.getName()
-        )));
+        var savedMap = AuditLogPayload.toMap(savedDepartment);
+
+        auditService.addAuditEntry(AuditLogPayload
+                .create()
+                .withUser(user)
+                .withAuditAction(
+                        AuditAction.Update,
+                        MODULE_NAME,
+                        DepartmentEntity.class,
+                        savedDepartment.getId(),
+                        "id",
+                        Map.of(
+                                "id", savedDepartment.getId(),
+                                "name", savedDepartment.getName()
+                        ))
+                .withDiff(existingMap, savedMap));
 
         return savedDepartment;
     }
@@ -174,11 +208,21 @@ public class DepartmentController {
                 .findById(id)
                 .orElseThrow(ResponseException::notFound);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, DepartmentEntity.class, Map.of(
-                "id", dep.getId(),
-                "name", dep.getName()
-        )));
-
         departmentService.delete(id);
+
+        auditService.addAuditEntry(AuditLogPayload
+                .create()
+                .withUser(user)
+                .withAuditAction(
+                        AuditAction.Delete,
+                        MODULE_NAME,
+                        DepartmentEntity.class,
+                        dep.getId(),
+                        "id",
+                        Map.of(
+                                "id", dep.getId(),
+                                "name", dep.getName()
+                        )));
+
     }
 }

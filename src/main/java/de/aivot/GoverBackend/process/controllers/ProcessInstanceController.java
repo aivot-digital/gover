@@ -85,7 +85,7 @@ public class ProcessInstanceController {
         var result = processInstanceService
                 .create(newInstance);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, ProcessInstanceEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), ProcessInstanceEntity.class, "legacy", "legacy", Map.of(
                 "id", result.getId(),
                 "processDefinitionId", result.getProcessId()
         )));
@@ -129,7 +129,7 @@ public class ProcessInstanceController {
         var result = processInstanceService
                 .update(id, updateDTO);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, ProcessInstanceEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), ProcessInstanceEntity.class, "legacy", "legacy", Map.of(
                 "id", result.getId(),
                 "processDefinitionId", result.getProcessId()
         )));
@@ -155,7 +155,7 @@ public class ProcessInstanceController {
         var deleted = processInstanceService
                 .delete(id);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, ProcessInstanceEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), ProcessInstanceEntity.class, "legacy", "legacy", Map.of(
                 "id", deleted.getId(),
                 "processDefinitionId", deleted.getProcessId()
         )));

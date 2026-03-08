@@ -88,15 +88,10 @@ public class DestinationController {
         var entity = destinationService
                 .create(requestDTO.toEntity());
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
-                        execUser,
-                        AuditAction.Create,
-                        Destination.class,
-                        Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), Destination.class, "legacy", "legacy", Map.of(
                                 "id", entity.getId(),
                                 "name", entity.getName()
-                        )
-                ));
+                        )));
 
         return DestinationResponseDTO
                 .fromEntity(entity);
@@ -132,15 +127,10 @@ public class DestinationController {
         var entity = destinationService
                 .update(id, requestDTO.toEntity());
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
-                        execUser,
-                        AuditAction.Update,
-                        Destination.class,
-                        Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), Destination.class, "legacy", "legacy", Map.of(
                                 "id", entity.getId(),
                                 "name", entity.getName()
-                        )
-                ));
+                        )));
 
         return DestinationResponseDTO
                 .fromEntity(entity);
@@ -165,14 +155,9 @@ public class DestinationController {
         var entity = destinationService
                 .delete(id);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
-                        user,
-                        AuditAction.Delete,
-                        Destination.class,
-                        Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), Destination.class, "legacy", "legacy", Map.of(
                                 "id", entity.getId(),
                                 "name", entity.getName()
-                        )
-                ));
+                        )));
     }
 }

@@ -35,6 +35,8 @@ import org.springframework.web.bind.annotation.*;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ProcessEdgeController {
+    private static final String MODULE_NAME = "Prozesse";
+
     private final ScopedAuditService auditService;
     private final UserService userService;
     private final ProcessEdgeService processDefinitionEdgeService;
@@ -85,8 +87,10 @@ public class ProcessEdgeController {
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Create,
+                        MODULE_NAME,
                         ProcessEdgeEntity.class,
-                        result.getId()
+                        result.getId(),
+                        "id"
                 ));
 
         return result;
@@ -139,8 +143,10 @@ public class ProcessEdgeController {
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Update,
+                        MODULE_NAME,
                         ProcessEdgeEntity.class,
-                        result.getId()
+                        result.getId(),
+                        "id"
                 )
                 .withDiffUndefined(existingMap, updatedMap));
 
@@ -170,8 +176,10 @@ public class ProcessEdgeController {
                 .withUser(user)
                 .withAuditAction(
                         AuditAction.Delete,
+                        MODULE_NAME,
                         ProcessEdgeEntity.class,
-                        deleted.getId()
+                        deleted.getId(),
+                        "id"
                 ));
     }
 }

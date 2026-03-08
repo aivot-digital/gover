@@ -128,15 +128,10 @@ public class IdentityProviderController {
         var created = identityProviderService
                 .create(requestDTO.toEntity());
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
-                        user,
-                        AuditAction.Create,
-                        IdentityProviderEntity.class,
-                        Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), IdentityProviderEntity.class, "legacy", "legacy", Map.of(
                                 "key", created.getKey(),
                                 "name", created.getName()
-                        )
-                ));
+                        )));
 
         return IdentityProviderDetailsDTO
                 .from(created);
@@ -214,7 +209,7 @@ public class IdentityProviderController {
             }
         }
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Update, IdentityProviderEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), IdentityProviderEntity.class, "legacy", "legacy", Map.of(
                 "key", updatedEntity.getKey(),
                 "name", updatedEntity.getName()
         )));
@@ -287,7 +282,7 @@ public class IdentityProviderController {
         var deletedEntity = identityProviderService
                 .delete(key);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, IdentityProviderEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), IdentityProviderEntity.class, "legacy", "legacy", Map.of(
                 "key", deletedEntity.getKey(),
                 "name", deletedEntity.getName()
         )));

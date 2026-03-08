@@ -82,7 +82,7 @@ public class DataObjectSchemaController {
 
         var created = service.create(newDataObjectEntity);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, DataObjectItemEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), DataObjectItemEntity.class, "legacy", "legacy", Map.of(
                 "schemaKey", created.getKey()
         )));
 
@@ -122,7 +122,7 @@ public class DataObjectSchemaController {
         var updated = service
                 .update(key, updatedDataObjectEntity);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, DataObjectItemEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), DataObjectItemEntity.class, "legacy", "legacy", Map.of(
                 "schemaKey", updated.getKey()
         )));
 
@@ -147,7 +147,7 @@ public class DataObjectSchemaController {
 
         var deleted = service.delete(key);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Delete, DataObjectItemEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), DataObjectItemEntity.class, "legacy", "legacy", Map.of(
                 "schemaKey", deleted.getKey()
         )));
     }

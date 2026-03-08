@@ -81,7 +81,7 @@ public class TeamMembershipController {
         var result = teamMembershipService
                 .create(createDTO);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, TeamMembershipEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), TeamMembershipEntity.class, "legacy", "legacy", Map.of(
                 "id", result.getId(),
                 "teamId", result.getTeamId(),
                 "userId", result.getUserId()
@@ -121,7 +121,7 @@ public class TeamMembershipController {
         var result = teamMembershipService
                 .update(id, updateDTO);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, TeamMembershipEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), TeamMembershipEntity.class, "legacy", "legacy", Map.of(
                 "id", result.getId(),
                 "teamId", result.getTeamId(),
                 "userId", result.getUserId()
@@ -151,7 +151,7 @@ public class TeamMembershipController {
         var deleted = teamMembershipService
                 .delete(id);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Delete, TeamMembershipEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), TeamMembershipEntity.class, "legacy", "legacy", Map.of(
                 "id", deleted.getId(),
                 "teamId", deleted.getTeamId(),
                 "userId", deleted.getUserId()

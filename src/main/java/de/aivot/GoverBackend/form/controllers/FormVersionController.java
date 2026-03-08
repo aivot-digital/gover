@@ -150,7 +150,7 @@ public class FormVersionController {
                 .create(user, createdFormVersionDetails);
 
         // Log the form version creation
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Create, FormVersionEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), FormVersionEntity.class, "legacy", "legacy", Map.of(
                 "formId", createdFormVersion.getFormId(),
                 "formVersion", createdFormVersion.getVersion()
         )));
@@ -261,7 +261,7 @@ public class FormVersionController {
                 .update(FormVersionEntityId.of(formId, version), patchedFormVersion);
 
         // Log the form version update
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Update, FormEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), FormEntity.class, "legacy", "legacy", Map.of(
                 "formId", updatedFormVersion.getFormId(),
                 "formVersion", updatedFormVersion.getVersion()
         )));
@@ -408,16 +408,11 @@ public class FormVersionController {
                 .publish(id);
 
         // Log the form publication
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
-                user,
-                AuditAction.Update,
-                FormVersionEntity.class,
-                Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), FormVersionEntity.class, "legacy", "legacy", Map.of(
                         "formId", publishedFormVersion.getFormId(),
                         "formVersion", publishedFormVersion.getVersion(),
                         "published", true
-                )
-        ));
+                )));
 
         /*
         // Send a message about the form publication
@@ -428,9 +423,6 @@ public class FormVersionController {
                     .create()
                     .withUser(user)
                     .setTriggerType("Exception")
-                    .setSeverity("error")
-                    .setActionResult("failure")
-                    .setReason(e.getMessage())
                     .setMessage("Failed to send message about form publication")
                     .setMetadata(Map.of(
                             "exceptionType", e.getClass().getName(),
@@ -506,16 +498,11 @@ public class FormVersionController {
                 .revoke(id);
 
         // Log the form publication
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
-                user,
-                AuditAction.Update,
-                FormVersionEntity.class,
-                Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), FormVersionEntity.class, "legacy", "legacy", Map.of(
                         "formId", revokedFormVersion.getFormId(),
                         "formVersion", revokedFormVersion.getVersion(),
                         "published", false
-                )
-        ));
+                )));
 
         /*
         // Send a message about the form publication
@@ -526,9 +513,6 @@ public class FormVersionController {
                     .create()
                     .withUser(user)
                     .setTriggerType("Exception")
-                    .setSeverity("error")
-                    .setActionResult("failure")
-                    .setReason(e.getMessage())
                     .setMessage("Failed to send message about form publication")
                     .setMetadata(Map.of(
                             "exceptionType", e.getClass().getName(),

@@ -70,9 +70,7 @@ public class CleanupService {
                 if (form == null) {
                     auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload
                             .create()
-                            .setActionType("Error")
-                            .setSeverity("error")
-                            .setActionResult("failure")
+                            .setTriggerType("Error")
                             .setMessage("Form with id " + submission.getFormId() + "not found for submission: " + submission.getId())
                             .setMetadata(Map.of(
                                     "submissionId", submission.getId(),

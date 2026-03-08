@@ -12,6 +12,12 @@ import {selectPermissions} from '../../../../slices/user-slice';
 import {AUDIT_LOG_READ_PERMISSION} from '../../constants/audit-permissions';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
+import {getTraceData} from '@sentry/react';
+import {getTriggerTypeColor, getTriggerTypeIcon, getTriggerTypeLabel} from '../../data/trigger-type';
+import {getActorTypeColor, getActorTypeIcon, getActorTypeLabel} from '../../data/actor-type';
+import {UsersApiService} from '../../../users/users-api-service';
+import {User} from '../../../users/models/user';
+
 
 const actorFilters = [
     {label: 'Alle', value: 'all'},
@@ -90,49 +96,16 @@ function trimValue(value: string | undefined, maxLength: number = 28): string {
     return `${value.slice(0, maxLength - 1)}…`;
 }
 
-function hasEntries(value: Record<string, unknown> | undefined): boolean {
+function hasEntries(value: Record<string, unknown> | null | undefined): boolean {
     return value != null && Object.keys(value).length > 0;
 }
 
-function previewJson(value: Record<string, unknown> | undefined): string {
-    if (!hasEntries(value)) {
-        return '-';
-    }
-
-    const entries = Object.entries(value!);
-    const preview = entries
-        .slice(0, 2)
-        .map(([key, entryValue]) => `${key}: ${String(entryValue)}`)
-        .join(', ');
-
-    return entries.length > 2 ? `${preview}…` : preview;
-}
-
-function prettyJson(value: Record<string, unknown> | undefined): string {
+function prettyJson(value: Record<string, unknown> | null | undefined): string {
     if (value == null) {
         return '{}';
     }
 
     return JSON.stringify(value, null, 2);
-}
-
-function triggerColor(triggerType: string): 'default' | 'success' | 'warning' | 'error' | 'info' {
-    switch (triggerType) {
-        case 'Create':
-            return 'success';
-        case 'Update':
-            return 'warning';
-        case 'Delete':
-        case 'Error':
-            return 'error';
-        case 'PermissionDenied':
-            return 'warning';
-        case 'Import':
-        case 'Export':
-            return 'info';
-        default:
-            return 'default';
-    }
 }
 
 export function AuditLogsListPage(): ReactNode {
@@ -146,6 +119,7 @@ export function AuditLogsListPage(): ReactNode {
     }, [permissions]);
 
     const [triggerType, setTriggerType] = useState<string | undefined>(undefined);
+    const [usersById, setUsersById] = useState<Record<string, User | undefined>>({});
 
     if (!hasReadAccess) {
         return (
@@ -205,7 +179,34 @@ export function AuditLogsListPage(): ReactNode {
                         sortField,
                         sortOrder,
                         filter,
-                    );
+                    ).then(async (result) => {
+                        const userIds = result.content
+                            .filter((entry) => entry.actorType === 'User' && entry.actorId != null && entry.actorId.trim().length > 0)
+                            .map((entry) => entry.actorId!.trim())
+                            .filter((value, index, array) => array.indexOf(value) === index);
+
+                        const unresolvedIds = userIds
+                            .filter((id) => usersById[id] == null);
+
+                        if (unresolvedIds.length > 0) {
+                            const loadedUsers = await Promise.all(unresolvedIds.map(async (id) => {
+                                try {
+                                    const user = await new UsersApiService().retrieve(id);
+                                    return [id, user] as const;
+                                } catch (e) {
+                                    console.error(e);
+                                    return [id, undefined] as const;
+                                }
+                            }));
+
+                            setUsersById((previous) => ({
+                                ...previous,
+                                ...Object.fromEntries(loadedUsers),
+                            }));
+                        }
+
+                        return result;
+                    });
                 }}
                 columnIcon={ModuleIcons.audit}
                 columnDefinitions={[
@@ -218,64 +219,15 @@ export function AuditLogsListPage(): ReactNode {
                                 <Tooltip title={formatDateTime(params.row.timestamp)}>
                                     <Box>
                                         <Typography variant="body2"
-                                                    fontWeight={600}>{formatRelative(params.row.timestamp)}</Typography>
+                                                    fontWeight={500}>
+                                            {formatRelative(params.row.timestamp)}
+                                        </Typography>
                                         <Typography variant="caption"
-                                                    color="text.secondary">{formatDateTime(params.row.timestamp)}</Typography>
+                                                    color="text.secondary">
+                                            {formatDateTime(params.row.timestamp)}
+                                        </Typography>
                                     </Box>
                                 </Tooltip>
-                            </CellContentWrapper>
-                        ),
-                    },
-                    {
-                        field: 'triggerType',
-                        headerName: 'Trigger',
-                        width: 180,
-                        renderCell: (params) => (
-                            <CellContentWrapper>
-                                <Chip
-                                    size="small"
-                                    label={params.row.triggerType}
-                                    color={triggerColor(params.row.triggerType)}
-                                    variant="outlined"
-                                />
-                            </CellContentWrapper>
-                        ),
-                    },
-                    {
-                        field: 'actorType',
-                        headerName: 'Akteur',
-                        width: 220,
-                        renderCell: (params) => (
-                            <CellContentWrapper>
-                                <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.5}}>
-                                    <Chip label={params.row.actorType}
-                                          size="small"
-                                          variant="outlined"
-                                          sx={{width: 'fit-content'}}/>
-                                    <Tooltip title={params.row.actorId ?? '-'}>
-                                        <Typography variant="caption"
-                                                    noWrap>
-                                            {trimValue(params.row.actorId, 28)}
-                                        </Typography>
-                                    </Tooltip>
-                                </Box>
-                            </CellContentWrapper>
-                        ),
-                    },
-                    {
-                        field: 'reference',
-                        headerName: 'Referenz',
-                        width: 250,
-                        sortable: false,
-                        renderCell: (params) => (
-                            <CellContentWrapper>
-                                <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.4}}>
-                                    <Typography variant="body2">{trimValue(params.row.triggerRef, 32)}</Typography>
-                                    <Typography variant="caption"
-                                                color="text.secondary">
-                                        {params.row.triggerRefType ?? '-'}
-                                    </Typography>
-                                </Box>
                             </CellContentWrapper>
                         ),
                     },
@@ -283,6 +235,67 @@ export function AuditLogsListPage(): ReactNode {
                         field: 'module',
                         headerName: 'Modul',
                         width: 190,
+                        renderCell: (params) => (
+                            <CellContentWrapper>
+                                <Typography variant="body2"
+                                            noWrap>
+                                    {String(params.value)}
+                                </Typography>
+                            </CellContentWrapper>
+                        ),
+                    },
+                    {
+                        field: 'triggerType',
+                        headerName: 'Auslösende Aktion',
+                        width: 180,
+                        renderCell: (params) => {
+                            const Icon = getTriggerTypeIcon(params.row.triggerType);
+                            return (
+                                <CellContentWrapper>
+                                    <Chip
+                                        icon={Icon != null ? <Icon/> : undefined}
+                                        size="small"
+                                        label={getTriggerTypeLabel(params.row.triggerType)}
+                                        color={getTriggerTypeColor(params.row.triggerType)}
+                                        variant="outlined"
+                                    />
+                                </CellContentWrapper>
+                            );
+                        },
+                    },
+                    {
+                        field: 'actorType',
+                        headerName: 'Auslösender Akteur',
+                        width: 220,
+                        renderCell: (params) => {
+                            const actorType = params.row.actorType;
+                            const actorId = params.row.actorId?.trim() || undefined;
+                            const isUser = actorType === 'User';
+                            const actorUser = actorId != null ? usersById[actorId] : undefined;
+                            const actorLabel = isUser
+                                ? (actorUser?.fullName?.trim() || actorId || getActorTypeLabel(actorType))
+                                : getActorTypeLabel(actorType);
+                            const Icon = getActorTypeIcon(actorType);
+
+                            return (
+                                <CellContentWrapper>
+                                    <Tooltip title={isUser ? (actorId ?? '-') : actorLabel}>
+                                        <Chip
+                                            size="small"
+                                            variant="outlined"
+                                            icon={Icon != null ? <Icon/> : undefined}
+                                            label={trimValue(actorLabel, 32)}
+                                            color={getActorTypeColor(actorType)}
+                                        />
+                                    </Tooltip>
+                                </CellContentWrapper>
+                            );
+                        },
+                    },
+                    {
+                        field: 'message',
+                        headerName: 'Nachricht',
+                        flex: 1,
                         renderCell: (params) => (
                             <CellContentWrapper>
                                 <Typography variant="body2"
@@ -313,9 +326,16 @@ export function AuditLogsListPage(): ReactNode {
                                             <Typography variant="subtitle2">Basisdaten</Typography>
                                             <Typography variant="body2">Zeitpunkt: {formatDateTime(row.timestamp)}</Typography>
                                             <Typography variant="body2">Trigger: {row.triggerType}</Typography>
-                                            <Typography variant="body2">Akteur: {row.actorType} {row.actorId != null ? `(${row.actorId})` : ''}</Typography>
-                                            <Typography variant="body2">Referenz: {row.triggerRef ?? '-'}</Typography>
-                                            <Typography variant="body2">Referenz-Typ: {row.triggerRefType ?? '-'}</Typography>
+                                            <Typography variant="body2">
+                                                Akteur: {row.actorType === 'User'
+                                                ? (row.actorId != null
+                                                    ? (usersById[row.actorId.trim()]?.fullName?.trim() || row.actorId)
+                                                    : getActorTypeLabel(row.actorType))
+                                                : getActorTypeLabel(row.actorType)}
+                                                {row.actorId != null ? ` (${row.actorId})` : ''}
+                                            </Typography>
+                                            <Typography variant="body2">Referenz: {row.entityRef ?? '-'}</Typography>
+                                            <Typography variant="body2">Referenz-Typ: {row.entityRefType ?? '-'}</Typography>
                                             <Typography variant="body2">Modul: {row.module}</Typography>
                                             <Typography variant="body2">IP-Adresse: {row.ipAddress ?? '-'}</Typography>
                                         </Box>

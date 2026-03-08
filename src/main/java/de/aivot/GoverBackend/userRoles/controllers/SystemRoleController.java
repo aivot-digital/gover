@@ -102,7 +102,7 @@ public class SystemRoleController {
         var createdEntity = systemRoleService
                 .create(newEntity);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, SystemRoleEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), SystemRoleEntity.class, "legacy", "legacy", Map.of(
                         "id", createdEntity.getId(),
                         "name", createdEntity.getName()
                 )));
@@ -155,7 +155,7 @@ public class SystemRoleController {
         var updatedEntity = systemRoleService
                 .update(id, patchedEntity);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, SystemRoleEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), SystemRoleEntity.class, "legacy", "legacy", Map.of(
                         "id", updatedEntity.getId(),
                         "name", updatedEntity.getName()
                 )));
@@ -189,7 +189,7 @@ public class SystemRoleController {
         userRoleService
                 .deleteEntity(entity);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Delete, UserRoleEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), UserRoleEntity.class, "legacy", "legacy", Map.of(
                         "id", entity.getId(),
                         "name", entity.getName()
                 )));

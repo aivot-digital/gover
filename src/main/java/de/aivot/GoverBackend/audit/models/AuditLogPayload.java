@@ -20,8 +20,6 @@ public class AuditLogPayload {
     public static final String ACTOR_TYPE_SYSTEM = "System";
     public static final String ACTOR_TYPE_PROCESS = "Process";
 
-    public static final String TRIGGER_REF_TYPE = "PK";
-
     @Nullable
     private LocalDateTime timestamp;
 

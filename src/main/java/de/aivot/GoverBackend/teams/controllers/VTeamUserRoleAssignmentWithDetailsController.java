@@ -113,7 +113,7 @@ public class VTeamUserRoleAssignmentWithDetailsController {
         var created = userRoleAssignmentService
                 .create(newAssignment);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Create, UserRoleAssignmentEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), UserRoleAssignmentEntity.class, "legacy", "legacy", Map.of(
                         "id", created.getId(),
                         "userRoleId", created.getUserRoleId()
                 )));
@@ -174,7 +174,7 @@ public class VTeamUserRoleAssignmentWithDetailsController {
         userRoleAssignmentService
                 .deleteEntity(entity);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, UserRoleAssignmentEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), UserRoleAssignmentEntity.class, "legacy", "legacy", Map.of(
                         "id", entity.getId(),
                         "userRoleId", entity.getUserRoleId()
                 )));

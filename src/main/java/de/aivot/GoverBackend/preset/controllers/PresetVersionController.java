@@ -120,16 +120,11 @@ public class PresetVersionController {
         var savedVersion = versionRepository
                 .save(newVersion);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
-                        user,
-                        AuditAction.Create,
-                        PresetVersionEntity.class,
-                        Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), PresetVersionEntity.class, "legacy", "legacy", Map.of(
                                 "id", preset.getKey(),
                                 "title", preset.getTitle(),
                                 "version", savedVersion.getVersion()
-                        )
-                ));
+                        )));
 
         return savedVersion;
     }
@@ -198,16 +193,11 @@ public class PresetVersionController {
 
         presetVersion.setRootElement(updatedPreset.getRootElement());
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
-                        user,
-                        AuditAction.Update,
-                        PresetVersionEntity.class,
-                        Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), PresetVersionEntity.class, "legacy", "legacy", Map.of(
                                 "id", preset.getKey(),
                                 "title", preset.getTitle(),
                                 "version", presetVersion.getVersion()
-                        )
-                ));
+                        )));
 
         return versionRepository.save(presetVersion);
     }
@@ -249,16 +239,11 @@ public class PresetVersionController {
 
         versionRepository.delete(presetVersion);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
-                user,
-                AuditAction.Delete,
-                PresetEntity.class,
-                Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), PresetEntity.class, "legacy", "legacy", Map.of(
                         "key", preset.getKey(),
                         "title", preset.getTitle(),
                         "version", presetVersion.getVersion()
-                )
-        ));
+                )));
     }
 
     @PutMapping("{version}/publish/")
@@ -287,16 +272,11 @@ public class PresetVersionController {
 
         presetVersion.setStatus(FormStatus.Published);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
-                user,
-                AuditAction.Update,
-                PresetVersionEntity.class,
-                Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), PresetVersionEntity.class, "legacy", "legacy", Map.of(
                         "key", presetVersion.getPresetKey(),
                         "version", presetVersion.getVersion(),
                         "status", presetVersion.getStatus().toString()
-                )
-        ));
+                )));
 
         return versionRepository.save(presetVersion);
     }
@@ -327,16 +307,11 @@ public class PresetVersionController {
 
         presetVersion.setStatus(FormStatus.Revoked);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
-                user,
-                AuditAction.Update,
-                PresetVersionEntity.class,
-                Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), PresetVersionEntity.class, "legacy", "legacy", Map.of(
                         "key", presetVersion.getPresetKey(),
                         "version", presetVersion.getVersion(),
                         "status", presetVersion.getStatus().toString()
-                )
-        ));
+                )));
 
         return versionRepository.save(presetVersion);
     }

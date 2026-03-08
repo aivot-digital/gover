@@ -82,7 +82,7 @@ public class TeamController {
         var result = teamService
                 .create(newTeam);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Create, TeamEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), TeamEntity.class, "legacy", "legacy", Map.of(
                 "id", result.getId(),
                 "name", result.getName()
         )));
@@ -127,7 +127,7 @@ public class TeamController {
             throw ResponseException.badRequest("Fehler beim Speichern des Teams", e);
         }
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Update, TeamEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), TeamEntity.class, "legacy", "legacy", Map.of(
                 "id", result.getId(),
                 "name", result.getName()
         )));
@@ -153,7 +153,7 @@ public class TeamController {
         var deleted = teamService
                 .delete(id);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, TeamEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), TeamEntity.class, "legacy", "legacy", Map.of(
                 "id", deleted.getId(),
                 "name", deleted.getName()
         )));

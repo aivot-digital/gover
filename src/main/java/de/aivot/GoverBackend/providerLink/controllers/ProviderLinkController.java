@@ -84,16 +84,11 @@ public class ProviderLinkController {
         var entity = providerLinkService
                 .create(requestDTO.toEntity());
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
-                        user,
-                        AuditAction.Create,
-                        ProviderLink.class,
-                        Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), ProviderLink.class, "legacy", "legacy", Map.of(
                                 "id", entity.getId(),
                                 "text", entity.getText(),
                                 "link", entity.getLink()
-                        )
-                ));
+                        )));
 
         return ProviderLinkResponseDTO
                 .fromEntity(entity);
@@ -133,16 +128,11 @@ public class ProviderLinkController {
         var entity = providerLinkService
                 .update(id, requestDTO.toEntity());
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
-                user,
-                AuditAction.Update,
-                ProviderLink.class,
-                Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), ProviderLink.class, "legacy", "legacy", Map.of(
                         "id", entity.getId(),
                         "text", entity.getText(),
                         "link", entity.getLink()
-                )
-        ));
+                )));
 
         return ProviderLinkResponseDTO
                 .fromEntity(entity);
@@ -166,15 +156,10 @@ public class ProviderLinkController {
         var link = providerLinkService
                 .delete(id);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
-                user,
-                AuditAction.Delete,
-                ProviderLink.class,
-                Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), ProviderLink.class, "legacy", "legacy", Map.of(
                         "id", link.getId(),
                         "text", link.getText(),
                         "link", link.getLink()
-                )
-        ));
+                )));
     }
 }

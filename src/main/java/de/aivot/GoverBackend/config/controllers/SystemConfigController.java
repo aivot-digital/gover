@@ -105,7 +105,7 @@ public class SystemConfigController {
                 .save(key, entity);
 
         // Log the action of updating the system configuration
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Update, SystemConfigEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), SystemConfigEntity.class, "legacy", "legacy", Map.of(
                         "key", key,
                         "value", updateRequest.value()
                 )));

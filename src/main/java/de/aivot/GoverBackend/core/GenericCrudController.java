@@ -100,8 +100,10 @@ public abstract class GenericCrudController<T, I, F extends Filter<T>> {
                         .withUser(execUser)
                         .withAuditAction(
                                 AuditAction.Create,
+                                this.getClass().getSimpleName(),
                                 createdItem.getClass(),
-                                getIdForEntity(createdItem)
+                                getIdForEntity(createdItem),
+                                "id"
                         )
         );
 
@@ -181,8 +183,10 @@ public abstract class GenericCrudController<T, I, F extends Filter<T>> {
                         .withUser(execUser)
                         .withAuditAction(
                                 AuditAction.Update,
+                                this.getClass().getSimpleName(),
                                 result.getClass(),
-                                id
+                                id,
+                                "id"
                         )
                         .withDiffUndefined(beforeMap, resultMap)
         );
@@ -225,8 +229,10 @@ public abstract class GenericCrudController<T, I, F extends Filter<T>> {
                         .withUser(execUser)
                         .withAuditAction(
                                 AuditAction.Delete,
+                                this.getClass().getSimpleName(),
                                 deleted.getClass(),
-                                id
+                                id,
+                                "id"
                         )
         );
     }

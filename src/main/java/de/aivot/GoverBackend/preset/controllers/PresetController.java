@@ -95,16 +95,11 @@ public class PresetController {
         var savedVersion = presetVersionRepository
                 .save(newVersion);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
-                        user,
-                        AuditAction.Create,
-                        PresetEntity.class,
-                        Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), PresetEntity.class, "legacy", "legacy", Map.of(
                                 "key", savedEntity.getKey(),
                                 "title", savedEntity.getTitle(),
                                 "version", savedVersion.getVersion()
-                        )
-                ));
+                        )));
 
         return presetRepository
                 .findById(savedEntity.getKey())
@@ -159,12 +154,7 @@ public class PresetController {
         auditData.put("key", savePreset.getKey());
         auditData.put("title", savePreset.getTitle());
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
-                user,
-                AuditAction.Update,
-                PresetEntity.class,
-                auditData
-        ));
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), PresetEntity.class, "legacy", "legacy", auditData));
 
         return savePreset;
     }
@@ -195,14 +185,9 @@ public class PresetController {
 
         presetRepository.delete(preset);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
-                user,
-                AuditAction.Delete,
-                PresetEntity.class,
-                Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), PresetEntity.class, "legacy", "legacy", Map.of(
                         "key", preset.getKey(),
                         "title", preset.getTitle()
-                )
-        ));
+                )));
     }
 }

@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.mail.services;
 
+import de.aivot.GoverBackend.audit.models.AuditLogPayload;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -85,14 +86,9 @@ public class ExceptionMailService {
                 );
                 mailReached = true;
             } catch (MessagingException | IOException e) {
-                auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload
+                auditService.addAuditEntry(AuditLogPayload
                         .create()
-                        .setActionType("Exception")
-                        .setSeverity("error")
-                        .setActionResult("failure")
-                        .setReason(e.getMessage())
-                        .setMessage("Error sending exception mail to " + mail)
-                        .setMetadata(Map.of("exceptionType", e.getClass().getName(), "mail", mail)));
+                        .withException(e, "Mail Service", this.getClass()));
             } catch (ResponseException e) {
                 throw new RuntimeException(e);
             }

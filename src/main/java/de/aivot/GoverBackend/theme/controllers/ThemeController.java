@@ -80,7 +80,7 @@ public class ThemeController {
         var createdTheme = service
                 .create(newTheme);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Create, ThemeEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), ThemeEntity.class, "legacy", "legacy", Map.of(
                 "id", createdTheme.getId(),
                 "name", createdTheme.getName()
         )));
@@ -126,7 +126,7 @@ public class ThemeController {
         var updatedTheme = service
                 .update(id, changedTheme);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Update, ThemeEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), ThemeEntity.class, "legacy", "legacy", Map.of(
                 "id", updatedTheme.getId(),
                 "name", updatedTheme.getName()
         )));
@@ -153,7 +153,7 @@ public class ThemeController {
         var deletedTheme = service
                 .delete(id);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, ThemeEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), ThemeEntity.class, "legacy", "legacy", Map.of(
                 "id", deletedTheme.getId(),
                 "name", deletedTheme.getName()
         )));

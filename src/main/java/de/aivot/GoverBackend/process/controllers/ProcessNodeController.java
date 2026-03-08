@@ -46,6 +46,8 @@ import java.util.Map;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ProcessNodeController {
+    private static final String MODULE_NAME = "Prozesse";
+
     private final ScopedAuditService auditService;
     private final UserService userService;
     private final ProcessNodeService processDefinitionNodeService;
@@ -108,8 +110,10 @@ public class ProcessNodeController {
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Create,
+                        MODULE_NAME,
                         ProcessNodeEntity.class,
-                        result.getId()
+                        result.getId(),
+                        "id"
                 ));
 
         return result;
@@ -162,8 +166,10 @@ public class ProcessNodeController {
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Update,
+                        MODULE_NAME,
                         ProcessNodeEntity.class,
-                        result.getId()
+                        result.getId(),
+                        "id"
                 )
                 .withDiffUndefined(existingMap, updatedMap));
 
@@ -193,8 +199,10 @@ public class ProcessNodeController {
                 .withUser(user)
                 .withAuditAction(
                         AuditAction.Delete,
+                        MODULE_NAME,
                         ProcessNodeEntity.class,
-                        deleted.getId()
+                        deleted.getId(),
+                        "id"
                 ));
     }
 

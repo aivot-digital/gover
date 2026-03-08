@@ -87,7 +87,7 @@ public class UserController {
             throw ResponseException.badRequest("Fehler beim Anlegen der Mitarbeiter:in", e);
         }
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, UserEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), UserEntity.class, "legacy", "legacy", Map.of(
                 "id", result.getId(),
                 "email", result.getEmail()
         )));
@@ -149,7 +149,7 @@ public class UserController {
             throw ResponseException.badRequest("Fehler beim Speichern der Mitarbeiter:in", e);
         }
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, UserEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), UserEntity.class, "legacy", "legacy", Map.of(
                 "id", result.getId(),
                 "email", result.getEmail()
         )));
@@ -173,17 +173,12 @@ public class UserController {
                 .delete(id);
 
         // Log the action
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
-                        user,
-                        AuditAction.Delete,
-                        UserEntity.class,
-                        Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), UserEntity.class, "legacy", "legacy", Map.of(
                                 "id", deletedUser.getId(),
                                 "email", deletedUser.getEmail(),
                                 "firstName", deletedUser.getFirstName(),
                                 "lastName", deletedUser.getLastName()
-                        )
-                ));
+                        )));
     }
 
     @PutMapping("{id}/reset-password/")
@@ -211,7 +206,7 @@ public class UserController {
         keyCloakApiService
                 .triggerPasswordReset(id);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, UserEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), UserEntity.class, "legacy", "legacy", Map.of(
                 "id", user.getId(),
                 "email", user.getEmail(),
                 "passwordReset", true
@@ -244,7 +239,7 @@ public class UserController {
         var result = userService
                 .updatePassword(id, passwordRequestDTO.password());
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, UserEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), UserEntity.class, "legacy", "legacy", Map.of(
                 "id", result.getId(),
                 "email", result.getEmail(),
                 "passwordChanged", true

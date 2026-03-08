@@ -111,7 +111,7 @@ public class ProcessInstanceTaskController {
         var result = processInstanceTaskService
                 .create(newTask);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, ProcessInstanceTaskEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), ProcessInstanceTaskEntity.class, "legacy", "legacy", Map.of(
                 "id", result.getId(),
                 "processInstanceId", result.getProcessInstanceId(),
                 "processDefinitionId", result.getProcessId(),
@@ -172,7 +172,7 @@ public class ProcessInstanceTaskController {
         var result = processInstanceTaskService
                 .update(id, updateDTO);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, ProcessInstanceTaskEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), ProcessInstanceTaskEntity.class, "legacy", "legacy", Map.of(
                 "id", result.getId(),
                 "processInstanceId", result.getProcessInstanceId(),
                 "processDefinitionId", result.getProcessId(),
@@ -200,7 +200,7 @@ public class ProcessInstanceTaskController {
         var deleted = processInstanceTaskService
                 .delete(id);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, ProcessInstanceTaskEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), ProcessInstanceTaskEntity.class, "legacy", "legacy", Map.of(
                 "id", deleted.getId(),
                 "processInstanceId", deleted.getProcessInstanceId(),
                 "processDefinitionId", deleted.getProcessId(),

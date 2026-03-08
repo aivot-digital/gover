@@ -115,7 +115,7 @@ public class DepartmentMembershipController {
         var createdMembership = departmentMembershipService
                 .create(newMembership);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, DepartmentMembershipEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), DepartmentMembershipEntity.class, "legacy", "legacy", Map.of(
                 "id", createdMembership.getId(),
                 "departmentId", createdMembership.getDepartmentId(),
                 "userId", createdMembership.getUserId()
@@ -186,7 +186,7 @@ public class DepartmentMembershipController {
         var savedMembership = departmentMembershipService
                 .update(id, updatedMembership);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, DepartmentMembershipEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), DepartmentMembershipEntity.class, "legacy", "legacy", Map.of(
                 "id", savedMembership.getId(),
                 "departmentId", savedMembership.getDepartmentId(),
                 "userId", savedMembership.getUserId()
@@ -232,7 +232,7 @@ public class DepartmentMembershipController {
         var deletedMembership = departmentMembershipService
                 .deleteEntity(existingMembership);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, DepartmentMembershipEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), DepartmentMembershipEntity.class, "legacy", "legacy", Map.of(
                 "id", deletedMembership.getId(),
                 "orgUnitId", deletedMembership.getDepartmentId(),
                 "userId", deletedMembership.getUserId()

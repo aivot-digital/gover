@@ -112,7 +112,7 @@ public class ProcessInstanceAttachmentController {
 
         processInstanceAttachmentService.create(attachment);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, ProcessInstanceAttachmentEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), ProcessInstanceAttachmentEntity.class, "legacy", "legacy", Map.of(
                 "key", attachment.getKey(),
                 "processInstanceId", attachment.getProcessInstanceId(),
                 "processInstanceTaskId", attachment.getProcessInstanceTaskId()
@@ -194,7 +194,7 @@ public class ProcessInstanceAttachmentController {
         var result = processInstanceAttachmentService
                 .update(key, updateDTO);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, ProcessInstanceAttachmentEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), ProcessInstanceAttachmentEntity.class, "legacy", "legacy", Map.of(
                 "key", result.getKey(),
                 "processInstanceId", result.getProcessInstanceId(),
                 "processInstanceTaskId", result.getProcessInstanceTaskId()
@@ -221,7 +221,7 @@ public class ProcessInstanceAttachmentController {
         var deleted = processInstanceAttachmentService
                 .delete(key);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, ProcessInstanceAttachmentEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), ProcessInstanceAttachmentEntity.class, "legacy", "legacy", Map.of(
                 "key", deleted.getKey(),
                 "processInstanceId", deleted.getProcessInstanceId(),
                 "processInstanceTaskId", deleted.getProcessInstanceTaskId()

@@ -140,7 +140,7 @@ public class UserConfigController {
         config = userConfigService.save(key, userId, config);
 
         // Log the action of updating the user configuration
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Update, UserConfigEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), UserConfigEntity.class, "legacy", "legacy", Map.of(
                         "userId", userId,
                         "key", key,
                         "value", request.value()

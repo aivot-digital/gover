@@ -83,7 +83,7 @@ public class ProcessInstanceEventController {
         var result = processInstanceHistoryEventService
                 .create(newEvent);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, ProcessInstanceEventEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), ProcessInstanceEventEntity.class, "legacy", "legacy", Map.of(
                 "id", result.getId(),
                 "processInstanceId", result.getProcessInstanceId(),
                 "processInstanceTaskId", result.getProcessInstanceTaskId()
@@ -130,7 +130,7 @@ public class ProcessInstanceEventController {
         var result = processInstanceHistoryEventService
                 .update(id, updateDTO);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, ProcessInstanceEventEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), ProcessInstanceEventEntity.class, "legacy", "legacy", Map.of(
                 "id", result.getId(),
                 "processInstanceId", result.getProcessInstanceId(),
                 "processInstanceTaskId", result.getProcessInstanceTaskId()
@@ -157,7 +157,7 @@ public class ProcessInstanceEventController {
         var deleted = processInstanceHistoryEventService
                 .delete(id);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, ProcessInstanceEventEntity.class, Map.of(
+        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), ProcessInstanceEventEntity.class, "legacy", "legacy", Map.of(
                 "id", deleted.getId(),
                 "processInstanceId", deleted.getProcessInstanceId(),
                 "processInstanceTaskId", deleted.getProcessInstanceTaskId()
