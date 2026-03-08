@@ -32,6 +32,7 @@ import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snac
 import {ProcessFlowEditor} from './components/process-flow-editor/process-flow-editor';
 import {ReactFlowProvider} from '@xyflow/react';
 import {ProcessDetailsPageProvider} from './process-details-page-context';
+import {Allotment} from 'allotment';
 import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
 import {
     ProcessDetailsPageMoreMenu,
@@ -822,290 +823,292 @@ export function ProcessDetailsPage(): ReactNode {
         >
             <Box
                 sx={{
-                    display: 'flex',
                     height: '100vh',
+                    '--focus-border': (theme) => theme.palette.secondary.main,
                 }}
             >
-                <Box
-                    sx={{
-                        flex: 1,
-                        px: 2,
-                        py: 2,
-                        height: '100vh',
-                        display: 'flex',
-                        flexDirection: 'column',
-                    }}
-                >
-                    <GenericPageHeader
-                        title={'Prozess: ' + processFlow.definition.internalTitle}
-                        badge={
-                            currentTestClaim != null ?
-                                [
-                                    {
-                                        color: 'default',
-                                        label: `Version ${processFlow.version.processVersion}`,
-                                    },
-                                    {
-                                        color: 'warning',
-                                        label: `Im Test durch ${resolveUserName(currentTestClaim.user)}`,
-                                        onDelete: () => {
-                                            confirm({
-                                                title: 'Testanspruch löschen',
-                                                children: (
-                                                    <Typography>
-                                                        Möchten Sie den Testanspruch wirklich löschen? Dadurch wird der
-                                                        Test für diesen Prozess sofort beendet und die Bearbeitung des
-                                                        Prozesses wieder freigegeben.
-                                                        Alle gestarteten Vorgänge werden dabei beendet und gelöscht.
-                                                    </Typography>
-                                                ),
-                                                confirmButtonText: 'Testanspruch löschen',
-                                            })
-                                                .then((confirmed) => {
-                                                    if (!confirmed) {
-                                                        return;
-                                                    }
-
-                                                    new ProcessTestClaimApiService()
-                                                        .destroy(currentTestClaim.claim.id)
-                                                        .then(() => {
-                                                            setCurrentTestClaim(null);
-                                                            setRuntimeData(null);
-                                                            dispatch(showSuccessSnackbar('Testanspruch wurde gelöscht.'));
-
-                                                            if (instanceId != null) {
-                                                                const nextSearchParams = new URLSearchParams(searchParams);
-                                                                nextSearchParams.delete('instanceId');
-                                                                setSearchParams(nextSearchParams);
+                <Allotment>
+                    <Allotment.Pane minSize={760}>
+                        <Box
+                            sx={{
+                                px: 2,
+                                py: 2,
+                                height: '100%',
+                                display: 'flex',
+                                flexDirection: 'column',
+                            }}
+                        >
+                            <GenericPageHeader
+                                title={'Prozess: ' + processFlow.definition.internalTitle}
+                                badge={
+                                    currentTestClaim != null ?
+                                        [
+                                            {
+                                                color: 'default',
+                                                label: `Version ${processFlow.version.processVersion}`,
+                                            },
+                                            {
+                                                color: 'warning',
+                                                label: `Im Test durch ${resolveUserName(currentTestClaim.user)}`,
+                                                onDelete: () => {
+                                                    confirm({
+                                                        title: 'Testanspruch löschen',
+                                                        children: (
+                                                            <Typography>
+                                                                Möchten Sie den Testanspruch wirklich löschen? Dadurch wird der
+                                                                Test für diesen Prozess sofort beendet und die Bearbeitung des
+                                                                Prozesses wieder freigegeben.
+                                                                Alle gestarteten Vorgänge werden dabei beendet und gelöscht.
+                                                            </Typography>
+                                                        ),
+                                                        confirmButtonText: 'Testanspruch löschen',
+                                                    })
+                                                        .then((confirmed) => {
+                                                            if (!confirmed) {
+                                                                return;
                                                             }
+
+                                                            new ProcessTestClaimApiService()
+                                                                .destroy(currentTestClaim.claim.id)
+                                                                .then(() => {
+                                                                    setCurrentTestClaim(null);
+                                                                    setRuntimeData(null);
+                                                                    dispatch(showSuccessSnackbar('Testanspruch wurde gelöscht.'));
+
+                                                                    if (instanceId != null) {
+                                                                        const nextSearchParams = new URLSearchParams(searchParams);
+                                                                        nextSearchParams.delete('instanceId');
+                                                                        setSearchParams(nextSearchParams);
+                                                                    }
+                                                                })
+                                                                .catch((err) => {
+                                                                    dispatch(showApiErrorSnackbar(err, 'Der Testanspruch konnte nicht gelöscht werden.'));
+                                                                });
                                                         })
                                                         .catch((err) => {
                                                             dispatch(showApiErrorSnackbar(err, 'Der Testanspruch konnte nicht gelöscht werden.'));
                                                         });
-                                                })
-                                                .catch((err) => {
-                                                    dispatch(showApiErrorSnackbar(err, 'Der Testanspruch konnte nicht gelöscht werden.'));
-                                                });
+                                                },
+                                            },
+                                        ] :
+                                        {
+                                            color: 'default',
+                                            label: `Version ${processFlow.version.processVersion}`,
+                                        }
+                                }
+                                icon={ModuleIcons.processes}
+                                actions={[
+                                    {
+                                        tooltip: 'Laufzeitdaten neu laden',
+                                        icon: <Refresh/>,
+                                        onClick: () => {
+                                            void loadRuntimeData();
+                                        },
+                                        visible: instanceId != null,
+                                        disabled: isRefreshingRuntimeData,
+                                    },
+                                    {
+                                        tooltip: 'Vorgangsereignisse anzeigen',
+                                        icon: <News/>,
+                                        onClick: () => {
+                                            setShowProcessInstanceEventsDialog(true);
+                                        },
+                                        visible: runtimeData != null,
+                                    },
+                                    {
+                                        label: 'Auslöser',
+                                        tooltip: 'Neuen Auslöser hinzufügen',
+                                        disabledTooltip: 'Während des Tests können keine Auslöser hinzugefügt werden.',
+                                        icon: <Add/>,
+                                        onClick: () => {
+                                            setShowAddTriggerDialog(true);
+                                        },
+                                        disabled: currentTestClaim != null,
+                                        variant: 'contained',
+                                    },
+                                    {
+                                        tooltip: 'Mehr',
+                                        icon: <MoreVert/>,
+                                        onClick: (event) => {
+                                            setShowMenuAtEl(event.target as HTMLElement);
                                         },
                                     },
-                                ] :
+                                ]}
+                            />
+
+                            <Box
+                                sx={{
+                                    flex: 1,
+                                    minHeight: 0,
+                                    borderRadius: 1,
+                                    mt: 2,
+                                    mb: -2, // compensate for parent `py: 2`
+                                    ml: -2, // compensate for parent `px: 2`
+                                    mr: -2, // compensate for parent `px: 2`
+                                }}
+                            >
                                 {
-                                    color: 'default',
-                                    label: `Version ${processFlow.version.processVersion}`,
+                                    isFlowEditorReady || shouldKeepFlowEditorMounted ?
+                                        <ReactFlowProvider>
+                                            <ProcessFlowEditor
+                                                editable={currentTestClaim == null}
+                                                processFlow={processFlow}
+                                                nodeProviders={flowNodeProviders}
+                                                selectedNode={selectedNode}
+                                                onSelectNode={(node) => {
+                                                    if (node == null) {
+                                                        navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}?${searchParams.toString()}`);
+                                                        return;
+                                                    }
+                                                    navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}/nodes/${node.id}?${searchParams.toString()}`);
+                                                }}
+                                                onAddFollowUpNode={(fromNodeId, viaPort) => {
+                                                    setNewNodeFor({
+                                                        fromNodeId,
+                                                        viaPort,
+                                                    });
+                                                }}
+                                                onAddInbetweenNode={(forEdgeId) => {
+                                                    setNewNodeOnEdgeId(forEdgeId);
+                                                }}
+                                                onAddEdge={(fromNodeId, toNodeId, viaPortKey) => {
+                                                    new ProcessDefinitionEdgeApiService()
+                                                        .create({
+                                                            id: 0,
+                                                            processId: processFlow.definition.id,
+                                                            processVersion: processFlow.version.processVersion,
+                                                            fromNodeId,
+                                                            toNodeId,
+                                                            viaPort: viaPortKey,
+                                                        })
+                                                        .then((newEdge) => {
+                                                            setProcessFlow((prevProcess) => {
+                                                                if (prevProcess == null) {
+                                                                    return prevProcess;
+                                                                }
+
+                                                                return {
+                                                                    ...prevProcess,
+                                                                    edges: [
+                                                                        ...prevProcess.edges,
+                                                                        newEdge,
+                                                                    ],
+                                                                };
+                                                            });
+                                                        });
+                                                }}
+                                                onDeleteEdge={(edgeId) => {
+                                                    new ProcessDefinitionEdgeApiService()
+                                                        .destroy(edgeId)
+                                                        .then(() => {
+                                                            setProcessFlow((prevProcess) => {
+                                                                if (prevProcess == null) {
+                                                                    return prevProcess;
+                                                                }
+
+                                                                return {
+                                                                    ...prevProcess,
+                                                                    edges: prevProcess.edges.filter((edge) => edge.id !== edgeId),
+                                                                };
+                                                            });
+                                                        });
+                                                }}
+                                                onDeleteNode={handleDeleteNode}
+                                                runtimeData={runtimeData}
+                                            />
+                                        </ReactFlowProvider> :
+                                        <Paper
+                                            sx={{
+                                                height: '100%',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                p: 2,
+                                            }}
+                                        >
+                                            <Typography color="text.secondary">
+                                                {
+                                                    hasFlowNodeProviderLoadError ?
+                                                        'Die versionierten Prozessknoten konnten nicht geladen werden.' :
+                                                        isLoadingFlowNodeProviders ?
+                                                            'Lade versionierte Prozessknoten...' :
+                                                            'Bereite Prozessknoten vor...'
+                                                }
+                                            </Typography>
+                                        </Paper>
                                 }
-                        }
-                        icon={ModuleIcons.processes}
-                        actions={[
-                            {
-                                tooltip: 'Laufzeitdaten neu laden',
-                                icon: <Refresh/>,
-                                onClick: () => {
-                                    void loadRuntimeData();
-                                },
-                                visible: instanceId != null,
-                                disabled: isRefreshingRuntimeData,
-                            },
-                            {
-                                tooltip: 'Vorgangsereignisse anzeigen',
-                                icon: <News/>,
-                                onClick: () => {
-                                    setShowProcessInstanceEventsDialog(true);
-                                },
-                                visible: runtimeData != null,
-                            },
-                            /*
-                            {
-                                tooltip: 'Historie anzeigen',
-                                icon: <AccessTimeIcon/>,
-                                onClick: () => {
-                                    setShowRevisions(true);
-                                },
-                                visible: canViewHistory,
-                            },
-                             */
-                            {
-                                label: 'Auslöser',
-                                tooltip: 'Neuen Auslöser hinzufügen',
-                                disabledTooltip: 'Während des Tests können keine Auslöser hinzugefügt werden.',
-                                icon: <Add/>,
-                                onClick: () => {
-                                    setShowAddTriggerDialog(true);
-                                },
-                                disabled: currentTestClaim != null,
-                                variant: 'contained',
-                            },
-                            {
-                                tooltip: 'Mehr',
-                                icon: <MoreVert/>,
-                                onClick: (event) => {
-                                    setShowMenuAtEl(event.target as HTMLElement);
-                                },
-                            },
-                        ]}
-                    />
+                            </Box>
 
-                    <Box
-                        sx={{
-                            flex: 1,
-                            minHeight: 0,
-                            borderRadius: 1,
-                            mt: 2,
-                            mb: -2, // compensate for parent `py: 2`
-                            ml: -2, // compensate for parent `px: 2`
-                            mr: -2, // compensate for parent `px: 2`
-                        }}
-                    >
-                        {
-                            isFlowEditorReady || shouldKeepFlowEditorMounted ?
-                                <ReactFlowProvider>
-                                    <ProcessFlowEditor
-                                        editable={currentTestClaim == null}
-                                        processFlow={processFlow}
-                                        nodeProviders={flowNodeProviders}
-                                        selectedNode={selectedNode}
-                                        onSelectNode={(node) => {
-                                            if (node == null) {
-                                                navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}?${searchParams.toString()}`);
-                                                return;
-                                            }
-                                            navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}/nodes/${node.id}?${searchParams.toString()}`);
-                                        }}
-                                        onAddFollowUpNode={(fromNodeId, viaPort) => {
-                                            setNewNodeFor({
-                                                fromNodeId,
-                                                viaPort,
-                                            });
-                                        }}
-                                        onAddInbetweenNode={(forEdgeId) => {
-                                            setNewNodeOnEdgeId(forEdgeId);
-                                        }}
-                                        onAddEdge={(fromNodeId, toNodeId, viaPortKey) => {
-                                            new ProcessDefinitionEdgeApiService()
-                                                .create({
-                                                    id: 0,
-                                                    processId: processFlow.definition.id,
-                                                    processVersion: processFlow.version.processVersion,
-                                                    fromNodeId,
-                                                    toNodeId,
-                                                    viaPort: viaPortKey,
-                                                })
-                                                .then((newEdge) => {
-                                                    setProcessFlow((prevProcess) => {
-                                                        if (prevProcess == null) {
-                                                            return prevProcess;
-                                                        }
-
-                                                        return {
-                                                            ...prevProcess,
-                                                            edges: [
-                                                                ...prevProcess.edges,
-                                                                newEdge,
-                                                            ],
-                                                        };
-                                                    });
-                                                });
-                                        }}
-                                        onDeleteEdge={(edgeId) => {
-                                            new ProcessDefinitionEdgeApiService()
-                                                .destroy(edgeId)
-                                                .then(() => {
-                                                    setProcessFlow((prevProcess) => {
-                                                        if (prevProcess == null) {
-                                                            return prevProcess;
-                                                        }
-
-                                                        return {
-                                                            ...prevProcess,
-                                                            edges: prevProcess.edges.filter((edge) => edge.id !== edgeId),
-                                                        };
-                                                    });
-                                                });
-                                        }}
-                                        onDeleteNode={handleDeleteNode}
-                                        runtimeData={runtimeData}
-                                    />
-                                </ReactFlowProvider> :
+                            {
+                                runtimeData != null && runtimeAttachments.length > 0 &&
                                 <Paper
                                     sx={{
-                                        height: '100%',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
+                                        mt: 2,
                                         p: 2,
+                                        display: 'flex',
+                                        flexWrap: 'wrap',
+                                        alignItems: 'center',
+                                        gap: 1,
                                     }}
                                 >
-                                    <Typography color="text.secondary">
-                                        {
-                                            hasFlowNodeProviderLoadError ?
-                                                'Die versionierten Prozessknoten konnten nicht geladen werden.' :
-                                                isLoadingFlowNodeProviders ?
-                                                    'Lade versionierte Prozessknoten...' :
-                                                    'Bereite Prozessknoten vor...'
-                                        }
+                                    <Typography variant="h6">
+                                        Anhänge
                                     </Typography>
-                                </Paper>
-                        }
-                    </Box>
 
-                    {
-                        runtimeData != null && runtimeAttachments.length > 0 &&
+                                    {
+                                        runtimeAttachments.map((attachment) => (
+                                            <Chip
+                                                key={attachment.key}
+                                                variant="outlined"
+                                                label={attachment.fileName}
+                                                sx={{
+                                                    maxWidth: 320,
+                                                    '& .MuiChip-label': {
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                    },
+                                                }}
+                                                onDelete={() => {
+                                                    void handleDownloadAttachment(attachment);
+                                                }}
+                                                deleteIcon={
+                                                    <Download color="primary"/>
+                                                }
+                                            />
+                                        ))
+                                    }
+                                </Paper>
+                            }
+                        </Box>
+                    </Allotment.Pane>
+
+                    <Allotment.Pane
+                        minSize={420}
+                        preferredSize={480}
+                    >
                         <Paper
                             sx={{
-                                mt: 2,
-                                p: 2,
-                                display: 'flex',
-                                flexWrap: 'wrap',
-                                alignItems: 'center',
-                                gap: 1,
+                                px: 0,
+                                boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
+                                borderLeft: '1px solid #E0E7E0',
+                                borderRadius: 0,
+                                position: 'relative',
+                                height: '100%',
+                                overflow: 'hidden',
                             }}
                         >
-                            <Typography variant="h6">
-                                Anhänge
-                            </Typography>
-
-                            {
-                                runtimeAttachments.map((attachment) => (
-                                    <Chip
-                                        key={attachment.key}
-                                        variant="outlined"
-                                        label={attachment.fileName}
-                                        sx={{
-                                            maxWidth: 320,
-                                            '& .MuiChip-label': {
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                            },
-                                        }}
-                                        onDelete={() => {
-                                            void handleDownloadAttachment(attachment);
-                                        }}
-                                        deleteIcon={
-                                            <Download color="primary"/>
-                                        }
-                                    />
-                                ))
-                            }
+                            <ProcessDetailsPageProvider
+                                value={{
+                                    editable: true,
+                                    onSave: handleSaveNode,
+                                    onDelete: handleDeleteNode,
+                                }}
+                            >
+                                <Outlet/>
+                            </ProcessDetailsPageProvider>
                         </Paper>
-                    }
-                </Box>
-
-                <Paper
-                    sx={{
-                        width: '33%',
-                        height: '100vh',
-                        borderLeft: '1px solid #ccc',
-                    }}
-                >
-                    <ProcessDetailsPageProvider
-                        value={{
-                            editable: true,
-                            onSave: handleSaveNode,
-                            onDelete: handleDeleteNode,
-                        }}
-                    >
-                        <Outlet/>
-                    </ProcessDetailsPageProvider>
-                </Paper>
+                    </Allotment.Pane>
+                </Allotment>
             </Box>
 
             <SelectNodeProviderDialog

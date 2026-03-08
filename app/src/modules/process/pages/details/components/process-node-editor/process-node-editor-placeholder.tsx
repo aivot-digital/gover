@@ -68,7 +68,7 @@ export function ProcessNodeEditorPlaceholder() {
             </Typography>
 
             <Typography
-                variant="h6"
+                variant="h5"
                 sx={{
                     mb: 2,
                 }}
