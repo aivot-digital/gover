@@ -18,11 +18,15 @@ import {ExpandableCodeBlock} from '../../../../../../components/expandable-code-
 import {ProcessInstanceEventDialog} from '../../../../dialogs/process-instance-event-dialog';
 import News from '@aivot/mui-material-symbols-400-outlined/dist/news/News';
 import {getLatestTaskForEdge, getLatestTaskForNode} from './utils/runtime-task-utils';
+import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {Menu} from '../../../../../../components/menu/menu';
 
 export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
     const theme = useTheme();
     const confirm = useConfirm();
     const [showEventsDialog, setShowEventsDialog] = useState(false);
+    const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
 
     const {
         data,
@@ -33,6 +37,7 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
         selectedNode,
         onAddFollowUpNode,
         onDeleteEdge,
+        onDeleteNode,
         showTargetHandles,
         runtimeData,
     } = useProcessFlowEditorContext();
@@ -94,12 +99,16 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
         );
     }, [provider.componentKey, provider.key]);
 
+    const nodeName = useMemo(() => getNodeName(node, provider), [node, provider]);
+    const nodeDescription = useMemo(() => getNodeDescription(node, provider), [node, provider]);
+
     return (
         <Box
             data-node-id={node.id}
             sx={{
                 position: 'relative',
                 width: `${getFlowNodeWidth(provider)}px`,
+                minWidth: '280px',
             }}
         >
             <Box
@@ -110,102 +119,159 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
                     alignItems: 'center',
                 }}
             >
-                {/* Type Card */}
                 <Paper
+                    elevation={0}
                     sx={{
                         bgcolor: typeBgColor,
                         color: typeTextColor,
-                        display: 'flex',
-                        width: '66%',
-                        height: '24px',
+                        display: 'inline-flex',
+                        width: 'fit-content',
+                        maxWidth: 'calc(100% - 32px)',
+                        minHeight: '32px',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        py: 0.25,
-                        px: 0.5,
+                        gap: 0.75,
+                        py: 0.5,
+                        px: 1.5,
                         borderBottomLeftRadius: 0,
                         borderBottomRightRadius: 0,
+                        borderTopLeftRadius: 6,
+                        borderTopRightRadius: 6,
                     }}
                 >
                     <TypeIcon
                         sx={{
-                            fontSize: '16px',
-                            mr: 0.5,
+                            fontSize: '18px',
                         }}
                     />
 
                     <Typography
                         sx={{
-                            fontSize: '12px',
-                            fontWeight: 200,
+                            fontSize: '0.95rem',
+                            fontWeight: 600,
+                            lineHeight: 1,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
                         }}
                     >
                         {typeLabel}
                     </Typography>
                 </Paper>
 
-                {/* Content Card */}
                 <Paper
+                    elevation={0}
                     sx={{
                         position: 'relative',
                         display: 'flex',
                         flexDirection: 'column',
-                        alignItems: 'flex-start',
                         width: '100%',
-                        height: 'calc(100% - 24px)',
+                        overflow: 'hidden',
+                        borderRadius: '6px',
                         outline: selectedNode?.id === node.id ? `2px solid ${theme.palette.primary.light}` : 'none',
+                        boxShadow: selectedNode?.id === node.id ?
+                            '0px 4px 20px rgba(0, 0, 0, 0.15)' :
+                            '0px 4px 20px rgba(0, 0, 0, 0.1)',
                     }}
                 >
-                    {/* Title */}
                     <Box
                         sx={{
                             display: 'flex',
                             alignItems: 'center',
-                            padding: 1,
+                            gap: 1.5,
+                            px: 1.875,
+                            pt: 1.5,
+                            pb: 1.5,
                             width: '100%',
                         }}
                     >
                         <ProviderIcon
                             sx={{
-                                mr: 1,
+                                mt: 0.125,
+                                color: theme.palette.text.primary,
+                                flexShrink: 0,
+                                fontSize: '1.5rem',
                             }}
                         />
 
-                        <Typography>
-                            {getNodeName(node, provider)}
-                        </Typography>
-
-                        {
-                            associatedTask != null &&
-                            <Box
+                        <Box
+                            sx={{
+                                minWidth: 0,
+                                flex: 1,
+                            }}
+                        >
+                            <Typography
                                 sx={{
-                                    ml: 'auto',
+                                    fontSize: '1rem',
+                                    fontWeight: 700,
+                                    lineHeight: 1.2,
+                                    color: theme.palette.text.primary,
                                 }}
                             >
+                                {nodeName}
+                            </Typography>
+                        </Box>
+
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 0.25,
+                                ml: 'auto',
+                                flexShrink: 0,
+                            }}
+                        >
+                            {
+                                associatedTask != null &&
                                 <ProcessInstanceTaskStatusIcon
                                     status={associatedTask.status}
                                     statusOverride={associatedTask.statusOverride}
                                 />
-                            </Box>
-                        }
+                            }
+
+                            {
+                                editable &&
+                                <IconButton
+                                    size="small"
+                                    sx={{
+                                        color: theme.palette.text.secondary,
+                                        mt: -0.25,
+                                        mr: -0.75,
+                                    }}
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        event.preventDefault();
+                                        setMenuAnchorEl(event.currentTarget);
+                                    }}
+                                >
+                                    <MoreVert/>
+                                </IconButton>
+                            }
+                        </Box>
                     </Box>
 
-                    {/* Divider */}
                     <Divider
                         sx={{
-                            mb: 0.25,
                             width: '100%',
+                            borderColor: 'rgba(15, 23, 42, 0.12)',
                         }}
                     />
 
-                    {/* Description */}
                     <Box
                         sx={{
-                            padding: 1,
+                            p: 1.875,
+                            pb: 2,
                             flex: 1,
                         }}
                     >
-                        <Typography>
-                            {getNodeDescription(node, provider)}
+                        <Typography
+                            sx={{
+                                fontSize: '0.875rem',
+                                lineHeight: 1.45,
+                                color: theme.palette.text.secondary,
+                            }}
+                        >
+                            {nodeDescription}
                         </Typography>
                     </Box>
 
@@ -278,6 +344,35 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
                     }
                 </Paper>
             </Box>
+
+            <Menu
+                open={menuAnchorEl != null}
+                anchorEl={menuAnchorEl}
+                onClose={() => {
+                    setMenuAnchorEl(null);
+                }}
+                items={[
+                    {
+                        label: 'Löschen',
+                        icon: <Delete/>,
+                        onClick: () => {
+                            void confirm({
+                                title: 'Prozesselement löschen',
+                                children: (
+                                    <Typography>
+                                        Möchten Sie das Prozesselement <strong>{nodeName}</strong> wirklich löschen?
+                                    </Typography>
+                                ),
+                            })
+                                .then((confirmed) => {
+                                    if (confirmed) {
+                                        void onDeleteNode(node);
+                                    }
+                                });
+                        },
+                    },
+                ]}
+            />
 
             {
                 provider.type !== ProcessNodeType.Trigger &&

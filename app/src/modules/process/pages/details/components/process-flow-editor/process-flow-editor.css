@@ -1,0 +1,74 @@
+.process-flow-editor-controls.react-flow__controls {
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 6px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+    overflow: hidden;
+}
+
+.process-flow-editor-controls.react-flow__panel.bottom.left {
+    top: auto;
+    right: auto;
+    bottom: 16px;
+    left: 16px;
+}
+
+.process-flow-editor-control-tooltip-anchor {
+    display: flex;
+}
+
+.process-flow-editor-controls .react-flow__controls-button.process-flow-editor-control-button {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 0;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    background: transparent;
+    color: #475569;
+    box-shadow: none;
+}
+
+.process-flow-editor-controls .react-flow__controls-button.process-flow-editor-control-button:last-child {
+    border-bottom: 0;
+}
+
+.process-flow-editor-controls .react-flow__controls-button.process-flow-editor-control-button:hover {
+    background: #f8fafc;
+}
+
+.process-flow-editor-controls .react-flow__controls-button.process-flow-editor-control-button:disabled {
+    color: #cbd5e1;
+    background: transparent;
+}
+
+.process-flow-editor-controls .react-flow__controls-button.process-flow-editor-control-button-zoom-reset {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0;
+    line-height: 1;
+    color: #334155;
+}
+
+.process-flow-editor-controls .react-flow__controls-button.process-flow-editor-control-button svg,
+.process-flow-editor-controls .react-flow__controls-button.process-flow-editor-control-button .MuiSvgIcon-root {
+    width: 18px;
+    height: 18px;
+    max-width: none;
+    max-height: none;
+}
+
+.process-flow-editor-minimap.react-flow__minimap {
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 10px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+    padding: 0;
+    overflow: hidden;
+}
+
+.process-flow-editor-minimap .react-flow__minimap-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    border-radius: 6px;
+}

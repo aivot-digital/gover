@@ -6,6 +6,7 @@ import {type ProcessNodeProvider} from '../../../../../services/process-node-pro
 import {
     DEFAULT_FLOW_EDGE_TYPE,
     DEFAULT_FLOW_NODE_TYPE,
+    MIN_NODE_WIDTH,
     NODE_HEIGHT,
     NODE_WIDTH,
     PROCESS_FLOW_EDGE_Z_INDEX,
@@ -71,7 +72,7 @@ interface ResolvedLayoutNode {
 }
 
 export function getFlowNodeWidth(provider: ProcessNodeProvider): number {
-    return Math.max(NODE_WIDTH * 2, NODE_WIDTH * (provider.ports.length + 1));
+    return Math.max(MIN_NODE_WIDTH, 96 * (provider.ports.length + 1));
 }
 
 export function createNodeMeasurementMap(flowNodes: FlowNode[]): NodeMeasurementMap {

@@ -17,8 +17,11 @@ import {
 import './process-flow-editor-animations.css';
 
 const CHIP_HEIGHT = 24;
+const PORT_DOT_SIZE = 10;
+const PORT_DOT_GAP = 6;
+const TOP_PORT_CONNECTOR_HEIGHT = ADD_BUTTON_DISTANCE + (PORT_DOT_SIZE / 2) + PORT_DOT_GAP;
 const CONNECTED_PORT_STEM_HEIGHT = 4;
-const CONNECTED_SOURCE_HANDLE_TOP = ADD_BUTTON_DISTANCE + CHIP_HEIGHT + CONNECTED_PORT_STEM_HEIGHT;
+const CONNECTED_SOURCE_HANDLE_TOP = ADD_BUTTON_DISTANCE + PORT_DOT_SIZE + PORT_DOT_GAP + CHIP_HEIGHT + CONNECTED_PORT_STEM_HEIGHT;
 const CONNECTED_PORT_SPACER_HEIGHT = ADD_BUTTON_DISTANCE + ADD_BUTTON_SIZE + (ADD_BUTTON_DISTANCE * 1.25) - CONNECTED_PORT_STEM_HEIGHT;
 
 interface ProcessFlowEditorNodeHandleProps {
@@ -79,7 +82,20 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
             >
                 <Box
                     sx={{
-                        height: ADD_BUTTON_DISTANCE,
+                        mt: `-${PORT_DOT_SIZE / 2}px`,
+                        width: `${PORT_DOT_SIZE}px`,
+                        height: `${PORT_DOT_SIZE}px`,
+                        borderRadius: '999px',
+                        bgcolor: wasPerformed ? theme.palette.primary.main : HANDLE_COLOR,
+                        border: `2px solid ${theme.palette.background.paper}`,
+                        boxShadow: '0 6px 14px rgba(15, 23, 42, 0.16)',
+                        zIndex: 1,
+                    }}
+                />
+
+                <Box
+                    sx={{
+                        height: `${TOP_PORT_CONNECTOR_HEIGHT}px`,
                         width: `${HANDLE_WIDTH}px`,
                         backgroundColor: wasPerformed ? undefined : HANDLE_COLOR,
                         backgroundImage: wasPerformed ?
