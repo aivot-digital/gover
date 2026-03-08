@@ -1,6 +1,5 @@
-import {ListItemAvatar, ListItemText, Menu, MenuItem} from '@mui/material';
+import {Divider, ListItemIcon, ListItemText, Menu, MenuItem} from '@mui/material';
 import React, {type ReactNode, useMemo} from 'react';
-import Divider from '@mui/material/Divider';
 import History from '@aivot/mui-material-symbols-400-outlined/dist/history/History';
 import Comment from '@aivot/mui-material-symbols-400-outlined/dist/comment/Comment';
 import FileExport from '@aivot/mui-material-symbols-400-outlined/dist/file-export/FileExport';
@@ -58,6 +57,36 @@ export function ProcessDetailsPageMoreMenu(props: ProcessDetailsPageMoreMenuProp
                 horizontal: 'right',
                 vertical: 'top',
             }}
+            transformOrigin={{
+                horizontal: 'left',
+                vertical: 'top',
+            }}
+            PaperProps={{
+                elevation: 6,
+                sx: {
+                    mt: -1.5,
+                    ml: 1.25,
+                    minWidth: 280,
+                    overflow: 'visible',
+                    '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 19,
+                        left: 0,
+                        width: 10,
+                        height: 10,
+                        bgcolor: 'background.paper',
+                        transform: 'translateX(-50%) rotate(45deg)',
+                        boxShadow: '-2px 2px 6px rgba(15, 23, 42, 0.08)',
+                        zIndex: 0,
+                    },
+                },
+            }}
+            MenuListProps={{
+                sx: {
+                    py: 1,
+                },
+            }}
         >
             {
                 entries
@@ -68,16 +97,28 @@ export function ProcessDetailsPageMoreMenu(props: ProcessDetailsPageMoreMenuProp
                         (
                             <MenuItem
                                 key={e.label}
-                                dense={true}
                                 onClick={() => {
                                     dispatchEvent(e.event);
                                 }}
+                                sx={{
+                                    minHeight: 42,
+                                    px: 1.5,
+                                    gap: 1,
+                                }}
                             >
-                                <ListItemAvatar>
+                                <ListItemIcon
+                                    sx={{
+                                        minWidth: 32,
+                                        color: e.isDangerous ? 'error.main' : 'text.secondary',
+                                    }}
+                                >
                                     {e.icon}
-                                </ListItemAvatar>
+                                </ListItemIcon>
                                 <ListItemText
                                     primary={e.label}
+                                    primaryTypographyProps={{
+                                        color: e.isDangerous ? 'error.main' : 'text.primary',
+                                    }}
                                 />
                             </MenuItem>
                         ))
@@ -91,6 +132,7 @@ const entries: Array<{
     icon: ReactNode;
     label: string;
     event?: ProcessDetailsPageMoreMenuEvent;
+    isDangerous?: boolean;
 } | 'separator'> = [
     {
         icon: <History/>,
@@ -125,5 +167,6 @@ const entries: Array<{
     {
         icon: <Delete/>,
         label: 'Prozess löschen',
+        isDangerous: true,
     },
 ];

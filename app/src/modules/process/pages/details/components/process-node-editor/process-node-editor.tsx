@@ -100,6 +100,7 @@ export function ProcessNodeEditor(): ReactNode {
     }, [originalNode?.processId, originalNode?.processVersion]);
 
     const {
+        hasChanged,
         dialog: changeBlockerDialog,
     } = useChangeBlocker(originalNode, editedNode);
 
@@ -229,20 +230,22 @@ export function ProcessNodeEditor(): ReactNode {
     }, [location]);
 
     const handleSaveSelected = (): void => {
-        if (editedNode != null) {
-            onSave(editedNode)
-                .then(() => {
-                    setOriginalNode(editedNode);
-                    dispatch(showSuccessSnackbar('Der Knoten wurde erfolgreich gespeichert.'));
-                })
-                .catch((err: any) => {
-                    if (isApiError(err) && err.status === 400 && err.displayableToUser) {
-                        dispatch(showErrorSnackbar('Der Knoten konnte nicht gespeichert werden, da die Konfiguration ungültig ist.'));
-                    } else {
-                        dispatch(showApiErrorSnackbar(err, 'Der Knoten konnte nicht gespeichert werden.'));
-                    }
-                });
+        if (!hasChanged || editedNode == null) {
+            return;
         }
+
+        onSave(editedNode)
+            .then(() => {
+                setOriginalNode(editedNode);
+                dispatch(showSuccessSnackbar('Der Knoten wurde erfolgreich gespeichert.'));
+            })
+            .catch((err: any) => {
+                if (isApiError(err) && err.status === 400 && err.displayableToUser) {
+                    dispatch(showErrorSnackbar('Der Knoten konnte nicht gespeichert werden, da die Konfiguration ungültig ist.'));
+                } else {
+                    dispatch(showApiErrorSnackbar(err, 'Der Knoten konnte nicht gespeichert werden.'));
+                }
+            });
     };
 
     const handleDeleteSelected = (): void => {
@@ -318,7 +321,7 @@ export function ProcessNodeEditor(): ReactNode {
                             alignItems: 'center',
                             gap: 2,
                             px: 2,
-                            pt: 1,
+                            pt: 1.5,
                             pb: 0.5,
                             minWidth: 0,
                         }}
@@ -353,6 +356,7 @@ export function ProcessNodeEditor(): ReactNode {
                                 sx={{
                                     display: 'block',
                                     lineHeight: 1.2,
+                                    mt: 0.5,
                                 }}
                             >
                                 {typeLabel}
@@ -360,7 +364,6 @@ export function ProcessNodeEditor(): ReactNode {
 
                             <Box
                                 sx={{
-                                    mt: -0.25,
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: 1,
@@ -411,7 +414,7 @@ export function ProcessNodeEditor(): ReactNode {
                             navigate(`/processes/${params.processId}/versions/${params.processVersion}/nodes/${originalNode.id}/tabs/${value}?${searchParams.toString()}`);
                         }}
                         sx={{
-                            mt: 1,
+                            mt: 0.25,
                             borderBottom: '1px solid #ddd',
                         }}
                     >
@@ -482,6 +485,7 @@ export function ProcessNodeEditor(): ReactNode {
                         onClick={handleSaveSelected}
                         variant="contained"
                         startIcon={<Save/>}
+                        disabled={!hasChanged || isNodeLoading}
                     >
                         Konfiguration speichern
                     </Button>
