@@ -12,6 +12,7 @@ import de.aivot.GoverBackend.config.services.SystemConfigService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -115,6 +116,11 @@ public class SystemConfigController {
                         SystemConfigEntity.class,
                         config.getKey(),
                         "key"
+                )
+                .withMessage(
+                        "Die Systemkonfiguration %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(config.getKey()),
+                        StringUtils.quote(user.getFullName())
                 )
                 .log();
 

@@ -1,6 +1,5 @@
 package de.aivot.GoverBackend.department.controllers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.models.AuditLogPayload;
 import de.aivot.GoverBackend.audit.services.AuditService;
@@ -15,9 +14,12 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,9 +29,6 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
-
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 
 import java.util.Map;
 
@@ -52,21 +51,19 @@ public class DepartmentController {
     private final DepartmentRepository departmentRepository;
     private final VDepartmentMembershipWithPermissionsService vDepartmentMembershipWithPermissionsService;
     private final UserService userService;
-    private final ObjectMapper objectMapper;
 
     @Autowired
     public DepartmentController(AuditService auditService,
                                 DepartmentService departmentService,
                                 DepartmentRepository departmentRepository,
                                 VDepartmentMembershipWithPermissionsService vDepartmentMembershipWithPermissionsService,
-                                UserService userService, ObjectMapper objectMapper) {
-        this.auditService = auditService.createScopedAuditService(DepartmentController.class);
+                                UserService userService) {
+        this.auditService = auditService.createScopedAuditService(DepartmentController.class, MODULE_NAME);
 
         this.departmentService = departmentService;
         this.departmentRepository = departmentRepository;
         this.vDepartmentMembershipWithPermissionsService = vDepartmentMembershipWithPermissionsService;
         this.userService = userService;
-        this.objectMapper = objectMapper;
     }
 
     @GetMapping("")
@@ -100,19 +97,21 @@ public class DepartmentController {
         var createdDepartment = departmentService
                 .create(newDepartment);
 
-        auditService.addAuditEntry(AuditLogPayload
-                .create()
+        auditService.create()
                 .withUser(execUser)
-                .withAuditAction(
-                        AuditAction.Create,
-                        MODULE_NAME,
-                        DepartmentEntity.class,
+                .withAuditAction(AuditAction.Create, DepartmentEntity.class,
                         createdDepartment.getId(),
                         "id",
                         Map.of(
-                                "id", createdDepartment.getId(),
                                 "name", createdDepartment.getName()
-                        )));
+                        ))
+                .withMessage(
+                        "Die Organisationseinheit %s mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(createdDepartment.getName()),
+                        StringUtils.quote(String.valueOf(createdDepartment.getId())),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
 
         return createdDepartment;
     }
@@ -171,20 +170,22 @@ public class DepartmentController {
 
         var savedMap = AuditLogPayload.toMap(savedDepartment);
 
-        auditService.addAuditEntry(AuditLogPayload
-                .create()
+        auditService.create()
                 .withUser(user)
-                .withAuditAction(
-                        AuditAction.Update,
-                        MODULE_NAME,
-                        DepartmentEntity.class,
+                .withAuditAction(AuditAction.Update, DepartmentEntity.class,
                         savedDepartment.getId(),
                         "id",
                         Map.of(
-                                "id", savedDepartment.getId(),
                                 "name", savedDepartment.getName()
                         ))
-                .withDiff(existingMap, savedMap));
+                .withDiff(existingMap, savedMap)
+                .withMessage(
+                        "Die Organisationseinheit %s mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(savedDepartment.getName()),
+                        StringUtils.quote(String.valueOf(savedDepartment.getId())),
+                        StringUtils.quote(user.getFullName())
+                )
+                .log();
 
         return savedDepartment;
     }
@@ -210,19 +211,21 @@ public class DepartmentController {
 
         departmentService.delete(id);
 
-        auditService.addAuditEntry(AuditLogPayload
-                .create()
+        auditService.create()
                 .withUser(user)
-                .withAuditAction(
-                        AuditAction.Delete,
-                        MODULE_NAME,
-                        DepartmentEntity.class,
+                .withAuditAction(AuditAction.Delete, DepartmentEntity.class,
                         dep.getId(),
                         "id",
                         Map.of(
-                                "id", dep.getId(),
                                 "name", dep.getName()
-                        )));
+                        ))
+                .withMessage(
+                        "Die Organisationseinheit %s mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
+                        StringUtils.quote(dep.getName()),
+                        StringUtils.quote(String.valueOf(dep.getId())),
+                        StringUtils.quote(user.getFullName())
+                )
+                .log();
 
     }
 }

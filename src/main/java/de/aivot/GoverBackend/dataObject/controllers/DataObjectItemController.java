@@ -224,7 +224,8 @@ public class DataObjectItemController {
                                 "schemaKey", schemaKey
                         )
                 )
-                .withMessage("Das Datenobjekt mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
+                .withMessage(
+                        "Das Datenobjekt mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
                         StringUtils.quote(deleted.getId()),
                         StringUtils.quote(execUser.getFullName())
                 )

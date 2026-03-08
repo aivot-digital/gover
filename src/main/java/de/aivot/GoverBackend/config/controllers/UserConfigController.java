@@ -13,6 +13,7 @@ import de.aivot.GoverBackend.config.services.UserConfigService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -153,6 +154,12 @@ public class UserConfigController {
                         Map.of(
                                 "userId", userId
                         ))
+                .withMessage(
+                        "Die Mitarbeiterkonfiguration %s für %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(config.getKey()),
+                        StringUtils.quote(config.getUserId()),
+                        StringUtils.quote(user.getFullName())
+                )
                 .log();
 
         return UserConfigResponseDto
