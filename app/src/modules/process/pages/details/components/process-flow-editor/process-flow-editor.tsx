@@ -63,7 +63,7 @@ const NOOP_DELETE_EDGE = (_edgeId: number): void => {
 };
 const NOOP_DELETE_NODE = (_node: ProcessNodeEntity): void => {
 };
-const NOOP_CONNECT_NODE_TO_EXISTING = (_node: ProcessNodeEntity): void => {
+const NOOP_CONNECT_NODE_TO_EXISTING = (_node: ProcessNodeEntity, _preferredPortKey?: string): void => {
 };
 const NOOP_ADD_FOLLOW_UP_NODE = (_fromNodeId: number, _viaPortKey: string): void => {
 };
@@ -82,7 +82,7 @@ interface ProcessFlowEditorProps {
     onAddEdge?: (fromNodeId: number, toNodeId: number, viaPortKey: string) => void;
     onDeleteEdge?: (edgeId: number) => void;
     onDeleteNode?: (node: ProcessNodeEntity) => void | Promise<void>;
-    onConnectNodeToExisting?: (node: ProcessNodeEntity) => void;
+    onConnectNodeToExisting?: (node: ProcessNodeEntity, preferredPortKey?: string) => void;
 
     onAddFollowUpNode?: (fromNodeId: number, viaPortKey: string) => void;
     onAddInbetweenNode?: (forEdgeId: number) => void;

@@ -25,6 +25,7 @@ interface ConnectExistingNodeDialogProps {
     open: boolean;
     processFlow: ProcessFlow;
     nodeProviders: ProcessNodeProvider[];
+    preferredPortKey?: string | null;
     sourceNode: ProcessNodeEntity | null;
     onClose: () => void;
     onConnect: (fromNodeId: number, toNodeId: number, viaPortKey: string) => void;
@@ -41,6 +42,7 @@ export function ProcessConnectExistingNodeDialog(props: ConnectExistingNodeDialo
         open,
         processFlow,
         nodeProviders,
+        preferredPortKey,
         sourceNode,
         onClose,
         onConnect,
@@ -118,9 +120,13 @@ export function ProcessConnectExistingNodeDialog(props: ConnectExistingNodeDialo
             return;
         }
 
-        setSelectedPortKey(availablePorts[0]?.key ?? '');
+        const nextPortKey = preferredPortKey != null && availablePorts.some((port) => port.key === preferredPortKey) ?
+            preferredPortKey :
+            availablePorts[0]?.key ?? '';
+
+        setSelectedPortKey(nextPortKey);
         setSelectedTarget(targetOptions.length === 1 ? targetOptions[0] : null);
-    }, [availablePorts, open, targetOptions]);
+    }, [availablePorts, open, preferredPortKey, targetOptions]);
 
     const handleConnect = (): void => {
         if (renderSourceNode == null || selectedTarget == null || selectedPortKey.length === 0) {

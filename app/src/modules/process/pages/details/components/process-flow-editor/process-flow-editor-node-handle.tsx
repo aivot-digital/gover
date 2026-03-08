@@ -7,6 +7,7 @@ import Chip from '@mui/material/Chip';
 import {useConfirm} from '../../../../../../providers/confirm-provider';
 import {Add} from '@mui/icons-material';
 import Close from '@aivot/mui-material-symbols-400-outlined/dist/close/Close';
+import Link from '@mui/icons-material/Link';
 import {
     ADD_BUTTON_DISTANCE,
     ADD_BUTTON_ICON_SIZE,
@@ -33,6 +34,7 @@ interface ProcessFlowEditorNodeHandleProps {
     isConnected: boolean;
     port: ProcessNodePort;
     onClick: () => void;
+    onConnectToExisting: (port: ProcessNodePort) => void;
     onDeleteEdge: (port: ProcessNodePort) => void;
     wasPerformed: boolean;
 }
@@ -45,6 +47,7 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
         isConnected,
         port,
         onClick,
+        onConnectToExisting,
         onDeleteEdge,
         wasPerformed,
     } = props;
@@ -116,8 +119,14 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
                         bgcolor: 'background.paper',
                         borderColor: wasPerformed ? theme.palette.primary.main : HANDLE_COLOR,
                     }}
-                    deleteIcon={editable ? <Close/> : undefined}
-                    onDelete={isConnected && editable ? handleDeleteEdge : undefined}
+                    deleteIcon={editable ? (isConnected ? <Close/> : <Link/>) : undefined}
+                    onDelete={editable ? (
+                        isConnected ?
+                            handleDeleteEdge :
+                            () => {
+                                onConnectToExisting(port);
+                            }
+                    ) : undefined}
                 />
 
                 {

@@ -181,6 +181,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
             `${port.key}:${outgoingEdges.some((outgoingEdge) => outgoingEdge.port?.key === port.key) ? '1' : '0'}`
         )).join('|')
     ), [outgoingEdges, provider.ports]);
+    const shouldRenderMenuButtonSlot = editable || associatedTask == null;
     const availableOutputPorts = useMemo(() => (
         provider.ports.filter((port) => (
             !outgoingEdges.some((outgoingEdge) => outgoingEdge.port?.key === port.key)
@@ -347,29 +348,32 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                                 />
                             }
 
-                            <IconButton
-                                size="small"
-                                aria-hidden={!editable}
-                                disabled={!editable}
-                                sx={{
-                                    color: theme.palette.text.secondary,
-                                    mt: -0.25,
-                                    mr: -0.75,
-                                    visibility: editable ? 'visible' : 'hidden',
-                                    pointerEvents: editable ? 'auto' : 'none',
-                                }}
-                                onClick={(event) => {
-                                    if (!editable) {
-                                        return;
-                                    }
+                            {
+                                shouldRenderMenuButtonSlot &&
+                                <IconButton
+                                    size="small"
+                                    aria-hidden={!editable}
+                                    disabled={!editable}
+                                    sx={{
+                                        color: theme.palette.text.secondary,
+                                        mt: -0.25,
+                                        mr: -0.75,
+                                        visibility: editable ? 'visible' : 'hidden',
+                                        pointerEvents: editable ? 'auto' : 'none',
+                                    }}
+                                    onClick={(event) => {
+                                        if (!editable) {
+                                            return;
+                                        }
 
-                                    event.stopPropagation();
-                                    event.preventDefault();
-                                    setMenuAnchorEl(event.currentTarget);
-                                }}
-                            >
-                                <MoreVert/>
-                            </IconButton>
+                                        event.stopPropagation();
+                                        event.preventDefault();
+                                        setMenuAnchorEl(event.currentTarget);
+                                    }}
+                                >
+                                    <MoreVert/>
+                                </IconButton>
+                            }
                         </Box>
                     </Box>
 
@@ -508,6 +512,9 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                                     port={port}
                                     onClick={() => {
                                         onAddFollowUpNode(node.id, port.key);
+                                    }}
+                                    onConnectToExisting={(port) => {
+                                        onConnectNodeToExisting(node, port.key);
                                     }}
                                     onDeleteEdge={(port) => {
                                         const edge = outgoingEdges.find((outgoingEdge) => outgoingEdge.port?.key === port.key);

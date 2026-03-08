@@ -104,7 +104,10 @@ export function ProcessDetailsPage(): ReactNode {
         viaPort: string;
     } | null>(null);
     const [newNodeOnEdgeId, setNewNodeOnEdgeId] = useState<number | null>(null);
-    const [connectExistingNodeSourceId, setConnectExistingNodeSourceId] = useState<number | null>(null);
+    const [connectExistingNodeRequest, setConnectExistingNodeRequest] = useState<{
+        sourceNodeId: number;
+        preferredPortKey: string | null;
+    } | null>(null);
 
     const [currentTestClaim, setCurrentTestClaim] = useState<{
         claim: ProcessTestClaimEntity;
@@ -951,12 +954,12 @@ export function ProcessDetailsPage(): ReactNode {
         ];
     }, [currentTestClaim, showNotImplementedHeaderActionMessage]);
     const connectExistingNodeSource = useMemo(() => {
-        if (processFlow == null || connectExistingNodeSourceId == null) {
+        if (processFlow == null || connectExistingNodeRequest == null) {
             return null;
         }
 
-        return processFlow.nodes.find((node) => node.id === connectExistingNodeSourceId) ?? null;
-    }, [connectExistingNodeSourceId, processFlow]);
+        return processFlow.nodes.find((node) => node.id === connectExistingNodeRequest.sourceNodeId) ?? null;
+    }, [connectExistingNodeRequest, processFlow]);
 
     if (processFlow == null) {
         if (showProcessDetailsPageSkeleton) {
@@ -1140,8 +1143,11 @@ export function ProcessDetailsPage(): ReactNode {
                                                     setNewNodeOnEdgeId(forEdgeId);
                                                 }}
                                                 onAddEdge={handleCreateEdge}
-                                                onConnectNodeToExisting={(node) => {
-                                                    setConnectExistingNodeSourceId(node.id);
+                                                onConnectNodeToExisting={(node, preferredPortKey) => {
+                                                    setConnectExistingNodeRequest({
+                                                        sourceNodeId: node.id,
+                                                        preferredPortKey: preferredPortKey ?? null,
+                                                    });
                                                 }}
                                                 onDeleteEdge={(edgeId) => {
                                                     new ProcessDefinitionEdgeApiService()
@@ -1271,9 +1277,10 @@ export function ProcessDetailsPage(): ReactNode {
                 open={connectExistingNodeSource != null}
                 processFlow={processFlow}
                 nodeProviders={flowNodeProviders}
+                preferredPortKey={connectExistingNodeRequest?.preferredPortKey ?? null}
                 sourceNode={connectExistingNodeSource}
                 onClose={() => {
-                    setConnectExistingNodeSourceId(null);
+                    setConnectExistingNodeRequest(null);
                 }}
                 onConnect={(fromNodeId, toNodeId, viaPortKey) => {
                     handleCreateEdge(fromNodeId, toNodeId, viaPortKey);
