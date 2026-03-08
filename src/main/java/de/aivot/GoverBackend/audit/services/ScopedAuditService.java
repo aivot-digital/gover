@@ -28,6 +28,10 @@ public class ScopedAuditService {
         this.auditLogService = auditLogService;
     }
 
+    public AuditLogPayload create() {
+        return AuditLogPayload.create(this);
+    }
+
     public void addAuditEntry(@Nonnull AuditLogPayload payload) {
         var request = getCurrentRequest();
 

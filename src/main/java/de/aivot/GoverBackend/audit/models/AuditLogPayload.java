@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.audit.models;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
+import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -53,12 +54,17 @@ public class AuditLogPayload {
     @Nullable
     private String ipAddress;
 
-    private AuditLogPayload() {}
+
+    private final ScopedAuditService service;
+
+    private AuditLogPayload(ScopedAuditService service) {
+        this.service = service;
+    }
 
     // region Utils
 
-    public static AuditLogPayload create() {
-        return new AuditLogPayload()
+    public static AuditLogPayload create(ScopedAuditService service) {
+        return new AuditLogPayload(service)
                 .setTimestamp(LocalDateTime.now());
     }
 
@@ -119,20 +125,18 @@ public class AuditLogPayload {
                 ));
     }
 
-    @SuppressWarnings("unchecked")
-    public AuditLogPayload withDiffUndefined(@Nullable Map<?, ?> oldState,
-                                             @Nullable Map<?, ?> newState) {
-        return setDiff(createDiff((Map<String, Object>) oldState, (Map<String, Object>) newState));
-    }
-
     public AuditLogPayload withDiff(@Nullable Map<String, Object> oldState,
                                     @Nullable Map<String, Object> newState) {
         return setDiff(createDiff(oldState, newState));
     }
 
+    public void log() {
+        service.addAuditEntry(this);
+    }
+
     @Nullable
     @SuppressWarnings("unchecked")
-    public static Map<String, Object> createDiff(@Nullable Map<String, Object> oldState,
+    private static Map<String, Object> createDiff(@Nullable Map<String, Object> oldState,
                                                  @Nullable Map<String, Object> newState) {
         if (oldState == null && newState == null) {
             return null;

@@ -160,7 +160,7 @@ public class AssetController {
 
         var created = storageService.createFolder(storageProvider.getId(), folderPath);
 
-        auditService.addAuditEntry(AuditLogPayload
+        auditService
                 .create()
                 .withUser(execUser)
                 .withAuditAction(
@@ -172,7 +172,8 @@ public class AssetController {
                                 "storageProviderId", storageProvider.getId(),
                                 "isFolder", true
                         )
-                ));
+                )
+                .log();
 
         return created;
     }
@@ -205,7 +206,7 @@ public class AssetController {
 
         assetRepository.deleteAllByStoragePathFromRootStartingWith(folderPath);
 
-        auditService.addAuditEntry(AuditLogPayload
+        auditService
                 .create()
                 .withUser(execUser)
                 .withAuditAction(
@@ -217,7 +218,8 @@ public class AssetController {
                                 "storageProviderId", storageProvider.getId(),
                                 "isFolder", true
                         )
-                ));
+                )
+                .log();
     }
 
     // endregion
@@ -273,7 +275,7 @@ public class AssetController {
                 .setStoragePathFromRoot(storedDocument.getPathFromRoot());
         assetRepository.save(asset);
 
-        auditService.addAuditEntry(AuditLogPayload
+        auditService
                 .create()
                 .withUser(execUser)
                 .withAuditAction(
@@ -285,7 +287,8 @@ public class AssetController {
                                 "storageProviderId", storageProvider.getId(),
                                 "isFolder", false
                         )
-                ));
+                )
+                .log();
 
         return storageIndexItemWithAssetRepository
                 .findById(VStorageIndexItemWithAssetEntityId.of(
@@ -379,7 +382,7 @@ public class AssetController {
         assetRepository
                 .save(asset.setPrivate(newPrivate));
 
-        auditService.addAuditEntry(AuditLogPayload
+        auditService
                 .create()
                 .withUser(execUser)
                 .withAuditAction(
@@ -396,7 +399,8 @@ public class AssetController {
                 .withDiff(
                         Map.of("isPrivate", oldPrivate),
                         Map.of("isPrivate", newPrivate)
-                ));
+                )
+                .log();
 
         return storageIndexItemWithAssetRepository
                 .findById(VStorageIndexItemWithAssetEntityId.of(
@@ -504,7 +508,7 @@ public class AssetController {
         // After the move, there is no need to update the asset because the asset path from root is updated automatically by the database because of the foreign key reference.
         var movedDocument = storageService.moveDocument(storageProvider.getId(), sourcePath, targetPath);
 
-        auditService.addAuditEntry(AuditLogPayload
+        auditService
                 .create()
                 .withUser(user)
                 .withAuditAction(
@@ -520,7 +524,8 @@ public class AssetController {
                 .withDiff(
                         Map.of("storagePathFromRoot", sourcePath),
                         Map.of("storagePathFromRoot", targetPath)
-                ));
+                )
+                .log();
 
         return storageIndexItemWithAssetRepository
                 .findById(VStorageIndexItemWithAssetEntityId.of(
@@ -583,7 +588,7 @@ public class AssetController {
                 .setStoragePathFromRoot(copiedDocument.getPathFromRoot());
         assetRepository.save(copiedAsset);
 
-        auditService.addAuditEntry(AuditLogPayload
+        auditService
                 .create()
                 .withUser(user)
                 .withAuditAction(
@@ -596,7 +601,8 @@ public class AssetController {
                                 "isFolder", false,
                                 "copyOf", sourcePath
                         )
-                ));
+                )
+                .log();
 
         return storageIndexItemWithAssetRepository
                 .findById(VStorageIndexItemWithAssetEntityId.of(
@@ -630,7 +636,7 @@ public class AssetController {
 
         storageService.deleteDocument(storageProvider.getId(), filePath);
 
-        auditService.addAuditEntry(AuditLogPayload
+        auditService
                 .create()
                 .withUser(user)
                 .withAuditAction(
@@ -642,7 +648,8 @@ public class AssetController {
                                 "storageProviderId", storageProvider.getId(),
                                 "isFolder", false
                         )
-                ));
+                )
+                .log();
     }
 
     // endregion
