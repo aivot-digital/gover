@@ -35,10 +35,13 @@ public class AuditLogPayload {
     private String triggerType;
 
     @Nullable
-    private String triggerRef;
+    private String entityType;
 
     @Nullable
-    private String triggerRefType;
+    private String entityRef;
+
+    @Nullable
+    private String entityRefType;
 
     @Nullable
     private String module;
@@ -79,15 +82,17 @@ public class AuditLogPayload {
     }
 
     public AuditLogPayload withAuditAction(@Nonnull AuditAction action,
+                                           @Nonnull String module,
                                            @Nonnull Class<?> entityClass,
-                                           @Nullable Object entityId) {
+                                           @Nonnull Object entityId) {
         return this
-                .withAuditAction(action, entityClass, entityId, Map.of());
+                .withAuditAction(action, module, entityClass, entityId, Map.of());
     }
 
     public AuditLogPayload withAuditAction(@Nonnull AuditAction action,
+                                           @Nonnull String module,
                                            @Nonnull Class<?> entityClass,
-                                           @Nullable Object entityId,
+                                           @Nonnull Object entityId,
                                            @Nullable Map<String, Object> metadata) {
         var me = new HashMap<String, Object>();
         if (metadata != null) {
@@ -98,11 +103,26 @@ public class AuditLogPayload {
 
         return this
                 .setTriggerType(action.name())
-                .setTriggerRef(entityId != null ? String.valueOf(entityId) : null)
-                .setTriggerRefType(entityId != null ? TRIGGER_REF_TYPE : null)
-                .setModule(entityClass.getSimpleName())
-                .setMessage(action.name() + " " + entityClass.getSimpleName() + (entityId != null ? " #" + entityId : ""))
+                .setEntityType(entityClass.getSimpleName())
+                .setEntityRef(String.valueOf(entityId))
+                .setEntityRefType(TRIGGER_REF_TYPE)
+                .setModule(module)
+                .setMessage(action.name() + " " + entityClass.getSimpleName() + " #" + entityId)
                 .setMetadata(me);
+    }
+
+    public AuditLogPayload withException(@Nullable Throwable exception,
+                                         @Nonnull String module,
+                                         @Nonnull Class<?> sourceClass) {
+        return this
+                .setModule(module)
+                .setTriggerType("Exception")
+                .setEntityType("Exception")
+                .setMessage(exception != null ? exception.getMessage() : "Unknown exception")
+                .setMetadata(Map.of(
+                        "exception", exception != null ? exception.getClass().getName() : "Unknown exception",
+                        "class", sourceClass.getName()
+                ));
     }
 
     @SuppressWarnings("unchecked")
@@ -176,38 +196,6 @@ public class AuditLogPayload {
         return map;
     }
 
-    public static AuditLogPayload ofLegacyAction(@Nonnull UserEntity user,
-                                                 @Nonnull AuditAction action,
-                                                 @Nonnull Class<?> entityClass) {
-        return create()
-                .withUser(user)
-                .withAuditAction(action, entityClass, null, null);
-    }
-
-    public static AuditLogPayload ofLegacyAction(@Nonnull UserEntity user,
-                                                 @Nonnull AuditAction action,
-                                                 @Nonnull Class<?> entityClass,
-                                                 @Nullable Map<String, Object> metadata) {
-        return create()
-                .withUser(user)
-                .withAuditAction(action, entityClass, extractEntityId(metadata), metadata);
-    }
-
-    public static AuditLogPayload ofLegacyMessage(@Nonnull String message,
-                                                  @Nullable Map<String, Object> metadata) {
-        var me = new HashMap<String, Object>();
-        if (metadata != null) {
-            me.putAll(metadata);
-        }
-        me.put("message", message);
-
-        return create()
-                .withSystem()
-                .setTriggerType("Message")
-                .setMessage(message)
-                .setMetadata(me);
-    }
-
     @Nullable
     public static Map<String, Object> toMap(@Nullable Object value) {
         if (value == null) {
@@ -218,22 +206,9 @@ public class AuditLogPayload {
         });
     }
 
-    @Nullable
-    private static Object extractEntityId(@Nullable Map<String, Object> metadata) {
-        if (metadata == null) {
-            return null;
-        }
-
-        if (metadata.containsKey("id")) {
-            return metadata.get("id");
-        }
-        if (metadata.containsKey("entityId")) {
-            return metadata.get("entityId");
-        }
-        return null;
-    }
-
     // endregion
+
+    // region Getters & Setters
 
     @Nullable
     public LocalDateTime getTimestamp() {
@@ -276,22 +251,32 @@ public class AuditLogPayload {
     }
 
     @Nullable
-    public String getTriggerRef() {
-        return triggerRef;
+    public String getEntityType() {
+        return entityType;
     }
 
-    public AuditLogPayload setTriggerRef(@Nullable String triggerRef) {
-        this.triggerRef = triggerRef;
+    public AuditLogPayload setEntityType(@Nullable String entityType) {
+        this.entityType = entityType;
         return this;
     }
 
     @Nullable
-    public String getTriggerRefType() {
-        return triggerRefType;
+    public String getEntityRef() {
+        return entityRef;
     }
 
-    public AuditLogPayload setTriggerRefType(@Nullable String triggerRefType) {
-        this.triggerRefType = triggerRefType;
+    public AuditLogPayload setEntityRef(@Nullable String entityRef) {
+        this.entityRef = entityRef;
+        return this;
+    }
+
+    @Nullable
+    public String getEntityRefType() {
+        return entityRefType;
+    }
+
+    public AuditLogPayload setEntityRefType(@Nullable String entityRefType) {
+        this.entityRefType = entityRefType;
         return this;
     }
 
@@ -342,110 +327,6 @@ public class AuditLogPayload {
 
     public AuditLogPayload setIpAddress(@Nullable String ipAddress) {
         this.ipAddress = ipAddress;
-        return this;
-    }
-
-    // region Compatibility setters
-
-    public AuditLogPayload setActionType(@Nullable String actionType) {
-        return setTriggerType(actionType);
-    }
-
-    public AuditLogPayload setAction(@Nullable AuditAction action) {
-        return setTriggerType(action != null ? action.name() : null);
-    }
-
-    public AuditLogPayload setTriggeringUser(@Nullable UserEntity user) {
-        if (user == null) {
-            return this;
-        }
-        return withUser(user);
-    }
-
-    public AuditLogPayload setResource(@Nullable Class<?> entityClass) {
-        if (entityClass == null) {
-            return this;
-        }
-        return setModule(entityClass.getSimpleName());
-    }
-
-    public AuditLogPayload setReason(@Nullable String reason) {
-        return appendMetadata("reason", reason);
-    }
-
-    public AuditLogPayload setSeverity(@Nullable String severity) {
-        return appendMetadata("severity", severity);
-    }
-
-    public AuditLogPayload setActionResult(@Nullable String actionResult) {
-        return appendMetadata("actionResult", actionResult);
-    }
-
-    public AuditLogPayload setComponent(@Nullable String component) {
-        return setModule(component);
-    }
-
-    public AuditLogPayload setEntityId(@Nullable String entityId) {
-        return this
-                .setTriggerRef(entityId)
-                .setTriggerRefType(entityId != null ? TRIGGER_REF_TYPE : null);
-    }
-
-    public AuditLogPayload setEntityType(@Nullable String entityType) {
-        return appendMetadata("entityType", entityType);
-    }
-
-    public AuditLogPayload setInstanceId(@Nullable String instanceId) {
-        if (instanceId == null) {
-            return this;
-        }
-
-        if (triggerRef == null) {
-            setTriggerRef(instanceId);
-            setTriggerRefType(TRIGGER_REF_TYPE);
-        }
-
-        return appendMetadata("instanceId", instanceId);
-    }
-
-    public AuditLogPayload setSource(@Nullable String source) {
-        return appendMetadata("source", source);
-    }
-
-    public AuditLogPayload setRequestId(@Nullable String requestId) {
-        return appendMetadata("requestId", requestId);
-    }
-
-    public AuditLogPayload setSessionId(@Nullable String sessionId) {
-        return appendMetadata("sessionId", sessionId);
-    }
-
-    public AuditLogPayload setUserAgent(@Nullable String userAgent) {
-        return appendMetadata("userAgent", userAgent);
-    }
-
-    public AuditLogPayload setBeforeData(@Nullable Map<String, Object> beforeData) {
-        return appendMetadata("beforeData", beforeData);
-    }
-
-    public AuditLogPayload setAfterData(@Nullable Map<String, Object> afterData) {
-        return appendMetadata("afterData", afterData);
-    }
-
-    public AuditLogPayload setChangedData(@Nullable Boolean changedData) {
-        return appendMetadata("changedData", changedData);
-    }
-
-    private AuditLogPayload appendMetadata(@Nonnull String key, @Nullable Object value) {
-        if (value == null) {
-            return this;
-        }
-
-        if (metadata == null) {
-            metadata = new HashMap<>();
-        }
-
-        metadata.put(key, value);
         return this;
     }
 

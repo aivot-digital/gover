@@ -12,7 +12,6 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.Map;
 
 public class ScopedAuditService {
     private final Logger logger;
@@ -33,8 +32,10 @@ public class ScopedAuditService {
         var actorId = payload.getActorId();
 
         var triggerType = firstNonBlank(payload.getTriggerType(), "Message");
-        var triggerRef = payload.getTriggerRef();
-        var triggerRefType = payload.getTriggerRefType();
+
+        var entityType = payload.getEntityType();
+        var entityRef = payload.getEntityRef();
+        var entityRefType = payload.getEntityRefType();
 
         var module = firstNonBlank(payload.getModule(), component);
         var message = firstNonBlank(payload.getMessage(), triggerType + " in " + module);
@@ -52,8 +53,9 @@ public class ScopedAuditService {
                 .setActorType(actorType)
                 .setActorId(actorId)
                 .setTriggerType(triggerType)
-                .setTriggerRef(triggerRef)
-                .setTriggerRefType(triggerRefType)
+                .setEntityType(entityType)
+                .setEntityRef(entityRef)
+                .setEntityRefType(entityRefType)
                 .setModule(module)
                 .setMessage(message)
                 .setDiff(diff)
@@ -65,7 +67,9 @@ public class ScopedAuditService {
                 .addKeyValue("actorType", actorType)
                 .addKeyValue("actorId", actorId)
                 .addKeyValue("triggerType", triggerType)
-                .addKeyValue("triggerRef", triggerRef)
+                .addKeyValue("entityType", entityType)
+                .addKeyValue("entityRef", entityRef)
+                .addKeyValue("entityRefType", entityRefType)
                 .addKeyValue("module", module)
                 .log();
 
