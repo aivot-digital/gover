@@ -63,6 +63,8 @@ const NOOP_DELETE_EDGE = (_edgeId: number): void => {
 };
 const NOOP_DELETE_NODE = (_node: ProcessNodeEntity): void => {
 };
+const NOOP_CONNECT_NODE_TO_EXISTING = (_node: ProcessNodeEntity): void => {
+};
 const NOOP_ADD_FOLLOW_UP_NODE = (_fromNodeId: number, _viaPortKey: string): void => {
 };
 const NOOP_ADD_INBETWEEN_NODE = (_forEdgeId: number): void => {
@@ -80,6 +82,7 @@ interface ProcessFlowEditorProps {
     onAddEdge?: (fromNodeId: number, toNodeId: number, viaPortKey: string) => void;
     onDeleteEdge?: (edgeId: number) => void;
     onDeleteNode?: (node: ProcessNodeEntity) => void | Promise<void>;
+    onConnectNodeToExisting?: (node: ProcessNodeEntity) => void;
 
     onAddFollowUpNode?: (fromNodeId: number, viaPortKey: string) => void;
     onAddInbetweenNode?: (forEdgeId: number) => void;
@@ -310,6 +313,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onAddEdge,
         onDeleteEdge,
         onDeleteNode,
+        onConnectNodeToExisting,
 
         onAddFollowUpNode,
         onAddInbetweenNode,
@@ -394,6 +398,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onAddEdge: onAddEdge ?? NOOP_ADD_EDGE,
         onDeleteEdge: onDeleteEdge ?? NOOP_DELETE_EDGE,
         onDeleteNode: onDeleteNode ?? NOOP_DELETE_NODE,
+        onConnectNodeToExisting: onConnectNodeToExisting ?? NOOP_CONNECT_NODE_TO_EXISTING,
 
         onAddFollowUpNode: onAddFollowUpNode ?? NOOP_ADD_FOLLOW_UP_NODE,
         onAddInbetweenNode: onAddInbetweenNode ?? NOOP_ADD_INBETWEEN_NODE,
@@ -404,6 +409,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onAddEdge,
         onAddFollowUpNode,
         onAddInbetweenNode,
+        onConnectNodeToExisting,
         onDeleteEdge,
         onDeleteNode,
         runtimeData,

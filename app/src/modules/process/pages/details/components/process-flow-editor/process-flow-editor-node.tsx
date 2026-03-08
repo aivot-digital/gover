@@ -23,6 +23,7 @@ import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/Mo
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {Menu} from '../../../../../../components/menu/menu';
 import {ProcessTaskStatus} from '../../../../enums/process-task-status';
+import Link from '@mui/icons-material/Link';
 
 function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
     const theme = useTheme();
@@ -39,6 +40,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         editable,
         selectedNode,
         onAddFollowUpNode,
+        onConnectNodeToExisting,
         onDeleteEdge,
         onDeleteNode,
         showTargetHandles,
@@ -179,6 +181,41 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
             `${port.key}:${outgoingEdges.some((outgoingEdge) => outgoingEdge.port?.key === port.key) ? '1' : '0'}`
         )).join('|')
     ), [outgoingEdges, provider.ports]);
+    const availableOutputPorts = useMemo(() => (
+        provider.ports.filter((port) => (
+            !outgoingEdges.some((outgoingEdge) => outgoingEdge.port?.key === port.key)
+        ))
+    ), [outgoingEdges, provider.ports]);
+    const menuItems = useMemo(() => (
+        [
+            ...(editable && availableOutputPorts.length > 0 ? [{
+                label: 'Mit bestehendem Knoten verbinden',
+                icon: <Link/>,
+                onClick: () => {
+                    onConnectNodeToExisting(node);
+                },
+            }, 'separator' as const] : []),
+            {
+                label: 'Löschen',
+                icon: <Delete/>,
+                onClick: () => {
+                    void confirm({
+                        title: 'Prozesselement löschen',
+                        children: (
+                            <Typography>
+                                Möchten Sie das Prozesselement <strong>{nodeName}</strong> wirklich löschen?
+                            </Typography>
+                        ),
+                    })
+                        .then((confirmed) => {
+                            if (confirmed) {
+                                void onDeleteNode(node);
+                            }
+                        });
+                },
+            },
+        ]
+    ), [availableOutputPorts.length, confirm, editable, node, nodeName, onConnectNodeToExisting, onDeleteNode]);
 
     useEffect(() => {
         updateNodeInternals(String(node.id));
@@ -428,27 +465,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                 onClose={() => {
                     setMenuAnchorEl(null);
                 }}
-                items={[
-                    {
-                        label: 'Löschen',
-                        icon: <Delete/>,
-                        onClick: () => {
-                            void confirm({
-                                title: 'Prozesselement löschen',
-                                children: (
-                                    <Typography>
-                                        Möchten Sie das Prozesselement <strong>{nodeName}</strong> wirklich löschen?
-                                    </Typography>
-                                ),
-                            })
-                                .then((confirmed) => {
-                                    if (confirmed) {
-                                        void onDeleteNode(node);
-                                    }
-                                });
-                        },
-                    },
-                ]}
+                items={menuItems}
             />
 
             {

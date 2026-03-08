@@ -61,6 +61,7 @@ import DeleteOutline from '@mui/icons-material/DeleteOutline';
 import Settings from '@aivot/mui-material-symbols-400-outlined/dist/settings/Settings';
 import {type Action} from '../../../../components/actions/actions-props';
 import HomeStorage from '@aivot/mui-material-symbols-400-outlined/dist/home-storage/HomeStorage';
+import {ProcessConnectExistingNodeDialog} from './components/process-connect-existing-node-dialog';
 
 const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 150;
 
@@ -103,6 +104,7 @@ export function ProcessDetailsPage(): ReactNode {
         viaPort: string;
     } | null>(null);
     const [newNodeOnEdgeId, setNewNodeOnEdgeId] = useState<number | null>(null);
+    const [connectExistingNodeSourceId, setConnectExistingNodeSourceId] = useState<number | null>(null);
 
     const [currentTestClaim, setCurrentTestClaim] = useState<{
         claim: ProcessTestClaimEntity;
@@ -862,6 +864,39 @@ export function ProcessDetailsPage(): ReactNode {
     const handleOpenAddTriggerDialog = useCallback(() => {
         setShowAddTriggerDialog(true);
     }, []);
+    const handleCreateEdge = useCallback((fromNodeId: number, toNodeId: number, viaPortKey: string): void => {
+        if (processFlow == null) {
+            return;
+        }
+
+        new ProcessDefinitionEdgeApiService()
+            .create({
+                id: 0,
+                processId: processFlow.definition.id,
+                processVersion: processFlow.version.processVersion,
+                fromNodeId,
+                toNodeId,
+                viaPort: viaPortKey,
+            })
+            .then((newEdge) => {
+                setProcessFlow((prevProcess) => {
+                    if (prevProcess == null) {
+                        return prevProcess;
+                    }
+
+                    return {
+                        ...prevProcess,
+                        edges: [
+                            ...prevProcess.edges,
+                            newEdge,
+                        ],
+                    };
+                });
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Die Verbindung konnte nicht erstellt werden.'));
+            });
+    }, [dispatch, processFlow]);
     const headerActions = useMemo<Action[]>(() => {
         const isInTestMode = currentTestClaim != null;
 
@@ -915,6 +950,13 @@ export function ProcessDetailsPage(): ReactNode {
             },
         ];
     }, [currentTestClaim, showNotImplementedHeaderActionMessage]);
+    const connectExistingNodeSource = useMemo(() => {
+        if (processFlow == null || connectExistingNodeSourceId == null) {
+            return null;
+        }
+
+        return processFlow.nodes.find((node) => node.id === connectExistingNodeSourceId) ?? null;
+    }, [connectExistingNodeSourceId, processFlow]);
 
     if (processFlow == null) {
         if (showProcessDetailsPageSkeleton) {
@@ -1097,31 +1139,9 @@ export function ProcessDetailsPage(): ReactNode {
                                                 onAddInbetweenNode={(forEdgeId) => {
                                                     setNewNodeOnEdgeId(forEdgeId);
                                                 }}
-                                                onAddEdge={(fromNodeId, toNodeId, viaPortKey) => {
-                                                    new ProcessDefinitionEdgeApiService()
-                                                        .create({
-                                                            id: 0,
-                                                            processId: processFlow.definition.id,
-                                                            processVersion: processFlow.version.processVersion,
-                                                            fromNodeId,
-                                                            toNodeId,
-                                                            viaPort: viaPortKey,
-                                                        })
-                                                        .then((newEdge) => {
-                                                            setProcessFlow((prevProcess) => {
-                                                                if (prevProcess == null) {
-                                                                    return prevProcess;
-                                                                }
-
-                                                                return {
-                                                                    ...prevProcess,
-                                                                    edges: [
-                                                                        ...prevProcess.edges,
-                                                                        newEdge,
-                                                                    ],
-                                                                };
-                                                            });
-                                                        });
+                                                onAddEdge={handleCreateEdge}
+                                                onConnectNodeToExisting={(node) => {
+                                                    setConnectExistingNodeSourceId(node.id);
                                                 }}
                                                 onDeleteEdge={(edgeId) => {
                                                     new ProcessDefinitionEdgeApiService()
@@ -1245,6 +1265,19 @@ export function ProcessDetailsPage(): ReactNode {
                     setShowAddTriggerDialog(false);
                 }}
                 onSelect={handleAddFlowTrigger}
+            />
+
+            <ProcessConnectExistingNodeDialog
+                open={connectExistingNodeSource != null}
+                processFlow={processFlow}
+                nodeProviders={flowNodeProviders}
+                sourceNode={connectExistingNodeSource}
+                onClose={() => {
+                    setConnectExistingNodeSourceId(null);
+                }}
+                onConnect={(fromNodeId, toNodeId, viaPortKey) => {
+                    handleCreateEdge(fromNodeId, toNodeId, viaPortKey);
+                }}
             />
 
             <SelectNodeProviderDialog
