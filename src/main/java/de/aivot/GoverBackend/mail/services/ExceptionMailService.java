@@ -37,7 +37,7 @@ public class ExceptionMailService {
             MailService mailService,
             GoverConfig goverConfig,
             SystemService systemService) {
-        this.auditService = auditService.createScopedAuditService(ExceptionMailService.class);
+        this.auditService = auditService.createScopedAuditService(ExceptionMailService.class, "E-Mail");
         this.mailService = mailService;
         this.goverConfig = goverConfig;
         this.systemService = systemService;
@@ -86,9 +86,8 @@ public class ExceptionMailService {
                 );
                 mailReached = true;
             } catch (MessagingException | IOException e) {
-                auditService.addAuditEntry(AuditLogPayload
-                        .create()
-                        .withException(e, "Mail Service", this.getClass()));
+                auditService.create()
+                        .withException(e, this.getClass()).log();
             } catch (ResponseException e) {
                 throw new RuntimeException(e);
             }
