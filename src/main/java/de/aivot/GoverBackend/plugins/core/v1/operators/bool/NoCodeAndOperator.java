@@ -80,10 +80,13 @@ public class NoCodeAndOperator extends NoCodeOperator {
 
     @Override
     public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
-        var arg0 = castToBoolean(args[0]);
-        var arg1 = castToBoolean(args[1]);
-
-        return new NoCodeResult(arg0 && arg1);
+        for (Object o : args) {
+            var arg = castToBoolean(o);
+            if (!arg) {
+                return new NoCodeResult(false);
+            }
+        }
+        return new NoCodeResult(true);
     }
 
     @Nullable
