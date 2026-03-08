@@ -981,6 +981,7 @@ export function ProcessDetailsPage(): ReactNode {
                                                                         fontWeight: 700,
                                                                         letterSpacing: 0.3,
                                                                         textTransform: 'uppercase',
+                                                                        mr: 2,
                                                                     }}
                                                                 >
                                                                     Testmodus
@@ -1000,6 +1001,7 @@ export function ProcessDetailsPage(): ReactNode {
                                                                         fontWeight: 600,
                                                                         lineHeight: 1.2,
                                                                         textTransform: 'none',
+                                                                        transform: 'translateY(-1px)',
                                                                     }}
                                                                 >
                                                                     Beenden
@@ -1016,13 +1018,19 @@ export function ProcessDetailsPage(): ReactNode {
                                                             />
                                                             <Typography
                                                                 variant="body2"
+                                                                title={resolveUserName(currentTestClaim.user)}
                                                                 sx={{
-                                                                    color: 'text.primary',
-                                                                    fontWeight: 600,
-                                                                    lineHeight: 1.4,
+                                                                    maxWidth: '100%',
+                                                                    overflow: 'hidden',
+                                                                    textOverflow: 'ellipsis',
+                                                                    whiteSpace: 'nowrap',
+                                                                    color: 'text.secondary',
+                                                                    fontSize: '0.8125rem',
+                                                                    fontWeight: 500,
+                                                                    lineHeight: 1.3,
                                                                 }}
                                                             >
-                                                                {resolveUserName(currentTestClaim.user)} testet diesen Prozess.
+                                                                Im Test durch {resolveUserName(currentTestClaim.user)}
                                                             </Typography>
                                                         </Box>
                                                     )
