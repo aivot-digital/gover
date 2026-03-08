@@ -14,6 +14,7 @@ import de.aivot.GoverBackend.process.services.ProcessDefinitionChangeService;
 import de.aivot.GoverBackend.process.services.ProcessService;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -53,7 +54,7 @@ public class ProcessChangeController {
                                    DepartmentService departmentService,
                                    ProcessService processDefinitionService,
                                    PermissionService permissionService) {
-        this.auditService = auditService.createScopedAuditService(ProcessChangeController.class);
+        this.auditService = auditService.createScopedAuditService(ProcessChangeController.class, "Prozesse");
         this.userService = userService;
         this.processDefinitionChangeService = processDefinitionChangeService;
         this.departmentService = departmentService;
@@ -105,11 +106,17 @@ public class ProcessChangeController {
         var result = processDefinitionChangeService
                 .create(newChange);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), ProcessChangeEntity.class, "legacy", "legacy", Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Create, ProcessChangeEntity.class, result.getId(), "id", Map.of(
                 "id", result.getId(),
                 "processDefinitionId", result.getProcessId(),
                 "processDefinitionVersion", result.getProcessVersion()
-        )));
+        )).withMessage(
+                "Die Prozessänderung mit der ID %s für den Prozess %s (Version %s) wurde von der Mitarbeiter:in %s erstellt.",
+                StringUtils.quote(String.valueOf(result.getId())),
+                StringUtils.quote(String.valueOf(result.getProcessId())),
+                StringUtils.quote(String.valueOf(result.getProcessVersion())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return result;
     }
@@ -165,11 +172,17 @@ public class ProcessChangeController {
         var result = processDefinitionChangeService
                 .update(id, updateDTO);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), ProcessChangeEntity.class, "legacy", "legacy", Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, ProcessChangeEntity.class, result.getId(), "id", Map.of(
                 "id", result.getId(),
                 "processDefinitionId", result.getProcessId(),
                 "processDefinitionVersion", result.getProcessVersion()
-        )));
+        )).withMessage(
+                "Die Prozessänderung mit der ID %s für den Prozess %s (Version %s) wurde von der Mitarbeiter:in %s aktualisiert.",
+                StringUtils.quote(String.valueOf(result.getId())),
+                StringUtils.quote(String.valueOf(result.getProcessId())),
+                StringUtils.quote(String.valueOf(result.getProcessVersion())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return result;
     }
@@ -192,11 +205,16 @@ public class ProcessChangeController {
         var deleted = processDefinitionChangeService
                 .delete(id);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), ProcessChangeEntity.class, "legacy", "legacy", Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Delete, ProcessChangeEntity.class, deleted.getId(), "id", Map.of(
                 "id", deleted.getId(),
                 "processDefinitionId", deleted.getProcessId(),
                 "processDefinitionVersion", deleted.getProcessVersion()
-        )));
+        )).withMessage(
+                "Die Prozessänderung mit der ID %s für den Prozess %s (Version %s) wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(String.valueOf(deleted.getId())),
+                StringUtils.quote(String.valueOf(deleted.getProcessId())),
+                StringUtils.quote(String.valueOf(deleted.getProcessVersion())),
+                StringUtils.quote(user.getFullName())
+        ).log();
     }
 }
-

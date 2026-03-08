@@ -12,6 +12,7 @@ import de.aivot.GoverBackend.process.filters.ProcessInstanceFilter;
 import de.aivot.GoverBackend.process.services.ProcessInstanceService;
 import de.aivot.GoverBackend.process.services.ProcessService;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -49,7 +50,7 @@ public class ProcessInstanceController {
                                     ProcessInstanceService processInstanceService,
                                     DepartmentService departmentService,
                                     ProcessService processDefinitionService) {
-        this.auditService = auditService.createScopedAuditService(ProcessInstanceController.class);
+        this.auditService = auditService.createScopedAuditService(ProcessInstanceController.class, "Prozesse");
         this.userService = userService;
         this.processInstanceService = processInstanceService;
         this.departmentService = departmentService;
@@ -85,10 +86,15 @@ public class ProcessInstanceController {
         var result = processInstanceService
                 .create(newInstance);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), ProcessInstanceEntity.class, "legacy", "legacy", Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Create, ProcessInstanceEntity.class, result.getId(), "id", Map.of(
                 "id", result.getId(),
                 "processDefinitionId", result.getProcessId()
-        )));
+        )).withMessage(
+                "Die Prozessinstanz mit der ID %s für den Prozess %s wurde von der Mitarbeiter:in %s erstellt.",
+                StringUtils.quote(String.valueOf(result.getId())),
+                StringUtils.quote(String.valueOf(result.getProcessId())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return result;
     }
@@ -129,10 +135,15 @@ public class ProcessInstanceController {
         var result = processInstanceService
                 .update(id, updateDTO);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), ProcessInstanceEntity.class, "legacy", "legacy", Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, ProcessInstanceEntity.class, result.getId(), "id", Map.of(
                 "id", result.getId(),
                 "processDefinitionId", result.getProcessId()
-        )));
+        )).withMessage(
+                "Die Prozessinstanz mit der ID %s für den Prozess %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                StringUtils.quote(String.valueOf(result.getId())),
+                StringUtils.quote(String.valueOf(result.getProcessId())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return result;
     }
@@ -155,10 +166,14 @@ public class ProcessInstanceController {
         var deleted = processInstanceService
                 .delete(id);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), ProcessInstanceEntity.class, "legacy", "legacy", Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Delete, ProcessInstanceEntity.class, deleted.getId(), "id", Map.of(
                 "id", deleted.getId(),
                 "processDefinitionId", deleted.getProcessId()
-        )));
+        )).withMessage(
+                "Die Prozessinstanz mit der ID %s für den Prozess %s wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(String.valueOf(deleted.getId())),
+                StringUtils.quote(String.valueOf(deleted.getProcessId())),
+                StringUtils.quote(user.getFullName())
+        ).log();
     }
 }
-

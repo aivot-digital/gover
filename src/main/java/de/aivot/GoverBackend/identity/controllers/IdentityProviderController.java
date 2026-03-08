@@ -18,6 +18,7 @@ import de.aivot.GoverBackend.identity.services.IdentityProviderService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -64,7 +65,7 @@ public class IdentityProviderController {
                                       FormVersionRepository formVersionRepository,
                                       UserService userService) {
         this.auditService = auditService
-                .createScopedAuditService(IdentityProviderController.class);
+                .createScopedAuditService(IdentityProviderController.class, "Identitaetsanbieter");
 
         this.identityProviderService = identityProviderService;
         this.formRevisionService = formRevisionService;
@@ -128,10 +129,15 @@ public class IdentityProviderController {
         var created = identityProviderService
                 .create(requestDTO.toEntity());
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), IdentityProviderEntity.class, "legacy", "legacy", Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Create, IdentityProviderEntity.class, created.getKey(), "key", Map.of(
                                 "key", created.getKey(),
                                 "name", created.getName()
-                        )));
+                        )).withMessage(
+                "Der Identitätsanbieter %s mit dem Schlüssel %s wurde von der Mitarbeiter:in %s erstellt.",
+                StringUtils.quote(created.getName()),
+                StringUtils.quote(String.valueOf(created.getKey())),
+                StringUtils.quote(user.getFullName())
+        ).log();
 
         return IdentityProviderDetailsDTO
                 .from(created);
@@ -209,10 +215,15 @@ public class IdentityProviderController {
             }
         }
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), IdentityProviderEntity.class, "legacy", "legacy", Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Update, IdentityProviderEntity.class, updatedEntity.getKey(), "key", Map.of(
                 "key", updatedEntity.getKey(),
                 "name", updatedEntity.getName()
-        )));
+        )).withMessage(
+                "Der Identitätsanbieter %s mit dem Schlüssel %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                StringUtils.quote(updatedEntity.getName()),
+                StringUtils.quote(String.valueOf(updatedEntity.getKey())),
+                StringUtils.quote(user.getFullName())
+        ).log();
 
         return IdentityProviderDetailsDTO
                 .from(updatedEntity);
@@ -282,9 +293,14 @@ public class IdentityProviderController {
         var deletedEntity = identityProviderService
                 .delete(key);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), IdentityProviderEntity.class, "legacy", "legacy", Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Delete, IdentityProviderEntity.class, deletedEntity.getKey(), "key", Map.of(
                 "key", deletedEntity.getKey(),
                 "name", deletedEntity.getName()
-        )));
+        )).withMessage(
+                "Der Identitätsanbieter %s mit dem Schlüssel %s wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(deletedEntity.getName()),
+                StringUtils.quote(String.valueOf(deletedEntity.getKey())),
+                StringUtils.quote(user.getFullName())
+        ).log();
     }
 }

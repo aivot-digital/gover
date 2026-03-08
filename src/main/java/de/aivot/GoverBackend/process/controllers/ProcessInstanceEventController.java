@@ -12,6 +12,7 @@ import de.aivot.GoverBackend.process.filters.ProcessInstanceEventFilter;
 import de.aivot.GoverBackend.process.services.ProcessService;
 import de.aivot.GoverBackend.process.services.ProcessInstanceEventService;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -47,7 +48,7 @@ public class ProcessInstanceEventController {
                                           ProcessInstanceEventService processInstanceHistoryEventService,
                                           DepartmentService departmentService,
                                           ProcessService processDefinitionService) {
-        this.auditService = auditService.createScopedAuditService(ProcessInstanceEventController.class);
+        this.auditService = auditService.createScopedAuditService(ProcessInstanceEventController.class, "Prozesse");
         this.userService = userService;
         this.processInstanceHistoryEventService = processInstanceHistoryEventService;
     }
@@ -83,11 +84,16 @@ public class ProcessInstanceEventController {
         var result = processInstanceHistoryEventService
                 .create(newEvent);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), ProcessInstanceEventEntity.class, "legacy", "legacy", Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Create, ProcessInstanceEventEntity.class, result.getId(), "id", Map.of(
                 "id", result.getId(),
                 "processInstanceId", result.getProcessInstanceId(),
                 "processInstanceTaskId", result.getProcessInstanceTaskId()
-        )));
+        )).withMessage(
+                "Das Instanzereignis mit der ID %s für die Prozessinstanz %s wurde von der Mitarbeiter:in %s erstellt.",
+                StringUtils.quote(String.valueOf(result.getId())),
+                StringUtils.quote(String.valueOf(result.getProcessInstanceId())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return result;
     }
@@ -130,11 +136,16 @@ public class ProcessInstanceEventController {
         var result = processInstanceHistoryEventService
                 .update(id, updateDTO);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), ProcessInstanceEventEntity.class, "legacy", "legacy", Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, ProcessInstanceEventEntity.class, result.getId(), "id", Map.of(
                 "id", result.getId(),
                 "processInstanceId", result.getProcessInstanceId(),
                 "processInstanceTaskId", result.getProcessInstanceTaskId()
-        )));
+        )).withMessage(
+                "Das Instanzereignis mit der ID %s für die Prozessinstanz %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                StringUtils.quote(String.valueOf(result.getId())),
+                StringUtils.quote(String.valueOf(result.getProcessInstanceId())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return result;
     }
@@ -157,11 +168,15 @@ public class ProcessInstanceEventController {
         var deleted = processInstanceHistoryEventService
                 .delete(id);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(user).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), ProcessInstanceEventEntity.class, "legacy", "legacy", Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Delete, ProcessInstanceEventEntity.class, deleted.getId(), "id", Map.of(
                 "id", deleted.getId(),
                 "processInstanceId", deleted.getProcessInstanceId(),
                 "processInstanceTaskId", deleted.getProcessInstanceTaskId()
-        )));
+        )).withMessage(
+                "Das Instanzereignis mit der ID %s für die Prozessinstanz %s wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(String.valueOf(deleted.getId())),
+                StringUtils.quote(String.valueOf(deleted.getProcessInstanceId())),
+                StringUtils.quote(user.getFullName())
+        ).log();
     }
 }
-
