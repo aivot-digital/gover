@@ -285,13 +285,13 @@ export function ProcessNodeEditor(): ReactNode {
                                 component="div"
                             >
                                 {provider.name} <Chip
-                                    label={`Version ${provider.majorVersion}`}
-                                    size="small"
-                                    sx={{
-                                        ml: 1,
-                                        fontWeight: 'normal',
-                                    }}
-                                />
+                                label={`Version ${provider.majorVersion}`}
+                                size="small"
+                                sx={{
+                                    ml: 1,
+                                    fontWeight: 'normal',
+                                }}
+                            />
                             </Typography>
                         </Box>
 
@@ -321,10 +321,13 @@ export function ProcessNodeEditor(): ReactNode {
                             value="configuration"
                         />
 
-                        <Tab
-                            label="Ausgangsdaten"
-                            value="outputs"
-                        />
+                        {
+                            provider.outputs.length > 0 &&
+                            <Tab
+                                label="Ausgangsdaten"
+                                value="outputs"
+                            />
+                        }
 
                         <Tab
                             label="Weiteres"
