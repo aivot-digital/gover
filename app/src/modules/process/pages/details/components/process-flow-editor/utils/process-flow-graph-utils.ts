@@ -3,6 +3,7 @@ import {type ProcessNodeEntity} from '../../../../../entities/process-node-entit
 import {
     type ProcessNodePort,
     type ProcessNodeProvider,
+    ProcessNodeType,
 } from '../../../../../services/process-node-provider-api-service';
 
 export interface ProcessFlowGraphNode {
@@ -15,6 +16,7 @@ export interface ProcessFlowGraphNode {
 export interface ProcessFlowGraphEdge {
     edge: ProcessDefinitionEdgeEntity;
     port: ProcessNodePort | null;
+    isFeedbackEdge: boolean;
 }
 
 export interface ProcessFlowGraph {
@@ -62,6 +64,7 @@ export function buildProcessFlowGraph(
         const graphEdge: ProcessFlowGraphEdge = {
             edge,
             port: sourceNode.provider.ports.find((port) => port.key === edge.viaPort) ?? null,
+            isFeedbackEdge: false,
         };
 
         sourceNode.outgoingEdges.push(graphEdge);
@@ -82,6 +85,8 @@ export function buildProcessFlowGraph(
         ));
     }
 
+    markFeedbackEdges(graphNodes);
+
     return {
         nodes: graphNodes,
         edges: graphEdges,
@@ -95,4 +100,44 @@ function getProviderPortIndex(provider: ProcessNodeProvider, portKey?: string | 
 
     const portIndex = provider.ports.findIndex((port) => port.key === portKey);
     return portIndex === -1 ? Number.MAX_SAFE_INTEGER : portIndex;
+}
+
+function markFeedbackEdges(graphNodes: ProcessFlowGraphNode[]): void {
+    const graphNodeById = new Map<number, ProcessFlowGraphNode>(graphNodes.map((graphNode) => [graphNode.node.id, graphNode]));
+    const visitStateByNodeId = new Map<number, 'visiting' | 'visited'>();
+    const orderedNodes = [
+        ...graphNodes.filter((graphNode) => graphNode.provider.type === ProcessNodeType.Trigger),
+        ...graphNodes.filter((graphNode) => graphNode.provider.type !== ProcessNodeType.Trigger),
+    ];
+
+    const visit = (graphNode: ProcessFlowGraphNode): void => {
+        visitStateByNodeId.set(graphNode.node.id, 'visiting');
+
+        for (const outgoingEdge of graphNode.outgoingEdges) {
+            const targetNode = graphNodeById.get(outgoingEdge.edge.toNodeId);
+            if (targetNode == null) {
+                continue;
+            }
+
+            const targetVisitState = visitStateByNodeId.get(targetNode.node.id);
+            if (targetVisitState === 'visiting') {
+                outgoingEdge.isFeedbackEdge = true;
+                continue;
+            }
+
+            if (targetVisitState == null) {
+                visit(targetNode);
+            }
+        }
+
+        visitStateByNodeId.set(graphNode.node.id, 'visited');
+    };
+
+    for (const graphNode of orderedNodes) {
+        if (visitStateByNodeId.has(graphNode.node.id)) {
+            continue;
+        }
+
+        visit(graphNode);
+    }
 }

@@ -37,7 +37,6 @@ function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
 
     const {
         graphEdge,
-        isFeedbackEdge,
         routePoints,
     } = useMemo(() => {
         if (optData == null) {
@@ -60,6 +59,7 @@ function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
         graphEdge,
         runtimeData,
     ]);
+    const isFeedbackEdge = graphEdge.isFeedbackEdge;
 
     const wasPerformed = nextTaskForEdge != null;
     const {

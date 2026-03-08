@@ -56,7 +56,6 @@ export type FlowNode = ReactFlowNode<{
 
 export type FlowEdge = ReactFlowEdge<{
     graphEdge: ProcessFlowGraphEdge;
-    isFeedbackEdge: boolean;
     routePoints: FlowPathPoint[];
 }>;
 
@@ -109,7 +108,7 @@ export async function layoutElements(
 
     return {
         flowNodes: transformNodes(graph, resolvedLayoutNodes),
-        flowEdges: transformEdges(graph, laidOutGraph.edges ?? [], resolvedLayoutNodes),
+        flowEdges: transformEdges(graph, laidOutGraph.edges ?? []),
     };
 }
 
@@ -152,6 +151,9 @@ function createElkGraph(
             id: String(graphEdge.edge.id),
             sources: [createSourcePortId(graphEdge.edge.fromNodeId, graphEdge.edge.viaPort)],
             targets: [createTargetPortId(graphEdge.edge.toNodeId)],
+            layoutOptions: {
+                'org.eclipse.elk.layered.priority.direction': graphEdge.isFeedbackEdge ? '0' : '100',
+            },
         })),
     };
 }
@@ -265,7 +267,6 @@ function transformNodes(
 function transformEdges(
     graph: ProcessFlowGraph,
     elkEdges: ElkExtendedEdge[],
-    resolvedLayoutNodes: Map<number, ResolvedLayoutNode>,
 ): FlowEdge[] {
     const routePointsByEdgeId = new Map<number, FlowPathPoint[]>();
 
@@ -290,24 +291,9 @@ function transformEdges(
         zIndex: PROCESS_FLOW_EDGE_Z_INDEX,
         data: {
             graphEdge,
-            isFeedbackEdge: isFeedbackEdge(graphEdge, resolvedLayoutNodes),
             routePoints: routePointsByEdgeId.get(graphEdge.edge.id) ?? [],
         },
     }));
-}
-
-function isFeedbackEdge(
-    graphEdge: ProcessFlowGraphEdge,
-    resolvedLayoutNodes: Map<number, ResolvedLayoutNode>,
-): boolean {
-    const sourceNode = resolvedLayoutNodes.get(graphEdge.edge.fromNodeId);
-    const targetNode = resolvedLayoutNodes.get(graphEdge.edge.toNodeId);
-
-    if (sourceNode == null || targetNode == null) {
-        return false;
-    }
-
-    return targetNode.y < sourceNode.y;
 }
 
 function extractEdgeRoutePoints(edge: ElkExtendedEdge): FlowPathPoint[] {
