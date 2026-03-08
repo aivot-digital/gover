@@ -120,6 +120,7 @@ export function NoCodeOperandEditorSelector(props: NoCodeOperandEditorSelectorPr
                 }
 
                 {
+                    false &&
                     !disableProcessOptions &&
                     <ButtonGroup size="small">
                         <Button
