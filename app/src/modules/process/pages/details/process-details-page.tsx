@@ -118,6 +118,14 @@ export function ProcessDetailsPage(): ReactNode {
     const [showProcessInstanceEventsDialog, setShowProcessInstanceEventsDialog] = useState(false);
     const showProcessDetailsPageSkeleton = useDelayedVisibility(processFlow == null, PROCESS_DETAILS_PAGE_SKELETON_DELAY);
 
+    useEffect(() => {
+        document.body.dataset.hasFlowEditor = 'true';
+
+        return () => {
+            delete document.body.dataset.hasFlowEditor;
+        };
+    }, []);
+
     const runtimeAttachments = useMemo(() => {
         if (runtimeData == null) {
             return [];
