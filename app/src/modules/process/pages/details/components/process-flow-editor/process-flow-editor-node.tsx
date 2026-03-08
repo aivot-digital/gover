@@ -310,24 +310,29 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                                 />
                             }
 
-                            {
-                                editable &&
-                                <IconButton
-                                    size="small"
-                                    sx={{
-                                        color: theme.palette.text.secondary,
-                                        mt: -0.25,
-                                        mr: -0.75,
-                                    }}
-                                    onClick={(event) => {
-                                        event.stopPropagation();
-                                        event.preventDefault();
-                                        setMenuAnchorEl(event.currentTarget);
-                                    }}
-                                >
-                                    <MoreVert/>
-                                </IconButton>
-                            }
+                            <IconButton
+                                size="small"
+                                aria-hidden={!editable}
+                                disabled={!editable}
+                                sx={{
+                                    color: theme.palette.text.secondary,
+                                    mt: -0.25,
+                                    mr: -0.75,
+                                    visibility: editable ? 'visible' : 'hidden',
+                                    pointerEvents: editable ? 'auto' : 'none',
+                                }}
+                                onClick={(event) => {
+                                    if (!editable) {
+                                        return;
+                                    }
+
+                                    event.stopPropagation();
+                                    event.preventDefault();
+                                    setMenuAnchorEl(event.currentTarget);
+                                }}
+                            >
+                                <MoreVert/>
+                            </IconButton>
                         </Box>
                     </Box>
 

@@ -12,7 +12,6 @@ import {ProcessNodeApiService} from '../../services/process-node-api-service';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {GenericPageHeader} from '../../../../components/generic-page-header/generic-page-header';
-import Add from '@aivot/mui-material-symbols-400-outlined/dist/add/Add';
 import {
     type ProcessNodeProvider,
     ProcessNodeProviderApiService,
@@ -52,12 +51,16 @@ import {ProcessInstanceApiService} from '../../services/process-instance-api-ser
 import {ProcessInstanceTaskApiService} from '../../services/process-instance-task-api-service';
 import {BaseApiService} from '../../../../services/base-api-service';
 import Download from '@aivot/mui-material-symbols-400-outlined/dist/download/Download';
-import Refresh from '@mui/icons-material/Refresh';
 import {ProcessInstanceEventDialog} from '../../dialogs/process-instance-event-dialog';
-import News from '@aivot/mui-material-symbols-400-outlined/dist/news/News';
 import {getProcessNodeProviderKey} from './components/process-flow-editor/utils/process-flow-graph-utils';
 import {ProcessDetailsPageSkeleton} from './components/process-details-page-skeleton';
 import {useDelayedVisibility} from '../../../../hooks/use-delayed-visibility';
+import Undo from '@mui/icons-material/Undo';
+import Redo from '@mui/icons-material/Redo';
+import DeleteOutline from '@mui/icons-material/DeleteOutline';
+import Settings from '@aivot/mui-material-symbols-400-outlined/dist/settings/Settings';
+import {type Action} from '../../../../components/actions/actions-props';
+import HomeStorage from '@aivot/mui-material-symbols-400-outlined/dist/home-storage/HomeStorage';
 
 const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 150;
 
@@ -844,18 +847,74 @@ export function ProcessDetailsPage(): ReactNode {
                 navigate(`/process-instances?processId=${processFlow?.definition.id}&processVersion=${processFlow?.version.processVersion}`);
                 break;
             default:
-                dispatch(addSnackbarMessage({
-                    key: 'unknown-process-details-event',
-                    type: SnackbarType.AutoHiding,
-                    severity: SnackbarSeverity.Info,
-                    message: 'Diese Funktion ist noch nicht implementiert.',
-                }));
+                showNotImplementedHeaderActionMessage();
                 break;
         }
     };
+    const showNotImplementedHeaderActionMessage = useCallback(() => {
+        dispatch(addSnackbarMessage({
+            key: 'unknown-process-details-event',
+            type: SnackbarType.AutoHiding,
+            severity: SnackbarSeverity.Info,
+            message: 'Diese Funktion ist noch nicht implementiert.',
+        }));
+    }, [dispatch]);
     const handleOpenAddTriggerDialog = useCallback(() => {
         setShowAddTriggerDialog(true);
     }, []);
+    const headerActions = useMemo<Action[]>(() => {
+        const isInTestMode = currentTestClaim != null;
+
+        return [
+            ...(!isInTestMode ? [
+                {
+                    tooltip: 'Rückgängig',
+                    ariaLabel: 'Rückgängig',
+                    icon: <Undo/>,
+                    onClick: showNotImplementedHeaderActionMessage,
+                },
+                {
+                    tooltip: 'Wiederholen',
+                    ariaLabel: 'Wiederholen',
+                    icon: <Redo/>,
+                    onClick: showNotImplementedHeaderActionMessage,
+                    disabled: true,
+                },
+                'separator' as const,
+            ] : []),
+            {
+                tooltip: 'Versionen',
+                ariaLabel: 'Versionen',
+                icon: <HomeStorage/>,
+                onClick: showNotImplementedHeaderActionMessage,
+            },
+            {
+                tooltip: 'Einstellungen',
+                ariaLabel: 'Einstellungen',
+                icon: <Settings/>,
+                onClick: showNotImplementedHeaderActionMessage,
+            },
+            {
+                tooltip: 'Weitere Optionen',
+                ariaLabel: 'Weitere Optionen',
+                icon: <MoreVert/>,
+                onClick: (event) => {
+                    setShowMenuAtEl(event.currentTarget as HTMLElement);
+                },
+            },
+            'separator',
+            {
+                label: 'Veröffentlichen',
+                tooltip: 'Veröffentlichen',
+                disabledTooltip: 'Während des Tests kann der Prozess nicht veröffentlicht werden.',
+                icon: null,
+                onClick: showNotImplementedHeaderActionMessage,
+                variant: 'contained',
+                disabled: isInTestMode,
+                activeStyle: {ml: 1}
+            },
+        ];
+    }, [currentTestClaim, showNotImplementedHeaderActionMessage]);
 
     if (processFlow == null) {
         if (showProcessDetailsPageSkeleton) {
@@ -907,41 +966,7 @@ export function ProcessDetailsPage(): ReactNode {
                                     label: `Version ${processFlow.version.processVersion}`,
                                 }}
                                 icon={ModuleIcons.processes}
-                                actions={[
-                                    {
-                                        tooltip: 'Laufzeitdaten neu laden',
-                                        icon: <Refresh/>,
-                                        onClick: () => {
-                                            void loadRuntimeData();
-                                        },
-                                        visible: instanceId != null,
-                                        disabled: isRefreshingRuntimeData,
-                                    },
-                                    {
-                                        tooltip: 'Vorgangsereignisse anzeigen',
-                                        icon: <News/>,
-                                        onClick: () => {
-                                            setShowProcessInstanceEventsDialog(true);
-                                        },
-                                        visible: runtimeData != null,
-                                    },
-                                    {
-                                        label: 'Auslöser',
-                                        tooltip: 'Neuen Auslöser hinzufügen',
-                                        disabledTooltip: 'Während des Tests können keine Auslöser hinzugefügt werden.',
-                                        icon: <Add/>,
-                                        onClick: handleOpenAddTriggerDialog,
-                                        disabled: currentTestClaim != null,
-                                        variant: 'contained',
-                                    },
-                                    {
-                                        tooltip: 'Mehr',
-                                        icon: <MoreVert/>,
-                                        onClick: (event) => {
-                                            setShowMenuAtEl(event.target as HTMLElement);
-                                        },
-                                    },
-                                ]}
+                                actions={headerActions}
                             />
 
                             <Box

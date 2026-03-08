@@ -31,6 +31,7 @@ const ELK_LAYOUT_OPTIONS = {
     'elk.edgeRouting': 'ORTHOGONAL',
     'elk.padding': '[top=32,left=32,bottom=32,right=32]',
     'elk.spacing.nodeNode': String(FLOW_HORIZONTAL_NODE_SPACING),
+    'org.eclipse.elk.spacing.componentComponent': String(FLOW_HORIZONTAL_NODE_SPACING),
     'elk.layered.spacing.nodeNodeBetweenLayers': '52',
     'elk.layered.considerModelOrder.strategy': 'PREFER_EDGES',
     'elk.layered.considerModelOrder.longEdgeStrategy': 'DUMMY_NODE_UNDER',

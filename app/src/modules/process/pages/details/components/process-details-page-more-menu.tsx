@@ -64,8 +64,8 @@ export function ProcessDetailsPageMoreMenu(props: ProcessDetailsPageMoreMenuProp
             PaperProps={{
                 elevation: 6,
                 sx: {
-                    mt: -1.5,
-                    ml: 1.25,
+                    mt: -0.875,
+                    ml: 0.5,
                     minWidth: 280,
                     overflow: 'visible',
                     '&::before': {
