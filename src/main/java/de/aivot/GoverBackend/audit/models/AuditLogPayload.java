@@ -56,6 +56,8 @@ public class AuditLogPayload {
     @Nullable
     private String ipAddress;
 
+    private AuditLogPayload() {}
+
     // region Utils
 
     public static AuditLogPayload create() {
