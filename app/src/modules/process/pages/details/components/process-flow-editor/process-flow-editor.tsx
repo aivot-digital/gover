@@ -12,6 +12,7 @@ import {
     type NodeChange,
     Panel,
     ReactFlow,
+    ViewportPortal,
     useEdgesState,
     useNodesInitialized,
     useNodesState,
@@ -25,15 +26,18 @@ import {ProcessFlowEditorProvider} from './process-flow-editor-context';
 import {
     DEFAULT_FLOW_EDGE_TYPE,
     DEFAULT_FLOW_NODE_TYPE,
+    MIN_NODE_WIDTH,
+    NODE_HEIGHT,
     PROCESS_FLOW_EDGE_Z_INDEX,
 } from './data/process-flow-constants';
 import {
     createNodeMeasurementMap,
     type FlowEdge,
     type FlowNode,
+    FLOW_HORIZONTAL_NODE_SPACING,
     layoutElements,
 } from './utils/layout-utils';
-import {Box, Tooltip} from '@mui/material';
+import {Box, Button, Tooltip} from '@mui/material';
 import {type ProcessInstanceEntity} from '../../../../entities/process-instance-entity';
 import {type ProcessInstanceTaskEntity} from '../../../../entities/process-instance-task-entity';
 import {type ProcessInstanceEventEntity} from '../../../../entities/process-instance-event-entity';
@@ -44,11 +48,15 @@ import Lock from '@mui/icons-material/Lock';
 import LockOpen from '@mui/icons-material/LockOpen';
 import ViewRealSize from '@aivot/mui-material-symbols-400-outlined/dist/view-real-size/ViewRealSize';
 import {getLatestTaskForEdge} from './utils/runtime-task-utils';
+import {ProcessNodeType} from '../../../../services/process-node-provider-api-service';
 
 const FLOW_MIN_ZOOM = 0.25;
 const FLOW_MAX_ZOOM = 2;
 const INITIAL_VIEWPORT_ZOOM = 1;
 const ZOOM_EPSILON = 0.001;
+const CANVAS_ADD_TRIGGER_BUTTON_DEFAULT_X = 56;
+const CANVAS_ADD_TRIGGER_BUTTON_DEFAULT_Y = 56;
+const CANVAS_ADD_TRIGGER_LAYER_THRESHOLD = 16;
 const NOOP_ADD_EDGE = (_fromNodeId: number, _toNodeId: number, _viaPortKey: string): void => {
 };
 const NOOP_DELETE_EDGE = (_edgeId: number): void => {
@@ -75,6 +83,7 @@ interface ProcessFlowEditorProps {
 
     onAddFollowUpNode?: (fromNodeId: number, viaPortKey: string) => void;
     onAddInbetweenNode?: (forEdgeId: number) => void;
+    onAddTrigger?: () => void;
 
     runtimeData: {
         instance: ProcessInstanceEntity;
@@ -228,6 +237,66 @@ function ProcessFlowEditorViewportControls(props: ProcessFlowEditorViewportContr
     );
 }
 
+interface ProcessFlowEditorCanvasAddTriggerButtonProps {
+    label: string;
+    onAddTrigger: () => void;
+    position: {
+        x: number;
+        y: number;
+        centerVertically: boolean;
+    };
+}
+
+function ProcessFlowEditorCanvasAddTriggerButton(props: ProcessFlowEditorCanvasAddTriggerButtonProps): ReactNode {
+    const {
+        label,
+        onAddTrigger,
+        position,
+    } = props;
+
+    return (
+        <ViewportPortal>
+            <Box
+                className="nopan nodrag"
+                sx={{
+                    position: 'absolute',
+                    transform: `translate(${position.x}px, ${position.y}px)${position.centerVertically ? ' translateY(-50%)' : ''}`,
+                    zIndex: PROCESS_FLOW_EDGE_Z_INDEX + 2,
+                    pointerEvents: 'all',
+                }}
+            >
+                <Button
+                    variant="text"
+                    startIcon={<Add sx={{fontSize: 18}}/>}
+                    onClick={onAddTrigger}
+                    sx={{
+                        minWidth: 0,
+                        height: 46,
+                        px: 2.25,
+                        borderRadius: 1.5,
+                        border: '2px dashed rgba(148, 163, 184, 0.5)',
+                        color: 'rgba(148, 163, 184, 0.96)',
+                        boxShadow: 'none',
+                        textTransform: 'none',
+                        fontWeight: 700,
+                        fontSize: '0.95rem',
+                        letterSpacing: 0,
+                        whiteSpace: 'nowrap',
+                        backdropFilter: 'blur(2px)',
+                        '&:hover': {
+                            bgcolor: 'rgba(255, 255, 255, 0.88)',
+                            borderColor: 'rgba(100, 116, 139, 0.62)',
+                            boxShadow: 'none',
+                        },
+                    }}
+                >
+                    {label}
+                </Button>
+            </Box>
+        </ViewportPortal>
+    );
+}
+
 export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const {
         editable,
@@ -244,6 +313,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
 
         onAddFollowUpNode,
         onAddInbetweenNode,
+        onAddTrigger,
 
         runtimeData,
         topLeftPanel,
@@ -279,6 +349,38 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
             ))
         ))
     ), [nodeProviders, processFlow.nodes]);
+    const canvasAddTriggerPosition = useMemo(() => {
+        if (!isEditable || onAddTrigger == null) {
+            return null;
+        }
+
+        if (processFlow.nodes.length === 0) {
+            return {
+                x: CANVAS_ADD_TRIGGER_BUTTON_DEFAULT_X,
+                y: CANVAS_ADD_TRIGGER_BUTTON_DEFAULT_Y,
+                centerVertically: false,
+            };
+        }
+
+        if (!hasAllNodeProviders || nodes.length === 0) {
+            return null;
+        }
+
+        const triggerNodes = nodes.filter((node) => node.data.graphNode.provider.type === ProcessNodeType.Trigger);
+        const anchorNodes = triggerNodes.length > 0 ?
+            triggerNodes :
+            getTopLayerNodes(nodes);
+        const rightmostAnchorNode = anchorNodes.reduce((currentRightmost, node) => {
+            return getFlowNodeRight(node) > getFlowNodeRight(currentRightmost) ? node : currentRightmost;
+        }, anchorNodes[0]);
+
+        return {
+            x: getFlowNodeRight(rightmostAnchorNode) + FLOW_HORIZONTAL_NODE_SPACING,
+            y: getFlowNodeCardCenterY(rightmostAnchorNode),
+            centerVertically: true,
+        };
+    }, [hasAllNodeProviders, isEditable, nodes, onAddTrigger, processFlow.nodes.length]);
+    const canvasAddTriggerLabel = processFlow.nodes.length === 0 ? 'Auslöser hinzufügen' : 'Weiterer Auslöser';
     const fitViewOptions = useMemo(() => ({
         padding: 0.16,
         duration: 200,
@@ -525,6 +627,15 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                 }}
             >
                 {
+                    canvasAddTriggerPosition != null &&
+                    onAddTrigger != null &&
+                    <ProcessFlowEditorCanvasAddTriggerButton
+                        label={canvasAddTriggerLabel}
+                        onAddTrigger={onAddTrigger}
+                        position={canvasAddTriggerPosition}
+                    />
+                }
+                {
                     topLeftPanel != null &&
                     <Panel
                         position="top-left"
@@ -601,4 +712,39 @@ function prioritizeRuntimeEdges(
     const wasChanged = prioritizedEdges.some((edge, index) => edge !== edges[index]);
 
     return wasChanged ? prioritizedEdges : edges;
+}
+
+function getFlowNodeWidth(node: FlowNode): number {
+    return node.measured?.width ?? node.width ?? MIN_NODE_WIDTH;
+}
+
+function getFlowNodeHeight(node: FlowNode): number {
+    return node.measured?.height ?? node.height ?? NODE_HEIGHT;
+}
+
+function getFlowNodeRight(node: FlowNode): number {
+    return node.position.x + getFlowNodeWidth(node);
+}
+
+function getTopLayerNodes(nodes: FlowNode[]): FlowNode[] {
+    if (nodes.length === 0) {
+        return [];
+    }
+
+    const topLayerY = Math.min(...nodes.map((node) => node.position.y));
+    return nodes.filter((node) => Math.abs(node.position.y - topLayerY) <= CANVAS_ADD_TRIGGER_LAYER_THRESHOLD);
+}
+
+function getFlowNodeCardCenterY(node: FlowNode): number {
+    if (typeof document === 'undefined') {
+        return node.position.y + (getFlowNodeHeight(node) / 2);
+    }
+
+    const nodeElement = document.querySelector(`.react-flow__node[data-id="${node.id}"]`) as HTMLElement | null;
+    const nodeCardElement = nodeElement?.querySelector('.process-flow-editor-node-card') as HTMLElement | null;
+    if (nodeCardElement == null) {
+        return node.position.y + (getFlowNodeHeight(node) / 2);
+    }
+
+    return node.position.y + nodeCardElement.offsetTop + (nodeCardElement.offsetHeight / 2);
 }

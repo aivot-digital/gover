@@ -2,7 +2,7 @@ import ELK, {type ElkEdgeSection, type ElkExtendedEdge, type ElkNode, type ElkPo
 import {type Edge as ReactFlowEdge, MarkerType, type Node as ReactFlowNode} from '@xyflow/react';
 import {type ProcessDefinitionEdgeEntity} from '../../../../../entities/process-definition-edge-entity';
 import {type ProcessNodeEntity} from '../../../../../entities/process-node-entity';
-import {type ProcessNodeProvider} from '../../../../../services/process-node-provider-api-service';
+import {type ProcessNodeProvider, ProcessNodeType} from '../../../../../services/process-node-provider-api-service';
 import {
     DEFAULT_FLOW_EDGE_TYPE,
     DEFAULT_FLOW_NODE_TYPE,
@@ -24,12 +24,13 @@ const elk = new ELK();
 const ELK_TARGET_PORT_KEY = '__target__';
 const INCLUDED_PORTS_IN_MIN_WIDTH = 2;
 const ADDITIONAL_PORT_WIDTH = 72;
+export const FLOW_HORIZONTAL_NODE_SPACING = 100;
 const ELK_LAYOUT_OPTIONS = {
     'elk.algorithm': 'layered',
     'elk.direction': 'DOWN',
     'elk.edgeRouting': 'ORTHOGONAL',
     'elk.padding': '[top=32,left=32,bottom=32,right=32]',
-    'elk.spacing.nodeNode': '100',
+    'elk.spacing.nodeNode': String(FLOW_HORIZONTAL_NODE_SPACING),
     'elk.layered.spacing.nodeNodeBetweenLayers': '52',
     'elk.layered.considerModelOrder.strategy': 'PREFER_EDGES',
     'elk.layered.considerModelOrder.longEdgeStrategy': 'DUMMY_NODE_UNDER',
@@ -167,7 +168,7 @@ function createElkNode(graphNode: ProcessFlowGraphNode, layoutNode: LayoutNodeMe
         id: String(graphNode.node.id),
         width: layoutNode.width,
         height: layoutNode.height,
-        layoutOptions: ELK_NODE_LAYOUT_OPTIONS,
+        layoutOptions: getElkNodeLayoutOptions(graphNode),
         ports: [
             {
                 id: createTargetPortId(graphNode.node.id),
@@ -181,6 +182,15 @@ function createElkNode(graphNode: ProcessFlowGraphNode, layoutNode: LayoutNodeMe
             },
             ...sourcePorts,
         ],
+    };
+}
+
+function getElkNodeLayoutOptions(graphNode: ProcessFlowGraphNode): Record<string, string> {
+    return {
+        ...ELK_NODE_LAYOUT_OPTIONS,
+        ...(graphNode.provider.type === ProcessNodeType.Trigger ? {
+            'org.eclipse.elk.layered.layering.layerConstraint': 'FIRST_SEPARATE',
+        } : {}),
     };
 }
 

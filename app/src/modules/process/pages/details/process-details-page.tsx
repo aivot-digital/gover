@@ -853,6 +853,9 @@ export function ProcessDetailsPage(): ReactNode {
                 break;
         }
     };
+    const handleOpenAddTriggerDialog = useCallback(() => {
+        setShowAddTriggerDialog(true);
+    }, []);
 
     if (processFlow == null) {
         if (showProcessDetailsPageSkeleton) {
@@ -927,9 +930,7 @@ export function ProcessDetailsPage(): ReactNode {
                                         tooltip: 'Neuen Auslöser hinzufügen',
                                         disabledTooltip: 'Während des Tests können keine Auslöser hinzugefügt werden.',
                                         icon: <Add/>,
-                                        onClick: () => {
-                                            setShowAddTriggerDialog(true);
-                                        },
+                                        onClick: handleOpenAddTriggerDialog,
                                         disabled: currentTestClaim != null,
                                         variant: 'contained',
                                     },
@@ -961,6 +962,7 @@ export function ProcessDetailsPage(): ReactNode {
                                                 editable={currentTestClaim == null}
                                                 processFlow={processFlow}
                                                 nodeProviders={flowNodeProviders}
+                                                onAddTrigger={handleOpenAddTriggerDialog}
                                                 topLeftPanel={
                                                     currentTestClaim == null ? undefined : (
                                                         <Box

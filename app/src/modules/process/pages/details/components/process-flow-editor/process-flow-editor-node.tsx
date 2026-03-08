@@ -243,6 +243,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
 
                 <Paper
                     elevation={0}
+                    className="process-flow-editor-node-card"
                     sx={{
                         position: 'relative',
                         display: 'flex',
