@@ -13,7 +13,12 @@ export function ProcessNodeEditorMoreTab() {
     } = useProcessNodeEditorContext();
 
     return (
-        <Box sx={{py: 1}}>
+        <Box
+            sx={{
+                pt: 1,
+                pb: 2,
+            }}
+        >
             <Typography variant="h6">
                 Weitere Eigenschaften des Elements
             </Typography>

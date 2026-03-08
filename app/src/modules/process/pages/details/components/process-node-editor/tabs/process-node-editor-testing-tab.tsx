@@ -33,24 +33,50 @@ export function ProcessNodeEditorTestingTab(): ReactNode {
 
     if (testClaim == null) {
         return (
-            <Typography>
-                Der Prozess befindet sich aktuell nicht in der Testphase.
-                Sobald der Prozess in die Testphase wechselt, können hier zusätzliche Eigenschaften des Elemente
-                konfiguriert werden.
-            </Typography>
+            <Box
+                sx={{
+                    pt: 1,
+                    pb: 2,
+                }}
+            >
+                <Typography component="h2" variant="h6" sx={{mb: 1.5}}>
+                    Prozesselement testen
+                </Typography>
+                <Typography>
+                    Der Prozess befindet sich aktuell nicht in der Testphase.
+                    Sobald der Prozess in die Testphase wechselt, können hier zusätzliche Eigenschaften des Elemente
+                    konfiguriert werden.
+                </Typography>
+            </Box>
         );
     }
 
     if (layout == null) {
         return (
-            <Box sx={{py: 1}}>
+            <Box
+                sx={{
+                    pt: 1,
+                    pb: 2,
+                }}
+            >
+                <Typography component="h2" variant="h6" sx={{mb: 1.5}}>
+                    Prozesselement testen
+                </Typography>
                 <Skeleton/>
             </Box>
         );
     }
 
     return (
-        <Box sx={{py: 1}}>
+        <Box
+            sx={{
+                pt: 1,
+                pb: 2,
+            }}
+        >
+            <Typography component="h2" variant="h6" sx={{mb: 1.5}}>
+                Prozesselement testen
+            </Typography>
             <ElementDerivationContext
                 element={layout}
                 elementData={{}}
