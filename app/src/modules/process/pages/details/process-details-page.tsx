@@ -656,10 +656,47 @@ export function ProcessDetailsPage(): ReactNode {
             return;
         }
 
+        const nodeProvider = flowNodeProviderCache[getProcessNodeProviderKey(
+            node.processNodeDefinitionKey,
+            node.processNodeDefinitionVersion,
+        )];
+        const incomingEdges = processFlow.edges.filter((edge) => edge.toNodeId === node.id);
+        const outgoingEdges = processFlow.edges.filter((edge) => edge.fromNodeId === node.id);
         const edgesToRemove = processFlow.edges.filter((edge) => (
             edge.fromNodeId === node.id ||
             edge.toNodeId === node.id
         ));
+        const remainingEdges = processFlow.edges.filter((edge) => (
+            !edgesToRemove.some((edgeToRemove) => edgeToRemove.id === edge.id)
+        ));
+        const bridgeTargetEdge = nodeProvider?.ports.length === 1 && outgoingEdges.length === 1
+            ? outgoingEdges[0]
+            : null;
+        const bridgeEdgePayloads = bridgeTargetEdge == null
+            ? []
+            : incomingEdges
+                .map((incomingEdge) => ({
+                    id: 0,
+                    processId: processFlow.definition.id,
+                    processVersion: processFlow.version.processVersion,
+                    fromNodeId: incomingEdge.fromNodeId,
+                    toNodeId: bridgeTargetEdge.toNodeId,
+                    viaPort: incomingEdge.viaPort,
+                }))
+                .filter((payload, index, payloads) => (
+                    payload.fromNodeId !== node.id &&
+                    payload.toNodeId !== node.id &&
+                    !remainingEdges.some((edge) => (
+                        edge.fromNodeId === payload.fromNodeId &&
+                        edge.toNodeId === payload.toNodeId &&
+                        edge.viaPort === payload.viaPort
+                    )) &&
+                    payloads.findIndex((candidate) => (
+                        candidate.fromNodeId === payload.fromNodeId &&
+                        candidate.toNodeId === payload.toNodeId &&
+                        candidate.viaPort === payload.viaPort
+                    )) === index
+                ));
 
         const edgeApi = new ProcessDefinitionEdgeApiService();
 
@@ -669,10 +706,17 @@ export function ProcessDetailsPage(): ReactNode {
         await new ProcessNodeApiService()
             .destroy(node.id);
 
+        const createdBridgeEdges = await Promise.all(
+            bridgeEdgePayloads.map((payload) => edgeApi.create(payload)),
+        );
+
         setProcessFlow({
             ...processFlow,
             nodes: processFlow.nodes.filter((n) => n.id !== node.id),
-            edges: processFlow.edges.filter((e) => !edgesToRemove.some((er) => er.id === e.id)),
+            edges: [
+                ...remainingEdges,
+                ...createdBridgeEdges,
+            ],
         });
 
         await navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}`);
