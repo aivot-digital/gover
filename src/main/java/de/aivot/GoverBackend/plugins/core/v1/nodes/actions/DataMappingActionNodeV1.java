@@ -136,7 +136,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
         var sourceRoot = context.getProcessData().get("$");
         if (!(sourceRoot instanceof Map<?, ?> sourceRootMapRaw)) {
             throw new ProcessNodeExecutionExceptionUnknown(
-                    "Die Prozessdatenwurzel ($) ist kein Objekt und kann nicht für die Datenabbildung verwendet werden."
+                    "Die Vorgangsdatenwurzel ($) ist kein Objekt und kann nicht für die Datenabbildung verwendet werden."
             );
         }
 
