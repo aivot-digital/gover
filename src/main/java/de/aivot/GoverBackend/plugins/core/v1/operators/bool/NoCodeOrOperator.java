@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.*;
+import jakarta.annotation.Nullable;
 
 public class NoCodeOrOperator extends NoCodeOperator {
     public static final String OPERATOR_ID = "or";
@@ -86,5 +87,11 @@ public class NoCodeOrOperator extends NoCodeOperator {
         var arg1 = castToBoolean(args[1]);
 
         return new NoCodeResult(arg0 || arg1);
+    }
+
+    @Nullable
+    @Override
+    public String getHumanReadableTemplate() {
+        return "„#0“ oder „#1“";
     }
 }
