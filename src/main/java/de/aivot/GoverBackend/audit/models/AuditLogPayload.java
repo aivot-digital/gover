@@ -84,15 +84,17 @@ public class AuditLogPayload {
     public AuditLogPayload withAuditAction(@Nonnull AuditAction action,
                                            @Nonnull String module,
                                            @Nonnull Class<?> entityClass,
-                                           @Nonnull Object entityId) {
+                                           @Nonnull Object entityId,
+                                           @Nonnull String entityRefType) {
         return this
-                .withAuditAction(action, module, entityClass, entityId, Map.of());
+                .withAuditAction(action, module, entityClass, entityId, entityRefType, Map.of());
     }
 
     public AuditLogPayload withAuditAction(@Nonnull AuditAction action,
                                            @Nonnull String module,
                                            @Nonnull Class<?> entityClass,
                                            @Nonnull Object entityId,
+                                           @Nonnull String entityRefType,
                                            @Nullable Map<String, Object> metadata) {
         var me = new HashMap<String, Object>();
         if (metadata != null) {
@@ -105,7 +107,7 @@ public class AuditLogPayload {
                 .setTriggerType(action.name())
                 .setEntityType(entityClass.getSimpleName())
                 .setEntityRef(String.valueOf(entityId))
-                .setEntityRefType(TRIGGER_REF_TYPE)
+                .setEntityRefType(entityRefType)
                 .setModule(module)
                 .setMessage(action.name() + " " + entityClass.getSimpleName() + " #" + entityId)
                 .setMetadata(me);

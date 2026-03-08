@@ -57,6 +57,8 @@ import java.util.UUID;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class AssetController {
+    private static final String MODULE_NAME = "Dateien & Medien";
+
     private final ScopedAuditService auditService;
 
     private final UserService userService;
@@ -163,14 +165,15 @@ public class AssetController {
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Create,
+                        MODULE_NAME,
                         AssetEntity.class,
                         created.getPathFromRoot(),
+                        "storagePathFromRoot",
                         Map.of(
                                 "storageProviderId", storageProvider.getId(),
                                 "isFolder", true
                         )
-                )
-                .setTriggerRefType("storagePathFromRoot"));
+                ));
 
         return created;
     }
@@ -208,14 +211,15 @@ public class AssetController {
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Delete,
+                        MODULE_NAME,
                         AssetEntity.class,
                         folderPath,
+                        "storagePathFromRoot",
                         Map.of(
                                 "storageProviderId", storageProvider.getId(),
                                 "isFolder", true
                         )
-                )
-                .setTriggerRefType("storagePathFromRoot"));
+                ));
     }
 
     // endregion
@@ -276,14 +280,15 @@ public class AssetController {
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Create,
+                        MODULE_NAME,
                         AssetEntity.class,
                         filePath,
+                        "storagePathFromRoot",
                         Map.of(
                                 "storageProviderId", storageProvider.getId(),
                                 "isFolder", false
                         )
-                )
-                .setTriggerRefType("storagePathFromRoot"));
+                ));
 
         return storageIndexItemWithAssetRepository
                 .findById(VStorageIndexItemWithAssetEntityId.of(
@@ -382,15 +387,16 @@ public class AssetController {
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Update,
+                        MODULE_NAME,
                         AssetEntity.class,
                         filePath,
+                        "storagePathFromRoot",
                         Map.of(
                                 "storageProviderId", storageProvider.getId(),
                                 "isFolder", false,
                                 "fileContentUpdated", newAssetFile != null && !newAssetFile.isEmpty()
                         )
                 )
-                .setTriggerRefType("storagePathFromRoot")
                 .withDiff(
                         Map.of("isPrivate", oldPrivate),
                         Map.of("isPrivate", newPrivate)
@@ -507,14 +513,15 @@ public class AssetController {
                 .withUser(user)
                 .withAuditAction(
                         AuditAction.Update,
+                        MODULE_NAME,
                         AssetEntity.class,
                         sourcePath,
+                        "storagePathFromRoot",
                         Map.of(
                                 "storageProviderId", storageProvider.getId(),
                                 "isFolder", false
                         )
                 )
-                .setTriggerRefType("storagePathFromRoot")
                 .withDiff(
                         Map.of("storagePathFromRoot", sourcePath),
                         Map.of("storagePathFromRoot", targetPath)
@@ -586,15 +593,16 @@ public class AssetController {
                 .withUser(user)
                 .withAuditAction(
                         AuditAction.Create,
+                        MODULE_NAME,
                         AssetEntity.class,
                         targetPath,
+                        "storagePathFromRoot",
                         Map.of(
                                 "storageProviderId", storageProvider.getId(),
                                 "isFolder", false,
                                 "copyOf", sourcePath
                         )
-                )
-                .setTriggerRefType("storagePathFromRoot"));
+                ));
 
         return storageIndexItemWithAssetRepository
                 .findById(VStorageIndexItemWithAssetEntityId.of(
@@ -633,14 +641,15 @@ public class AssetController {
                 .withUser(user)
                 .withAuditAction(
                         AuditAction.Delete,
+                        MODULE_NAME,
                         AssetEntity.class,
                         filePath,
+                        "storagePathFromRoot",
                         Map.of(
                                 "storageProviderId", storageProvider.getId(),
                                 "isFolder", false
                         )
-                )
-                .setTriggerRefType("storagePathFromRoot"));
+                ));
     }
 
     // endregion
