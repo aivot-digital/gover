@@ -255,7 +255,8 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const nodesInitialized = useNodesInitialized({
         includeHiddenNodes: true,
     });
-    const hasQueuedInitialViewportRef = useRef<boolean>(false);
+    const hasResolvedInitialViewportRef = useRef<boolean>(false);
+    const initialViewportNodeIdRef = useRef<number | null>(null);
     const layoutRequestIdRef = useRef<number>(0);
 
     const isEditable = runtimeData == null && editable;
@@ -300,12 +301,13 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         setIsViewportLocked((current) => !current);
     }, []);
     const focusInitialViewport = useCallback(async (): Promise<boolean> => {
-        if (nodes.length === 0 || selectedNode == null) {
+        const initialViewportNodeId = initialViewportNodeIdRef.current;
+        if (nodes.length === 0 || initialViewportNodeId == null) {
             return false;
         }
 
         const initialZoom = Math.min(INITIAL_VIEWPORT_ZOOM, FLOW_MAX_ZOOM);
-        const selectedFlowNode = nodes.find((node) => node.id === String(selectedNode.id));
+        const selectedFlowNode = nodes.find((node) => node.id === String(initialViewportNodeId));
         if (selectedFlowNode == null) {
             return false;
         }
@@ -323,16 +325,18 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         );
 
         return true;
-    }, [nodes, selectedNode, setCenter]);
+    }, [nodes, setCenter]);
 
-    const queueInitialViewportForSelectedNode = useCallback(() => {
-        if (selectedNode == null || hasQueuedInitialViewportRef.current) {
+    const resolveInitialViewportDecision = useCallback(() => {
+        if (hasResolvedInitialViewportRef.current) {
             return;
         }
 
-        hasQueuedInitialViewportRef.current = true;
-        setPendingInitialViewport(true);
-    }, [selectedNode]);
+        hasResolvedInitialViewportRef.current = true;
+        if (initialViewportNodeIdRef.current != null) {
+            setPendingInitialViewport(true);
+        }
+    }, []);
 
     const layoutNodes = useCallback(async (nodeMeasurements?: ReturnType<typeof createNodeMeasurementMap>) => {
         if (!hasAllNodeProviders) {
@@ -377,7 +381,9 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     }, [onNodesChange]);
 
     useEffect(() => {
-        hasQueuedInitialViewportRef.current = false;
+        hasResolvedInitialViewportRef.current = false;
+        initialViewportNodeIdRef.current = selectedNode?.id ?? null;
+        setPendingInitialViewport(false);
     }, [processFlow.definition.id, processFlow.version.processVersion]);
 
     useEffect(() => {
@@ -403,8 +409,8 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         void layoutNodes(hasAnyMeasuredNodes ? currentNodeMeasurements : undefined);
         setNeedsMeasuredLayout(!hasMeasurementsForAllNodes);
 
-        queueInitialViewportForSelectedNode();
-    }, [getNodes, hasAllNodeProviders, layoutNodes, processFlow.nodes, queueInitialViewportForSelectedNode]);
+        resolveInitialViewportDecision();
+    }, [getNodes, hasAllNodeProviders, layoutNodes, processFlow.nodes, resolveInitialViewportDecision]);
 
     useEffect(() => {
         if (!hasAllNodeProviders || !needsMeasuredLayout || !nodesInitialized) {
