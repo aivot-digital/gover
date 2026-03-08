@@ -13,6 +13,7 @@ import de.aivot.GoverBackend.dataObject.services.DataObjectItemService;
 import de.aivot.GoverBackend.dataObject.services.DataObjectSchemaService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -100,8 +101,7 @@ public class DataObjectItemController {
         var created = service
                 .create(entity);
 
-        auditService.addAuditEntry(AuditLogPayload
-                .create()
+        auditService.create()
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Create,
@@ -110,7 +110,13 @@ public class DataObjectItemController {
                         "id",
                         Map.of(
                                 "schemaKey", schemaKey
-                        )));
+                        )
+                )
+                .withMessage(
+                        "Ein neues Datenobjekt wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
 
         return DataObjectItemResponseDTO
                 .fromEntity(created, schema);
@@ -167,8 +173,7 @@ public class DataObjectItemController {
         var updated = service
                 .update(id, entity);
 
-        auditService.addAuditEntry(AuditLogPayload
-                .create()
+        auditService.create()
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Update,
@@ -177,7 +182,14 @@ public class DataObjectItemController {
                         "id",
                         Map.of(
                                 "schemaKey", schemaKey
-                        )));
+                        )
+                )
+                .withMessage(
+                        "Das Datenobjekt mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(updated.getId()),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log(); // TODO: Add Diff
 
         return DataObjectItemResponseDTO
                 .fromEntity(updated, schema);
@@ -201,8 +213,7 @@ public class DataObjectItemController {
         var id = new DataObjectItemEntityId(schemaKey, itemId);
         var deleted = service.delete(id);
 
-        auditService.addAuditEntry(AuditLogPayload
-                .create()
+        auditService.create()
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Delete,
@@ -211,6 +222,12 @@ public class DataObjectItemController {
                         "id",
                         Map.of(
                                 "schemaKey", schemaKey
-                        )));
+                        )
+                )
+                .withMessage("Das Datenobjekt mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
+                        StringUtils.quote(deleted.getId()),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
     }
 }
