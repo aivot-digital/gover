@@ -285,9 +285,10 @@ export function ProcessFlowEditorNode(props: NodeProps<FlowNode>): ReactNode {
                     type="target"
                     position={Position.Top}
                     style={{
-                        visibility: showTargetHandles ? 'visible' : 'hidden',
-                        width: showTargetHandles ? `${HANDLE_SIZE}px` : 0,
-                        height: showTargetHandles ? `${HANDLE_SIZE}px` : 0,
+                        opacity: showTargetHandles ? 1 : 0,
+                        pointerEvents: showTargetHandles ? 'all' : 'none',
+                        width: `${HANDLE_SIZE}px`,
+                        height: `${HANDLE_SIZE}px`,
                         backgroundColor: 'var(--xy-edge-stroke, var(--xy-edge-stroke-default))',
                         border: 'none',
                     }}

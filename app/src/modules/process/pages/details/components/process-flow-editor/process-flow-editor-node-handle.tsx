@@ -154,12 +154,13 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
                 id={port.key}
                 position={Position.Bottom}
                 style={{
-                    visibility: isConnected ? 'hidden' : 'visible',
-                    width: isConnected ? 0 : `${HANDLE_SIZE}px`,
-                    height: isConnected ? 0 : `${HANDLE_SIZE}px`,
+                    opacity: isConnected ? 0 : 1,
+                    pointerEvents: isConnected ? 'none' : 'all',
+                    width: `${HANDLE_SIZE}px`,
+                    height: `${HANDLE_SIZE}px`,
                     backgroundColor: 'var(--xy-edge-stroke, var(--xy-edge-stroke-default))',
                     border: 'none',
-                    bottom: isConnected ? '4px' : '-4px',
+                    bottom: '-4px',
                 }}
             />
         </Box>

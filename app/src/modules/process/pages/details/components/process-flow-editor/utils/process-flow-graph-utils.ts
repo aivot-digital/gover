@@ -71,8 +71,15 @@ export function buildProcessFlowGraph(
     });
 
     for (const graphNode of graphNodes) {
-        graphNode.outgoingEdges.sort((a, b) => a.edge.id - b.edge.id);
-        graphNode.incomingEdges.sort((a, b) => a.edge.id - b.edge.id);
+        graphNode.outgoingEdges.sort((a, b) => (
+            getProviderPortIndex(graphNode.provider, a.port?.key) - getProviderPortIndex(graphNode.provider, b.port?.key) ||
+            a.edge.toNodeId - b.edge.toNodeId ||
+            a.edge.id - b.edge.id
+        ));
+        graphNode.incomingEdges.sort((a, b) => (
+            a.edge.fromNodeId - b.edge.fromNodeId ||
+            a.edge.id - b.edge.id
+        ));
     }
 
     graphNodes.sort((a, b) => a.node.id - b.node.id);
@@ -82,4 +89,13 @@ export function buildProcessFlowGraph(
         nodes: graphNodes,
         edges: graphEdges,
     };
+}
+
+function getProviderPortIndex(provider: ProcessNodeProvider, portKey?: string | null): number {
+    if (portKey == null) {
+        return Number.MAX_SAFE_INTEGER;
+    }
+
+    const portIndex = provider.ports.findIndex((port) => port.key === portKey);
+    return portIndex === -1 ? Number.MAX_SAFE_INTEGER : portIndex;
 }

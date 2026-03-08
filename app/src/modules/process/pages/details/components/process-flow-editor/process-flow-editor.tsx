@@ -105,7 +105,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         ))
     ), [nodeProviders, processFlow.nodes]);
 
-    const layoutNodes = useCallback((useMeasuredNodes: boolean = false) => {
+    const layoutNodes = useCallback((nodeMeasurements?: ReturnType<typeof createNodeMeasurementMap>) => {
         if (!hasAllNodeProviders) {
             return;
         }
@@ -117,12 +117,12 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
             processFlow.nodes,
             processFlow.edges,
             nodeProviders,
-            useMeasuredNodes ? createNodeMeasurementMap(getNodes()) : undefined,
+            nodeMeasurements,
         );
 
         setNodes([...laidOutNodes]);
         setEdges([...laidOutEdges]);
-    }, [getNodes, hasAllNodeProviders, nodeProviders, processFlow.edges, processFlow.nodes, setEdges, setNodes]);
+    }, [hasAllNodeProviders, nodeProviders, processFlow.edges, processFlow.nodes, setEdges, setNodes]);
 
     const handleNodesChange = useCallback((changes: NodeChange<FlowNode>[]) => {
         onNodesChange(changes);
@@ -143,23 +143,36 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
             return;
         }
 
-        layoutNodes(false);
-        setNeedsMeasuredLayout(true);
+        const currentNodeMeasurements = createNodeMeasurementMap(getNodes());
+        const hasAnyMeasuredNodes = currentNodeMeasurements.size > 0;
+        const hasMeasurementsForAllNodes = processFlow.nodes.every((node) => {
+            const measurement = currentNodeMeasurements.get(String(node.id));
+
+            return (
+                measurement?.width != null &&
+                measurement.width > 0 &&
+                measurement?.height != null &&
+                measurement.height > 0
+            );
+        });
+
+        layoutNodes(hasAnyMeasuredNodes ? currentNodeMeasurements : undefined);
+        setNeedsMeasuredLayout(!hasMeasurementsForAllNodes);
 
         if (!hasPerformedInitialFitRef.current) {
             hasPerformedInitialFitRef.current = true;
             setPendingFitView(true);
         }
-    }, [hasAllNodeProviders, layoutNodes, setEdges, setNodes]);
+    }, [getNodes, hasAllNodeProviders, layoutNodes, processFlow.nodes]);
 
     useEffect(() => {
         if (!hasAllNodeProviders || !needsMeasuredLayout || !nodesInitialized) {
             return;
         }
 
-        layoutNodes(true);
+        layoutNodes(createNodeMeasurementMap(getNodes()));
         setNeedsMeasuredLayout(false);
-    }, [hasAllNodeProviders, layoutNodes, needsMeasuredLayout, nodesInitialized]);
+    }, [getNodes, hasAllNodeProviders, layoutNodes, needsMeasuredLayout, nodesInitialized]);
 
     useEffect(() => {
         if (!pendingFitView || needsMeasuredLayout) {
@@ -213,9 +226,9 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                             tooltip: 'layout',
                             onClick: () => {
                                 if (nodesInitialized) {
-                                    layoutNodes(true);
+                                    layoutNodes(createNodeMeasurementMap(getNodes()));
                                 } else {
-                                    layoutNodes(false);
+                                    layoutNodes();
                                     setNeedsMeasuredLayout(true);
                                 }
 
