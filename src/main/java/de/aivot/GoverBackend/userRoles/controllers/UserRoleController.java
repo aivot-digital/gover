@@ -11,6 +11,7 @@ import de.aivot.GoverBackend.userRoles.dtos.UserRoleResponseDTO;
 import de.aivot.GoverBackend.userRoles.entities.UserRoleEntity;
 import de.aivot.GoverBackend.userRoles.filters.UserRoleFilter;
 import de.aivot.GoverBackend.userRoles.services.UserRoleService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -40,7 +41,7 @@ public class UserRoleController {
     @Autowired
     public UserRoleController(AuditService auditService, UserRoleService userRoleService, UserService userService) {
         this.auditService = auditService
-                .createScopedAuditService(UserRoleController.class);
+                .createScopedAuditService(UserRoleController.class, "Rollen");
 
         this.userRoleService = userRoleService;
         this.userService = userService;
@@ -78,10 +79,15 @@ public class UserRoleController {
         var created = userRoleService
                 .create(requestDTO.toEntity());
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), UserRoleEntity.class, "legacy", "legacy", Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Create, UserRoleEntity.class, created.getId(), "id", Map.of(
                         "id", created.getId(),
                         "name", created.getName()
-                )));
+                )).withMessage(
+                "Die Fachrolle %s mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
+                StringUtils.quote(created.getName()),
+                StringUtils.quote(String.valueOf(created.getId())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return UserRoleResponseDTO
                 .fromEntity(created);
@@ -120,10 +126,15 @@ public class UserRoleController {
         var result = userRoleService
                 .update(id, requestDTO.toEntity());
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), UserRoleEntity.class, "legacy", "legacy", Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, UserRoleEntity.class, result.getId(), "id", Map.of(
                         "id", result.getId(),
                         "name", result.getName()
-                )));
+                )).withMessage(
+                "Die Fachrolle %s mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                StringUtils.quote(result.getName()),
+                StringUtils.quote(String.valueOf(result.getId())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return UserRoleResponseDTO
                 .fromEntity(result);
@@ -151,9 +162,14 @@ public class UserRoleController {
         userRoleService
                 .deleteEntity(entity);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), UserRoleEntity.class, "legacy", "legacy", Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Delete, UserRoleEntity.class, entity.getId(), "id", Map.of(
                         "id", entity.getId(),
                         "name", entity.getName()
-                )));
+                )).withMessage(
+                "Die Fachrolle %s mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(entity.getName()),
+                StringUtils.quote(String.valueOf(entity.getId())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
     }
 }

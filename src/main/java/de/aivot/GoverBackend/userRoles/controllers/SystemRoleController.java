@@ -14,6 +14,7 @@ import de.aivot.GoverBackend.userRoles.filters.SystemRoleFilter;
 import de.aivot.GoverBackend.userRoles.permissions.SystemRolePermissionProvider;
 import de.aivot.GoverBackend.userRoles.services.SystemRoleService;
 import de.aivot.GoverBackend.userRoles.services.UserRoleService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -52,7 +53,7 @@ public class SystemRoleController {
                                 SystemRoleService systemRoleService,
                                 PermissionService permissionService) {
         this.auditService = auditService
-                .createScopedAuditService(SystemRoleController.class);
+                .createScopedAuditService(SystemRoleController.class, "Rollen");
 
         this.userRoleService = userRoleService;
         this.userService = userService;
@@ -102,10 +103,15 @@ public class SystemRoleController {
         var createdEntity = systemRoleService
                 .create(newEntity);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Create, this.getClass().getSimpleName(), SystemRoleEntity.class, "legacy", "legacy", Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Create, SystemRoleEntity.class, createdEntity.getId(), "id", Map.of(
                         "id", createdEntity.getId(),
                         "name", createdEntity.getName()
-                )));
+                )).withMessage(
+                "Die Systemrolle %s mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
+                StringUtils.quote(createdEntity.getName()),
+                StringUtils.quote(String.valueOf(createdEntity.getId())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return createdEntity;
     }
@@ -155,10 +161,15 @@ public class SystemRoleController {
         var updatedEntity = systemRoleService
                 .update(id, patchedEntity);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Update, this.getClass().getSimpleName(), SystemRoleEntity.class, "legacy", "legacy", Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, SystemRoleEntity.class, updatedEntity.getId(), "id", Map.of(
                         "id", updatedEntity.getId(),
                         "name", updatedEntity.getName()
-                )));
+                )).withMessage(
+                "Die Systemrolle %s mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                StringUtils.quote(updatedEntity.getName()),
+                StringUtils.quote(String.valueOf(updatedEntity.getId())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return updatedEntity;
     }
@@ -189,9 +200,14 @@ public class SystemRoleController {
         userRoleService
                 .deleteEntity(entity);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.create().withUser(execUser).withAuditAction(AuditAction.Delete, this.getClass().getSimpleName(), UserRoleEntity.class, "legacy", "legacy", Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Delete, UserRoleEntity.class, entity.getId(), "id", Map.of(
                         "id", entity.getId(),
                         "name", entity.getName()
-                )));
+                )).withMessage(
+                "Die Systemrolle %s mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(entity.getName()),
+                StringUtils.quote(String.valueOf(entity.getId())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
     }
 }

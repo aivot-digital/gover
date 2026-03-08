@@ -12,6 +12,7 @@ import de.aivot.GoverBackend.user.permissions.UserPermissionProvider;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.services.UserDeputyService;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
@@ -38,7 +39,7 @@ public class UserDeputyController extends GenericCrudController<UserDeputyEntity
                                 UserService userService,
                                 UserDeputyService service,
                                 PermissionService permissionService) {
-        super(auditService.createScopedAuditService(UserDeputyController.class),
+        super(auditService.createScopedAuditService(UserDeputyController.class, "Benutzer"),
                 userService,
                 service);
         this.permissionService = permissionService;
@@ -48,6 +49,47 @@ public class UserDeputyController extends GenericCrudController<UserDeputyEntity
     @Override
     protected Integer getIdForEntity(UserDeputyEntity entity) {
         return entity.getId();
+    }
+
+    @Override
+    @Nonnull
+    protected String buildCreateAuditMessage(@Nonnull UserEntity execUser,
+                                             @Nonnull UserDeputyEntity createdItem) {
+        return String.format(
+                "Die Vertretung mit der ID %s (Original %s, Stellvertretung %s) wurde von der Mitarbeiter:in %s erstellt.",
+                StringUtils.quote(String.valueOf(createdItem.getId())),
+                StringUtils.quote(createdItem.getOriginalUserId()),
+                StringUtils.quote(createdItem.getDeputyUserId()),
+                StringUtils.quote(execUser.getFullName())
+        );
+    }
+
+    @Override
+    @Nonnull
+    protected String buildUpdateAuditMessage(@Nonnull UserEntity execUser,
+                                             @Nonnull Integer id,
+                                             @Nonnull UserDeputyEntity updatedItem) {
+        return String.format(
+                "Die Vertretung mit der ID %s (Original %s, Stellvertretung %s) wurde von der Mitarbeiter:in %s aktualisiert.",
+                StringUtils.quote(String.valueOf(id)),
+                StringUtils.quote(updatedItem.getOriginalUserId()),
+                StringUtils.quote(updatedItem.getDeputyUserId()),
+                StringUtils.quote(execUser.getFullName())
+        );
+    }
+
+    @Override
+    @Nonnull
+    protected String buildDeleteAuditMessage(@Nonnull UserEntity execUser,
+                                             @Nonnull Integer id,
+                                             @Nonnull UserDeputyEntity deletedItem) {
+        return String.format(
+                "Die Vertretung mit der ID %s (Original %s, Stellvertretung %s) wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(String.valueOf(id)),
+                StringUtils.quote(deletedItem.getOriginalUserId()),
+                StringUtils.quote(deletedItem.getDeputyUserId()),
+                StringUtils.quote(execUser.getFullName())
+        );
     }
 
     @Override
