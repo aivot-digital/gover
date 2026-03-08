@@ -25,6 +25,7 @@ import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
 import de.aivot.GoverBackend.storage.services.StorageProviderService;
 import de.aivot.GoverBackend.storage.services.StorageService;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -173,6 +174,11 @@ public class AssetController {
                                 "isFolder", true
                         )
                 )
+                .withMessage(
+                        "Der Ordner %s wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(created.getPathFromRoot()),
+                        StringUtils.quote(execUser.getFullName())
+                )
                 .log();
 
         return created;
@@ -218,6 +224,11 @@ public class AssetController {
                                 "storageProviderId", storageProvider.getId(),
                                 "isFolder", true
                         )
+                )
+                .withMessage(
+                        "Der Ordner %s wurde von der Mitarbeiter:in %s gelöscht.",
+                        StringUtils.quote(folderPath),
+                        StringUtils.quote(execUser.getFullName())
                 )
                 .log();
     }
@@ -287,6 +298,11 @@ public class AssetController {
                                 "storageProviderId", storageProvider.getId(),
                                 "isFolder", false
                         )
+                )
+                .withMessage(
+                        "Die Datei %s wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(filePath),
+                        StringUtils.quote(execUser.getFullName())
                 )
                 .log();
 
@@ -399,6 +415,11 @@ public class AssetController {
                 .withDiff(
                         Map.of("isPrivate", oldPrivate),
                         Map.of("isPrivate", newPrivate)
+                )
+                .withMessage(
+                        "Die Datei %s wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(filePath),
+                        StringUtils.quote(execUser.getFullName())
                 )
                 .log();
 
@@ -525,6 +546,12 @@ public class AssetController {
                         Map.of("storagePathFromRoot", sourcePath),
                         Map.of("storagePathFromRoot", targetPath)
                 )
+                .withMessage(
+                        "Die Datei %s wurde von der Mitarbeiter:in %s nach %s verschoben.",
+                        StringUtils.quote(sourcePath),
+                        StringUtils.quote(user.getFullName()),
+                        StringUtils.quote(targetPath)
+                )
                 .log();
 
         return storageIndexItemWithAssetRepository
@@ -602,6 +629,12 @@ public class AssetController {
                                 "copyOf", sourcePath
                         )
                 )
+                .withMessage(
+                        "Die Datei %s wurde von der Mitarbeiter:in %s nach %s kopiert.",
+                        StringUtils.quote(sourcePath),
+                        StringUtils.quote(user.getFullName()),
+                        StringUtils.quote(targetPath)
+                )
                 .log();
 
         return storageIndexItemWithAssetRepository
@@ -648,6 +681,11 @@ public class AssetController {
                                 "storageProviderId", storageProvider.getId(),
                                 "isFolder", false
                         )
+                )
+                .withMessage(
+                        "Die Datei %s wurde von der Mitarbeiter:in %s gelöscht.",
+                        StringUtils.quote(filePath),
+                        StringUtils.quote(user.getFullName())
                 )
                 .log();
     }

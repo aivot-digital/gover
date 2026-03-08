@@ -137,7 +137,7 @@ public class AuditLogPayload {
     @Nullable
     @SuppressWarnings("unchecked")
     private static Map<String, Object> createDiff(@Nullable Map<String, Object> oldState,
-                                                 @Nullable Map<String, Object> newState) {
+                                                  @Nullable Map<String, Object> newState) {
         if (oldState == null && newState == null) {
             return null;
         }
@@ -315,6 +315,11 @@ public class AuditLogPayload {
 
     public AuditLogPayload setIpAddress(@Nullable String ipAddress) {
         this.ipAddress = ipAddress;
+        return this;
+    }
+
+    public AuditLogPayload withMessage(String format, Object... args) {
+        this.setMessage(String.format(format, args));
         return this;
     }
 
