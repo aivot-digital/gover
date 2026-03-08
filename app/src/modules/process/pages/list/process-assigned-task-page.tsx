@@ -165,13 +165,20 @@ export function ProcessAssignedTaskListPage() {
                                 children: (
                                     <>
                                         <Typography variant="h6">
-                                            Arbeitsdaten der Aufgabe:
+                                            Vorgangsdaten der Aufgabe
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            Die Vorgangsdaten, welche die Aufgabe weitergegeben hat.
                                         </Typography>
                                         <ExpandableCodeBlock
                                             value={JSON.stringify(item.processData, null, 2)}
                                         />
+
                                         <Typography variant="h6">
-                                            Metadaten der Aufgabe:
+                                            Elementdaten der Aufgabe
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            Die Elementdaten, die diese Aufgabe erzeugt hat.
                                         </Typography>
                                         <ExpandableCodeBlock
                                             value={JSON.stringify(item.nodeData, null, 2)}

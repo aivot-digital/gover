@@ -240,13 +240,20 @@ export function ProcessInstanceTaskListPage() {
                                     children: (
                                         <>
                                             <Typography variant="h6">
-                                                Die von dieser Aufgabe weitergegebene Vorgangsdatenebene
+                                                Vorgangsdaten der Aufgabe
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                Die Vorgangsdaten, welche die Aufgabe weitergegeben hat.
                                             </Typography>
                                             <ExpandableCodeBlock
                                                 value={JSON.stringify(item.processData, null, 2)}
                                             />
+
                                             <Typography variant="h6">
-                                                Die von dieser Aufgabe erzeugten Prozesselementdatenebene
+                                                Elementdaten der Aufgabe
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                Die Elementdaten, die diese Aufgabe erzeugt hat.
                                             </Typography>
                                             <ExpandableCodeBlock
                                                 value={JSON.stringify(item.nodeData, null, 2)}
