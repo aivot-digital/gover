@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.*;
+import jakarta.annotation.Nullable;
 
 import java.util.Locale;
 
@@ -85,6 +86,12 @@ public class NoCodeAddToDateOperator extends NoCodeOperator {
                         )
                 )
         );
+    }
+
+    @Nullable
+    @Override
+    public String getHumanReadableTemplate() {
+        return "füge „#1“ „#2“ zu „#0“ hinzu";
     }
 
     @Override

@@ -5,6 +5,7 @@ import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException;
 import de.aivot.GoverBackend.nocode.models.*;
+import jakarta.annotation.Nullable;
 
 import java.util.Locale;
 
@@ -81,6 +82,12 @@ public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
                         )
                 )
         );
+    }
+
+    @Nullable
+    @Override
+    public String getHumanReadableTemplate() {
+        return "subtrahiere „#1“ „#2“ von „#0“";
     }
 
     @Override

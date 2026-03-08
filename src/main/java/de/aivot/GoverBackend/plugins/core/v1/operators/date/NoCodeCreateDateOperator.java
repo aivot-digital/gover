@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.*;
+import jakarta.annotation.Nullable;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -84,6 +85,12 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
                         )
                 )
         );
+    }
+
+    @Nullable
+    @Override
+    public String getHumanReadableTemplate() {
+        return "erstelle ein Datum aus Tag „#0“, Monat „#1“ und Jahr „#2“";
     }
 
     @Override
