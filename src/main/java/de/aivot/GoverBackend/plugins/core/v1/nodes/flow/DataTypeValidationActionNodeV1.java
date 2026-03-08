@@ -88,13 +88,13 @@ public class DataTypeValidationActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     public String getName() {
-        return "Prozessdaten validieren";
+        return "Vorgangsdaten validieren";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Prüft, ob konfigurierte Datenpfade in den Prozessdaten vorhanden sind und den erwarteten Datentypen entsprechen.";
+        return "Prüft, ob konfigurierte Datenpfade in den Vorgangsdaten vorhanden sind und den erwarteten Datentypen entsprechen.";
     }
 
     @Nonnull
@@ -230,7 +230,7 @@ public class DataTypeValidationActionNodeV1 implements ProcessNodeDefinition {
         var sourceRoot = context.getProcessData().get("$");
         if (!(sourceRoot instanceof Map<?, ?> sourceRootRawMap)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Prozessdatenwurzel ($) ist kein Objekt."
+                    "Die Vorgangsdatenwurzel ($) ist kein Objekt."
             );
         }
 
