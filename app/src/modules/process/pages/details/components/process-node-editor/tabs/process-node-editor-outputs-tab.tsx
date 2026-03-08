@@ -11,7 +11,7 @@ export function ProcessNodeEditorOutputsTab() {
     } = useProcessNodeEditorContext();
 
     return (
-        <Box>
+        <Box sx={{py: 1}}>
             <Typography variant="h6">
                 Ausgangsdaten
             </Typography>

@@ -278,6 +278,9 @@ export function ProcessNodeEditor(): ReactNode {
                             <Typography
                                 fontWeight="bold"
                                 component="div"
+                                sx={{
+                                    mt: -0.5,
+                                }}
                             >
                                 {provider.name} <Chip
                                     label={`Version ${provider.majorVersion}`}
@@ -308,7 +311,8 @@ export function ProcessNodeEditor(): ReactNode {
                             navigate(`/processes/${params.processId}/versions/${params.processVersion}/nodes/${originalNode.id}/tabs/${value}?${searchParams.toString()}`);
                         }}
                         sx={{
-                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                            mt: 1,
+                            borderBottom: '1px solid #ddd',
                         }}
                     >
                         <Tab
@@ -369,7 +373,7 @@ export function ProcessNodeEditor(): ReactNode {
                         mt: 'auto',
                         px: 2,
                         pt: 2,
-                        pb: 4,
+                        pb: 2.5,
                         display: 'flex',
                         justifyContent: 'space-between',
                     }}

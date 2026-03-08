@@ -13,7 +13,7 @@ export function ProcessNodeEditorMoreTab() {
     } = useProcessNodeEditorContext();
 
     return (
-        <Box>
+        <Box sx={{py: 1}}>
             <Typography variant="h6">
                 Weitere Eigenschaften des Elements
             </Typography>
@@ -38,6 +38,7 @@ export function ProcessNodeEditorMoreTab() {
             <RichTextInputComponent
                 label="Fachliche Anforderungen"
                 hint="Beschreiben Sie die fachlichen Anforderungen oder Voraussetzungen für die Ausführung dieses Elemente."
+                reducedMode={true}
                 value={node.requirements}
                 onChange={(val) => {
                     setNode({
@@ -55,6 +56,7 @@ export function ProcessNodeEditorMoreTab() {
             <RichTextInputComponent
                 label="Notizen"
                 hint="Fügen Sie zusätzliche Notizen oder Kommentare zu diesem Elemente hinzu."
+                reducedMode={true}
                 value={node.notes}
                 onChange={(val) => {
                     setNode({

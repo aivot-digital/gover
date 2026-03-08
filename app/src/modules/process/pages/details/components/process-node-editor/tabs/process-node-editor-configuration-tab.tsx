@@ -22,6 +22,7 @@ export function ProcessNodeEditorConfigurationTab() {
         <Box
             sx={{
                 position: 'relative',
+                py: 1,
             }}
         >
             <Typography variant="h6">

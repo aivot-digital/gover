@@ -43,14 +43,14 @@ export function ProcessNodeEditorTestingTab(): ReactNode {
 
     if (layout == null) {
         return (
-            <Box>
+            <Box sx={{py: 1}}>
                 <Skeleton/>
             </Box>
         );
     }
 
     return (
-        <Box>
+        <Box sx={{py: 1}}>
             <ElementDerivationContext
                 element={layout}
                 elementData={{}}

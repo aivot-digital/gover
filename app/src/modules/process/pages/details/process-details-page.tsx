@@ -1083,8 +1083,8 @@ export function ProcessDetailsPage(): ReactNode {
                     </Allotment.Pane>
 
                     <Allotment.Pane
-                        minSize={420}
-                        preferredSize={480}
+                        minSize={560}
+                        preferredSize={560}
                     >
                         <Paper
                             sx={{
