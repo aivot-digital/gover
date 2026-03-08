@@ -31,8 +31,10 @@ const ELK_LAYOUT_OPTIONS = {
     'elk.edgeRouting': 'ORTHOGONAL',
     'elk.padding': '[top=32,left=32,bottom=32,right=32]',
     'elk.spacing.nodeNode': String(FLOW_HORIZONTAL_NODE_SPACING),
+    'org.eclipse.elk.spacing.edgeNode': '52',
     'org.eclipse.elk.spacing.componentComponent': String(FLOW_HORIZONTAL_NODE_SPACING),
     'elk.layered.spacing.nodeNodeBetweenLayers': '52',
+    'org.eclipse.elk.layered.feedbackEdges': 'true',
     'elk.layered.considerModelOrder.strategy': 'PREFER_EDGES',
     'elk.layered.considerModelOrder.longEdgeStrategy': 'DUMMY_NODE_UNDER',
     'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
@@ -54,6 +56,7 @@ export type FlowNode = ReactFlowNode<{
 
 export type FlowEdge = ReactFlowEdge<{
     graphEdge: ProcessFlowGraphEdge;
+    isFeedbackEdge: boolean;
     routePoints: FlowPathPoint[];
 }>;
 
@@ -106,7 +109,7 @@ export async function layoutElements(
 
     return {
         flowNodes: transformNodes(graph, resolvedLayoutNodes),
-        flowEdges: transformEdges(graph, laidOutGraph.edges ?? []),
+        flowEdges: transformEdges(graph, laidOutGraph.edges ?? [], resolvedLayoutNodes),
     };
 }
 
@@ -262,6 +265,7 @@ function transformNodes(
 function transformEdges(
     graph: ProcessFlowGraph,
     elkEdges: ElkExtendedEdge[],
+    resolvedLayoutNodes: Map<number, ResolvedLayoutNode>,
 ): FlowEdge[] {
     const routePointsByEdgeId = new Map<number, FlowPathPoint[]>();
 
@@ -286,9 +290,24 @@ function transformEdges(
         zIndex: PROCESS_FLOW_EDGE_Z_INDEX,
         data: {
             graphEdge,
+            isFeedbackEdge: isFeedbackEdge(graphEdge, resolvedLayoutNodes),
             routePoints: routePointsByEdgeId.get(graphEdge.edge.id) ?? [],
         },
     }));
+}
+
+function isFeedbackEdge(
+    graphEdge: ProcessFlowGraphEdge,
+    resolvedLayoutNodes: Map<number, ResolvedLayoutNode>,
+): boolean {
+    const sourceNode = resolvedLayoutNodes.get(graphEdge.edge.fromNodeId);
+    const targetNode = resolvedLayoutNodes.get(graphEdge.edge.toNodeId);
+
+    if (sourceNode == null || targetNode == null) {
+        return false;
+    }
+
+    return targetNode.y < sourceNode.y;
 }
 
 function extractEdgeRoutePoints(edge: ElkExtendedEdge): FlowPathPoint[] {

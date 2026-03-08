@@ -14,6 +14,7 @@ import {getLatestTaskForEdge} from './utils/runtime-task-utils';
 
 const EDGE_ARROW_LENGTH = 8;
 const EDGE_ARROW_WIDTH = 12;
+const FEEDBACK_EDGE_DASH_ARRAY = '8 6';
 
 function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
     const theme = useTheme();
@@ -36,6 +37,7 @@ function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
 
     const {
         graphEdge,
+        isFeedbackEdge,
         routePoints,
     } = useMemo(() => {
         if (optData == null) {
@@ -71,10 +73,11 @@ function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
         return {
             edgePath: buildOrthogonalPath(trimmedRoutePoints),
             arrowPath: buildArrowPath(renderedRoutePoints, EDGE_ARROW_LENGTH, EDGE_ARROW_WIDTH),
-            labelPoint: getPreferredLabelPoint(renderedRoutePoints),
+            labelPoint: getPreferredLabelPoint(renderedRoutePoints, isFeedbackEdge),
         };
-    }, [routePoints, sourceX, sourceY, targetX, targetY]);
+    }, [isFeedbackEdge, routePoints, sourceX, sourceY, targetX, targetY]);
     const edgeColor = wasPerformed ? theme.palette.primary.main : HANDLE_COLOR;
+    const edgeDashArray = wasPerformed ? '10 10' : isFeedbackEdge ? FEEDBACK_EDGE_DASH_ARRAY : undefined;
 
     return (
         <>
@@ -86,7 +89,7 @@ function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
                     strokeLinecap: 'round',
                     strokeLinejoin: 'round',
                     stroke: edgeColor,
-                    strokeDasharray: wasPerformed ? '10 10' : undefined,
+                    strokeDasharray: edgeDashArray,
                     animation: wasPerformed ? 'active-edge-dash-scroll 2s linear infinite' : undefined,
                 }}
             />
@@ -362,7 +365,7 @@ function getPolylineMidpoint(points: PathPoint[]): PathPoint {
     return points[points.length - 1];
 }
 
-function getPreferredLabelPoint(points: PathPoint[]): PathPoint {
+function getPreferredLabelPoint(points: PathPoint[], isFeedbackEdge: boolean): PathPoint {
     const segments = getLineSegments(points);
     if (segments.length === 0) {
         return getPolylineMidpoint(points);
@@ -376,6 +379,7 @@ function getPreferredLabelPoint(points: PathPoint[]): PathPoint {
 
     const selectedSegment = [...candidateSegments]
         .sort((a, b) => (
+            getSegmentPriorityScore(b, points, isFeedbackEdge) - getSegmentPriorityScore(a, points, isFeedbackEdge) ||
             b.length - a.length ||
             Math.abs(a.index - ((segments.length - 1) / 2)) - Math.abs(b.index - ((segments.length - 1) / 2))
         ))
@@ -389,6 +393,24 @@ function getPreferredLabelPoint(points: PathPoint[]): PathPoint {
         x: (selectedSegment.start.x + selectedSegment.end.x) / 2,
         y: (selectedSegment.start.y + selectedSegment.end.y) / 2,
     };
+}
+
+function getSegmentPriorityScore(
+    segment: ReturnType<typeof getLineSegments>[number],
+    points: PathPoint[],
+    isFeedbackEdge: boolean,
+): number {
+    if (!isFeedbackEdge) {
+        return 0;
+    }
+
+    const sourcePoint = points[0];
+    const targetPoint = points[points.length - 1];
+    const routeCenterX = (sourcePoint.x + targetPoint.x) / 2;
+    const segmentCenterX = (segment.start.x + segment.end.x) / 2;
+    const isVerticalSegment = segment.start.x === segment.end.x;
+
+    return Math.abs(segmentCenterX - routeCenterX) + (isVerticalSegment ? 1000 : 0);
 }
 
 function getSegmentLength(startPoint: PathPoint, endPoint: PathPoint): number {
