@@ -142,7 +142,7 @@ public class UserConfigController {
         config = userConfigService.save(key, userId, config);
 
         // Log the action of updating the user configuration
-        auditService.addAuditEntry(AuditLogPayload
+        auditService
                 .create()
                 .withUser(user)
                 .withAuditAction(
@@ -152,7 +152,8 @@ public class UserConfigController {
                         "key",
                         Map.of(
                                 "userId", userId
-                        )));
+                        ))
+                .log();
 
         return UserConfigResponseDto
                 .fromEntity(config, def);

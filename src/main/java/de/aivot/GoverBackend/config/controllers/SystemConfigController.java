@@ -107,7 +107,7 @@ public class SystemConfigController {
                 .save(key, entity);
 
         // Log the action of updating the system configuration
-        auditService.addAuditEntry(AuditLogPayload
+        auditService
                 .create()
                 .withUser(user)
                 .withAuditAction(
@@ -115,7 +115,8 @@ public class SystemConfigController {
                         SystemConfigEntity.class,
                         config.getKey(),
                         "key"
-                ));
+                )
+                .log();
 
         return SystemConfigResponseDto
                 .fromEntity(config, def);
