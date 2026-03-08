@@ -35,7 +35,7 @@ public class CleanupService {
                           SubmissionStorageService submissionStorageService,
                           ExceptionMailService exceptionMailService,
                           FormVersionService formVersionService) {
-        this.auditService = auditService.createScopedAuditService(CleanupService.class);
+        this.auditService = auditService.createScopedAuditService(CleanupService.class, "Systemwartung");
 
         this.submissionService = submissionService;
         this.submissionStorageService = submissionStorageService;
@@ -68,14 +68,17 @@ public class CleanupService {
                         .orElse(null);
 
                 if (form == null) {
-                    auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload
-                            .create()
+                    auditService.create()
                             .setTriggerType("Error")
-                            .setMessage("Form with id " + submission.getFormId() + "not found for submission: " + submission.getId())
+                            .setMessage(
+                                    "Das Formular mit der ID " + submission.getFormId() +
+                                            " wurde für den archivierten Antrag mit der ID " + submission.getId() +
+                                            " nicht gefunden; der Löschlauf wurde für diesen Antrag übersprungen."
+                            )
                             .setMetadata(Map.of(
                                     "submissionId", submission.getId(),
                                     "formId", submission.getFormId()
-                            )));
+                            )).log();
                     continue;
                 }
 
