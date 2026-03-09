@@ -417,7 +417,7 @@ public class AssetController {
                         Map.of("isPrivate", newPrivate)
                 )
                 .withMessage(
-                        "Die Datei %s wurde von der Mitarbeiter:in %s erstellt.",
+                        "Die Datei %s wurde von der Mitarbeiter:in %s aktualisiert.",
                         StringUtils.quote(filePath),
                         StringUtils.quote(execUser.getFullName())
                 )
