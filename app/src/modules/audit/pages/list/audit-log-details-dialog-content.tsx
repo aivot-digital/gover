@@ -97,7 +97,7 @@ export function AuditLogDetailsDialogContent(props: AuditLogDetailsDialogContent
                 <Typography variant="body2">Referenz-Typ: {props.row.entityRefType ?? '-'}</Typography>
                 <Typography variant="body2">Modul: {props.row.module}</Typography>
                 <Typography variant="body2">Nachricht: {props.row.message ?? '-'}</Typography>
-                <Typography variant="body2">IP-Adresse: {props.row.ipAddress ?? '-'}</Typography>
+                <Typography variant="body2">IP-Adresse: {maskIp(props.row.ipAddress)}</Typography>
             </Box>
 
             <Box>
@@ -165,4 +165,15 @@ export function AuditLogDetailsDialogContent(props: AuditLogDetailsDialogContent
             </Box>
         </Box>
     );
+}
+
+function maskIp(ip: string | null | undefined): string {
+    if (ip == null) {
+        return '-';
+    }
+    const parts = ip.split('.');
+    if (parts.length !== 4) {
+        return ip;
+    }
+    return `${parts[0]}.${parts[1]}.***.***`;
 }
