@@ -28,7 +28,7 @@ import Route from '@aivot/mui-material-symbols-400-outlined/dist/route/Route';
 
 const availableFilter = [
     {
-        label: 'Alle Formulare',
+        label: 'Alle Prozesse',
         value: 'all',
     },
     {
@@ -62,7 +62,7 @@ const columns: GridColDef<ProcessListEntry>[] = [
     },
     {
         field: 'internalTitle',
-        headerName: 'Formular',
+        headerName: 'Prozesse',
         flex: 2,
         renderCell: (params) => {
             const {
@@ -94,7 +94,7 @@ const columns: GridColDef<ProcessListEntry>[] = [
                                 textDecoration: 'none',
                             }}
                             to={`/processes/${params.row.id}/versions/${params.row.draftedVersion ?? params.row.publishedVersion ?? ''}`}
-                            title="Formular bearbeiten"
+                            title="Prozess bearbeiten"
                         >
                             {params.row.internalTitle}
                         </Link>
@@ -273,7 +273,7 @@ export function ProcessListPage() {
                                         Eine Administrator:in muss Sie noch einem Fachbereich zuordnen und Ihnen eine
                                         Rolle
                                         zuweisen.
-                                        Erst dann können Sie mit der Entwicklung von Formularen loslegen.
+                                        Erst dann können Sie mit der Entwicklung von Prozessen loslegen.
                                     </Typography>
                                 </>
                             }
@@ -281,7 +281,7 @@ export function ProcessListPage() {
                                 memberships != null &&
                                 memberships.length > 0 &&
                                 <Typography>
-                                    Sie haben aktuell keine Formulare. Starten Sie jetzt mit Ihrem ersten Formular!
+                                    Sie haben aktuell keine Prozesse. Starten Sie jetzt mit Ihrem ersten Prozess!
                                 </Typography>
                             }
                         </Box>
