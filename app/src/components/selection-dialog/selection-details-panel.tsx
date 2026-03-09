@@ -23,6 +23,7 @@ export function SelectionDetailsPanel(props: SelectionDetailsPanelProps): ReactN
             <Box
                 sx={{
                     p: 2,
+                    pt: 1.75,
                     borderBottom: '1px solid',
                     borderColor: 'divider',
                 }}
