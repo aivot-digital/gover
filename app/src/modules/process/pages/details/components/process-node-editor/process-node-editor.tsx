@@ -53,8 +53,11 @@ export function ProcessNodeEditor(): ReactNode {
     const [originalNode, setOriginalNode] = useState<ProcessNodeEntity | null>(null);
 
     const {
+        editable,
         onSave,
         onDelete,
+        onStartReplaceNode,
+        nodeRefreshSignal,
     } = useProcessDetailsPageContext();
 
     const [provider, setProvider] = useState<ProcessNodeProvider | null>(null);
@@ -76,6 +79,7 @@ export function ProcessNodeEditor(): ReactNode {
         }
         return parseInt(rawNodeId, 10);
     })();
+    const nodeRefreshVersion = nodeRefreshSignal.nodeId === nodeId ? nodeRefreshSignal.version : 0;
 
     useEffect(() => {
         if (originalNode == null) {
@@ -163,7 +167,7 @@ export function ProcessNodeEditor(): ReactNode {
         return () => {
             isCancelled = true;
         };
-    }, [nodeId]);
+    }, [nodeId, nodeRefreshVersion]);
 
     useEffect(() => {
         if (!showNodeLoadingOverlay) {
@@ -406,7 +410,7 @@ export function ProcessNodeEditor(): ReactNode {
                                 flexShrink: 0,
                             }}
                             onClick={(event) => {
-                                setMenuAnchorEl(event.target as HTMLElement);
+                                setMenuAnchorEl(event.currentTarget);
                             }}
                         >
                             <MoreVert/>
@@ -515,6 +519,13 @@ export function ProcessNodeEditor(): ReactNode {
                 anchorEl={menuAnchorEl}
                 onClose={() => {
                     setMenuAnchorEl(null);
+                }}
+                onReplaceNode={() => {
+                    if (!editable || originalNode == null) {
+                        return;
+                    }
+
+                    onStartReplaceNode(originalNode);
                 }}
                 onDeleteNode={handleDeleteSelected}
             />

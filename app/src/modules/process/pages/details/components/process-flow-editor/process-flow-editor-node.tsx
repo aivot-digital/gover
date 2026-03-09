@@ -21,9 +21,10 @@ import News from '@aivot/mui-material-symbols-400-outlined/dist/news/News';
 import {getLatestTaskForEdge, getLatestTaskForNode} from './utils/runtime-task-utils';
 import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
-import {Menu} from '../../../../../../components/menu/menu';
 import {ProcessTaskStatus} from '../../../../enums/process-task-status';
 import Link from '@mui/icons-material/Link';
+import SwapHoriz from '@mui/icons-material/SwapHoriz';
+import {ProcessActionMenu, type ProcessActionMenuItem} from '../process-action-menu';
 
 function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
     const theme = useTheme();
@@ -41,6 +42,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         selectedNode,
         onAddFollowUpNode,
         onConnectNodeToExisting,
+        onStartReplaceNode,
         onDeleteEdge,
         onDeleteNode,
         showTargetHandles,
@@ -187,18 +189,31 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
             !outgoingEdges.some((outgoingEdge) => outgoingEdge.port?.key === port.key)
         ))
     ), [outgoingEdges, provider.ports]);
-    const menuItems = useMemo(() => (
-        [
-            ...(editable && availableOutputPorts.length > 0 ? [{
+    const menuItems = useMemo<ProcessActionMenuItem[]>(() => {
+        const actionItems: ProcessActionMenuItem[] = editable ? [
+            ...(availableOutputPorts.length > 0 ? [{
                 label: 'Mit bestehendem Knoten verbinden',
                 icon: <Link/>,
                 onClick: () => {
                     onConnectNodeToExisting(node);
                 },
-            }, 'separator' as const] : []),
+            }] : []),
+            {
+                label: 'Ersetzen',
+                icon: <SwapHoriz/>,
+                onClick: () => {
+                    onStartReplaceNode(node);
+                },
+            },
+        ] : [];
+
+        return [
+            ...actionItems,
+            ...(actionItems.length > 0 ? ['separator' as const] : []),
             {
                 label: 'Löschen',
                 icon: <Delete/>,
+                isDangerous: true,
                 onClick: () => {
                     void confirm({
                         title: 'Prozesselement löschen',
@@ -215,8 +230,8 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                         });
                 },
             },
-        ]
-    ), [availableOutputPorts.length, confirm, editable, node, nodeName, onConnectNodeToExisting, onDeleteNode]);
+        ];
+    }, [availableOutputPorts.length, confirm, editable, node, nodeName, onConnectNodeToExisting, onDeleteNode, onStartReplaceNode]);
 
     // Connecting/disconnecting ports changes the effective handle geometry of the node. React Flow
     // does not always pick that up from pure React re-renders, so force an internal recalculation
@@ -466,8 +481,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                 </Paper>
             </Box>
 
-            <Menu
-                open={menuAnchorEl != null}
+            <ProcessActionMenu
                 anchorEl={menuAnchorEl}
                 onClose={() => {
                     setMenuAnchorEl(null);
