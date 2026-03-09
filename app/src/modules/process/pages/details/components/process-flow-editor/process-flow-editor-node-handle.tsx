@@ -13,6 +13,7 @@ import {
     ADD_BUTTON_ICON_SIZE,
     ADD_BUTTON_SIZE,
     HANDLE_COLOR,
+    INTERACTIVE_HANDLE_SIZE,
     HANDLE_SIZE,
     HANDLE_WIDTH,
 } from './data/process-flow-constants';
@@ -206,15 +207,16 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
                 style={{
                     opacity: isConnected ? 0 : 1,
                     pointerEvents: isConnected ? 'none' : 'all',
-                    width: `${HANDLE_SIZE}px`,
-                    height: `${HANDLE_SIZE}px`,
-                    backgroundColor: 'var(--xy-edge-stroke, var(--xy-edge-stroke-default))',
-                    border: 'none',
+                    width: `${isConnected ? HANDLE_SIZE : INTERACTIVE_HANDLE_SIZE}px`,
+                    height: `${isConnected ? HANDLE_SIZE : INTERACTIVE_HANDLE_SIZE}px`,
+                    backgroundColor: theme.palette.background.paper,
+                    border: `${isConnected ? 0 : 2}px solid ${HANDLE_COLOR}`,
+                    cursor: isConnected ? 'default' : 'crosshair',
                     ...(isConnected ? {
                         top: `${CONNECTED_SOURCE_HANDLE_TOP}px`,
                         bottom: 'auto',
                     } : {
-                        bottom: '-4px',
+                        bottom: `-${INTERACTIVE_HANDLE_SIZE / 2}px`,
                     }),
                 }}
             />

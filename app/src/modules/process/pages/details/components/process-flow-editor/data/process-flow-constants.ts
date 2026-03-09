@@ -13,3 +13,4 @@ export const ADD_BUTTON_DISTANCE = 12;
 export const HANDLE_WIDTH = 2;
 export const HANDLE_COLOR = 'var(--xy-edge-stroke, var(--xy-edge-stroke-default))';
 export const HANDLE_SIZE = 8;
+export const INTERACTIVE_HANDLE_SIZE = 10;

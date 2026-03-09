@@ -9,7 +9,7 @@ import {ProviderTypeStyles} from '../../../../data/provider-type-styles';
 import {KnownProviderIcons} from '../../../../data/known-provider-icons';
 import {ProcessFlowEditorNodeHandle} from './process-flow-editor-node-handle';
 import {useProcessFlowEditorContext} from './process-flow-editor-context';
-import {HANDLE_SIZE} from './data/process-flow-constants';
+import {HANDLE_COLOR, HANDLE_SIZE, INTERACTIVE_HANDLE_SIZE} from './data/process-flow-constants';
 import {getFlowNodeWidth, type FlowNode} from './utils/layout-utils';
 import {getNodeDescription, getNodeName} from './utils/node-utils';
 import {ProcessInstanceTaskStatusIcon} from '../../../../components/process-instance-task-status-icon';
@@ -480,10 +480,13 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                     style={{
                         opacity: showTargetHandles ? 1 : 0,
                         pointerEvents: showTargetHandles ? 'all' : 'none',
-                        width: `${HANDLE_SIZE}px`,
-                        height: `${HANDLE_SIZE}px`,
-                        backgroundColor: 'var(--xy-edge-stroke, var(--xy-edge-stroke-default))',
-                        border: 'none',
+                        width: `${INTERACTIVE_HANDLE_SIZE}px`,
+                        height: `${INTERACTIVE_HANDLE_SIZE}px`,
+                        top: `${(HANDLE_SIZE / 2) - (INTERACTIVE_HANDLE_SIZE / 2)}px`,
+                        backgroundColor: theme.palette.background.paper,
+                        border: `2px solid ${HANDLE_COLOR}`,
+                        cursor: showTargetHandles ? 'crosshair' : 'default',
+                        transition: 'opacity 120ms ease',
                     }}
                 />
             }
