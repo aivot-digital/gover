@@ -99,6 +99,7 @@ public class ProcessExportService {
                 edges
         );
 
+        /*
         String exportDataString;
         try {
             exportDataString = exportData.toJSONString();
@@ -106,7 +107,6 @@ public class ProcessExportService {
             throw ResponseException.internalServerError("Failed to serialize process export data", e);
         }
 
-        /*
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
         kpg.initialize(1024);
         return kpg.genKeyPair();
