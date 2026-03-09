@@ -110,6 +110,8 @@ function markFeedbackEdges(graphNodes: ProcessFlowGraphNode[]): void {
         ...graphNodes.filter((graphNode) => graphNode.provider.type !== ProcessNodeType.Trigger),
     ];
 
+    // Classify cycle-closing edges before ELK runs. That keeps the main process flow moving
+    // downward and treats loop-backs as feedback edges instead of allowing arbitrary layer flips.
     const visit = (graphNode: ProcessFlowGraphNode): void => {
         visitStateByNodeId.set(graphNode.node.id, 'visiting');
 

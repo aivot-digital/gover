@@ -302,6 +302,21 @@ function ProcessFlowEditorCanvasAddTriggerButton(props: ProcessFlowEditorCanvasA
     );
 }
 
+function areCanvasAddTriggerPositionsEqual(
+    left: CanvasAddTriggerPosition | null,
+    right: CanvasAddTriggerPosition | null,
+): boolean {
+    if (left == null || right == null) {
+        return left === right;
+    }
+
+    return (
+        left.x === right.x &&
+        left.y === right.y &&
+        left.centerVertically === right.centerVertically
+    );
+}
+
 export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const {
         editable,
@@ -346,6 +361,9 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const initialViewportNodeIdRef = useRef<number | null>(null);
     const layoutRequestIdRef = useRef<number>(0);
     const runtimeDataRef = useRef<ProcessFlowEditorRuntimeData>(runtimeData);
+    // The trigger CTA measures against the rendered node card, but `onlyRenderVisibleElements`
+    // may unmount that DOM subtree when it scrolls out of view. Cache the last valid offset so
+    // later re-layouts can still place the CTA on the same card center.
     const nodeCardCenterOffsetCacheRef = useRef<Map<string, number>>(new Map());
 
     const isEditable = runtimeData == null && editable;
@@ -404,8 +422,8 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
             return false;
         }
 
-        const selectedNodeWidth = selectedFlowNode.measured?.width ?? 0;
-        const selectedNodeHeight = selectedFlowNode.measured?.height ?? 0;
+        const selectedNodeWidth = getFlowNodeWidth(selectedFlowNode);
+        const selectedNodeHeight = getFlowNodeHeight(selectedFlowNode);
 
         await setCenter(
             selectedFlowNode.position.x + (selectedNodeWidth / 2),
@@ -480,6 +498,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     useEffect(() => {
         hasResolvedInitialViewportRef.current = false;
         initialViewportNodeIdRef.current = selectedNode?.id ?? null;
+        nodeCardCenterOffsetCacheRef.current.clear();
         setPendingInitialViewport(false);
     }, [processFlow.definition.id, processFlow.version.processVersion]);
 
@@ -539,16 +558,19 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
 
     useLayoutEffect(() => {
         if (!isEditable || onAddTrigger == null) {
-            setCanvasAddTriggerPosition(null);
+            setCanvasAddTriggerPosition((current) => areCanvasAddTriggerPositionsEqual(current, null) ? current : null);
             return;
         }
 
         if (processFlow.nodes.length === 0) {
-            setCanvasAddTriggerPosition({
+            const defaultPosition = {
                 x: CANVAS_ADD_TRIGGER_BUTTON_DEFAULT_X,
                 y: CANVAS_ADD_TRIGGER_BUTTON_DEFAULT_Y,
                 centerVertically: false,
-            });
+            };
+            setCanvasAddTriggerPosition((current) => (
+                areCanvasAddTriggerPositionsEqual(current, defaultPosition) ? current : defaultPosition
+            ));
             return;
         }
 
@@ -556,6 +578,9 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
             return;
         }
 
+        // The CTA should align to the rendered card center of the rightmost trigger. Compute it
+        // after the commit so DOM-dependent offsets are stable, then keep the last good value if
+        // React Flow later unmounts that node outside the viewport.
         const triggerNodes = nodes.filter((node) => node.data.graphNode.provider.type === ProcessNodeType.Trigger);
         const anchorNodes = triggerNodes.length > 0 ?
             triggerNodes :
@@ -564,11 +589,15 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
             return getFlowNodeRight(node) > getFlowNodeRight(currentRightmost) ? node : currentRightmost;
         }, anchorNodes[0]);
 
-        setCanvasAddTriggerPosition({
+        const nextPosition = {
             x: getFlowNodeRight(rightmostAnchorNode) + FLOW_HORIZONTAL_NODE_SPACING,
             y: getFlowNodeCardCenterY(rightmostAnchorNode, nodeCardCenterOffsetCacheRef.current),
             centerVertically: true,
-        });
+        };
+
+        setCanvasAddTriggerPosition((current) => (
+            areCanvasAddTriggerPositionsEqual(current, nextPosition) ? current : nextPosition
+        ));
     }, [hasAllNodeProviders, isEditable, nodes, nodesInitialized, onAddTrigger, processFlow.nodes.length]);
 
     return (
@@ -758,6 +787,8 @@ function getFlowNodeCardCenterY(node: FlowNode, cachedOffsets: Map<string, numbe
     const nodeElement = document.querySelector(`.react-flow__node[data-id="${node.id}"]`) as HTMLElement | null;
     const nodeCardElement = nodeElement?.querySelector('.process-flow-editor-node-card') as HTMLElement | null;
     if (nodeCardElement == null) {
+        // When the anchor node is outside the viewport, React Flow may omit its DOM entirely.
+        // Fall back to the last measured card offset instead of the full node box center.
         return node.position.y + (cachedOffset ?? (getFlowNodeHeight(node) / 2));
     }
 

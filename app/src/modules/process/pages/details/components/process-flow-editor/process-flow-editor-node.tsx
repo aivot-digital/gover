@@ -218,6 +218,9 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         ]
     ), [availableOutputPorts.length, confirm, editable, node, nodeName, onConnectNodeToExisting, onDeleteNode]);
 
+    // Connecting/disconnecting ports changes the effective handle geometry of the node. React Flow
+    // does not always pick that up from pure React re-renders, so force an internal recalculation
+    // whenever the port occupancy signature changes.
     useEffect(() => {
         updateNodeInternals(String(node.id));
     }, [handleLayoutSignature, node.id, updateNodeInternals]);

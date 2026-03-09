@@ -254,10 +254,11 @@ function transformNodes(
                 x: resolvedLayoutNode.x,
                 y: resolvedLayoutNode.y,
             },
-            measured: {
-                width: resolvedLayoutNode.width,
-                height: resolvedLayoutNode.height,
-            },
+            // Keep the ELK dimensions as layout hints, but let React Flow own `measured`.
+            // Feeding synthetic `measured` values back into React Flow blurs the line between
+            // estimated layout size and actual DOM size and can short-circuit remeasurement.
+            width: resolvedLayoutNode.width,
+            height: resolvedLayoutNode.height,
             zIndex: PROCESS_FLOW_NODE_Z_INDEX,
             data: {
                 graphNode,
@@ -349,6 +350,8 @@ function applyOpenPortClearanceToRoutePoints(
         return routePoints;
     }
 
+    // ELK does not know about our visible open-port UI below the node card. Shift horizontal
+    // segments downward when they would cut through that affordance zone so open ports stay legible.
     const adjustedRoutePoints = routePoints.map((point) => ({...point}));
 
     for (let index = 0; index < adjustedRoutePoints.length - 1; index += 1) {
