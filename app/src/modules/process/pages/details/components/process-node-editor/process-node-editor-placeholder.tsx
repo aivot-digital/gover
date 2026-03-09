@@ -53,9 +53,12 @@ export function ProcessNodeEditorPlaceholder() {
                 flexDirection: 'column',
                 alignItems: 'flex-start',
                 justifyContent: 'center',
+                maxWidth: 440,
             }}
         >
-            <ProcessNodeEditorPlaceholderIllustration/>
+            <Box sx={{ml: 2, maxWidth: 440}}>
+                <ProcessNodeEditorPlaceholderIllustration/>
+            </Box>
 
             <Typography
                 variant="caption"
@@ -68,7 +71,7 @@ export function ProcessNodeEditorPlaceholder() {
             </Typography>
 
             <Typography
-                variant="h6"
+                variant="h5"
                 sx={{
                     mb: 2,
                 }}
@@ -107,7 +110,7 @@ export function ProcessNodeEditorPlaceholder() {
                 startIcon={<MenuBook/>}
                 variant="contained"
                 sx={{
-                    mt: 2,
+                    mt: 3,
                 }}
                 onClick={() => {
                     dispatch(addSnackbarMessage({
