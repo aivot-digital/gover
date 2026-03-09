@@ -13,7 +13,7 @@ import {generateComponentTitle} from '../../../utils/generate-component-title';
 
 export function humanizeNoCode(operand: NoCodeOperand, allElements: ElementWithParents[], allOperators: NoCodeOperatorDetailsDTO[]): string {
     if (isNoCodeStaticValue(operand)) {
-        return `„${operand.value}”`;
+        return `„${operand.value}“`;
     }
 
     if (isNoCodeReference(operand)) {
@@ -24,7 +24,7 @@ export function humanizeNoCode(operand: NoCodeOperand, allElements: ElementWithP
             ? generateComponentTitle(element.element)
             : `Unbekanntes Element (ID: ${operand.elementId})`;
 
-        return `Wert von „${elementTitle}”`;
+        return `Wert von „${elementTitle}“`;
     }
 
     if (isNoCodeProcessDataReference(operand)) {
@@ -62,13 +62,13 @@ export function humanizeNoCode(operand: NoCodeOperand, allElements: ElementWithP
 
             operator.signatures[0].parameters.forEach((param, index) => {
                 const placeholder = `#${index}`;
-                const insert = parameterHumanized[index] ?? `„${param.label}”`;
+                const insert = parameterHumanized[index] ?? `„${param.label}“`;
                 template = template.replaceAll(placeholder, insert);
             });
 
             return template;
         } else {
-            return `Das Ergebnis der Operation „${operator.label}” mit den Parametern: ${parameterHumanized.join(', ')}`;
+            return `Das Ergebnis der Operation „${operator.label}“ mit den Parametern: ${parameterHumanized.join(', ')}`;
         }
     }
 
