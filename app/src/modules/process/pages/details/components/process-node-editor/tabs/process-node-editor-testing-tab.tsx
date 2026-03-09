@@ -19,17 +19,34 @@ export function ProcessNodeEditorTestingTab(): ReactNode {
     const [layout, setLayout] = useState<GroupLayout | null>(null);
 
     useEffect(() => {
+        let cancelled = false;
+
         if (testClaim == null) {
             setLayout(null);
+            return () => {
+                cancelled = true;
+            };
         }
 
         new ProcessNodeApiService()
             .getTesting(node.id)
-            .then(setLayout)
+            .then((data) => {
+                if (cancelled) {
+                    return;
+                }
+                setLayout(data);
+            })
             .catch((err) => {
+                if (cancelled) {
+                    return;
+                }
                 dispatch(showApiErrorSnackbar(err, 'Fehler beim Laden des Test-Layouts.'));
             });
-    }, [testClaim]);
+
+        return () => {
+            cancelled = true;
+        };
+    }, [dispatch, node.id, testClaim]);
 
     if (testClaim == null) {
         return (

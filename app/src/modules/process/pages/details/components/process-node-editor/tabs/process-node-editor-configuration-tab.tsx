@@ -3,7 +3,7 @@ import {TextFieldComponent} from '../../../../../../../components/text-field/tex
 import {useProcessNodeEditorContext} from '../process-node-editor-context';
 import {ElementDerivationContext} from '../../../../../../elements/components/element-derivation-context';
 import Typography from '@mui/material/Typography';
-import {useEffect, useState} from 'react';
+import {useRef} from 'react';
 
 export function ProcessNodeEditorConfigurationTab() {
     const {
@@ -12,11 +12,7 @@ export function ProcessNodeEditorConfigurationTab() {
         setNode: setLocalNode,
     } = useProcessNodeEditorContext();
 
-    const [firstDerivationDone, setFirstDerivationDone] = useState(false);
-
-    useEffect(() => {
-        setFirstDerivationDone(false);
-    }, [layout]);
+    const initialDerivationNodeIdRef = useRef<number | null>(null);
 
     return (
         <Box
@@ -76,6 +72,7 @@ export function ProcessNodeEditorConfigurationTab() {
             />
 
             <ElementDerivationContext
+                key={localNode.id}
                 element={layout}
                 elementData={localNode.configuration}
                 onElementDataChange={(elementData) => {
@@ -85,12 +82,12 @@ export function ProcessNodeEditorConfigurationTab() {
                     }, false);
                 }}
                 onDerivationFinished={(elementData) => {
-                    if (!firstDerivationDone) {
+                    if (initialDerivationNodeIdRef.current !== localNode.id) {
+                        initialDerivationNodeIdRef.current = localNode.id;
                         setLocalNode({
                             ...localNode,
                             configuration: elementData,
                         }, true);
-                        setFirstDerivationDone(true);
                     }
                 }}
             />

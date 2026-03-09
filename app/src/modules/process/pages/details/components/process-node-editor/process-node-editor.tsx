@@ -44,7 +44,7 @@ const processNodeEditorLoadedSidebarFlash = keyframes`
 
 export function ProcessNodeEditor(): ReactNode {
     const params = useParams();
-    const [searchParams, setSearchParams] = useSearchParams();
+    const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const location = useLocation();
     const confirm = useConfirm();
@@ -69,13 +69,13 @@ export function ProcessNodeEditor(): ReactNode {
     const showInitialNodeEditorSkeleton = useDelayedVisibility(!hasEditorContent, PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY);
     const hasShownShellLoadingRef = useRef(false);
 
-    const nodeId = useMemo(() => {
-        const nodeId = params.nodeId;
-        if (nodeId == null) {
+    const nodeId = (() => {
+        const rawNodeId = params.nodeId;
+        if (rawNodeId == null) {
             throw new Error('nodeId is required');
         }
-        return parseInt(nodeId, 10);
-    }, [params]);
+        return parseInt(rawNodeId, 10);
+    })();
 
     useEffect(() => {
         if (originalNode == null) {
@@ -459,6 +459,7 @@ export function ProcessNodeEditor(): ReactNode {
                         }}
                     >
                         <ProcessNodeEditorProvider
+                            key={nodeId}
                             value={{
                                 provider,
                                 layout,

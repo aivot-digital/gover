@@ -37,7 +37,7 @@ export const processRoutes: RouteObject[] = [
                 element: <ProcessNodeEditorPlaceholder/>,
             },
             {
-                path: '/processes/:processId/versions/:processVersion/nodes/:nodeId',
+                path: 'nodes/:nodeId',
                 element: <ProcessNodeEditor/>,
                 children: [
                     {
@@ -45,19 +45,19 @@ export const processRoutes: RouteObject[] = [
                         element: <ProcessNodeEditorConfigurationTab/>,
                     },
                     {
-                        path: '/processes/:processId/versions/:processVersion/nodes/:nodeId/tabs/configuration',
+                        path: 'tabs/configuration',
                         element: <ProcessNodeEditorConfigurationTab/>,
                     },
                     {
-                        path: '/processes/:processId/versions/:processVersion/nodes/:nodeId/tabs/outputs',
+                        path: 'tabs/outputs',
                         element: <ProcessNodeEditorOutputsTab/>,
                     },
                     {
-                        path: '/processes/:processId/versions/:processVersion/nodes/:nodeId/tabs/more',
+                        path: 'tabs/more',
                         element: <ProcessNodeEditorMoreTab/>,
                     },
                     {
-                        path: '/processes/:processId/versions/:processVersion/nodes/:nodeId/tabs/testing',
+                        path: 'tabs/testing',
                         element: <ProcessNodeEditorTestingTab/>,
                     },
                 ],
