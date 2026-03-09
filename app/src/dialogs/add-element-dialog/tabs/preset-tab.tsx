@@ -2,7 +2,7 @@ import React, {useEffect, useMemo, useState} from 'react';
 import Fuse from 'fuse.js';
 import {type Preset} from '../../../models/entities/preset';
 import {type BaseTabProps} from './base-tab-props';
-import {Alert, Box, Button, Typography} from '@mui/material';
+import {Alert, Box, Typography} from '@mui/material';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {cloneElement} from '../../../utils/clone-element';
 import {Link} from 'react-router-dom';
@@ -12,6 +12,7 @@ import {useApi} from '../../../hooks/use-api';
 import {SearchInput} from '../../../components/search-input/search-input';
 import {PresetsApiService} from '../../../modules/presets/presets-api-service';
 import {PresetVersionApiService} from '../../../modules/presets/preset-version-api-service';
+import {SelectionListRow} from '../../../components/selection-dialog/selection-list-row';
 
 function getPresetSummary(preset: Preset): string {
     if (preset.publishedVersion != null && preset.draftedVersion != null) {
@@ -156,71 +157,21 @@ export function PresetTab(props: BaseTabProps & {
                 {
                     filteredPresets.map((preset, index) => (
                         <React.Fragment key={preset.key}>
-                            <Box
-                                sx={{
-                                    display: 'flex',
-                                    alignItems: 'flex-start',
-                                    gap: 1.75,
-                                    px: 2.25,
-                                    py: 1.9,
-                                    bgcolor: props.highlightedPresetKey === preset.key ? 'action.hover' : 'transparent',
+                            <SelectionListRow
+                                icon={<MenuOutlinedIcon sx={{fontSize: 20, color: 'text.secondary'}}/>}
+                                title={preset.title}
+                                description={getPresetSummary(preset)}
+                                selected={props.highlightedPresetKey === preset.key}
+                                primaryActionLabel={props.primaryActionLabel}
+                                primaryActionIcon={props.primaryActionIcon}
+                                detailsIcon={<InfoOutlinedIcon sx={{fontSize: 18}}/>}
+                                onShowDetails={() => {
+                                    props.showPresetInfo(preset);
                                 }}
-                            >
-                                <Box
-                                    sx={{
-                                        width: 38,
-                                        height: 38,
-                                        borderRadius: '50%',
-                                        bgcolor: 'grey.100',
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        flexShrink: 0,
-                                    }}
-                                >
-                                    <MenuOutlinedIcon sx={{fontSize: 20, color: 'text.secondary'}}/>
-                                </Box>
-
-                                <Box sx={{minWidth: 0, flex: 1}}>
-                                    <Typography fontWeight={700}>
-                                        {preset.title}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{mt: 0.5}}>
-                                        {getPresetSummary(preset)}
-                                    </Typography>
-                                </Box>
-
-                                <Box
-                                    sx={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 1.5,
-                                        flexShrink: 0,
-                                        pl: 1.5,
-                                    }}
-                                >
-                                    <Button
-                                        variant="text"
-                                        size="small"
-                                        startIcon={<InfoOutlinedIcon sx={{fontSize: 18}}/>}
-                                        onClick={() => {
-                                            props.showPresetInfo(preset);
-                                        }}
-                                    >
-                                        Details
-                                    </Button>
-                                    <Button
-                                        variant="contained"
-                                        size="small"
-                                        startIcon={props.primaryActionIcon}
-                                        onClick={() => {
-                                            addPresetElement(preset);
-                                        }}
-                                    >
-                                        {props.primaryActionLabel}
-                                    </Button>
-                                </Box>
-                            </Box>
+                                onPrimaryAction={() => {
+                                    addPresetElement(preset);
+                                }}
+                            />
                             {
                                 index < filteredPresets.length - 1 &&
                                 <Box sx={{mx: 2}}>

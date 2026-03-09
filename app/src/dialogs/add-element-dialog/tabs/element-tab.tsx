@@ -6,13 +6,11 @@ import {
     AccordionSummary,
     Alert,
     Box,
-    Button,
     Chip,
     Divider,
     Typography,
 } from '@mui/material';
 import ExpandMore from '@mui/icons-material/ExpandMore';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {SearchInput} from '../../../components/search-input/search-input';
 import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
 import {getElementNameForType} from '../../../data/element-type/element-names';
@@ -26,6 +24,7 @@ import {
     getElementDescriptionForType,
     getElementGroupForType,
 } from '../element-dialog-metadata';
+import {SelectionListRow} from '../../../components/selection-dialog/selection-list-row';
 
 const defaultExpandedGroups: Record<ElementTypeGroups, boolean> = {
     [ElementTypeGroups.Display]: true,
@@ -285,84 +284,15 @@ function ElementRow(props: {
     const Icon = getElementIconForType(option.type);
 
     return (
-        <Box
-            sx={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 1.75,
-                px: 2.25,
-                py: 1.9,
-                bgcolor: isSelected ? 'action.hover' : 'transparent',
-            }}
-        >
-            <Box
-                sx={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: '50%',
-                    bgcolor: 'grey.100',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                }}
-            >
-                <Icon sx={{fontSize: 20, color: 'text.secondary'}}/>
-            </Box>
-
-            <Box
-                sx={{
-                    minWidth: 0,
-                    flex: 1,
-                }}
-            >
-                <Typography
-                    fontWeight={700}
-                    sx={{
-                        minWidth: 0,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                    }}
-                >
-                    {option.name}
-                </Typography>
-
-                <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{mt: 0.5}}
-                >
-                    {option.description}
-                </Typography>
-            </Box>
-
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    flexShrink: 0,
-                    pl: 1.5,
-                }}
-            >
-                <Button
-                    variant="text"
-                    size="small"
-                    startIcon={<InfoOutlinedIcon sx={{fontSize: 18}}/>}
-                    onClick={onShowDetails}
-                >
-                    Details
-                </Button>
-                <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={primaryActionIcon}
-                    onClick={onAdd}
-                >
-                    {primaryActionLabel}
-                </Button>
-            </Box>
-        </Box>
+        <SelectionListRow
+            icon={<Icon sx={{fontSize: 20, color: 'text.secondary'}}/>}
+            title={option.name}
+            description={option.description}
+            selected={isSelected}
+            primaryActionLabel={primaryActionLabel}
+            primaryActionIcon={primaryActionIcon}
+            onShowDetails={onShowDetails}
+            onPrimaryAction={onAdd}
+        />
     );
 }

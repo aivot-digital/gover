@@ -1,4 +1,4 @@
-import React, {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
+import React, {type ReactNode, useMemo, useState} from 'react';
 import Fuse from 'fuse.js';
 import {
     Accordion,
@@ -6,23 +6,21 @@ import {
     AccordionSummary,
     Alert,
     Box,
-    Button,
     Chip,
-    Dialog,
     Divider,
-    Tab,
-    Tabs,
     Typography,
 } from '@mui/material';
 import Assignment from '@aivot/mui-material-symbols-400-outlined/dist/assignment/Assignment';
 import ExpandMore from '@mui/icons-material/ExpandMore';
-import InfoOutlined from '@mui/icons-material/InfoOutlined';
 import Add from '@mui/icons-material/Add';
 import {SearchInput} from '../../../components/search-input/search-input';
-import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {KnownProviderIcons} from '../data/known-provider-icons';
 import {ProviderTypeStyles} from '../data/provider-type-styles';
 import {type ProcessNodeProvider, ProcessNodeType} from '../services/process-node-provider-api-service';
+import {SelectionDialogShell} from '../../../components/selection-dialog/selection-dialog-shell';
+import {SelectionListRow} from '../../../components/selection-dialog/selection-list-row';
+import {SelectionDetailsPanel} from '../../../components/selection-dialog/selection-details-panel';
+import {useRetainedDialogValue} from '../../../hooks/use-retained-dialog-value';
 
 const PROCESS_NODE_TYPE_ORDER = [
     ProcessNodeType.Trigger,
@@ -103,24 +101,15 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
         primaryActionIcon = <Add sx={{fontSize: 18}}/>,
     } = props;
 
-    const retainedFilterRef = useRef<SelectNodeProviderDialogProps['filter']>(filter);
-    const [retainedNodeProviders, setRetainedNodeProviders] = useState<ProcessNodeProvider[]>(nodeProviders);
     const [currentTab, setCurrentTab] = useState(0);
     const [search, setSearch] = useState('');
     const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
     const [expandedGroups, setExpandedGroups] = useState<Record<ProcessNodeType, boolean>>(DEFAULT_EXPANDED_GROUPS);
-
-    useEffect(() => {
-        if (!open) {
-            return;
-        }
-
-        setRetainedNodeProviders(nodeProviders);
-        retainedFilterRef.current = filter;
-    }, [filter, nodeProviders, open]);
-
-    const renderNodeProviders = open ? nodeProviders : retainedNodeProviders;
-    const renderFilter = open ? filter : retainedFilterRef.current;
+    const renderNodeProviders = useRetainedDialogValue(open, nodeProviders);
+    const renderFilter = useRetainedDialogValue(open, filter);
+    const renderTitle = useRetainedDialogValue(open, title);
+    const renderPrimaryActionLabel = useRetainedDialogValue(open, primaryActionLabel);
+    const renderPrimaryActionIcon = useRetainedDialogValue(open, primaryActionIcon);
 
     const filteredNodeProviders = useMemo(() => (
         getFilteredNodeProviders(renderNodeProviders, renderFilter)
@@ -161,241 +150,194 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
     };
 
     return (
-        <Dialog
+        <SelectionDialogShell
             open={open}
             onClose={onClose}
-            fullWidth
-            maxWidth={selectedProvider != null ? 'lg' : 'md'}
-            TransitionProps={{
-                onExited: () => {
-                    setCurrentTab(0);
-                    setSearch('');
-                    setSelectedProviderId(null);
-                    setExpandedGroups(DEFAULT_EXPANDED_GROUPS);
-                },
+            title={renderTitle}
+            tabs={[
+                {label: 'Elemente', value: 0},
+                {label: 'Vorlagen', value: 1, disabled: true},
+                {label: 'Gover Marktplatz', value: 2, disabled: true},
+            ]}
+            activeTab={currentTab}
+            onTabChange={(value) => {
+                setCurrentTab(Number(value));
             }}
+            showDetailsPanel={selectedProvider != null}
+            onExited={() => {
+                setCurrentTab(0);
+                setSearch('');
+                setSelectedProviderId(null);
+                setExpandedGroups(DEFAULT_EXPANDED_GROUPS);
+            }}
+            detailsPanel={selectedProvider != null ? (
+                <SelectNodeProviderDetails
+                    provider={selectedProvider}
+                    primaryActionLabel={renderPrimaryActionLabel}
+                    primaryActionIcon={renderPrimaryActionIcon}
+                    onAdd={() => {
+                        handleAddProvider(selectedProvider);
+                    }}
+                    onClose={() => {
+                        setSelectedProviderId(null);
+                    }}
+                />
+            ) : undefined}
         >
-            <DialogTitleWithClose
-                onClose={onClose}
-            >
-                {title}
-            </DialogTitleWithClose>
-
-            <Tabs
-                value={currentTab}
-                onChange={(_, value) => {
-                    setCurrentTab(value);
-                }}
+            <Box
                 sx={{
-                    px: 2,
-                    mt: -1.5,
+                    p: 2,
                     borderBottom: '1px solid',
                     borderColor: 'divider',
                 }}
             >
-                <Tab label="Elemente" value={0}/>
-                <Tab label="Vorlagen" value={1} disabled/>
-                <Tab label="Gover Marktplatz" value={2} disabled/>
-            </Tabs>
+                <SearchInput
+                    label="Prozesselement suchen"
+                    ariaLabel="Prozesselement suchen"
+                    placeholder="Name, Beschreibung oder Plugin durchsuchen"
+                    value={search}
+                    onChange={setSearch}
+                    debounce={120}
+                />
+            </Box>
 
             <Box
                 sx={{
-                    display: 'grid',
-                    gridTemplateColumns: selectedProvider != null ? 'minmax(0, 1.2fr) minmax(320px, 0.8fr)' : 'minmax(0, 1fr)',
-                    height: 'min(74vh, 820px)',
+                    flex: 1,
+                    overflowY: 'auto',
+                    px: 0,
+                    pb: 1.5,
                 }}
             >
-                <Box
-                    sx={{
-                        minWidth: 0,
-                        minHeight: 0,
-                        display: 'flex',
-                        flexDirection: 'column',
-                    }}
-                >
-                    <Box
-                        sx={{
-                            p: 2,
-                            borderBottom: '1px solid',
-                            borderColor: 'divider',
-                        }}
-                    >
-                        <SearchInput
-                            label="Prozesselement suchen"
-                            ariaLabel="Prozesselement suchen"
-                            placeholder="Name, Beschreibung oder Plugin durchsuchen"
-                            value={search}
-                            onChange={setSearch}
-                            debounce={120}
-                        />
-                    </Box>
-
-                    <Box
-                        sx={{
-                            flex: 1,
-                            overflowY: 'auto',
-                            px: 0,
-                            pb: 1.5,
-                        }}
-                    >
-                        {
-                            filteredNodeProviders.length === 0 &&
-                            <Box sx={{mt: 2, px: 2}}>
-                                <Alert severity="info">
-                                    Für diese Aktion stehen aktuell keine kompatiblen Prozesselemente zur Verfügung.
-                                </Alert>
-                            </Box>
-                        }
-
-                        {
-                            filteredNodeProviders.length > 0 && searchedNodeProviders.length === 0 &&
-                            <Box sx={{mt: 2, px: 2}}>
-                                <Alert severity="info">
-                                    Es wurden keine Prozesselemente gefunden, die zu Ihrer Suche passen.
-                                </Alert>
-                            </Box>
-                        }
-
-                        {
-                            visibleGroupTypes.map((type, groupIndex) => {
-                                const providersForType = groupedNodeProviders.get(type) ?? [];
-                                const typeStyle = ProviderTypeStyles[type];
-                                const isExpanded = search.trim().length > 0 ? true : expandedGroups[type];
-                                const shouldShowExpandIcon = search.trim().length === 0;
-
-                                return (
-                                    <Accordion
-                                        key={type}
-                                        disableGutters
-                                        expanded={isExpanded}
-                                        onChange={(_, expanded) => {
-                                            if (search.trim().length > 0) {
-                                                return;
-                                            }
-
-                                            setExpandedGroups((previousState) => ({
-                                                ...previousState,
-                                                [type]: expanded,
-                                            }));
-                                        }}
-                                        sx={{
-                                            mx: 0,
-                                            mb: 0,
-                                            boxShadow: 'none',
-                                            bgcolor: 'transparent',
-                                            '&::before': {
-                                                display: 'none',
-                                            },
-                                            '&.Mui-expanded': {
-                                                mt: 0,
-                                                mb: 0,
-                                            },
-                                        }}
-                                    >
-                                        <AccordionSummary
-                                            expandIcon={shouldShowExpandIcon ? <ExpandMore/> : undefined}
-                                            sx={{
-                                                px: 2,
-                                                minHeight: 56,
-                                                bgcolor: 'rgba(15, 23, 42, 0.035)',
-                                                borderTop: groupIndex === 0 ? 'none' : '1px solid',
-                                                borderBottom: '1px solid',
-                                                borderColor: 'divider',
-                                                '& .MuiAccordionSummary-content': {
-                                                    my: 1.5,
-                                                },
-                                                '& .MuiAccordionSummary-expandIconWrapper': {
-                                                    mr: 0.25,
-                                                },
-                                            }}
-                                        >
-                                            <Box
-                                                sx={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: 1,
-                                                    minWidth: 0,
-                                                    pl: 1,
-                                                }}
-                                            >
-                                                <typeStyle.Icon
-                                                        sx={{
-                                                            color: 'text.secondary',
-                                                        }}
-                                                    />
-                                                <Typography fontWeight={700}>
-                                                    {PROCESS_NODE_TYPE_PLURAL_LABELS[type]}
-                                                </Typography>
-                                                <Chip
-                                                    size="small"
-                                                    label={`${providersForType.length} ${providersForType.length === 1 ? 'Element' : 'Elemente'}`}
-                                                    sx={{
-                                                        ml: 0.5,
-                                                        bgcolor: typeStyle.bgColor,
-                                                        color: typeStyle.textColor,
-                                                    }}
-                                                />
-                                            </Box>
-                                        </AccordionSummary>
-                                        <AccordionDetails sx={{p: 0}}>
-                                            {
-                                                providersForType.map((provider, index) => (
-                                                    <React.Fragment key={getProviderId(provider)}>
-                                                        <SelectNodeProviderDialogRow
-                                                            provider={provider}
-                                                            isSelected={selectedProviderId === getProviderId(provider)}
-                                                            primaryActionLabel={primaryActionLabel}
-                                                            primaryActionIcon={primaryActionIcon}
-                                                            onShowDetails={() => {
-                                                                setSelectedProviderId(getProviderId(provider));
-                                                            }}
-                                                            onAdd={() => {
-                                                                handleAddProvider(provider);
-                                                            }}
-                                                        />
-                                                        {
-                                                            index < providersForType.length - 1 &&
-                                                            <Divider/>
-                                                        }
-                                                    </React.Fragment>
-                                                ))
-                                            }
-                                        </AccordionDetails>
-                                    </Accordion>
-                                );
-                            })
-                        }
-                    </Box>
-                </Box>
-
                 {
-                    selectedProvider != null &&
-                    <Box
-                        sx={{
-                            minWidth: 0,
-                            minHeight: 0,
-                            borderLeft: '1px solid',
-                            borderColor: 'divider',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            overflow: 'hidden',
-                        }}
-                    >
-                        <SelectNodeProviderDetails
-                            provider={selectedProvider}
-                            primaryActionLabel={primaryActionLabel}
-                            primaryActionIcon={primaryActionIcon}
-                            onAdd={() => {
-                                handleAddProvider(selectedProvider);
-                            }}
-                            onClose={() => {
-                                setSelectedProviderId(null);
-                            }}
-                        />
+                    filteredNodeProviders.length === 0 &&
+                    <Box sx={{mt: 2, px: 2}}>
+                        <Alert severity="info">
+                            Für diese Aktion stehen aktuell keine kompatiblen Prozesselemente zur Verfügung.
+                        </Alert>
                     </Box>
                 }
+
+                {
+                    filteredNodeProviders.length > 0 && searchedNodeProviders.length === 0 &&
+                    <Box sx={{mt: 2, px: 2}}>
+                        <Alert severity="info">
+                            Es wurden keine Prozesselemente gefunden, die zu Ihrer Suche passen.
+                        </Alert>
+                    </Box>
+                }
+
+                {
+                    visibleGroupTypes.map((type, groupIndex) => {
+                        const providersForType = groupedNodeProviders.get(type) ?? [];
+                        const typeStyle = ProviderTypeStyles[type];
+                        const isExpanded = search.trim().length > 0 ? true : expandedGroups[type];
+                        const shouldShowExpandIcon = search.trim().length === 0;
+
+                        return (
+                            <Accordion
+                                key={type}
+                                disableGutters
+                                expanded={isExpanded}
+                                onChange={(_, expanded) => {
+                                    if (search.trim().length > 0) {
+                                        return;
+                                    }
+
+                                    setExpandedGroups((previousState) => ({
+                                        ...previousState,
+                                        [type]: expanded,
+                                    }));
+                                }}
+                                sx={{
+                                    mx: 0,
+                                    mb: 0,
+                                    boxShadow: 'none',
+                                    bgcolor: 'transparent',
+                                    '&::before': {
+                                        display: 'none',
+                                    },
+                                    '&.Mui-expanded': {
+                                        mt: 0,
+                                        mb: 0,
+                                    },
+                                }}
+                            >
+                                <AccordionSummary
+                                    expandIcon={shouldShowExpandIcon ? <ExpandMore/> : undefined}
+                                    sx={{
+                                        px: 2,
+                                        minHeight: 56,
+                                        bgcolor: 'rgba(15, 23, 42, 0.035)',
+                                        borderTop: groupIndex === 0 ? 'none' : '1px solid',
+                                        borderBottom: '1px solid',
+                                        borderColor: 'divider',
+                                        '& .MuiAccordionSummary-content': {
+                                            my: 1.5,
+                                        },
+                                        '& .MuiAccordionSummary-expandIconWrapper': {
+                                            mr: 0.25,
+                                        },
+                                    }}
+                                >
+                                    <Box
+                                        sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 1,
+                                            minWidth: 0,
+                                            pl: 1,
+                                        }}
+                                    >
+                                        <typeStyle.Icon
+                                            sx={{
+                                                color: 'text.secondary',
+                                            }}
+                                        />
+                                        <Typography fontWeight={700}>
+                                            {PROCESS_NODE_TYPE_PLURAL_LABELS[type]}
+                                        </Typography>
+                                        <Chip
+                                            size="small"
+                                            label={`${providersForType.length} ${providersForType.length === 1 ? 'Element' : 'Elemente'}`}
+                                            sx={{
+                                                ml: 0.5,
+                                                bgcolor: typeStyle.bgColor,
+                                                color: typeStyle.textColor,
+                                            }}
+                                        />
+                                    </Box>
+                                </AccordionSummary>
+                                <AccordionDetails sx={{p: 0}}>
+                                    {
+                                        providersForType.map((provider, index) => (
+                                            <React.Fragment key={getProviderId(provider)}>
+                                                <SelectNodeProviderDialogRow
+                                                    provider={provider}
+                                                    isSelected={selectedProviderId === getProviderId(provider)}
+                                                    primaryActionLabel={renderPrimaryActionLabel}
+                                                    primaryActionIcon={renderPrimaryActionIcon}
+                                                    onShowDetails={() => {
+                                                        setSelectedProviderId(getProviderId(provider));
+                                                    }}
+                                                    onAdd={() => {
+                                                        handleAddProvider(provider);
+                                                    }}
+                                                />
+                                                {
+                                                    index < providersForType.length - 1 &&
+                                                    <Divider/>
+                                                }
+                                            </React.Fragment>
+                                        ))
+                                    }
+                                </AccordionDetails>
+                            </Accordion>
+                        );
+                    })
+                }
             </Box>
-        </Dialog>
+        </SelectionDialogShell>
     );
 }
 
@@ -421,101 +363,23 @@ function SelectNodeProviderDialogRow(props: SelectNodeProviderDialogRowProps): R
     const ProviderIcon = KnownProviderIcons[provider.componentKey] ?? KnownProviderIcons[provider.key] ?? Assignment;
 
     return (
-        <Box
-            sx={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 1.75,
-                px: 2.25,
-                py: 1.9,
-                bgcolor: isSelected ? 'action.hover' : 'transparent',
-            }}
-        >
-            <Box
-                sx={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: '50%',
-                    bgcolor: 'grey.100',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                }}
-            >
-                <ProviderIcon sx={{fontSize: 20, color: 'text.secondary'}}/>
-            </Box>
-
-            <Box
-                sx={{
-                    minWidth: 0,
-                    flex: 1,
-                }}
-            >
-                <Box
-                    sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                        minWidth: 0,
-                    }}
-                >
-                    <Typography
-                        fontWeight={700}
-                        sx={{
-                            minWidth: 0,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                        }}
-                    >
-                        {provider.name}
-                    </Typography>
-                    <Chip
-                        size="small"
-                        label={`Version ${provider.majorVersion}`}
-                        sx={{flexShrink: 0}}
-                    />
-                </Box>
-
-                <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{
-                        mt: 0.5,
-                    }}
-                >
-                    {provider.description}
-                </Typography>
-            </Box>
-
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    flexShrink: 0,
-                    pl: 1.5,
-                }}
-            >
-                <Button
-                    variant="text"
+        <SelectionListRow
+            icon={<ProviderIcon sx={{fontSize: 20, color: 'text.secondary'}}/>}
+            title={provider.name}
+            titleAdornment={(
+                <Chip
                     size="small"
-                    startIcon={<InfoOutlined sx={{fontSize: 18}}/>}
-                    onClick={onShowDetails}
-                >
-                    Details
-                </Button>
-                <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={primaryActionIcon}
-                    onClick={onAdd}
-                >
-                    {primaryActionLabel}
-                </Button>
-            </Box>
-        </Box>
+                    label={`Version ${provider.majorVersion}`}
+                    sx={{flexShrink: 0}}
+                />
+            )}
+            description={provider.description}
+            selected={isSelected}
+            primaryActionLabel={primaryActionLabel}
+            primaryActionIcon={primaryActionIcon}
+            onShowDetails={onShowDetails}
+            onPrimaryAction={onAdd}
+        />
     );
 }
 
@@ -545,174 +409,72 @@ function SelectNodeProviderDetails(props: SelectNodeProviderDetailsProps): React
     const ProviderIcon = KnownProviderIcons[provider.componentKey] ?? KnownProviderIcons[provider.key] ?? Assignment;
 
     return (
-        <>
-            <Box
-                sx={{
-                    p: 2,
-                    borderBottom: '1px solid',
-                    borderColor: 'divider',
-                }}
-            >
-                <Box
-                    sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 2,
-                    }}
-                >
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: 38,
-                            height: 38,
-                            minWidth: 38,
-                            minHeight: 38,
-                            aspectRatio: '1 / 1',
-                            flexShrink: 0,
-                            borderRadius: '50%',
-                            backgroundColor: typeBgColor,
-                            color: typeTextColor,
-                        }}
-                    >
-                        <ProviderIcon sx={{fontSize: 20}}/>
-                    </Box>
+        <SelectionDetailsPanel
+            icon={<ProviderIcon sx={{fontSize: 20}}/>}
+            iconBackgroundColor={typeBgColor}
+            iconColor={typeTextColor}
+            label={typeLabel}
+            title={provider.name}
+            titleAdornment={(
+                <Chip
+                    size="small"
+                    label={`Version ${provider.majorVersion}`}
+                    sx={{flexShrink: 0}}
+                />
+            )}
+            description={provider.description}
+            primaryActionLabel={primaryActionLabel}
+            primaryActionIcon={primaryActionIcon}
+            onPrimaryAction={onAdd}
+            onClose={onClose}
+        >
+            {
+                provider.deprecationNotice != null &&
+                <Alert severity="warning">
+                    {provider.deprecationNotice}
+                </Alert>
+            }
 
-                    <Box sx={{minWidth: 0, flex: 1}}>
-                        <Typography
-                            variant="caption"
-                            sx={{
-                                display: 'block',
-                                lineHeight: 1.2,
-                                mt: 0.5,
-                            }}
-                        >
-                            {typeLabel}
-                        </Typography>
+            <SelectNodeProviderDetailsSection title="Allgemein">
+                <SelectNodeProviderDetailsRow label="Plugin" value={provider.parentPluginKey}/>
+                <SelectNodeProviderDetailsRow label="Elementschlüssel" value={provider.key}/>
+                <SelectNodeProviderDetailsRow label="Komponente" value={provider.componentKey}/>
+                <SelectNodeProviderDetailsRow label="Komponententyp" value={provider.componentType}/>
+                <SelectNodeProviderDetailsRow label="Komponentenversion" value={provider.componentVersion}/>
+            </SelectNodeProviderDetailsSection>
 
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 1,
-                                minWidth: 0,
-                            }}
-                        >
-                            <Typography
-                                variant="h6"
-                                lineHeight={1.2}
-                                sx={{
-                                    flex: 1,
-                                    minWidth: 0,
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                }}
-                            >
-                                {provider.name}
-                            </Typography>
-                            <Chip
-                                size="small"
-                                label={`Version ${provider.majorVersion}`}
-                                sx={{flexShrink: 0}}
-                            />
-                        </Box>
-                    </Box>
-                </Box>
-            </Box>
-
-            <Box
-                sx={{
-                    flex: 1,
-                    overflowY: 'auto',
-                    px: 2.25,
-                    pt: 2.25,
-                    pb: 3.75,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 2.5,
-                }}
-            >
-                <Typography variant="body2" color="text.secondary">
-                    {provider.description}
-                </Typography>
-
+            <SelectNodeProviderDetailsSection title="Ausgänge">
                 {
-                    provider.deprecationNotice != null &&
-                    <Alert severity="warning">
-                        {provider.deprecationNotice}
-                    </Alert>
+                    provider.ports.length > 0 ?
+                        provider.ports.map((port) => (
+                            <SelectNodeProviderDetailsListRow
+                                key={port.key}
+                                primary={port.label}
+                                secondary={port.description}
+                            />
+                        )) :
+                        <Typography variant="body2" color="text.secondary">
+                            Dieses Prozesselement besitzt keine Ausgangsports.
+                        </Typography>
                 }
+            </SelectNodeProviderDetailsSection>
 
-                <SelectNodeProviderDetailsSection title="Allgemein">
-                    <SelectNodeProviderDetailsRow label="Plugin" value={provider.parentPluginKey}/>
-                    <SelectNodeProviderDetailsRow label="Elementschlüssel" value={provider.key}/>
-                    <SelectNodeProviderDetailsRow label="Komponente" value={provider.componentKey}/>
-                    <SelectNodeProviderDetailsRow label="Komponententyp" value={provider.componentType}/>
-                    <SelectNodeProviderDetailsRow label="Komponentenversion" value={provider.componentVersion}/>
-                </SelectNodeProviderDetailsSection>
-
-                <SelectNodeProviderDetailsSection title="Ausgänge">
-                    {
-                        provider.ports.length > 0 ?
-                            provider.ports.map((port) => (
-                                <SelectNodeProviderDetailsListRow
-                                    key={port.key}
-                                    primary={port.label}
-                                    secondary={port.description}
-                                />
-                            )) :
-                            <Typography variant="body2" color="text.secondary">
-                                Dieses Prozesselement besitzt keine Ausgangsports.
-                            </Typography>
-                    }
-                </SelectNodeProviderDetailsSection>
-
-                <SelectNodeProviderDetailsSection title="Ausgangsdaten">
-                    {
-                        provider.outputs.length > 0 ?
-                            provider.outputs.map((output) => (
-                                <SelectNodeProviderDetailsListRow
-                                    key={output.key}
-                                    primary={output.label}
-                                    secondary={output.description}
-                                />
-                            )) :
-                            <Typography variant="body2" color="text.secondary">
-                                Dieses Prozesselement erzeugt keine zusätzlichen Ausgangsdaten.
-                            </Typography>
-                    }
-                </SelectNodeProviderDetailsSection>
-            </Box>
-
-            <Box
-                sx={{
-                    px: 2,
-                    pt: 2,
-                    pb: 2.5,
-                    borderTop: '1px solid',
-                    borderColor: 'divider',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    gap: 1,
-                }}
-            >
-                <Button
-                    variant="contained"
-                    startIcon={primaryActionIcon}
-                    onClick={onAdd}
-                >
-                    {primaryActionLabel}
-                </Button>
-                <Button
-                    variant="text"
-                    onClick={onClose}
-                >
-                    Details schließen
-                </Button>
-            </Box>
-        </>
+            <SelectNodeProviderDetailsSection title="Ausgangsdaten">
+                {
+                    provider.outputs.length > 0 ?
+                        provider.outputs.map((output) => (
+                            <SelectNodeProviderDetailsListRow
+                                key={output.key}
+                                primary={output.label}
+                                secondary={output.description}
+                            />
+                        )) :
+                        <Typography variant="body2" color="text.secondary">
+                            Dieses Prozesselement erzeugt keine zusätzlichen Ausgangsdaten.
+                        </Typography>
+                }
+            </SelectNodeProviderDetailsSection>
+        </SelectionDetailsPanel>
     );
 }
 

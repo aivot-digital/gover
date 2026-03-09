@@ -1,4 +1,4 @@
-import {Alert, Box, Button, Chip, Typography} from '@mui/material';
+import {Alert, Box, Chip, Typography} from '@mui/material';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import React, {useEffect, useMemo, useState} from 'react';
 import Fuse from 'fuse.js';
@@ -12,6 +12,7 @@ import ExtensionOutlinedIcon from '@mui/icons-material/ExtensionOutlined';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {type StoreModuleListProps} from './store-module-list-props';
+import {SelectionListRow} from '../selection-dialog/selection-list-row';
 
 export function StoreModuleList(props: StoreModuleListProps) {
     const dispatch = useAppDispatch();
@@ -132,44 +133,11 @@ export function StoreModuleList(props: StoreModuleListProps) {
                 {
                     filteredModules.map((module, index) => (
                         <React.Fragment key={module.id}>
-                            <Box
-                                sx={{
-                                    display: 'flex',
-                                    alignItems: 'flex-start',
-                                    gap: 1.75,
-                                    px: 2.25,
-                                    py: 1.9,
-                                    bgcolor: props.selectedModuleId === module.id ? 'action.hover' : 'transparent',
-                                }}
-                            >
-                                <Box
-                                    sx={{
-                                        width: 38,
-                                        height: 38,
-                                        borderRadius: '50%',
-                                        bgcolor: 'grey.100',
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        flexShrink: 0,
-                                    }}
-                                >
-                                    <ExtensionOutlinedIcon sx={{fontSize: 20, color: 'text.secondary'}}/>
-                                </Box>
-
-                                <Box sx={{minWidth: 0, flex: 1}}>
-                                    <Box
-                                        sx={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 0.75,
-                                            minWidth: 0,
-                                            flexWrap: 'wrap',
-                                        }}
-                                    >
-                                        <Typography fontWeight={700}>
-                                            {module.title}
-                                        </Typography>
+                            <SelectionListRow
+                                icon={<ExtensionOutlinedIcon sx={{fontSize: 20, color: 'text.secondary'}}/>}
+                                title={module.title}
+                                titleAdornment={(
+                                    <>
                                         {
                                             !module.is_public &&
                                             <LockOutlinedIcon sx={{fontSize: 16, color: 'text.secondary'}}/>
@@ -179,46 +147,20 @@ export function StoreModuleList(props: StoreModuleListProps) {
                                             label={`Version ${module.current_version}`}
                                             sx={{flexShrink: 0}}
                                         />
-                                    </Box>
-                                    <Typography variant="body2" color="text.secondary" sx={{mt: 0.5}}>
-                                        @{module.organization} - {module.description_short}
-                                    </Typography>
-                                </Box>
-
-                                <Box
-                                    sx={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 1.5,
-                                        flexShrink: 0,
-                                        pl: 1.5,
-                                    }}
-                                >
-                                    {
-                                        props.itemAction != null &&
-                                        <Button
-                                            variant="text"
-                                            size="small"
-                                            startIcon={props.itemAction.icon ?? <InfoOutlinedIcon sx={{fontSize: 18}}/>}
-                                            onClick={() => {
-                                                props.itemAction?.onClick(module);
-                                            }}
-                                        >
-                                            Details
-                                        </Button>
-                                    }
-                                    <Button
-                                        variant="contained"
-                                        size="small"
-                                        startIcon={props.primaryActionIcon}
-                                        onClick={() => {
-                                            addModuleElement(module);
-                                        }}
-                                    >
-                                        {props.primaryActionLabel}
-                                    </Button>
-                                </Box>
-                            </Box>
+                                    </>
+                                )}
+                                description={`@${module.organization} - ${module.description_short}`}
+                                selected={props.selectedModuleId === module.id}
+                                primaryActionLabel={props.primaryActionLabel}
+                                primaryActionIcon={props.primaryActionIcon}
+                                detailsIcon={props.itemAction?.icon ?? <InfoOutlinedIcon sx={{fontSize: 18}}/>}
+                                onShowDetails={props.itemAction != null ? () => {
+                                    props.itemAction?.onClick(module);
+                                } : undefined}
+                                onPrimaryAction={() => {
+                                    addModuleElement(module);
+                                }}
+                            />
                             {
                                 index < filteredModules.length - 1 &&
                                 <Box sx={{mx: 2}}>

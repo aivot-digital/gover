@@ -42,6 +42,7 @@ import {getElementDescriptionForType, getElementGroupLabelForType} from '../elem
 import {type ReactNode} from 'react';
 import {AppInfo} from '../../../app-info';
 import {FileUploadComponent} from '../../../components/file-upload-field/file-upload-component';
+import {SelectionDetailsPanel} from '../../../components/selection-dialog/selection-details-panel';
 
 const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Alert]: (
@@ -1274,103 +1275,17 @@ export function ElementInfoTab({
     };
 
     return (
-        <>
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                    p: 2,
-                    borderBottom: '1px solid',
-                    borderColor: 'divider',
-                }}
-            >
-                <Box
-                    sx={{
-                        width: 38,
-                        height: 38,
-                        borderRadius: '50%',
-                        bgcolor: 'grey.100',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                    }}
-                >
-                    <ElementIcon sx={{fontSize: 20, color: 'text.secondary'}}/>
-                </Box>
-
-                <Box sx={{minWidth: 0, flex: 1}}>
-                    <Typography
-                        variant="caption"
-                        sx={{
-                            display: 'block',
-                            lineHeight: 1.2,
-                            mt: 0.5,
-                        }}
-                    >
-                        {getElementGroupLabelForType(type)}
-                    </Typography>
-
-                    <Typography
-                        variant="h6"
-                        lineHeight={1.2}
-                        sx={{
-                            minWidth: 0,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                        }}
-                    >
-                        {getElementNameForType(type)}
-                    </Typography>
-                </Box>
-            </Box>
-
-            <Box
-                sx={{
-                    flex: 1,
-                    overflowY: 'auto',
-                    px: 2.25,
-                    pt: 2.25,
-                    pb: 3.75,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 2.5,
-                }}
-            >
-                <Typography variant="body2" color="text.secondary">
-                    {getElementDescriptionForType(type)}
-                </Typography>
-                {elementDescriptions[type]}
-            </Box>
-
-            <Box
-                sx={{
-                    px: 2,
-                    pt: 2,
-                    pb: 2.5,
-                    borderTop: '1px solid',
-                    borderColor: 'divider',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    gap: 1,
-                }}
-            >
-                <Button
-                    variant="contained"
-                    startIcon={primaryActionIcon}
-                    onClick={handleAddElement}
-                >
-                    {primaryActionLabel}
-                </Button>
-                <Button
-                    variant="text"
-                    onClick={onClose}
-                >
-                    Details schließen
-                </Button>
-            </Box>
-        </>
+        <SelectionDetailsPanel
+            icon={<ElementIcon sx={{fontSize: 20, color: 'text.secondary'}}/>}
+            label={getElementGroupLabelForType(type)}
+            title={getElementNameForType(type)}
+            description={getElementDescriptionForType(type)}
+            primaryActionLabel={primaryActionLabel}
+            primaryActionIcon={primaryActionIcon}
+            onPrimaryAction={handleAddElement}
+            onClose={onClose}
+        >
+            {elementDescriptions[type]}
+        </SelectionDetailsPanel>
     );
 }
