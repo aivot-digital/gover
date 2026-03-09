@@ -58,13 +58,13 @@ import {useDelayedVisibility} from '../../../../hooks/use-delayed-visibility';
 import Undo from '@mui/icons-material/Undo';
 import Redo from '@mui/icons-material/Redo';
 import Refresh from '@mui/icons-material/Refresh';
-import DeleteOutline from '@mui/icons-material/DeleteOutline';
 import Settings from '@aivot/mui-material-symbols-400-outlined/dist/settings/Settings';
 import {type Action} from '../../../../components/actions/actions-props';
 import HomeStorage from '@aivot/mui-material-symbols-400-outlined/dist/home-storage/HomeStorage';
 import News from '@aivot/mui-material-symbols-400-outlined/dist/news/News';
 import {ProcessConnectExistingNodeDialog} from './components/process-connect-existing-node-dialog';
 import {getNodeName} from './components/process-flow-editor/utils/node-utils';
+import SwapHoriz from '@mui/icons-material/SwapHoriz';
 
 const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 150;
 
@@ -1577,6 +1577,7 @@ export function ProcessDetailsPage(): ReactNode {
             <SelectNodeProviderDialog
                 open={showAddTriggerDialog}
                 nodeProviders={availableNodeProviders}
+                title="Auslöser hinzufügen"
                 filter={(provider) => provider.type === ProcessNodeType.Trigger}
                 onClose={() => {
                     setShowAddTriggerDialog(false);
@@ -1601,6 +1602,9 @@ export function ProcessDetailsPage(): ReactNode {
             <SelectNodeProviderDialog
                 open={replaceNodeSource != null}
                 nodeProviders={availableNodeProviders}
+                title="Prozesselement ersetzen"
+                primaryActionLabel="Ersetzen"
+                primaryActionIcon={<SwapHoriz sx={{fontSize: 18}}/>}
                 filter={(provider) => {
                     if (replaceNodeSource == null) {
                         return false;
