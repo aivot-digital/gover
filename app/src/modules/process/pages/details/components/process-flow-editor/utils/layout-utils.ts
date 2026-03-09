@@ -254,11 +254,10 @@ function transformNodes(
                 x: resolvedLayoutNode.x,
                 y: resolvedLayoutNode.y,
             },
-            // Keep the ELK dimensions as layout hints, but let React Flow own `measured`.
-            // Feeding synthetic `measured` values back into React Flow blurs the line between
-            // estimated layout size and actual DOM size and can short-circuit remeasurement.
-            width: resolvedLayoutNode.width,
-            height: resolvedLayoutNode.height,
+            measured: {
+                width: resolvedLayoutNode.width,
+                height: resolvedLayoutNode.height,
+            },
             zIndex: PROCESS_FLOW_NODE_Z_INDEX,
             data: {
                 graphNode,
