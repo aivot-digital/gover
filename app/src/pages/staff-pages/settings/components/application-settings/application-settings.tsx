@@ -462,7 +462,7 @@ export function ApplicationSettings() {
                 Am Ende eines jeden Formulars wird Ihre Index-Seite mit dem Text „Weitere Formulare“ verlinkt.
                 Diese Verlinkung dient der Barrierefreiheit (gemäß <abbr title={'Web Content Accessibility Guidelines'}>WCAG</abbr> 2.1)
                 und der Zugänglichkeit Ihrer Formulare. Sie können diesen Link deaktivieren oder gegen einen eigenen Link ersetzen
-                (wenn Sie zum Beispiel alle Formulare auf Ihrer eigene Webseite auflisten).
+                (wenn Sie zum Beispiel alle Formulare auf Ihrer eigenen Webseite auflisten).
             </Typography>
             {
                 (editedConfig[SystemConfigKeys.provider.listingPage.disableListingPageLink] ?? config[SystemConfigKeys.provider.listingPage.disableListingPageLink]) != 'true' &&
