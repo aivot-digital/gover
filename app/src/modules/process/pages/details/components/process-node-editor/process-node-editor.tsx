@@ -1,8 +1,9 @@
 import {type ProcessNodeEntity} from '../../../../entities/process-node-entity';
-import React, {type ReactNode, useEffect, useMemo, useState} from 'react';
+import React, {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
 import {type GroupLayout} from '../../../../../../models/elements/form/layout/group-layout';
 import {ProcessNodeApiService} from '../../../../services/process-node-api-service';
-import {Box, Button, IconButton, Skeleton, Tab, Tabs} from '@mui/material';
+import {Box, Button, IconButton, Tab, Tabs} from '@mui/material';
+import {alpha, keyframes} from '@mui/material/styles';
 import {Link, Outlet, useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {useProcessDetailsPageContext} from '../../process-details-page-context';
 import {ProviderTypeStyles} from '../../../../data/provider-type-styles';
@@ -26,6 +27,20 @@ import {useAppDispatch} from '../../../../../../hooks/use-app-dispatch';
 import {type ProcessTestClaimEntity} from '../../../../entities/process-test-claim-entity';
 import {ProcessTestClaimApiService} from '../../../../services/process-test-claim-api-service';
 import {isElementData} from '../../../../../../models/element-data';
+import {ProcessNodeEditorSkeleton} from './process-node-editor-skeleton';
+import {clearLoadingMessage, setLoadingMessage} from '../../../../../../slices/shell-slice';
+import {useDelayedVisibility} from '../../../../../../hooks/use-delayed-visibility';
+
+const PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY = 150;
+const PROCESS_NODE_EDITOR_LOADED_FEEDBACK_DURATION = 1200;
+const processNodeEditorLoadedSidebarFlash = keyframes`
+    0% {
+        background-color: ${'#f6f6f6'};
+    }
+    100% {
+        background-color: transparent;
+    }
+`;
 
 export function ProcessNodeEditor(): ReactNode {
     const params = useParams();
@@ -47,6 +62,12 @@ export function ProcessNodeEditor(): ReactNode {
     const [testClaim, setTestClaim] = useState<ProcessTestClaimEntity | null>(null);
     const [layout, setLayout] = useState<GroupLayout | null>(null);
     const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
+    const [isNodeLoading, setIsNodeLoading] = useState(false);
+    const [showNodeLoadedFeedback, setShowNodeLoadedFeedback] = useState(false);
+    const hasEditorContent = originalNode != null && layout != null && provider != null;
+    const showNodeLoadingOverlay = useDelayedVisibility(isNodeLoading, PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY);
+    const showInitialNodeEditorSkeleton = useDelayedVisibility(!hasEditorContent, PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY);
+    const hasShownShellLoadingRef = useRef(false);
 
     const nodeId = useMemo(() => {
         const nodeId = params.nodeId;
@@ -80,36 +101,63 @@ export function ProcessNodeEditor(): ReactNode {
     }, [originalNode?.processId, originalNode?.processVersion]);
 
     const {
+        hasChanged,
         dialog: changeBlockerDialog,
     } = useChangeBlocker(originalNode, editedNode);
 
     useEffect(() => {
         let isCancelled = false;
+        const hasEditorContent = originalNode != null && layout != null && provider != null;
 
-        // Reset state for newly selected node
-        setOriginalNode(null);
-        setEditedNode(null);
-        setLayout(null);
-        setProvider(null);
-        setTestClaim(null);
+        if (!hasEditorContent) {
+            setOriginalNode(null);
+            setEditedNode(null);
+            setLayout(null);
+            setProvider(null);
+            setTestClaim(null);
+        }
 
-        Promise.all([
-            new ProcessNodeApiService().retrieve(nodeId),
-            new ProcessNodeApiService().getConfigurationLayout(nodeId),
-        ])
-            .then(([node, configurationLayout]) => {
+        setIsNodeLoading(true);
+        setShowNodeLoadedFeedback(false);
+
+        (async () => {
+            const [node, configurationLayout] = await Promise.all([
+                new ProcessNodeApiService().retrieve(nodeId),
+                new ProcessNodeApiService().getConfigurationLayout(nodeId),
+            ]);
+            const nodeProvider = await new ProcessNodeProviderApiService()
+                .getNodeProvider(node.processNodeDefinitionKey, node.processNodeDefinitionVersion);
+
+            return {
+                node,
+                configurationLayout,
+                nodeProvider,
+            };
+        })()
+            .then(({node, configurationLayout, nodeProvider}) => {
                 if (isCancelled) {
                     return;
                 }
                 setOriginalNode(node);
                 setEditedNode(node);
                 setLayout(configurationLayout);
+                setProvider(nodeProvider);
+                if (hasEditorContent) {
+                    setShowNodeLoadedFeedback(true);
+                }
             })
             .catch((error) => {
                 if (isCancelled) {
                     return;
                 }
                 dispatch(showApiErrorSnackbar(error, 'Die Details für das Prozesselement konnten nicht geladen werden.'));
+            })
+            .finally(() => {
+                if (isCancelled) {
+                    return;
+                }
+
+                setIsNodeLoading(false);
             });
 
         return () => {
@@ -118,32 +166,42 @@ export function ProcessNodeEditor(): ReactNode {
     }, [nodeId]);
 
     useEffect(() => {
-        if (originalNode == null) {
-            setProvider(null);
+        if (!showNodeLoadingOverlay) {
+            if (hasShownShellLoadingRef.current) {
+                dispatch(clearLoadingMessage());
+                hasShownShellLoadingRef.current = false;
+            }
             return;
         }
 
-        let isCancelled = false;
-
-        new ProcessNodeProviderApiService()
-            .getNodeProvider(originalNode.processNodeDefinitionKey, originalNode.processNodeDefinitionVersion)
-            .then((nodeProvider) => {
-                if (isCancelled) {
-                    return;
-                }
-                setProvider(nodeProvider);
-            })
-            .catch((err) => {
-                if (isCancelled) {
-                    return;
-                }
-                dispatch(showApiErrorSnackbar(err, 'Der Anbietertyp für das Prozesselement konnte nicht geladen werden.'));
-            });
+        hasShownShellLoadingRef.current = true;
+        dispatch(setLoadingMessage({
+            message: 'Prozesselement wird geladen',
+            blocking: false,
+            estimatedTime: 500,
+        }));
 
         return () => {
-            isCancelled = true;
+            if (hasShownShellLoadingRef.current) {
+                dispatch(clearLoadingMessage());
+                hasShownShellLoadingRef.current = false;
+            }
         };
-    }, [originalNode?.processNodeDefinitionKey, originalNode?.processNodeDefinitionVersion]);
+    }, [dispatch, showNodeLoadingOverlay]);
+
+    useEffect(() => {
+        if (!showNodeLoadedFeedback) {
+            return;
+        }
+
+        const timeoutId = window.setTimeout(() => {
+            setShowNodeLoadedFeedback(false);
+        }, PROCESS_NODE_EDITOR_LOADED_FEEDBACK_DURATION);
+
+        return () => {
+            window.clearTimeout(timeoutId);
+        };
+    }, [showNodeLoadedFeedback]);
 
     const {
         Icon: TypeIcon,
@@ -173,24 +231,26 @@ export function ProcessNodeEditor(): ReactNode {
     }, [location]);
 
     const handleSaveSelected = (): void => {
-        if (editedNode != null) {
-            onSave(editedNode)
-                .then(() => {
-                    setOriginalNode(editedNode);
-                    dispatch(showSuccessSnackbar('Der Knoten wurde erfolgreich gespeichert.'));
-                })
-                .catch((err: any) => {
-                    if (isApiError(err) && err.status === 400 && isElementData(err.details)) {
-                        setEditedNode({
-                            ...editedNode,
-                            configuration: err.details,
-                        });
-                        dispatch(showErrorSnackbar('Der Knoten konnte nicht gespeichert werden, da die Konfiguration ungültig ist.'));
-                    } else {
-                        dispatch(showApiErrorSnackbar(err, 'Der Knoten konnte nicht gespeichert werden.'));
-                    }
-                });
+        if (!hasChanged || editedNode == null) {
+            return;
         }
+
+        onSave(editedNode)
+            .then(() => {
+                setOriginalNode(editedNode);
+                dispatch(showSuccessSnackbar('Der Knoten wurde erfolgreich gespeichert.'));
+            })
+            .catch((err: any) => {
+                if (isApiError(err) && err.status === 400 && isElementData(err.details)) {
+                    setEditedNode({
+                        ...editedNode,
+                        configuration: err.details,
+                    });
+                    dispatch(showErrorSnackbar('Der Knoten konnte nicht gespeichert werden, da die Konfiguration ungültig ist.'));
+                } else {
+                    dispatch(showApiErrorSnackbar(err, 'Der Knoten konnte nicht gespeichert werden.'));
+                }
+            });
     };
 
     const handleDeleteSelected = (): void => {
@@ -220,18 +280,10 @@ export function ProcessNodeEditor(): ReactNode {
             });
     };
 
-    if (originalNode == null || layout == null || provider == null) {
-        return (
-            <Box
-                sx={{
-                    px: 2,
-                }}
-            >
-                <Skeleton height={96}/>
-                <Skeleton height={96}/>
-                <Skeleton height={256}/>
-            </Box>
-        );
+    if (!hasEditorContent) {
+        return showInitialNodeEditorSkeleton ?
+            <ProcessNodeEditorSkeleton/> :
+            <Box sx={{height: '100vh'}}/>;
     }
 
     return (
@@ -241,14 +293,31 @@ export function ProcessNodeEditor(): ReactNode {
                     display: 'flex',
                     flexDirection: 'column',
                     height: '100vh',
+                    position: 'relative',
+                    animation: showNodeLoadedFeedback ? `${processNodeEditorLoadedSidebarFlash} ${PROCESS_NODE_EDITOR_LOADED_FEEDBACK_DURATION}ms ease-out` : 'none',
                 }}
             >
+                {
+                    showNodeLoadingOverlay &&
+                    <Box
+                        sx={{
+                            position: 'absolute',
+                            inset: 0,
+                            zIndex: 2,
+                            bgcolor: 'rgba(255, 255, 255, 0.42)',
+                            backdropFilter: 'blur(1.5px)',
+                        }}
+                    />
+                }
                 <Box
                     sx={{
                         flex: 1,
                         display: 'flex',
                         flexDirection: 'column',
                         overflow: 'hidden',
+                        pointerEvents: isNodeLoading ? 'none' : 'auto',
+                        opacity: showNodeLoadingOverlay ? 0.78 : 1,
+                        transition: 'opacity 140ms ease',
                     }}
                 >
                     <Box
@@ -257,9 +326,9 @@ export function ProcessNodeEditor(): ReactNode {
                             alignItems: 'center',
                             gap: 2,
                             px: 2,
-                            pt: 1,
-                            bgcolor: 'background.paper',
-                            zIndex: 2,
+                            pt: 1.5,
+                            pb: 0.5,
+                            minWidth: 0,
                         }}
                     >
                         <Box
@@ -269,6 +338,10 @@ export function ProcessNodeEditor(): ReactNode {
                                 justifyContent: 'center',
                                 width: 32,
                                 height: 32,
+                                minWidth: 32,
+                                minHeight: 32,
+                                aspectRatio: '1 / 1',
+                                flexShrink: 0,
                                 borderRadius: '50%',
                                 backgroundColor: typeBgColor,
                                 color: typeTextColor,
@@ -277,29 +350,60 @@ export function ProcessNodeEditor(): ReactNode {
                             <TypeIcon/>
                         </Box>
 
-                        <Box>
-                            <Typography variant="caption">
+                        <Box
+                            sx={{
+                                flex: 1,
+                                minWidth: 0,
+                            }}
+                        >
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    display: 'block',
+                                    lineHeight: 1.2,
+                                    mt: 0.5,
+                                }}
+                            >
                                 {typeLabel}
                             </Typography>
 
-                            <Typography
-                                fontWeight="bold"
-                                component="div"
-                            >
-                                {provider.name} <Chip
-                                label={`Version ${provider.majorVersion}`}
-                                size="small"
+                            <Box
                                 sx={{
-                                    ml: 1,
-                                    fontWeight: 'normal',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1,
+                                    minWidth: 0,
                                 }}
-                            />
-                            </Typography>
+                            >
+                                <Typography
+                                    fontWeight="bold"
+                                    component="div"
+                                    title={provider.name}
+                                    sx={{
+                                        flex: 1,
+                                        minWidth: 0,
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                    }}
+                                >
+                                    {provider.name}
+                                </Typography>
+                                <Chip
+                                    label={`Version ${provider.majorVersion}`}
+                                    size="small"
+                                    sx={{
+                                        fontWeight: 'normal',
+                                        flexShrink: 0,
+                                    }}
+                                />
+                            </Box>
                         </Box>
 
                         <IconButton
                             sx={{
                                 marginLeft: 'auto',
+                                flexShrink: 0,
                             }}
                             onClick={(event) => {
                                 setMenuAnchorEl(event.target as HTMLElement);
@@ -315,8 +419,8 @@ export function ProcessNodeEditor(): ReactNode {
                             navigate(`/processes/${params.processId}/versions/${params.processVersion}/nodes/${originalNode.id}/tabs/${value}?${searchParams.toString()}`);
                         }}
                         sx={{
-                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-                            zIndex: 1,
+                            mt: 0.25,
+                            borderBottom: '1px solid #ddd',
                         }}
                     >
                         <Tab
@@ -380,7 +484,7 @@ export function ProcessNodeEditor(): ReactNode {
                         mt: 'auto',
                         px: 2,
                         pt: 2,
-                        pb: 4,
+                        pb: 2.5,
                         display: 'flex',
                         justifyContent: 'space-between',
                     }}
@@ -389,8 +493,9 @@ export function ProcessNodeEditor(): ReactNode {
                         onClick={handleSaveSelected}
                         variant="contained"
                         startIcon={<Save/>}
+                        disabled={!hasChanged || isNodeLoading}
                     >
-                        Knoten speichern
+                        Konfiguration speichern
                     </Button>
 
                     <Button

@@ -1,5 +1,5 @@
 import React, {type ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
-import {Box, Chip, Paper, Typography} from '@mui/material';
+import {Box, Button, Chip, Divider, Paper, Typography} from '@mui/material';
 import {Outlet, useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {type ProcessEntity} from '../../entities/process-entity';
 import {ProcessDefinitionVersionApiService} from '../../services/process-definition-version-api-service';
@@ -10,10 +10,8 @@ import {ProcessDefinitionEdgeApiService} from '../../services/process-definition
 import {type ProcessVersionEntity} from '../../entities/process-version-entity';
 import {ProcessNodeApiService} from '../../services/process-node-api-service';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
-import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {GenericPageHeader} from '../../../../components/generic-page-header/generic-page-header';
-import Add from '@aivot/mui-material-symbols-400-outlined/dist/add/Add';
 import {
     type ProcessNodeProvider,
     ProcessNodeProviderApiService,
@@ -32,6 +30,7 @@ import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snac
 import {ProcessFlowEditor} from './components/process-flow-editor/process-flow-editor';
 import {ReactFlowProvider} from '@xyflow/react';
 import {ProcessDetailsPageProvider} from './process-details-page-context';
+import {Allotment} from 'allotment';
 import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
 import {
     ProcessDetailsPageMoreMenu,
@@ -52,10 +51,21 @@ import {ProcessInstanceApiService} from '../../services/process-instance-api-ser
 import {ProcessInstanceTaskApiService} from '../../services/process-instance-task-api-service';
 import {BaseApiService} from '../../../../services/base-api-service';
 import Download from '@aivot/mui-material-symbols-400-outlined/dist/download/Download';
-import Refresh from '@mui/icons-material/Refresh';
-import BugReport from '@aivot/mui-material-symbols-400-outlined/dist/bug-report/BugReport';
 import {ProcessInstanceEventDialog} from '../../dialogs/process-instance-event-dialog';
+import {getProcessNodeProviderKey} from './components/process-flow-editor/utils/process-flow-graph-utils';
+import {ProcessDetailsPageSkeleton} from './components/process-details-page-skeleton';
+import {useDelayedVisibility} from '../../../../hooks/use-delayed-visibility';
+import Undo from '@mui/icons-material/Undo';
+import Redo from '@mui/icons-material/Redo';
+import Refresh from '@mui/icons-material/Refresh';
+import DeleteOutline from '@mui/icons-material/DeleteOutline';
+import Settings from '@aivot/mui-material-symbols-400-outlined/dist/settings/Settings';
+import {type Action} from '../../../../components/actions/actions-props';
+import HomeStorage from '@aivot/mui-material-symbols-400-outlined/dist/home-storage/HomeStorage';
 import News from '@aivot/mui-material-symbols-400-outlined/dist/news/News';
+import {ProcessConnectExistingNodeDialog} from './components/process-connect-existing-node-dialog';
+
+const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 150;
 
 interface RuntimeAttachment {
     key: string;
@@ -85,6 +95,10 @@ export function ProcessDetailsPage(): ReactNode {
     } | null>(null);
     const [isRefreshingRuntimeData, setIsRefreshingRuntimeData] = useState(false);
     const [availableNodeProviders, setAvailableNodeProviders] = useState<ProcessNodeProvider[]>([]);
+    const [flowNodeProviderCache, setFlowNodeProviderCache] = useState<Record<string, ProcessNodeProvider>>({});
+    const [isLoadingFlowNodeProviders, setIsLoadingFlowNodeProviders] = useState(false);
+    const [hasFlowNodeProviderLoadError, setHasFlowNodeProviderLoadError] = useState(false);
+    const [readyFlowEditorKey, setReadyFlowEditorKey] = useState<string | null>(null);
 
     const [showAddTriggerDialog, setShowAddTriggerDialog] = useState(false);
     const [newNodeFor, setNewNodeFor] = useState<{
@@ -92,6 +106,10 @@ export function ProcessDetailsPage(): ReactNode {
         viaPort: string;
     } | null>(null);
     const [newNodeOnEdgeId, setNewNodeOnEdgeId] = useState<number | null>(null);
+    const [connectExistingNodeRequest, setConnectExistingNodeRequest] = useState<{
+        sourceNodeId: number;
+        preferredPortKey: string | null;
+    } | null>(null);
 
     const [currentTestClaim, setCurrentTestClaim] = useState<{
         claim: ProcessTestClaimEntity;
@@ -100,6 +118,15 @@ export function ProcessDetailsPage(): ReactNode {
 
     const [showMenuAtEl, setShowMenuAtEl] = useState<HTMLElement | null>(null);
     const [showProcessInstanceEventsDialog, setShowProcessInstanceEventsDialog] = useState(false);
+    const showProcessDetailsPageSkeleton = useDelayedVisibility(processFlow == null, PROCESS_DETAILS_PAGE_SKELETON_DELAY);
+
+    useEffect(() => {
+        document.body.dataset.hasFlowEditor = 'true';
+
+        return () => {
+            delete document.body.dataset.hasFlowEditor;
+        };
+    }, []);
 
     const runtimeAttachments = useMemo(() => {
         if (runtimeData == null) {
@@ -200,6 +227,46 @@ export function ProcessDetailsPage(): ReactNode {
         return parseInt(instanceIdParam);
     }, [searchParams]);
 
+    const requiredFlowNodeProviders = useMemo(() => {
+        if (processFlow == null) {
+            return [];
+        }
+
+        return Array.from(new Map(
+            processFlow.nodes.map((node) => [
+                getProcessNodeProviderKey(node.processNodeDefinitionKey, node.processNodeDefinitionVersion),
+                {
+                    key: node.processNodeDefinitionKey,
+                    version: node.processNodeDefinitionVersion,
+                },
+            ]),
+        ).values());
+    }, [processFlow?.nodes]);
+
+    const requiredFlowNodeProviderSignature = useMemo(() => (
+        requiredFlowNodeProviders
+            .map((providerReference) => getProcessNodeProviderKey(providerReference.key, providerReference.version))
+            .sort()
+            .join('|')
+    ), [requiredFlowNodeProviders]);
+
+    const flowEditorKey = useMemo(() => {
+        if (processFlow == null) {
+            return null;
+        }
+
+        return `${processFlow.definition.id}:${processFlow.version.processVersion}`;
+    }, [processFlow]);
+
+    const flowNodeProviders = useMemo(() => (
+        requiredFlowNodeProviders
+            .map((providerReference) => flowNodeProviderCache[getProcessNodeProviderKey(providerReference.key, providerReference.version)])
+            .filter((provider): provider is ProcessNodeProvider => provider != null)
+    ), [flowNodeProviderCache, requiredFlowNodeProviders]);
+
+    const isFlowEditorReady = requiredFlowNodeProviderSignature.length === 0 || flowNodeProviders.length === requiredFlowNodeProviders.length;
+    const shouldKeepFlowEditorMounted = flowEditorKey != null && readyFlowEditorKey === flowEditorKey;
+
     const selectedNode = useMemo(() => {
         if (processFlow == null) {
             return null;
@@ -279,6 +346,75 @@ export function ProcessDetailsPage(): ReactNode {
                 dispatch(showApiErrorSnackbar(err, 'Die Testansprüche konnten nicht geladen werden.'));
             });
     }, [processId, processVersion]);
+
+    useEffect(() => {
+        if (requiredFlowNodeProviders.length === 0) {
+            setIsLoadingFlowNodeProviders(false);
+            setHasFlowNodeProviderLoadError(false);
+            return;
+        }
+
+        const missingProviderReferences = requiredFlowNodeProviders.filter((providerReference) => (
+            flowNodeProviderCache[getProcessNodeProviderKey(providerReference.key, providerReference.version)] == null
+        ));
+
+        if (missingProviderReferences.length === 0) {
+            setIsLoadingFlowNodeProviders(false);
+            setHasFlowNodeProviderLoadError(false);
+            return;
+        }
+
+        let cancelled = false;
+
+        setIsLoadingFlowNodeProviders(true);
+        setHasFlowNodeProviderLoadError(false);
+
+        Promise.all(missingProviderReferences.map((providerReference) => (
+            new ProcessNodeProviderApiService().getNodeProvider(providerReference.key, providerReference.version)
+        )))
+            .then((providers) => {
+                if (cancelled) {
+                    return;
+                }
+
+                setFlowNodeProviderCache((previousCache) => {
+                    const nextCache = {
+                        ...previousCache,
+                    };
+
+                    for (const provider of providers) {
+                        nextCache[getProcessNodeProviderKey(provider.key, provider.majorVersion)] = provider;
+                    }
+
+                    return nextCache;
+                });
+            })
+            .catch((error) => {
+                if (cancelled) {
+                    return;
+                }
+
+                setHasFlowNodeProviderLoadError(true);
+                dispatch(showApiErrorSnackbar(error, 'Die für die Prozessansicht benötigten Knotendefinitionen konnten nicht geladen werden.'));
+            })
+            .finally(() => {
+                if (cancelled) {
+                    return;
+                }
+
+                setIsLoadingFlowNodeProviders(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [dispatch, flowNodeProviderCache, requiredFlowNodeProviders]);
+
+    useEffect(() => {
+        if (isFlowEditorReady && flowEditorKey != null && readyFlowEditorKey !== flowEditorKey) {
+            setReadyFlowEditorKey(flowEditorKey);
+        }
+    }, [flowEditorKey, isFlowEditorReady, readyFlowEditorKey]);
 
     const loadRuntimeData = useCallback(() => {
         if (instanceId == null) {
@@ -402,6 +538,17 @@ export function ProcessDetailsPage(): ReactNode {
         const edgeApi = new ProcessDefinitionEdgeApiService();
 
         if (existingEdge != null) {
+            if (nodeProvider.ports.length === 0) {
+                dispatch(addSnackbarMessage({
+                    key: 'process-follow-up-node-missing-port',
+                    type: SnackbarType.AutoHiding,
+                    severity: SnackbarSeverity.Warning,
+                    message: 'Dieser Knotentyp kann hier nicht eingefügt werden, da er keinen Ausgangsport besitzt.',
+                }));
+                dispatch(clearLoadingMessage());
+                return;
+            }
+
             await edgeApi.destroy(existingEdge.id);
         }
 
@@ -465,6 +612,17 @@ export function ProcessDetailsPage(): ReactNode {
             estimatedTime: 1000,
         }));
 
+        if (nodeProvider.ports.length === 0) {
+            dispatch(addSnackbarMessage({
+                key: 'process-inbetween-node-missing-port',
+                type: SnackbarType.AutoHiding,
+                severity: SnackbarSeverity.Warning,
+                message: 'Dieser Knotentyp kann hier nicht eingefügt werden, da er keinen Ausgangsport besitzt.',
+            }));
+            dispatch(clearLoadingMessage());
+            return;
+        }
+
         const edgeApi = new ProcessDefinitionEdgeApiService();
 
         await edgeApi.destroy(existingEdge.id);
@@ -521,10 +679,47 @@ export function ProcessDetailsPage(): ReactNode {
             return;
         }
 
+        const nodeProvider = flowNodeProviderCache[getProcessNodeProviderKey(
+            node.processNodeDefinitionKey,
+            node.processNodeDefinitionVersion,
+        )];
+        const incomingEdges = processFlow.edges.filter((edge) => edge.toNodeId === node.id);
+        const outgoingEdges = processFlow.edges.filter((edge) => edge.fromNodeId === node.id);
         const edgesToRemove = processFlow.edges.filter((edge) => (
             edge.fromNodeId === node.id ||
             edge.toNodeId === node.id
         ));
+        const remainingEdges = processFlow.edges.filter((edge) => (
+            !edgesToRemove.some((edgeToRemove) => edgeToRemove.id === edge.id)
+        ));
+        const bridgeTargetEdge = nodeProvider?.ports.length === 1 && outgoingEdges.length === 1
+            ? outgoingEdges[0]
+            : null;
+        const bridgeEdgePayloads = bridgeTargetEdge == null
+            ? []
+            : incomingEdges
+                .map((incomingEdge) => ({
+                    id: 0,
+                    processId: processFlow.definition.id,
+                    processVersion: processFlow.version.processVersion,
+                    fromNodeId: incomingEdge.fromNodeId,
+                    toNodeId: bridgeTargetEdge.toNodeId,
+                    viaPort: incomingEdge.viaPort,
+                }))
+                .filter((payload, index, payloads) => (
+                    payload.fromNodeId !== node.id &&
+                    payload.toNodeId !== node.id &&
+                    !remainingEdges.some((edge) => (
+                        edge.fromNodeId === payload.fromNodeId &&
+                        edge.toNodeId === payload.toNodeId &&
+                        edge.viaPort === payload.viaPort
+                    )) &&
+                    payloads.findIndex((candidate) => (
+                        candidate.fromNodeId === payload.fromNodeId &&
+                        candidate.toNodeId === payload.toNodeId &&
+                        candidate.viaPort === payload.viaPort
+                    )) === index
+                ));
 
         const edgeApi = new ProcessDefinitionEdgeApiService();
 
@@ -534,10 +729,17 @@ export function ProcessDetailsPage(): ReactNode {
         await new ProcessNodeApiService()
             .destroy(node.id);
 
+        const createdBridgeEdges = await Promise.all(
+            bridgeEdgePayloads.map((payload) => edgeApi.create(payload)),
+        );
+
         setProcessFlow({
             ...processFlow,
             nodes: processFlow.nodes.filter((n) => n.id !== node.id),
-            edges: processFlow.edges.filter((e) => !edgesToRemove.some((er) => er.id === e.id)),
+            edges: [
+                ...remainingEdges,
+                ...createdBridgeEdges,
+            ],
         });
 
         await navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}`);
@@ -607,6 +809,47 @@ export function ProcessDetailsPage(): ReactNode {
             });
     };
 
+    const handleEndTestClaim = useCallback((): void => {
+        if (currentTestClaim == null) {
+            return;
+        }
+
+        confirm({
+            title: 'Testanspruch löschen',
+            children: (
+                <Typography>
+                    Möchten Sie den Testanspruch wirklich löschen? Dadurch wird der
+                    Test für diesen Prozess sofort beendet und die Bearbeitung des
+                    Prozesses wieder freigegeben.
+                    Alle gestarteten Vorgänge werden dabei beendet und gelöscht.
+                </Typography>
+            ),
+            confirmButtonText: 'Testanspruch löschen',
+        })
+            .then((confirmed) => {
+                if (!confirmed) {
+                    return;
+                }
+
+                return new ProcessTestClaimApiService()
+                    .destroy(currentTestClaim.claim.id)
+                    .then(() => {
+                        setCurrentTestClaim(null);
+                        setRuntimeData(null);
+                        dispatch(showSuccessSnackbar('Testanspruch wurde gelöscht.'));
+
+                        if (instanceId != null) {
+                            const nextSearchParams = new URLSearchParams(searchParams);
+                            nextSearchParams.delete('instanceId');
+                            setSearchParams(nextSearchParams);
+                        }
+                    });
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Der Testanspruch konnte nicht gelöscht werden.'));
+            });
+    }, [confirm, currentTestClaim, dispatch, instanceId, searchParams, setSearchParams]);
+
     const handleMenuEvent = (event: ProcessDetailsPageMoreMenuEvent): void => {
         switch (event) {
             case 'export':
@@ -619,19 +862,161 @@ export function ProcessDetailsPage(): ReactNode {
                 navigate(`/process-instances?processId=${processFlow?.definition.id}&processVersion=${processFlow?.version.processVersion}`);
                 break;
             default:
-                dispatch(addSnackbarMessage({
-                    key: 'unknown-process-details-event',
-                    type: SnackbarType.AutoHiding,
-                    severity: SnackbarSeverity.Info,
-                    message: 'Diese Funktion ist noch nicht implementiert.',
-                }));
+                showNotImplementedHeaderActionMessage();
                 break;
         }
     };
+    const showNotImplementedHeaderActionMessage = useCallback(() => {
+        dispatch(addSnackbarMessage({
+            key: 'unknown-process-details-event',
+            type: SnackbarType.AutoHiding,
+            severity: SnackbarSeverity.Info,
+            message: 'Diese Funktion ist noch nicht implementiert.',
+        }));
+    }, [dispatch]);
+    const handleOpenAddTriggerDialog = useCallback(() => {
+        setShowAddTriggerDialog(true);
+    }, []);
+    const handleCreateEdge = useCallback((fromNodeId: number, toNodeId: number, viaPortKey: string): void => {
+        if (processFlow == null) {
+            return;
+        }
+
+        new ProcessDefinitionEdgeApiService()
+            .create({
+                id: 0,
+                processId: processFlow.definition.id,
+                processVersion: processFlow.version.processVersion,
+                fromNodeId,
+                toNodeId,
+                viaPort: viaPortKey,
+            })
+            .then((newEdge) => {
+                setProcessFlow((prevProcess) => {
+                    if (prevProcess == null) {
+                        return prevProcess;
+                    }
+
+                    return {
+                        ...prevProcess,
+                        edges: [
+                            ...prevProcess.edges,
+                            newEdge,
+                        ],
+                    };
+                });
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Die Verbindung konnte nicht erstellt werden.'));
+            });
+    }, [dispatch, processFlow]);
+    const headerActions = useMemo<Action[]>(() => {
+        const isInTestMode = currentTestClaim != null;
+        const runtimeActions: Action[] = instanceId == null ? [] : [
+            {
+                tooltip: 'Laufzeitdaten neu laden',
+                ariaLabel: 'Laufzeitdaten neu laden',
+                icon: <Refresh/>,
+                onClick: () => {
+                    void loadRuntimeData();
+                },
+                disabled: isRefreshingRuntimeData,
+            },
+            {
+                tooltip: 'Vorgangsereignisse anzeigen',
+                ariaLabel: 'Vorgangsereignisse anzeigen',
+                icon: <News/>,
+                onClick: () => {
+                    setShowProcessInstanceEventsDialog(true);
+                },
+                disabled: runtimeData == null,
+            },
+            'separator' as const,
+        ];
+
+        return [
+            ...runtimeActions,
+            ...(!isInTestMode ? [
+                {
+                    tooltip: 'Rückgängig',
+                    ariaLabel: 'Rückgängig',
+                    icon: <Undo/>,
+                    onClick: showNotImplementedHeaderActionMessage,
+                },
+                {
+                    tooltip: 'Wiederholen',
+                    ariaLabel: 'Wiederholen',
+                    icon: <Redo/>,
+                    onClick: showNotImplementedHeaderActionMessage,
+                    disabled: true,
+                },
+                'separator' as const,
+            ] : []),
+            {
+                tooltip: 'Versionen',
+                ariaLabel: 'Versionen',
+                icon: <HomeStorage/>,
+                onClick: showNotImplementedHeaderActionMessage,
+            },
+            {
+                tooltip: 'Einstellungen',
+                ariaLabel: 'Einstellungen',
+                icon: <Settings/>,
+                onClick: showNotImplementedHeaderActionMessage,
+            },
+            {
+                tooltip: 'Weitere Optionen',
+                ariaLabel: 'Weitere Optionen',
+                icon: <MoreVert/>,
+                onClick: (event) => {
+                    setShowMenuAtEl(event.currentTarget as HTMLElement);
+                },
+            },
+            'separator',
+            {
+                label: 'Veröffentlichen',
+                tooltip: 'Prozessversion veröffentlichen',
+                disabledTooltip: 'Während des Tests kann der Prozess nicht veröffentlicht werden.',
+                icon: null,
+                onClick: showNotImplementedHeaderActionMessage,
+                variant: 'contained',
+                disabled: isInTestMode,
+                activeStyle: {ml: 1}
+            },
+        ];
+    }, [
+        currentTestClaim,
+        instanceId,
+        isRefreshingRuntimeData,
+        loadRuntimeData,
+        runtimeData,
+        showNotImplementedHeaderActionMessage,
+    ]);
+    const connectExistingNodeSource = useMemo(() => {
+        if (processFlow == null || connectExistingNodeRequest == null) {
+            return null;
+        }
+
+        return processFlow.nodes.find((node) => node.id === connectExistingNodeRequest.sourceNodeId) ?? null;
+    }, [connectExistingNodeRequest, processFlow]);
 
     if (processFlow == null) {
+        if (showProcessDetailsPageSkeleton) {
+            return <ProcessDetailsPageSkeleton/>;
+        }
+
         return (
-            <GenericDetailsSkeleton/>
+            <PageWrapper
+                title="Prozess"
+                fullWidth={true}
+                fullHeight={true}
+            >
+                <Box
+                    sx={{
+                        height: '100vh',
+                    }}
+                />
+            </PageWrapper>
         );
     }
 
@@ -643,264 +1028,278 @@ export function ProcessDetailsPage(): ReactNode {
         >
             <Box
                 sx={{
-                    display: 'flex',
                     height: '100vh',
+                    '--focus-border': (theme) => theme.palette.secondary.main,
                 }}
             >
-                <Box
-                    sx={{
-                        flex: 1,
-                        px: 2,
-                        py: 2,
-                        height: '100vh',
-                        display: 'flex',
-                        flexDirection: 'column',
-                    }}
-                >
-                    <GenericPageHeader
-                        title={'Prozess: ' + processFlow.definition.internalTitle}
-                        badge={
-                            currentTestClaim != null ?
-                                [
-                                    {
-                                        color: 'default',
-                                        label: `Version ${processFlow.version.processVersion}`,
-                                    },
-                                    {
-                                        color: 'warning',
-                                        label: `Im Test durch ${resolveUserName(currentTestClaim.user)}`,
-                                        onDelete: () => {
-                                            confirm({
-                                                title: 'Testanspruch löschen',
-                                                children: (
-                                                    <Typography>
-                                                        Möchten Sie den Testanspruch wirklich löschen? Dadurch wird der
-                                                        Test für diesen Prozess sofort beendet und die Bearbeitung des
-                                                        Prozesses wieder freigegeben.
-                                                        Alle gestarteten Vorgänge werden dabei beendet und gelöscht.
-                                                    </Typography>
-                                                ),
-                                                confirmButtonText: 'Testanspruch löschen',
-                                            })
-                                                .then((confirmed) => {
-                                                    if (!confirmed) {
-                                                        return;
-                                                    }
-
-                                                    new ProcessTestClaimApiService()
-                                                        .destroy(currentTestClaim.claim.id)
-                                                        .then(() => {
-                                                            setCurrentTestClaim(null);
-                                                            setRuntimeData(null);
-                                                            dispatch(showSuccessSnackbar('Testanspruch wurde gelöscht.'));
-
-                                                            if (instanceId != null) {
-                                                                const nextSearchParams = new URLSearchParams(searchParams);
-                                                                nextSearchParams.delete('instanceId');
-                                                                setSearchParams(nextSearchParams);
-                                                            }
-                                                        })
-                                                        .catch((err) => {
-                                                            dispatch(showApiErrorSnackbar(err, 'Der Testanspruch konnte nicht gelöscht werden.'));
-                                                        });
-                                                })
-                                                .catch((err) => {
-                                                    dispatch(showApiErrorSnackbar(err, 'Der Testanspruch konnte nicht gelöscht werden.'));
-                                                });
-                                        },
-                                    },
-                                ] :
-                                {
-                                    color: 'default',
-                                    label: `Version ${processFlow.version.processVersion}`,
-                                }
-                        }
-                        icon={ModuleIcons.processes}
-                        actions={[
-                            {
-                                tooltip: 'Laufzeitdaten neu laden',
-                                icon: <Refresh/>,
-                                onClick: () => {
-                                    void loadRuntimeData();
-                                },
-                                visible: instanceId != null,
-                                disabled: isRefreshingRuntimeData,
-                            },
-                            {
-                                tooltip: 'Vorgangsereignisse anzeigen',
-                                icon: <News/>,
-                                onClick: () => {
-                                    setShowProcessInstanceEventsDialog(true);
-                                },
-                                visible: runtimeData != null,
-                            },
-                            /*
-                            {
-                                tooltip: 'Historie anzeigen',
-                                icon: <AccessTimeIcon/>,
-                                onClick: () => {
-                                    setShowRevisions(true);
-                                },
-                                visible: canViewHistory,
-                            },
-                             */
-                            {
-                                label: 'Auslöser',
-                                tooltip: 'Neuen Auslöser hinzufügen',
-                                disabledTooltip: 'Während des Tests können keine Auslöser hinzugefügt werden.',
-                                icon: <Add/>,
-                                onClick: () => {
-                                    setShowAddTriggerDialog(true);
-                                },
-                                disabled: currentTestClaim != null,
-                                variant: 'contained',
-                            },
-                            {
-                                tooltip: 'Mehr',
-                                icon: <MoreVert/>,
-                                onClick: (event) => {
-                                    setShowMenuAtEl(event.target as HTMLElement);
-                                },
-                            },
-                        ]}
-                    />
-
-                    <Box
-                        sx={{
-                            flex: 1,
-                            minHeight: 0,
-                            borderRadius: 1,
-                            mt: 2,
-                        }}
-                    >
-                        <ReactFlowProvider>
-                            <ProcessFlowEditor
-                                editable={currentTestClaim == null}
-                                processFlow={processFlow}
-                                nodeProviders={availableNodeProviders}
-                                selectedNode={selectedNode}
-                                onSelectNode={(node) => {
-                                    if (node == null) {
-                                        navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}?${searchParams.toString()}`);
-                                        return;
-                                    }
-                                    navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}/nodes/${node.id}?${searchParams.toString()}`);
-                                }}
-                                onAddFollowUpNode={(fromNodeId, viaPort) => {
-                                    setNewNodeFor({
-                                        fromNodeId,
-                                        viaPort,
-                                    });
-                                }}
-                                onAddInbetweenNode={(forEdgeId) => {
-                                    setNewNodeOnEdgeId(forEdgeId);
-                                }}
-                                onAddEdge={(fromNodeId, toNodeId, viaPortKey) => {
-                                    new ProcessDefinitionEdgeApiService()
-                                        .create({
-                                            id: 0,
-                                            processId: processFlow.definition.id,
-                                            processVersion: processFlow.version.processVersion,
-                                            fromNodeId,
-                                            toNodeId,
-                                            viaPort: viaPortKey,
-                                        })
-                                        .then((newEdge) => {
-                                            setProcessFlow((prevProcess) => {
-                                                if (prevProcess == null) {
-                                                    return prevProcess;
-                                                }
-
-                                                return {
-                                                    ...prevProcess,
-                                                    edges: [
-                                                        ...prevProcess.edges,
-                                                        newEdge,
-                                                    ],
-                                                };
-                                            });
-                                        });
-                                }}
-                                onDeleteEdge={(edgeId) => {
-                                    new ProcessDefinitionEdgeApiService()
-                                        .destroy(edgeId)
-                                        .then(() => {
-                                            setProcessFlow((prevProcess) => {
-                                                if (prevProcess == null) {
-                                                    return prevProcess;
-                                                }
-
-                                                return {
-                                                    ...prevProcess,
-                                                    edges: prevProcess.edges.filter((edge) => edge.id !== edgeId),
-                                                };
-                                            });
-                                        });
-                                }}
-                                runtimeData={runtimeData}
-                            />
-                        </ReactFlowProvider>
-                    </Box>
-
-                    {
-                        runtimeData != null && runtimeAttachments.length > 0 &&
-                        <Paper
+                <Allotment>
+                    <Allotment.Pane minSize={760}>
+                        <Box
                             sx={{
-                                mt: 2,
-                                p: 2,
+                                px: 2,
+                                py: 2,
+                                height: '100%',
                                 display: 'flex',
-                                flexWrap: 'wrap',
-                                alignItems: 'center',
-                                gap: 1,
+                                flexDirection: 'column',
                             }}
                         >
-                            <Typography variant="h6">
-                                Anhänge
-                            </Typography>
+                            <GenericPageHeader
+                                title={'Prozess: ' + processFlow.definition.internalTitle}
+                                badge={{
+                                    color: 'default',
+                                    label: `Version ${processFlow.version.processVersion}`,
+                                }}
+                                icon={ModuleIcons.processes}
+                                actions={headerActions}
+                            />
+
+                            <Box
+                                sx={{
+                                    flex: 1,
+                                    minHeight: 0,
+                                    borderRadius: 1,
+                                    mt: 2,
+                                    mb: -2, // compensate for parent `py: 2`
+                                    ml: -2, // compensate for parent `px: 2`
+                                    mr: -2, // compensate for parent `px: 2`
+                                }}
+                            >
+                                {
+                                    isFlowEditorReady || shouldKeepFlowEditorMounted ?
+                                        <ReactFlowProvider>
+                                            <ProcessFlowEditor
+                                                editable={currentTestClaim == null}
+                                                processFlow={processFlow}
+                                                nodeProviders={flowNodeProviders}
+                                                onAddTrigger={handleOpenAddTriggerDialog}
+                                                topLeftPanel={
+                                                    currentTestClaim == null ? undefined : (
+                                                        <Box
+                                                            sx={{
+                                                                display: 'flex',
+                                                                flexDirection: 'column',
+                                                                alignItems: 'flex-start',
+                                                                gap: 0,
+                                                            }}
+                                                        >
+                                                            <Box
+                                                                sx={{
+                                                                    width: '100%',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: 0.75,
+                                                                }}
+                                                            >
+                                                                <Box
+                                                                    className="process-flow-editor-status-dot"
+                                                                    sx={{
+                                                                        width: 10,
+                                                                        height: 10,
+                                                                        borderRadius: '50%',
+                                                                        color: 'warning.main',
+                                                                        bgcolor: 'currentColor',
+                                                                        flexShrink: 0,
+                                                                        transform: 'translateY(-1px)',
+                                                                        mr: 0.25,
+                                                                    }}
+                                                                />
+                                                                <Typography
+                                                                    variant="caption"
+                                                                    sx={{
+                                                                        color: 'warning.dark',
+                                                                        fontWeight: 700,
+                                                                        letterSpacing: 0.3,
+                                                                        textTransform: 'uppercase',
+                                                                        mr: 2,
+                                                                    }}
+                                                                >
+                                                                    Testmodus
+                                                                </Typography>
+                                                                <Button
+                                                                    size="small"
+                                                                    color="warning"
+                                                                    variant="text"
+                                                                    onClick={handleEndTestClaim}
+                                                                    sx={{
+                                                                        minWidth: 0,
+                                                                        ml: 'auto',
+                                                                        px: 0.5,
+                                                                        py: 0.125,
+                                                                        borderRadius: 1,
+                                                                        fontSize: '0.75rem',
+                                                                        fontWeight: 600,
+                                                                        lineHeight: 1.2,
+                                                                        textTransform: 'none',
+                                                                        transform: 'translateY(-1px)',
+                                                                    }}
+                                                                >
+                                                                    Beenden
+                                                                </Button>
+                                                            </Box>
+                                                            <Divider
+                                                                sx={{
+                                                                    width: 'calc(100% + 24px)',
+                                                                    mx: '-12px',
+                                                                    mt: 1,
+                                                                    mb: 1.25,
+                                                                    borderColor: 'rgba(15, 23, 42, 0.12)',
+                                                                }}
+                                                            />
+                                                            <Typography
+                                                                variant="body2"
+                                                                title={resolveUserName(currentTestClaim.user)}
+                                                                sx={{
+                                                                    maxWidth: '100%',
+                                                                    overflow: 'hidden',
+                                                                    textOverflow: 'ellipsis',
+                                                                    whiteSpace: 'nowrap',
+                                                                    color: 'text.secondary',
+                                                                    fontSize: '0.8125rem',
+                                                                    fontWeight: 500,
+                                                                    lineHeight: 1.3,
+                                                                }}
+                                                            >
+                                                                Im Test durch {resolveUserName(currentTestClaim.user)}
+                                                            </Typography>
+                                                        </Box>
+                                                    )
+                                                }
+                                                selectedNode={selectedNode}
+                                                onSelectNode={(node) => {
+                                                    if (node == null) {
+                                                        navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}?${searchParams.toString()}`);
+                                                        return;
+                                                    }
+                                                    navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}/nodes/${node.id}?${searchParams.toString()}`);
+                                                }}
+                                                onAddFollowUpNode={(fromNodeId, viaPort) => {
+                                                    setNewNodeFor({
+                                                        fromNodeId,
+                                                        viaPort,
+                                                    });
+                                                }}
+                                                onAddInbetweenNode={(forEdgeId) => {
+                                                    setNewNodeOnEdgeId(forEdgeId);
+                                                }}
+                                                onAddEdge={handleCreateEdge}
+                                                onConnectNodeToExisting={(node, preferredPortKey) => {
+                                                    setConnectExistingNodeRequest({
+                                                        sourceNodeId: node.id,
+                                                        preferredPortKey: preferredPortKey ?? null,
+                                                    });
+                                                }}
+                                                onDeleteEdge={(edgeId) => {
+                                                    new ProcessDefinitionEdgeApiService()
+                                                        .destroy(edgeId)
+                                                        .then(() => {
+                                                            setProcessFlow((prevProcess) => {
+                                                                if (prevProcess == null) {
+                                                                    return prevProcess;
+                                                                }
+
+                                                                return {
+                                                                    ...prevProcess,
+                                                                    edges: prevProcess.edges.filter((edge) => edge.id !== edgeId),
+                                                                };
+                                                            });
+                                                        });
+                                                }}
+                                                onDeleteNode={handleDeleteNode}
+                                                runtimeData={runtimeData}
+                                            />
+                                        </ReactFlowProvider> :
+                                        <Paper
+                                            sx={{
+                                                height: '100%',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                p: 2,
+                                            }}
+                                        >
+                                            <Typography color="text.secondary">
+                                                {
+                                                    hasFlowNodeProviderLoadError ?
+                                                        'Die versionierten Prozessknoten konnten nicht geladen werden.' :
+                                                        isLoadingFlowNodeProviders ?
+                                                            'Lade versionierte Prozessknoten...' :
+                                                            'Bereite Prozessknoten vor...'
+                                                }
+                                            </Typography>
+                                        </Paper>
+                                }
+                            </Box>
 
                             {
-                                runtimeAttachments.map((attachment) => (
-                                    <Chip
-                                        key={attachment.key}
-                                        variant="outlined"
-                                        label={attachment.fileName}
-                                        sx={{
-                                            maxWidth: 320,
-                                            '& .MuiChip-label': {
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                            },
-                                        }}
-                                        onDelete={() => {
-                                            void handleDownloadAttachment(attachment);
-                                        }}
-                                        deleteIcon={
-                                            <Download color="primary"/>
-                                        }
-                                    />
-                                ))
-                            }
-                        </Paper>
-                    }
-                </Box>
+                                runtimeData != null && runtimeAttachments.length > 0 &&
+                                <Paper
+                                    sx={{
+                                        mt: 2,
+                                        p: 2,
+                                        display: 'flex',
+                                        flexWrap: 'wrap',
+                                        alignItems: 'center',
+                                        gap: 1,
+                                    }}
+                                >
+                                    <Typography variant="h6">
+                                        Anhänge
+                                    </Typography>
 
-                <Paper
-                    sx={{
-                        width: '33%',
-                        height: '100vh',
-                        borderLeft: '1px solid #ccc',
-                    }}
-                >
-                    <ProcessDetailsPageProvider
-                        value={{
-                            editable: true,
-                            onSave: handleSaveNode,
-                            onDelete: handleDeleteNode,
-                        }}
+                                    {
+                                        runtimeAttachments.map((attachment) => (
+                                            <Chip
+                                                key={attachment.key}
+                                                variant="outlined"
+                                                label={attachment.fileName}
+                                                sx={{
+                                                    maxWidth: 320,
+                                                    '& .MuiChip-label': {
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                    },
+                                                }}
+                                                onDelete={() => {
+                                                    void handleDownloadAttachment(attachment);
+                                                }}
+                                                deleteIcon={
+                                                    <Download color="primary"/>
+                                                }
+                                            />
+                                        ))
+                                    }
+                                </Paper>
+                            }
+                        </Box>
+                    </Allotment.Pane>
+
+                    <Allotment.Pane
+                        minSize={560}
+                        preferredSize={560}
                     >
-                        <Outlet/>
-                    </ProcessDetailsPageProvider>
-                </Paper>
+                        <Paper
+                            sx={{
+                                px: 0,
+                                boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
+                                borderLeft: '1px solid #E0E7E0',
+                                borderRadius: 0,
+                                position: 'relative',
+                                height: '100%',
+                                overflow: 'hidden',
+                            }}
+                        >
+                            <ProcessDetailsPageProvider
+                                value={{
+                                    editable: true,
+                                    onSave: handleSaveNode,
+                                    onDelete: handleDeleteNode,
+                                }}
+                            >
+                                <Outlet/>
+                            </ProcessDetailsPageProvider>
+                        </Paper>
+                    </Allotment.Pane>
+                </Allotment>
             </Box>
 
             <SelectNodeProviderDialog
@@ -913,10 +1312,39 @@ export function ProcessDetailsPage(): ReactNode {
                 onSelect={handleAddFlowTrigger}
             />
 
+            <ProcessConnectExistingNodeDialog
+                open={connectExistingNodeSource != null}
+                processFlow={processFlow}
+                nodeProviders={flowNodeProviders}
+                preferredPortKey={connectExistingNodeRequest?.preferredPortKey ?? null}
+                sourceNode={connectExistingNodeSource}
+                onClose={() => {
+                    setConnectExistingNodeRequest(null);
+                }}
+                onConnect={(fromNodeId, toNodeId, viaPortKey) => {
+                    handleCreateEdge(fromNodeId, toNodeId, viaPortKey);
+                }}
+            />
+
             <SelectNodeProviderDialog
                 open={newNodeFor != null}
                 nodeProviders={availableNodeProviders}
-                filter={(provider) => provider.type !== ProcessNodeType.Trigger}
+                filter={(provider) => {
+                    if (provider.type === ProcessNodeType.Trigger) {
+                        return false;
+                    }
+
+                    if (newNodeFor == null) {
+                        return true;
+                    }
+
+                    const requiresOutgoingPort = processFlow.edges.some((edge) => (
+                        edge.fromNodeId === newNodeFor.fromNodeId &&
+                        edge.viaPort === newNodeFor.viaPort
+                    ));
+
+                    return !requiresOutgoingPort || provider.ports.length > 0;
+                }}
                 onClose={() => {
                     setNewNodeFor(null);
                 }}
@@ -926,7 +1354,10 @@ export function ProcessDetailsPage(): ReactNode {
             <SelectNodeProviderDialog
                 open={newNodeOnEdgeId != null}
                 nodeProviders={availableNodeProviders}
-                filter={(provider) => provider.type !== ProcessNodeType.Trigger && provider.type !== ProcessNodeType.Termination}
+                filter={(provider) => (
+                    provider.type !== ProcessNodeType.Trigger &&
+                    provider.ports.length > 0
+                )}
                 onClose={() => {
                     setNewNodeOnEdgeId(null);
                 }}
