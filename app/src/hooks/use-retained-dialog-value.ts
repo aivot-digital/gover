@@ -1,16 +1,14 @@
-import {useEffect, useState} from 'react';
+import {useRef} from 'react';
 
 // Keep the last open-state value available until the dialog close transition has finished.
 export function useRetainedDialogValue<T>(open: boolean, value: T): T {
-    // React treats function values passed to useState/setState as lazy initializers/updaters.
-    // Wrap the value so callbacks like filters are retained as plain values.
-    const [retainedValue, setRetainedValue] = useState<T>(() => value);
+    const retainedValueRef = useRef(value);
 
-    useEffect(() => {
-        if (open) {
-            setRetainedValue(() => value);
-        }
-    }, [open, value]);
+    // Snapshot the latest open-state value during render. This avoids state/effect feedback
+    // loops for unstable values such as callbacks or freshly created ReactNodes.
+    if (open) {
+        retainedValueRef.current = value;
+    }
 
-    return open ? value : retainedValue;
+    return open ? value : retainedValueRef.current;
 }
