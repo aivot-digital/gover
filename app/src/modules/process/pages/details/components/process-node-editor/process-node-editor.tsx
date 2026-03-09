@@ -258,6 +258,8 @@ export function ProcessNodeEditor(): ReactNode {
                             gap: 2,
                             px: 2,
                             pt: 1,
+                            bgcolor: 'background.paper',
+                            zIndex: 2,
                         }}
                     >
                         <Box
@@ -314,6 +316,7 @@ export function ProcessNodeEditor(): ReactNode {
                         }}
                         sx={{
                             boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                            zIndex: 1,
                         }}
                     >
                         <Tab
