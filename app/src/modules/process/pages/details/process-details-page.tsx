@@ -101,6 +101,18 @@ interface NodeReplacementPlan {
     removedOutgoingEdges: ProcessDefinitionEdgeEntity[];
 }
 
+function canReplaceNodeType(currentType: ProcessNodeType, replacementType: ProcessNodeType): boolean {
+    if (currentType === ProcessNodeType.Trigger || replacementType === ProcessNodeType.Trigger) {
+        return currentType === ProcessNodeType.Trigger && replacementType === ProcessNodeType.Trigger;
+    }
+
+    if (currentType === ProcessNodeType.Termination || replacementType === ProcessNodeType.Termination) {
+        return currentType === ProcessNodeType.Termination && replacementType === ProcessNodeType.Termination;
+    }
+
+    return true;
+}
+
 function formatOutgoingConnectionSummary(preservedOutgoingEdgeCount: number, removedOutgoingEdgeCount: number): string {
     if (preservedOutgoingEdgeCount === 0 && removedOutgoingEdgeCount === 0) {
         return 'Es gibt derzeit keine ausgehenden Verbindungen.';
@@ -1062,6 +1074,11 @@ export function ProcessDetailsPage(): ReactNode {
             return;
         }
 
+        if (!canReplaceNodeType(currentProvider.type, replacementProvider.type)) {
+            dispatch(showErrorSnackbar('Auslöser und Endelemente können nur durch denselben Knotentyp ersetzt werden.'));
+            return;
+        }
+
         const replacementPlan = buildNodeReplacementPlan(processFlow, node, currentProvider, replacementProvider);
         const preservedOutgoingEdgeCount = replacementPlan.unchangedOutgoingEdges.length + replacementPlan.recreatedOutgoingEdges.length;
         const removedOutgoingEdgeCount = replacementPlan.removedOutgoingEdges.length;
@@ -1589,6 +1606,14 @@ export function ProcessDetailsPage(): ReactNode {
                         return false;
                     }
 
+                    const currentProvider = flowNodeProviderCache[getProcessNodeProviderKey(
+                        replaceNodeSource.processNodeDefinitionKey,
+                        replaceNodeSource.processNodeDefinitionVersion,
+                    )];
+                    if (currentProvider == null) {
+                        return false;
+                    }
+
                     if (
                         provider.key === replaceNodeSource.processNodeDefinitionKey &&
                         provider.majorVersion === replaceNodeSource.processNodeDefinitionVersion
@@ -1596,8 +1621,7 @@ export function ProcessDetailsPage(): ReactNode {
                         return false;
                     }
 
-                    const hasIncomingEdges = processFlow.edges.some((edge) => edge.toNodeId === replaceNodeSource.id);
-                    if (hasIncomingEdges && provider.type === ProcessNodeType.Trigger) {
+                    if (!canReplaceNodeType(currentProvider.type, provider.type)) {
                         return false;
                     }
 
