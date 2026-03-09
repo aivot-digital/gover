@@ -1,23 +1,22 @@
-import React, {type ReactNode, useMemo, useState} from 'react';
+import React, {type ReactNode, useEffect, useMemo, useState} from 'react';
 import {Box, Chip, Tooltip, Typography} from '@mui/material';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
-import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import {AuditLogEntity} from '../../models/audit-log-entity';
-import {AuditLogsApiService, AuditLogFilter} from '../../audit-logs-api-service';
+import {AuditLogFilter, AuditLogFilterOptions, AuditLogsApiService} from '../../audit-logs-api-service';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectPermissions} from '../../../../slices/user-slice';
 import {AUDIT_LOG_READ_PERMISSION} from '../../constants/audit-permissions';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
-import {getTraceData} from '@sentry/react';
 import {getTriggerTypeColor, getTriggerTypeIcon, getTriggerTypeLabel} from '../../data/trigger-type';
 import {getActorTypeColor, getActorTypeIcon, getActorTypeLabel} from '../../data/actor-type';
 import {UsersApiService} from '../../../users/users-api-service';
 import {User} from '../../../users/models/user';
 import {AuditLogDetailsDialogContent} from './audit-log-details-dialog-content';
+import {ChipInputFieldComponent} from '../../../../components/chip-input-field/chip-input-field-component';
 
 
 const actorFilters = [
@@ -25,18 +24,6 @@ const actorFilters = [
     {label: 'User', value: 'User'},
     {label: 'System', value: 'System'},
     {label: 'Process', value: 'Process'},
-];
-
-const triggerTypeOptions = [
-    {label: 'Alle Trigger', value: 'all'},
-    {label: 'Create', value: 'Create'},
-    {label: 'Update', value: 'Update'},
-    {label: 'Delete', value: 'Delete'},
-    {label: 'Error', value: 'Error'},
-    {label: 'PermissionDenied', value: 'PermissionDenied'},
-    {label: 'Export', value: 'Export'},
-    {label: 'Import', value: 'Import'},
-    {label: 'Message', value: 'Message'},
 ];
 
 function parseDate(value: string): Date | undefined {
@@ -107,13 +94,49 @@ export function AuditLogsListPage(): ReactNode {
             ?.some((entry) => entry.permissions.includes(AUDIT_LOG_READ_PERMISSION)) ?? false;
     }, [permissions]);
 
-    const [triggerType, setTriggerType] = useState<string | undefined>(undefined);
     const [usersById, setUsersById] = useState<Record<string, User | undefined>>({});
+    const [filterOptions, setFilterOptions] = useState<AuditLogFilterOptions>({
+        modules: [],
+        triggerTypes: [],
+        actors: [],
+    });
+    const [selectedModules, setSelectedModules] = useState<string[] | undefined>(undefined);
+    const [selectedTriggerTypes, setSelectedTriggerTypes] = useState<string[] | undefined>(undefined);
+    const [selectedActors, setSelectedActors] = useState<string[] | undefined>(undefined);
+
+    useEffect(() => {
+        new AuditLogsApiService()
+            .getFilterOptions()
+            .then((result) => {
+                setFilterOptions(result);
+            })
+            .catch((error) => {
+                console.error(error);
+            });
+    }, []);
+
+    const actorLabelToValue = useMemo(() => {
+        return Object.fromEntries(
+            filterOptions.actors.map((entry) => [entry.label, entry.value]),
+        );
+    }, [filterOptions.actors]);
+
+    const handleModuleChange = (value: string[] | null | undefined) => {
+        setSelectedModules(value ?? undefined);
+    };
+
+    const handleTriggerTypeChange = (value: string[] | null | undefined) => {
+        setSelectedTriggerTypes(value ?? undefined);
+    };
+
+    const handleActorChange = (value: string[] | null | undefined) => {
+        setSelectedActors(value ?? undefined);
+    };
 
     if (!hasReadAccess) {
         return (
             <PageWrapper
-                title="Audit-Logs"
+                title="Audit-Log"
                 background
                 error="Zugriff verweigert. Ihnen fehlt die Berechtigung audit_log.read."
             />
@@ -121,7 +144,7 @@ export function AuditLogsListPage(): ReactNode {
     }
 
     return (
-        <PageWrapper title="Audit-Logs"
+        <PageWrapper title="Audit-Log"
                      fullWidth
                      background>
             <GenericListPage<AuditLogEntity>
@@ -129,34 +152,51 @@ export function AuditLogsListPage(): ReactNode {
                 filters={actorFilters}
                 header={{
                     icon: ModuleIcons.audit,
-                    title: 'Audit-Logs',
+                    title: 'Audit-Log',
                 }}
-                searchLabel="Modul"
-                searchPlaceholder="z.B. Assets, Process, UserRole"
                 preSearchElements={[
-                    <SelectFieldComponent
-                        label="Trigger"
-                        value={triggerType}
-                        onChange={setTriggerType}
-                        options={triggerTypeOptions}
-                        placeholder="Alle Trigger"
-                        size="small"
-                        sx={{minWidth: '11rem'}}
+                    <ChipInputFieldComponent
+                        label="Modul"
+                        value={selectedModules}
+                        onChange={handleModuleChange}
+                        placeholder="z.B. Prozess"
+                        suggestions={filterOptions.modules}
+                    />,
+                    <ChipInputFieldComponent
+                        label="Auslösende Aktion"
+                        value={selectedTriggerTypes}
+                        onChange={handleTriggerTypeChange}
+                        placeholder="z.B. Update"
+                        suggestions={filterOptions.triggerTypes}
+                    />,
+                    <ChipInputFieldComponent
+                        label="Akteur"
+                        value={selectedActors}
+                        onChange={handleActorChange}
+                        placeholder="Akteur-ID oder Name"
+                        suggestions={filterOptions.actors.map((entry) => entry.label)}
                     />,
                 ]}
                 fetch={(options) => {
                     const filter: Partial<AuditLogFilter> = {};
 
-                    if (options.search != null && options.search.trim().length > 0) {
-                        filter.module = options.search;
+                    if (selectedModules != null && selectedModules.length > 0) {
+                        filter.modules = selectedModules;
                     }
 
                     if (options.filter != null && options.filter !== 'all') {
                         filter.actorType = options.filter;
                     }
 
-                    if (triggerType != null && triggerType !== 'all') {
-                        filter.triggerType = triggerType;
+                    if (selectedTriggerTypes != null && selectedTriggerTypes.length > 0) {
+                        filter.triggerTypes = selectedTriggerTypes;
+                    }
+
+                    if (selectedActors != null && selectedActors.length > 0) {
+                        filter.actors = selectedActors
+                            .map((entry) => entry.trim())
+                            .filter((entry) => entry.length > 0)
+                            .map((entry) => actorLabelToValue[entry] ?? entry);
                     }
 
                     const sortField = (options.sort as string | undefined) ?? 'timestamp';
@@ -296,8 +336,8 @@ export function AuditLogsListPage(): ReactNode {
                     },
                 ]}
                 getRowIdentifier={(row) => row.id.toString()}
-                noDataPlaceholder="Keine Audit-Logs vorhanden"
-                noSearchResultsPlaceholder="Keine Audit-Logs für diese Filter gefunden"
+                noDataPlaceholder="Kein Audit-Log vorhanden"
+                noSearchResultsPlaceholder="Kein Audit-Log für diese Filter gefunden"
                 dynamicRowHeight={true}
                 rowActionsCount={1}
                 rowActions={(row) => [

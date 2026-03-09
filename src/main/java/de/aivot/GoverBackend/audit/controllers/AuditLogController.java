@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.audit.controllers;
 
 import de.aivot.GoverBackend.audit.entities.AuditLogEntity;
 import de.aivot.GoverBackend.audit.filters.AuditLogFilter;
+import de.aivot.GoverBackend.audit.models.AuditLogFilterOptions;
 import de.aivot.GoverBackend.audit.permissions.AuditPermissionProvider;
 import de.aivot.GoverBackend.audit.services.AuditLogService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -59,6 +60,20 @@ public class AuditLogController {
 
         return auditLogService
                 .list(pageable, filter);
+    }
+
+    @GetMapping("filter-options/")
+    @Operation(
+            summary = "List Audit Log Filter Options",
+            description = "Retrieve all existing filter options for audit logs. Requires the permission " + AuditPermissionProvider.AUDIT_LOG_READ + "."
+    )
+    public AuditLogFilterOptions filterOptions(
+            @Nullable @AuthenticationPrincipal Jwt jwt
+    ) throws ResponseException {
+        permissionService
+                .testSystemPermission(jwt, AuditPermissionProvider.AUDIT_LOG_READ);
+
+        return auditLogService.getFilterOptions();
     }
 
     @GetMapping("{id}/")

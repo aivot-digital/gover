@@ -8,15 +8,23 @@ import jakarta.annotation.Nullable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class AuditLogFilter implements Filter<AuditLogEntity> {
     private Long id;
     private String actorType;
     private String actorId;
+    private List<String> actors;
     private String triggerType;
+    private List<String> triggerTypes;
     private String triggerRef;
     private String triggerRefType;
     private String module;
+    private List<String> modules;
     private String ipAddress;
     private LocalDateTime timestampFrom;
     private LocalDateTime timestampTo;
@@ -37,7 +45,19 @@ public class AuditLogFilter implements Filter<AuditLogEntity> {
                 .withContains("triggerRef", triggerRef)
                 .withContains("triggerRefType", triggerRefType)
                 .withContains("module", module)
+                .withInList("triggerType", normalizeValues(triggerTypes))
+                .withInList("module", normalizeValues(modules))
                 .withContains("ipAddress", ipAddress);
+
+        var normalizedActors = normalizeValues(actors);
+        if (!normalizedActors.isEmpty()) {
+            builder.withSpecification((root, query, specBuilder) -> specBuilder.or(
+                    normalizedActors
+                            .stream()
+                            .map(entry -> specBuilder.like(specBuilder.lower(root.get("actorId")), "%" + entry.toLowerCase(Locale.ROOT) + "%"))
+                            .toArray(jakarta.persistence.criteria.Predicate[]::new)
+            ));
+        }
 
         if (timestampFrom != null) {
             builder.withSpecification((root, query, specBuilder) ->
@@ -85,12 +105,32 @@ public class AuditLogFilter implements Filter<AuditLogEntity> {
     }
 
     @Nullable
+    public List<String> getActors() {
+        return actors;
+    }
+
+    public AuditLogFilter setActors(@Nullable List<String> actors) {
+        this.actors = actors;
+        return this;
+    }
+
+    @Nullable
     public String getTriggerType() {
         return triggerType;
     }
 
     public AuditLogFilter setTriggerType(@Nullable String triggerType) {
         this.triggerType = triggerType;
+        return this;
+    }
+
+    @Nullable
+    public List<String> getTriggerTypes() {
+        return triggerTypes;
+    }
+
+    public AuditLogFilter setTriggerTypes(@Nullable List<String> triggerTypes) {
+        this.triggerTypes = triggerTypes;
         return this;
     }
 
@@ -125,6 +165,16 @@ public class AuditLogFilter implements Filter<AuditLogEntity> {
     }
 
     @Nullable
+    public List<String> getModules() {
+        return modules;
+    }
+
+    public AuditLogFilter setModules(@Nullable List<String> modules) {
+        this.modules = modules;
+        return this;
+    }
+
+    @Nullable
     public String getIpAddress() {
         return ipAddress;
     }
@@ -152,5 +202,22 @@ public class AuditLogFilter implements Filter<AuditLogEntity> {
     public AuditLogFilter setTimestampTo(@Nullable LocalDateTime timestampTo) {
         this.timestampTo = timestampTo;
         return this;
+    }
+
+    @Nonnull
+    private static List<String> normalizeValues(@Nullable List<String> values) {
+        if (values == null || values.isEmpty()) {
+            return List.of();
+        }
+
+        return values
+                .stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(entry -> !entry.isEmpty())
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toCollection(LinkedHashSet::new),
+                        List::copyOf
+                ));
     }
 }

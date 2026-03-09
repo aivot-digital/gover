@@ -6,13 +6,27 @@ export interface AuditLogFilter {
     id: number;
     actorType: string;
     actorId: string;
+    actors: string[];
     triggerType: string;
+    triggerTypes: string[];
     triggerRef: string;
     triggerRefType: string;
     module: string;
+    modules: string[];
     ipAddress: string;
     timestampFrom: string;
     timestampTo: string;
+}
+
+export interface AuditLogFilterActorOption {
+    value: string;
+    label: string;
+}
+
+export interface AuditLogFilterOptions {
+    modules: string[];
+    triggerTypes: string[];
+    actors: AuditLogFilterActorOption[];
 }
 
 export class AuditLogsApiService extends BaseApiService {
@@ -37,5 +51,9 @@ export class AuditLogsApiService extends BaseApiService {
 
     public async retrieve(id: number): Promise<AuditLogEntity> {
         return await this.get<AuditLogEntity>(`${this.path}${id}/`);
+    }
+
+    public async getFilterOptions(): Promise<AuditLogFilterOptions> {
+        return await this.get<AuditLogFilterOptions>(`${this.path}filter-options/`);
     }
 }

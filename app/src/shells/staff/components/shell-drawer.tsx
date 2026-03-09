@@ -136,12 +136,6 @@ const BaseDrawerGroups: DrawerGroup[] = [
             },
             {icon: ModuleIcons.assets, label: 'Dateien & Medien', to: '/assets'},
             {
-                icon: ModuleIcons.audit,
-                label: 'Audit-Logs',
-                to: '/audit-logs',
-                requiredSystemPermission: AUDIT_LOG_READ_PERMISSION,
-            },
-            {
                 icon: ModuleIcons.dataModels,
                 label: 'Datenmodelle',
                 to: '/data-models',
@@ -152,6 +146,12 @@ const BaseDrawerGroups: DrawerGroup[] = [
                 children: [
                     {icon: ModuleIcons.settings, label: 'Allgemeine Einstellungen', to: '/settings/app'},
                     {icon: <ReadinessScore />, label: 'Systeminformationen', to: '/settings/status'},
+                    {
+                        icon: ModuleIcons.audit,
+                        label: 'Audit-Log',
+                        to: '/audit-log',
+                        requiredSystemPermission: AUDIT_LOG_READ_PERMISSION,
+                    },
                     {icon: ModuleIcons.themes, label: 'Erscheinungsbild', to: '/themes'},
                     {icon: ModuleIcons.secrets, label: 'Systemvariablen', to: '/secrets'},
                     {
@@ -167,7 +167,6 @@ const BaseDrawerGroups: DrawerGroup[] = [
                     {icon: <ForwardToInbox />, label: 'SMTP-Test (legacy)', to: '/settings/smtp'},
                     {icon: ModuleIcons.providerLinks, label: 'Links (legacy)', to: '/provider-links'},
                     {icon: ModuleIcons.destinations, label: 'Schnittstellen (legacy)', to: '/destinations'},
-
                 ],
             },
         ],

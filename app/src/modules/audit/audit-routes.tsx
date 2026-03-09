@@ -4,7 +4,7 @@ import {AuditLogsListPage} from './pages/list/audit-logs-list-page';
 
 export const auditRoutes: RouteObject[] = [
     {
-        path: '/audit-logs',
+        path: '/audit-log',
         element: <AuditLogsListPage/>,
     },
 ];
