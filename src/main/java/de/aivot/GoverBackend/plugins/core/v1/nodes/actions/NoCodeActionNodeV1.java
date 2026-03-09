@@ -120,7 +120,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition {
         variablesInput.setLabel("No-Code-Aktion");
         variablesInput.setHint("Pro Eintrag wird ein Variablenname und der zu berechnende No-Code-Ausdruck definiert.");
         variablesInput.setRequired(true);
-        variablesInput.setMinimumRequiredSets(1);
+        // variablesInput.setMinimumRequiredSets(1);
         variablesInput.setHeadlineTemplate("Eintrag #");
         variablesInput.setAddLabel("Eintrag hinzufügen");
         variablesInput.setRemoveLabel("Eintrag entfernen");
