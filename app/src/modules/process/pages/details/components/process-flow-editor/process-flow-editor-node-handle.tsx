@@ -1,6 +1,6 @@
 import React, {type ReactNode} from 'react';
 import {Handle, Position} from '@xyflow/react';
-import {Box, IconButton, useTheme} from '@mui/material';
+import {Box, IconButton, Tooltip, useTheme} from '@mui/material';
 import Typography from '@mui/material/Typography';
 import {type ProcessNodePort} from '../../../../services/process-node-provider-api-service';
 import Chip from '@mui/material/Chip';
@@ -38,6 +38,38 @@ interface ProcessFlowEditorNodeHandleProps {
     onConnectToExisting: (port: ProcessNodePort) => void;
     onDeleteEdge: (port: ProcessNodePort) => void;
     wasPerformed: boolean;
+}
+
+interface PortChipActionIconProps {
+    children: ReactNode;
+    className?: string;
+    onClick?: React.MouseEventHandler<HTMLSpanElement>;
+    tooltip: string;
+}
+
+function PortChipActionIcon(props: PortChipActionIconProps): ReactNode {
+    const {
+        children,
+        className,
+        onClick,
+        tooltip,
+    } = props;
+
+    return (
+        <Tooltip title={tooltip} arrow>
+            <span
+                className={className}
+                onClick={onClick}
+                style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}
+            >
+                {children}
+            </span>
+        </Tooltip>
+    );
 }
 
 export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandleProps): ReactNode {
@@ -120,7 +152,15 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
                         bgcolor: 'background.paper',
                         borderColor: wasPerformed ? theme.palette.primary.main : HANDLE_COLOR,
                     }}
-                    deleteIcon={editable ? (isConnected ? <Close/> : <Link/>) : undefined}
+                    deleteIcon={editable ? (
+                        isConnected ?
+                            <PortChipActionIcon tooltip="Verbindung aufheben">
+                                <Close sx={{fontSize: 18}}/>
+                            </PortChipActionIcon> :
+                            <PortChipActionIcon tooltip="Mit bestehendem Knoten verbinden">
+                                <Link sx={{fontSize: 18}}/>
+                            </PortChipActionIcon>
+                    ) : undefined}
                     onDelete={editable ? (
                         isConnected ?
                             handleDeleteEdge :
