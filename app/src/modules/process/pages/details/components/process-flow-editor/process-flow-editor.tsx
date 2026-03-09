@@ -1,6 +1,6 @@
 import {type ProcessFlow} from '../../process-details-page';
 import {type ProcessNodeProvider} from '../../../../services/process-node-provider-api-service';
-import React, {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import React, {type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import '@xyflow/react/dist/style.css';
 import './process-flow-editor.css';
 import {
@@ -243,11 +243,13 @@ function ProcessFlowEditorViewportControls(props: ProcessFlowEditorViewportContr
 interface ProcessFlowEditorCanvasAddTriggerButtonProps {
     label: string;
     onAddTrigger: () => void;
-    position: {
-        x: number;
-        y: number;
-        centerVertically: boolean;
-    };
+    position: CanvasAddTriggerPosition;
+}
+
+interface CanvasAddTriggerPosition {
+    x: number;
+    y: number;
+    centerVertically: boolean;
 }
 
 function ProcessFlowEditorCanvasAddTriggerButton(props: ProcessFlowEditorCanvasAddTriggerButtonProps): ReactNode {
@@ -333,6 +335,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const [needsMeasuredLayout, setNeedsMeasuredLayout] = useState<boolean>(false);
     const [pendingInitialViewport, setPendingInitialViewport] = useState<boolean>(false);
     const [isViewportLocked, setIsViewportLocked] = useState<boolean>(false);
+    const [canvasAddTriggerPosition, setCanvasAddTriggerPosition] = useState<CanvasAddTriggerPosition | null>(null);
 
     const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>([]);
@@ -343,6 +346,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const initialViewportNodeIdRef = useRef<number | null>(null);
     const layoutRequestIdRef = useRef<number>(0);
     const runtimeDataRef = useRef<ProcessFlowEditorRuntimeData>(runtimeData);
+    const nodeCardCenterOffsetCacheRef = useRef<Map<string, number>>(new Map());
 
     const isEditable = runtimeData == null && editable;
     const hasAllNodeProviders = useMemo(() => (
@@ -353,37 +357,6 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
             ))
         ))
     ), [nodeProviders, processFlow.nodes]);
-    const canvasAddTriggerPosition = useMemo(() => {
-        if (!isEditable || onAddTrigger == null) {
-            return null;
-        }
-
-        if (processFlow.nodes.length === 0) {
-            return {
-                x: CANVAS_ADD_TRIGGER_BUTTON_DEFAULT_X,
-                y: CANVAS_ADD_TRIGGER_BUTTON_DEFAULT_Y,
-                centerVertically: false,
-            };
-        }
-
-        if (!hasAllNodeProviders || nodes.length === 0) {
-            return null;
-        }
-
-        const triggerNodes = nodes.filter((node) => node.data.graphNode.provider.type === ProcessNodeType.Trigger);
-        const anchorNodes = triggerNodes.length > 0 ?
-            triggerNodes :
-            getTopLayerNodes(nodes);
-        const rightmostAnchorNode = anchorNodes.reduce((currentRightmost, node) => {
-            return getFlowNodeRight(node) > getFlowNodeRight(currentRightmost) ? node : currentRightmost;
-        }, anchorNodes[0]);
-
-        return {
-            x: getFlowNodeRight(rightmostAnchorNode) + FLOW_HORIZONTAL_NODE_SPACING,
-            y: getFlowNodeCardCenterY(rightmostAnchorNode),
-            centerVertically: true,
-        };
-    }, [hasAllNodeProviders, isEditable, nodes, onAddTrigger, processFlow.nodes.length]);
     const canvasAddTriggerLabel = processFlow.nodes.length === 0 ? 'Auslöser hinzufügen' : 'Weiterer Auslöser';
     const fitViewOptions = useMemo(() => ({
         padding: 0.16,
@@ -564,6 +537,40 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         };
     }, [focusInitialViewport, needsMeasuredLayout, pendingInitialViewport]);
 
+    useLayoutEffect(() => {
+        if (!isEditable || onAddTrigger == null) {
+            setCanvasAddTriggerPosition(null);
+            return;
+        }
+
+        if (processFlow.nodes.length === 0) {
+            setCanvasAddTriggerPosition({
+                x: CANVAS_ADD_TRIGGER_BUTTON_DEFAULT_X,
+                y: CANVAS_ADD_TRIGGER_BUTTON_DEFAULT_Y,
+                centerVertically: false,
+            });
+            return;
+        }
+
+        if (!hasAllNodeProviders || nodes.length === 0 || !nodesInitialized) {
+            return;
+        }
+
+        const triggerNodes = nodes.filter((node) => node.data.graphNode.provider.type === ProcessNodeType.Trigger);
+        const anchorNodes = triggerNodes.length > 0 ?
+            triggerNodes :
+            getTopLayerNodes(nodes);
+        const rightmostAnchorNode = anchorNodes.reduce((currentRightmost, node) => {
+            return getFlowNodeRight(node) > getFlowNodeRight(currentRightmost) ? node : currentRightmost;
+        }, anchorNodes[0]);
+
+        setCanvasAddTriggerPosition({
+            x: getFlowNodeRight(rightmostAnchorNode) + FLOW_HORIZONTAL_NODE_SPACING,
+            y: getFlowNodeCardCenterY(rightmostAnchorNode, nodeCardCenterOffsetCacheRef.current),
+            centerVertically: true,
+        });
+    }, [hasAllNodeProviders, isEditable, nodes, nodesInitialized, onAddTrigger, processFlow.nodes.length]);
+
     return (
         <ProcessFlowEditorProvider
             value={contextValue}
@@ -741,16 +748,21 @@ function getTopLayerNodes(nodes: FlowNode[]): FlowNode[] {
     return nodes.filter((node) => Math.abs(node.position.y - topLayerY) <= CANVAS_ADD_TRIGGER_LAYER_THRESHOLD);
 }
 
-function getFlowNodeCardCenterY(node: FlowNode): number {
+function getFlowNodeCardCenterY(node: FlowNode, cachedOffsets: Map<string, number>): number {
+    const cachedOffset = cachedOffsets.get(node.id);
+
     if (typeof document === 'undefined') {
-        return node.position.y + (getFlowNodeHeight(node) / 2);
+        return node.position.y + (cachedOffset ?? (getFlowNodeHeight(node) / 2));
     }
 
     const nodeElement = document.querySelector(`.react-flow__node[data-id="${node.id}"]`) as HTMLElement | null;
     const nodeCardElement = nodeElement?.querySelector('.process-flow-editor-node-card') as HTMLElement | null;
     if (nodeCardElement == null) {
-        return node.position.y + (getFlowNodeHeight(node) / 2);
+        return node.position.y + (cachedOffset ?? (getFlowNodeHeight(node) / 2));
     }
 
-    return node.position.y + nodeCardElement.offsetTop + (nodeCardElement.offsetHeight / 2);
+    const measuredOffset = nodeCardElement.offsetTop + (nodeCardElement.offsetHeight / 2);
+    cachedOffsets.set(node.id, measuredOffset);
+
+    return node.position.y + measuredOffset;
 }
