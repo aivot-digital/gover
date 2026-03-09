@@ -27,6 +27,7 @@ const CONNECTED_PORT_STEM_HEIGHT = 0;
 const CONNECTED_SOURCE_HANDLE_OFFSET = 5;
 const CONNECTED_SOURCE_HANDLE_TOP = ADD_BUTTON_DISTANCE + PORT_DOT_SIZE + PORT_DOT_GAP + CHIP_HEIGHT + CONNECTED_SOURCE_HANDLE_OFFSET;
 const CONNECTED_PORT_SPACER_HEIGHT = ADD_BUTTON_DISTANCE + ADD_BUTTON_SIZE + (ADD_BUTTON_DISTANCE * 1.25) - CONNECTED_PORT_STEM_HEIGHT;
+const OPEN_PORT_CONNECTOR_HEIGHT = ADD_BUTTON_DISTANCE + ADD_BUTTON_SIZE + (ADD_BUTTON_DISTANCE * 1.25);
 const ACTIVE_RUNTIME_DASH_ARRAY = '10 10';
 const ACTIVE_RUNTIME_DASH_ANIMATION = 'active-edge-dash-scroll 2s linear infinite';
 
@@ -190,53 +191,63 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
                                 }}
                             />
                         </> :
-                        <>
-                            <Box
-                                sx={{
-                                    height: ADD_BUTTON_DISTANCE,
-                                }}
-                            >
-                                <PortConnector
-                                    height={ADD_BUTTON_DISTANCE}
-                                    wasPerformed={wasPerformed}
-                                />
-                            </Box>
-
-                            <IconButton
-                                sx={{
-                                    bgcolor: 'background.paper',
-                                    border: `${HANDLE_WIDTH}px solid`,
-                                    borderColor: HANDLE_COLOR,
-                                    padding: 0,
-                                    width: ADD_BUTTON_SIZE,
-                                    height: ADD_BUTTON_SIZE,
-                                }}
-                                onClick={(event) => {
-                                    event.stopPropagation();
-                                    event.preventDefault();
-
-                                    onClick();
-                                }}
-                                disabled={!editable}
-                            >
-                                <Add
+                        editable ?
+                            <>
+                                <Box
                                     sx={{
-                                        fontSize: ADD_BUTTON_ICON_SIZE,
+                                        height: ADD_BUTTON_DISTANCE,
                                     }}
-                                />
-                            </IconButton>
+                                >
+                                    <PortConnector
+                                        height={ADD_BUTTON_DISTANCE}
+                                        wasPerformed={wasPerformed}
+                                    />
+                                </Box>
 
+                                <IconButton
+                                    sx={{
+                                        bgcolor: 'background.paper',
+                                        border: `${HANDLE_WIDTH}px solid`,
+                                        borderColor: HANDLE_COLOR,
+                                        padding: 0,
+                                        width: ADD_BUTTON_SIZE,
+                                        height: ADD_BUTTON_SIZE,
+                                    }}
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        event.preventDefault();
+
+                                        onClick();
+                                    }}
+                                >
+                                    <Add
+                                        sx={{
+                                            fontSize: ADD_BUTTON_ICON_SIZE,
+                                        }}
+                                    />
+                                </IconButton>
+
+                                <Box
+                                    sx={{
+                                        height: ADD_BUTTON_DISTANCE * 1.25,
+                                    }}
+                                >
+                                    <PortConnector
+                                        height={ADD_BUTTON_DISTANCE * 1.25}
+                                        wasPerformed={wasPerformed}
+                                    />
+                                </Box>
+                            </> :
                             <Box
                                 sx={{
-                                    height: ADD_BUTTON_DISTANCE * 1.25,
+                                    height: OPEN_PORT_CONNECTOR_HEIGHT,
                                 }}
                             >
                                 <PortConnector
-                                    height={ADD_BUTTON_DISTANCE * 1.25}
+                                    height={OPEN_PORT_CONNECTOR_HEIGHT}
                                     wasPerformed={wasPerformed}
                                 />
                             </Box>
-                        </>
                 }
             </Box>
 
