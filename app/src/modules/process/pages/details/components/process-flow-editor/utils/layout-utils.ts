@@ -24,6 +24,8 @@ const elk = new ELK();
 const ELK_TARGET_PORT_KEY = '__target__';
 const INCLUDED_PORTS_IN_MIN_WIDTH = 2;
 const ADDITIONAL_PORT_WIDTH = 72;
+const OPEN_PORT_ZONE_HEIGHT = 72;
+const OPEN_PORT_ROUTE_CLEARANCE = 18;
 export const FLOW_HORIZONTAL_NODE_SPACING = 100;
 const ELK_LAYOUT_OPTIONS = {
     'elk.algorithm': 'layered',
@@ -108,7 +110,7 @@ export async function layoutElements(
 
     return {
         flowNodes: transformNodes(graph, resolvedLayoutNodes),
-        flowEdges: transformEdges(graph, laidOutGraph.edges ?? []),
+        flowEdges: transformEdges(graph, laidOutGraph.edges ?? [], resolvedLayoutNodes),
     };
 }
 
@@ -267,8 +269,10 @@ function transformNodes(
 function transformEdges(
     graph: ProcessFlowGraph,
     elkEdges: ElkExtendedEdge[],
+    resolvedLayoutNodes: Map<number, ResolvedLayoutNode>,
 ): FlowEdge[] {
     const routePointsByEdgeId = new Map<number, FlowPathPoint[]>();
+    const openPortClearanceZones = createOpenPortClearanceZones(graph, resolvedLayoutNodes);
 
     for (const elkEdge of elkEdges) {
         const edgeId = Number.parseInt(elkEdge.id ?? '', 10);
@@ -276,7 +280,10 @@ function transformEdges(
             continue;
         }
 
-        routePointsByEdgeId.set(edgeId, extractEdgeRoutePoints(elkEdge));
+        routePointsByEdgeId.set(edgeId, applyOpenPortClearanceToRoutePoints(
+            extractEdgeRoutePoints(elkEdge),
+            openPortClearanceZones,
+        ));
     }
 
     return graph.edges.map<FlowEdge>((graphEdge) => ({
@@ -294,6 +301,94 @@ function transformEdges(
             routePoints: routePointsByEdgeId.get(graphEdge.edge.id) ?? [],
         },
     }));
+}
+
+function createOpenPortClearanceZones(
+    graph: ProcessFlowGraph,
+    resolvedLayoutNodes: Map<number, ResolvedLayoutNode>,
+): Array<{
+    minX: number;
+    maxX: number;
+    minY: number;
+    maxY: number;
+    adjustedY: number;
+}> {
+    return graph.nodes.flatMap((graphNode) => {
+        const hasOpenPort = graphNode.provider.ports.some((port) => (
+            !graphNode.outgoingEdges.some((outgoingEdge) => outgoingEdge.port?.key === port.key)
+        ));
+        const resolvedLayoutNode = resolvedLayoutNodes.get(graphNode.node.id);
+
+        if (!hasOpenPort || resolvedLayoutNode == null) {
+            return [];
+        }
+
+        const nodeBottom = resolvedLayoutNode.y + resolvedLayoutNode.height;
+
+        return [{
+            minX: resolvedLayoutNode.x,
+            maxX: resolvedLayoutNode.x + resolvedLayoutNode.width,
+            minY: nodeBottom - OPEN_PORT_ZONE_HEIGHT,
+            maxY: nodeBottom + OPEN_PORT_ROUTE_CLEARANCE,
+            adjustedY: nodeBottom + OPEN_PORT_ROUTE_CLEARANCE,
+        }];
+    });
+}
+
+function applyOpenPortClearanceToRoutePoints(
+    routePoints: FlowPathPoint[],
+    clearanceZones: Array<{
+        minX: number;
+        maxX: number;
+        minY: number;
+        maxY: number;
+        adjustedY: number;
+    }>,
+): FlowPathPoint[] {
+    if (routePoints.length < 2 || clearanceZones.length === 0) {
+        return routePoints;
+    }
+
+    const adjustedRoutePoints = routePoints.map((point) => ({...point}));
+
+    for (let index = 0; index < adjustedRoutePoints.length - 1; index += 1) {
+        const startPoint = adjustedRoutePoints[index];
+        const endPoint = adjustedRoutePoints[index + 1];
+
+        if (startPoint.y !== endPoint.y) {
+            continue;
+        }
+
+        const segmentMinX = Math.min(startPoint.x, endPoint.x);
+        const segmentMaxX = Math.max(startPoint.x, endPoint.x);
+        const segmentY = startPoint.y;
+
+        let adjustedY = segmentY;
+
+        for (const clearanceZone of clearanceZones) {
+            if (
+                segmentMaxX > clearanceZone.minX &&
+                segmentMinX < clearanceZone.maxX &&
+                segmentY >= clearanceZone.minY &&
+                segmentY <= clearanceZone.maxY
+            ) {
+                adjustedY = Math.max(adjustedY, clearanceZone.adjustedY);
+            }
+        }
+
+        if (adjustedY !== segmentY) {
+            adjustedRoutePoints[index] = {
+                ...startPoint,
+                y: adjustedY,
+            };
+            adjustedRoutePoints[index + 1] = {
+                ...endPoint,
+                y: adjustedY,
+            };
+        }
+    }
+
+    return adjustedRoutePoints;
 }
 
 function extractEdgeRoutePoints(edge: ElkExtendedEdge): FlowPathPoint[] {
