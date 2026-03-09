@@ -1,4 +1,4 @@
-import {Box, Dialog, Grid, Tab, Tabs} from '@mui/material';
+import {Box, Dialog, Tab, Tabs} from '@mui/material';
 import {type AddElementDialogProps} from './add-element-dialog-props';
 import React, {useState} from 'react';
 import {type ElementType} from '../../data/element-type/element-type';
@@ -9,20 +9,29 @@ import {ElementInfoTab} from './tabs/element-info-tab';
 import {StoreTab} from './tabs/store-tab';
 import {ModuleInfoTab} from './tabs/module-info-tab';
 import {AnyElement} from '../../models/elements/any-element';
+import {type Preset} from '../../models/entities/preset';
+import {PresetInfoTab} from './tabs/preset-info-tab';
+import Add from '@mui/icons-material/Add';
 
 
 export function AddElementDialog(props: AddElementDialogProps) {
+    const title = props.title ?? 'Formularelement hinzufügen';
+    const primaryActionLabel = props.primaryActionLabel ?? 'Hinzufügen';
+    const primaryActionIcon = props.primaryActionIcon ?? <Add sx={{fontSize: 18}}/>;
     const [currentTab, setCurrentTab] = useState(0);
     const [showElementInfo, setShowElementInfo] = useState<ElementType>();
+    const [showPresetInfo, setShowPresetInfo] = useState<Preset>();
     const [showModuleId, setShowModuleId] = useState<string>();
+    const showElementDetailsPanel = currentTab === 0 && showElementInfo != null;
+    const showPresetDetailsPanel = currentTab === 1 && showPresetInfo != null;
+    const showStoreDetailsPanel = currentTab === 2 && showModuleId != null;
+    const showDetailsPanel = showElementDetailsPanel || showPresetDetailsPanel || showStoreDetailsPanel;
 
     const handleClose = () => {
-        setShowModuleId(undefined);
         props.onClose();
     };
 
     const handleAddElement = (element: AnyElement) => {
-        setShowModuleId(undefined);
         props.onAddElement(element);
     };
 
@@ -31,13 +40,22 @@ export function AddElementDialog(props: AddElementDialogProps) {
             open={props.show}
             onClose={handleClose}
             fullWidth
-            maxWidth="xl"
+            maxWidth={showDetailsPanel ? 'lg' : 'md'}
+            TransitionProps={{
+                onExited: () => {
+                    // Keep the last active tab and detail selection alive until the close transition finishes.
+                    setCurrentTab(0);
+                    setShowElementInfo(undefined);
+                    setShowPresetInfo(undefined);
+                    setShowModuleId(undefined);
+                },
+            }}
         >
             <DialogTitleWithClose
                 onClose={handleClose}
                 closeTooltip="Schließen"
             >
-                Neues Element hinzufügen
+                {title}
             </DialogTitleWithClose>
             <Tabs
                 value={currentTab}
@@ -45,12 +63,13 @@ export function AddElementDialog(props: AddElementDialogProps) {
                     setCurrentTab(val);
                 }}
                 sx={{
+                    px: 2,
                     borderBottom: '1px solid #E0E0E0',
-                    mt: -1,
+                    mt: -1.5,
                 }}
             >
                 <Tab
-                    label="Basis-Elemente"
+                    label="Elemente"
                     value={0}
                 />
                 {
@@ -63,18 +82,28 @@ export function AddElementDialog(props: AddElementDialogProps) {
                 {
                     props.hideGoverStore !== true &&
                     <Tab
-                        label="Gover Store"
+                        label="Gover Marktplatz"
                         value={2}
                     />
                 }
             </Tabs>
-            <Grid container>
-                <Grid
-                    size={(currentTab === 0 && showElementInfo != null) || (currentTab === 2 && showModuleId != null) ? 6 : 12}
+            <Box
+                sx={{
+                    display: 'grid',
+                    gridTemplateColumns: showDetailsPanel ? 'minmax(0, 1.2fr) minmax(320px, 0.8fr)' : 'minmax(0, 1fr)',
+                    height: 'min(74vh, 820px)',
+                }}
+            >
+                <Box
+                    sx={{
+                        minWidth: 0,
+                        minHeight: 0,
+                        overflow: 'hidden',
+                    }}
                 >
                     <Box
                         sx={{
-                            height: '50vh',
+                            height: '100%',
                             overflowY: 'auto',
                         }}
                     >
@@ -83,6 +112,8 @@ export function AddElementDialog(props: AddElementDialogProps) {
                             <ElementTab
                                 parentType={props.parentType}
                                 onAddElement={handleAddElement}
+                                primaryActionLabel={primaryActionLabel}
+                                primaryActionIcon={primaryActionIcon}
                                 showElementInfo={setShowElementInfo}
                                 highlightedElement={showElementInfo}
                                 limitElementTypes={props.limitElementTypes}
@@ -93,6 +124,10 @@ export function AddElementDialog(props: AddElementDialogProps) {
                             <PresetTab
                                 parentType={props.parentType}
                                 onAddElement={handleAddElement}
+                                primaryActionLabel={primaryActionLabel}
+                                primaryActionIcon={primaryActionIcon}
+                                showPresetInfo={setShowPresetInfo}
+                                highlightedPresetKey={showPresetInfo?.key}
                             />
                         }
                         {
@@ -100,53 +135,111 @@ export function AddElementDialog(props: AddElementDialogProps) {
                             <StoreTab
                                 parentType={props.parentType}
                                 onAddElement={handleAddElement}
+                                primaryActionLabel={primaryActionLabel}
+                                primaryActionIcon={primaryActionIcon}
                                 showModuleId={setShowModuleId}
                                 highlightedModuleId={showModuleId}
                             />
                         }
                     </Box>
-                </Grid>
+                </Box>
 
                 {
-                    currentTab === 0 &&
-                    showElementInfo != null &&
-                    <Grid size={6}>
+                    showElementDetailsPanel &&
+                    <Box
+                        sx={{
+                            minWidth: 0,
+                            minHeight: 0,
+                            borderLeft: '1px solid',
+                            borderColor: 'divider',
+                            overflow: 'hidden',
+                        }}
+                    >
                         <Box
                             sx={{
-                                height: '50vh',
-                                overflowY: 'auto',
+                                height: '100%',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                overflow: 'hidden',
                             }}
                         >
                             <ElementInfoTab
                                 type={showElementInfo}
+                                onAddElement={handleAddElement}
+                                primaryActionLabel={primaryActionLabel}
+                                primaryActionIcon={primaryActionIcon}
                                 onClose={() => {
                                     setShowElementInfo(undefined);
                                 }}
                             />
                         </Box>
-                    </Grid>
+                    </Box>
                 }
 
                 {
-                    currentTab === 2 &&
-                    showModuleId != null &&
-                    <Grid size={6}>
+                    showPresetDetailsPanel &&
+                    <Box
+                        sx={{
+                            minWidth: 0,
+                            minHeight: 0,
+                            borderLeft: '1px solid',
+                            borderColor: 'divider',
+                            overflow: 'hidden',
+                        }}
+                    >
                         <Box
                             sx={{
-                                height: '50vh',
-                                overflowY: 'auto',
+                                height: '100%',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                overflow: 'hidden',
+                            }}
+                        >
+                            <PresetInfoTab
+                                preset={showPresetInfo}
+                                onAddElement={handleAddElement}
+                                primaryActionLabel={primaryActionLabel}
+                                primaryActionIcon={primaryActionIcon}
+                                onClose={() => {
+                                    setShowPresetInfo(undefined);
+                                }}
+                            />
+                        </Box>
+                    </Box>
+                }
+
+                {
+                    showStoreDetailsPanel &&
+                    <Box
+                        sx={{
+                            minWidth: 0,
+                            minHeight: 0,
+                            borderLeft: '1px solid',
+                            borderColor: 'divider',
+                            overflow: 'hidden',
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                height: '100%',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                overflow: 'hidden',
                             }}
                         >
                             <ModuleInfoTab
                                 moduleId={showModuleId}
+                                onAddElement={handleAddElement}
+                                primaryActionLabel={primaryActionLabel}
+                                primaryActionIcon={primaryActionIcon}
                                 onClose={() => {
                                     setShowModuleId(undefined);
                                 }}
                             />
                         </Box>
-                    </Grid>
+                    </Box>
                 }
-            </Grid>
+            </Box>
         </Dialog>
     );
 }

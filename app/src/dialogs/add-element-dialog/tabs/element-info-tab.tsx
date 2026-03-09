@@ -1,6 +1,5 @@
 import React from 'react';
-import {Box, DialogContent, Divider, IconButton, Tooltip, Typography} from '@mui/material';
-import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
+import {Box, Button, Divider, Typography} from '@mui/material';
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
 import {getElementNameForType} from '../../../data/element-type/element-names';
 import {type ElementTypesMap} from '../../../data/element-type/element-types-map';
@@ -20,6 +19,7 @@ import {DateTimeFieldComponent} from '../../../components/date-time-field/date-t
 import {DateRangeFieldComponent} from '../../../components/date-range-field/date-range-field-component';
 import {TimeRangeFieldComponent} from '../../../components/time-range-field/time-range-field-component';
 import {DateTimeRangeFieldComponent} from '../../../components/date-time-range-field/date-time-range-field-component';
+import {TimeFieldComponent} from '../../../components/time-field/time-field-component';
 import {MapPointFieldComponent} from '../../../components/map-point-field/map-point-field-component';
 import {RichTextInputComponent} from '../../../components/rich-text-input-component/rich-text-input-component';
 import {CodeInputFieldComponent} from '../../../components/code-input-field/code-input-field-component';
@@ -35,6 +35,13 @@ import {
 } from '../../../components/domain-user-select-field/domain-user-select-options';
 import {getDepartmentTypeIcons} from '../../../modules/departments/utils/department-utils';
 import {ModuleIcons} from '../../../shells/staff/data/module-icons';
+import {getElementIconForType} from '../../../data/element-type/element-icons';
+import {type AnyElement} from '../../../models/elements/any-element';
+import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
+import {getElementDescriptionForType, getElementGroupLabelForType} from '../element-dialog-metadata';
+import {type ReactNode} from 'react';
+import {AppInfo} from '../../../app-info';
+import {FileUploadComponent} from '../../../components/file-upload-field/file-upload-component';
 
 const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Alert]: (
@@ -86,6 +93,35 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 Bitte beachten Sie, dass Sie Bilder nur via URL einbinden können.
                 Das Bild muss also auf einem Server hochgeladen und über das Internet erreichbar sein.
             </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box
+                component="figure"
+                sx={{
+                    m: 0,
+                    mt: 2,
+                    maxWidth: 380,
+                }}
+            >
+                <Box
+                    component="img"
+                    src={`${AppInfo.mode == 'staff' ? '/staff' : ''}/assets/images/gover-beispiel-grafik.svg`}
+                    alt="Beispielgrafik"
+                    sx={{
+                        display: 'block',
+                        width: '100%',
+                        borderRadius: 2,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                    }}
+                />
+                <Typography component="figcaption" variant="caption" color="text.secondary" sx={{mt: 0.75, display: 'block'}}>
+                    Beispielgrafik mit optionaler Bildunterschrift
+                </Typography>
+            </Box>
         </Box>
     ),
     [ElementType.GroupLayout]: (
@@ -98,6 +134,40 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             <Typography sx={{mt: 2}}>
                 Gruppierungen können zudem als Vorlagen abgespeichert werden.
             </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box
+                sx={{
+                    mt: 2,
+                    p: 2,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 2,
+                }}
+            >
+                <HeadlineComponent
+                    content="Kontaktdaten"
+                    small={true}
+                />
+                <TextFieldComponent
+                    label="Vorname"
+                    value="Max"
+                    onChange={() => {
+                    }}
+                />
+                <TextFieldComponent
+                    label="Nachname"
+                    value="Mustermann"
+                    onChange={() => {
+                    }}
+                />
+            </Box>
         </Box>
     ),
     [ElementType.Step]: null,
@@ -324,6 +394,43 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             <Typography sx={{mt: 2}}>
                 Die Anzahl an abzufragenden Datensätzen kann durch Sie festgelegt werden.
             </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2, display: 'flex', flexDirection: 'column', gap: 1.5}}>
+                {[1, 2].map((index) => (
+                    <Box
+                        key={index}
+                        sx={{
+                            p: 2,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            borderRadius: 2,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 1.5,
+                        }}
+                    >
+                        <Typography variant="subtitle2">
+                            Person {index}
+                        </Typography>
+                        <TextFieldComponent
+                            label="Vorname"
+                            value={index === 1 ? 'Max' : 'Erika'}
+                            onChange={() => {
+                            }}
+                        />
+                        <TextFieldComponent
+                            label="Nachname"
+                            value={index === 1 ? 'Mustermann' : 'Beispiel'}
+                            onChange={() => {
+                            }}
+                        />
+                    </Box>
+                ))}
+            </Box>
         </Box>
     ),
     [ElementType.RichText]: (
@@ -332,6 +439,36 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 Das Fließtext-Element ermöglicht Ihnen die Einbindung von formatiertem Text.
                 Auf diese Weise können Sie Nutzer:innen zusätzliche Informationen gezielt darstellen.
             </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Typography
+                component={'div'}
+                variant="body2"
+                sx={{
+                    mt: 2,
+                    maxWidth: '660px',
+                    wordBreak: 'break-word',
+                    '& .inline-code': {
+                        fontFamily: 'Monaco, monospace',
+                        backgroundColor: '#f5f5f5',
+                        padding: '0.2em 0.4em',
+                        borderRadius: '4px',
+                    },
+                    '& .code-block': {
+                        fontFamily: 'Monaco, monospace',
+                        backgroundColor: '#f5f5f5',
+                        padding: '1em',
+                        borderRadius: '4px',
+                        overflowX: 'auto',
+                    },
+                }}
+                dangerouslySetInnerHTML={{
+                    __html: '<h3>Wichtiger Hinweis</h3><p>Bitte halten Sie <strong>Nachweise</strong> bereit und prüfen Sie Ihre Angaben vor dem Absenden.</p>',
+                }}
+            />
         </Box>
     ),
     [ElementType.Radio]: (
@@ -490,6 +627,25 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 liegenden Elementen ein. Es hilft Ihnen dabei, verschiedene Abfragen und/oder Informationen innerhalb
                 eines Abschnittes visuell deutlicher voneinander zu trennen.
             </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <Typography variant="body2">Persönliche Angaben</Typography>
+                <Box
+                    sx={{
+                        height: 24,
+                        my: 1.5,
+                        borderRadius: 1,
+                        border: '1px dashed',
+                        borderColor: 'divider',
+                        bgcolor: 'grey.50',
+                    }}
+                />
+                <Typography variant="body2">Weitere Hinweise</Typography>
+            </Box>
         </Box>
     ),
     [ElementType.Table]: (
@@ -506,6 +662,33 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 Sie erlaubt die Verwendung aller Elementtypen, bietet detaillierte Konfigurationsmöglichkeiten und sorgt
                 für eine deutlich bessere Nutzerfreundlichkeit.
             </AlertComponent>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box
+                sx={{
+                    mt: 2,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                }}
+            >
+                <Box sx={{display: 'grid', gridTemplateColumns: '1.4fr 1fr', bgcolor: 'grey.100'}}>
+                    <Typography sx={{px: 1.5, py: 1}} fontWeight={700}>Bezeichnung</Typography>
+                    <Typography sx={{px: 1.5, py: 1}} fontWeight={700}>Menge</Typography>
+                </Box>
+                <Box sx={{display: 'grid', gridTemplateColumns: '1.4fr 1fr', borderTop: '1px solid', borderColor: 'divider'}}>
+                    <Typography sx={{px: 1.5, py: 1}}>Unterlage A</Typography>
+                    <Typography sx={{px: 1.5, py: 1}}>2</Typography>
+                </Box>
+                <Box sx={{display: 'grid', gridTemplateColumns: '1.4fr 1fr', borderTop: '1px solid', borderColor: 'divider'}}>
+                    <Typography sx={{px: 1.5, py: 1}}>Unterlage B</Typography>
+                    <Typography sx={{px: 1.5, py: 1}}>1</Typography>
+                </Box>
+            </Box>
         </Box>
     ),
     [ElementType.Text]: (
@@ -924,6 +1107,20 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 entgegenzunehmen.
                 Es beinhaltet zudem vielfältige Möglichkeiten für die Validierung der getätigten Eingaben.
             </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <TimeFieldComponent
+                    label="Uhrzeit"
+                    value={new Date().toISOString()}
+                    onChange={() => {
+                    }}
+                    hint="Bitte geben Sie eine Uhrzeit an."
+                />
+            </Box>
         </Box>
     ),
     [ElementType.FileUpload]: (
@@ -943,6 +1140,23 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 Die maximale Gesamtgröße aller zu übertragenden Dateien ist abhängig von den in der verwendeten
                 Schnittstelle hinterlegten Einstellungen.
             </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <FileUploadComponent
+                    id="example-file-upload"
+                    label="Nachweise hochladen"
+                    value={undefined}
+                    onChange={() => {
+                    }}
+                    hint="PDF-, PNG- oder JPG-Dateien können hier hochgeladen werden."
+                    isMultifile
+                    maxFiles={3}
+                />
+            </Box>
         </Box>
     ),
     [ElementType.IntroductionStep]: null,
@@ -964,6 +1178,27 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 Das Ergebnis wird als strukturierter Ausdruck gespeichert und kann in Folgeprozessen ausgewertet
                 werden.
             </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box
+                sx={{
+                    mt: 2,
+                    p: 1.5,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                    bgcolor: 'grey.50',
+                    fontFamily: 'Monaco, monospace',
+                    fontSize: 14,
+                }}
+            >
+                Wenn <strong>Einkommen</strong> größer als <strong>5000</strong>, dann
+                <br/>
+                setze <strong>Prüfung erforderlich</strong> auf <strong>Ja</strong>
+            </Box>
         </Box>
     ),
     [ElementType.CodeInput]: (
@@ -1018,32 +1253,124 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
 
 export function ElementInfoTab({
                                    type,
+                                   onAddElement,
+                                   primaryActionLabel,
+                                   primaryActionIcon,
                                    onClose,
-                               }: { type: ElementType, onClose: () => void }) {
+                               }: {
+    type: ElementType,
+    onAddElement: (element: AnyElement) => void,
+    primaryActionLabel: string,
+    primaryActionIcon: ReactNode,
+    onClose: () => void,
+}) {
+    const ElementIcon = getElementIconForType(type);
+
+    const handleAddElement = () => {
+        const newElement = generateElementWithDefaultValues(type);
+        if (newElement != null) {
+            onAddElement(newElement);
+        }
+    };
+
     return (
-        <DialogContent tabIndex={0}>
+        <>
             <Box
                 sx={{
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'space-between',
+                    gap: 2,
+                    p: 2,
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
                 }}
             >
-                <h3>{getElementNameForType(type)}</h3>
+                <Box
+                    sx={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: '50%',
+                        bgcolor: 'grey.100',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                    }}
+                >
+                    <ElementIcon sx={{fontSize: 20, color: 'text.secondary'}}/>
+                </Box>
 
-                <Tooltip title="Schließen">
-                    <IconButton
-                        onClick={onClose}
-                        size="small"
+                <Box sx={{minWidth: 0, flex: 1}}>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            display: 'block',
+                            lineHeight: 1.2,
+                            mt: 0.5,
+                        }}
                     >
-                        <CloseOutlinedIcon/>
-                    </IconButton>
-                </Tooltip>
+                        {getElementGroupLabelForType(type)}
+                    </Typography>
+
+                    <Typography
+                        variant="h6"
+                        lineHeight={1.2}
+                        sx={{
+                            minWidth: 0,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                        }}
+                    >
+                        {getElementNameForType(type)}
+                    </Typography>
+                </Box>
             </Box>
 
-            {
-                elementDescriptions[type]
-            }
-        </DialogContent>
+            <Box
+                sx={{
+                    flex: 1,
+                    overflowY: 'auto',
+                    px: 2.25,
+                    pt: 2.25,
+                    pb: 3.75,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 2.5,
+                }}
+            >
+                <Typography variant="body2" color="text.secondary">
+                    {getElementDescriptionForType(type)}
+                </Typography>
+                {elementDescriptions[type]}
+            </Box>
+
+            <Box
+                sx={{
+                    px: 2,
+                    pt: 2,
+                    pb: 2.5,
+                    borderTop: '1px solid',
+                    borderColor: 'divider',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 1,
+                }}
+            >
+                <Button
+                    variant="contained"
+                    startIcon={primaryActionIcon}
+                    onClick={handleAddElement}
+                >
+                    {primaryActionLabel}
+                </Button>
+                <Button
+                    variant="text"
+                    onClick={onClose}
+                >
+                    Details schließen
+                </Button>
+            </Box>
+        </>
     );
 }
