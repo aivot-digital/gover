@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class DataTypeValidationActionNodeV1 implements ProcessNodeDefinition {
+public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition {
     public static final String NODE_KEY = "data_type_validation";
 
     private static final String PORT_NAME_VALID = "valid";
@@ -109,7 +109,7 @@ public class DataTypeValidationActionNodeV1 implements ProcessNodeDefinition {
         rulesInput.setLabel("Validierungsregeln");
         rulesInput.setHint("Beispiele: person.name, person.address.street, tags.*, items.*.name");
         rulesInput.setRequired(true);
-        rulesInput.setMinimumRequiredSets(1);
+        //rulesInput.setMinimumRequiredSets(1);
         rulesInput.setHeadlineTemplate("Regel #");
         rulesInput.setAddLabel("Regel hinzufügen");
         rulesInput.setRemoveLabel("Regel entfernen");
@@ -312,13 +312,13 @@ public class DataTypeValidationActionNodeV1 implements ProcessNodeDefinition {
             var path = row
                     .getOpt(RULE_PATH_FIELD_ID)
                     .map(ElementDataObject::getValue)
-                    .map(DataTypeValidationActionNodeV1::toNullableTrimmedString)
+                    .map(DataTypeValidationControlNodeV1::toNullableTrimmedString)
                     .orElse(null);
 
             var expectedType = row
                     .getOpt(RULE_TYPE_FIELD_ID)
                     .map(ElementDataObject::getValue)
-                    .map(DataTypeValidationActionNodeV1::toNullableTrimmedString)
+                    .map(DataTypeValidationControlNodeV1::toNullableTrimmedString)
                     .filter(type -> !StringUtils.isNullOrEmpty(type))
                     .orElse(TYPE_ANY);
 
