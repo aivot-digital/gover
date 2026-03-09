@@ -8,6 +8,7 @@ import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameterOption;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
+import jakarta.annotation.Nullable;
 
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -72,6 +73,12 @@ public class NoCodeFormatDateOperator extends NoCodeOperator {
                         )
                 )
         );
+    }
+
+    @Nullable
+    @Override
+    public String getHumanReadableTemplate() {
+        return "formatiere „#0“ mit dem Muster „#1“";
     }
 
     @Override

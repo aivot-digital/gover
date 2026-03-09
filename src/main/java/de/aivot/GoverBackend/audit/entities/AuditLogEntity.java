@@ -37,17 +37,24 @@ public class AuditLogEntity {
     private String actorId;
 
     @Nonnull
+    private String origin;
+
+    @Nonnull
     @NotNull(message = "Der Trigger-Typ darf nicht null sein.")
     @Length(max = 64, message = "Der Trigger-Typ darf maximal 64 Zeichen lang sein.")
     private String triggerType;
 
     @Nullable
-    @Length(max = 255, message = "Die Trigger-Referenz darf maximal 255 Zeichen lang sein.")
-    private String triggerRef;
+    @Length(max = 128, message = "Der Entitäts-Typ darf maximal 255 Zeichen lang sein.")
+    private String entityType;
 
     @Nullable
-    @Length(max = 64, message = "Der Trigger-Referenz-Typ darf maximal 64 Zeichen lang sein.")
-    private String triggerRefType;
+    @Length(max = 255, message = "Die Entitäts-Referenz darf maximal 255 Zeichen lang sein.")
+    private String entityRef;
+
+    @Nullable
+    @Length(max = 64, message = "Der Entitäts-Referenz-Typ darf maximal 64 Zeichen lang sein.")
+    private String entityRefType;
 
     @Nonnull
     @NotNull(message = "Das Modul darf nicht null sein.")
@@ -78,23 +85,12 @@ public class AuditLogEntity {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         AuditLogEntity that = (AuditLogEntity) o;
-        return Objects.equals(id, that.id)
-                && Objects.equals(timestamp, that.timestamp)
-                && Objects.equals(actorType, that.actorType)
-                && Objects.equals(actorId, that.actorId)
-                && Objects.equals(triggerType, that.triggerType)
-                && Objects.equals(triggerRef, that.triggerRef)
-                && Objects.equals(triggerRefType, that.triggerRefType)
-                && Objects.equals(module, that.module)
-                && Objects.equals(message, that.message)
-                && Objects.equals(diff, that.diff)
-                && Objects.equals(metadata, that.metadata)
-                && Objects.equals(ipAddress, that.ipAddress);
+        return Objects.equals(id, that.id) && Objects.equals(timestamp, that.timestamp) && Objects.equals(actorType, that.actorType) && Objects.equals(actorId, that.actorId) && Objects.equals(origin, that.origin) && Objects.equals(triggerType, that.triggerType) && Objects.equals(entityType, that.entityType) && Objects.equals(entityRef, that.entityRef) && Objects.equals(entityRefType, that.entityRefType) && Objects.equals(module, that.module) && Objects.equals(message, that.message) && Objects.equals(diff, that.diff) && Objects.equals(metadata, that.metadata) && Objects.equals(ipAddress, that.ipAddress);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, timestamp, actorType, actorId, triggerType, triggerRef, triggerRefType, module, message, diff, metadata, ipAddress);
+        return Objects.hash(id, timestamp, actorType, actorId, origin, triggerType, entityType, entityRef, entityRefType, module, message, diff, metadata, ipAddress);
     }
 
     @Nonnull
@@ -148,22 +144,22 @@ public class AuditLogEntity {
     }
 
     @Nullable
-    public String getTriggerRef() {
-        return triggerRef;
+    public String getEntityRef() {
+        return entityRef;
     }
 
-    public AuditLogEntity setTriggerRef(@Nullable String triggerRef) {
-        this.triggerRef = triggerRef;
+    public AuditLogEntity setEntityRef(@Nullable String triggerRef) {
+        this.entityRef = triggerRef;
         return this;
     }
 
     @Nullable
-    public String getTriggerRefType() {
-        return triggerRefType;
+    public String getEntityRefType() {
+        return entityRefType;
     }
 
-    public AuditLogEntity setTriggerRefType(@Nullable String triggerRefType) {
-        this.triggerRefType = triggerRefType;
+    public AuditLogEntity setEntityRefType(@Nullable String triggerRefType) {
+        this.entityRefType = triggerRefType;
         return this;
     }
 
@@ -214,6 +210,26 @@ public class AuditLogEntity {
 
     public AuditLogEntity setIpAddress(@Nullable String ipAddress) {
         this.ipAddress = ipAddress;
+        return this;
+    }
+
+    @Nullable
+    public String getEntityType() {
+        return entityType;
+    }
+
+    public AuditLogEntity setEntityType(@Nullable String entityType) {
+        this.entityType = entityType;
+        return this;
+    }
+
+    @Nonnull
+    public String getOrigin() {
+        return origin;
+    }
+
+    public AuditLogEntity setOrigin(@Nonnull String origin) {
+        this.origin = origin;
         return this;
     }
 }

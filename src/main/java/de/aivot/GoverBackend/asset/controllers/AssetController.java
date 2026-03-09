@@ -25,6 +25,7 @@ import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
 import de.aivot.GoverBackend.storage.services.StorageProviderService;
 import de.aivot.GoverBackend.storage.services.StorageService;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -57,6 +58,8 @@ import java.util.UUID;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class AssetController {
+    private static final String MODULE_NAME = "Dateien & Medien";
+
     private final ScopedAuditService auditService;
 
     private final UserService userService;
@@ -74,7 +77,7 @@ public class AssetController {
                            VStorageIndexItemWithAssetRepository storageIndexItemWithAssetRepository,
                            StorageService storageService,
                            AssetRepository assetRepository) {
-        this.auditService = auditService.createScopedAuditService(AssetController.class);
+        this.auditService = auditService.createScopedAuditService(AssetController.class, MODULE_NAME);
 
         this.userService = userService;
         this.permissionService = permissionService;
@@ -158,19 +161,25 @@ public class AssetController {
 
         var created = storageService.createFolder(storageProvider.getId(), folderPath);
 
-        auditService.addAuditEntry(AuditLogPayload
+        auditService
                 .create()
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Create,
                         AssetEntity.class,
                         created.getPathFromRoot(),
+                        "storagePathFromRoot",
                         Map.of(
                                 "storageProviderId", storageProvider.getId(),
                                 "isFolder", true
                         )
                 )
-                .setTriggerRefType("storagePathFromRoot"));
+                .withMessage(
+                        "Der Ordner %s wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(created.getPathFromRoot()),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
 
         return created;
     }
@@ -203,19 +212,25 @@ public class AssetController {
 
         assetRepository.deleteAllByStoragePathFromRootStartingWith(folderPath);
 
-        auditService.addAuditEntry(AuditLogPayload
+        auditService
                 .create()
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Delete,
                         AssetEntity.class,
                         folderPath,
+                        "storagePathFromRoot",
                         Map.of(
                                 "storageProviderId", storageProvider.getId(),
                                 "isFolder", true
                         )
                 )
-                .setTriggerRefType("storagePathFromRoot"));
+                .withMessage(
+                        "Der Ordner %s wurde von der Mitarbeiter:in %s gelöscht.",
+                        StringUtils.quote(folderPath),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
     }
 
     // endregion
@@ -271,19 +286,25 @@ public class AssetController {
                 .setStoragePathFromRoot(storedDocument.getPathFromRoot());
         assetRepository.save(asset);
 
-        auditService.addAuditEntry(AuditLogPayload
+        auditService
                 .create()
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Create,
                         AssetEntity.class,
                         filePath,
+                        "storagePathFromRoot",
                         Map.of(
                                 "storageProviderId", storageProvider.getId(),
                                 "isFolder", false
                         )
                 )
-                .setTriggerRefType("storagePathFromRoot"));
+                .withMessage(
+                        "Die Datei %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(filePath),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
 
         return storageIndexItemWithAssetRepository
                 .findById(VStorageIndexItemWithAssetEntityId.of(
@@ -377,24 +398,30 @@ public class AssetController {
         assetRepository
                 .save(asset.setPrivate(newPrivate));
 
-        auditService.addAuditEntry(AuditLogPayload
+        auditService
                 .create()
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Update,
                         AssetEntity.class,
                         filePath,
+                        "storagePathFromRoot",
                         Map.of(
                                 "storageProviderId", storageProvider.getId(),
                                 "isFolder", false,
                                 "fileContentUpdated", newAssetFile != null && !newAssetFile.isEmpty()
                         )
                 )
-                .setTriggerRefType("storagePathFromRoot")
                 .withDiff(
                         Map.of("isPrivate", oldPrivate),
                         Map.of("isPrivate", newPrivate)
-                ));
+                )
+                .withMessage(
+                        "Die Datei %s wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(filePath),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
 
         return storageIndexItemWithAssetRepository
                 .findById(VStorageIndexItemWithAssetEntityId.of(
@@ -502,23 +529,30 @@ public class AssetController {
         // After the move, there is no need to update the asset because the asset path from root is updated automatically by the database because of the foreign key reference.
         var movedDocument = storageService.moveDocument(storageProvider.getId(), sourcePath, targetPath);
 
-        auditService.addAuditEntry(AuditLogPayload
+        auditService
                 .create()
                 .withUser(user)
                 .withAuditAction(
                         AuditAction.Update,
                         AssetEntity.class,
                         sourcePath,
+                        "storagePathFromRoot",
                         Map.of(
                                 "storageProviderId", storageProvider.getId(),
                                 "isFolder", false
                         )
                 )
-                .setTriggerRefType("storagePathFromRoot")
                 .withDiff(
                         Map.of("storagePathFromRoot", sourcePath),
                         Map.of("storagePathFromRoot", targetPath)
-                ));
+                )
+                .withMessage(
+                        "Die Datei %s wurde von der Mitarbeiter:in %s nach %s verschoben.",
+                        StringUtils.quote(sourcePath),
+                        StringUtils.quote(user.getFullName()),
+                        StringUtils.quote(targetPath)
+                )
+                .log();
 
         return storageIndexItemWithAssetRepository
                 .findById(VStorageIndexItemWithAssetEntityId.of(
@@ -581,20 +615,27 @@ public class AssetController {
                 .setStoragePathFromRoot(copiedDocument.getPathFromRoot());
         assetRepository.save(copiedAsset);
 
-        auditService.addAuditEntry(AuditLogPayload
+        auditService
                 .create()
                 .withUser(user)
                 .withAuditAction(
                         AuditAction.Create,
                         AssetEntity.class,
                         targetPath,
+                        "storagePathFromRoot",
                         Map.of(
                                 "storageProviderId", storageProvider.getId(),
                                 "isFolder", false,
                                 "copyOf", sourcePath
                         )
                 )
-                .setTriggerRefType("storagePathFromRoot"));
+                .withMessage(
+                        "Die Datei %s wurde von der Mitarbeiter:in %s nach %s kopiert.",
+                        StringUtils.quote(sourcePath),
+                        StringUtils.quote(user.getFullName()),
+                        StringUtils.quote(targetPath)
+                )
+                .log();
 
         return storageIndexItemWithAssetRepository
                 .findById(VStorageIndexItemWithAssetEntityId.of(
@@ -628,19 +669,25 @@ public class AssetController {
 
         storageService.deleteDocument(storageProvider.getId(), filePath);
 
-        auditService.addAuditEntry(AuditLogPayload
+        auditService
                 .create()
                 .withUser(user)
                 .withAuditAction(
                         AuditAction.Delete,
                         AssetEntity.class,
                         filePath,
+                        "storagePathFromRoot",
                         Map.of(
                                 "storageProviderId", storageProvider.getId(),
                                 "isFolder", false
                         )
                 )
-                .setTriggerRefType("storagePathFromRoot"));
+                .withMessage(
+                        "Die Datei %s wurde von der Mitarbeiter:in %s gelöscht.",
+                        StringUtils.quote(filePath),
+                        StringUtils.quote(user.getFullName())
+                )
+                .log();
     }
 
     // endregion

@@ -1,7 +1,7 @@
-import {Box} from "@mui/material";
-import {useProcessNodeEditorContext} from "../process-node-editor-context";
-import {TextFieldComponent} from "../../../../../../../components/text-field/text-field-component";
-import Typography from "@mui/material/Typography";
+import {Box} from '@mui/material';
+import {useProcessNodeEditorContext} from '../process-node-editor-context';
+import {TextFieldComponent} from '../../../../../../../components/text-field/text-field-component';
+import Typography from '@mui/material/Typography';
 
 export function ProcessNodeEditorOutputsTab() {
     const {
@@ -9,6 +9,23 @@ export function ProcessNodeEditorOutputsTab() {
         setNode,
         provider,
     } = useProcessNodeEditorContext();
+
+    if (provider.outputs.length === 0) {
+        return (
+            <Box>
+                <Typography variant="h6">
+                    Ausgangsdaten
+                </Typography>
+                <Typography
+                    variant="body2"
+                    color="textSecondary"
+                >
+                    Dieses Element erzeugt keine Ausgangsdaten oder bietet einen alternativen Weg, um Vorgangsdaten zu
+                    schreiben.
+                </Typography>
+            </Box>
+        );
+    }
 
     return (
         <Box
@@ -23,7 +40,7 @@ export function ProcessNodeEditorOutputsTab() {
             <Typography variant="body1"
                         mt={1} mb={2} maxWidth={400}>
                 Die Zuweisung von Datenvariablen für die Ausgangsdaten ist optional.
-                Ohne Zuweisung sind Ergebnisse ausschließlich über die Metadaten-Ebene zugänglich.
+                Ohne Zuweisung sind Ergebnisse ausschließlich über die Elementdaten zugänglich.
             </Typography>
 
             {

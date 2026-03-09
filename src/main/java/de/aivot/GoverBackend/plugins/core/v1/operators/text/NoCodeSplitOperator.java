@@ -8,6 +8,7 @@ import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
+import jakarta.annotation.Nullable;
 
 import java.util.List;
 import java.util.regex.Pattern;
@@ -76,6 +77,12 @@ public class NoCodeSplitOperator extends NoCodeOperator {
                         )
                 )
         );
+    }
+
+    @Nullable
+    @Override
+    public String getHumanReadableTemplate() {
+        return "teile „#0“ mit dem Separator „#1“ auf";
     }
 
     @Override

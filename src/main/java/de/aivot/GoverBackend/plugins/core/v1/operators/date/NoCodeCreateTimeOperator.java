@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
+import jakarta.annotation.Nullable;
 
 import java.time.ZonedDateTime;
 
@@ -69,6 +70,12 @@ public class NoCodeCreateTimeOperator extends NoCodeOperator {
                         )
                 )
         );
+    }
+
+    @Nullable
+    @Override
+    public String getHumanReadableTemplate() {
+        return "erstelle eine Zeit mit Stunde „#0“ und Minute „#1“";
     }
 
     @Override

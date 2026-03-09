@@ -10,7 +10,9 @@ import de.aivot.GoverBackend.process.filters.ProcessInstanceAccessControlFilter;
 import de.aivot.GoverBackend.process.models.ProcessInstanceAccessSelectableItem;
 import de.aivot.GoverBackend.process.services.PotentialProcessInstanceAccessService;
 import de.aivot.GoverBackend.process.services.ProcessInstanceAccessControlService;
+import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -41,7 +43,7 @@ public class ProcessInstanceAccessControlController extends GenericCrudControlle
                                                   UserService userService,
                                                   ProcessInstanceAccessControlService processInstanceAccessControlService,
                                                   PotentialProcessInstanceAccessService potentialProcessInstanceAccessService) {
-        super(auditService.createScopedAuditService(ProcessInstanceAccessControlController.class),
+        super(auditService.createScopedAuditService(ProcessInstanceAccessControlController.class, "Prozesse"),
                 userService,
                 processInstanceAccessControlService);
         this.userService = userService;
@@ -73,6 +75,44 @@ public class ProcessInstanceAccessControlController extends GenericCrudControlle
     @Override
     protected Integer getIdForEntity(ProcessInstanceAccessControlEntity entity) {
         return entity.getId();
+    }
+
+    @Override
+    @Nonnull
+    protected String buildCreateAuditMessage(@Nonnull UserEntity execUser,
+                                             @Nonnull ProcessInstanceAccessControlEntity createdItem) {
+        return String.format(
+                "Die Instanz-Zugriffsregel mit der ID %s für die Prozessinstanz %s wurde von der Mitarbeiter:in %s erstellt.",
+                StringUtils.quote(String.valueOf(createdItem.getId())),
+                StringUtils.quote(String.valueOf(createdItem.getTargetProcessInstanceId())),
+                StringUtils.quote(execUser.getFullName())
+        );
+    }
+
+    @Override
+    @Nonnull
+    protected String buildUpdateAuditMessage(@Nonnull UserEntity execUser,
+                                             @Nonnull Integer id,
+                                             @Nonnull ProcessInstanceAccessControlEntity updatedItem) {
+        return String.format(
+                "Die Instanz-Zugriffsregel mit der ID %s für die Prozessinstanz %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                StringUtils.quote(String.valueOf(id)),
+                StringUtils.quote(String.valueOf(updatedItem.getTargetProcessInstanceId())),
+                StringUtils.quote(execUser.getFullName())
+        );
+    }
+
+    @Override
+    @Nonnull
+    protected String buildDeleteAuditMessage(@Nonnull UserEntity execUser,
+                                             @Nonnull Integer id,
+                                             @Nonnull ProcessInstanceAccessControlEntity deletedItem) {
+        return String.format(
+                "Die Instanz-Zugriffsregel mit der ID %s für die Prozessinstanz %s wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(String.valueOf(id)),
+                StringUtils.quote(String.valueOf(deletedItem.getTargetProcessInstanceId())),
+                StringUtils.quote(execUser.getFullName())
+        );
     }
 
     // TODO: Implement Permission Checks

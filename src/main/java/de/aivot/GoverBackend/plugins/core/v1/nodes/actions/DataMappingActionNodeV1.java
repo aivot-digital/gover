@@ -94,23 +94,23 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
         var table = new TableInputElement();
         table.setId(MAPPINGS_FIELD_ID);
         table.setLabel("Abbildungsregeln");
-        table.setHint("Definieren Sie pro Zeile Quellpfad, Zielpfad und optional eine JavaScript-Funktion, z.B. (v) => String(v).trim().");
+        table.setHint("Definieren Sie pro Zeile einen Quellpfad, einen Zielpfad und optional eine Transformationsfunktion (Javascript), z.B. (wert) => 'Der Wer ist ' + wert");
         table.setRequired(true);
         table.setMinimumRequiredRows(1);
         table.setFields(List.of(
                 new TableInputElementColumn()
                         .setKey(FROM_FIELD_COLUMN_KEY)
-                        .setLabel("From Field")
+                        .setLabel("Quellpfad")
                         .setDatatype(TableColumnDataType.String)
                         .setOptional(false),
                 new TableInputElementColumn()
                         .setKey(TO_FIELD_COLUMN_KEY)
-                        .setLabel("To Field")
+                        .setLabel("Zielpfad")
                         .setDatatype(TableColumnDataType.String)
                         .setOptional(false),
                 new TableInputElementColumn()
                         .setKey(TRANSFORM_FUNCTION_COLUMN_KEY)
-                        .setLabel("Transform (JS function)")
+                        .setLabel("Transformationsfunktion")
                         .setDatatype(TableColumnDataType.String)
                         .setOptional(true)
         ));
@@ -136,7 +136,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
         var sourceRoot = context.getProcessData().get("$");
         if (!(sourceRoot instanceof Map<?, ?> sourceRootMapRaw)) {
             throw new ProcessNodeExecutionExceptionUnknown(
-                    "Die Prozessdatenwurzel ($) ist kein Objekt und kann nicht für die Datenabbildung verwendet werden."
+                    "Die Vorgangsdatenwurzel ($) ist kein Objekt und kann nicht für die Datenabbildung verwendet werden."
             );
         }
 

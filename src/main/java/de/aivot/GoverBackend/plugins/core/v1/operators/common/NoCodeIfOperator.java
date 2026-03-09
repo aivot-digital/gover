@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.*;
+import jakarta.annotation.Nullable;
 
 public class NoCodeIfOperator extends NoCodeOperator {
     @Override
@@ -86,5 +87,11 @@ public class NoCodeIfOperator extends NoCodeOperator {
         var arg2 = args[2];
 
         return new NoCodeResult(arg0 ? arg1 : arg2);
+    }
+
+    @Nullable
+    @Override
+    public String getHumanReadableTemplate() {
+        return "wenn „#0“ wahr ist, dann „#1“ andernfalls „#2“";
     }
 }

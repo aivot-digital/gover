@@ -29,18 +29,18 @@ export function humanizeNoCode(operand: NoCodeOperand, allElements: ElementWithP
 
     if (isNoCodeProcessDataReference(operand)) {
         return operand.path != null && operand.path.length > 0
-            ? `Prozessdaten → ${operand.path}`
-            : 'Prozessdaten';
+            ? `Vorgangsdaten → ${operand.path}`
+            : 'Vorgangsdaten';
     }
 
     if (isNoCodeInstanceDataReference(operand)) {
         return operand.path != null && operand.path.length > 0
-            ? `Instanzdaten → ${operand.path}`
-            : 'Instanzdaten';
+            ? `Geschützte Vorgangsdaten → ${operand.path}`
+            : 'Geschützte Vorgangsdaten';
     }
 
     if (isNoCodeNodeDataReference(operand)) {
-        const sourceLabel = `Knotendaten (${operand.nodeDataKey ?? 'kein Schlüssel'})`;
+        const sourceLabel = `Elementdaten (${operand.nodeDataKey ?? 'kein Datenschlüssel'})`;
         return operand.path != null && operand.path.length > 0
             ? `${sourceLabel} → ${operand.path}`
             : sourceLabel;

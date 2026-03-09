@@ -74,17 +74,17 @@ public class NoCodeGreaterThanOperator extends NoCodeOperator {
         );
     }
 
-    @Nullable
-    @Override
-    public String getHumanReadableTemplate() {
-        return "#0 ist größer als #1";
-    }
-
     @Override
     public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
         var arg0 = castToNumber(args[0]);
         var arg1 = castToNumber(args[1]);
 
         return new NoCodeResult(arg0.compareTo(arg1) > 0);
+    }
+
+    @Nullable
+    @Override
+    public String getHumanReadableTemplate() {
+        return "„#0“ ist größer als „#1“";
     }
 }

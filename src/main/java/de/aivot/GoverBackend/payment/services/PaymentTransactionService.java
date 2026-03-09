@@ -53,7 +53,7 @@ public class PaymentTransactionService implements
             AuditService auditService,
             PaymentProviderDefinitionsService paymentProviderDefinitionsService,
             PaymentProviderRepository paymentProviderRepository) {
-        this.auditService = auditService.createScopedAuditService(PaymentTransactionService.class);
+        this.auditService = auditService.createScopedAuditService(PaymentTransactionService.class, "Zahlungen");
         this.paymentTransactionChangeListeners = paymentTransactionChangeListeners;
         this.config = config;
         this.paymentTransactionRepository = paymentTransactionRepository;
@@ -118,14 +118,10 @@ public class PaymentTransactionService implements
                     "paymentItems", paymentItems
             ));
             metadata.put("exceptionType", e.getClass().getName());
-            auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload
-                    .create()
-                    .setActionType("Exception")
-                    .setSeverity("error")
-                    .setActionResult("failure")
-                    .setReason(e.getMessage())
-                    .setMessage("Failed to create payment request")
-                    .setMetadata(metadata));
+            auditService.create()
+                    .setTriggerType("Exception")
+                    .setMessage("Die Zahlungsanfrage konnte für den Zahlungsdienstleister nicht erstellt werden.")
+                    .setMetadata(metadata).log();
             throw e;
         }
         transactionEntity.setPaymentRequest(paymentRequest);
@@ -147,14 +143,10 @@ public class PaymentTransactionService implements
                     "paymentItems", paymentItems
             ));
             metadata.put("exceptionType", e.getClass().getName());
-            auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload
-                    .create()
-                    .setActionType("Exception")
-                    .setSeverity("error")
-                    .setActionResult("failure")
-                    .setReason(e.getMessage())
-                    .setMessage("Failed to initiate payment")
-                    .setMetadata(metadata));
+            auditService.create()
+                    .setTriggerType("Exception")
+                    .setMessage("Die Zahlung konnte beim Zahlungsdienstleister nicht initialisiert werden.")
+                    .setMetadata(metadata).log();
             throw e;
         }
         transactionEntity.setPaymentInformation(xBezahldienstePaymentTransaction.getPaymentInformation());
@@ -299,27 +291,21 @@ public class PaymentTransactionService implements
                 .findAll(spec);
 
         for (var transactionEntity : pendingTransactions) {
-            auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload
-                    .create()
-                    .setActionType("Debug")
-                    .setSeverity("debug")
-                    .setMessage("Polling transaction " + transactionEntity.getKey())
-                    .setMetadata(Map.of("transactionKey", transactionEntity.getKey())));
+            auditService.create()
+                    .setTriggerType("Debug")
+                    .setMessage("Der Status der Zahlungstransaktion mit dem Schlüssel " + transactionEntity.getKey() + " wird abgefragt.")
+                    .setMetadata(Map.of("transactionKey", transactionEntity.getKey())).log();
 
             try {
                 processCallback(transactionEntity, null);
             } catch (PaymentException e) {
-                auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload
-                        .create()
-                        .setActionType("Exception")
-                        .setSeverity("error")
-                        .setActionResult("failure")
-                        .setReason(e.getMessage())
-                        .setMessage("Error polling transaction " + transactionEntity.getKey())
+                auditService.create()
+                        .setTriggerType("Exception")
+                        .setMessage("Beim Abfragen der Zahlungstransaktion mit dem Schlüssel " + transactionEntity.getKey() + " ist ein Fehler aufgetreten.")
                         .setMetadata(Map.of(
                                 "transactionKey", transactionEntity.getKey(),
                                 "exceptionType", e.getClass().getName()
-                        )));
+                        )).log();
                 // TODO: Set error flag on transaction
             }
         }

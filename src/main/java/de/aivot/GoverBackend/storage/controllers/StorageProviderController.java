@@ -18,6 +18,7 @@ import de.aivot.GoverBackend.storage.services.StorageProviderDefinitionService;
 import de.aivot.GoverBackend.storage.services.StorageProviderService;
 import de.aivot.GoverBackend.storage.services.StorageSyncWorker;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -65,7 +66,7 @@ public class StorageProviderController {
                                      RabbitTemplate rabbitTemplate,
                                      StorageIndexItemRepository storageIndexItemRepository,
                                      StorageProviderDefinitionService storageProviderDefinitionService) {
-        this.auditService = auditService.createScopedAuditService(StorageProviderController.class);
+        this.auditService = auditService.createScopedAuditService(StorageProviderController.class, "Speicheranbieter");
         this.userService = userService;
         this.storageProviderService = storageProviderService;
         this.permissionService = permissionService;
@@ -108,10 +109,15 @@ public class StorageProviderController {
         var created = storageProviderService
                 .create(newStorageProvider);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, StorageProviderEntity.class, Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Create, StorageProviderEntity.class, created.getId(), "id", Map.of(
                         "id", created.getId(),
                         "name", created.getName()
-                )));
+                )).withMessage(
+                "Der Speicheranbieter %s mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
+                StringUtils.quote(created.getName()),
+                StringUtils.quote(String.valueOf(created.getId())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return created;
     }
@@ -151,10 +157,15 @@ public class StorageProviderController {
         var result = storageProviderService
                 .update(id, update);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, StorageProviderEntity.class, Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, StorageProviderEntity.class, result.getId(), "id", Map.of(
                         "id", result.getId(),
                         "name", result.getName()
-                )));
+                )).withMessage(
+                "Der Speicheranbieter %s mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                StringUtils.quote(result.getName()),
+                StringUtils.quote(String.valueOf(result.getId())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return result;
     }
@@ -176,10 +187,15 @@ public class StorageProviderController {
         var deleted = storageProviderService
                 .delete(id);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Delete, StorageProviderEntity.class, Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Delete, StorageProviderEntity.class, deleted.getId(), "id", Map.of(
                         "id", deleted.getId(),
                         "name", deleted.getName()
-                )));
+                )).withMessage(
+                "Der Speicheranbieter %s mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(deleted.getName()),
+                StringUtils.quote(String.valueOf(deleted.getId())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
     }
 
     @PutMapping("{id}/resync/")
@@ -207,11 +223,16 @@ public class StorageProviderController {
         rabbitTemplate
                 .convertAndSend(StorageSyncWorker.DO_WORK_ON_STORAGE_SYNC_QUEUE, id);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, StorageProviderEntity.class, Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, StorageProviderEntity.class, updated.getId(), "id", Map.of(
                         "id", updated.getId(),
                         "name", updated.getName(),
                         "resynced", true
-                )));
+                )).withMessage(
+                "Für den Speicheranbieter %s mit der ID %s wurde von der Mitarbeiter:in %s eine Resynchronisierung gestartet.",
+                StringUtils.quote(updated.getName()),
+                StringUtils.quote(String.valueOf(updated.getId())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return updated;
     }

@@ -8,6 +8,7 @@ import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
+import jakarta.annotation.Nullable;
 
 public class NoCodeConcatOperator extends NoCodeOperator {
     @Override
@@ -64,6 +65,12 @@ public class NoCodeConcatOperator extends NoCodeOperator {
                         )
                 )
         );
+    }
+
+    @Nullable
+    @Override
+    public String getHumanReadableTemplate() {
+        return "verkette „#0“ mit „#1“";
     }
 
     @Override

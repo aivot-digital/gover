@@ -79,7 +79,7 @@ public class ProcessInstanceTaskEntity {
     private Map<String, Object> runtimeData;
 
     @Nonnull
-    @NotNull(message = "Die Prozesselementdaten dürfen nicht null sein.")
+    @NotNull(message = "Die Elementdaten dürfen nicht null sein.")
     @Column(columnDefinition = "jsonb")
     @Convert(converter = JsonObjectConverter.class)
     private Map<String, Object> nodeData;

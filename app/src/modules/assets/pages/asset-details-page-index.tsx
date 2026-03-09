@@ -129,6 +129,7 @@ export function AssetDetailsPageIndex() {
     const storageProvider = additionalData?.storageProvider;
     const assetMetadata = (asset?.metadata ?? {}) as Record<string, unknown>;
     const hasSelectedFile = file != null && file.length > 0;
+    const hasPendingChanges = !hasNotChanged || hasSelectedFile;
     const isNewAsset = asset?.filename === '';
     const canCreateAsset = !isStorageReadOnly;
     const canReplaceFile = !isStorageReadOnly;
@@ -491,7 +492,7 @@ export function AssetDetailsPageIndex() {
             >
                 <Button
                     onClick={asset?.filename !== '' ? handleSave : handleSubmit}
-                    disabled={isBusy || (isNewAsset ? (!canCreateAsset || !hasSelectedFile) : hasNotChanged)}
+                    disabled={isBusy || (isNewAsset ? (!canCreateAsset || !hasSelectedFile) : !hasPendingChanges)}
                     variant="contained"
                     color="primary"
                     startIcon={<SaveOutlinedIcon />}
@@ -516,8 +517,10 @@ export function AssetDetailsPageIndex() {
                     <Button
                         onClick={() => {
                             reset();
+                            setFile([]);
+                            setUploadError(undefined);
                         }}
-                        disabled={isBusy || hasNotChanged}
+                        disabled={isBusy || !hasPendingChanges}
                         color="error"
                     >
                         Zurücksetzen

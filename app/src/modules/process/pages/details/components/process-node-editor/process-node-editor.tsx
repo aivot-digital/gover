@@ -26,6 +26,7 @@ import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../.
 import {useAppDispatch} from '../../../../../../hooks/use-app-dispatch';
 import {type ProcessTestClaimEntity} from '../../../../entities/process-test-claim-entity';
 import {ProcessTestClaimApiService} from '../../../../services/process-test-claim-api-service';
+import {isElementData} from '../../../../../../models/element-data';
 import {ProcessNodeEditorSkeleton} from './process-node-editor-skeleton';
 import {clearLoadingMessage, setLoadingMessage} from '../../../../../../slices/shell-slice';
 import {useDelayedVisibility} from '../../../../../../hooks/use-delayed-visibility';
@@ -240,7 +241,11 @@ export function ProcessNodeEditor(): ReactNode {
                 dispatch(showSuccessSnackbar('Der Knoten wurde erfolgreich gespeichert.'));
             })
             .catch((err: any) => {
-                if (isApiError(err) && err.status === 400 && err.displayableToUser) {
+                if (isApiError(err) && err.status === 400 && isElementData(err.details)) {
+                    setEditedNode({
+                        ...editedNode,
+                        configuration: err.details,
+                    });
                     dispatch(showErrorSnackbar('Der Knoten konnte nicht gespeichert werden, da die Konfiguration ungültig ist.'));
                 } else {
                     dispatch(showApiErrorSnackbar(err, 'Der Knoten konnte nicht gespeichert werden.'));
@@ -423,10 +428,13 @@ export function ProcessNodeEditor(): ReactNode {
                             value="configuration"
                         />
 
-                        <Tab
-                            label="Ausgangsdaten"
-                            value="outputs"
-                        />
+                        {
+                            provider.outputs.length > 0 &&
+                            <Tab
+                                label="Ausgangsdaten"
+                                value="outputs"
+                            />
+                        }
 
                         <Tab
                             label="Weiteres"

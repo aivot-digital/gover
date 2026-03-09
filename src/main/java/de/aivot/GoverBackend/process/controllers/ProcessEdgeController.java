@@ -12,6 +12,7 @@ import de.aivot.GoverBackend.process.entities.ProcessEdgeEntity;
 import de.aivot.GoverBackend.process.filters.ProcessDefinitionEdgeFilter;
 import de.aivot.GoverBackend.process.services.ProcessEdgeService;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -35,6 +36,8 @@ import org.springframework.web.bind.annotation.*;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ProcessEdgeController {
+    private static final String MODULE_NAME = "Prozesse";
+
     private final ScopedAuditService auditService;
     private final UserService userService;
     private final ProcessEdgeService processDefinitionEdgeService;
@@ -45,7 +48,7 @@ public class ProcessEdgeController {
                                  UserService userService,
                                  ProcessEdgeService processDefinitionEdgeService,
                                  ObjectMapper objectMapper) {
-        this.auditService = auditService.createScopedAuditService(ProcessEdgeController.class);
+        this.auditService = auditService.createScopedAuditService(ProcessEdgeController.class, "Prozesse");
         this.userService = userService;
         this.processDefinitionEdgeService = processDefinitionEdgeService;
         this.objectMapper = objectMapper;
@@ -80,14 +83,16 @@ public class ProcessEdgeController {
         var result = processDefinitionEdgeService
                 .create(newEdge);
 
-        auditService.addAuditEntry(AuditLogPayload
-                .create()
+        auditService.create()
                 .withUser(execUser)
-                .withAuditAction(
-                        AuditAction.Create,
-                        ProcessEdgeEntity.class,
-                        result.getId()
-                ));
+                .withAuditAction(AuditAction.Create, ProcessEdgeEntity.class,
+                        result.getId(),
+                        "id"
+                ).withMessage(
+                        "Die Prozesskante mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(String.valueOf(result.getId())),
+                        StringUtils.quote(execUser.getFullName())
+                ).log();
 
         return result;
     }
@@ -134,15 +139,17 @@ public class ProcessEdgeController {
         var updatedMap = objectMapper
                 .convertValue(result, java.util.Map.class);
 
-        auditService.addAuditEntry(AuditLogPayload
-                .create()
+        auditService.create()
                 .withUser(execUser)
-                .withAuditAction(
-                        AuditAction.Update,
-                        ProcessEdgeEntity.class,
-                        result.getId()
+                .withAuditAction(AuditAction.Update, ProcessEdgeEntity.class,
+                        result.getId(),
+                        "id"
                 )
-                .withDiffUndefined(existingMap, updatedMap));
+                .withDiff(existingMap, updatedMap).withMessage(
+                        "Die Prozesskante mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(String.valueOf(result.getId())),
+                        StringUtils.quote(execUser.getFullName())
+                ).log();
 
         return result;
     }
@@ -165,13 +172,15 @@ public class ProcessEdgeController {
         var deleted = processDefinitionEdgeService
                 .delete(id);
 
-        auditService.addAuditEntry(AuditLogPayload
-                .create()
+        auditService.create()
                 .withUser(user)
-                .withAuditAction(
-                        AuditAction.Delete,
-                        ProcessEdgeEntity.class,
-                        deleted.getId()
-                ));
+                .withAuditAction(AuditAction.Delete, ProcessEdgeEntity.class,
+                        deleted.getId(),
+                        "id"
+                ).withMessage(
+                        "Die Prozesskante mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
+                        StringUtils.quote(String.valueOf(deleted.getId())),
+                        StringUtils.quote(user.getFullName())
+                ).log();
     }
 }

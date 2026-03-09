@@ -12,17 +12,24 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.Map;
 
 public class ScopedAuditService {
     private final Logger logger;
-    private final String component;
+    private final String module;
+    private final String origin;
     private final AuditLogService auditLogService;
 
-    public ScopedAuditService(Class<?> cls, AuditLogService auditLogService) {
+    public ScopedAuditService(@Nonnull Class<?> cls,
+                              @Nonnull String module,
+                              @Nonnull AuditLogService auditLogService) {
         this.logger = LoggerFactory.getLogger(cls);
-        this.component = cls.getSimpleName();
+        this.module = module;
+        this.origin = cls.getCanonicalName();
         this.auditLogService = auditLogService;
+    }
+
+    public AuditLogPayload create() {
+        return AuditLogPayload.create(this);
     }
 
     public void addAuditEntry(@Nonnull AuditLogPayload payload) {
@@ -33,10 +40,11 @@ public class ScopedAuditService {
         var actorId = payload.getActorId();
 
         var triggerType = firstNonBlank(payload.getTriggerType(), "Message");
-        var triggerRef = payload.getTriggerRef();
-        var triggerRefType = payload.getTriggerRefType();
 
-        var module = firstNonBlank(payload.getModule(), component);
+        var entityType = payload.getEntityType();
+        var entityRef = payload.getEntityRef();
+        var entityRefType = payload.getEntityRefType();
+
         var message = firstNonBlank(payload.getMessage(), triggerType + " in " + module);
         var diff = payload.getDiff();
 
@@ -51,9 +59,11 @@ public class ScopedAuditService {
                 .setTimestamp(timestamp)
                 .setActorType(actorType)
                 .setActorId(actorId)
+                .setOrigin(origin)
                 .setTriggerType(triggerType)
-                .setTriggerRef(triggerRef)
-                .setTriggerRefType(triggerRefType)
+                .setEntityType(entityType)
+                .setEntityRef(entityRef)
+                .setEntityRefType(entityRefType)
                 .setModule(module)
                 .setMessage(message)
                 .setDiff(diff)
@@ -64,8 +74,11 @@ public class ScopedAuditService {
                 .setMessage(message)
                 .addKeyValue("actorType", actorType)
                 .addKeyValue("actorId", actorId)
+                .addKeyValue("origin", origin)
                 .addKeyValue("triggerType", triggerType)
-                .addKeyValue("triggerRef", triggerRef)
+                .addKeyValue("entityType", entityType)
+                .addKeyValue("entityRef", entityRef)
+                .addKeyValue("entityRefType", entityRefType)
                 .addKeyValue("module", module)
                 .log();
 

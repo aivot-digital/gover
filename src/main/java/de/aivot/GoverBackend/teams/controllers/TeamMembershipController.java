@@ -11,6 +11,7 @@ import de.aivot.GoverBackend.teams.filters.TeamMembershipFilter;
 import de.aivot.GoverBackend.teams.services.TeamMembershipService;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -45,7 +46,7 @@ public class TeamMembershipController {
     public TeamMembershipController(AuditService auditService,
                                     UserService userService,
                                     TeamMembershipService teamMembershipService) {
-        this.auditService = auditService.createScopedAuditService(TeamMembershipController.class);
+        this.auditService = auditService.createScopedAuditService(TeamMembershipController.class, "Teams");
         this.userService = userService;
         this.teamMembershipService = teamMembershipService;
     }
@@ -81,11 +82,17 @@ public class TeamMembershipController {
         var result = teamMembershipService
                 .create(createDTO);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, TeamMembershipEntity.class, Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Create, TeamMembershipEntity.class, result.getId(), "id", Map.of(
                 "id", result.getId(),
                 "teamId", result.getTeamId(),
                 "userId", result.getUserId()
-        )));
+        )).withMessage(
+                "Die Teamzugehörigkeit mit der ID %s für das Team %s und die Mitarbeiter:in %s wurde von der Mitarbeiter:in %s erstellt.",
+                StringUtils.quote(String.valueOf(result.getId())),
+                StringUtils.quote(String.valueOf(result.getTeamId())),
+                StringUtils.quote(result.getUserId()),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return result;
     }
@@ -121,11 +128,17 @@ public class TeamMembershipController {
         var result = teamMembershipService
                 .update(id, updateDTO);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, TeamMembershipEntity.class, Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, TeamMembershipEntity.class, result.getId(), "id", Map.of(
                 "id", result.getId(),
                 "teamId", result.getTeamId(),
                 "userId", result.getUserId()
-        )));
+        )).withMessage(
+                "Die Teamzugehörigkeit mit der ID %s für das Team %s und die Mitarbeiter:in %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                StringUtils.quote(String.valueOf(result.getId())),
+                StringUtils.quote(String.valueOf(result.getTeamId())),
+                StringUtils.quote(result.getUserId()),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return result;
     }
@@ -151,10 +164,16 @@ public class TeamMembershipController {
         var deleted = teamMembershipService
                 .delete(id);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Delete, TeamMembershipEntity.class, Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Delete, TeamMembershipEntity.class, deleted.getId(), "id", Map.of(
                 "id", deleted.getId(),
                 "teamId", deleted.getTeamId(),
                 "userId", deleted.getUserId()
-        )));
+        )).withMessage(
+                "Die Teamzugehörigkeit mit der ID %s für das Team %s und die Mitarbeiter:in %s wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(String.valueOf(deleted.getId())),
+                StringUtils.quote(String.valueOf(deleted.getTeamId())),
+                StringUtils.quote(deleted.getUserId()),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
     }
 }

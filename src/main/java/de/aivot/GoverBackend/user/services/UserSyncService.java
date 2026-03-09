@@ -41,7 +41,7 @@ public class UserSyncService {
                            KeyCloakApiService keycloakApiService,
                            GoverConfig goverConfig,
                            SystemRoleRepository systemRoleRepository) {
-        this.auditService = auditService.createScopedAuditService(UserSyncService.class);
+        this.auditService = auditService.createScopedAuditService(UserSyncService.class, "Benutzer");
 
         this.userRepository = userRepository;
         this.keycloakApiService = keycloakApiService;
@@ -197,12 +197,22 @@ public class UserSyncService {
                 metadata.put("failureMessage", failureMessage != null ? failureMessage : "");
                 metadata.put("syncedUsers", syncedUsers);
 
-                auditService.addAuditEntry(AuditLogPayload
-                        .create()
+                auditService.create()
                         .withSystem()
                         .setTriggerType("UserSync")
-                        .setMessage(success ? "User sync completed" : "User sync failed")
-                        .setMetadata(metadata));
+                        .setMessage(success
+                                ? String.format(
+                                "Die Benutzersynchronisierung wurde erfolgreich abgeschlossen: %d von %d Benutzer:innen importiert oder aktualisiert, %d als im IdP gelöscht markiert, %d zu Super-Admin befördert.",
+                                importedOrUpdatedCount,
+                                totalUsersFromIdp,
+                                deletedInIdpCount,
+                                promotedToSuperAdminCount
+                        )
+                                : String.format(
+                                "Die Benutzersynchronisierung ist fehlgeschlagen: %s",
+                                failureMessage != null ? failureMessage : "Unbekannter Fehler"
+                        ))
+                        .setMetadata(metadata).log();
             }
         }
 

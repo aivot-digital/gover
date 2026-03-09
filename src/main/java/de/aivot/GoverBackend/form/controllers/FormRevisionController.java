@@ -13,6 +13,7 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -59,7 +60,7 @@ public class FormRevisionController {
                                   VFormWithPermissionsService vFormWithPermissionsService,
                                   VFormVersionWithDetailsService vFormVersionWithDetailsService,
                                   UserService userService) {
-        this.auditService = auditService.createScopedAuditService(FormRevisionController.class);
+        this.auditService = auditService.createScopedAuditService(FormRevisionController.class, "Formulare");
 
         this.formLockService = formLockService;
         this.formRevisionService = formRevisionService;
@@ -141,16 +142,33 @@ public class FormRevisionController {
         var rolledBackForm = formRevisionService
                 .rollback(formVersionEntity, revisionId);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Update, FormEntity.class, Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Update, FormEntity.class, rolledBackForm.getId(), "formId", Map.of(
                 "formId", rolledBackForm.getId(),
                 "formSlug", rolledBackForm.getSlug(),
                 "developingDepartmentId", rolledBackForm.getDevelopingDepartmentId()
-        )));
+        ))
+                .withMessage(
+                        "Das Formular %s (Slug %s, ID %s) wurde von der Mitarbeiter:in %s auf den Stand der Revision %s zurückgesetzt.",
+                        StringUtils.quote(rolledBackForm.getInternalTitle()),
+                        StringUtils.quote(rolledBackForm.getSlug()),
+                        StringUtils.quote(String.valueOf(rolledBackForm.getId())),
+                        StringUtils.quote(user.getFullName()),
+                        StringUtils.quote(String.valueOf(revisionId))
+                )
+                .log();
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Update, FormEntity.class, Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Update, FormEntity.class, rolledBackForm.getFormId(), "formId", Map.of(
                 "formId", rolledBackForm.getFormId(),
                 "formVersion", rolledBackForm.getVersion()
-        )));
+        ))
+                .withMessage(
+                        "Die Formularversion %s des Formulars mit der ID %s wurde von der Mitarbeiter:in %s durch ein Rollback auf Revision %s aktualisiert.",
+                        StringUtils.quote(String.valueOf(rolledBackForm.getVersion())),
+                        StringUtils.quote(String.valueOf(rolledBackForm.getFormId())),
+                        StringUtils.quote(user.getFullName()),
+                        StringUtils.quote(String.valueOf(revisionId))
+                )
+                .log();
 
         // Create a revision for the form
         formRevisionService

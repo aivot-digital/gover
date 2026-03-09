@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.dataObject.controllers;
 
 import de.aivot.GoverBackend.audit.enums.AuditAction;
+import de.aivot.GoverBackend.audit.models.AuditLogPayload;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.dataObject.dtos.DataObjectItemRequestDTO;
@@ -12,6 +13,7 @@ import de.aivot.GoverBackend.dataObject.services.DataObjectItemService;
 import de.aivot.GoverBackend.dataObject.services.DataObjectSchemaService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+
 import java.util.Map;
 
 @RestController
@@ -33,8 +36,8 @@ import java.util.Map;
 @Tag(
         name = "Data Objects",
         description = "Data Objects are separated into schemas and items. " +
-                      "Schemas define the structure of the data objects, while items are the actual data entries conforming to these schemas. " +
-                      "Data Objects are used to store flexible and dynamic data within the application."
+                "Schemas define the structure of the data objects, while items are the actual data entries conforming to these schemas. " +
+                "Data Objects are used to store flexible and dynamic data within the application."
 )
 public class DataObjectItemController {
     private final ScopedAuditService auditService;
@@ -46,7 +49,7 @@ public class DataObjectItemController {
     public DataObjectItemController(AuditService auditService,
                                     DataObjectItemService service,
                                     DataObjectSchemaService schemaService, UserService userService) {
-        this.auditService = auditService.createScopedAuditService(DataObjectItemController.class);
+        this.auditService = auditService.createScopedAuditService(DataObjectItemController.class, "Datenobjekte");
         this.service = service;
         this.schemaService = schemaService;
         this.userService = userService;
@@ -77,7 +80,7 @@ public class DataObjectItemController {
     @Operation(
             summary = "Create Data Object Item",
             description = "Create a new data object item under a specific schema. " +
-                          "Any user can create data object items."
+                    "Any user can create data object items."
     )
     public DataObjectItemResponseDTO create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -98,10 +101,22 @@ public class DataObjectItemController {
         var created = service
                 .create(entity);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, DataObjectItemEntity.class, Map.of(
-                "schemaKey", schemaKey,
-                "itemId", created.getId()
-        )));
+        auditService.create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Create,
+                        DataObjectItemEntity.class,
+                        entity.getId(),
+                        "id",
+                        Map.of(
+                                "schemaKey", schemaKey
+                        )
+                )
+                .withMessage(
+                        "Ein neues Datenobjekt wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
 
         return DataObjectItemResponseDTO
                 .fromEntity(created, schema);
@@ -111,7 +126,7 @@ public class DataObjectItemController {
     @Operation(
             summary = "Retrieve Data Object Item",
             description = "Retrieve a specific data object item by its ID under a specific schema. " +
-                          "Any user can retrieve data object items."
+                    "Any user can retrieve data object items."
     )
     public DataObjectItemResponseDTO retrieve(
             @Nonnull @PathVariable String schemaKey,
@@ -134,7 +149,7 @@ public class DataObjectItemController {
     @Operation(
             summary = "Update Data Object Item",
             description = "Update an existing data object item under a specific schema. " +
-                          "Any user can update data object items."
+                    "Any user can update data object items."
     )
     public DataObjectItemResponseDTO update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -158,10 +173,23 @@ public class DataObjectItemController {
         var updated = service
                 .update(id, entity);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, DataObjectItemEntity.class, Map.of(
-                "schemaKey", schemaKey,
-                "itemId", updated.getId()
-        )));
+        auditService.create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Update,
+                        DataObjectItemEntity.class,
+                        updated.getId(),
+                        "id",
+                        Map.of(
+                                "schemaKey", schemaKey
+                        )
+                )
+                .withMessage(
+                        "Das Datenobjekt mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(updated.getId()),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log(); // TODO: Add Diff
 
         return DataObjectItemResponseDTO
                 .fromEntity(updated, schema);
@@ -171,7 +199,7 @@ public class DataObjectItemController {
     @Operation(
             summary = "Delete Data Object Item",
             description = "Delete a specific data object item by its ID under a specific schema. " +
-                          "Any user can delete data object items."
+                    "Any user can delete data object items."
     )
     public void destroy(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -185,9 +213,22 @@ public class DataObjectItemController {
         var id = new DataObjectItemEntityId(schemaKey, itemId);
         var deleted = service.delete(id);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Delete, DataObjectItemEntity.class, Map.of(
-                "schemaKey", schemaKey,
-                "itemId", deleted.getId()
-        )));
+        auditService.create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Delete,
+                        DataObjectItemEntity.class,
+                        deleted.getId(),
+                        "id",
+                        Map.of(
+                                "schemaKey", schemaKey
+                        )
+                )
+                .withMessage(
+                        "Das Datenobjekt mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
+                        StringUtils.quote(deleted.getId()),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
     }
 }

@@ -111,6 +111,8 @@ public class ProcessDataService {
         allData.put("$", previousTask != null ? previousTask.getProcessData() : instance.getInitialPayload());
 
         Map<String, Object> instanceData = new HashMap<>();
+        // instanceData.put("instance", instance);
+        // TODO: add attachments
         // TODO: Specify Instance Data
         allData.put("$$", instanceData);
 

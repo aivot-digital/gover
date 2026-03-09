@@ -13,6 +13,7 @@ import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
 import de.aivot.GoverBackend.userRoles.entities.UserRoleAssignmentEntity;
 import de.aivot.GoverBackend.userRoles.filters.UserRoleAssignmentFilter;
 import de.aivot.GoverBackend.userRoles.services.UserRoleAssignmentService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -56,7 +57,7 @@ public class VTeamUserRoleAssignmentWithDetailsController {
                                                         UserService userService,
                                                         TeamMembershipService teamMembershipService,
                                                         VUserTeamPermissionRepository vUserTeamPermissionRepository) {
-        this.auditService = auditService.createScopedAuditService(VTeamUserRoleAssignmentWithDetailsController.class);
+        this.auditService = auditService.createScopedAuditService(VTeamUserRoleAssignmentWithDetailsController.class, "Teams");
 
         this.userRoleAssignmentService = userRoleAssignmentService;
         this.userService = userService;
@@ -113,10 +114,21 @@ public class VTeamUserRoleAssignmentWithDetailsController {
         var created = userRoleAssignmentService
                 .create(newAssignment);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Create, UserRoleAssignmentEntity.class, Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Create, UserRoleAssignmentEntity.class, created.getId(), "id", Map.of(
                         "id", created.getId(),
-                        "userRoleId", created.getUserRoleId()
-                )));
+                        "userRoleId", created.getUserRoleId(),
+                        "teamMembershipId", created.getTeamMembershipId(),
+                        "teamId", membership.getTeamId(),
+                        "userId", membership.getUserId()
+                )).withMessage(
+                "Die Team-Rollenzuweisung mit der ID %s zur Teamzugehörigkeit %s (Team %s, Mitarbeiter:in %s, Rolle %s) wurde von der Mitarbeiter:in %s erstellt.",
+                StringUtils.quote(String.valueOf(created.getId())),
+                StringUtils.quote(String.valueOf(created.getTeamMembershipId())),
+                StringUtils.quote(String.valueOf(membership.getTeamId())),
+                StringUtils.quote(membership.getUserId()),
+                StringUtils.quote(String.valueOf(created.getUserRoleId())),
+                StringUtils.quote(user.getFullName())
+        ).log();
 
         return created;
     }
@@ -174,10 +186,21 @@ public class VTeamUserRoleAssignmentWithDetailsController {
         userRoleAssignmentService
                 .deleteEntity(entity);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, UserRoleAssignmentEntity.class, Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Delete, UserRoleAssignmentEntity.class, entity.getId(), "id", Map.of(
                         "id", entity.getId(),
-                        "userRoleId", entity.getUserRoleId()
-                )));
+                        "userRoleId", entity.getUserRoleId(),
+                        "teamMembershipId", entity.getTeamMembershipId(),
+                        "teamId", membership.getTeamId(),
+                        "userId", membership.getUserId()
+                )).withMessage(
+                "Die Team-Rollenzuweisung mit der ID %s zur Teamzugehörigkeit %s (Team %s, Mitarbeiter:in %s, Rolle %s) wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(String.valueOf(entity.getId())),
+                StringUtils.quote(String.valueOf(entity.getTeamMembershipId())),
+                StringUtils.quote(String.valueOf(membership.getTeamId())),
+                StringUtils.quote(membership.getUserId()),
+                StringUtils.quote(String.valueOf(entity.getUserRoleId())),
+                StringUtils.quote(user.getFullName())
+        ).log();
     }
 
     private boolean hasTeamEditPermission(@Nonnull String userId, @Nonnull Integer teamId) {

@@ -19,6 +19,7 @@ import de.aivot.GoverBackend.payment.services.PaymentProviderService;
 import de.aivot.GoverBackend.payment.services.PaymentProviderTestService;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -62,7 +63,7 @@ public class PaymentProviderController {
                                      FormVersionRepository formVersionRepository,
                                      VFormVersionWithDetailsRepository vFormVersionWithDetailsRepository,
                                      UserService userService) {
-        this.auditService = auditService.createScopedAuditService(PaymentProviderController.class);
+        this.auditService = auditService.createScopedAuditService(PaymentProviderController.class, "Zahlungen");
         this.paymentProviderService = paymentProviderService;
         this.paymentProviderTestService = paymentProviderTestService;
         this.formRevisionService = formRevisionService;
@@ -103,10 +104,15 @@ public class PaymentProviderController {
         var created = paymentProviderService
                 .create(requestDTO.toEntity());
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, PaymentProviderEntity.class, Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Create, PaymentProviderEntity.class, created.getKey(), "key", Map.of(
                         "key", created.getKey(),
                         "name", created.getName()
-                )));
+                )).withMessage(
+                "Der Zahlungsanbieter %s mit dem Schlüssel %s wurde von der Mitarbeiter:in %s erstellt.",
+                StringUtils.quote(created.getName()),
+                StringUtils.quote(String.valueOf(created.getKey())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return PaymentProviderResponseDTO
                 .fromEntity(created);
@@ -178,10 +184,15 @@ public class PaymentProviderController {
         var result = paymentProviderService
                 .update(key, requestDTO.toEntity());
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, PaymentProviderEntity.class, Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, PaymentProviderEntity.class, result.getKey(), "key", Map.of(
                         "key", result.getKey(),
                         "name", result.getName()
-                )));
+                )).withMessage(
+                "Der Zahlungsanbieter %s mit dem Schlüssel %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                StringUtils.quote(result.getName()),
+                StringUtils.quote(String.valueOf(result.getKey())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return PaymentProviderResponseDTO
                 .fromEntity(result);
@@ -205,10 +216,15 @@ public class PaymentProviderController {
         var deleted = paymentProviderService
                 .delete(key);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Delete, PaymentProviderEntity.class, Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Delete, PaymentProviderEntity.class, deleted.getKey(), "key", Map.of(
                         "key", deleted.getKey(),
                         "name", deleted.getName()
-                )));
+                )).withMessage(
+                "Der Zahlungsanbieter %s mit dem Schlüssel %s wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(deleted.getName()),
+                StringUtils.quote(String.valueOf(deleted.getKey())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
     }
 
     @PostMapping("{key}/test/")

@@ -6,6 +6,8 @@ import de.aivot.GoverBackend.core.configs.ProviderNameSystemConfigDefinition;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.process.entities.*;
+import de.aivot.GoverBackend.process.filters.ProcessDefinitionEdgeFilter;
+import de.aivot.GoverBackend.process.filters.ProcessNodeFilter;
 import de.aivot.GoverBackend.system.properties.BuildProperties;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -50,7 +52,12 @@ public class ProcessExportService {
                 .orElseThrow(ResponseException::notFound);
 
         var nodes = processDefinitionNodeService
-                .list()
+                .list(
+                        ProcessNodeFilter
+                                .create()
+                                .setProcessId(processId)
+                                .setProcessVersion(version)
+                )
                 .stream()
                 .peek((node) -> {
                     var nodeProvider = processNodeProviderService
@@ -66,7 +73,12 @@ public class ProcessExportService {
                 .toList();
 
         var edges = processDefinitionEdgeService
-                .list()
+                .list(
+                        ProcessDefinitionEdgeFilter
+                                .create()
+                                .setProcessDefinitionId(processId)
+                                .setProcessDefinitionVersion(version)
+                )
                 .stream()
                 .toList();
 
@@ -87,6 +99,7 @@ public class ProcessExportService {
                 edges
         );
 
+        /*
         String exportDataString;
         try {
             exportDataString = exportData.toJSONString();
@@ -94,7 +107,6 @@ public class ProcessExportService {
             throw ResponseException.internalServerError("Failed to serialize process export data", e);
         }
 
-        /*
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
         kpg.initialize(1024);
         return kpg.genKeyPair();

@@ -55,7 +55,7 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
 
     @Autowired
     public GirocheckoutPaymentProviderDefinitionV1(AuditService auditService, SecretService secretService, HttpService httpService) {
-        this.auditService = auditService.createScopedAuditService(GirocheckoutPaymentProviderDefinitionV1.class);
+        this.auditService = auditService.createScopedAuditService(GirocheckoutPaymentProviderDefinitionV1.class, "Zahlungen");
         this.secretService = secretService;
         this.httpService = httpService;
     }
@@ -181,7 +181,14 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
 
         var xFormUrlEncoded = giroPayPaymentRequest.toApplicationXWwwFormUrlEncoded();
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyMessage("Payment Request to GiroCheckout: " + xFormUrlEncoded, Map.of()));
+        auditService.create()
+                .withSystem()
+                .setMessage("Eine Zahlungsanfrage wurde an GiroCheckout übermittelt.")
+                .setMetadata(Map.of(
+                        "paymentProviderKey", String.valueOf(paymentProviderEntity.getKey()),
+                        "paymentProviderName", paymentProviderEntity.getName(),
+                        "requestBody", xFormUrlEncoded
+                )).log();
 
         HttpResponse<String> response;
         try {

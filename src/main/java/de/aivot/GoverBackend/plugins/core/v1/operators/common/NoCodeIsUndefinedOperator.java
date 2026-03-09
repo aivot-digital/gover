@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.plugins.core.v1.operators.common;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import jakarta.annotation.Nullable;
 
 public class NoCodeIsUndefinedOperator extends NoCodeIsDefinedOperator {
     @Override
@@ -54,5 +55,11 @@ public class NoCodeIsUndefinedOperator extends NoCodeIsDefinedOperator {
     public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
         var res = super.performEvaluation(data, args);
         return new NoCodeResult(!res.getValueAsBoolean());
+    }
+
+    @Nullable
+    @Override
+    public String getHumanReadableTemplate() {
+        return "„#0“ ist leer";
     }
 }

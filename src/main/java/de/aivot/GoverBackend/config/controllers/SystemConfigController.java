@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.config.controllers;
 
 import de.aivot.GoverBackend.audit.enums.AuditAction;
+import de.aivot.GoverBackend.audit.models.AuditLogPayload;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.config.dtos.SystemConfigRequestDto;
@@ -11,6 +12,7 @@ import de.aivot.GoverBackend.config.services.SystemConfigService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+
 import java.util.Map;
 
 /**
@@ -36,7 +39,7 @@ import java.util.Map;
 @Tag(
         name = "System Configurations",
         description = "System configurations are key-value pairs that define various settings and parameters of the application. " +
-                      "These configurations can be used to customize the behavior of the system and should be used if you need to provide configuration values to citizens publicly."
+                "These configurations can be used to customize the behavior of the system and should be used if you need to provide configuration values to citizens publicly."
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class SystemConfigController {
@@ -48,7 +51,7 @@ public class SystemConfigController {
     public SystemConfigController(AuditService auditService,
                                   SystemConfigService systemConfigService,
                                   UserService userService) {
-        this.auditService = auditService.createScopedAuditService(SystemConfigController.class);
+        this.auditService = auditService.createScopedAuditService(SystemConfigController.class, "Systemkonfiguration");
         this.systemConfigService = systemConfigService;
         this.userService = userService;
     }
@@ -81,7 +84,7 @@ public class SystemConfigController {
     @Operation(
             summary = "Update System Configuration",
             description = "Update the value of a specific system configuration identified by its key. " +
-                          "Requires system administrator permissions."
+                    "Requires system administrator permissions."
     )
     public SystemConfigResponseDto update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -105,10 +108,21 @@ public class SystemConfigController {
                 .save(key, entity);
 
         // Log the action of updating the system configuration
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Update, SystemConfigEntity.class, Map.of(
-                        "key", key,
-                        "value", updateRequest.value()
-                )));
+        auditService
+                .create()
+                .withUser(user)
+                .withAuditAction(
+                        AuditAction.Update,
+                        SystemConfigEntity.class,
+                        config.getKey(),
+                        "key"
+                )
+                .withMessage(
+                        "Die Systemkonfiguration %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(config.getKey()),
+                        StringUtils.quote(user.getFullName())
+                )
+                .log();
 
         return SystemConfigResponseDto
                 .fromEntity(config, def);

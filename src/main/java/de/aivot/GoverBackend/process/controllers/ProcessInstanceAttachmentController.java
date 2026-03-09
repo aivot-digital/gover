@@ -10,6 +10,7 @@ import de.aivot.GoverBackend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.GoverBackend.process.filters.ProcessInstanceAttachmentFilter;
 import de.aivot.GoverBackend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -55,7 +56,7 @@ public class ProcessInstanceAttachmentController {
                                                UserService userService,
                                                ProcessInstanceAttachmentService processInstanceAttachmentService,
                                                de.aivot.GoverBackend.storage.services.StorageService storageService) {
-        this.auditService = auditService.createScopedAuditService(ProcessInstanceAttachmentController.class);
+        this.auditService = auditService.createScopedAuditService(ProcessInstanceAttachmentController.class, "Prozesse");
         this.userService = userService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.storageService = storageService;
@@ -112,11 +113,16 @@ public class ProcessInstanceAttachmentController {
 
         processInstanceAttachmentService.create(attachment);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, ProcessInstanceAttachmentEntity.class, Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Create, ProcessInstanceAttachmentEntity.class, attachment.getKey(), "key", Map.of(
                 "key", attachment.getKey(),
                 "processInstanceId", attachment.getProcessInstanceId(),
                 "processInstanceTaskId", attachment.getProcessInstanceTaskId()
-        )));
+        )).withMessage(
+                "Der Anhang mit dem Schlüssel %s für die Prozessinstanz %s wurde von der Mitarbeiter:in %s erstellt.",
+                StringUtils.quote(String.valueOf(attachment.getKey())),
+                StringUtils.quote(String.valueOf(attachment.getProcessInstanceId())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return attachment;
     }
@@ -194,11 +200,16 @@ public class ProcessInstanceAttachmentController {
         var result = processInstanceAttachmentService
                 .update(key, updateDTO);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, ProcessInstanceAttachmentEntity.class, Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, ProcessInstanceAttachmentEntity.class, result.getKey(), "key", Map.of(
                 "key", result.getKey(),
                 "processInstanceId", result.getProcessInstanceId(),
                 "processInstanceTaskId", result.getProcessInstanceTaskId()
-        )));
+        )).withMessage(
+                "Der Anhang mit dem Schlüssel %s für die Prozessinstanz %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                StringUtils.quote(String.valueOf(result.getKey())),
+                StringUtils.quote(String.valueOf(result.getProcessInstanceId())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return result;
     }
@@ -221,10 +232,15 @@ public class ProcessInstanceAttachmentController {
         var deleted = processInstanceAttachmentService
                 .delete(key);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, ProcessInstanceAttachmentEntity.class, Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Delete, ProcessInstanceAttachmentEntity.class, deleted.getKey(), "key", Map.of(
                 "key", deleted.getKey(),
                 "processInstanceId", deleted.getProcessInstanceId(),
                 "processInstanceTaskId", deleted.getProcessInstanceTaskId()
-        )));
+        )).withMessage(
+                "Der Anhang mit dem Schlüssel %s für die Prozessinstanz %s wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(String.valueOf(deleted.getKey())),
+                StringUtils.quote(String.valueOf(deleted.getProcessInstanceId())),
+                StringUtils.quote(user.getFullName())
+        ).log();
     }
 }

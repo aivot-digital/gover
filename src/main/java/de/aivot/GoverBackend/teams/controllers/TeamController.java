@@ -10,6 +10,7 @@ import de.aivot.GoverBackend.teams.entities.TeamEntity;
 import de.aivot.GoverBackend.teams.filters.TeamFilter;
 import de.aivot.GoverBackend.teams.services.TeamService;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -44,7 +45,7 @@ public class TeamController {
     public TeamController(AuditService auditService,
                           UserService userService,
                           TeamService teamService) {
-        this.auditService = auditService.createScopedAuditService(TeamController.class);
+        this.auditService = auditService.createScopedAuditService(TeamController.class, "Teams");
 
         this.userService = userService;
         this.teamService = teamService;
@@ -82,10 +83,15 @@ public class TeamController {
         var result = teamService
                 .create(newTeam);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Create, TeamEntity.class, Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Create, TeamEntity.class, result.getId(), "id", Map.of(
                 "id", result.getId(),
                 "name", result.getName()
-        )));
+        )).withMessage(
+                "Das Team %s mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
+                StringUtils.quote(result.getName()),
+                StringUtils.quote(String.valueOf(result.getId())),
+                StringUtils.quote(user.getFullName())
+        ).log();
 
         return result;
     }
@@ -127,10 +133,15 @@ public class TeamController {
             throw ResponseException.badRequest("Fehler beim Speichern des Teams", e);
         }
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Update, TeamEntity.class, Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Update, TeamEntity.class, result.getId(), "id", Map.of(
                 "id", result.getId(),
                 "name", result.getName()
-        )));
+        )).withMessage(
+                "Das Team %s mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                StringUtils.quote(result.getName()),
+                StringUtils.quote(String.valueOf(result.getId())),
+                StringUtils.quote(user.getFullName())
+        ).log();
 
         return result;
     }
@@ -153,9 +164,14 @@ public class TeamController {
         var deleted = teamService
                 .delete(id);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, TeamEntity.class, Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Delete, TeamEntity.class, deleted.getId(), "id", Map.of(
                 "id", deleted.getId(),
                 "name", deleted.getName()
-        )));
+        )).withMessage(
+                "Das Team %s mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(deleted.getName()),
+                StringUtils.quote(String.valueOf(deleted.getId())),
+                StringUtils.quote(user.getFullName())
+        ).log();
     }
 }

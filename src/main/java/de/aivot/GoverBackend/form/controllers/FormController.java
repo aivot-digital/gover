@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.form.controllers;
 
 import de.aivot.GoverBackend.audit.enums.AuditAction;
+import de.aivot.GoverBackend.audit.models.AuditLogPayload;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.department.filters.VDepartmentMembershipWithPermissionsFilter;
@@ -24,6 +25,7 @@ import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.system.properties.BuildProperties;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -40,6 +42,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -50,9 +53,9 @@ import java.util.Map;
 @Tag(
         name = "Forms",
         description = "Forms are built for collecting data from users. " +
-                      "They can be designed with various elements and configurations to suit different data collection needs. " +
-                      "Forms can be published, managed, and analyzed within the system. " +
-                      "Forms are versioned with the „Form Version” resource."
+                "They can be designed with various elements and configurations to suit different data collection needs. " +
+                "Forms can be published, managed, and analyzed within the system. " +
+                "Forms are versioned with the „Form Version” resource."
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class FormController {
@@ -83,7 +86,7 @@ public class FormController {
                           FormVersionService formVersionService,
                           BuildProperties buildProperties,
                           UserService userService) {
-        this.auditService = auditService.createScopedAuditService(FormController.class);
+        this.auditService = auditService.createScopedAuditService(FormController.class, "Formulare");
 
         this.formMailService = formMailService;
         this.exceptionMailService = exceptionMailService;
@@ -102,7 +105,7 @@ public class FormController {
     @Operation(
             summary = "List Forms",
             description = "List all forms the user has access to. " +
-                          "Superadmins see all forms, staff users see only forms they have read permission for."
+                    "Superadmins see all forms, staff users see only forms they have read permission for."
     )
     public Page<FormEntity> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -136,7 +139,7 @@ public class FormController {
     @Operation(
             summary = "Create Form",
             description = "Create a new form. " +
-                          "The user must have create permission in the developing department of the form."
+                    "The user must have create permission in the developing department of the form."
     )
     public FormEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -167,12 +170,25 @@ public class FormController {
                 .create(newForm);
 
         // Write the audit log
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Create, FormEntity.class, Map.of(
-                "id", cratedForm.getId(),
-                "slug", cratedForm.getSlug(),
-                "title", cratedForm.getInternalTitle(),
-                "developingDepartmentId", cratedForm.getDevelopingDepartmentId()
-        )));
+        auditService.create()
+                .withUser(user)
+                .withAuditAction(AuditAction.Create, FormEntity.class,
+                        cratedForm.getId(),
+                        "id",
+                        Map.of(
+                                "id", cratedForm.getId(),
+                                "slug", cratedForm.getSlug(),
+                                "title", cratedForm.getInternalTitle(),
+                                "developingDepartmentId", cratedForm.getDevelopingDepartmentId()
+                        ))
+                .withMessage(
+                        "Das Formular %s (Slug %s, ID %s) wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(cratedForm.getInternalTitle()),
+                        StringUtils.quote(cratedForm.getSlug()),
+                        StringUtils.quote(String.valueOf(cratedForm.getId())),
+                        StringUtils.quote(user.getFullName())
+                )
+                .log();
 
         return cratedForm;
     }
@@ -181,7 +197,7 @@ public class FormController {
     @Operation(
             summary = "Retrieve Form",
             description = "Retrieve a form by its id. " +
-                          "Superadmins can retrieve any form, staff users can retrieve forms they have read permission for."
+                    "Superadmins can retrieve any form, staff users can retrieve forms they have read permission for."
     )
     @SecurityRequirement(name = OpenApiConfiguration.Security)
     public FormEntity retrieve(
@@ -216,7 +232,7 @@ public class FormController {
     @Operation(
             summary = "Update Form",
             description = "Update a form by its id." +
-                          "Super admins can update any form, staff users can update forms they have edit permission for."
+                    "Super admins can update any form, staff users can update forms they have edit permission for."
     )
     @SecurityRequirement(name = OpenApiConfiguration.Security)
     public FormEntity update(
@@ -237,7 +253,7 @@ public class FormController {
                 .setFormPermissionEdit(true)
                 .build();
         var canUpdate = user.getIsSuperAdmin() ||
-                        vDepartmentMembershipWithPermissionsService.exists(canUpdateSpec);
+                vDepartmentMembershipWithPermissionsService.exists(canUpdateSpec);
         if (!canUpdate) {
             throw ResponseException.noPermission(PermissionLabels.FormPermissionEdit);
         }
@@ -250,11 +266,19 @@ public class FormController {
                 .update(formId, patchedForm);
 
         // Log the form update
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Update, FormEntity.class, Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Update, FormEntity.class, updatedForm.getId(), "formId", Map.of(
                 "formId", updatedForm.getId(),
                 "formSlug", updatedForm.getSlug(),
                 "developingDepartmentId", updatedForm.getDevelopingDepartmentId()
-        )));
+        ))
+                .withMessage(
+                        "Das Formular %s (Slug %s, ID %s) wurde von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(updatedForm.getInternalTitle()),
+                        StringUtils.quote(updatedForm.getSlug()),
+                        StringUtils.quote(String.valueOf(updatedForm.getId())),
+                        StringUtils.quote(user.getFullName())
+                )
+                .log();
 
         // TODO: Create revision formRevisionService.create(user, form, existingForm);
 
@@ -265,7 +289,7 @@ public class FormController {
     @Operation(
             summary = "Move Form",
             description = "Move a form to another department. " +
-                          "The user must be a super admin or have edit permission in the current developing department of the form."
+                    "The user must be a super admin or have edit permission in the current developing department of the form."
     )
     @SecurityRequirement(name = OpenApiConfiguration.Security)
     public void move(
@@ -326,7 +350,7 @@ public class FormController {
     @Operation(
             summary = "Delete Form",
             description = "Delete a form by its id. " +
-                          "Super admins can delete any form, staff users can delete forms they have delete permission for."
+                    "Super admins can delete any form, staff users can delete forms they have delete permission for."
     )
     @SecurityRequirement(name = OpenApiConfiguration.Security)
     public void destroy(
@@ -358,33 +382,32 @@ public class FormController {
         // Delete the form
         var deletedForm = formService.delete(formId);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
-                user,
-                AuditAction.Delete,
-                FormEntity.class,
-                Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Delete, FormEntity.class, deletedForm.getId(), "formId", Map.of(
                         "formId", deletedForm.getId(),
                         "formSlug", deletedForm.getSlug(),
                         "developingDepartmentId", deletedForm.getDevelopingDepartmentId()
+                ))
+                .withMessage(
+                        "Das Formular %s (Slug %s, ID %s) wurde von der Mitarbeiter:in %s gelöscht.",
+                        StringUtils.quote(deletedForm.getInternalTitle()),
+                        StringUtils.quote(deletedForm.getSlug()),
+                        StringUtils.quote(String.valueOf(deletedForm.getId())),
+                        StringUtils.quote(user.getFullName())
                 )
-        ));
+                .log();
 
         try {
             formMailService.sendDeleted(user, deletedForm);
         } catch (MessagingException | IOException | NoValidUserEMailsInDepartmentException e) {
-            auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload
-                    .create()
+            auditService.create()
                     .withUser(user)
                     .setTriggerType("Exception")
-                    .setSeverity("error")
-                    .setActionResult("failure")
-                    .setReason(e.getMessage())
                     .setMessage("Failed to send message about form deletion")
                     .setMetadata(Map.of(
                             "exceptionType", e.getClass().getName(),
                             "formId", deletedForm.getId(),
                             "formSlug", deletedForm.getSlug()
-                    )));
+                    )).log();
             exceptionMailService.send(e);
         }
     }
@@ -393,8 +416,8 @@ public class FormController {
     @Operation(
             summary = "Export Form",
             description = "Export a form by its id. " +
-                          "You can optionally specify a version to export a specific version of the form. " +
-                          "Superadmins can export any form, staff users can export forms they have read permission for."
+                    "You can optionally specify a version to export a specific version of the form. " +
+                    "Superadmins can export any form, staff users can export forms they have read permission for."
     )
     public FormExportDTO export(
             @Nullable @AuthenticationPrincipal Jwt jwt,

@@ -10,6 +10,7 @@ import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.filters.UserFilter;
 import de.aivot.GoverBackend.user.services.KeyCloakApiService;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -42,7 +43,7 @@ public class UserController {
             UserService userService,
             KeyCloakApiService keyCloakApiService) {
         this.auditService = auditService
-                .createScopedAuditService(UserController.class);
+                .createScopedAuditService(UserController.class, "Benutzer");
 
         this.userService = userService;
         this.keyCloakApiService = keyCloakApiService;
@@ -87,10 +88,15 @@ public class UserController {
             throw ResponseException.badRequest("Fehler beim Anlegen der Mitarbeiter:in", e);
         }
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, UserEntity.class, Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Create, UserEntity.class, result.getId(), "id", Map.of(
                 "id", result.getId(),
                 "email", result.getEmail()
-        )));
+        )).withMessage(
+                "Die Mitarbeiter:in mit der ID %s und der E-Mail-Adresse %s wurde von der Mitarbeiter:in %s erstellt.",
+                StringUtils.quote(result.getId()),
+                StringUtils.quote(result.getEmail()),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return result;
     }
@@ -149,10 +155,15 @@ public class UserController {
             throw ResponseException.badRequest("Fehler beim Speichern der Mitarbeiter:in", e);
         }
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, UserEntity.class, Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, UserEntity.class, result.getId(), "id", Map.of(
                 "id", result.getId(),
                 "email", result.getEmail()
-        )));
+        )).withMessage(
+                "Die Mitarbeiter:in mit der ID %s und der E-Mail-Adresse %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                StringUtils.quote(result.getId()),
+                StringUtils.quote(result.getEmail()),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return result;
     }
@@ -173,17 +184,17 @@ public class UserController {
                 .delete(id);
 
         // Log the action
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
-                        user,
-                        AuditAction.Delete,
-                        UserEntity.class,
-                        Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Delete, UserEntity.class, deletedUser.getId(), "id", Map.of(
                                 "id", deletedUser.getId(),
                                 "email", deletedUser.getEmail(),
                                 "firstName", deletedUser.getFirstName(),
                                 "lastName", deletedUser.getLastName()
-                        )
-                ));
+                        )).withMessage(
+                "Die Mitarbeiter:in mit der ID %s und der E-Mail-Adresse %s wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(deletedUser.getId()),
+                StringUtils.quote(deletedUser.getEmail()),
+                StringUtils.quote(user.getFullName())
+        ).log();
     }
 
     @PutMapping("{id}/reset-password/")
@@ -211,11 +222,16 @@ public class UserController {
         keyCloakApiService
                 .triggerPasswordReset(id);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, UserEntity.class, Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, UserEntity.class, user.getId(), "id", Map.of(
                 "id", user.getId(),
                 "email", user.getEmail(),
                 "passwordReset", true
-        )));
+        )).withMessage(
+                "Für die Mitarbeiter:in mit der ID %s und der E-Mail-Adresse %s wurde von der Mitarbeiter:in %s ein Passwort-Reset ausgelöst.",
+                StringUtils.quote(user.getId()),
+                StringUtils.quote(user.getEmail()),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return Map.of(
                 "message", "Password reset triggered for user with ID: " + id
@@ -244,11 +260,16 @@ public class UserController {
         var result = userService
                 .updatePassword(id, passwordRequestDTO.password());
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, UserEntity.class, Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, UserEntity.class, result.getId(), "id", Map.of(
                 "id", result.getId(),
                 "email", result.getEmail(),
                 "passwordChanged", true
-        )));
+        )).withMessage(
+                "Das Passwort der Mitarbeiter:in mit der ID %s und der E-Mail-Adresse %s wurde von der Mitarbeiter:in %s geändert.",
+                StringUtils.quote(result.getId()),
+                StringUtils.quote(result.getEmail()),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return result;
     }

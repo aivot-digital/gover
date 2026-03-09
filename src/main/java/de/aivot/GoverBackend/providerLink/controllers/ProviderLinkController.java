@@ -11,6 +11,7 @@ import de.aivot.GoverBackend.providerLink.filters.ProviderLinkFilter;
 import de.aivot.GoverBackend.providerLink.services.ProviderLinkService;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -47,7 +48,7 @@ public class ProviderLinkController {
             AuditService auditService,
             ProviderLinkService providerLinkService,
             UserService userService) {
-        this.auditService = auditService.createScopedAuditService(ProviderLinkController.class);
+        this.auditService = auditService.createScopedAuditService(ProviderLinkController.class, "Schnittstellen");
         this.providerLinkService = providerLinkService;
         this.userService = userService;
     }
@@ -84,16 +85,16 @@ public class ProviderLinkController {
         var entity = providerLinkService
                 .create(requestDTO.toEntity());
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
-                        user,
-                        AuditAction.Create,
-                        ProviderLink.class,
-                        Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Create, ProviderLink.class, entity.getId(), "id", Map.of(
                                 "id", entity.getId(),
                                 "text", entity.getText(),
                                 "link", entity.getLink()
-                        )
-                ));
+                        )).withMessage(
+                "Der Anbieterlink %s mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
+                StringUtils.quote(entity.getText()),
+                StringUtils.quote(String.valueOf(entity.getId())),
+                StringUtils.quote(user.getFullName())
+        ).log();
 
         return ProviderLinkResponseDTO
                 .fromEntity(entity);
@@ -133,16 +134,16 @@ public class ProviderLinkController {
         var entity = providerLinkService
                 .update(id, requestDTO.toEntity());
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
-                user,
-                AuditAction.Update,
-                ProviderLink.class,
-                Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Update, ProviderLink.class, entity.getId(), "id", Map.of(
                         "id", entity.getId(),
                         "text", entity.getText(),
                         "link", entity.getLink()
-                )
-        ));
+                )).withMessage(
+                "Der Anbieterlink %s mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                StringUtils.quote(entity.getText()),
+                StringUtils.quote(String.valueOf(entity.getId())),
+                StringUtils.quote(user.getFullName())
+        ).log();
 
         return ProviderLinkResponseDTO
                 .fromEntity(entity);
@@ -166,15 +167,15 @@ public class ProviderLinkController {
         var link = providerLinkService
                 .delete(id);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(
-                user,
-                AuditAction.Delete,
-                ProviderLink.class,
-                Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Delete, ProviderLink.class, link.getId(), "id", Map.of(
                         "id", link.getId(),
                         "text", link.getText(),
                         "link", link.getLink()
-                )
-        ));
+                )).withMessage(
+                "Der Anbieterlink %s mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(link.getText()),
+                StringUtils.quote(String.valueOf(link.getId())),
+                StringUtils.quote(user.getFullName())
+        ).log();
     }
 }

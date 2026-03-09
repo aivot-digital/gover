@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.department.controllers;
 
 import de.aivot.GoverBackend.audit.enums.AuditAction;
+import de.aivot.GoverBackend.audit.models.AuditLogPayload;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.department.entities.DepartmentMembershipEntity;
@@ -15,6 +16,7 @@ import de.aivot.GoverBackend.mail.services.ExceptionMailService;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,6 +33,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+
 import java.io.IOException;
 import java.util.Map;
 
@@ -39,8 +42,8 @@ import java.util.Map;
 @Tag(
         name = "Department Memberships",
         description = "Department Memberships link users to organisational units (departments) within the system. " +
-                      "They define which users belong to which departments and what roles or permissions they have within those departments. " +
-                      "Managing department memberships is crucial for controlling access to resources and functionalities based on organisational structure."
+                "They define which users belong to which departments and what roles or permissions they have within those departments. " +
+                "Managing department memberships is crucial for controlling access to resources and functionalities based on organisational structure."
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class DepartmentMembershipController {
@@ -59,7 +62,7 @@ public class DepartmentMembershipController {
                                           ExceptionMailService exceptionMailService,
                                           VDepartmentMembershipWithPermissionsService vDepartmentMembershipWithPermissionsService,
                                           UserService userService) {
-        this.auditService = auditService.createScopedAuditService(DepartmentMembershipController.class);
+        this.auditService = auditService.createScopedAuditService(DepartmentMembershipController.class, "Organisationseinheiten");
 
         this.departmentMembershipService = departmentMembershipService;
         this.departmentMembershipMailService = departmentMembershipMailService;
@@ -86,7 +89,7 @@ public class DepartmentMembershipController {
     @Operation(
             summary = "Create department membership",
             description = "Create a new department membership linking a user to a department. " +
-                          "Requires super admin permissions or department edit permissions for the membership's target department."
+                    "Requires super admin permissions or department edit permissions for the membership's target department."
     )
     public DepartmentMembershipEntity create(
             @AuthenticationPrincipal Jwt jwt,
@@ -115,11 +118,25 @@ public class DepartmentMembershipController {
         var createdMembership = departmentMembershipService
                 .create(newMembership);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, DepartmentMembershipEntity.class, Map.of(
-                "id", createdMembership.getId(),
-                "departmentId", createdMembership.getDepartmentId(),
-                "userId", createdMembership.getUserId()
-        )));
+        auditService.create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Create,
+                        DepartmentMembershipEntity.class,
+                        createdMembership.getId(),
+                        "id",
+                        Map.of(
+                                "departmentId", createdMembership.getDepartmentId(),
+                                "userId", createdMembership.getUserId()
+                        ))
+                .withMessage(
+                        "Die Zugehörigkeit mit der ID %s für die Organisationseinheit %s und die Mitarbeiter:in %s wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(String.valueOf(createdMembership.getId())),
+                        StringUtils.quote(String.valueOf(createdMembership.getDepartmentId())),
+                        StringUtils.quote(createdMembership.getUserId()),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
 
         if (!execUser.getId().equals(createdMembership.getUserId())) {
             try {
@@ -151,7 +168,7 @@ public class DepartmentMembershipController {
     @Operation(
             summary = "Update department membership",
             description = "Update an existing department membership. " +
-                          "Requires super admin permissions or department edit permissions for the membership's department."
+                    "Requires super admin permissions or department edit permissions for the membership's department."
     )
     public DepartmentMembershipEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -186,11 +203,25 @@ public class DepartmentMembershipController {
         var savedMembership = departmentMembershipService
                 .update(id, updatedMembership);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, DepartmentMembershipEntity.class, Map.of(
-                "id", savedMembership.getId(),
-                "departmentId", savedMembership.getDepartmentId(),
-                "userId", savedMembership.getUserId()
-        )));
+        auditService.create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Update,
+                        DepartmentMembershipEntity.class,
+                        savedMembership.getId(),
+                        "id",
+                        Map.of(
+                                "departmentId", savedMembership.getDepartmentId(),
+                                "userId", savedMembership.getUserId()
+                        ))
+                .withMessage(
+                        "Die Zugehörigkeit mit der ID %s für die Organisationseinheit %s und die Mitarbeiter:in %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(String.valueOf(savedMembership.getId())),
+                        StringUtils.quote(String.valueOf(savedMembership.getDepartmentId())),
+                        StringUtils.quote(savedMembership.getUserId()),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log(); // TODO: Add Diff
 
         return savedMembership;
     }
@@ -199,7 +230,7 @@ public class DepartmentMembershipController {
     @Operation(
             summary = "Delete department membership",
             description = "Delete an existing department membership. " +
-                          "Requires super admin permissions or department edit permissions for the membership's department."
+                    "Requires super admin permissions or department edit permissions for the membership's department."
     )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -232,11 +263,25 @@ public class DepartmentMembershipController {
         var deletedMembership = departmentMembershipService
                 .deleteEntity(existingMembership);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, DepartmentMembershipEntity.class, Map.of(
-                "id", deletedMembership.getId(),
-                "orgUnitId", deletedMembership.getDepartmentId(),
-                "userId", deletedMembership.getUserId()
-        )));
+        auditService.create()
+                .withUser(user)
+                .withAuditAction(
+                        AuditAction.Delete,
+                        DepartmentMembershipEntity.class,
+                        deletedMembership.getId(),
+                        "id",
+                        Map.of(
+                                "orgUnitId", deletedMembership.getDepartmentId(),
+                                "userId", deletedMembership.getUserId()
+                        ))
+                .withMessage(
+                        "Die Zugehörigkeit mit der ID %s für die Organisationseinheit %s und die Mitarbeiter:in %s wurde von der Mitarbeiter:in %s gelöscht.",
+                        StringUtils.quote(String.valueOf(deletedMembership.getId())),
+                        StringUtils.quote(String.valueOf(deletedMembership.getDepartmentId())),
+                        StringUtils.quote(deletedMembership.getUserId()),
+                        StringUtils.quote(user.getFullName())
+                )
+                .log(); // TODO: Add Diff
 
         if (!user.getId().equals(deletedMembership.getUserId())) {
             try {

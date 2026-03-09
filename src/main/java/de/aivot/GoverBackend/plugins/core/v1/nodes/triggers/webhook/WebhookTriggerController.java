@@ -51,7 +51,30 @@ public class WebhookTriggerController {
         this.processNodeService = processNodeService;
     }
 
-    @RequestMapping(value = "/api/public/webhooks/{slug}/", consumes = {
+    @RequestMapping(value = "/api/public/webhooks/{slug}/", method = {
+            RequestMethod.GET,
+            RequestMethod.POST,
+            RequestMethod.PUT,
+            RequestMethod.PATCH,
+            RequestMethod.DELETE,
+    }, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response handleWithoutBody(
+            @Nonnull HttpServletRequest request,
+            @Nonnull @PathVariable String slug,
+            @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
+            @Nullable @RequestParam(value = AUTH_TOKEN_QUERY_PARAM, required = false) String authToken,
+            @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) UUID identityId,
+            @Nullable @RequestHeader(name = AUTH_HEADER_NAME, required = false) String authorizationHeader
+    ) throws ResponseException {
+        return handleRequest(request, slug, new HashMap<>(), Map.of(), testClaimAccessKey, authToken, authorizationHeader);
+    }
+
+    @RequestMapping(value = "/api/public/webhooks/{slug}/", method = {
+            RequestMethod.POST,
+            RequestMethod.PUT,
+            RequestMethod.PATCH,
+            RequestMethod.DELETE,
+    }, consumes = {
             MediaType.APPLICATION_JSON_VALUE,
             MediaType.APPLICATION_XML_VALUE,
     }, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -67,7 +90,12 @@ public class WebhookTriggerController {
         return handleRequest(request, slug, payload, Map.of(), testClaimAccessKey, authToken, authorizationHeader);
     }
 
-    @RequestMapping(value = "/api/public/webhooks/{slug}/", consumes = {
+    @RequestMapping(value = "/api/public/webhooks/{slug}/", method = {
+            RequestMethod.POST,
+            RequestMethod.PUT,
+            RequestMethod.PATCH,
+            RequestMethod.DELETE,
+    }, consumes = {
             MediaType.MULTIPART_FORM_DATA_VALUE,
     }, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response handleFormData(

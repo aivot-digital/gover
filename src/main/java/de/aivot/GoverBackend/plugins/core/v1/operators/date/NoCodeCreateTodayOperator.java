@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
+import jakarta.annotation.Nullable;
 
 import java.time.ZonedDateTime;
 
@@ -57,6 +58,12 @@ public class NoCodeCreateTodayOperator extends NoCodeOperator {
                         NoCodeDataType.Date
                 )
         );
+    }
+
+    @Nullable
+    @Override
+    public String getHumanReadableTemplate() {
+        return "erstelle das heutige Datum";
     }
 
     @Override

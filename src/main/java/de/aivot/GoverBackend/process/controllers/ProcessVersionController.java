@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.process.controllers;
 
 import de.aivot.GoverBackend.audit.enums.AuditAction;
+import de.aivot.GoverBackend.audit.models.AuditLogPayload;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.department.services.DepartmentService;
@@ -15,6 +16,7 @@ import de.aivot.GoverBackend.process.services.ProcessService;
 import de.aivot.GoverBackend.process.services.ProcessVersionService;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -40,6 +42,8 @@ import java.util.Map;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ProcessVersionController {
+    private static final String MODULE_NAME = "Prozesse";
+
     private final ScopedAuditService auditService;
     private final UserService userService;
     private final ProcessVersionService processDefinitionVersionService;
@@ -54,7 +58,7 @@ public class ProcessVersionController {
                                     DepartmentService departmentService,
                                     ProcessService processDefinitionService,
                                     PermissionService permissionService) {
-        this.auditService = auditService.createScopedAuditService(ProcessVersionController.class);
+        this.auditService = auditService.createScopedAuditService(ProcessVersionController.class, "Prozesse");
         this.userService = userService;
         this.processDefinitionVersionService = processDefinitionVersionService;
         this.departmentService = departmentService;
@@ -108,10 +112,20 @@ public class ProcessVersionController {
         var result = processDefinitionVersionService
                 .create(newVersion);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Create, ProcessVersionEntity.class, Map.of(
-                "processDefinitionId", result.getProcessId(),
-                "processDefinitionVersion", result.getProcessVersion()
-        )));
+        auditService.create()
+                .withUser(execUser)
+                .withAuditAction(AuditAction.Create, ProcessVersionEntity.class,
+                        result.getProcessVersion(),
+                        "processVersion",
+                        Map.of(
+                                "processId", result.getProcessId(),
+                                "processVersion", result.getProcessVersion()
+                        )).withMessage(
+                        "Die Prozessversion %s für den Prozess %s wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(String.valueOf(result.getProcessVersion())),
+                        StringUtils.quote(String.valueOf(result.getProcessId())),
+                        StringUtils.quote(execUser.getFullName())
+                ).log();
 
         return result;
     }
@@ -152,6 +166,7 @@ public class ProcessVersionController {
         var existing = processDefinitionVersionService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
+        var existingMap = AuditLogPayload.toMap(existing);
 
         // Check department permission for the process definition this version belongs to
         var department = departmentService
@@ -170,11 +185,23 @@ public class ProcessVersionController {
 
         var result = processDefinitionVersionService
                 .update(id, updateDTO);
+        var resultMap = AuditLogPayload.toMap(result);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(execUser, AuditAction.Update, ProcessVersionEntity.class, Map.of(
-                "processDefinitionId", result.getProcessId(),
-                "processDefinitionVersion", result.getProcessVersion()
-        )));
+        auditService.create()
+                .withUser(execUser)
+                .withAuditAction(AuditAction.Update, ProcessVersionEntity.class,
+                        result.getProcessVersion(),
+                        "processVersion",
+                        Map.of(
+                                "processId", result.getProcessId(),
+                                "processVersion", result.getProcessVersion()
+                        ))
+                .withDiff(existingMap, resultMap).withMessage(
+                        "Die Prozessversion %s für den Prozess %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(String.valueOf(result.getProcessVersion())),
+                        StringUtils.quote(String.valueOf(result.getProcessId())),
+                        StringUtils.quote(execUser.getFullName())
+                ).log();
 
         return result;
     }
@@ -200,10 +227,19 @@ public class ProcessVersionController {
         var deleted = processDefinitionVersionService
                 .delete(id);
 
-        auditService.addAuditEntry(de.aivot.GoverBackend.audit.models.AuditLogPayload.ofLegacyAction(user, AuditAction.Delete, ProcessVersionEntity.class, Map.of(
-                "processDefinitionId", deleted.getProcessId(),
-                "processDefinitionVersion", deleted.getProcessVersion()
-        )));
+        auditService.create()
+                .withUser(user)
+                .withAuditAction(AuditAction.Delete, ProcessVersionEntity.class,
+                        deleted.getProcessVersion(),
+                        "processVersion",
+                        Map.of(
+                                "processId", deleted.getProcessId(),
+                                "processVersion", deleted.getProcessVersion()
+                        )).withMessage(
+                        "Die Prozessversion %s für den Prozess %s wurde von der Mitarbeiter:in %s gelöscht.",
+                        StringUtils.quote(String.valueOf(deleted.getProcessVersion())),
+                        StringUtils.quote(String.valueOf(deleted.getProcessId())),
+                        StringUtils.quote(user.getFullName())
+                ).log();
     }
 }
-

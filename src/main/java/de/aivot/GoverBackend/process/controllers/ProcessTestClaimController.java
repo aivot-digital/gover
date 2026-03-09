@@ -13,6 +13,7 @@ import de.aivot.GoverBackend.process.repositories.ProcessTestClaimRepository;
 import de.aivot.GoverBackend.process.services.ProcessTestClaimService;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
@@ -41,7 +42,7 @@ public class ProcessTestClaimController extends GenericCrudController<ProcessTes
                                       PermissionService permissionService,
                                       ProcessTestClaimRepository processTestClaimRepository) {
         super(
-                auditService.createScopedAuditService(ProcessTestClaimController.class),
+                auditService.createScopedAuditService(ProcessTestClaimController.class, "Prozesse"),
                 userService,
                 service
         );
@@ -135,6 +136,47 @@ public class ProcessTestClaimController extends GenericCrudController<ProcessTes
     @Override
     protected Integer getIdForEntity(ProcessTestClaimEntity entity) {
         return entity.getId();
+    }
+
+    @Override
+    @Nonnull
+    protected String buildCreateAuditMessage(@Nonnull UserEntity execUser,
+                                             @Nonnull ProcessTestClaimEntity createdItem) {
+        return String.format(
+                "Der Test-Claim mit der ID %s für den Prozess %s (Version %s) wurde von der Mitarbeiter:in %s erstellt.",
+                StringUtils.quote(String.valueOf(createdItem.getId())),
+                StringUtils.quote(String.valueOf(createdItem.getProcessId())),
+                StringUtils.quote(String.valueOf(createdItem.getProcessVersion())),
+                StringUtils.quote(execUser.getFullName())
+        );
+    }
+
+    @Override
+    @Nonnull
+    protected String buildUpdateAuditMessage(@Nonnull UserEntity execUser,
+                                             @Nonnull Integer id,
+                                             @Nonnull ProcessTestClaimEntity updatedItem) {
+        return String.format(
+                "Der Test-Claim mit der ID %s für den Prozess %s (Version %s) wurde von der Mitarbeiter:in %s aktualisiert.",
+                StringUtils.quote(String.valueOf(id)),
+                StringUtils.quote(String.valueOf(updatedItem.getProcessId())),
+                StringUtils.quote(String.valueOf(updatedItem.getProcessVersion())),
+                StringUtils.quote(execUser.getFullName())
+        );
+    }
+
+    @Override
+    @Nonnull
+    protected String buildDeleteAuditMessage(@Nonnull UserEntity execUser,
+                                             @Nonnull Integer id,
+                                             @Nonnull ProcessTestClaimEntity deletedItem) {
+        return String.format(
+                "Der Test-Claim mit der ID %s für den Prozess %s (Version %s) wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(String.valueOf(id)),
+                StringUtils.quote(String.valueOf(deletedItem.getProcessId())),
+                StringUtils.quote(String.valueOf(deletedItem.getProcessVersion())),
+                StringUtils.quote(execUser.getFullName())
+        );
     }
 
     private boolean hasGlobalReadPermission(@Nonnull String userId) {
