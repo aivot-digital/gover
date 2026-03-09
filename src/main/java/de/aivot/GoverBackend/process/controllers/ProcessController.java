@@ -413,7 +413,13 @@ public class ProcessController {
                         existing.getId(),
                         "id"
                 )
-                .withMessage("Ein Prozess wurde exportiert.")
+                .withMessage("Der Prozess %s (%d) wurde von der Mitarbeiter:in %s exportiert."
+                        .formatted(
+                                StringUtils.quote(existing.getInternalTitle()),
+                                existing.getId(),
+                                StringUtils.quote(execUser.getFullName())
+                        )
+                )
                 .log();
 
         return result;
