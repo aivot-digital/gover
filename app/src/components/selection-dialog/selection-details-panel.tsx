@@ -17,6 +17,12 @@ interface SelectionDetailsPanelProps {
     iconColor?: string;
 }
 
+function getTitleAttribute(title: ReactNode): string | undefined {
+    return typeof title === 'string' || typeof title === 'number'
+        ? `${title}`
+        : undefined;
+}
+
 export function SelectionDetailsPanel(props: SelectionDetailsPanelProps): ReactNode {
     return (
         <>
@@ -77,6 +83,7 @@ export function SelectionDetailsPanel(props: SelectionDetailsPanelProps): ReactN
                             <Typography
                                 variant="h6"
                                 lineHeight={1.2}
+                                title={getTitleAttribute(props.title)}
                                 sx={{
                                     flex: 1,
                                     minWidth: 0,
