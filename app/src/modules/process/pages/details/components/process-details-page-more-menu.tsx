@@ -1,4 +1,3 @@
-import {Divider, ListItemIcon, ListItemText, Menu, MenuItem} from '@mui/material';
 import React, {type ReactNode, useMemo} from 'react';
 import History from '@aivot/mui-material-symbols-400-outlined/dist/history/History';
 import Comment from '@aivot/mui-material-symbols-400-outlined/dist/comment/Comment';
@@ -9,6 +8,7 @@ import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete'
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {addSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../../slices/shell-slice';
 import {ModuleIcons} from '../../../../../shells/staff/data/module-icons';
+import {ProcessActionMenu, type ProcessActionMenuItem} from './process-action-menu';
 
 export type ProcessDetailsPageMoreMenuEvent = 'export' | 'test' | 'instances' | 'delete';
 
@@ -29,11 +29,6 @@ export function ProcessDetailsPageMoreMenu(props: ProcessDetailsPageMoreMenuProp
 
     const dispatch = useAppDispatch();
 
-    const isOpen = useMemo(() => {
-        return anchorEl != null;
-    }, [anchorEl]);
-
-
     const dispatchEvent = (event: ProcessDetailsPageMoreMenuEvent | undefined): void => {
         if (event != null) {
             onMenuEvent(event);
@@ -48,82 +43,23 @@ export function ProcessDetailsPageMoreMenu(props: ProcessDetailsPageMoreMenuProp
         onClose();
     };
 
+    const items = useMemo<ProcessActionMenuItem[]>(() => {
+        return entries.map((entry) => entry === 'separator' ? entry : ({
+            label: entry.label,
+            icon: entry.icon,
+            isDangerous: entry.isDangerous,
+            onClick: () => {
+                dispatchEvent(entry.event);
+            },
+        }));
+    }, [dispatchEvent]);
+
     return (
-        <Menu
-            open={isOpen}
+        <ProcessActionMenu
             anchorEl={anchorEl}
             onClose={onClose}
-            anchorOrigin={{
-                horizontal: 'right',
-                vertical: 'top',
-            }}
-            transformOrigin={{
-                horizontal: 'left',
-                vertical: 'top',
-            }}
-            PaperProps={{
-                elevation: 6,
-                sx: {
-                    mt: -0.875,
-                    ml: 0.5,
-                    minWidth: 280,
-                    overflow: 'visible',
-                    '&::before': {
-                        content: '""',
-                        position: 'absolute',
-                        top: 19,
-                        left: 0,
-                        width: 10,
-                        height: 10,
-                        bgcolor: 'background.paper',
-                        transform: 'translateX(-50%) rotate(45deg)',
-                        boxShadow: '-2px 2px 6px rgba(15, 23, 42, 0.08)',
-                        zIndex: 0,
-                    },
-                },
-            }}
-            MenuListProps={{
-                sx: {
-                    py: 1,
-                },
-            }}
-        >
-            {
-                entries
-                    .map((e, index) => e === 'separator' ?
-                        (
-                            <Divider key={index.toString()}/>
-                        ) :
-                        (
-                            <MenuItem
-                                key={e.label}
-                                onClick={() => {
-                                    dispatchEvent(e.event);
-                                }}
-                                sx={{
-                                    minHeight: 42,
-                                    px: 1.5,
-                                    gap: 1,
-                                }}
-                            >
-                                <ListItemIcon
-                                    sx={{
-                                        minWidth: 32,
-                                        color: e.isDangerous ? 'error.main' : 'text.secondary',
-                                    }}
-                                >
-                                    {e.icon}
-                                </ListItemIcon>
-                                <ListItemText
-                                    primary={e.label}
-                                    primaryTypographyProps={{
-                                        color: e.isDangerous ? 'error.main' : 'text.primary',
-                                    }}
-                                />
-                            </MenuItem>
-                        ))
-            }
-        </Menu>
+            items={items}
+        />
     );
 }
 

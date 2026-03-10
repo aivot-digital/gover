@@ -26,7 +26,7 @@ import {
     SnackbarSeverity,
     SnackbarType,
 } from '../../../../slices/shell-slice';
-import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {ProcessFlowEditor} from './components/process-flow-editor/process-flow-editor';
 import {ReactFlowProvider} from '@xyflow/react';
 import {ProcessDetailsPageProvider} from './process-details-page-context';
@@ -58,12 +58,13 @@ import {useDelayedVisibility} from '../../../../hooks/use-delayed-visibility';
 import Undo from '@mui/icons-material/Undo';
 import Redo from '@mui/icons-material/Redo';
 import Refresh from '@mui/icons-material/Refresh';
-import DeleteOutline from '@mui/icons-material/DeleteOutline';
 import Settings from '@aivot/mui-material-symbols-400-outlined/dist/settings/Settings';
 import {type Action} from '../../../../components/actions/actions-props';
 import HomeStorage from '@aivot/mui-material-symbols-400-outlined/dist/home-storage/HomeStorage';
 import News from '@aivot/mui-material-symbols-400-outlined/dist/news/News';
 import {ProcessConnectExistingNodeDialog} from './components/process-connect-existing-node-dialog';
+import {getNodeName} from './components/process-flow-editor/utils/node-utils';
+import SwapHoriz from '@mui/icons-material/SwapHoriz';
 
 const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 150;
 
@@ -77,6 +78,145 @@ export interface ProcessFlow {
     version: ProcessVersionEntity;
     nodes: ProcessNodeEntity[];
     edges: ProcessDefinitionEdgeEntity[];
+}
+
+interface ReplaceNodeRequest {
+    nodeId: number;
+}
+
+interface NodeRefreshSignal {
+    nodeId: number | null;
+    version: number;
+}
+
+interface RecreatedEdgePlan {
+    originalEdge: ProcessDefinitionEdgeEntity;
+    createPayload: ProcessDefinitionEdgeEntity;
+}
+
+interface NodeReplacementPlan {
+    replacementNode: ProcessNodeEntity;
+    unchangedOutgoingEdges: ProcessDefinitionEdgeEntity[];
+    recreatedOutgoingEdges: RecreatedEdgePlan[];
+    removedOutgoingEdges: ProcessDefinitionEdgeEntity[];
+}
+
+function canReplaceNodeType(currentType: ProcessNodeType, replacementType: ProcessNodeType): boolean {
+    if (currentType === ProcessNodeType.Trigger || replacementType === ProcessNodeType.Trigger) {
+        return currentType === ProcessNodeType.Trigger && replacementType === ProcessNodeType.Trigger;
+    }
+
+    if (currentType === ProcessNodeType.Termination || replacementType === ProcessNodeType.Termination) {
+        return currentType === ProcessNodeType.Termination && replacementType === ProcessNodeType.Termination;
+    }
+
+    return true;
+}
+
+function formatOutgoingConnectionSummary(preservedOutgoingEdgeCount: number, removedOutgoingEdgeCount: number): string {
+    if (preservedOutgoingEdgeCount === 0 && removedOutgoingEdgeCount === 0) {
+        return 'Es gibt derzeit keine ausgehenden Verbindungen.';
+    }
+
+    if (removedOutgoingEdgeCount === 0) {
+        return preservedOutgoingEdgeCount === 1
+            ? 'Die ausgehende Verbindung wird übernommen.'
+            : `Alle ${preservedOutgoingEdgeCount} ausgehenden Verbindungen werden übernommen.`;
+    }
+
+    if (preservedOutgoingEdgeCount === 0) {
+        return removedOutgoingEdgeCount === 1
+            ? 'Keine ausgehende Verbindung kann übernommen werden. Die bestehende Verbindung wird entfernt.'
+            : `Keine ausgehende Verbindung kann übernommen werden. ${removedOutgoingEdgeCount} bestehende Verbindungen werden entfernt.`;
+    }
+
+    const preservedText = preservedOutgoingEdgeCount === 1
+        ? 'Eine ausgehende Verbindung wird übernommen.'
+        : `${preservedOutgoingEdgeCount} ausgehende Verbindungen werden übernommen.`;
+    const removedText = removedOutgoingEdgeCount === 1
+        ? 'Eine Verbindung kann nicht übernommen werden und wird entfernt.'
+        : `${removedOutgoingEdgeCount} Verbindungen können nicht übernommen werden und werden entfernt.`;
+
+    return `${preservedText} ${removedText}`;
+}
+
+function formatRemovedOutgoingConnectionsMessage(removedOutgoingEdgeCount: number): string {
+    return removedOutgoingEdgeCount === 1
+        ? 'Eine ausgehende Verbindung konnte nicht übernommen werden und wurde entfernt.'
+        : `${removedOutgoingEdgeCount} ausgehende Verbindungen konnten nicht übernommen werden und wurden entfernt.`;
+}
+
+function getProviderPortOrderIndex(provider: ProcessNodeProvider, portKey: string): number {
+    const portIndex = provider.ports.findIndex((port) => port.key === portKey);
+    return portIndex === -1 ? Number.MAX_SAFE_INTEGER : portIndex;
+}
+
+function buildNodeReplacementPlan(
+    processFlow: ProcessFlow,
+    node: ProcessNodeEntity,
+    currentProvider: ProcessNodeProvider,
+    replacementProvider: ProcessNodeProvider,
+): NodeReplacementPlan {
+    // Preserve outgoing connections deterministically: keep same-key ports first, then map any
+    // remaining edges onto the remaining replacement ports in order. Extra edges are dropped when
+    // the new provider simply cannot host the same fan-out anymore.
+    const outgoingEdges = processFlow
+        .edges
+        .filter((edge) => edge.fromNodeId === node.id)
+        .sort((leftEdge, rightEdge) => (
+            getProviderPortOrderIndex(currentProvider, leftEdge.viaPort) - getProviderPortOrderIndex(currentProvider, rightEdge.viaPort) ||
+            leftEdge.id - rightEdge.id
+        ));
+    const replacementPortKeys = replacementProvider.ports.map((port) => port.key);
+    const usedReplacementPortKeys = new Set<string>();
+    const unchangedOutgoingEdges: ProcessDefinitionEdgeEntity[] = [];
+    const recreatedOutgoingEdges: RecreatedEdgePlan[] = [];
+    const removedOutgoingEdges: ProcessDefinitionEdgeEntity[] = [];
+
+    for (const outgoingEdge of outgoingEdges) {
+        const preferredReplacementPortKey = replacementPortKeys.find((portKey) => (
+            portKey === outgoingEdge.viaPort &&
+            !usedReplacementPortKeys.has(portKey)
+        ));
+        const fallbackReplacementPortKey = replacementPortKeys.find((portKey) => (
+            !usedReplacementPortKeys.has(portKey)
+        ));
+        const replacementPortKey = preferredReplacementPortKey ?? fallbackReplacementPortKey ?? null;
+
+        if (replacementPortKey == null) {
+            removedOutgoingEdges.push(outgoingEdge);
+            continue;
+        }
+
+        usedReplacementPortKeys.add(replacementPortKey);
+
+        if (replacementPortKey === outgoingEdge.viaPort) {
+            unchangedOutgoingEdges.push(outgoingEdge);
+            continue;
+        }
+
+        recreatedOutgoingEdges.push({
+            originalEdge: outgoingEdge,
+            createPayload: {
+                ...outgoingEdge,
+                id: 0,
+                viaPort: replacementPortKey,
+            },
+        });
+    }
+
+    return {
+        replacementNode: {
+            ...node,
+            processNodeDefinitionKey: replacementProvider.key,
+            processNodeDefinitionVersion: replacementProvider.majorVersion,
+            configuration: {},
+            outputMappings: {},
+        },
+        unchangedOutgoingEdges,
+        recreatedOutgoingEdges,
+        removedOutgoingEdges,
+    };
 }
 
 export function ProcessDetailsPage(): ReactNode {
@@ -106,10 +246,15 @@ export function ProcessDetailsPage(): ReactNode {
         viaPort: string;
     } | null>(null);
     const [newNodeOnEdgeId, setNewNodeOnEdgeId] = useState<number | null>(null);
+    const [replaceNodeRequest, setReplaceNodeRequest] = useState<ReplaceNodeRequest | null>(null);
     const [connectExistingNodeRequest, setConnectExistingNodeRequest] = useState<{
         sourceNodeId: number;
         preferredPortKey: string | null;
     } | null>(null);
+    const [nodeRefreshSignal, setNodeRefreshSignal] = useState<NodeRefreshSignal>({
+        nodeId: null,
+        version: 0,
+    });
 
     const [currentTestClaim, setCurrentTestClaim] = useState<{
         claim: ProcessTestClaimEntity;
@@ -932,6 +1077,11 @@ export function ProcessDetailsPage(): ReactNode {
     const handleOpenAddTriggerDialog = useCallback(() => {
         setShowAddTriggerDialog(true);
     }, []);
+    const handleOpenReplaceNodeDialog = useCallback((node: ProcessNodeEntity): void => {
+        setReplaceNodeRequest({
+            nodeId: node.id,
+        });
+    }, []);
     const handleCreateEdge = useCallback((fromNodeId: number, toNodeId: number, viaPortKey: string): void => {
         if (processFlow == null) {
             return;
@@ -965,6 +1115,118 @@ export function ProcessDetailsPage(): ReactNode {
                 dispatch(showApiErrorSnackbar(err, 'Die Verbindung konnte nicht erstellt werden.'));
             });
     }, [dispatch, processFlow]);
+    const handleReplaceNode = useCallback(async (node: ProcessNodeEntity, replacementProvider: ProcessNodeProvider): Promise<void> => {
+        if (processFlow == null) {
+            return;
+        }
+
+        const currentProvider = flowNodeProviderCache[getProcessNodeProviderKey(
+            node.processNodeDefinitionKey,
+            node.processNodeDefinitionVersion,
+        )];
+        if (currentProvider == null) {
+            dispatch(showErrorSnackbar('Der aktuelle Knotentyp konnte nicht aufgelöst werden.'));
+            return;
+        }
+
+        if (!canReplaceNodeType(currentProvider.type, replacementProvider.type)) {
+            dispatch(showErrorSnackbar('Auslöser und Endelemente können nur durch denselben Knotentyp ersetzt werden.'));
+            return;
+        }
+
+        const replacementPlan = buildNodeReplacementPlan(processFlow, node, currentProvider, replacementProvider);
+        const preservedOutgoingEdgeCount = replacementPlan.unchangedOutgoingEdges.length + replacementPlan.recreatedOutgoingEdges.length;
+        const removedOutgoingEdgeCount = replacementPlan.removedOutgoingEdges.length;
+        const outgoingConnectionSummary = formatOutgoingConnectionSummary(
+            preservedOutgoingEdgeCount,
+            removedOutgoingEdgeCount,
+        );
+
+        const confirmed = await confirm({
+            title: 'Prozesselement ersetzen',
+            confirmButtonText: 'Ersetzen',
+            children: (
+                <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
+                    <Typography>
+                        Möchten Sie das Prozesselement <strong>{getNodeName(node, currentProvider)}</strong> wirklich
+                        durch <strong>{replacementProvider.name}</strong> ersetzen?
+                    </Typography>
+                    <Typography>
+                        Name, Kurzbeschreibung und Datenschlüssel bleiben erhalten.
+                        Sämtliche Konfiguration und Zuweisungen werden zurückgesetzt.
+                    </Typography>
+                    <Typography>
+                        Bestehende eingehende Verbindungen bleiben erhalten. {outgoingConnectionSummary}
+                    </Typography>
+                </Box>
+            ),
+        });
+
+        if (!confirmed) {
+            return;
+        }
+
+        dispatch(setLoadingMessage({
+            message: 'Ersetze Prozesselement',
+            blocking: false,
+            estimatedTime: 1000,
+        }));
+
+        const edgeApi = new ProcessDefinitionEdgeApiService();
+        const nodeApi = new ProcessNodeApiService();
+        // Recreated edges are removed before the node update and created afterwards. That avoids
+        // temporarily persisting an edge whose `viaPort` no longer exists on the current node type.
+        const edgesToRemove = [
+            ...replacementPlan.removedOutgoingEdges,
+            ...replacementPlan.recreatedOutgoingEdges.map((edgePlan) => edgePlan.originalEdge),
+        ];
+
+        try {
+            await Promise.all(edgesToRemove.map((edge) => edgeApi.destroy(edge.id)));
+
+            const updatedNode = await nodeApi.update(node.id, replacementPlan.replacementNode);
+            const recreatedEdges = await Promise.all(
+                replacementPlan.recreatedOutgoingEdges.map((edgePlan) => edgeApi.create(edgePlan.createPayload)),
+            );
+
+            setFlowNodeProviderCache((previousCache) => ({
+                ...previousCache,
+                [getProcessNodeProviderKey(replacementProvider.key, replacementProvider.majorVersion)]: replacementProvider,
+            }));
+            setProcessFlow((previousProcess) => {
+                if (previousProcess == null) {
+                    return previousProcess;
+                }
+
+                return {
+                    ...previousProcess,
+                    nodes: previousProcess.nodes.map((processNode) => processNode.id === updatedNode.id ? updatedNode : processNode),
+                    edges: [
+                        ...previousProcess.edges.filter((edge) => !edgesToRemove.some((edgeToRemove) => edgeToRemove.id === edge.id)),
+                        ...recreatedEdges,
+                    ],
+                };
+            });
+            setNodeRefreshSignal((previousSignal) => ({
+                nodeId: node.id,
+                version: previousSignal.version + 1,
+            }));
+
+            dispatch(showSuccessSnackbar('Das Prozesselement wurde ersetzt.'));
+            if (removedOutgoingEdgeCount > 0) {
+                dispatch(addSnackbarMessage({
+                    key: `process-node-replaced-removed-edges-${node.id}-${replacementProvider.key}-${replacementProvider.majorVersion}`,
+                    type: SnackbarType.AutoHiding,
+                    severity: SnackbarSeverity.Warning,
+                    message: formatRemovedOutgoingConnectionsMessage(removedOutgoingEdgeCount),
+                }));
+            }
+        } catch (error) {
+            dispatch(showApiErrorSnackbar(error, 'Das Prozesselement konnte nicht ersetzt werden.'));
+        } finally {
+            dispatch(clearLoadingMessage());
+        }
+    }, [confirm, dispatch, flowNodeProviderCache, processFlow]);
     const headerActions = useMemo<Action[]>(() => {
         const isInTestMode = currentTestClaim != null;
         const runtimeActions: Action[] = instanceId == null ? [] : [
@@ -1055,6 +1317,13 @@ export function ProcessDetailsPage(): ReactNode {
 
         return processFlow.nodes.find((node) => node.id === connectExistingNodeRequest.sourceNodeId) ?? null;
     }, [connectExistingNodeRequest, processFlow]);
+    const replaceNodeSource = useMemo(() => {
+        if (processFlow == null || replaceNodeRequest == null) {
+            return null;
+        }
+
+        return processFlow.nodes.find((node) => node.id === replaceNodeRequest.nodeId) ?? null;
+    }, [processFlow, replaceNodeRequest]);
 
     if (processFlow == null) {
         if (showProcessDetailsPageSkeleton) {
@@ -1244,6 +1513,7 @@ export function ProcessDetailsPage(): ReactNode {
                                                         preferredPortKey: preferredPortKey ?? null,
                                                     });
                                                 }}
+                                                onStartReplaceNode={handleOpenReplaceNodeDialog}
                                                 onDeleteEdge={(edgeId) => {
                                                     new ProcessDefinitionEdgeApiService()
                                                         .destroy(edgeId)
@@ -1346,9 +1616,11 @@ export function ProcessDetailsPage(): ReactNode {
                         >
                             <ProcessDetailsPageProvider
                                 value={{
-                                    editable: true,
+                                    editable: currentTestClaim == null,
                                     onSave: handleSaveNode,
                                     onDelete: handleDeleteNode,
+                                    onStartReplaceNode: handleOpenReplaceNodeDialog,
+                                    nodeRefreshSignal,
                                 }}
                             >
                                 <Outlet/>
@@ -1361,6 +1633,7 @@ export function ProcessDetailsPage(): ReactNode {
             <SelectNodeProviderDialog
                 open={showAddTriggerDialog}
                 nodeProviders={availableNodeProviders}
+                title="Auslöser hinzufügen"
                 filter={(provider) => provider.type === ProcessNodeType.Trigger}
                 onClose={() => {
                     setShowAddTriggerDialog(false);
@@ -1379,6 +1652,50 @@ export function ProcessDetailsPage(): ReactNode {
                 }}
                 onConnect={(fromNodeId, toNodeId, viaPortKey) => {
                     handleCreateEdge(fromNodeId, toNodeId, viaPortKey);
+                }}
+            />
+
+            <SelectNodeProviderDialog
+                open={replaceNodeSource != null}
+                nodeProviders={availableNodeProviders}
+                title="Prozesselement ersetzen"
+                primaryActionLabel="Ersetzen"
+                primaryActionIcon={<SwapHoriz sx={{fontSize: 18}}/>}
+                filter={(provider) => {
+                    if (replaceNodeSource == null) {
+                        return false;
+                    }
+
+                    const currentProvider = flowNodeProviderCache[getProcessNodeProviderKey(
+                        replaceNodeSource.processNodeDefinitionKey,
+                        replaceNodeSource.processNodeDefinitionVersion,
+                    )];
+                    if (currentProvider == null) {
+                        return false;
+                    }
+
+                    if (
+                        provider.key === replaceNodeSource.processNodeDefinitionKey &&
+                        provider.majorVersion === replaceNodeSource.processNodeDefinitionVersion
+                    ) {
+                        return false;
+                    }
+
+                    if (!canReplaceNodeType(currentProvider.type, provider.type)) {
+                        return false;
+                    }
+
+                    return true;
+                }}
+                onClose={() => {
+                    setReplaceNodeRequest(null);
+                }}
+                onSelect={(provider) => {
+                    if (replaceNodeSource == null) {
+                        return;
+                    }
+
+                    void handleReplaceNode(replaceNodeSource, provider);
                 }}
             />
 

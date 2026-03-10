@@ -108,6 +108,10 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     public ProcessNodeEntity performUpdate(@Nonnull Integer id,
                                            @Nonnull ProcessNodeEntity entity,
                                            @Nonnull ProcessNodeEntity existingEntity) throws ResponseException {
+        var providerChanged =
+                !existingEntity.getProcessNodeDefinitionKey().equals(entity.getProcessNodeDefinitionKey()) ||
+                existingEntity.getProcessNodeDefinitionVersion() != entity.getProcessNodeDefinitionVersion();
+
         existingEntity.setProcessId(entity.getProcessId());
         existingEntity.setProcessVersion(entity.getProcessVersion());
         existingEntity.setName(entity.getName());
@@ -120,8 +124,11 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         existingEntity.setNotes(entity.getNotes());
         existingEntity.setRequirements(entity.getRequirements());
 
-        // Derive configuration
-        var derivedObjectItemData = deriveDataObjectItemData(entity, false);
+        // A provider replacement intentionally starts from a fresh configuration. In that case we
+        // must derive the new provider defaults with skipped validation errors first, just like the
+        // create flow does, otherwise the update endpoint would reject the empty reset state before
+        // the user even has a chance to configure the new node.
+        var derivedObjectItemData = deriveDataObjectItemData(entity, providerChanged);
 
         // If derivation has errors, throw bad request
         if (derivedObjectItemData.hasAnyError()) {
@@ -130,6 +137,10 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
 
         // Set derived configuration
         existingEntity.setConfiguration(derivedObjectItemData);
+
+        if (providerChanged) {
+            return processDefinitionNodeRepository.save(existingEntity);
+        }
 
         // Fetch the provider and validate configuration
         var provider = processNodeProviderService
@@ -200,4 +211,3 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         return derivedData;
     }
 }
-
