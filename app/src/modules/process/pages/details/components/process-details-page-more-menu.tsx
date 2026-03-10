@@ -10,7 +10,7 @@ import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {addSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../../slices/shell-slice';
 import {ModuleIcons} from '../../../../../shells/staff/data/module-icons';
 
-export type ProcessDetailsPageMoreMenuEvent = 'export' | 'test' | 'instances';
+export type ProcessDetailsPageMoreMenuEvent = 'export' | 'test' | 'instances' | 'delete';
 
 interface ProcessDetailsPageMoreMenuProps {
     anchorEl: null | HTMLElement;
@@ -167,6 +167,7 @@ const entries: Array<{
     {
         icon: <Delete/>,
         label: 'Prozess löschen',
+        event: 'delete',
         isDangerous: true,
     },
 ];
