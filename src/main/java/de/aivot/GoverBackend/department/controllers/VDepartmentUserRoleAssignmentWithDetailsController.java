@@ -35,6 +35,10 @@ import jakarta.annotation.Nullable;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * @deprecated
+ */
+@Deprecated
 @RestController
 @RequestMapping("/api/department-user-role-assignments-with-details/")
 @Tag(

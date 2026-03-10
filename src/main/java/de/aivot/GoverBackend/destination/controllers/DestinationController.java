@@ -11,6 +11,7 @@ import de.aivot.GoverBackend.destination.filters.DestinationFilter;
 import de.aivot.GoverBackend.destination.services.DestinationService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,9 +37,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/destinations/")
 @Tag(
-        name = "Destinations",
-        description = "Destinations are used to define where data should be sent. " +
-                "They can represent external systems, endpoints, or services that receive data from the application."
+        name = OpenApiConstants.Tags.DestinationsName,
+        description = OpenApiConstants.Tags.DestinationsDescription
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class DestinationController {

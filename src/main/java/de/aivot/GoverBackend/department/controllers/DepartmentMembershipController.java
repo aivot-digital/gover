@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.department.controllers;
 
 import de.aivot.GoverBackend.audit.enums.AuditAction;
-import de.aivot.GoverBackend.audit.models.AuditLogPayload;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.department.entities.DepartmentMembershipEntity;
@@ -14,12 +13,15 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.services.DepartmentMembershipMailService;
 import de.aivot.GoverBackend.mail.services.ExceptionMailService;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
 import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
@@ -31,19 +33,14 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
-
 import java.io.IOException;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/department-memberships/")
 @Tag(
-        name = "Department Memberships",
-        description = "Department Memberships link users to organisational units (departments) within the system. " +
-                "They define which users belong to which departments and what roles or permissions they have within those departments. " +
-                "Managing department memberships is crucial for controlling access to resources and functionalities based on organisational structure."
+        name = OpenApiConstants.Tags.DepartmentMembershipsName,
+        description = OpenApiConstants.Tags.DepartmentMembershipsDescription
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class DepartmentMembershipController {

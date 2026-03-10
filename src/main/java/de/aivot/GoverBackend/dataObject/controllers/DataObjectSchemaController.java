@@ -8,6 +8,7 @@ import de.aivot.GoverBackend.dataObject.filters.DataObjectSchemaFilter;
 import de.aivot.GoverBackend.dataObject.services.DataObjectSchemaService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,10 +32,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/data-objects/")
 @Tag(
-        name = "Data Objects",
-        description = "Data Objects are separated into schemas and items. " +
-                "Schemas define the structure of the data objects, while items are the actual data entries conforming to these schemas. " +
-                "Data Objects are used to store flexible and dynamic data within the application."
+        name = OpenApiConstants.Tags.DataObjectSchemasName,
+        description = OpenApiConstants.Tags.DataObjectSchemasDescription
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class DataObjectSchemaController {

@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.config.controllers;
 
 import de.aivot.GoverBackend.audit.enums.AuditAction;
-import de.aivot.GoverBackend.audit.models.AuditLogPayload;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.config.dtos.SystemConfigRequestDto;
@@ -11,11 +10,14 @@ import de.aivot.GoverBackend.config.filters.SystemConfigFilter;
 import de.aivot.GoverBackend.config.services.SystemConfigService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,20 +28,14 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
-
-import java.util.Map;
-
 /**
  * This controller provides functionality to list, retrieve and update system configurations.
  */
 @RestController
 @RequestMapping("/api/system-configs/")
 @Tag(
-        name = "System Configurations",
-        description = "System configurations are key-value pairs that define various settings and parameters of the application. " +
-                "These configurations can be used to customize the behavior of the system and should be used if you need to provide configuration values to citizens publicly."
+        name = OpenApiConstants.Tags.SystemConfigsName,
+        description = OpenApiConstants.Tags.SystemConfigDescription
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class SystemConfigController {

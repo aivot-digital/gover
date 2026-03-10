@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.dataObject.controllers;
 
 import de.aivot.GoverBackend.audit.enums.AuditAction;
-import de.aivot.GoverBackend.audit.models.AuditLogPayload;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.dataObject.dtos.DataObjectItemRequestDTO;
@@ -12,10 +11,13 @@ import de.aivot.GoverBackend.dataObject.filters.DataObjectItemFilter;
 import de.aivot.GoverBackend.dataObject.services.DataObjectItemService;
 import de.aivot.GoverBackend.dataObject.services.DataObjectSchemaService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,18 +28,13 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
-
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/data-objects/{schemaKey}/items/")
 @Tag(
-        name = "Data Objects",
-        description = "Data Objects are separated into schemas and items. " +
-                "Schemas define the structure of the data objects, while items are the actual data entries conforming to these schemas. " +
-                "Data Objects are used to store flexible and dynamic data within the application."
+        name = OpenApiConstants.Tags.DataObjectItemsName,
+        description = OpenApiConstants.Tags.DataObjectItemsDescription
 )
 public class DataObjectItemController {
     private final ScopedAuditService auditService;

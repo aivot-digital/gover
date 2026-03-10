@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.captcha.services.AltchaService;
 import de.aivot.GoverBackend.captcha.services.RedisCaptchaReplayGuard;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,9 +29,8 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @Tag(
-        name = "Captcha",
-        description = "Captcha challenges are used to prevent automated abuse of the system. " +
-                      "They require clients to solve a proof-of-work challenge before performing certain actions."
+        name = OpenApiConstants.Tags.CaptchaName,
+        description = OpenApiConstants.Tags.CaptchaDescription
 )
 public class CaptchaController {
 

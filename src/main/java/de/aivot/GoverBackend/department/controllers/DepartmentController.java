@@ -12,6 +12,7 @@ import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.department.services.VDepartmentMembershipWithPermissionsService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
 import de.aivot.GoverBackend.utils.StringUtils;
@@ -35,11 +36,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/departments/")
 @Tag(
-        name = "Departments",
-        description = "Departments are organisational units within the system. " +
-                "They can represent different sub-organizations, departments, or divisions within an organisation. " +
-                "Departments help in structuring users and managing permissions effectively. " +
-                "They also own certain resources and can have specific settings that apply to all users within the department."
+        name = OpenApiConstants.Tags.DepartmentsName,
+        description = OpenApiConstants.Tags.DepartmentsDescription
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class DepartmentController {

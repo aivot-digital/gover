@@ -12,6 +12,7 @@ import de.aivot.GoverBackend.config.models.UserConfigDefinition;
 import de.aivot.GoverBackend.config.services.UserConfigService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -41,9 +42,8 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/user-configs/{userId}/")
 @Tag(
-        name = "User Configurations",
-        description = "User configurations are key-value pairs that define various settings and preferences for individual users. " +
-                "These configurations can be used to customize the behavior of the system for each user."
+        name = OpenApiConstants.Tags.UserConfigsName,
+        description = OpenApiConstants.Tags.UserConfigDescription
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class UserConfigController {
