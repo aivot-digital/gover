@@ -30,6 +30,7 @@ import {DataObjectSelectFieldSummary} from './data-object-select-field-summary';
 import {RichTextInputSummary} from './rich-text-input-summary';
 import {CodeInputSummary} from './code-input-summary';
 import {NoCodeInputSummary} from './no-code-input-summary';
+import {UiDefinitionInputSummary} from './ui-definition-input-summary';
 
 export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.FormLayout]: RootSummary,
@@ -61,7 +62,7 @@ export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.FunctionInput]: null,
     [ElementType.CodeInput]: CodeInputSummary,
     [ElementType.RichTextInput]: RichTextInputSummary,
-    [ElementType.UiDefinitionInput]: null,
+    [ElementType.UiDefinitionInput]: UiDefinitionInputSummary,
     [ElementType.IdentityInput]: null,
     [ElementType.TabLayout]: null,
     [ElementType.ChipInput]: ChipInputFieldSummary,

@@ -41,6 +41,7 @@ import {DataObjectSelectFieldEditor} from './data-object-select-field-editor';
 import {RichTextInputFieldEditor} from './rich-text-input-field-editor';
 import {CodeInputFieldEditor} from './code-input-field-editor';
 import {NoCodeInputFieldEditor} from './no-code-input-field-editor';
+import {UiDefinitionInputFieldEditor} from './ui-definition-input-field-editor';
 
 export interface EditorTab {
     label: string;
@@ -142,7 +143,9 @@ export const editors: ElementTypesMap<EditorSet | null> = {
     [ElementType.RichTextInput]: {
         default: RichTextInputFieldEditor,
     },
-    [ElementType.UiDefinitionInput]: null,
+    [ElementType.UiDefinitionInput]: {
+        default: UiDefinitionInputFieldEditor,
+    },
     [ElementType.IdentityInput]: null,
     [ElementType.TabLayout]: null,
     [ElementType.ChipInput]: {

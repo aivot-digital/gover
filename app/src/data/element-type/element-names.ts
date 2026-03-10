@@ -31,7 +31,7 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.FunctionInput]: 'Funktionseingabe',
     [ElementType.CodeInput]: 'Codeeingabe',
     [ElementType.RichTextInput]: 'Markdown-Eingabe',
-    [ElementType.UiDefinitionInput]: 'UI-Definition Eingabe',
+    [ElementType.UiDefinitionInput]: 'UI-Definition-Editor',
     [ElementType.IdentityInput]: 'Identitätseingabe',
     [ElementType.TabLayout]: 'Tabs',
     [ElementType.ChipInput]: 'Tag-Liste (Schlagwörter)',

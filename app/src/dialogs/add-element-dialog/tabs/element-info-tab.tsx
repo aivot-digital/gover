@@ -1247,7 +1247,14 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             </Box>
         </Box>
     ),
-    [ElementType.UiDefinitionInput]: null,
+    [ElementType.UiDefinitionInput]: (
+        <Box>
+            <Typography>
+                Das Element „UI-Definition-Editor“ zeigt eine kompakte Zusammenfassung der hinterlegten
+                UI-Definition an und öffnet die Bearbeitung in einem separaten Dialog.
+            </Typography>
+        </Box>
+    ),
     [ElementType.IdentityInput]: null,
     [ElementType.TabLayout]: null,
 };

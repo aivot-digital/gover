@@ -62,7 +62,7 @@ export const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
     [ElementType.ConfigLayout]: null,
     [ElementType.FunctionInput]: null,
     [ElementType.CodeInput]: ElementTypeGroups.Input,
-    [ElementType.UiDefinitionInput]: null,
+    [ElementType.UiDefinitionInput]: ElementTypeGroups.Input,
     [ElementType.IdentityInput]: null,
     [ElementType.TabLayout]: null,
 };
@@ -98,6 +98,7 @@ export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
     [ElementType.NoCodeInput]: 'Erfasst Logik über einen No-Code-Ausdruck.',
     [ElementType.CodeInput]: 'Erfasst technischen oder ausführbaren Code.',
     [ElementType.RichTextInput]: 'Erfasst formatierte Texte in Markdown.',
+    [ElementType.UiDefinitionInput]: 'Definiert eine Benutzeroberfläche (UI) für z. B. Formulare oder Aufgaben.',
 };
 
 export function getElementGroupForType(type: ElementType): ElementTypeGroups | null {
