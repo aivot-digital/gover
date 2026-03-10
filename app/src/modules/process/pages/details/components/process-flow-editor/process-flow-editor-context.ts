@@ -14,6 +14,7 @@ export interface ProcessFlowEditorContextType {
     onDeleteEdge: (forEdgeId: number) => void;
     onDeleteNode: (node: ProcessNodeEntity) => void | Promise<void>;
     onConnectNodeToExisting: (node: ProcessNodeEntity, preferredPortKey?: string) => void;
+    onStartReplaceNode: (node: ProcessNodeEntity) => void;
 
     onAddFollowUpNode: (fromNodeId: number, viaPortKey: string) => void;
     onAddInbetweenNode: (forEdgeId: number) => void;
