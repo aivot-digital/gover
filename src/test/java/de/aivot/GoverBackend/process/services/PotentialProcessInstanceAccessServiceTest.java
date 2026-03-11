@@ -5,37 +5,35 @@ import de.aivot.GoverBackend.process.repositories.VPotentialProcessInstanceAcces
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class PotentialProcessInstanceAccessServiceTest {
     private static final Integer PROCESS_ID = 42;
     private static final Integer PROCESS_VERSION = 3;
     private static final String REQUIRED_PERMISSION = "process_instance.edit_task";
 
-    private VPotentialProcessInstanceAccessRepository repository;
+    private List<Object[]> rows;
     private PotentialProcessInstanceAccessService service;
 
     @BeforeEach
     void setUp() {
-        repository = mock(VPotentialProcessInstanceAccessRepository.class);
+        rows = List.of();
         service = new PotentialProcessInstanceAccessService(repository);
     }
 
     @Test
     void listSelectableItems_UsesOnlyDirectMembershipAndDirectPermissionsForUsers() {
-        when(repository.findRowsByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
-                .thenReturn(List.of(
-                        departmentRow(10, List.of()),
-                        teamRow(20, List.of()),
-                        userRow("direct-user", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION)),
-                        userRow("indirect-member-user", 10, null, false, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION)),
-                        userRow("indirect-permission-user", null, 20, true, List.of(), List.of(REQUIRED_PERMISSION))
-                ));
+        rows = List.of(
+                departmentRow(10, List.of()),
+                teamRow(20, List.of()),
+                userRow("direct-user", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION)),
+                userRow("indirect-member-user", 10, null, false, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION)),
+                userRow("indirect-permission-user", null, 20, true, List.of(), List.of(REQUIRED_PERMISSION))
+        );
 
         var result = service.listSelectableItems(
                 PROCESS_ID,
@@ -54,12 +52,11 @@ class PotentialProcessInstanceAccessServiceTest {
 
     @Test
     void listSelectableItems_KeepsDirectDepartmentAndTeamAccess() {
-        when(repository.findRowsByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
-                .thenReturn(List.of(
-                        departmentRow(10, List.of(REQUIRED_PERMISSION)),
-                        teamRow(20, List.of(REQUIRED_PERMISSION)),
-                        userRow("deputy-only-user", 10, null, false, List.of(), List.of(REQUIRED_PERMISSION))
-                ));
+        rows = List.of(
+                departmentRow(10, List.of(REQUIRED_PERMISSION)),
+                teamRow(20, List.of(REQUIRED_PERMISSION)),
+                userRow("deputy-only-user", 10, null, false, List.of(), List.of(REQUIRED_PERMISSION))
+        );
 
         var result = service.listSelectableItems(
                 PROCESS_ID,
@@ -78,11 +75,10 @@ class PotentialProcessInstanceAccessServiceTest {
 
     @Test
     void listSelectableItems_IgnoresNullRows() {
-        when(repository.findRowsByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
-                .thenReturn(Arrays.asList(
-                        null,
-                        departmentRow(10, List.of(REQUIRED_PERMISSION))
-                ));
+        rows = Arrays.asList(
+                null,
+                departmentRow(10, List.of(REQUIRED_PERMISSION))
+        );
 
         var result = service.listSelectableItems(
                 PROCESS_ID,
@@ -143,5 +139,39 @@ class PotentialProcessInstanceAccessServiceTest {
                 directPermissions.toArray(String[]::new),
                 permissions.toArray(String[]::new)
         };
+    }
+
+    private VPotentialProcessInstanceAccessRepository repository = proxy(
+            VPotentialProcessInstanceAccessRepository.class,
+            (methodName, args) -> switch (methodName) {
+                case "findRowsByProcessIdAndProcessVersion" -> rows;
+                default -> unsupported(methodName);
+            }
+    );
+
+    @FunctionalInterface
+    private interface MethodHandler {
+        Object invoke(String methodName, Object[] args);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T proxy(Class<T> type, MethodHandler handler) {
+        return (T) Proxy.newProxyInstance(
+                type.getClassLoader(),
+                new Class<?>[]{type},
+                (proxy, method, args) -> {
+                    var methodName = method.getName();
+                    return switch (methodName) {
+                        case "toString" -> type.getSimpleName() + "TestProxy";
+                        case "hashCode" -> System.identityHashCode(proxy);
+                        case "equals" -> proxy == args[0];
+                        default -> handler.invoke(methodName, args);
+                    };
+                }
+        );
+    }
+
+    private static Object unsupported(String methodName) {
+        throw new UnsupportedOperationException("Unexpected repository method call in test: " + methodName);
     }
 }
