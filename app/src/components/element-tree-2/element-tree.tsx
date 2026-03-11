@@ -24,7 +24,6 @@ export interface ElementTreeProps<T extends AnyElement> {
     value: T;
     onChange: (patch: T) => void;
     editable: boolean;
-    drawerZIndexOverride?: number;
 }
 
 interface ElementTreeSearchResult {
@@ -38,7 +37,6 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
         value,
         onChange,
         editable,
-        drawerZIndexOverride,
     } = props;
 
     const {
@@ -340,7 +338,6 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                                 expandCommand: expandCommand,
                                 activeSearchResultPath: activeSearchResult?.path,
                                 allElements: allElements,
-                                drawerZIndexOverride: drawerZIndexOverride,
                             }}
                         >
                             <ElementTreeChildList

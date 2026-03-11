@@ -27,7 +27,6 @@ export interface ElementTreeContextType {
     expandCommand: ElementTreeExpandCommand;
     activeSearchResultPath?: string[];
     allElements: ElementWithParents[];
-    drawerZIndexOverride?: number;
 }
 
 export const ElementTreeContext = createContext<ElementTreeContextType | null>(null);

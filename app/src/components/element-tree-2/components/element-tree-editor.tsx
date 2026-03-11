@@ -35,7 +35,6 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
     const {
         root,
         editable,
-        drawerZIndexOverride,
     } = useElementTreeContext();
 
     const {
@@ -86,11 +85,9 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
 
     return (
         <Drawer
+            variant="persistent"
             anchor="right"
             open={open}
-            sx={{
-                zIndex: drawerZIndexOverride,
-            }}
             slotProps={{
                 paper: {
                     sx: {
@@ -308,7 +305,6 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                                         Soll das Element wirklich gelöscht werden?
                                     </Typography>
                                 ),
-                                zIndex: drawerZIndexOverride != null ? drawerZIndexOverride + 10 : undefined,
                             }).then((confirmed) => {
                                 if (confirmed) {
                                     onDelete();

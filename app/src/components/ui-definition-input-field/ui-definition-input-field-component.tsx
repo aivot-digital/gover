@@ -42,8 +42,6 @@ function buildSummary(value?: UiDefinitionInputFieldElementItem | null): string 
 }
 
 export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldComponentProps) {
-    const theme = useTheme();
-
     const {
         label,
         hint,
@@ -225,7 +223,6 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                     value={draftValue ?? value ?? defaultValue}
                                     onChange={setDraftValue}
                                     editable={!disabled}
-                                    drawerZIndexOverride={theme.zIndex.modal + 10}
                                 />
                             </Allotment.Pane>
                         </Allotment>
