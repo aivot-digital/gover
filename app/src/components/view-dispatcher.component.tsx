@@ -8,7 +8,7 @@ import IconButton from '@mui/material/IconButton';
 import {ElementErrorBoundary} from './element-error-boundary/element-error-boundary';
 import {type ElementData, type ElementDataObject} from '../models/element-data';
 import {resolveErrors, resolveOverride, resolvePrefill, resolveValueForResolvedOverride, resolveVisibility} from '../utils/element-data-utils';
-import {useElementEditorNavigation} from '../hooks/use-element-editor-navigation';
+import {useElementEditorNavigationActions} from '../hooks/use-element-editor-navigation';
 import {isAnyContentElement} from '../models/elements/form/content/any-content-element';
 import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
 import {Box, Divider, ListItemIcon, ListItemText, Menu, MenuItem, Typography} from '@mui/material';
@@ -240,7 +240,7 @@ function ContextMenuButton(props: ContextMenuButtonProps) {
 
     const {
         navigateToElementEditor,
-    } = useElementEditorNavigation();
+    } = useElementEditorNavigationActions();
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
         event.stopPropagation();

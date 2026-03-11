@@ -206,7 +206,13 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
     }, [activeSearchResult]);
 
     return (
-        <Box>
+        <Box
+            sx={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+            }}
+        >
             <Box
                 sx={{
                     borderBottom: '1px solid #ccc',
@@ -314,8 +320,8 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                     justifyContent: 'space-between',
                     height: '100%',
                     overflowY: 'auto',
-                    px: 2,
-                    mt: 2,
+                    p: 2,
+                    pb: 8,
                 }}
             >
                 <Box

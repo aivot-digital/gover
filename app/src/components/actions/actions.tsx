@@ -81,11 +81,13 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps): ReactNode
     }
 
     // Determine the component to render, either a button or a link
-    const component = 'onClick' in action ? 'button' : ('to' in action ? Link : 'a');
+    const isHashLink = 'to' in action && action.to.startsWith('#');
+    const component = 'onClick' in action ? 'button' : ('to' in action ? (isHashLink ? 'a' : Link) : 'a');
 
     // Determine shared properties
     const href = 'href' in action ? action.href : undefined;
     const to = 'to' in action ? action.to : undefined;
+    const resolvedHref = isHashLink ? to : href;
     const target = 'href' in action ? '_blank' : undefined;
     const onClick = 'onClick' in action ? action.onClick : undefined;
     const shouldDisable = action.ignoreBusy ? action.disabled : (action.disabled || isBusy);
@@ -105,8 +107,8 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps): ReactNode
                 variant={action.variant}
                 onClick={onClick}
                 component={component}
-                href={href}
-                to={to}
+                href={resolvedHref}
+                to={isHashLink ? undefined : to}
                 target={target}
                 aria-label={action.ariaLabel}
                 endIcon={action.icon}
@@ -126,8 +128,8 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps): ReactNode
                 }}
                 onClick={onClick}
                 component={component}
-                href={href}
-                to={to}
+                href={resolvedHref}
+                to={isHashLink ? undefined : to}
                 target={target}
                 aria-label={action.ariaLabel}
                 disabled={shouldDisable}

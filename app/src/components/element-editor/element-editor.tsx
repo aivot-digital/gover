@@ -17,7 +17,6 @@ import {AppInfo} from '../../app-info';
 import {createElementEditorNavigationLink, useElementEditorNavigation} from '../../hooks/use-element-editor-navigation';
 import {generateComponentTitle} from '../../utils/generate-component-title';
 import {getElementNameForType} from '../../data/element-type/element-names';
-import {Link} from 'react-router-dom';
 import {addSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../slices/shell-slice';
 
 export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorProps<T, E>): React.ReactNode | null {
@@ -208,12 +207,11 @@ export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>
                             props
                                 .parents
                                 .map((element) => (
-                                    <Link
-                                        to={createElementEditorNavigationLink(element.id)}
-                                        replace={true}
+                                    <a
+                                        href={createElementEditorNavigationLink(element.id)}
                                     >
                                         {generateComponentTitle(element)}
-                                    </Link>
+                                    </a>
                                 ))
                         }
                     </Breadcrumbs>

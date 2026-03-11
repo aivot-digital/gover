@@ -9,7 +9,6 @@ import {
 } from '../../../hooks/use-element-editor-navigation';
 import {generateComponentTitle} from '../../../utils/generate-component-title';
 import {getElementNameForType} from '../../../data/element-type/element-names';
-import {Link} from 'react-router-dom';
 import {ElementTreeEditorContextProvider} from './element-tree-editor-context';
 import {DefaultTabs} from '../../element-editor/default-tabs';
 import {ElementIsInput} from '../../../data/element-type/element-is-input';
@@ -149,12 +148,11 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                             props
                                 .parents
                                 .map((element) => (
-                                    <Link
-                                        to={createElementEditorNavigationLink(element.id)}
-                                        replace={true}
+                                    <a
+                                        href={createElementEditorNavigationLink(element.id)}
                                     >
                                         {generateComponentTitle(element)}
-                                    </Link>
+                                    </a>
                                 ))
                         }
                     </Breadcrumbs>
