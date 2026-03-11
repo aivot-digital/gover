@@ -26,12 +26,15 @@ const INCLUDED_PORTS_IN_MIN_WIDTH = 2;
 const ADDITIONAL_PORT_WIDTH = 72;
 const OPEN_PORT_ZONE_HEIGHT = 72;
 const OPEN_PORT_ROUTE_CLEARANCE = 18;
+const FLOW_LAYOUT_TOP_PADDING = 144;
+const FLOW_LAYOUT_SIDE_PADDING = 32;
+const FLOW_LAYOUT_BOTTOM_PADDING = 32;
 export const FLOW_HORIZONTAL_NODE_SPACING = 100;
 const ELK_LAYOUT_OPTIONS = {
     'elk.algorithm': 'layered',
     'elk.direction': 'DOWN',
     'elk.edgeRouting': 'ORTHOGONAL',
-    'elk.padding': '[top=32,left=32,bottom=32,right=32]',
+    'elk.padding': `[top=${FLOW_LAYOUT_TOP_PADDING},left=${FLOW_LAYOUT_SIDE_PADDING},bottom=${FLOW_LAYOUT_BOTTOM_PADDING},right=${FLOW_LAYOUT_SIDE_PADDING}]`,
     'elk.spacing.nodeNode': String(FLOW_HORIZONTAL_NODE_SPACING),
     'org.eclipse.elk.spacing.edgeNode': '52',
     'org.eclipse.elk.spacing.componentComponent': String(FLOW_HORIZONTAL_NODE_SPACING),
