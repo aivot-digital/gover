@@ -1,5 +1,5 @@
 import React, {useMemo, useState} from 'react';
-import {Box, Button, Dialog, DialogActions, DialogContent, Typography} from '@mui/material';
+import {Box, Button, Dialog, DialogActions, DialogContent, Typography, useTheme} from '@mui/material';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
 import {flattenElements} from '../../utils/flatten-elements';
@@ -7,6 +7,11 @@ import {generateComponentTitle} from '../../utils/generate-component-title';
 import {getElementNameForType} from '../../data/element-type/element-names';
 import {ElementType} from '../../data/element-type/element-type';
 import {UiDefinitionInputFieldElementItem} from '../../models/elements/form/input/ui-definition-input-field-element';
+import {ElementTree} from '../element-tree-2/element-tree';
+import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
+import {ElementDerivationContext} from '../../modules/elements/components/element-derivation-context';
+import {Allotment} from 'allotment';
+import {ElementData} from '../../models/element-data';
 
 interface UiDefinitionInputFieldComponentProps {
     label: string;
@@ -37,6 +42,8 @@ function buildSummary(value?: UiDefinitionInputFieldElementItem | null): string 
 }
 
 export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldComponentProps) {
+    const theme = useTheme();
+
     const {
         label,
         hint,
@@ -49,8 +56,9 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
     } = props;
 
     const displayLabel = `${label}${required ? ' *' : ''}`;
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [draftValue, setDraftValue] = useState<UiDefinitionInputFieldElementItem | null | undefined>(value ?? undefined);
+    const [showDraftDialog, setShowDraftDialog] = useState<boolean>(false);
+    const [draftValue, setDraftValue] = useState<UiDefinitionInputFieldElementItem | null>(null);
+    const [inputData, setInputData] = useState<ElementData>({});
 
     const summary = useMemo(() => {
         return buildSummary(value);
@@ -63,6 +71,18 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
 
         return getElementNameForType(expectedRootType);
     }, [expectedRootType]);
+
+    const defaultValue = useMemo(() => {
+        return generateElementWithDefaultValues(expectedRootType ?? ElementType.GroupLayout) as UiDefinitionInputFieldElementItem;
+    }, [expectedRootType]);
+
+    const handleClose = () => {
+        setShowDraftDialog(false);
+        setTimeout(() => {
+            setDraftValue(generateElementWithDefaultValues(expectedRootType ?? ElementType.GroupLayout) as UiDefinitionInputFieldElementItem);
+            setInputData({});
+        }, 300);
+    };
 
     return (
         <>
@@ -81,12 +101,14 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                 <Button
                     variant="outlined"
                     size="small"
-                    startIcon={<Edit />}
-                    sx={{ml: 'auto'}}
+                    startIcon={<Edit/>}
+                    sx={{
+                        ml: 'auto',
+                    }}
                     disabled={disabled}
                     onClick={() => {
-                        setDraftValue(value ?? undefined);
-                        setIsDialogOpen(true);
+                        setDraftValue(value ?? defaultValue);
+                        setShowDraftDialog(true);
                     }}
                 >
                     Bearbeiten
@@ -124,7 +146,10 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
 
                 {
                     expectedRootTypeLabel != null &&
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography
+                        variant="caption"
+                        color="text.secondary"
+                    >
                         Erwarteter Wurzeltyp: {expectedRootTypeLabel}
                     </Typography>
                 }
@@ -158,56 +183,89 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
             }
 
             <Dialog
-                open={isDialogOpen}
-                onClose={() => setIsDialogOpen(false)}
+                open={showDraftDialog}
+                onClose={handleClose}
                 fullWidth
-                maxWidth="lg"
+                maxWidth="xl"
             >
-                <DialogTitleWithClose onClose={() => setIsDialogOpen(false)}>
+                <DialogTitleWithClose
+                    sx={{
+                        boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.2)',
+                    }}
+                    onClose={handleClose}
+                >
                     {displayLabel}
                 </DialogTitleWithClose>
 
-                <DialogContent>
-                    <Box
-                        sx={{
-                            pt: 2,
-                            pb: 1,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 2,
-                        }}
-                    >
-                        <Box
-                            sx={{
-                                border: '1px dashed',
-                                borderColor: 'divider',
-                                borderRadius: 1,
-                                px: 2,
-                                py: 3,
-                            }}
-                        >
-                            <Typography variant="subtitle2">
-                                Editor in Vorbereitung
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary" sx={{mt: 1, maxWidth: 720}}>
-                                Der eigentliche UI-Definition-Editor wird in einem späteren Schritt an dieser Stelle
-                                eingebunden. Dieser Dialog ist bereits als Integrationspunkt vorbereitet.
-                            </Typography>
-                        </Box>
-                    </Box>
+                <DialogContent
+                    sx={{
+                        height: 'calc(100vh - 200px)',
+                    }}
+                >
+                    <Allotment vertical>
+                        <Allotment>
+                            <Allotment.Pane minSize={732}>
+                                <Box
+                                    sx={{
+                                        p: 2,
+                                    }}
+                                >
+                                    <ElementDerivationContext
+                                        element={draftValue ?? value ?? defaultValue}
+                                        elementData={inputData}
+                                        onElementDataChange={setInputData}
+                                    />
+                                </Box>
+                            </Allotment.Pane>
+                            <Allotment.Pane
+                                minSize={480}
+                                preferredSize={480}
+                            >
+                                <ElementTree
+                                    value={draftValue ?? value ?? defaultValue}
+                                    onChange={setDraftValue}
+                                    editable={!disabled}
+                                    drawerZIndexOverride={theme.zIndex.modal + 10}
+                                />
+                            </Allotment.Pane>
+                        </Allotment>
+                    </Allotment>
                 </DialogContent>
 
-                <DialogActions>
+                <DialogActions
+                    sx={{
+                        borderTop: '1px solid',
+                        borderColor: 'divider',
+                        display: 'flex',
+                        width: '100%',
+                        justifyContent: 'flex-start',
+                        pt: 2,
+                    }}
+                >
                     <Button
                         variant="contained"
                         onClick={() => {
                             onChange(draftValue ?? undefined);
-                            setIsDialogOpen(false);
+                            handleClose();
                         }}
                     >
                         Übernehmen
                     </Button>
-                    <Button onClick={() => setIsDialogOpen(false)}>
+
+                    <Button
+                        onClick={() => {
+                            // TODO
+                        }}
+                    >
+                        Validierung testen
+                    </Button>
+
+                    <Button
+                        sx={{
+                            ml: 'auto',
+                        }}
+                        onClick={handleClose}
+                    >
                         Abbrechen
                     </Button>
                 </DialogActions>

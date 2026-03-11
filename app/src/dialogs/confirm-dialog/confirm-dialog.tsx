@@ -16,6 +16,7 @@ interface ConfirmDialogProps {
     confirmButtonText?: string;
     hideCancelButton?: boolean;
     width?: 'sm' | 'md' | 'lg' | 'xl';
+    zIndex?: number;
 }
 
 export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>): ReactNode {
@@ -40,6 +41,9 @@ export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>): Rea
             onClose={props.onCancel}
             fullWidth={true}
             maxWidth={props.width || 'sm'}
+            sx={{
+                zIndex: props.zIndex,
+            }}
         >
             <DialogTitleWithClose onClose={props.onCancel}>
                 {props.title}
@@ -49,7 +53,8 @@ export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>): Rea
                 {props.children}
                 {requiresInput && (
                     <>
-                        <Typography variant="body2" sx={{mt: 2}}>
+                        <Typography variant="body2"
+                                    sx={{mt: 2}}>
                             Bitte geben Sie den folgenden Text ein, um die Aktion zu bestätigen:
                         </Typography>
 
@@ -94,7 +99,9 @@ export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>): Rea
                         <TextFieldComponent
                             label={props.inputLabel || 'Eingabe zur Bestätigung'}
                             value={inputValue}
-                            onChange={(val) => {setInputValue(val ?? '');}}
+                            onChange={(val) => {
+                                setInputValue(val ?? '');
+                            }}
                             error={mismatch ? 'Der Text muss exakt übereinstimmen.' : undefined}
                             debounce={600}
                             required
@@ -109,7 +116,7 @@ export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>): Rea
                     variant="contained"
                     color={props.isDestructive ? 'error' : 'primary'}
                     disabled={isConfirmDisabled}
-                    startIcon={props.isDestructive ? <Delete /> : undefined}
+                    startIcon={props.isDestructive ? <Delete/> : undefined}
                 >
                     {props.confirmButtonText || (props.isDestructive ? 'Löschen' : 'Bestätigen')}
                 </Button>

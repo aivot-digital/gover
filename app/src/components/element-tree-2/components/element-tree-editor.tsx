@@ -35,6 +35,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
     const {
         root,
         editable,
+        drawerZIndexOverride,
     } = useElementTreeContext();
 
     const {
@@ -87,16 +88,21 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
         <Drawer
             anchor="right"
             open={open}
-            PaperProps={{
-                sx: {
-                    width: {
-                        xs: '100%',
-                        sm: '100%',
-                        md: '90%',
-                        lg: '85%',
-                        xl: '75%',
+            sx={{
+                zIndex: drawerZIndexOverride,
+            }}
+            slotProps={{
+                paper: {
+                    sx: {
+                        width: {
+                            xs: '100%',
+                            sm: '100%',
+                            md: '90%',
+                            lg: '85%',
+                            xl: '75%',
+                        },
+                        maxWidth: '1720px',
                     },
-                    maxWidth: '1720px',
                 },
             }}
             onClose={handleClose}
@@ -302,6 +308,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                                         Soll das Element wirklich gelöscht werden?
                                     </Typography>
                                 ),
+                                zIndex: drawerZIndexOverride != null ? drawerZIndexOverride + 10 : undefined,
                             }).then((confirmed) => {
                                 if (confirmed) {
                                     onDelete();

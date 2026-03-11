@@ -147,20 +147,23 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
         }
     }, [currentEditedElementId]);
 
-    const icons = useMemo(() => {
-        return [
-            ...getIcons(root, value, allElements),
-            ...(isAnyElementWithChildren(value) ? [
-                'separator',
-                {
-                    icon: <ChevronRight fontSize="small"/>,
-                    tooltip: isCollapsed ? 'Ausklappen' : 'Einklappen',
-                    onClick: () => {
-                        setIsCollapsed((prev => !prev));
-                    },
-                    visible: isAnyElementWithChildren(value),
+    const icons: Action[] = useMemo(() => {
+        const leadingIcons: Action[] = getIcons(root, value, allElements);
+        const trailingIcons: Action[] = isAnyElementWithChildren(value) ? [
+            {
+                icon: <ChevronRight fontSize="small"/>,
+                tooltip: isCollapsed ? 'Ausklappen' : 'Einklappen',
+                onClick: () => {
+                    setIsCollapsed((prev => !prev));
                 },
-            ] as Action[] : []),
+                visible: isAnyElementWithChildren(value),
+            },
+        ] : [];
+
+        return [
+            ...leadingIcons,
+            ...(leadingIcons.length > 0 && trailingIcons.length > 0 ? ['separator'] : []) as Action[],
+            ...trailingIcons,
         ];
     }, [value]);
 

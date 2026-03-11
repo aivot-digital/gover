@@ -1,7 +1,7 @@
 import {createContext, useContext} from 'react';
 import {ElementType} from '../../data/element-type/element-type';
-import {AnyElementWithChildren} from '../../models/elements/any-element-with-children';
 import {ElementWithParents} from '../../utils/flatten-elements';
+import {AnyElement} from '../../models/elements/any-element';
 
 export interface ElementTreeDragItem {
     id: string;
@@ -19,7 +19,7 @@ export interface ElementTreeExpandCommand {
 export const ELEMENT_TREE_DND_ITEM_TYPE = 'element-tree-item';
 
 export interface ElementTreeContextType {
-    root: AnyElementWithChildren;
+    root: AnyElement;
     editable: boolean;
     scrollToElement: (elementPath: string) => void;
     canDropElement: (dragItem: ElementTreeDragItem, targetParentPath: string[], targetIndex: number) => boolean;
@@ -27,6 +27,7 @@ export interface ElementTreeContextType {
     expandCommand: ElementTreeExpandCommand;
     activeSearchResultPath?: string[];
     allElements: ElementWithParents[];
+    drawerZIndexOverride?: number;
 }
 
 export const ElementTreeContext = createContext<ElementTreeContextType | null>(null);

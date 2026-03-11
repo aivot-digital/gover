@@ -13,6 +13,7 @@ interface ConfirmDialogOptions {
     children?: React.ReactNode;
     theme?: Theme;
     width?: 'sm' | 'md' | 'lg' | 'xl';
+    zIndex?: number;
 }
 
 interface ConfirmContextProps {

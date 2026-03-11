@@ -20,10 +20,11 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
 import {flattenElementsWithParents} from '../../utils/flatten-elements';
 
-export interface ElementTreeProps<T extends AnyElementWithChildren> {
+export interface ElementTreeProps<T extends AnyElement> {
     value: T;
     onChange: (patch: T) => void;
     editable: boolean;
+    drawerZIndexOverride?: number;
 }
 
 interface ElementTreeSearchResult {
@@ -32,11 +33,12 @@ interface ElementTreeSearchResult {
     path: string[];
 }
 
-export function ElementTree<T extends AnyElementWithChildren>(props: ElementTreeProps<T>) {
+export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
     const {
         value,
         onChange,
         editable,
+        drawerZIndexOverride,
     } = props;
 
     const {
@@ -64,7 +66,7 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
     }, [value]);
 
     const children = useMemo(() => {
-        return value.children ?? [];
+        return isAnyElementWithChildren(value) ? value.children ?? [] : [];
     }, [value]);
 
     const scrollContainerRef = useRef<HTMLDivElement>(undefined);
@@ -102,6 +104,9 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
     }, [value, onChange]);
 
     const flattenedSearchResults = useMemo(() => {
+        if (!isAnyElementWithChildren(value)) {
+            return [];
+        }
         return flattenTreeForSearch(value, [value.id]);
     }, [value]);
 
@@ -335,6 +340,7 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
                                 expandCommand: expandCommand,
                                 activeSearchResultPath: activeSearchResult?.path,
                                 allElements: allElements,
+                                drawerZIndexOverride: drawerZIndexOverride,
                             }}
                         >
                             <ElementTreeChildList
