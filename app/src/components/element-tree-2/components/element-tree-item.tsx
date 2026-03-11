@@ -1,7 +1,7 @@
 import {AnyElement} from '../../../models/elements/any-element';
 import {Box, Paper, Typography} from '@mui/material';
 import {ELEMENT_TREE_DND_ITEM_TYPE, useElementTreeContext} from '../element-tree-context';
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {getElementIconForType} from '../../../data/element-type/element-icons';
 import {AnyElementWithChildren, isAnyElementWithChildren} from '../../../models/elements/any-element-with-children';
 import {ElementTreeChildList} from './element-tree-child-list';
@@ -99,6 +99,7 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
     }), [editable, isDraggable, valueId, type, pathParts, parentPath]);
 
     const [isCollapsed, setIsCollapsed] = useState(true);
+    const lastHandledExpandCommandVersionRef = useRef(0);
 
     const isHighlighted = useMemo(() => {
         return currentEditedElementId === valueId;
@@ -116,6 +117,12 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
         if (!isAnyElementWithChildren(value) || expandCommand.type == null) {
             return;
         }
+
+        if (expandCommand.version <= lastHandledExpandCommandVersionRef.current) {
+            return;
+        }
+
+        lastHandledExpandCommandVersionRef.current = expandCommand.version;
 
         if (expandCommand.type === 'collapse-all') {
             setIsCollapsed(true);
