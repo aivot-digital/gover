@@ -82,6 +82,10 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
 
     const isRoot = root === value;
 
+    if (!open) {
+        return null;
+    }
+
     return (
         <Drawer
             variant="persistent"
