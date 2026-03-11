@@ -25,6 +25,9 @@ import confetti from 'canvas-confetti';
 import {FormEntity} from '../../modules/forms/entities/form-entity';
 import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
 import {FormApiService} from '../../modules/forms/services/form-api-service';
+import {ElementType} from '../../data/element-type/element-type';
+import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
+import type {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 
 const animationStartDelay = 200;
 const animationDuration = 2000;
@@ -55,7 +58,7 @@ const useSetPrivacyErrorWithSnackbar = (setPrivacyError: (message: string) => vo
 
 export function Submitted(props: SubmittedProps) {
     const api = useApi();
-    const submitStep = props.version.rootElement.submitStep;
+    const submitStep = props.version.rootElement.children?.find(c => c.type === ElementType.SubmitStep) as SubmitStepElement;
     const confettiDisabled = submitStep?.disableConfetti === true;
 
     const [status, setStatus] = useState<SubmissionStatusResponseDTO>();
@@ -366,8 +369,8 @@ export function Submitted(props: SubmittedProps) {
                 !isStringNullOrEmpty(submitStep?.textPostSubmit) &&
                 <Preamble
                     text={submitStep?.textPostSubmit}
-                    logoLink={props.version.rootElement.introductionStep?.initiativeLogoLink ?? undefined}
-                    logoAlt={props.version.rootElement.introductionStep?.initiativeName ?? undefined}
+                    logoLink={(props.version.rootElement.children?.find(c => c.type === ElementType.IntroductionStep) as IntroductionStepElement)?.initiativeLogoLink ?? undefined}
+                    logoAlt={(props.version.rootElement.children?.find(c => c.type === ElementType.IntroductionStep) as IntroductionStepElement)?.initiativeName ?? undefined}
                 />
             }
             {

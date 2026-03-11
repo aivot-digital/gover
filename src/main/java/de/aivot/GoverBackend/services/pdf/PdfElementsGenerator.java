@@ -8,12 +8,10 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.TableInputEleme
 import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
-import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import java.util.*;
 
 public class PdfElementsGenerator {
@@ -92,7 +90,7 @@ public class PdfElementsGenerator {
                     .filter(Objects::nonNull)
                     .toList();
             return new PdfElement(currentElement, null, children);
-        } else if (currentElement instanceof StepElement stepElement) {
+        } else if (currentElement instanceof GenericStepElement stepElement) {
             var children = stepElement
                     .getChildren()
                     .stream()

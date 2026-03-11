@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.elements.models.elements.steps;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
+import de.aivot.GoverBackend.elements.models.elements.InputElement;
 import de.aivot.GoverBackend.elements.models.elements.PrintableElement;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.exceptions.ValidationException;
@@ -13,7 +14,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 
-public class SubmitStepElement extends BaseInputElement<Map<String, Object>> implements PrintableElement<Map<String, Object>> {
+public class SubmitStepElement extends BaseStepElement implements InputElement<Map<String, Object>>, PrintableElement<Map<String, Object>> {
     @Nullable
     private String textPreSubmit;
     @Nullable
@@ -27,6 +28,11 @@ public class SubmitStepElement extends BaseInputElement<Map<String, Object>> imp
 
     public SubmitStepElement() {
         super(ElementType.SubmitStep);
+    }
+
+    @Override
+    public Boolean getRequired() {
+        return true;
     }
 
     @Override

@@ -9,7 +9,7 @@ import de.aivot.GoverBackend.elements.models.elements.form.content.*;
 import de.aivot.GoverBackend.elements.models.elements.form.input.*;
 import de.aivot.GoverBackend.elements.models.elements.layout.*;
 import de.aivot.GoverBackend.elements.models.elements.steps.IntroductionStepElement;
-import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SummaryStepElement;
 import de.aivot.GoverBackend.enums.ElementType;
@@ -31,7 +31,7 @@ import java.util.UUID;
 )
 @JsonSubTypes({
         @JsonSubTypes.Type(value = FormLayoutElement.class, name = ElementType.ID_FormLayout),
-        @JsonSubTypes.Type(value = StepElement.class, name = ElementType.ID_Step),
+        @JsonSubTypes.Type(value = GenericStepElement.class, name = ElementType.ID_Step),
         @JsonSubTypes.Type(value = AlertContentElement.class, name = ElementType.ID_Alert),
         @JsonSubTypes.Type(value = GroupLayoutElement.class, name = ElementType.ID_Group),
         @JsonSubTypes.Type(value = CheckboxInputElement.class, name = ElementType.ID_Checkbox),

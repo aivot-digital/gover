@@ -43,6 +43,9 @@ export const ElementChildOptions: Record<ElementType, ElementType[] | null> = {
     [ElementType.Step]: BaseComponents,
     [ElementType.FormLayout]: [
         ElementType.Step,
+        ElementType.IntroductionStep,
+        ElementType.SummaryStep,
+        ElementType.SubmitStep,
     ],
     [ElementType.Checkbox]: null,
     [ElementType.Date]: null,

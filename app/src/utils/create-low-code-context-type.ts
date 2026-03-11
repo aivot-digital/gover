@@ -13,27 +13,6 @@ export function createLowCodeContextType(rootElement: AnyElement) {
     // Create element data object interfaces for all elements in the root element.
     const relevantElements = flattenElementsWithParents(rootElement, [], false);
 
-    if (isRootElement(rootElement)) {
-        if (rootElement.introductionStep != null) {
-            relevantElements.push({
-                element: rootElement.introductionStep,
-                parents: [rootElement],
-            });
-        }
-        if (rootElement.summaryStep != null) {
-            relevantElements.push({
-                element: rootElement.summaryStep,
-                parents: [rootElement],
-            });
-        }
-        if (rootElement.submitStep != null) {
-            relevantElements.push({
-                element: rootElement.submitStep,
-                parents: [rootElement],
-            });
-        }
-    }
-
     const elementDataObjectInterfaces = relevantElements
         .map(elementToContextDataObjectInterface)
         .join('\n\n');

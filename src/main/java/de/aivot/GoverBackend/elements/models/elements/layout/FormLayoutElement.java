@@ -3,8 +3,9 @@ package de.aivot.GoverBackend.elements.models.elements.layout;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.BaseStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.IntroductionStepElement;
-import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SummaryStepElement;
 import de.aivot.GoverBackend.enums.ElementType;
@@ -15,9 +16,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
-public class FormLayoutElement extends BaseElement implements LayoutElement<StepElement> {
+public class FormLayoutElement extends BaseElement implements LayoutElement<BaseStepElement> {
     private String tabTitle;
-    private List<StepElement> children = new LinkedList<>();
+    private List<BaseStepElement> children = new LinkedList<>();
 
     private String expiring;
 
@@ -26,47 +27,21 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Step
     private String offlineSubmissionText;
     private Boolean offlineSignatureNeeded;
 
-    private IntroductionStepElement introductionStep;
-    private SummaryStepElement summaryStep;
-    private SubmitStepElement submitStep;
-
     public FormLayoutElement() {
         super(ElementType.FormLayout);
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
-
         FormLayoutElement that = (FormLayoutElement) o;
-
-        if (!Objects.equals(tabTitle, that.tabTitle)) return false;
-        if (!Objects.equals(children, that.children)) return false;
-        if (!Objects.equals(expiring, that.expiring)) return false;
-        if (!Objects.equals(privacyText, that.privacyText)) return false;
-        if (!Objects.equals(offlineSubmissionText, that.offlineSubmissionText)) return false;
-        if (!Objects.equals(offlineSignatureNeeded, that.offlineSignatureNeeded)) return false;
-        if (!Objects.equals(introductionStep, that.introductionStep))
-            return false;
-        if (!Objects.equals(summaryStep, that.summaryStep)) return false;
-        return Objects.equals(submitStep, that.submitStep);
+        return Objects.equals(tabTitle, that.tabTitle) && Objects.equals(children, that.children) && Objects.equals(expiring, that.expiring) && Objects.equals(privacyText, that.privacyText) && Objects.equals(offlineSubmissionText, that.offlineSubmissionText) && Objects.equals(offlineSignatureNeeded, that.offlineSignatureNeeded);
     }
 
     @Override
     public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + (tabTitle != null ? tabTitle.hashCode() : 0);
-        result = 31 * result + (children != null ? children.hashCode() : 0);
-        result = 31 * result + (expiring != null ? expiring.hashCode() : 0);
-        result = 31 * result + (privacyText != null ? privacyText.hashCode() : 0);
-        result = 31 * result + (offlineSubmissionText != null ? offlineSubmissionText.hashCode() : 0);
-        result = 31 * result + (offlineSignatureNeeded != null ? offlineSignatureNeeded.hashCode() : 0);
-        result = 31 * result + (introductionStep != null ? introductionStep.hashCode() : 0);
-        result = 31 * result + (summaryStep != null ? summaryStep.hashCode() : 0);
-        result = 31 * result + (submitStep != null ? submitStep.hashCode() : 0);
-        return result;
+        return Objects.hash(super.hashCode(), tabTitle, children, expiring, privacyText, offlineSubmissionText, offlineSignatureNeeded);
     }
 
     @JsonIgnore
@@ -90,7 +65,7 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Step
 
     @Nonnull
     @Override
-    public List<StepElement> getChildren() {
+    public List<BaseStepElement> getChildren() {
         if (children == null) {
             children = new LinkedList<>();
         }
@@ -99,7 +74,7 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Step
 
     @Nonnull
     @Override
-    public FormLayoutElement setChildren(@Nullable List<StepElement> children) {
+    public FormLayoutElement setChildren(@Nullable List<BaseStepElement> children) {
         if (children == null) {
             children = new LinkedList<>();
         }
@@ -140,33 +115,6 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Step
 
     public FormLayoutElement setOfflineSignatureNeeded(Boolean offlineSignatureNeeded) {
         this.offlineSignatureNeeded = offlineSignatureNeeded;
-        return this;
-    }
-
-    public IntroductionStepElement getIntroductionStep() {
-        return introductionStep;
-    }
-
-    public FormLayoutElement setIntroductionStep(IntroductionStepElement introductionStep) {
-        this.introductionStep = introductionStep;
-        return this;
-    }
-
-    public SummaryStepElement getSummaryStep() {
-        return summaryStep;
-    }
-
-    public FormLayoutElement setSummaryStep(SummaryStepElement summaryStep) {
-        this.summaryStep = summaryStep;
-        return this;
-    }
-
-    public SubmitStepElement getSubmitStep() {
-        return submitStep;
-    }
-
-    public FormLayoutElement setSubmitStep(SubmitStepElement submitStep) {
-        this.submitStep = submitStep;
         return this;
     }
 

@@ -61,8 +61,8 @@ const SubmissionIdSearchParam = 'submissionId';
 
 const checkTimeoutMinMs = 1000;
 
-function extractVisibleSteps(children: StepElement[] | null | undefined, introductionStep: IntroductionStepElement | null | undefined, summaryStep: SummaryStepElement | null | undefined, submitStep: SubmitStepElement | null | undefined, elementData: ElementData): AnyStepElement[] {
-    if (children == null || introductionStep == null || summaryStep == null || submitStep == null) {
+function extractVisibleSteps(children: StepElement[] | null | undefined, elementData: ElementData): AnyStepElement[] {
+    if (children == null) {
         return [];
     }
 
@@ -75,12 +75,7 @@ function extractVisibleSteps(children: StepElement[] | null | undefined, introdu
         }
     }
 
-    return [
-        introductionStep,
-        ...visibleChildren,
-        summaryStep,
-        submitStep,
-    ];
+    return visibleChildren;
 }
 
 function extractCurrentStep(currentStep: number, allVisibleSteps: AnyStepElement[]) {
@@ -134,13 +129,10 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
     // Deconstruct the element to get the steps.
     const {
         children,
-        introductionStep,
-        summaryStep,
-        submitStep,
     } = element;
 
     // Collecting all steps including the fixed steps
-    const allVisibleSteps = useMemo(() => extractVisibleSteps(children, introductionStep, summaryStep, submitStep, elementData), [children, introductionStep, summaryStep, submitStep, elementData]);
+    const allVisibleSteps = useMemo(() => extractVisibleSteps(children as StepElement[], elementData), [children, elementData]);
 
     // Extract the current step based on the current step index and all visible steps
     const currentStepElement = useMemo(() => extractCurrentStep(currentStep, allVisibleSteps), [currentStep, allVisibleSteps]);
@@ -366,20 +358,14 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
         // Get the list of all steps, which are relevant for the derivation.
         // This includes the introduction step, all children that do not have derivable aspects, the summary step and the submit step.
         const allStepsWithoutDerivableAspects = [
-            element.introductionStep?.id ?? '',
             ...children
                 .filter(step => !hasDerivableAspects(step, true))
                 .map(step => step.id),
-            element.summaryStep?.id ?? '',
-            element.submitStep?.id ?? '',
         ];
 
         const allSteps = [
-            element.introductionStep?.id ?? '',
             ...children
                 .map(step => step.id),
-            element.summaryStep?.id ?? '',
-            element.submitStep?.id ?? '',
         ];
 
         console.log('Found steps without derivable aspects:', allStepsWithoutDerivableAspects);

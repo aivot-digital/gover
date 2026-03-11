@@ -6,7 +6,7 @@ import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
-import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.GoverBackend.enums.ElementType;
 import jakarta.annotation.Nonnull;
 import net.minidev.json.annotate.JsonIgnore;
@@ -121,30 +121,6 @@ public class ElementData extends HashMap<String, ElementDataObject> implements S
             // which are held in the root element itself.
             // These steps are the introduction step, summary step and submit step.
             case FormLayoutElement _rootElement -> {
-                if (_rootElement.getIntroductionStep() != null) {
-                    var introductionStepValue = valueMap.get(_rootElement.getIntroductionStep().getId());
-                    elementData.putInputValue(
-                            _rootElement.getIntroductionStep(),
-                            introductionStepValue
-                    );
-                }
-
-                if (_rootElement.getSummaryStep() != null) {
-                    var summaryStepValue = valueMap.get(_rootElement.getSummaryStep().getId());
-                    elementData.putInputValue(
-                            _rootElement.getSummaryStep(),
-                            summaryStepValue
-                    );
-                }
-
-                if (_rootElement.getSubmitStep() != null) {
-                    var submitStepValue = valueMap.get(_rootElement.getSubmitStep().getId());
-                    elementData.putInputValue(
-                            _rootElement.getSubmitStep(),
-                            submitStepValue
-                    );
-                }
-
                 // If the root element has children, iterate over them and call this function recursively.
                 // This is necessary to ensure that all elements in the root element are handled.
                 if (_rootElement.getChildren() != null) {
@@ -262,17 +238,13 @@ public class ElementData extends HashMap<String, ElementDataObject> implements S
 
         switch (resolvedElement) {
             case FormLayoutElement _rootElement -> {
-                addValueToMap.accept(_rootElement.getIntroductionStep());
-                addValueToMap.accept(_rootElement.getSummaryStep());
-                addValueToMap.accept(_rootElement.getSubmitStep());
-
                 if (_rootElement.getChildren() != null) {
                     for (var step : _rootElement.getChildren()) {
                         map.putAll(toValueMap(step, elementData));
                     }
                 }
             }
-            case StepElement _stepElement -> {
+            case GenericStepElement _stepElement -> {
                 if (_stepElement.getChildren() != null) {
                     for (var child : _stepElement.getChildren()) {
                         map.putAll(toValueMap(child, elementData));

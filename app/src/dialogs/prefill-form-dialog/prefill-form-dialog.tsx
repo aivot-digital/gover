@@ -120,7 +120,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                 const stepElements = flattenElements(s, true)
                     .filter(canPrefillElement);
                 return {
-                    step: s,
+                    step: s as StepElement,
                     elements: stepElements,
                 };
             })

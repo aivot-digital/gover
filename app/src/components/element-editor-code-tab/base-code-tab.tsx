@@ -21,11 +21,7 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
 
     return (
         <>
-            <Box
-                sx={{
-                    m: 4,
-                }}
-            >
+            <Box>
                 <ElementEditorSectionHeader
                     title={props.label}
                     disableMarginTop

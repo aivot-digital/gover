@@ -136,44 +136,6 @@ function _mergeDerivedElementDataWithLocal(derivedElementData: ElementData, loca
         [elementId]: mergedElementDataObject,
     };
 
-    if (isRootElement(rootElement)) {
-        if (rootElement.introductionStep != null) {
-            mergedElementData = {
-                ...mergedElementData,
-                ..._mergeDerivedElementDataWithLocal(
-                    derivedElementData,
-                    localElementData,
-                    rootElement.introductionStep,
-                    options,
-                ),
-            };
-        }
-
-        if (rootElement.summaryStep != null) {
-            mergedElementData = {
-                ...mergedElementData,
-                ..._mergeDerivedElementDataWithLocal(
-                    derivedElementData,
-                    localElementData,
-                    rootElement.summaryStep,
-                    options,
-                ),
-            };
-        }
-
-        if (rootElement.submitStep != null) {
-            mergedElementData = {
-                ...mergedElementData,
-                ..._mergeDerivedElementDataWithLocal(
-                    derivedElementData,
-                    localElementData,
-                    rootElement.submitStep,
-                    options,
-                ),
-            };
-        }
-    }
-
     if (isAnyElementWithChildren(rootElement) && rootElement.children != null) {
         if (rootElement.type === ElementType.ReplicatingContainer) {
             const localChildInputValue = localElementDataObject.inputValue as ElementData[] | null | undefined;
@@ -262,33 +224,6 @@ export function mapElementData(
 
     const val = resolveValue(currentElement, newElementData);
 
-    if (isRootElement(currentElement)) {
-        if (currentElement.introductionStep != null) {
-            const childMappedData = mapElementData(currentElement.introductionStep, newElementData, callback, [...parents, currentElement]);
-            newElementData = {
-                ...newElementData,
-                ...childMappedData,
-            };
-        }
-
-        if (currentElement.summaryStep != null) {
-            const childMappedData = mapElementData(currentElement.summaryStep, newElementData, callback, [...parents, currentElement]);
-            newElementData = {
-                ...newElementData,
-                ...childMappedData,
-            };
-        }
-
-        if (currentElement.submitStep != null) {
-            const childMappedData = mapElementData(currentElement.submitStep, newElementData, callback, [...parents, currentElement]);
-            newElementData = {
-                ...newElementData,
-                ...childMappedData,
-            };
-        }
-    }
-
-
     if (isReplicatingContainerLayout(currentElement)) {
         if (Array.isArray(val)) {
             const mapped = val.map((childData, index) => {
@@ -335,53 +270,6 @@ export function filterElementData(
 
     if (filterResult) {
         filteredElementData[currentElement.id] = elementDataObject;
-    }
-
-    if (isRootElement(currentElement)) {
-        if (currentElement.introductionStep != null) {
-            const res = filterElementData(
-                currentElement.introductionStep,
-                currentElementData,
-                callback,
-                [...parents, currentElement],
-            );
-            if (Object.keys(res).length > 0) {
-                filteredElementData = {
-                    ...filteredElementData,
-                    ...res,
-                };
-            }
-        }
-
-        if (currentElement.summaryStep != null) {
-            const res = filterElementData(
-                currentElement.summaryStep,
-                currentElementData,
-                callback,
-                [...parents, currentElement],
-            );
-            if (Object.keys(res).length > 0) {
-                filteredElementData = {
-                    ...filteredElementData,
-                    ...res,
-                };
-            }
-        }
-
-        if (currentElement.submitStep != null) {
-            const res = filterElementData(
-                currentElement.submitStep,
-                currentElementData,
-                callback,
-                [...parents, currentElement],
-            );
-            if (Object.keys(res).length > 0) {
-                filteredElementData = {
-                    ...filteredElementData,
-                    ...res,
-                };
-            }
-        }
     }
 
     if (isReplicatingContainerLayout(currentElement)) {

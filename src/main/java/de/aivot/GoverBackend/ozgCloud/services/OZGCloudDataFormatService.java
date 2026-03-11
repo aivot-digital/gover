@@ -7,7 +7,7 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.*;
 import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
-import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.GoverBackend.enums.TableColumnDataType;
 import de.aivot.GoverBackend.ozgCloud.models.OZGCloudFormDataItem;
 import jakarta.annotation.Nonnull;
@@ -16,7 +16,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class OZGCloudDataFormatService {
@@ -41,7 +40,7 @@ public class OZGCloudDataFormatService {
 
         return switch (override) {
             case FormLayoutElement rootElement -> buildRoot(rootElement, elementData);
-            case StepElement stepElement -> List.of(buildStep(stepElement, elementData));
+            case GenericStepElement stepElement -> List.of(buildStep(stepElement, elementData));
             case GroupLayoutElement groupLayout -> buildGroupLayout(groupLayout, elementData);
             case ReplicatingContainerLayoutElement replicatingContainerLayout ->
                     List.of(buildReplicatingContainerLayout(replicatingContainerLayout, elementData));
@@ -91,7 +90,7 @@ public class OZGCloudDataFormatService {
     }
 
     private OZGCloudFormDataItem buildStep(
-            @Nonnull StepElement stepElement,
+            @Nonnull GenericStepElement stepElement,
             @Nonnull ElementData elementData
     ) {
         var children = buildChildList(

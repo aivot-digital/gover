@@ -9,18 +9,6 @@ export function hasUntestedChild(element: AnyElementWithChildren): boolean {
         return false;
     }
 
-    if (isRootElement(element)) {
-        if (!isElementTested(element.introductionStep)) {
-            return true;
-        }
-        if (!isElementTested(element.summaryStep)) {
-            return true;
-        }
-        if (!isElementTested(element.submitStep)) {
-            return true;
-        }
-    }
-
     return (element
         .children ?? [])
         .some((child: AnyElement) => {

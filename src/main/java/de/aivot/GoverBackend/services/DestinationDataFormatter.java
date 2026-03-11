@@ -11,7 +11,7 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.FileUploadInput
 import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
-import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
 import de.aivot.GoverBackend.identity.models.IdentityData;
@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -240,7 +239,7 @@ public class DestinationDataFormatter {
                 }
             }
             case FormLayoutElement rootElement -> rootElement.getChildren().forEach(extractChildData);
-            case StepElement stepElement -> stepElement.getChildren().forEach(extractChildData);
+            case GenericStepElement stepElement -> stepElement.getChildren().forEach(extractChildData);
             case null, default -> {
                 // Do nothing
             }

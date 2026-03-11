@@ -7,7 +7,7 @@ const uid = new ShortUniqueId();
 
 const idRegex = /^[a-z][a-zA-Z0-9_]*$/;
 
-export function checkId(root: RootElement, id?: string): string | null {
+export function checkId(root: AnyElement, id?: string): string | null {
     if (id == null || id.length === 0) {
         return 'Bitte geben Sie eine ID ein.';
     }

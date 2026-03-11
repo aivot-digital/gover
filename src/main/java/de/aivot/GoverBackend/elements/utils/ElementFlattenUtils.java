@@ -4,10 +4,8 @@ import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
-import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -18,7 +16,7 @@ public class ElementFlattenUtils {
 
         if (current instanceof FormLayoutElement rootElement) {
             children = rootElement.getChildren();
-        } else if (current instanceof StepElement stepElement) {
+        } else if (current instanceof GenericStepElement stepElement) {
             children = stepElement.getChildren();
         } else if (current instanceof GroupLayoutElement groupLayout) {
             children = groupLayout.getChildren();

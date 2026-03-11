@@ -8,6 +8,7 @@ import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
@@ -179,7 +180,14 @@ public class SubmitController {
 
         var submitStepElementData = elementData
                 .getOrDefault(
-                        form.getRootElement().getSubmitStep().getId(),
+                        form
+                                .getRootElement()
+                                .getChildren()
+                                .stream()
+                                .filter(s -> s.getType() == ElementType.SubmitStep)
+                                .findFirst()
+                                .map(BaseElement::getId)
+                                .orElse(""),
                         new ElementDataObject(ElementType.SubmitStep)
                 );
 

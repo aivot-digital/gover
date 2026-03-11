@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.elements.models.elements.steps;
 
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
+import de.aivot.GoverBackend.elements.models.elements.InputElement;
 import de.aivot.GoverBackend.elements.models.elements.PrintableElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.CheckboxInputElement;
 import de.aivot.GoverBackend.enums.ElementType;
@@ -11,7 +12,7 @@ import jakarta.annotation.Nullable;
 import java.util.Collection;
 import java.util.Objects;
 
-public class IntroductionStepElement extends BaseInputElement<Boolean> implements PrintableElement<Boolean> {
+public class IntroductionStepElement extends BaseStepElement implements InputElement<Boolean>, PrintableElement<Boolean> {
     @Nullable
     private String initiativeName;
     @Nullable
@@ -40,6 +41,11 @@ public class IntroductionStepElement extends BaseInputElement<Boolean> implement
         if (!Boolean.TRUE.equals(value)) {
             throw new ValidationException(this, "Bitte akzeptieren Sie die Hinweise zum Datenschutz.");
         }
+    }
+
+    @Override
+    public Boolean getRequired() {
+        return true;
     }
 
     @Override

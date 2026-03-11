@@ -12,7 +12,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
-public class StepElement extends BaseElement implements LayoutElement<BaseFormElement> {
+public class GenericStepElement extends BaseStepElement implements LayoutElement<BaseFormElement> {
     @Nullable
     private String title;
     @Nullable
@@ -20,7 +20,7 @@ public class StepElement extends BaseElement implements LayoutElement<BaseFormEl
     @Nullable
     private List<BaseFormElement> children = new LinkedList<>();
 
-    public StepElement() {
+    public GenericStepElement() {
         super(ElementType.Step);
     }
 
@@ -31,7 +31,7 @@ public class StepElement extends BaseElement implements LayoutElement<BaseFormEl
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
 
-        StepElement that = (StepElement) o;
+        GenericStepElement that = (GenericStepElement) o;
         return Objects.equals(title, that.title) && Objects.equals(icon, that.icon) && Objects.equals(children, that.children);
     }
 
@@ -61,7 +61,7 @@ public class StepElement extends BaseElement implements LayoutElement<BaseFormEl
         return "Unbenannter Abschnitt";
     }
 
-    public StepElement setTitle(@Nullable String title) {
+    public GenericStepElement setTitle(@Nullable String title) {
         this.title = title;
         return this;
     }
@@ -71,7 +71,7 @@ public class StepElement extends BaseElement implements LayoutElement<BaseFormEl
         return icon;
     }
 
-    public StepElement setIcon(@Nullable String icon) {
+    public GenericStepElement setIcon(@Nullable String icon) {
         this.icon = icon;
         return this;
     }
@@ -87,7 +87,7 @@ public class StepElement extends BaseElement implements LayoutElement<BaseFormEl
 
     @Nonnull
     @Override
-    public StepElement setChildren(@Nullable List<BaseFormElement> children) {
+    public GenericStepElement setChildren(@Nullable List<BaseFormElement> children) {
         if (children == null) {
             children = new LinkedList<>();
         }

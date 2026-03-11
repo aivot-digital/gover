@@ -7,7 +7,7 @@ import de.aivot.GoverBackend.elements.models.elements.form.content.*;
 import de.aivot.GoverBackend.elements.models.elements.form.input.*;
 import de.aivot.GoverBackend.elements.models.elements.layout.*;
 import de.aivot.GoverBackend.elements.models.elements.steps.IntroductionStepElement;
-import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SummaryStepElement;
 import de.aivot.GoverBackend.lib.models.Identifiable;
@@ -134,7 +134,7 @@ public enum ElementType implements Identifiable<Integer> {
     public static BaseElement getElementClass(ElementType type) throws ElementDataConversionException {
         return switch (type) {
             case FormLayout -> new FormLayoutElement();
-            case Step -> new StepElement();
+            case Step -> new GenericStepElement();
             case Alert -> new AlertContentElement();
             case Group -> new GroupLayoutElement();
             case Checkbox -> new CheckboxInputElement();

@@ -9,7 +9,7 @@ import {resetAdminSettings, selectDevToolsTab, toggleComponentTree, toggleValida
 import {AdminToolsDialog} from '../../../../dialogs/admin-tools/admin-tools-dialog';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
-import {ElementTree} from '../../../../components/element-tree/element-tree';
+import {ElementTree} from '../../../../components/element-tree-2/element-tree';
 import {setCurrentStep} from '../../../../slices/stepper-slice';
 import {flattenElements} from '../../../../utils/flatten-elements';
 import {HelpDialog, HelpDialogId} from '../../../../dialogs/help-dialog/help.dialog';
@@ -64,6 +64,7 @@ import {FormVersionApiService} from '../../services/form-version-api-service';
 import {VFormWithPermissionsApiService} from '../../services/v-form-with-permissions-api-service';
 import {FormEntity} from '../../entities/form-entity';
 import {FormVersionEntity} from '../../entities/form-version-entity';
+import {RootElement} from '../../../../models/elements/root-element';
 
 export const DialogSearchParam = 'dialog';
 
@@ -708,7 +709,6 @@ export function FormDetailsPage() {
                                     >
                                         <Paper
                                             sx={{
-                                                px: 2,
                                                 boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
                                                 borderLeft: '1px solid #E0E7E0',
                                                 borderRadius: 0,
@@ -718,11 +718,18 @@ export function FormDetailsPage() {
                                             }}
                                         >
                                             <ElementTree
-                                                entity={loadedForm}
-                                                onPatch={handlePatch}
+                                                value={loadedForm.version.rootElement}
+                                                onChange={(changed) => {
+                                                    console.log('Changed', changed);
+                                                    handlePatch({
+                                                        ...loadedForm,
+                                                        version: {
+                                                            ...loadedForm.version,
+                                                            rootElement: changed as RootElement,
+                                                        }
+                                                    });
+                                                }}
                                                 editable={isEditable}
-                                                scope="application"
-                                                enabledIdentityProviderInfos={identityProviderInfos}
                                             />
                                         </Paper>
                                     </Allotment.Pane>
@@ -798,4 +805,3 @@ export function FormDetailsPage() {
         );
     }
 }
-

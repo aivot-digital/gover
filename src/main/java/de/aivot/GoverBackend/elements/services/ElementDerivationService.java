@@ -10,9 +10,8 @@ import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
-import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
-import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
@@ -98,7 +97,7 @@ public class ElementDerivationService {
                         logger);
                 break;
 
-            case StepElement element:
+            case GenericStepElement element:
                 deriveStepElement(javascriptEngine,
                         rootElement,
                         inputContextElementData,
@@ -171,42 +170,6 @@ public class ElementDerivationService {
 
         var optionsForChildren = options.copyForUseInChild(currentRootElement.getId());
 
-        if (currentRootElement.getIntroductionStep() != null) {
-            var cDo = deriveElement(javascriptEngine,
-                    rootElement,
-                    inputContextElementData,
-                    currentRootElement.getIntroductionStep(),
-                    optionsForChildren,
-                    isVisible,
-                    logger);
-            inputContextElementData.put(currentRootElement.getIntroductionStep(), cDo);
-            outputContextElementData.put(currentRootElement.getIntroductionStep(), cDo);
-        }
-
-        if (currentRootElement.getSummaryStep() != null) {
-            var cDo = deriveElement(javascriptEngine,
-                    rootElement,
-                    inputContextElementData,
-                    currentRootElement.getSummaryStep(),
-                    optionsForChildren,
-                    isVisible,
-                    logger);
-            inputContextElementData.put(currentRootElement.getSummaryStep(), cDo);
-            outputContextElementData.put(currentRootElement.getSummaryStep(), cDo);
-        }
-
-        if (currentRootElement.getSubmitStep() != null) {
-            var cDo = deriveElement(javascriptEngine,
-                    rootElement,
-                    inputContextElementData,
-                    currentRootElement.getSubmitStep(),
-                    optionsForChildren,
-                    isVisible,
-                    logger);
-            inputContextElementData.put(currentRootElement.getSubmitStep(), cDo);
-            outputContextElementData.put(currentRootElement.getSubmitStep(), cDo);
-        }
-
         for (var step : currentRootElement.getChildren()) {
             derive(javascriptEngine,
                     rootElement,
@@ -224,7 +187,7 @@ public class ElementDerivationService {
             @Nonnull BaseElement rootElement,
             @Nonnull ElementData inputContextElementData,
             @Nonnull ElementData outputContextElementData,
-            @Nonnull StepElement _stepElement,
+            @Nonnull GenericStepElement _stepElement,
             @Nonnull ElementDerivationOptions options,
             @Nonnull Boolean isParentVisible,
             @Nonnull ElementDerivationLogger logger
@@ -241,7 +204,7 @@ public class ElementDerivationService {
 
         var isVisible = isParentVisible && dataObject.getIsVisible();
 
-        var stepElement = (StepElement) dataObject
+        var stepElement = (GenericStepElement) dataObject
                 .getComputedOverrideOrDefault(_stepElement);
 
         var optionsForChildren = options.copyForUseInChild(stepElement.getId());
@@ -533,7 +496,7 @@ public class ElementDerivationService {
 
     private static boolean userCannotInputElement(@Nonnull BaseElement element) {
         return !(element instanceof BaseInputElement<?> inputElement) ||
-               Boolean.TRUE.equals(inputElement.getDisabled()) ||
-               Boolean.TRUE.equals(inputElement.getTechnical());
+                Boolean.TRUE.equals(inputElement.getDisabled()) ||
+                Boolean.TRUE.equals(inputElement.getTechnical());
     }
 }

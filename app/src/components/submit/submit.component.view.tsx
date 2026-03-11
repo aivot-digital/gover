@@ -10,7 +10,6 @@ import {type BaseViewProps} from '../../views/base-view';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
-import {useApi} from '../../hooks/use-api';
 import {AlertComponent} from '../alert/alert-component';
 import {formatNumToGermanNum} from '../../utils/format-german-numbers';
 import {FormCostCalculationResponseDTO} from '../../modules/forms/dtos/form-cost-calculation-response-dto';
@@ -19,6 +18,8 @@ import {AltchaWidget} from '../altcha/altcha-widget';
 import {VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
 import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
 import {FormApiService} from '../../modules/forms/services/form-api-service';
+import {ElementType} from '../../data/element-type/element-type';
+import type {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 
 export const SubmitPaymentDataKey = '__payment_data__';
 
@@ -86,7 +87,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
             key={String(index) + doc}
         >
             <ListItemIcon sx={{minWidth: '34px'}}>
-                <UploadFileOutlinedIcon sx={{color: theme.palette.primary.main}} />
+                <UploadFileOutlinedIcon sx={{color: theme.palette.primary.main}}/>
             </ListItemIcon>
             <ListItemText>{doc}</ListItemText>
         </ListItem>
@@ -192,8 +193,8 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
                 !isStringNullOrEmpty(props.element.textPreSubmit) &&
                 <Preamble
                     text={props.element.textPreSubmit}
-                    logoLink={form.version.rootElement.introductionStep?.initiativeLogoLink ?? undefined}
-                    logoAlt={form.version.rootElement.introductionStep?.initiativeName ?? undefined}
+                    logoLink={(form.version.rootElement.children?.find(c => c.type === ElementType.IntroductionStep) as IntroductionStepElement)?.initiativeLogoLink ?? undefined}
+                    logoAlt={(form.version.rootElement.children?.find(c => c.type === ElementType.IntroductionStep) as IntroductionStepElement)?.initiativeName ?? undefined}
                 />
             }
 
@@ -253,7 +254,8 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
                         Um Ihren Antrag bearbeiten zu können, ist eine Bezahlung von Gebühren erforderlich.
                         Die Zahlung wird durch den
                         Dienstleister <strong>{costs.paymentProviderName}</strong> abgewickelt.
-                        Bitte achten Sie darauf, dass Sie die Zahlungs&shy;informationen korrekt eingeben und den Vorgang abschließen.
+                        Bitte achten Sie darauf, dass Sie die Zahlungs&shy;informationen korrekt eingeben und den
+                        Vorgang abschließen.
                     </Typography>
 
                     <Typography

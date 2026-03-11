@@ -117,37 +117,6 @@ export function ElementTreeTree<T extends AnyElementWithChildren>(props: Element
             <DndProvider
                 backend={HTML5Backend}
             >
-                {
-                    isRootElement(value) &&
-                    <ElementTreeItem
-                        parents={[value]}
-                        entity={entity}
-                        element={value.introductionStep ?? generateElementWithDefaultValues(ElementType.IntroductionStep) as AnyElement}
-                        disableDrag={true}
-                        onPatch={(updatedElement) => {
-                            onChange({
-                                ...value,
-                                introductionStep: {
-                                    ...value.introductionStep,
-                                    ...updatedElement,
-                                },
-                            });
-                        }}
-                        onMove={() => {
-                            // Ignore move
-                        }}
-                        onDelete={() => {
-                            // Ignore delete
-                        }}
-                        onClone={() => {
-                            // Ignore clone
-                        }}
-                        editable={editable}
-                        scope={scope}
-                        enabledIdentityProviderInfos={enabledIdentityProviderInfos}
-                    />
-                }
-
                 <ElementTreeItemList
                     parents={[]}
                     entity={entity}
@@ -167,68 +136,6 @@ export function ElementTreeTree<T extends AnyElementWithChildren>(props: Element
                     enabledIdentityProviderInfos={enabledIdentityProviderInfos}
                     limitElementTypes={limitElementTypes}
                 />
-
-                {
-                    isRootElement(value) &&
-                    <ElementTreeItem
-                        parents={[value]}
-                        entity={entity}
-                        element={value.summaryStep ?? generateElementWithDefaultValues(ElementType.SummaryStep) as AnyElement}
-                        disableDrag={true}
-                        onPatch={(updatedElement) => {
-                            onChange({
-                                ...value,
-                                summaryStep: {
-                                    ...value.introductionStep,
-                                    ...updatedElement,
-                                },
-                            });
-                        }}
-                        onMove={() => {
-                            // Ignore move
-                        }}
-                        onDelete={() => {
-                            // Ignore delete
-                        }}
-                        onClone={() => {
-                            // Ignore clone
-                        }}
-                        editable={editable}
-                        scope={scope}
-                        enabledIdentityProviderInfos={enabledIdentityProviderInfos}
-                    />
-                }
-
-                {
-                    isRootElement(value) &&
-                    <ElementTreeItem
-                        parents={[value]}
-                        entity={entity}
-                        element={value.submitStep ?? generateElementWithDefaultValues(ElementType.SubmitStep) as AnyElement}
-                        disableDrag={true}
-                        onPatch={(updatedElement, updatedEntity) => {
-                            onChange({
-                                ...value,
-                                submitStep: {
-                                    ...value.introductionStep,
-                                    ...updatedElement,
-                                },
-                            });
-                        }}
-                        onMove={() => {
-                            // Ignore move
-                        }}
-                        onDelete={() => {
-                            // Ignore delete
-                        }}
-                        onClone={() => {
-                            // Ignore clone
-                        }}
-                        editable={editable}
-                        scope={scope}
-                        enabledIdentityProviderInfos={enabledIdentityProviderInfos}
-                    />
-                }
             </DndProvider>
         </Paper>
     );

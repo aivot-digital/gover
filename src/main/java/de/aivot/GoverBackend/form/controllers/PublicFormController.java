@@ -295,11 +295,13 @@ public class PublicFormController {
 
         derivedElementData.put(IdentityValueKey.IdCustomerInputKey, inputIdValue);
 
+        /* TODO: Fix identity process
         if (options.notContainsSkipErrors(formVersion.getRootElement().getIntroductionStep().getId())) {
             if (formVersion.getIdentityVerificationRequired() && inputIdValue.isEmpty()) {
                 inputIdValue.setComputedErrors(List.of("Bitte melden Sie sich mit einem der Nutzerkonten an."));
             }
         }
+         */
 
         return ElementDerivationResponse
                 .from(elementData, derivationLogger, jwt != null);
