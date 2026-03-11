@@ -29,6 +29,7 @@ const BaseComponents = [
     ElementType.FileUpload,
     ElementType.ChipInput,
     ElementType.NoCodeInput,
+    ElementType.UiDefinitionInput,
     ElementType.CodeInput,
     ElementType.RichTextInput,
 

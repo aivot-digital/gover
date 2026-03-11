@@ -36,6 +36,7 @@ import {AssignmentContextFieldElement} from './form/input/assignment-context-fie
 import {DataModelSelectFieldElement} from './form/input/data-model-select-field-element';
 import {DataObjectSelectFieldElement} from './form/input/data-object-select-field-element';
 import {NoCodeInputFieldElement} from './form/input/no-code-input-field-element';
+import {UiDefinitionInputFieldElement} from './form/input/ui-definition-input-field-element';
 
 export type AnyElement =
     RootElement |
@@ -80,7 +81,8 @@ export type AnyElementType<T extends ElementType> =
                                                                                                                     T extends ElementType.DateTimeRange ? DateTimeRangeFieldElement :
                                                                                                                         T extends ElementType.MapPoint ? MapPointFieldElement :
                                                                                                                             T extends ElementType.DomainAndUserSelect ? DomainUserSelectFieldElement :
-                                                                                                                                T extends ElementType.AssignmentContext ? AssignmentContextFieldElement :
-                                                                                                                                    T extends ElementType.DataModelSelect ? DataModelSelectFieldElement :
-                                                                                                                                        T extends ElementType.DataObjectSelect ? DataObjectSelectFieldElement :
-                                                                                                                                            T extends ElementType.NoCodeInput ? NoCodeInputFieldElement : never;
+                                                                                                                                    T extends ElementType.AssignmentContext ? AssignmentContextFieldElement :
+                                                                                                                                        T extends ElementType.DataModelSelect ? DataModelSelectFieldElement :
+                                                                                                                                            T extends ElementType.DataObjectSelect ? DataObjectSelectFieldElement :
+                                                                                                                                                T extends ElementType.UiDefinitionInput ? UiDefinitionInputFieldElement :
+                                                                                                                                                T extends ElementType.NoCodeInput ? NoCodeInputFieldElement : never;

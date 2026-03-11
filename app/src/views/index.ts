@@ -36,6 +36,7 @@ import {AssignmentContextFieldView} from './assignment-context-field-view';
 import {DataModelSelectFieldView} from './data-model-select-field-view';
 import {DataObjectSelectFieldView} from './data-object-select-field-view';
 import {NoCodeInputFieldView} from './no-code-input-field-view';
+import {UiDefinitionInputFieldView} from './ui-definition-input-field-view';
 
 export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.FormLayout]: RootComponentView,
@@ -67,7 +68,7 @@ export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.FunctionInput]: FunctionInputView,
     [ElementType.CodeInput]: CodeInputView,
     [ElementType.RichTextInput]: RichTextView,
-    [ElementType.UiDefinitionInput]: null,
+    [ElementType.UiDefinitionInput]: UiDefinitionInputFieldView,
     [ElementType.IdentityInput]: null,
     [ElementType.TabLayout]: null,
     [ElementType.ChipInput]: ChipInputFieldView,

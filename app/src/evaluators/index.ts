@@ -18,6 +18,7 @@ import {MapPointEvaluator} from './map-point-evaluator';
 import {DomainUserSelectEvaluator} from './domain-user-select-evaluator';
 import {AssignmentContextFieldEvaluator} from './assignment-context-field-evaluator';
 import {NoCodeInputEvaluator} from './no-code-input-evaluator';
+import {UiDefinitionInputEvaluator} from './ui-definition-input-evaluator';
 
 export const evaluators: {
     [key in ElementType]: BaseEvaluator<any> | null;
@@ -51,7 +52,7 @@ export const evaluators: {
     [ElementType.FunctionInput]: null,
     [ElementType.CodeInput]: null,
     [ElementType.RichTextInput]: TextEvaluator,
-    [ElementType.UiDefinitionInput]: null,
+    [ElementType.UiDefinitionInput]: UiDefinitionInputEvaluator,
     [ElementType.IdentityInput]: null,
     [ElementType.TabLayout]: null,
     [ElementType.ChipInput]: ChipInputEvaluator,

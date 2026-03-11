@@ -34,6 +34,7 @@ import FunctionsOutlinedIcon from '@mui/icons-material/FunctionsOutlined';
 import {type SvgIcon} from '@mui/material';
 import {type AnyElement} from '../../models/elements/any-element';
 import {type SvgIconComponent} from '@mui/icons-material';
+import Dashboard2 from '@aivot/mui-material-symbols-400-outlined/dist/dashboard-2/Dashboard2';
 
 const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.Alert]: ErrorOutlineOutlinedIcon,
@@ -65,7 +66,7 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.FunctionInput]: UploadFileOutlinedIcon,
     [ElementType.CodeInput]: CodeOutlinedIcon,
     [ElementType.RichTextInput]: UploadFileOutlinedIcon,
-    [ElementType.UiDefinitionInput]: UploadFileOutlinedIcon,
+    [ElementType.UiDefinitionInput]: Dashboard2,
     [ElementType.IdentityInput]: UploadFileOutlinedIcon,
     [ElementType.TabLayout]: UploadFileOutlinedIcon,
     [ElementType.ChipInput]: LocalOfferOutlinedIcon,

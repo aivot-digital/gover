@@ -46,6 +46,7 @@ import {
     NoCodeInputFieldElement,
     NoCodeInputFieldReturnType
 } from '../models/elements/form/input/no-code-input-field-element';
+import {UiDefinitionInputFieldElement} from '../models/elements/form/input/ui-definition-input-field-element';
 
 function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
     return {
@@ -109,7 +110,7 @@ const elementConstructors: {
     [ElementType.FunctionInput]: (id: string) => void;
     [ElementType.CodeInput]: (id: string) => CodeInputElement;
     [ElementType.RichTextInput]: (id: string) => RichTextInputElement;
-    [ElementType.UiDefinitionInput]: (id: string) => void;
+    [ElementType.UiDefinitionInput]: (id: string) => UiDefinitionInputFieldElement;
     [ElementType.IdentityInput]: (id: string) => void;
     [ElementType.TabLayout]: (id: string) => void;
     [ElementType.ChipInput]: (id: string) => ChipInputFieldElement;
@@ -355,7 +356,11 @@ const elementConstructors: {
         label: 'Markdown-Eingabe',
         reducedMode: false,
     }),
-    [ElementType.UiDefinitionInput]: (id) => ({}),
+    [ElementType.UiDefinitionInput]: (id) => ({
+        ...makeInputBase(ElementType.UiDefinitionInput, id),
+        label: 'UI-Definition',
+        elementType: undefined,
+    }),
     [ElementType.IdentityInput]: (id) => ({}),
     [ElementType.TabLayout]: (id) => ({}),
     [ElementType.ChipInput]: (id) => ({

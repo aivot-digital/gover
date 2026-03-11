@@ -418,12 +418,13 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
         },
         ...(dynamicRowHeight
             ? {
-                // Let rows grow with multiline/custom cell content instead of clipping.
-                '& .MuiDataGrid-cell': {
+                // Let actual data rows grow with multiline/custom cell content instead of clipping.
+                // Exclude loading skeleton rows, otherwise their placeholder content gets top-aligned.
+                [`& .${gridClasses.row}:not(.${gridClasses.rowSkeleton}) .${gridClasses.cell}`]: {
                     alignItems: 'flex-start',
                     py: 0.75,
                 },
-                '& .MuiDataGrid-cellContent': {
+                [`& .${gridClasses.row}:not(.${gridClasses.rowSkeleton}) .MuiDataGrid-cellContent`]: {
                     whiteSpace: 'normal',
                     overflow: 'visible',
                     textOverflow: 'unset',
