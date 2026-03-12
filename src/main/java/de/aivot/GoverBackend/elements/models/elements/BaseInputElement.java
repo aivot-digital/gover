@@ -11,7 +11,7 @@ import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.Objects;
 
-public abstract class BaseInputElement<T> extends BaseFormElement {
+public abstract class BaseInputElement<T> extends BaseFormElement implements InputElement<T> {
     @Nullable
     private String label;
     @Nullable

@@ -1,8 +1,6 @@
 package de.aivot.GoverBackend.elements.models.elements.steps;
 
-import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
-import de.aivot.GoverBackend.elements.models.elements.InputElement;
-import de.aivot.GoverBackend.elements.models.elements.PrintableElement;
+import de.aivot.GoverBackend.elements.models.elements.*;
 import de.aivot.GoverBackend.elements.models.elements.form.input.CheckboxInputElement;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.exceptions.ValidationException;
@@ -51,6 +49,18 @@ public class IntroductionStepElement extends BaseStepElement implements InputEle
     @Override
     public Boolean formatValue(Object value) {
         return CheckboxInputElement._formatValue(value);
+    }
+
+    @Nullable
+    @Override
+    public ElementValueFunctions getValue() {
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public ElementValidationFunctions getValidation() {
+        return null;
     }
 
     @Nonnull

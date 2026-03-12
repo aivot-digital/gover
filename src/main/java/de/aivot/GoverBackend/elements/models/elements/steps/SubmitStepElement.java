@@ -1,9 +1,7 @@
 package de.aivot.GoverBackend.elements.models.elements.steps;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
-import de.aivot.GoverBackend.elements.models.elements.InputElement;
-import de.aivot.GoverBackend.elements.models.elements.PrintableElement;
+import de.aivot.GoverBackend.elements.models.elements.*;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.utils.StringUtils;
@@ -66,6 +64,18 @@ public class SubmitStepElement extends BaseStepElement implements InputElement<M
     @Override
     public Map<String, Object> formatValue(@Nullable Object value) {
         return _formatValue(value);
+    }
+
+    @Nullable
+    @Override
+    public ElementValueFunctions getValue() {
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public ElementValidationFunctions getValidation() {
+        return null;
     }
 
     @Nullable

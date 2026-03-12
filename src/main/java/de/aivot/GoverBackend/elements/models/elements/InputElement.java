@@ -38,6 +38,8 @@ public interface InputElement<T> {
             performValidation(formattedValue);
         }
     }
+    @Nonnull
+    String getId();
 
     Boolean getRequired();
 
@@ -50,4 +52,10 @@ public interface InputElement<T> {
 
     @Nullable
     T formatValue(@Nullable Object value);
+
+    @Nullable
+    ElementValueFunctions getValue();
+
+    @Nullable
+    ElementValidationFunctions getValidation();
 }

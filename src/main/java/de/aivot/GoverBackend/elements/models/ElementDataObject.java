@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+@Deprecated
 @JsonDeserialize(using = ElementDataObjectDeserializer.class)
 public class ElementDataObject implements Serializable {
     @JsonProperty("$type")

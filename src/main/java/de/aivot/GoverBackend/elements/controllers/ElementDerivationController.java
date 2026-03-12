@@ -1,9 +1,10 @@
 package de.aivot.GoverBackend.elements.controllers;
 
-import de.aivot.GoverBackend.elements.dtos.ElementDerivationResponse;
-import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
+import de.aivot.GoverBackend.elements.exceptions.DerivationException;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
+import de.aivot.GoverBackend.elements.models.ElementDerivationRequestV2;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
-import de.aivot.GoverBackend.elements.services.ElementDerivationService;
+import de.aivot.GoverBackend.elements.services.ElementDerivationServiceV2;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
@@ -25,10 +26,10 @@ import org.springframework.web.bind.annotation.RestController;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ElementDerivationController {
-    private final ElementDerivationService elementDerivationService;
+    private final ElementDerivationServiceV2 elementDerivationServiceV2;
 
-    public ElementDerivationController(ElementDerivationService elementDerivationService) {
-        this.elementDerivationService = elementDerivationService;
+    public ElementDerivationController(ElementDerivationServiceV2 elementDerivationServiceV2) {
+        this.elementDerivationServiceV2 = elementDerivationServiceV2;
     }
 
     @PostMapping("derive/")
@@ -36,15 +37,12 @@ public class ElementDerivationController {
             summary = "Derive Element",
             description = "Derives an element based on the provided data in the request."
     )
-    public ElementDerivationResponse derive(
-            @Nonnull @RequestBody @Valid ElementDerivationRequest request
+    public DerivedRuntimeElementData derive(
+            @Nonnull @RequestBody @Valid ElementDerivationRequestV2 request
     ) throws ResponseException {
         var derivationLogger = new ElementDerivationLogger();
 
-        var derivedElementData = elementDerivationService
+        return elementDerivationServiceV2
                 .derive(request, derivationLogger);
-
-        return ElementDerivationResponse
-                .from(derivedElementData, derivationLogger, true);
     }
 }

@@ -15,6 +15,7 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.function.Consumer;
 
+@Deprecated
 public class ElementData extends HashMap<String, ElementDataObject> implements Serializable {
     public ElementData() {
         super();
