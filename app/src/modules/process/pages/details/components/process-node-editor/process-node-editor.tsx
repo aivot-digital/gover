@@ -30,6 +30,7 @@ import {isElementData} from '../../../../../../models/element-data';
 import {ProcessNodeEditorSkeleton} from './process-node-editor-skeleton';
 import {clearLoadingMessage, setLoadingMessage} from '../../../../../../slices/shell-slice';
 import {useDelayedVisibility} from '../../../../../../hooks/use-delayed-visibility';
+import {downloadObjectFile} from '../../../../../../utils/download-utils';
 
 const PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY = 150;
 const PROCESS_NODE_EDITOR_LOADED_FEEDBACK_DURATION = 1200;
@@ -284,6 +285,21 @@ export function ProcessNodeEditor(): ReactNode {
             });
     };
 
+    const handleExportSelected = (): void => {
+        if (originalNode == null || provider == null) {
+            return;
+        }
+
+        new ProcessNodeApiService()
+            .export(originalNode.id)
+            .then((exp) => {
+                downloadObjectFile(`${getNodeName(originalNode, provider)}.json`, exp);
+            })
+            .catch((error) => {
+                dispatch(showApiErrorSnackbar(error, 'Das Prozesselement konnte nicht exportiert werden.'));
+            });
+    };
+
     if (!hasEditorContent) {
         return showInitialNodeEditorSkeleton ?
             <ProcessNodeEditorSkeleton/> :
@@ -520,6 +536,7 @@ export function ProcessNodeEditor(): ReactNode {
                 onClose={() => {
                     setMenuAnchorEl(null);
                 }}
+                onExportNode={handleExportSelected}
                 onReplaceNode={() => {
                     if (!editable || originalNode == null) {
                         return;

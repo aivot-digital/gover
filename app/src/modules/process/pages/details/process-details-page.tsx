@@ -37,6 +37,7 @@ import {
     type ProcessDetailsPageMoreMenuEvent,
 } from './components/process-details-page-more-menu';
 import {downloadObjectFile} from '../../../../utils/download-utils';
+import {uploadObjectFile} from '../../../../utils/download-utils';
 import {ProcessTestClaimApiService} from '../../services/process-test-claim-api-service';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import {type ProcessTestClaimEntity} from '../../entities/process-test-claim-entity';
@@ -65,6 +66,8 @@ import News from '@aivot/mui-material-symbols-400-outlined/dist/news/News';
 import {ProcessConnectExistingNodeDialog} from './components/process-connect-existing-node-dialog';
 import {getNodeName} from './components/process-flow-editor/utils/node-utils';
 import SwapHoriz from '@mui/icons-material/SwapHoriz';
+import UploadFile from '@aivot/mui-material-symbols-400-outlined/dist/upload-file/UploadFile';
+import {type ProcessNodeExport} from '../../entities/process-node-export';
 
 const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 150;
 
@@ -100,6 +103,8 @@ interface NodeReplacementPlan {
     recreatedOutgoingEdges: RecreatedEdgePlan[];
     removedOutgoingEdges: ProcessDefinitionEdgeEntity[];
 }
+
+type NodeImportContext = 'trigger' | 'follow-up' | 'in-between';
 
 function canReplaceNodeType(currentType: ProcessNodeType, replacementType: ProcessNodeType): boolean {
     if (currentType === ProcessNodeType.Trigger || replacementType === ProcessNodeType.Trigger) {
@@ -217,6 +222,17 @@ function buildNodeReplacementPlan(
         recreatedOutgoingEdges,
         removedOutgoingEdges,
     };
+}
+
+function getNodeProviderFromList(
+    nodeProviders: ProcessNodeProvider[],
+    key: string,
+    version: number,
+): ProcessNodeProvider | null {
+    return nodeProviders.find((provider) => (
+        provider.key === key &&
+        provider.majorVersion === version
+    )) ?? null;
 }
 
 export function ProcessDetailsPage(): ReactNode {
@@ -651,6 +667,23 @@ export function ProcessDetailsPage(): ReactNode {
             });
     };
 
+    const handleAddImportedTriggerNode = useCallback((importedNode: ProcessNodeEntity): void => {
+        setProcessFlow((prevProcess) => {
+            if (prevProcess == null) {
+                return prevProcess;
+            }
+
+            return {
+                ...prevProcess,
+                nodes: [
+                    ...prevProcess.nodes,
+                    importedNode,
+                ],
+            };
+        });
+        setShowAddTriggerDialog(false);
+    }, []);
+
     const handleAddFollowUpNode = async (nodeProvider: ProcessNodeProvider): Promise<void> => {
         if (processFlow == null) {
             return;
@@ -733,6 +766,64 @@ export function ProcessDetailsPage(): ReactNode {
 
         dispatch(clearLoadingMessage());
     };
+
+    const handleAddImportedFollowUpNode = useCallback(async (
+        importedNode: ProcessNodeEntity,
+        importedProvider: ProcessNodeProvider,
+    ): Promise<void> => {
+        if (processFlow == null || newNodeFor == null) {
+            return;
+        }
+
+        const existingEdge = processFlow.edges.find((edge) => (
+            edge.fromNodeId === newNodeFor.fromNodeId &&
+            edge.viaPort === newNodeFor.viaPort
+        ));
+
+        const edgeApi = new ProcessDefinitionEdgeApiService();
+
+        if (existingEdge != null) {
+            if (importedProvider.ports.length === 0) {
+                throw new Error('imported-follow-up-node-missing-port');
+            }
+
+            await edgeApi.destroy(existingEdge.id);
+        }
+
+        const newEdge = await edgeApi.create({
+            id: 0,
+            processId: processFlow.definition.id,
+            processVersion: processFlow.version.processVersion,
+            fromNodeId: newNodeFor.fromNodeId,
+            toNodeId: importedNode.id,
+            viaPort: newNodeFor.viaPort,
+        });
+
+        let newlyCreatedFollowUpEdge: ProcessDefinitionEdgeEntity | null = null;
+        if (existingEdge != null) {
+            newlyCreatedFollowUpEdge = await edgeApi.create({
+                ...existingEdge,
+                id: 0,
+                fromNodeId: importedNode.id,
+                viaPort: importedProvider.ports[0].key,
+            });
+        }
+
+        setProcessFlow({
+            ...processFlow,
+            nodes: [
+                ...processFlow.nodes,
+                importedNode,
+            ],
+            edges: [
+                ...processFlow.edges.filter((edge) => edge.id !== existingEdge?.id),
+                newEdge,
+                ...(newlyCreatedFollowUpEdge != null ? [newlyCreatedFollowUpEdge] : []),
+            ],
+        });
+
+        setNewNodeFor(null);
+    }, [newNodeFor, processFlow]);
 
     const handleAddInbetweenNode = async (nodeProvider: ProcessNodeProvider): Promise<void> => {
         if (processFlow == null) {
@@ -818,6 +909,64 @@ export function ProcessDetailsPage(): ReactNode {
 
         dispatch(clearLoadingMessage());
     };
+
+    const handleAddImportedInbetweenNode = useCallback(async (
+        importedNode: ProcessNodeEntity,
+        importedProvider: ProcessNodeProvider,
+    ): Promise<void> => {
+        if (processFlow == null || newNodeOnEdgeId == null) {
+            return;
+        }
+
+        const existingEdge = processFlow
+            .edges
+            .find((edge) => edge.id === newNodeOnEdgeId);
+
+        if (existingEdge == null) {
+            return;
+        }
+
+        if (importedProvider.ports.length === 0) {
+            throw new Error('imported-inbetween-node-missing-port');
+        }
+
+        const edgeApi = new ProcessDefinitionEdgeApiService();
+
+        await edgeApi.destroy(existingEdge.id);
+
+        const newEdgeToNewNode = await edgeApi.create({
+            id: 0,
+            processId: processFlow.definition.id,
+            processVersion: processFlow.version.processVersion,
+            fromNodeId: existingEdge.fromNodeId,
+            toNodeId: importedNode.id,
+            viaPort: existingEdge.viaPort,
+        });
+
+        const newEdgeFromNewNode = await edgeApi.create({
+            id: 0,
+            processId: processFlow.definition.id,
+            processVersion: processFlow.version.processVersion,
+            fromNodeId: importedNode.id,
+            toNodeId: existingEdge.toNodeId,
+            viaPort: importedProvider.ports[0].key,
+        });
+
+        setProcessFlow({
+            ...processFlow,
+            nodes: [
+                ...processFlow.nodes,
+                importedNode,
+            ],
+            edges: [
+                ...processFlow.edges.filter((edge) => edge.id !== existingEdge.id),
+                newEdgeToNewNode,
+                newEdgeFromNewNode,
+            ],
+        });
+
+        setNewNodeOnEdgeId(null);
+    }, [newNodeOnEdgeId, processFlow]);
 
     const handleDeleteNode = async (node: ProcessNodeEntity): Promise<void> => {
         if (processFlow == null) {
@@ -1082,6 +1231,90 @@ export function ProcessDetailsPage(): ReactNode {
             nodeId: node.id,
         });
     }, []);
+    const handleImportNode = useCallback(async (context: NodeImportContext): Promise<void> => {
+        if (processFlow == null) {
+            return;
+        }
+
+        try {
+            const importedNodeExport = await uploadObjectFile<ProcessNodeExport>('application/json');
+            if (importedNodeExport == null) {
+                return;
+            }
+
+            const importedProvider = getNodeProviderFromList(
+                availableNodeProviders,
+                importedNodeExport.data.node.processNodeDefinitionKey,
+                importedNodeExport.data.node.processNodeDefinitionVersion,
+            );
+            if (importedProvider == null) {
+                dispatch(showErrorSnackbar('Die Knotendefinition aus dem Import ist in dieser Instanz nicht verfügbar.'));
+                return;
+            }
+
+            if (context === 'trigger' && importedProvider.type !== ProcessNodeType.Trigger) {
+                dispatch(showErrorSnackbar('In diesem Dialog können nur importierte Auslöser eingefügt werden.'));
+                return;
+            }
+
+            if (context !== 'trigger' && importedProvider.type === ProcessNodeType.Trigger) {
+                dispatch(showErrorSnackbar('Importierte Auslöser können hier nicht eingefügt werden.'));
+                return;
+            }
+
+            if (context === 'follow-up' && newNodeFor != null) {
+                const requiresOutgoingPort = processFlow.edges.some((edge) => (
+                    edge.fromNodeId === newNodeFor.fromNodeId &&
+                    edge.viaPort === newNodeFor.viaPort
+                ));
+                if (requiresOutgoingPort && importedProvider.ports.length === 0) {
+                    dispatch(showErrorSnackbar('Dieser importierte Knotentyp kann hier nicht eingefügt werden, da er keinen Ausgangsport besitzt.'));
+                    return;
+                }
+            }
+
+            if (context === 'in-between' && importedProvider.ports.length === 0) {
+                dispatch(showErrorSnackbar('Dieser importierte Knotentyp kann hier nicht eingefügt werden, da er keinen Ausgangsport besitzt.'));
+                return;
+            }
+
+            dispatch(setLoadingMessage({
+                message: 'Importiere Prozesselement',
+                blocking: false,
+                estimatedTime: 1000,
+            }));
+
+            const importedNode = await new ProcessNodeApiService()
+                .import(processFlow.definition.id, processFlow.version.processVersion, importedNodeExport);
+
+            setFlowNodeProviderCache((previousCache) => ({
+                ...previousCache,
+                [getProcessNodeProviderKey(importedProvider.key, importedProvider.majorVersion)]: importedProvider,
+            }));
+
+            if (context === 'trigger') {
+                handleAddImportedTriggerNode(importedNode);
+            } else if (context === 'follow-up') {
+                await handleAddImportedFollowUpNode(importedNode, importedProvider);
+            } else {
+                await handleAddImportedInbetweenNode(importedNode, importedProvider);
+            }
+
+            dispatch(showSuccessSnackbar('Das Prozesselement wurde importiert.'));
+        } catch (error) {
+            dispatch(showApiErrorSnackbar(error, 'Das Prozesselement konnte nicht importiert werden.'));
+        } finally {
+            dispatch(clearLoadingMessage());
+        }
+    }, [
+        availableNodeProviders,
+        dispatch,
+        handleAddImportedFollowUpNode,
+        handleAddImportedInbetweenNode,
+        handleAddImportedTriggerNode,
+        newNodeFor,
+        processFlow,
+    ]);
     const handleCreateEdge = useCallback((fromNodeId: number, toNodeId: number, viaPortKey: string): void => {
         if (processFlow == null) {
             return;
@@ -1634,6 +1867,13 @@ export function ProcessDetailsPage(): ReactNode {
                 open={showAddTriggerDialog}
                 nodeProviders={availableNodeProviders}
                 title="Auslöser hinzufügen"
+                titleActions={[{
+                    label: 'Importieren',
+                    icon: <UploadFile sx={{fontSize: 18}}/>,
+                    onClick: () => {
+                        void handleImportNode('trigger');
+                    },
+                }]}
                 filter={(provider) => provider.type === ProcessNodeType.Trigger}
                 onClose={() => {
                     setShowAddTriggerDialog(false);
@@ -1702,6 +1942,13 @@ export function ProcessDetailsPage(): ReactNode {
             <SelectNodeProviderDialog
                 open={newNodeFor != null}
                 nodeProviders={availableNodeProviders}
+                titleActions={[{
+                    label: 'Importieren',
+                    icon: <UploadFile sx={{fontSize: 18}}/>,
+                    onClick: () => {
+                        void handleImportNode('follow-up');
+                    },
+                }]}
                 filter={(provider) => {
                     if (provider.type === ProcessNodeType.Trigger) {
                         return false;
@@ -1727,6 +1974,13 @@ export function ProcessDetailsPage(): ReactNode {
             <SelectNodeProviderDialog
                 open={newNodeOnEdgeId != null}
                 nodeProviders={availableNodeProviders}
+                titleActions={[{
+                    label: 'Importieren',
+                    icon: <UploadFile sx={{fontSize: 18}}/>,
+                    onClick: () => {
+                        void handleImportNode('in-between');
+                    },
+                }]}
                 filter={(provider) => (
                     provider.type !== ProcessNodeType.Trigger &&
                     provider.ports.length > 0

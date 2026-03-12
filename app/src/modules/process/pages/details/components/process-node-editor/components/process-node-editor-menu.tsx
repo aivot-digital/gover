@@ -1,4 +1,5 @@
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Download from '@aivot/mui-material-symbols-400-outlined/dist/download/Download';
 import SwapHoriz from '@mui/icons-material/SwapHoriz';
 import {ProcessActionMenu} from '../../process-action-menu';
 
@@ -6,6 +7,7 @@ interface ProcessNodeEditorMenuProps {
     anchorEl: HTMLElement | null;
     onClose: () => void;
 
+    onExportNode: () => void;
     onReplaceNode: () => void;
     onDeleteNode: () => void;
 }
@@ -15,6 +17,7 @@ export function ProcessNodeEditorMenu(props: ProcessNodeEditorMenuProps) {
         anchorEl,
         onClose,
 
+        onExportNode,
         onReplaceNode,
         onDeleteNode,
     } = props;
@@ -33,6 +36,11 @@ export function ProcessNodeEditorMenu(props: ProcessNodeEditorMenuProps) {
                 vertical: 'top',
             }}
             items={[
+                {
+                    label: 'Exportieren',
+                    onClick: onExportNode,
+                    icon: <Download/>,
+                },
                 {
                     label: 'Ersetzen',
                     onClick: onReplaceNode,

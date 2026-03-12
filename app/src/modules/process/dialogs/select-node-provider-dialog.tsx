@@ -21,6 +21,7 @@ import {SelectionDialogShell} from '../../../components/selection-dialog/selecti
 import {SelectionListRow} from '../../../components/selection-dialog/selection-list-row';
 import {SelectionDetailsPanel} from '../../../components/selection-dialog/selection-details-panel';
 import {useRetainedDialogValue} from '../../../hooks/use-retained-dialog-value';
+import {type Action} from '../../../components/actions/actions-props';
 
 const PROCESS_NODE_TYPE_ORDER = [
     ProcessNodeType.Trigger,
@@ -52,6 +53,7 @@ interface SelectNodeProviderDialogProps {
     title?: string;
     primaryActionLabel?: string;
     primaryActionIcon?: ReactNode;
+    titleActions?: Action[];
 }
 
 function getProviderId(provider: ProcessNodeProvider): string {
@@ -99,6 +101,7 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
         title = 'Prozesselement hinzufügen',
         primaryActionLabel = 'Hinzufügen',
         primaryActionIcon = <Add sx={{fontSize: 18}}/>,
+        titleActions,
     } = props;
 
     const [currentTab, setCurrentTab] = useState(0);
@@ -110,6 +113,7 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
     const renderTitle = useRetainedDialogValue(open, title);
     const renderPrimaryActionLabel = useRetainedDialogValue(open, primaryActionLabel);
     const renderPrimaryActionIcon = useRetainedDialogValue(open, primaryActionIcon);
+    const renderTitleActions = useRetainedDialogValue(open, titleActions);
 
     const filteredNodeProviders = useMemo(() => (
         getFilteredNodeProviders(renderNodeProviders, renderFilter)
@@ -154,6 +158,7 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
             open={open}
             onClose={onClose}
             title={renderTitle}
+            titleActions={renderTitleActions}
             tabs={[
                 {label: 'Elemente', value: 0},
                 {label: 'Vorlagen', value: 1, disabled: true},

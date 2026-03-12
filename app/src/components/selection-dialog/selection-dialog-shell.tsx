@@ -1,6 +1,7 @@
 import React, {type ReactNode} from 'react';
 import {Box, Dialog, Tab, Tabs, type DialogProps} from '@mui/material';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
+import {type Action} from '../actions/actions-props';
 
 export interface SelectionDialogTabDefinition {
     label: ReactNode;
@@ -25,6 +26,7 @@ interface SelectionDialogShellProps {
     detailsColumnWidth?: string;
     height?: string | number;
     closeTooltip?: string;
+    titleActions?: Action[];
 }
 
 export function SelectionDialogShell(props: SelectionDialogShellProps): ReactNode {
@@ -43,6 +45,7 @@ export function SelectionDialogShell(props: SelectionDialogShellProps): ReactNod
             <DialogTitleWithClose
                 onClose={props.onClose}
                 closeTooltip={props.closeTooltip}
+                actions={props.titleActions}
             >
                 {props.title}
             </DialogTitleWithClose>
