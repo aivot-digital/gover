@@ -7,6 +7,7 @@ import {alpha, keyframes} from '@mui/material/styles';
 import {Link, Outlet, useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {useProcessDetailsPageContext} from '../../process-details-page-context';
 import {ProviderTypeStyles} from '../../../../data/provider-type-styles';
+import {KnownProviderIcons} from '../../../../data/known-provider-icons';
 import {
     type ProcessNodeProvider,
     ProcessNodeProviderApiService,
@@ -31,6 +32,7 @@ import {ProcessNodeEditorSkeleton} from './process-node-editor-skeleton';
 import {clearLoadingMessage, setLoadingMessage} from '../../../../../../slices/shell-slice';
 import {useDelayedVisibility} from '../../../../../../hooks/use-delayed-visibility';
 import {downloadObjectFile} from '../../../../../../utils/download-utils';
+import Assignment from '@aivot/mui-material-symbols-400-outlined/dist/assignment/Assignment';
 
 const PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY = 150;
 const PROCESS_NODE_EDITOR_LOADED_FEEDBACK_DURATION = 1200;
@@ -224,6 +226,18 @@ export function ProcessNodeEditor(): ReactNode {
             ProviderTypeStyles[provider.type];
     }, [provider]);
 
+    const ProviderIcon = useMemo(() => {
+        if (provider == null) {
+            return Assignment;
+        }
+
+        return (
+            KnownProviderIcons[provider.componentKey] ||
+            KnownProviderIcons[provider.key] ||
+            Assignment
+        );
+    }, [provider]);
+
     const currentTab = useMemo(() => {
         if (location.pathname.endsWith('/tabs/outputs')) {
             return 'outputs';
@@ -367,7 +381,7 @@ export function ProcessNodeEditor(): ReactNode {
                                 color: typeTextColor,
                             }}
                         >
-                            <TypeIcon/>
+                            <ProviderIcon/>
                         </Box>
 
                         <Box

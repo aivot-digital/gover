@@ -22,6 +22,18 @@ public class VUserDomainPermissionEntity {
     @Nullable
     private Integer teamId;
 
+    @Nullable
+    private Boolean isDirectMember;
+
+    @Nullable
+    private Boolean isIndirectMember;
+
+    @Nullable
+    private List<String> directSystemRolePermissions;
+
+    @Nullable
+    private List<String> indirectSystemRolePermissions;
+
     @Nonnull
     private List<String> systemRolePermissions;
 
@@ -31,6 +43,12 @@ public class VUserDomainPermissionEntity {
     @Nonnull
     private List<Integer> systemRoleIds;
 
+    @Nullable
+    private List<String> directDomainRolePermissions;
+
+    @Nullable
+    private List<String> indirectDomainRolePermissions;
+
     @Nonnull
     private List<String> domainRolePermissions;
 
@@ -39,6 +57,15 @@ public class VUserDomainPermissionEntity {
 
     @Nonnull
     private List<Integer> domainRoleIds;
+
+    @Nullable
+    private List<String> directPermissions;
+
+    @Nullable
+    private List<String> indirectPermissions;
+
+    @Nullable
+    private List<String> deputyForUserIds;
 
     @Nonnull
     private List<String> permissions;
@@ -73,6 +100,46 @@ public class VUserDomainPermissionEntity {
         return this;
     }
 
+    @Nullable
+    public Boolean getIsDirectMember() {
+        return isDirectMember;
+    }
+
+    public VUserDomainPermissionEntity setIsDirectMember(@Nullable Boolean isDirectMember) {
+        this.isDirectMember = isDirectMember;
+        return this;
+    }
+
+    @Nullable
+    public Boolean getIsIndirectMember() {
+        return isIndirectMember;
+    }
+
+    public VUserDomainPermissionEntity setIsIndirectMember(@Nullable Boolean isIndirectMember) {
+        this.isIndirectMember = isIndirectMember;
+        return this;
+    }
+
+    @Nullable
+    public List<String> getDirectSystemRolePermissions() {
+        return directSystemRolePermissions;
+    }
+
+    public VUserDomainPermissionEntity setDirectSystemRolePermissions(@Nullable List<String> directSystemRolePermissions) {
+        this.directSystemRolePermissions = directSystemRolePermissions;
+        return this;
+    }
+
+    @Nullable
+    public List<String> getIndirectSystemRolePermissions() {
+        return indirectSystemRolePermissions;
+    }
+
+    public VUserDomainPermissionEntity setIndirectSystemRolePermissions(@Nullable List<String> indirectSystemRolePermissions) {
+        this.indirectSystemRolePermissions = indirectSystemRolePermissions;
+        return this;
+    }
+
     @Nonnull
     public List<String> getSystemRolePermissions() {
         return systemRolePermissions;
@@ -103,6 +170,26 @@ public class VUserDomainPermissionEntity {
         return this;
     }
 
+    @Nullable
+    public List<String> getDirectDomainRolePermissions() {
+        return directDomainRolePermissions;
+    }
+
+    public VUserDomainPermissionEntity setDirectDomainRolePermissions(@Nullable List<String> directDomainRolePermissions) {
+        this.directDomainRolePermissions = directDomainRolePermissions;
+        return this;
+    }
+
+    @Nullable
+    public List<String> getIndirectDomainRolePermissions() {
+        return indirectDomainRolePermissions;
+    }
+
+    public VUserDomainPermissionEntity setIndirectDomainRolePermissions(@Nullable List<String> indirectDomainRolePermissions) {
+        this.indirectDomainRolePermissions = indirectDomainRolePermissions;
+        return this;
+    }
+
     @Nonnull
     public List<String> getDomainRolePermissions() {
         return domainRolePermissions;
@@ -130,6 +217,36 @@ public class VUserDomainPermissionEntity {
 
     public VUserDomainPermissionEntity setDomainRoleIds(@Nonnull List<Integer> domainRoleIds) {
         this.domainRoleIds = domainRoleIds;
+        return this;
+    }
+
+    @Nullable
+    public List<String> getDirectPermissions() {
+        return directPermissions;
+    }
+
+    public VUserDomainPermissionEntity setDirectPermissions(@Nullable List<String> directPermissions) {
+        this.directPermissions = directPermissions;
+        return this;
+    }
+
+    @Nullable
+    public List<String> getIndirectPermissions() {
+        return indirectPermissions;
+    }
+
+    public VUserDomainPermissionEntity setIndirectPermissions(@Nullable List<String> indirectPermissions) {
+        this.indirectPermissions = indirectPermissions;
+        return this;
+    }
+
+    @Nullable
+    public List<String> getDeputyForUserIds() {
+        return deputyForUserIds;
+    }
+
+    public VUserDomainPermissionEntity setDeputyForUserIds(@Nullable List<String> deputyForUserIds) {
+        this.deputyForUserIds = deputyForUserIds;
         return this;
     }
 

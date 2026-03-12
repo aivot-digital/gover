@@ -11,9 +11,13 @@ type TabConfig<ItemType> = {
     isDisabled?: (item: ItemType | undefined) => boolean;
 };
 
+export type GenericDetailsPageHeaderConfig<ItemType> =
+    Omit<GenericPageHeaderProps, 'isBusy'>
+    | ((item: ItemType | undefined, isNewItem: boolean, notFound: boolean) => Omit<GenericPageHeaderProps, 'isBusy'>);
+
 export interface GenericDetailsPageProps<ItemType, ID, AdditionalData> {
     getTabTitle: (item: ItemType) => string;
-    header: Omit<GenericPageHeaderProps, 'isBusy'>;
+    header: GenericDetailsPageHeaderConfig<ItemType>;
     initializeItem: (api: Api) => ItemType;
     fetchData: (api: Api, id: ID) => Promise<ItemType>;
     fetchAdditionalData?: AdditionalDataFetchObject<AdditionalData, ID | string>;

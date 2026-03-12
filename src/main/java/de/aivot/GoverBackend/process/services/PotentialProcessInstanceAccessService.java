@@ -9,8 +9,8 @@ import org.springframework.stereotype.Service;
 
 import java.sql.Array;
 import java.sql.SQLException;
-import java.util.Comparator;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
@@ -45,7 +45,7 @@ public class PotentialProcessInstanceAccessService {
                 .stream()
                 .filter(PotentialProcessInstanceAccessService::isUserRow)
                 .filter(row -> Boolean.TRUE.equals(row.userIsEnabled()))
-                .filter(row -> hasRequiredPermissions(row.permissions(), normalizedRequiredPermissions))
+                .filter(row -> hasDirectUserAccess(row, normalizedRequiredPermissions))
                 .toList();
 
         var departmentsWithMatchingUsers = matchingUsers
@@ -65,7 +65,7 @@ public class PotentialProcessInstanceAccessService {
         for (var row : rows) {
             if (isUserRow(row)) {
                 if (Boolean.TRUE.equals(row.userIsEnabled()) &&
-                    hasRequiredPermissions(row.permissions(), normalizedRequiredPermissions)) {
+                    hasDirectUserAccess(row, normalizedRequiredPermissions)) {
                     putItem(selectableItems, "user", row.userId());
                 }
                 continue;
@@ -111,6 +111,14 @@ public class PotentialProcessInstanceAccessService {
                 .filter(permission -> !permission.isBlank())
                 .distinct()
                 .toList();
+    }
+
+    private static boolean hasDirectUserAccess(
+            @Nonnull PotentialAccessRow row,
+            @Nonnull List<String> requiredPermissions
+    ) {
+        return Boolean.TRUE.equals(row.userIsDirectMember()) &&
+               hasRequiredPermissions(row.userDirectPermissions(), requiredPermissions);
     }
 
     private static boolean hasRequiredPermissions(
@@ -162,7 +170,7 @@ public class PotentialProcessInstanceAccessService {
 
     @Nullable
     private static PotentialAccessRow toRow(@Nullable Object[] row) {
-        if (row == null || row.length < 7) {
+        if (row == null || row.length < 9) {
             return null;
         }
 
@@ -173,7 +181,9 @@ public class PotentialProcessInstanceAccessService {
                 toBoolean(row[3]),
                 toInteger(row[4]),
                 toInteger(row[5]),
-                toStringList(row[6])
+                toBoolean(row[6]),
+                toStringList(row[7]),
+                toStringList(row[8])
         );
     }
 
@@ -309,6 +319,8 @@ public class PotentialProcessInstanceAccessService {
             @Nullable Boolean userIsEnabled,
             @Nullable Integer userViaDepartmentId,
             @Nullable Integer userViaTeamId,
+            @Nullable Boolean userIsDirectMember,
+            @Nonnull List<String> userDirectPermissions,
             @Nonnull List<String> permissions
     ) {
     }

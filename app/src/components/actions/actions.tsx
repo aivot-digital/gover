@@ -89,6 +89,7 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps): ReactNode
     const to = 'to' in action ? action.to : undefined;
     const resolvedHref = isHashLink ? to : href;
     const target = 'href' in action ? '_blank' : undefined;
+    const rel = 'href' in action ? 'noopener noreferrer' : undefined;
     const onClick = 'onClick' in action ? action.onClick : undefined;
     const shouldDisable = action.ignoreBusy ? action.disabled : (action.disabled || isBusy);
     const activeStyle = 'activeStyle' in action ? action.activeStyle : undefined;
@@ -110,6 +111,7 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps): ReactNode
                 href={resolvedHref}
                 to={isHashLink ? undefined : to}
                 target={target}
+                rel={rel}
                 aria-label={action.ariaLabel}
                 endIcon={action.icon}
                 disabled={shouldDisable}
@@ -131,6 +133,7 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps): ReactNode
                 href={resolvedHref}
                 to={isHashLink ? undefined : to}
                 target={target}
+                rel={rel}
                 aria-label={action.ariaLabel}
                 disabled={shouldDisable}
                 edge={isFirst ? 'start' : isLast ? 'end' : false}

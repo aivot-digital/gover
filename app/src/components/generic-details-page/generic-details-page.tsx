@@ -58,10 +58,16 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
     const id = useMemo(() => {
         return params[ID_PARAM] as ID;
     }, [params]);
+    const isNewItem = id === NEW_ID_INDICATOR;
 
     const [isBusy, setIsBusy] = useState(false);
     const [item, setItem] = useState<ItemType>();
     const [additionalData, setAdditionalData] = useState<AdditionalData>();
+
+    const resolvedPathParams = useMemo(() => ({
+        ...params,
+        [ID_PARAM]: id as string | undefined,
+    }), [params, ID_PARAM, id]);
 
     const resolvedTabs = useMemo(() => {
         if (typeof props.tabs === 'function') {
@@ -72,9 +78,16 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
 
     const currentTab: number = useMemo(() => {
         return resolvedTabs
-            .map(tab => generatePath(tab.path, {[ID_PARAM]: id}))
+            .map(tab => generatePath(tab.path, resolvedPathParams))
             .findIndex(path => matchPath(location.pathname, path) != null);
-    }, [id, location, resolvedTabs]);
+    }, [location, resolvedPathParams, resolvedTabs]);
+
+    const resolvedHeader = useMemo(() => {
+        if (typeof props.header === 'function') {
+            return props.header(item, isNewItem, notFound);
+        }
+        return props.header;
+    }, [props.header, item, isNewItem, notFound]);
 
     useEffect(() => {
         if (id == null) {
@@ -105,13 +118,13 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
 
     const headerTitle = useMemo(() => {
         if (props.getHeaderTitle) {
-            return props.getHeaderTitle(item, id === NEW_ID_INDICATOR, notFound);
+            return props.getHeaderTitle(item, isNewItem, notFound);
         }
-        return props.header.title ?? 'Resource bearbeiten'; // use static title as fallback, if defined
-    }, [item, id, notFound]);
+        return resolvedHeader.title ?? 'Resource bearbeiten';
+    }, [props.getHeaderTitle, item, isNewItem, notFound, resolvedHeader]);
 
     useEffect(() => {
-        if (id === NEW_ID_INDICATOR) {
+        if (isNewItem) {
             return;
         }
         if (entityType == null) {
@@ -127,7 +140,7 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
     return (
         <>
             <Container>
-                <GenericPageHeader {...props.header} title={isBusy ? "Wird geladen…" : headerTitle} isBusy={isBusy} />
+                <GenericPageHeader {...resolvedHeader} title={isBusy ? "Wird geladen…" : headerTitle} isBusy={isBusy} />
 
                 <Paper
                     sx={{
@@ -150,7 +163,7 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
                                             value={currentTab}
                                             onChange={(_, index: number) => {
                                                 const tab = resolvedTabs[index];
-                                                navigate(generatePath(tab.path, {[ID_PARAM]: id}));
+                                                navigate(generatePath(tab.path, resolvedPathParams));
                                             }}
                                         >
                                             {
@@ -224,8 +237,8 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
                                     value={{
                                         item: item,
                                         setItem: setItem,
-                                        isNewItem: id === NEW_ID_INDICATOR,
-                                        isExistingItem: id !== NEW_ID_INDICATOR,
+                                        isNewItem: isNewItem,
+                                        isExistingItem: !isNewItem,
                                         additionalData: additionalData,
                                         setAdditionalData: setAdditionalData,
                                         isBusy: isBusy,

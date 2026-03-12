@@ -32,6 +32,8 @@ public interface VPotentialProcessInstanceAccessRepository extends
                         p.user_is_enabled,
                         p.user_via_department_id,
                         p.user_via_team_id,
+                        p.user_is_direct_member,
+                        p.user_direct_permissions,
                         p.permissions
                     FROM v_potential_process_instance_access p
                     WHERE p.process_id = :processId

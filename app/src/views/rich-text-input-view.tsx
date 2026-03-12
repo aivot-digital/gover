@@ -3,6 +3,7 @@ import {RichTextInputElement} from "../models/elements/form/input/rich-text-inpu
 import {RichTextInputComponent} from "../components/rich-text-input-component/rich-text-input-component";
 import {useMemo} from 'react';
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
+import {ElementType} from '../data/element-type/element-type';
 
 export function RichTextView(props: BaseViewProps<RichTextInputElement, string>) {
     const {
@@ -12,6 +13,7 @@ export function RichTextView(props: BaseViewProps<RichTextInputElement, string>)
         errors,
         isBusy: isGloballyDisabled,
         isDeriving,
+        rootElement,
     } = props;
 
     const isDisabled = useMemo(() => {
@@ -22,6 +24,10 @@ export function RichTextView(props: BaseViewProps<RichTextInputElement, string>)
         return isDeriving && hasDerivableAspects(element);
     }, [isDeriving, element]);
 
+    const isProcessConfigRoot = useMemo(() => {
+        return (rootElement as { type: ElementType }).type === ElementType.ConfigLayout;
+    }, [rootElement]);
+
     return (
         <RichTextInputComponent
             label={element.label ?? ''}
@@ -30,7 +36,7 @@ export function RichTextView(props: BaseViewProps<RichTextInputElement, string>)
             required={element.required}
             disabled={isDisabled}
             readOnly={isBusy}
-            reducedMode={element.reducedMode ?? false}
+            reducedMode={isProcessConfigRoot || Boolean(element.reducedMode)}
             value={value}
             onChange={setValue}
         />

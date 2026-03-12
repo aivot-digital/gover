@@ -34,7 +34,6 @@ import {
     createNodeMeasurementMap,
     type FlowEdge,
     type FlowNode,
-    FLOW_HORIZONTAL_NODE_SPACING,
     layoutElements,
 } from './utils/layout-utils';
 import {Box, Button, Tooltip} from '@mui/material';
@@ -56,6 +55,7 @@ const INITIAL_VIEWPORT_ZOOM = 1;
 const ZOOM_EPSILON = 0.001;
 const CANVAS_ADD_TRIGGER_BUTTON_DEFAULT_X = 56;
 const CANVAS_ADD_TRIGGER_BUTTON_DEFAULT_Y = 56;
+const CANVAS_TRIGGER_LANE_HEADER_GAP = 68;
 const CANVAS_ADD_TRIGGER_LAYER_THRESHOLD = 16;
 const NOOP_ADD_EDGE = (_fromNodeId: number, _toNodeId: number, _viaPortKey: string): void => {
 };
@@ -246,14 +246,36 @@ function ProcessFlowEditorViewportControls(props: ProcessFlowEditorViewportContr
 interface ProcessFlowEditorCanvasAddTriggerButtonProps {
     label: string;
     onAddTrigger: () => void;
-    position: CanvasAddTriggerPosition;
+    position: CanvasAddTriggerButtonPosition;
 }
 
-interface CanvasAddTriggerPosition {
+interface CanvasAddTriggerButtonPosition {
     x: number;
     y: number;
     centerVertically: boolean;
 }
+
+interface ProcessFlowEditorCanvasTriggerLaneHeaderProps {
+    label: string;
+    onAddTrigger: () => void;
+    position: CanvasTriggerLaneHeaderPosition;
+}
+
+interface CanvasTriggerLaneHeaderPosition {
+    x: number;
+    y: number;
+    width: number;
+}
+
+type CanvasAddTriggerPresentation =
+    | {
+        type: 'button';
+        position: CanvasAddTriggerButtonPosition;
+    }
+    | {
+        type: 'lane-header';
+        position: CanvasTriggerLaneHeaderPosition;
+    };
 
 function ProcessFlowEditorCanvasAddTriggerButton(props: ProcessFlowEditorCanvasAddTriggerButtonProps): ReactNode {
     const {
@@ -305,19 +327,95 @@ function ProcessFlowEditorCanvasAddTriggerButton(props: ProcessFlowEditorCanvasA
     );
 }
 
-function areCanvasAddTriggerPositionsEqual(
-    left: CanvasAddTriggerPosition | null,
-    right: CanvasAddTriggerPosition | null,
+function ProcessFlowEditorCanvasTriggerLaneHeader(props: ProcessFlowEditorCanvasTriggerLaneHeaderProps): ReactNode {
+    const {
+        label,
+        onAddTrigger,
+        position,
+    } = props;
+
+    return (
+        <ViewportPortal>
+            <Box
+                className="nopan nodrag"
+                sx={{
+                    position: 'absolute',
+                    transform: `translate(${position.x}px, ${position.y}px) translateY(-100%)`,
+                    width: position.width,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    zIndex: PROCESS_FLOW_EDGE_Z_INDEX + 2,
+                    pointerEvents: 'none',
+                }}
+            >
+                <Box
+                    sx={{
+                        pointerEvents: 'all',
+                        display: 'inline-flex',
+                    }}
+                >
+                    <Button
+                        variant="text"
+                        startIcon={<Add sx={{fontSize: 18}}/>}
+                        onClick={onAddTrigger}
+                        sx={{
+                            minWidth: 0,
+                            height: 46,
+                            px: 2.25,
+                            borderRadius: 1.5,
+                            border: '2px dashed rgba(148, 163, 184, 0.5)',
+                            color: 'rgba(148, 163, 184, 0.96)',
+                            boxShadow: 'none',
+                            fontWeight: 700,
+                            fontSize: '0.95rem',
+                            letterSpacing: 0,
+                            textTransform: 'none',
+                            whiteSpace: 'nowrap',
+                            backdropFilter: 'blur(2px)',
+                            '&:hover': {
+                                bgcolor: 'rgba(255, 255, 255, 0.88)',
+                                borderColor: 'rgba(100, 116, 139, 0.62)',
+                                boxShadow: 'none',
+                            },
+                        }}
+                    >
+                        {label}
+                    </Button>
+                </Box>
+            </Box>
+        </ViewportPortal>
+    );
+}
+
+function areCanvasAddTriggerPresentationsEqual(
+    left: CanvasAddTriggerPresentation | null,
+    right: CanvasAddTriggerPresentation | null,
 ): boolean {
     if (left == null || right == null) {
         return left === right;
     }
 
-    return (
-        left.x === right.x &&
-        left.y === right.y &&
-        left.centerVertically === right.centerVertically
-    );
+    if (left.type !== right.type) {
+        return false;
+    }
+
+    if (left.type === 'button' && right.type === 'button') {
+        return (
+            left.position.x === right.position.x &&
+            left.position.y === right.position.y &&
+            left.position.centerVertically === right.position.centerVertically
+        );
+    }
+
+    if (left.type === 'lane-header' && right.type === 'lane-header') {
+        return (
+            left.position.x === right.position.x &&
+            left.position.y === right.position.y &&
+            left.position.width === right.position.width
+        );
+    }
+
+    return false;
 }
 
 export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
@@ -354,7 +452,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const [needsMeasuredLayout, setNeedsMeasuredLayout] = useState<boolean>(false);
     const [pendingInitialViewport, setPendingInitialViewport] = useState<boolean>(false);
     const [isViewportLocked, setIsViewportLocked] = useState<boolean>(false);
-    const [canvasAddTriggerPosition, setCanvasAddTriggerPosition] = useState<CanvasAddTriggerPosition | null>(null);
+    const [canvasAddTriggerPresentation, setCanvasAddTriggerPresentation] = useState<CanvasAddTriggerPresentation | null>(null);
 
     const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>([]);
@@ -365,10 +463,6 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const initialViewportNodeIdRef = useRef<number | null>(null);
     const layoutRequestIdRef = useRef<number>(0);
     const runtimeDataRef = useRef<ProcessFlowEditorRuntimeData>(runtimeData);
-    // The trigger CTA measures against the rendered node card, but `onlyRenderVisibleElements`
-    // may unmount that DOM subtree when it scrolls out of view. Cache the last valid offset so
-    // later re-layouts can still place the CTA on the same card center.
-    const nodeCardCenterOffsetCacheRef = useRef<Map<string, number>>(new Map());
 
     const isEditable = runtimeData == null && editable;
     const hasAllNodeProviders = useMemo(() => (
@@ -504,7 +598,6 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     useEffect(() => {
         hasResolvedInitialViewportRef.current = false;
         initialViewportNodeIdRef.current = selectedNode?.id ?? null;
-        nodeCardCenterOffsetCacheRef.current.clear();
         setPendingInitialViewport(false);
     }, [processFlow.definition.id, processFlow.version.processVersion]);
 
@@ -564,18 +657,21 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
 
     useLayoutEffect(() => {
         if (!isEditable || onAddTrigger == null) {
-            setCanvasAddTriggerPosition((current) => areCanvasAddTriggerPositionsEqual(current, null) ? current : null);
+            setCanvasAddTriggerPresentation((current) => areCanvasAddTriggerPresentationsEqual(current, null) ? current : null);
             return;
         }
 
         if (processFlow.nodes.length === 0) {
-            const defaultPosition = {
-                x: CANVAS_ADD_TRIGGER_BUTTON_DEFAULT_X,
-                y: CANVAS_ADD_TRIGGER_BUTTON_DEFAULT_Y,
-                centerVertically: false,
+            const defaultPresentation: CanvasAddTriggerPresentation = {
+                type: 'button',
+                position: {
+                    x: CANVAS_ADD_TRIGGER_BUTTON_DEFAULT_X,
+                    y: CANVAS_ADD_TRIGGER_BUTTON_DEFAULT_Y,
+                    centerVertically: false,
+                },
             };
-            setCanvasAddTriggerPosition((current) => (
-                areCanvasAddTriggerPositionsEqual(current, defaultPosition) ? current : defaultPosition
+            setCanvasAddTriggerPresentation((current) => (
+                areCanvasAddTriggerPresentationsEqual(current, defaultPresentation) ? current : defaultPresentation
             ));
             return;
         }
@@ -584,25 +680,24 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
             return;
         }
 
-        // The CTA should align to the rendered card center of the rightmost trigger. Compute it
-        // after the commit so DOM-dependent offsets are stable, then keep the last good value if
-        // React Flow later unmounts that node outside the viewport.
         const triggerNodes = nodes.filter((node) => node.data.graphNode.provider.type === ProcessNodeType.Trigger);
         const anchorNodes = triggerNodes.length > 0 ?
             triggerNodes :
             getTopLayerNodes(nodes);
-        const rightmostAnchorNode = anchorNodes.reduce((currentRightmost, node) => {
-            return getFlowNodeRight(node) > getFlowNodeRight(currentRightmost) ? node : currentRightmost;
-        }, anchorNodes[0]);
-
-        const nextPosition = {
-            x: getFlowNodeRight(rightmostAnchorNode) + FLOW_HORIZONTAL_NODE_SPACING,
-            y: getFlowNodeCardCenterY(rightmostAnchorNode, nodeCardCenterOffsetCacheRef.current),
-            centerVertically: true,
+        const laneMinX = Math.min(...anchorNodes.map((node) => node.position.x));
+        const laneMaxX = Math.max(...anchorNodes.map((node) => getFlowNodeRight(node)));
+        const laneTopY = Math.min(...anchorNodes.map((node) => node.position.y));
+        const nextPresentation: CanvasAddTriggerPresentation = {
+            type: 'lane-header',
+            position: {
+                x: laneMinX,
+                y: laneTopY - CANVAS_TRIGGER_LANE_HEADER_GAP,
+                width: Math.max(laneMaxX - laneMinX, MIN_NODE_WIDTH),
+            },
         };
 
-        setCanvasAddTriggerPosition((current) => (
-            areCanvasAddTriggerPositionsEqual(current, nextPosition) ? current : nextPosition
+        setCanvasAddTriggerPresentation((current) => (
+            areCanvasAddTriggerPresentationsEqual(current, nextPresentation) ? current : nextPresentation
         ));
     }, [hasAllNodeProviders, isEditable, nodes, nodesInitialized, onAddTrigger, processFlow.nodes.length]);
 
@@ -675,12 +770,21 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                 }}
             >
                 {
-                    canvasAddTriggerPosition != null &&
+                    canvasAddTriggerPresentation?.type === 'button' &&
                     onAddTrigger != null &&
                     <ProcessFlowEditorCanvasAddTriggerButton
                         label={canvasAddTriggerLabel}
                         onAddTrigger={onAddTrigger}
-                        position={canvasAddTriggerPosition}
+                        position={canvasAddTriggerPresentation.position}
+                    />
+                }
+                {
+                    canvasAddTriggerPresentation?.type === 'lane-header' &&
+                    onAddTrigger != null &&
+                    <ProcessFlowEditorCanvasTriggerLaneHeader
+                        label={canvasAddTriggerLabel}
+                        onAddTrigger={onAddTrigger}
+                        position={canvasAddTriggerPresentation.position}
                     />
                 }
                 {
@@ -781,25 +885,4 @@ function getTopLayerNodes(nodes: FlowNode[]): FlowNode[] {
 
     const topLayerY = Math.min(...nodes.map((node) => node.position.y));
     return nodes.filter((node) => Math.abs(node.position.y - topLayerY) <= CANVAS_ADD_TRIGGER_LAYER_THRESHOLD);
-}
-
-function getFlowNodeCardCenterY(node: FlowNode, cachedOffsets: Map<string, number>): number {
-    const cachedOffset = cachedOffsets.get(node.id);
-
-    if (typeof document === 'undefined') {
-        return node.position.y + (cachedOffset ?? (getFlowNodeHeight(node) / 2));
-    }
-
-    const nodeElement = document.querySelector(`.react-flow__node[data-id="${node.id}"]`) as HTMLElement | null;
-    const nodeCardElement = nodeElement?.querySelector('.process-flow-editor-node-card') as HTMLElement | null;
-    if (nodeCardElement == null) {
-        // When the anchor node is outside the viewport, React Flow may omit its DOM entirely.
-        // Fall back to the last measured card offset instead of the full node box center.
-        return node.position.y + (cachedOffset ?? (getFlowNodeHeight(node) / 2));
-    }
-
-    const measuredOffset = nodeCardElement.offsetTop + (nodeCardElement.offsetHeight / 2);
-    cachedOffsets.set(node.id, measuredOffset);
-
-    return node.position.y + measuredOffset;
 }

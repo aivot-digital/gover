@@ -184,6 +184,7 @@ export function StaffShell(): ReactNode {
                         <ShellDrawer/>
 
                         <Box
+                            data-confetti-container="staff-shell-content"
                             sx={{
                                 flex: 1,
                                 position: 'relative',

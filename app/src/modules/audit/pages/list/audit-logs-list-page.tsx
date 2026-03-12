@@ -159,6 +159,7 @@ export function AuditLogsListPage(): ReactNode {
                         label="Modul"
                         value={selectedModules}
                         onChange={handleModuleChange}
+                        size="small"
                         placeholder="z.B. Prozess"
                         suggestions={filterOptions.modules}
                     />,
@@ -166,6 +167,7 @@ export function AuditLogsListPage(): ReactNode {
                         label="Auslösende Aktion"
                         value={selectedTriggerTypes}
                         onChange={handleTriggerTypeChange}
+                        size="small"
                         placeholder="z.B. Update"
                         suggestions={filterOptions.triggerTypes}
                     />,
@@ -173,6 +175,7 @@ export function AuditLogsListPage(): ReactNode {
                         label="Akteur"
                         value={selectedActors}
                         onChange={handleActorChange}
+                        size="small"
                         placeholder="Akteur-ID oder Name"
                         suggestions={filterOptions.actors.map((entry) => entry.label)}
                     />,
@@ -245,7 +248,7 @@ export function AuditLogsListPage(): ReactNode {
                         width: 200,
                         renderCell: (params) => (
                             <CellContentWrapper>
-                                <Tooltip title={formatDateTime(params.row.timestamp)}>
+                                <Tooltip title={formatDateTime(params.row.timestamp)} arrow>
                                     <Box>
                                         <Typography variant="body2"
                                                     fontWeight={500}>
@@ -308,7 +311,7 @@ export function AuditLogsListPage(): ReactNode {
 
                             return (
                                 <CellContentWrapper>
-                                    <Tooltip title={isUser ? (actorId ?? '-') : actorLabel}>
+                                    <Tooltip title={isUser ? (actorId ?? '-') : actorLabel} arrow>
                                         <Chip
                                             size="small"
                                             variant="outlined"

@@ -1,5 +1,5 @@
 import {KeyboardEvent, useMemo, useState} from 'react';
-import {Autocomplete, TextField} from '@mui/material';
+import {Autocomplete, TextField, type TextFieldProps} from '@mui/material';
 
 interface ChipInputFieldComponentProps {
     label: string;
@@ -13,6 +13,7 @@ interface ChipInputFieldComponentProps {
     readOnly?: boolean;
     suggestions?: string[];
     allowDuplicates?: boolean;
+    size?: TextFieldProps['size'];
 }
 
 function normalizeValues(values: string[], allowDuplicates: boolean): string[] | undefined {
@@ -44,6 +45,7 @@ export function ChipInputFieldComponent(props: ChipInputFieldComponentProps) {
         readOnly,
         suggestions,
         allowDuplicates,
+        size = 'medium',
     } = props;
     const [inputValue, setInputValue] = useState('');
 
@@ -57,6 +59,7 @@ export function ChipInputFieldComponent(props: ChipInputFieldComponentProps) {
             freeSolo
             readOnly={readOnly}
             disabled={disabled}
+            size={size}
             options={options}
             value={value ?? []}
             inputValue={inputValue}
@@ -75,6 +78,7 @@ export function ChipInputFieldComponent(props: ChipInputFieldComponentProps) {
                     required={required}
                     error={error != null}
                     helperText={error ?? hint}
+                    size={size}
                     InputLabelProps={{
                         title: label,
                     }}

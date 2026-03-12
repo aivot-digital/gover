@@ -10,8 +10,8 @@ import Mail from '@aivot/mui-material-symbols-400-outlined/dist/mail/Mail';
 import EditDocument from '@aivot/mui-material-symbols-400-outlined/dist/edit-document/EditDocument';
 import Api from '@aivot/mui-material-symbols-400-outlined/dist/api/Api';
 import RuleFolder from '@aivot/mui-material-symbols-400-outlined/dist/rule-folder/RuleFolder';
-import {CompareArrows} from '@mui/icons-material';
 import InputCircle from '@aivot/mui-material-symbols-400-outlined/dist/input-circle/InputCircle';
+import ApprovalDelegation from '@aivot/mui-material-symbols-400-outlined/dist/approval-delegation/ApprovalDelegation';
 
 export const KnownProviderIcons: Record<string, FC<SvgIconProps>> = {
     'if': AltRoute,
@@ -25,4 +25,5 @@ export const KnownProviderIcons: Record<string, FC<SvgIconProps>> = {
     'pdf': EditDocument,
     'data_type_validation': RuleFolder,
     'default-termination': LineEndSquare,
+    'approval': ApprovalDelegation,
 };
