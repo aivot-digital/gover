@@ -36,6 +36,12 @@ export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEdit
             ? 'Elementdaten (_)'
             : 'Geschützte Vorgangsdaten ($$)';
 
+    const startIcon = isProcessDataReference
+        ? '$.'
+        : isNodeDataReference
+            ? undefined
+            : '$$.';
+
     return (
         <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
             {
@@ -49,6 +55,7 @@ export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEdit
                         nodeDataKey: nodeDataKey ?? undefined,
                     })}
                     muiPassTroughProps={{margin: 'none'}}
+                    startIcon="_."
                 />
             }
 
@@ -62,7 +69,7 @@ export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEdit
                         path: path ?? undefined,
                     });
                 }}
-                startIcon={<DatabaseSearch />}
+                startIcon={startIcon}
                 endAction={[
                     {
                         icon: <Delete />,

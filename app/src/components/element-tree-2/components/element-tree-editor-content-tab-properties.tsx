@@ -281,24 +281,21 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                         sx={{mt: 8}}
                     >
                         Definieren Sie, wie dieses Formularelement mit Daten verknüpft ist.
-                        Legen Sie fest, welcher Datenschlüssel zur Schnittstelle übertragen wird und welchen Attributen
-                        aus Nutzerkonten (wenn aktiviert) das Element zugeordnet ist.
+                        Legen Sie fest, welcher Datenschlüssel verwendet wird, um dieses Feld an einen Datensatz in der Datenhaltung zu binden.
+                        Sie können auch ganze Pfade, z.B. „person.vorname“, verwenden, um verschachtelte Datenstrukturen abzubilden.
+                        Achten Sie darauf, dass die gewählten Schlüssel eindeutig sind und nicht mit anderen Elementen kollidieren, um Datenüberschreibungen zu vermeiden.
                     </ElementEditorSectionHeader>
-
-                    <ElementEditorSectionHeader
-                        title="Schnittstellen"
-                        variant="h5"
-                    />
 
                     <TextFieldComponent
                         value={currentElement.destinationKey ?? undefined}
-                        label="HTTP-Schnittstellen-Schlüssel"
+                        label="Datenschlüssel"
                         onChange={(val) => {
                             onChangeCurrentElement({
                                 ...currentElement,
                                 destinationKey: val,
                             } as T);
                         }}
+                        startIcon={'$.'}
                         hint="Dieser Schlüssel wird statt der Feld-ID verwendet, wenn die Daten an eine HTTP-Schnittstelle gesendet werden."
                         disabled={!editable}
                     />

@@ -11,5 +11,6 @@ export interface TextFieldElement extends BaseInputElement<ElementType.Text> {
         regex: string;
         message: string;
     } | null | undefined;
+    prefix: string | null | undefined;
     suggestions: string[] | null | undefined;
 }

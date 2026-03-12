@@ -117,6 +117,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition {
         var pathInput = new TextInputElement();
         pathInput.setId(RULE_PATH_FIELD_ID);
         pathInput.setLabel("Pfad");
+        pathInput.setPrefix("$.");
         pathInput.setHint("Dot-Notation mit * für Arrays, z. B. addresses.*.street");
         pathInput.setRequired(true);
         pathInput.setWeight(8.0);
