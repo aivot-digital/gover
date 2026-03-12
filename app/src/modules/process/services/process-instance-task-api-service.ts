@@ -88,4 +88,9 @@ export class ProcessInstanceTaskApiService extends BaseCrudApiService<
     public rerunFailedTask(taskId: number): Promise<ProcessInstanceTaskEntity> {
         return this.put<any, ProcessInstanceTaskEntity>(this.buildPath(taskId) + 'rerun-failed/', {});
     }
+
+    public async getAssignedTaskCount(): Promise<number> {
+        const response = await this.get<{ count: number }>('/api/process-instance-tasks/assigned-count/');
+        return response.count;
+    }
 }

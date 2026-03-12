@@ -32,8 +32,10 @@ import FamilyHistory from '@aivot/mui-material-symbols-400-outlined/dist/family-
 import SupervisedUserCircle from '@aivot/mui-material-symbols-400-outlined/dist/supervised-user-circle/SupervisedUserCircle';
 import {StorageProvidersApiService} from '../../../modules/storage/storage-providers-api-service';
 import {StorageProviderType} from '../../../modules/storage/enums/storage-provider-type';
-import {selectPermissions} from '../../../slices/user-slice';
+import {selectPermissions, selectUser} from '../../../slices/user-slice';
 import {AUDIT_LOG_READ_PERMISSION} from '../../../modules/audit/constants/audit-permissions';
+import {ProcessInstanceTaskApiService} from '../../../modules/process/services/process-instance-task-api-service';
+import {subscribeProcessAssignedTaskCountRefreshEvent} from '../../../modules/process/utils/process-assigned-task-count-events';
 
 /* -----------------------------
  * Types & Navigation Structure
@@ -70,7 +72,6 @@ const BaseDrawerGroups: DrawerGroup[] = [
             {
                 icon: ModuleIcons.tasks,
                 label: 'Aufgaben',
-                chipContent: 26,
                 to: '/tasks',
             },
             {
@@ -180,6 +181,7 @@ export function ShellDrawer() {
     const baseTheme = useTheme();
     const dispatch = useAppDispatch();
     const permissions = useAppSelector(selectPermissions);
+    const user = useAppSelector(selectUser);
     const minimizeDrawer = useAppSelector(selectMinimizeDrawer) ?? false;
     const [userMenuAnchorEl, setUserMenuAnchorEl] = useState<null | HTMLElement>(null);
     const [notificationsAnchorEl, setNotificationsAnchorEl] = useState<null | HTMLElement>(null);
@@ -187,6 +189,7 @@ export function ShellDrawer() {
     const showAboutGoverDialog = useAppSelector(selectShowAboutGoverDialog) ?? false;
     const [assetStorageProviderItems, setAssetStorageProviderItems] = useState<DrawerItem[]>([]);
     const [isLoadingAssetStorageProviders, setIsLoadingAssetStorageProviders] = useState(true);
+    const [assignedTaskCount, setAssignedTaskCount] = useState<number | null>(null);
 
     useEffect(() => {
         setIsLoadingAssetStorageProviders(true);
@@ -215,6 +218,40 @@ export function ShellDrawer() {
                 setIsLoadingAssetStorageProviders(false);
             });
     }, [dispatch]);
+
+    useEffect(() => {
+        if (user?.id == null) {
+            setAssignedTaskCount(null);
+            return;
+        }
+
+        let isMounted = true;
+
+        const refreshAssignedTaskCount = () => {
+            if (document.visibilityState === 'hidden') {
+                return;
+            }
+
+            new ProcessInstanceTaskApiService()
+                .getAssignedTaskCount()
+                .then((count) => {
+                    if (isMounted) {
+                        setAssignedTaskCount(count);
+                    }
+                })
+                .catch(() => {
+                    // Keep the last known value to avoid noisy UI errors for a purely decorative counter.
+                });
+        };
+
+        refreshAssignedTaskCount();
+        const unsubscribeRefreshListener = subscribeProcessAssignedTaskCountRefreshEvent(refreshAssignedTaskCount);
+
+        return () => {
+            isMounted = false;
+            unsubscribeRefreshListener();
+        };
+    }, [user?.id]);
 
     const drawerGroups = useMemo(() => {
         const hasSystemPermission = (permission: string): boolean => {
@@ -247,6 +284,13 @@ export function ShellDrawer() {
         return BaseDrawerGroups.map((group) => ({
             ...group,
             items: group.items.map((item) => {
+                if (item.label === 'Aufgaben') {
+                    return {
+                        ...item,
+                        chipContent: assignedTaskCount ?? undefined,
+                    };
+                }
+
                 if (item.label !== 'Dateien & Medien') {
                     return item;
                 }
@@ -277,7 +321,7 @@ export function ShellDrawer() {
                 items: filterByPermission(group.items),
             }))
             .filter((group) => group.items.length > 0);
-    }, [assetStorageProviderItems, isLoadingAssetStorageProviders, permissions]);
+    }, [assetStorageProviderItems, assignedTaskCount, isLoadingAssetStorageProviders, permissions]);
 
     // responsive auto-minimize
     useEffect(() => {

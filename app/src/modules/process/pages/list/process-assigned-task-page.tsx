@@ -7,7 +7,7 @@ import {ProcessInstanceTaskEntity} from "../../entities/process-instance-task-en
 import {useConfirm} from "../../../../providers/confirm-provider";
 import {ExpandableCodeBlock} from "../../../../components/expandable-code-block/expandable-code-block";
 import {ProcessTaskStatus, ProcessTaskStatusLabels} from "../../enums/process-task-status";
-import React, {useRef} from "react";
+import React, {useEffect, useRef} from "react";
 import {ListControlRef} from "../../../../components/generic-list/generic-list-props";
 import Refresh from "@aivot/mui-material-symbols-400-outlined/dist/refresh/Refresh";
 import {ProcessInstanceEntity} from "../../entities/process-instance-entity";
@@ -23,6 +23,7 @@ import {ProcessNodeProvider, ProcessNodeProviderApiService} from "../../services
 import {getNodeName} from "../details/components/process-flow-editor/utils/node-utils";
 import {CellLink} from "../../../../components/cell-link/cell-link";
 import Task from '@aivot/mui-material-symbols-400-outlined/dist/task/Task';
+import {dispatchProcessAssignedTaskCountRefreshEvent} from "../../utils/process-assigned-task-count-events";
 
 interface ProcessInstanceTaskEntityWithInstance extends ProcessInstanceTaskEntity {
     instance: ProcessInstanceEntity;
@@ -38,6 +39,10 @@ export function ProcessAssignedTaskListPage() {
     const listRef = useRef<ListControlRef | null>(null);
 
     const confirm = useConfirm();
+
+    useEffect(() => {
+        dispatchProcessAssignedTaskCountRefreshEvent();
+    }, []);
 
     return (
         <PageWrapper

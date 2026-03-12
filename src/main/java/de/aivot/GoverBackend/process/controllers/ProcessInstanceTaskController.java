@@ -33,6 +33,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -79,6 +80,27 @@ public class ProcessInstanceTaskController {
     ) throws ResponseException {
         return processInstanceTaskService
                 .list(pageable, filter);
+    }
+
+    @GetMapping("assigned-count/")
+    @Operation(
+            summary = "Count Assigned Process Instance Tasks",
+            description = "Returns the number of currently assigned running tasks for the authenticated user."
+    )
+    public Map<String, Long> countAssignedTasks(
+            @Nullable @AuthenticationPrincipal Jwt jwt
+    ) throws ResponseException {
+        var execUser = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        return Map.of(
+                "count",
+                processInstanceTaskService.countAssignedTasks(
+                        execUser.getId(),
+                        List.of(ProcessTaskStatus.Running)
+                )
+        );
     }
 
     @PostMapping("")
@@ -264,4 +286,3 @@ public class ProcessInstanceTaskController {
         return taskEntity;
     }
 }
-
