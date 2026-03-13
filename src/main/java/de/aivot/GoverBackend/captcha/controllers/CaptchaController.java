@@ -16,10 +16,7 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /*
  * This controller handles the Altcha captcha verification process.
@@ -28,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
  * before sending the solution back to the server.
  */
 @RestController
+@RequestMapping("/api/public/captcha/")
 @Tag(
         name = OpenApiConstants.Tags.CaptchaName,
         description = OpenApiConstants.Tags.CaptchaDescription
@@ -42,7 +40,7 @@ public class CaptchaController {
         this.replayGuard = replayGuard;
     }
 
-    @GetMapping("/api/public/captcha/challenge/")
+    @GetMapping("challenge/")
     @Operation(
             summary = "Create Captcha Challenge",
             description = "Creates a new captcha challenge that clients must solve. " +
@@ -59,7 +57,7 @@ public class CaptchaController {
     }
 
     /* verification for forms is handled in the Submit endpoint, this authenticated verification endpoint is only used for debugging */
-    @PostMapping("/api/captcha/verify/")
+    @PostMapping("verify/")
     @Operation(
             summary = "Verify Captcha Solution",
             description = "Verifies the captcha solution provided by the client. " +
