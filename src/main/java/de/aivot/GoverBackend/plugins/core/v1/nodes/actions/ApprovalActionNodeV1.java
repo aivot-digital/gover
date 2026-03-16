@@ -3,6 +3,8 @@ package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.enums.ValueFunctionType;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
@@ -277,7 +279,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
 
     @Nonnull
     @Override
-    public ElementData getStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+    public DerivedRuntimeElementData getStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
         var config = loadConfigurationForUi(context);
         var layout = buildStaffTaskView(config);
 
@@ -291,14 +293,14 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
             valueMap.put(TASK_VIEW_REMARK_FIELD_ID, context.getThisTask().getNodeData().get(TASK_VIEW_REMARK_FIELD_ID));
         }
 
-        return ElementData.fromValueMap(layout, valueMap);
+        return null; //ElementData.fromValueMap(layout, valueMap);
     }
 
     @Nonnull
     @Override
     public Optional<ProcessNodeExecutionResult> onUpdateFromStaff(
             @Nonnull ProcessNodeExecutionContextUIStaff context,
-            @Nonnull Map<String, Object> update,
+            @Nonnull AuthoredElementValues update,
             @Nonnull String event
     ) throws ResponseException {
         var remark = update.get(TASK_VIEW_REMARK_FIELD_ID);
@@ -405,17 +407,13 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
             );
         }
 
-        var dataContentRaw = configuration.getOpt(DATA_CONTENT_FIELD_ID)
-                .flatMap(elementDataObject -> elementDataObject.getOptionalValue())
-                .orElse(null);
+        var dataContentRaw = configuration.get(DATA_CONTENT_FIELD_ID);
         var dataContent = dataContentRaw != null
                 ? ObjectMapperFactory.getInstance().convertValue(dataContentRaw, BaseElement.class)
                 : null;
 
         var customContent = readString(configuration, CUSTOM_CONTENT_FIELD_ID);
-        var assignmentContextRaw = configuration.getOpt(ASSIGNMENT_CONTEXT_FIELD_ID)
-                .flatMap(elementDataObject -> elementDataObject.getOptionalValue())
-                .orElse(null);
+        var assignmentContextRaw = configuration.get(ASSIGNMENT_CONTEXT_FIELD_ID);
         var assignmentContext = AssignmentContextInputElement._formatValue(assignmentContextRaw);
 
         if (criteria == null || criteria.isBlank()) {
@@ -454,11 +452,8 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Nullable
-    private static String readString(@Nonnull ElementData configuration, @Nonnull String fieldId) {
-        return configuration.getOpt(fieldId)
-                .flatMap(elementDataObject -> elementDataObject.getOptionalValue())
-                .map(Object::toString)
-                .orElse(null);
+    private static String readString(@Nonnull AuthoredElementValues configuration, @Nonnull String fieldId) {
+        return configuration.get(fieldId).toString();
     }
 
     @Nonnull

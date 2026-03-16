@@ -29,7 +29,7 @@ class ElementDerivationServiceV2Test {
         authoredValues.put("field", "hello");
 
         var result = service.derive(
-                new ElementDerivationRequestV2(root, authoredValues, new ElementDerivationOptions()),
+                new ElementDerivationRequest(root, authoredValues, new ElementDerivationOptions()),
                 new ElementDerivationLogger()
         );
 
@@ -76,7 +76,7 @@ class ElementDerivationServiceV2Test {
         authoredValues.put("source", "copied value");
 
         var result = service.derive(
-                new ElementDerivationRequestV2(root, authoredValues, new ElementDerivationOptions()),
+                new ElementDerivationRequest(root, authoredValues, new ElementDerivationOptions()),
                 new ElementDerivationLogger()
         );
 
@@ -127,7 +127,7 @@ class ElementDerivationServiceV2Test {
         authoredValues.put("rows", List.of(firstRow, secondRow));
 
         var result = service.derive(
-                new ElementDerivationRequestV2(root, authoredValues, new ElementDerivationOptions()),
+                new ElementDerivationRequest(root, authoredValues, new ElementDerivationOptions()),
                 new ElementDerivationLogger()
         );
 
@@ -154,8 +154,8 @@ class ElementDerivationServiceV2Test {
         assertEquals("Dieses Feld ist ein Pflichtfeld und darf nicht leer sein.", secondRowState.getError());
     }
 
-    private static ElementDerivationServiceV2 createService() {
-        return new ElementDerivationServiceV2(
+    private static ElementDerivationService createService() {
+        return new ElementDerivationService(
                 new ElementOverrideDerivationService(),
                 new ElementVisibilityDerivationService(),
                 new ElementErrorDerivationService(),

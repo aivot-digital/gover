@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.storage.entities;
 
-import de.aivot.GoverBackend.core.converters.ElementDataConverter;
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.core.converters.AuthoredElementValuesConverter;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.storage.converters.StorageProviderMetadataAttributesConverter;
 import de.aivot.GoverBackend.storage.enums.StorageProviderStatus;
 import de.aivot.GoverBackend.storage.enums.StorageProviderType;
@@ -74,8 +74,8 @@ public class StorageProviderEntity {
     @Nonnull
     @NotNull(message = "Die Konfiguration des Speicheranbieters darf nicht null sein.")
     @Column(columnDefinition = "jsonb")
-    @Convert(converter = ElementDataConverter.class)
-    private ElementData configuration;
+    @Convert(converter = AuthoredElementValuesConverter.class)
+    private AuthoredElementValues configuration;
 
     @Nonnull
     @NotNull(message = "Die maximale Dateigröße des Speicheranbieters darf nicht null sein.")
@@ -138,7 +138,7 @@ public class StorageProviderEntity {
                                  @Nullable String statusMessage,
                                  @Nonnull Boolean readOnlyStorage,
                                  @Nonnull Boolean testProvider,
-                                 @Nonnull ElementData configuration,
+                                 @Nonnull AuthoredElementValues configuration,
                                  @Nonnull Long maxFileSizeInBytes,
                                  @Nonnull Boolean systemProvider,
                                  @Nonnull List<StorageProviderMetadataAttribute> metadataAttributes,
@@ -285,11 +285,11 @@ public class StorageProviderEntity {
     }
 
     @Nonnull
-    public ElementData getConfiguration() {
+    public AuthoredElementValues getConfiguration() {
         return configuration;
     }
 
-    public StorageProviderEntity setConfiguration(@Nonnull ElementData configuration) {
+    public StorageProviderEntity setConfiguration(@Nonnull AuthoredElementValues configuration) {
         this.configuration = configuration;
         return this;
     }

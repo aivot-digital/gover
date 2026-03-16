@@ -1,11 +1,11 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.flow;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
-import de.aivot.GoverBackend.core.converters.ElementDataConverter;
 import de.aivot.GoverBackend.elements.enums.ValueFunctionType;
+import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.models.ElementData;
-import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.elements.models.elements.ElementValueFunctions;
 import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
@@ -17,6 +17,7 @@ import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContaine
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
 import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
@@ -29,9 +30,7 @@ import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -58,8 +57,6 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition {
     private static final String OUTPUT_NAME_VALIDATED_VALUE_COUNT = "validatedValueCount";
     private static final String OUTPUT_NAME_IS_VALID = "isValid";
     private static final String OUTPUT_NAME_ERRORS = "errors";
-
-    private final ElementDataConverter elementDataConverter = new ElementDataConverter();
 
     @Nonnull
     @Override
@@ -200,7 +197,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition {
         contentBuilder.append("<p>Beispiel-Payload für die konfigurierten Validierungsregeln:</p>\n");
 
         try {
-            var rules = parseRules(context.thisNode().getConfiguration());
+            var rules = parseRules(context.configuration().getEffectiveValues());
             var examplePayload = createExamplePayloadFromRules(rules);
             var exampleJson = ObjectMapperFactory
                     .getInstance()
@@ -227,6 +224,11 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition {
     }
 
     @Override
+    public void validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity, @Nonnull ElementData configuration) throws ResponseException {
+        // TODO: validate
+    }
+
+    @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
         var sourceRoot = context.getProcessData().get("$");
         if (!(sourceRoot instanceof Map<?, ?> sourceRootRawMap)) {
@@ -236,7 +238,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition {
         }
 
         var sourceRootMap = castStringObjectMap(sourceRootRawMap);
-        var rules = parseRules(context.getThisNode().getConfiguration());
+        var rules = parseRules(context.getConfiguration().getEffectiveValues());
 
         var checkedValuesCount = 0;
         var errors = new ArrayList<Map<String, Object>>();
@@ -285,64 +287,27 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition {
     }
 
     @Nonnull
-    private List<ValidationRule> parseRules(@Nonnull ElementData configuration) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        var rawRules = configuration
-                .getOpt(RULES_FIELD_ID)
-                .map(ElementDataObject::getValue)
-                .orElse(List.of());
+    private List<ValidationRule> parseRules(@Nonnull EffectiveElementValues configuration) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        ObjectMapper om = ObjectMapperFactory
+                .getInstance();
 
-        if (!(rawRules instanceof Collection<?> rows)) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Konfiguration im Feld %s ist ungültig. Es wird eine Liste erwartet.",
-                    StringUtils.quote(RULES_FIELD_ID)
-            );
-        }
+        return ObjectMapperFactory
+                .Utils
+                .convertToList(
+                        configuration.getOrDefault(RULES_FIELD_ID, List.of()),
+                        EffectiveElementValues.class
+                )
+                .stream()
+                .map(row -> {
+                    var path = StringUtils
+                            .toNullableTrimmedString(row.get(RULE_PATH_FIELD_ID));
 
-        if (rows.isEmpty()) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Es wurde keine Validierungsregel konfiguriert."
-            );
-        }
+                    var expectedType = StringUtils
+                            .toNullableTrimmedString(row.getOrDefault(RULE_TYPE_FIELD_ID, TYPE_ANY));
 
-        var result = new ArrayList<ValidationRule>();
-        var usedPaths = new LinkedHashSet<String>();
-        int rowIndex = 1;
-        for (var rawRow : rows) {
-            var row = toElementData(rawRow, rowIndex);
-
-            var path = row
-                    .getOpt(RULE_PATH_FIELD_ID)
-                    .map(ElementDataObject::getValue)
-                    .map(DataTypeValidationControlNodeV1::toNullableTrimmedString)
-                    .orElse(null);
-
-            var expectedType = row
-                    .getOpt(RULE_TYPE_FIELD_ID)
-                    .map(ElementDataObject::getValue)
-                    .map(DataTypeValidationControlNodeV1::toNullableTrimmedString)
-                    .filter(type -> !StringUtils.isNullOrEmpty(type))
-                    .orElse(TYPE_ANY);
-
-            if (StringUtils.isNullOrEmpty(path)) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "In Zeile %d fehlt ein gültiger Pfad.",
-                        rowIndex
-                );
-            }
-
-            if (!usedPaths.add(path)) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Der Pfad %s wird mehrfach verwendet.",
-                        StringUtils.quote(path)
-                );
-            }
-
-            validateExpectedType(expectedType, rowIndex);
-            result.add(new ValidationRule(path, expectedType));
-            rowIndex++;
-        }
-
-        return result;
+                    return new ValidationRule(path, expectedType);
+                })
+                .toList();
     }
 
     @Nonnull
@@ -448,23 +413,6 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition {
                 .replace("&", "&amp;")
                 .replace("<", "&lt;")
                 .replace(">", "&gt;");
-    }
-
-    @Nonnull
-    private ElementData toElementData(@Nonnull Object rawRow, int rowIndex) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        if (rawRow instanceof ElementData elementData) {
-            return elementData;
-        }
-
-        try {
-            return elementDataConverter.convertObjectToEntityAttribute(rawRow);
-        } catch (RuntimeException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    e,
-                    "Die Validierungsregel in Zeile %d ist ungültig.",
-                    rowIndex
-            );
-        }
     }
 
     @Nonnull

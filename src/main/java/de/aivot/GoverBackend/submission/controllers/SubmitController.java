@@ -1,13 +1,9 @@
 package de.aivot.GoverBackend.submission.controllers;
 
 import de.aivot.GoverBackend.captcha.services.AltchaService;
-import de.aivot.GoverBackend.core.converters.ElementDataConverter;
 import de.aivot.GoverBackend.destination.entities.Destination;
 import de.aivot.GoverBackend.destination.repositories.DestinationRepository;
-import de.aivot.GoverBackend.elements.models.ElementData;
-import de.aivot.GoverBackend.elements.models.ElementDataObject;
-import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
-import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
+import de.aivot.GoverBackend.elements.models.*;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
@@ -72,10 +68,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @RestController
 public class SubmitController {
@@ -145,7 +138,7 @@ public class SubmitController {
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer formId,
             @PathVariable Integer formVersion,
-            @RequestParam(value = "inputs", required = true) String inputs,
+            @RequestParam(value = "inputs", required = true) AuthoredElementValues inputs,
             @RequestParam(value = "files", required = false) MultipartFile[] files,
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) UUID identityId
     ) throws ResponseException {
@@ -166,19 +159,17 @@ public class SubmitController {
             throw ResponseException.forbidden();
         }
 
-        // Get customer input
-        ElementData elementData;
-        try {
-            elementData = new ElementDataConverter()
-                    .convertToEntityAttribute(inputs);
-        } catch (Exception e) {
-            throw ResponseException.badRequest(
-                    "Ungültige Eingabedaten.",
-                    "Die Eingabedaten konnten nicht verarbeitet werden. Bitte überprüfen Sie die Struktur der Daten."
-            );
-        }
+        var logger = new ElementDerivationLogger();
+        var derivationRequest = new ElementDerivationRequest(
+                form.getRootElement(),
+                inputs,
+                new ElementDerivationOptions()
+        );
+        var derivedRuntimeElementData = elementDerivationService
+                .derive(derivationRequest, logger);
 
-        var submitStepElementData = elementData
+        var rawCaptchaValue = (Map<?, ?>) derivedRuntimeElementData
+                .getEffectiveValues()
                 .getOrDefault(
                         form
                                 .getRootElement()
@@ -188,20 +179,18 @@ public class SubmitController {
                                 .findFirst()
                                 .map(BaseElement::getId)
                                 .orElse(""),
-                        new ElementDataObject(ElementType.SubmitStep)
+                        Map.of()
                 );
 
         // Verify captcha if present
+        /*
         try {
-
-            var rawCaptchaValue = submitStepElementData.getValue();
-
             var formattedCaptchaValue = SubmitStepElement
                     ._formatValue(rawCaptchaValue);
 
             var payloadNode = formattedCaptchaValue != null ? formattedCaptchaValue.get("payload") : null;
             if (payloadNode == null) {
-                submitStepElementData.setComputedErrors(List.of("Bitte bestätigen Sie, dass Sie ein Mensch sind."));
+                derivedRuntimeElementData.getElementStates().get().setComputedErrors(List.of("Bitte bestätigen Sie, dass Sie ein Mensch sind."));
                 throw ResponseException.badRequest(elementData);
             }
 
@@ -217,10 +206,12 @@ public class SubmitController {
             throw ResponseException.badRequest(elementData);
         }
 
+         */
+
         var optionalIdp = extractIdp(identityId);
 
         // Hydrate the customer input with the data from an idp
-        hydrateCustomerInputWithIdpData(form, optionalIdp, elementData);
+        // hydrateCustomerInputWithIdpData(form, optionalIdp, derivedRuntimeElementData);
 
         // Test files for viruses
         avService.testMultipartFiles(files);
@@ -229,6 +220,7 @@ public class SubmitController {
         destinationSubmitService.testDestinationAttachmentSize(destination, files);
 
         // Validate customer input
+        /*
         var options = new ElementDerivationOptions();
         var request = new ElementDerivationRequest()
                 .setElement(form.getRootElement())
@@ -241,10 +233,12 @@ public class SubmitController {
             throw ResponseException.badRequest(verifiedElementData);
         }
 
+
         // Copy the identity value to the verified element data
         verifiedElementData
                 .put(IdentityValueKey.IdCustomerInputKey, elementData.get(IdentityValueKey.IdCustomerInputKey));
 
+         */
         // Prepare submission id
         var submissionId = UUID
                 .randomUUID()
@@ -260,7 +254,7 @@ public class SubmitController {
         submission.setCreated(LocalDateTime.now());
         submission.setUpdated(LocalDateTime.now());
         submission.setAssigneeId(null);
-        submission.setCustomerInput(verifiedElementData);
+        submission.setCustomerInput(inputs);
         submission.setIsTestSubmission(jwt != null);
         submission.setCopySent(false);
         submission.setCopyTries(0);
@@ -308,6 +302,7 @@ public class SubmitController {
         Optional<PaymentTransactionEntity> paymentRequest = Optional.empty();
         // If a payment provider is set, create a transaction
         if (form.getPaymentProviderKey() != null) {
+            /*
             try {
                 paymentRequest = paymentService
                         .createTransaction(form, submissionId, verifiedElementData);
@@ -316,6 +311,7 @@ public class SubmitController {
                 submissionRepository.delete(submission);
                 throw ResponseException.internalServerError("Der Antrag konnte nicht eingereicht werden, da es ein Problem mit der Zahlung gab.", e);
             }
+             */
         }
 
         if (paymentRequest.isPresent()) {
@@ -372,7 +368,7 @@ public class SubmitController {
 
         if (optionalIdp.isEmpty()) {
             // Remove the idp data from the customer input if no idp data is present, to avoid confusion in the destination and to keep the customer input clean
-            customerInput.remove(IdentityValueKey.IdCustomerInputKey);
+            // customerInput.remove(IdentityValueKey.IdCustomerInputKey);
             return;
         }
 
@@ -409,11 +405,11 @@ public class SubmitController {
             // If the metadata identifier is an identifier of a system identity provider, format the value accordingly
             mappedValue = SystemIdentityProviderFormatter.formatForSystemIdentityProvider(identityCacheEntity.getMetadataIdentifier(), mapping, mappedValue);
 
-            var existingDataObject = customerInput.getOrDefault(element.getId(), new ElementDataObject(element));
-            existingDataObject.setType(element.getType());
-            existingDataObject.setInputValue(mappedValue);
-
-            customerInput.put(element, existingDataObject);
+            //var existingDataObject = customerInput.getOrDefault(element.getId(), new ElementDataObject(element));
+            //existingDataObject.setType(element.getType());
+            //existingDataObject.setInputValue(mappedValue);
+//
+            //customerInput.put(element, existingDataObject);
         }
 
         // Create the identity value
@@ -424,11 +420,11 @@ public class SubmitController {
                 identityCacheEntity.getIdentityData()
         );
 
-        var identityValueDataObject = new ElementDataObject(ElementType.SubmittedStep);
-        identityValueDataObject.setInputValue(identityValue);
+        // var identityValueDataObject = new ElementDataObject(ElementType.SubmittedStep);
+        // identityValueDataObject.setInputValue(identityValue);
 
         // Add the idp data to the customer input
-        customerInput.put(IdentityValueKey.IdCustomerInputKey, identityValueDataObject);
+        // customerInput.put(IdentityValueKey.IdCustomerInputKey, identityValueDataObject);
     }
 
     @PostMapping("/api/public/send-copy/{submissionId}/")

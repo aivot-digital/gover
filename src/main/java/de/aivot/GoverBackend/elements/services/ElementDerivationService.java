@@ -1,502 +1,590 @@
 package de.aivot.GoverBackend.elements.services;
 
-import de.aivot.GoverBackend.core.converters.ElementDataConverter;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.GoverBackend.elements.enums.EffectiveValueSource;
 import de.aivot.GoverBackend.elements.exceptions.DerivationException;
-import de.aivot.GoverBackend.elements.models.ElementData;
-import de.aivot.GoverBackend.elements.models.ElementDataObject;
-import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
-import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
+import de.aivot.GoverBackend.elements.models.*;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
-import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
+import de.aivot.GoverBackend.elements.models.elements.InputElement;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
-import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
-import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
-import de.aivot.GoverBackend.enums.ElementType;
+import de.aivot.GoverBackend.exceptions.ValidationException;
+import de.aivot.GoverBackend.javascript.exceptions.JavascriptException;
+import de.aivot.GoverBackend.javascript.models.JavascriptResult;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
+import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 import de.aivot.GoverBackend.nocode.services.NoCodeEvaluationService;
+import de.aivot.GoverBackend.utils.ElementResolver;
+import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
+/**
+ * Derivation service for elements.
+ */
 @Service
 public class ElementDerivationService {
-    private final ElementErrorDerivationService errorDerivationService;
-    private final ElementOverrideDerivationService overrideDerivationService;
-    private final ElementValueDerivationService valueDerivationService;
-    private final ElementVisibilityDerivationService visibilityDerivationService;
     private final JavascriptEngineFactoryService javascriptEngineFactoryService;
     private final NoCodeEvaluationService noCodeEvaluationService;
 
     @Autowired
     public ElementDerivationService(
-            ElementOverrideDerivationService overrideDerivationService,
-            ElementVisibilityDerivationService visibilityDerivationService,
-            ElementErrorDerivationService errorDerivationService,
-            ElementValueDerivationService valueDerivationService,
             JavascriptEngineFactoryService javascriptEngineFactoryService,
             NoCodeEvaluationService noCodeEvaluationService
     ) {
-        this.overrideDerivationService = overrideDerivationService;
-        this.visibilityDerivationService = visibilityDerivationService;
-        this.errorDerivationService = errorDerivationService;
-        this.valueDerivationService = valueDerivationService;
         this.javascriptEngineFactoryService = javascriptEngineFactoryService;
         this.noCodeEvaluationService = noCodeEvaluationService;
     }
 
-    public ElementData derive(@Nonnull ElementDerivationRequest request,
-                              @Nonnull ElementDerivationLogger logger) {
+    @Nonnull
+    public DerivedRuntimeElementData derive(@Nonnull ElementDerivationRequest request,
+                                            @Nonnull ElementDerivationLogger logger) {
         var javascriptEngine = javascriptEngineFactoryService
                 .getEngine();
 
-        var outputElementData = new ElementData();
+        // Create the values container for the effective values.
+        // Effective values are either the computed values or authored values.
+        var effectiveElementValues = new EffectiveElementValues();
+
+        // Create the container for the computed element states.
+        // These contain metainformation about elements.
+        var computedElementStates = new ComputedElementStates();
 
         derive(
                 javascriptEngine,
-                request.getElement(),
-                request.getElementData(),
-                outputElementData,
-                request.getElement(),
-                request.getOptions(),
+                request.element(),
+                request.element(),
+                request.authoredElementValues(),
+                effectiveElementValues,
+                computedElementStates,
+                request.derivationOptions(),
                 true,
                 logger
         );
 
-        try {
-            javascriptEngine.close();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        return outputElementData;
+        return new DerivedRuntimeElementData(
+                effectiveElementValues,
+                computedElementStates
+        );
     }
 
     private void derive(
             @Nonnull JavascriptEngine javascriptEngine,
             @Nonnull BaseElement rootElement,
-            @Nonnull ElementData inputContextElementData,
-            @Nonnull ElementData outputContextElementData,
-            @Nonnull BaseElement currentlyDerivedElement,
+            @Nonnull BaseElement currentElement,
+            @Nonnull AuthoredElementValues authoredElementValues,
+            @Nonnull EffectiveElementValues effectiveElementValues,
+            @Nonnull ComputedElementStates computedElementStates,
             @Nonnull ElementDerivationOptions options,
             @Nonnull Boolean isParentVisible,
             @Nonnull ElementDerivationLogger logger
     ) {
-        switch (currentlyDerivedElement) {
-            case FormLayoutElement element:
-                deriveRootElement(javascriptEngine,
+        var elementState = new ComputedElementState();
+        computedElementStates.put(currentElement.getId(), elementState);
+
+        try {
+            BaseElement overrideElement;
+            if (isParentVisible) {
+                overrideElement = deriveOverride(
+                        javascriptEngine,
                         rootElement,
-                        inputContextElementData,
-                        outputContextElementData,
-                        element,
+                        currentElement,
+                        authoredElementValues,
+                        effectiveElementValues,
+                        computedElementStates,
                         options,
-                        isParentVisible,
-                        logger);
-                break;
-
-            case GenericStepElement element:
-                deriveStepElement(javascriptEngine,
-                        rootElement,
-                        inputContextElementData,
-                        outputContextElementData,
-                        element,
-                        options,
-                        isParentVisible,
-                        logger);
-                break;
-
-            case ReplicatingContainerLayoutElement element:
-                deriveReplicatingLayout(javascriptEngine,
-                        rootElement,
-                        inputContextElementData,
-                        outputContextElementData,
-                        element,
-                        options,
-                        isParentVisible,
-                        logger);
-                break;
-
-
-            case LayoutElement element:
-                deriveLayoutElement(javascriptEngine,
-                        rootElement,
-                        inputContextElementData,
-                        outputContextElementData,
-                        element,
-                        options,
-                        isParentVisible,
-                        logger);
-                break;
-
-            case BaseElement element:
-                var elementDataObject = deriveElement(javascriptEngine,
-                        rootElement,
-                        inputContextElementData,
-                        element,
-                        options,
-                        isParentVisible,
-                        logger);
-
-                inputContextElementData.put(element, elementDataObject);
-                outputContextElementData.put(element, elementDataObject);
-                break;
-        }
-    }
-
-    private void deriveRootElement(
-            @Nonnull JavascriptEngine javascriptEngine,
-            @Nonnull BaseElement rootElement,
-            @Nonnull ElementData inputContextElementData,
-            @Nonnull ElementData outputContextElementData,
-            @Nonnull FormLayoutElement currentRootElement,
-            @Nonnull ElementDerivationOptions options,
-            @Nonnull Boolean isParentVisible,
-            @Nonnull ElementDerivationLogger logger
-    ) {
-        var dataObject = deriveElement(javascriptEngine,
-                rootElement,
-                inputContextElementData,
-                currentRootElement,
-                options,
-                isParentVisible,
-                logger);
-        inputContextElementData.put(rootElement, dataObject);
-        outputContextElementData.put(rootElement, dataObject);
-
-        var isVisible = isParentVisible && dataObject.getIsVisible();
-
-        var optionsForChildren = options.copyForUseInChild(currentRootElement.getId());
-
-        for (var step : currentRootElement.getChildren()) {
-            derive(javascriptEngine,
-                    rootElement,
-                    inputContextElementData,
-                    outputContextElementData,
-                    step,
-                    optionsForChildren,
-                    isVisible,
-                    logger);
-        }
-    }
-
-    protected void deriveStepElement(
-            @Nonnull JavascriptEngine javascriptEngine,
-            @Nonnull BaseElement rootElement,
-            @Nonnull ElementData inputContextElementData,
-            @Nonnull ElementData outputContextElementData,
-            @Nonnull GenericStepElement _stepElement,
-            @Nonnull ElementDerivationOptions options,
-            @Nonnull Boolean isParentVisible,
-            @Nonnull ElementDerivationLogger logger
-    ) {
-        var dataObject = deriveElement(javascriptEngine,
-                rootElement,
-                inputContextElementData,
-                _stepElement,
-                options,
-                isParentVisible,
-                logger);
-        inputContextElementData.put(_stepElement, dataObject);
-        outputContextElementData.put(_stepElement, dataObject);
-
-        var isVisible = isParentVisible && dataObject.getIsVisible();
-
-        var stepElement = (GenericStepElement) dataObject
-                .getComputedOverrideOrDefault(_stepElement);
-
-        var optionsForChildren = options.copyForUseInChild(stepElement.getId());
-
-        if (stepElement.getChildren() != null) {
-            for (var child : stepElement.getChildren()) {
-                derive(javascriptEngine,
-                        rootElement,
-                        inputContextElementData,
-                        outputContextElementData,
-                        child,
-                        optionsForChildren,
-                        isVisible,
-                        logger);
-            }
-        }
-    }
-
-    protected void deriveLayoutElement(
-            @Nonnull JavascriptEngine javascriptEngine,
-            @Nonnull BaseElement rootElement,
-            @Nonnull ElementData inputContextElementData,
-            @Nonnull ElementData outputContextElementData,
-            @Nonnull LayoutElement<?> _groupLayout,
-            @Nonnull ElementDerivationOptions options,
-            @Nonnull Boolean isParentVisible,
-            @Nonnull ElementDerivationLogger logger
-    ) {
-        if (_groupLayout instanceof BaseElement _baseElementGroupLayout) {
-            var dataObject = deriveElement(javascriptEngine,
-                    rootElement,
-                    inputContextElementData,
-                    _baseElementGroupLayout,
-                    options,
-                    isParentVisible,
-                    logger);
-            inputContextElementData.put(_baseElementGroupLayout, dataObject);
-            outputContextElementData.put(_baseElementGroupLayout, dataObject);
-
-            var isVisible = isParentVisible && dataObject.getIsVisible();
-
-            var groupLayout = (LayoutElement<?>) dataObject
-                    .getComputedOverrideOrDefault(_baseElementGroupLayout);
-
-            var optionsForChildren = options.copyForUseInChild(_baseElementGroupLayout.getId());
-
-            if (groupLayout.getChildren() != null) {
-                for (var child : groupLayout.getChildren()) {
-                    derive(javascriptEngine,
-                            rootElement,
-                            inputContextElementData,
-                            outputContextElementData,
-                            child,
-                            optionsForChildren,
-                            isVisible,
-                            logger);
-                }
-            }
-        }
-    }
-
-    protected void deriveReplicatingLayout(
-            @Nonnull JavascriptEngine javascriptEngine,
-            @Nonnull BaseElement rootElement,
-            @Nonnull ElementData inputContextElementData,
-            @Nonnull ElementData outputContextElementData,
-            @Nonnull ReplicatingContainerLayoutElement _replicatingContainerLayout,
-            @Nonnull ElementDerivationOptions options,
-            @Nonnull Boolean isParentVisible,
-            @Nonnull ElementDerivationLogger logger
-    ) {
-        var dataObject = deriveElement(javascriptEngine,
-                rootElement,
-                inputContextElementData,
-                _replicatingContainerLayout,
-                options,
-                isParentVisible,
-                logger);
-        inputContextElementData.put(_replicatingContainerLayout, dataObject);
-        outputContextElementData.put(_replicatingContainerLayout, dataObject);
-
-        var isVisible = isParentVisible && dataObject.getIsVisible();
-
-        var replicatingContainerLayout = (ReplicatingContainerLayoutElement) dataObject
-                .getComputedOverrideOrDefault(_replicatingContainerLayout);
-
-        var optionsForChildren = options.copyForUseInChild(replicatingContainerLayout.getId());
-
-        var value = dataObject
-                .getValue();
-
-        if (value == null) {
-            dataObject.setInputValue(null);
-            dataObject.setComputedValue(null);
-        } else if (value instanceof Iterable<?> iValue) {
-            if (replicatingContainerLayout.getChildren() != null) {
-                var om = new ElementDataConverter();
-
-                var resValue = new LinkedList<ElementData>();
-
-                for (Object item : iValue) {
-                    var childInputContextElementData = om
-                            .convertObjectToEntityAttribute(item);
-
-                    var childOutputContextElementData = new ElementData();
-
-                    for (var child : replicatingContainerLayout.getChildren()) {
-                        derive(javascriptEngine,
-                                rootElement,
-                                childInputContextElementData,
-                                childOutputContextElementData,
-                                child,
-                                optionsForChildren,
-                                isVisible,
-                                logger);
-                    }
-
-                    resValue.add(childOutputContextElementData);
-                }
-
-                if (resValue.isEmpty()) {
-                    dataObject.setInputValue(null);
-                } else {
-                    dataObject.setInputValue(resValue);
-                }
-            }
-        } else {
-            dataObject.addComputedError("Der Wert der replizierenden Liste muss eine Iterable in Form der Elementdaten sein. Es war jedoch " + (value.getClass().getSimpleName()) + ".");
-        }
-    }
-
-    protected ElementDataObject deriveElement(
-            @Nonnull JavascriptEngine javascriptEngine,
-            @Nonnull BaseElement rootElement,
-            @Nonnull ElementData accumulator,
-            @Nonnull BaseElement _currentElement,
-            @Nonnull ElementDerivationOptions options,
-            @Nonnull Boolean isParentVisible,
-            @Nonnull ElementDerivationLogger logger
-    ) {
-        // Get or create the data object for the current element
-        var inputDataObject = accumulator
-                .computeIfAbsent(_currentElement.getId(), id -> new ElementDataObject(_currentElement));
-        var dataObject = new ElementDataObject(_currentElement)
-                .setType(_currentElement.getType())
-                .setInputValue(inputDataObject.getInputValue())
-                .setPreviousInputValue(inputDataObject.getPreviousInputValue())
-                .setIsDirty(inputDataObject.getIsDirty())
-                .setIsPrefilled(inputDataObject.getIsPrefilled());
-
-        // Set the dirty flag if the element has an input value
-        if (dataObject.getInputValue() != null) {
-            dataObject.setIsDirty(true);
-        }
-
-        // Check if the element cannot be input by the user and clean it up if necessary
-        if (userCannotInputElement(_currentElement)) {
-            dataObject.setInputValue(null);
-            dataObject.setIsDirty(false);
-        }
-
-        BaseElement overriddenElement = null;
-        if (options.containsSkipOverrides(_currentElement.getId())) {
-            overriddenElement = inputDataObject.getComputedOverride();
-        } else {
-            try {
-                overriddenElement = overrideDerivationService
-                        .derive(rootElement,
-                                accumulator,
-                                dataObject,
-                                _currentElement,
-                                javascriptEngine,
-                                noCodeEvaluationService,
-                                logger);
-            } catch (DerivationException e) {
-                logger.error(e);
-                dataObject.addComputedError(e.getMessage());
-            }
-        }
-        dataObject.setComputedOverride(overriddenElement);
-
-        // If an override was applied, use it as the current element for further processing
-        var currentElement = overriddenElement != null ?
-                overriddenElement : _currentElement;
-
-        // Check if the element cannot be input by the user and clean it up if necessary
-        if (userCannotInputElement(currentElement)) {
-            dataObject.setInputValue(null);
-            dataObject.setIsDirty(false);
-        }
-
-        // Format the input value if the element is an input element
-        if (currentElement instanceof BaseInputElement<?> baseInputElement) {
-            var formattedValue = baseInputElement
-                    .formatValue(dataObject.getInputValue());
-            dataObject.setInputValue(formattedValue);
-        }
-
-        boolean computedVisibility = true;
-        if (options.containsSkipVisibilities(currentElement.getId())) {
-            computedVisibility = inputDataObject.getIsVisible();
-        } else {
-            try {
-                computedVisibility = visibilityDerivationService
-                        .derive(rootElement,
-                                accumulator,
-                                currentElement,
-                                isParentVisible,
-                                javascriptEngine,
-                                noCodeEvaluationService,
-                                logger);
-            } catch (DerivationException e) {
-                logger.error(e);
-                dataObject.addComputedError(e.getMessage());
-            }
-        }
-        dataObject.setIsVisible(computedVisibility);
-
-        var isVisible = isParentVisible && computedVisibility;
-
-        if (currentElement instanceof BaseInputElement<?> baseInputElement) {
-            if (isVisible) {
-                if (dataObject.getInputValue() == null && dataObject.getPreviousInputValue() != null) {
-                    dataObject.setInputValue(dataObject.getPreviousInputValue());
-                    dataObject.setPreviousInputValue(null);
-                    dataObject.setIsDirty(true);
-                }
-
-                if (options.containsSkipValues(baseInputElement.getId())) {
-                    dataObject.setComputedValue(inputDataObject.getComputedValue());
-                } else {
-                    try {
-                        var computedValue = valueDerivationService
-                                .derive(rootElement,
-                                        accumulator,
-                                        dataObject,
-                                        baseInputElement,
-                                        javascriptEngine,
-                                        noCodeEvaluationService,
-                                        logger);
-
-                        if (baseInputElement.getType() == ElementType.Checkbox && computedValue == null) {
-                            dataObject.setComputedValue(null);
-                        } else {
-                            var formattedComputedValue = baseInputElement
-                                    .formatValue(computedValue);
-                            dataObject
-                                    .setComputedValue(formattedComputedValue);
-                        }
-                    } catch (DerivationException e) {
-                        logger.error(e);
-                        dataObject.addComputedError(e.getMessage());
-                    }
-                }
-
-                if (options.containsSkipErrors(baseInputElement.getId())) {
-                    dataObject.setComputedErrors(inputDataObject.getComputedErrors());
-                } else {
-                    try {
-                        var computedErrors = errorDerivationService
-                                .derive(rootElement,
-                                        accumulator,
-                                        dataObject,
-                                        baseInputElement,
-                                        javascriptEngine,
-                                        noCodeEvaluationService,
-                                        logger);
-                        if (computedErrors != null) {
-                            dataObject
-                                    .addComputedError(computedErrors);
-                        }
-                    } catch (DerivationException e) {
-                        logger.error(e);
-                        dataObject.addComputedError(e.getMessage());
-                    }
-                }
+                        logger
+                );
+                elementState.setOverride(overrideElement);
             } else {
-                if (dataObject.getInputValue() != null) {
-                    dataObject.setPreviousInputValue(dataObject.getInputValue());
+                overrideElement = null;
+            }
+
+            var actualElement = overrideElement != null
+                    ? overrideElement
+                    : currentElement;
+
+            var isVisible = isParentVisible && deriveVisibility(
+                    javascriptEngine,
+                    rootElement,
+                    actualElement,
+                    authoredElementValues,
+                    effectiveElementValues,
+                    computedElementStates,
+                    options,
+                    logger
+            );
+            elementState.setVisible(isVisible);
+
+            if (isVisible && actualElement instanceof InputElement<?> inputElement) {
+                var authoredValue = authoredElementValues
+                        .getOrDefault(currentElement.getId(), null);
+
+                var effectiveValue = deriveValue(
+                        javascriptEngine,
+                        rootElement,
+                        inputElement,
+                        authoredElementValues,
+                        effectiveElementValues,
+                        computedElementStates,
+                        options,
+                        authoredValue,
+                        elementState,
+                        logger
+                );
+                effectiveElementValues.put(currentElement.getId(), effectiveValue);
+
+                var err = deriveError(
+                        javascriptEngine,
+                        rootElement,
+                        inputElement,
+                        authoredElementValues,
+                        effectiveElementValues,
+                        computedElementStates,
+                        options,
+                        effectiveValue,
+                        elementState,
+                        logger
+                );
+                elementState.setError(err);
+            }
+
+            if (actualElement instanceof ReplicatingContainerLayoutElement replicatingContainer) {
+                // Extract the effective child data set list as a raw object to work with.
+                var rawEffectiveChildDataSetList = effectiveElementValues
+                        .get(replicatingContainer.getId());
+
+                // Create a new container list to hold the computed element states for all child data sets.
+                // Add this to the existing element state of the replicating list container.
+                elementState.setSubStates(new LinkedList<>());
+
+                // Test if the child data is a list of child data sets.
+                if (rawEffectiveChildDataSetList instanceof List<?> effectiveChildDataSetList) {
+                    // Iterate through the list of all child data sets.
+                    for (var rawEffectiveChildDataSet : effectiveChildDataSetList) {
+                        if (rawEffectiveChildDataSet instanceof Map<?, ?> effectiveChildDataSet) {
+                            // Create a new container for the computed element states of the current child data set.
+                            // Add this to the list of computed element states of the replicating list container.
+                            var childItemElementStates = new ComputedElementStates();
+                            elementState
+                                    .getSubStates()
+                                    .add(childItemElementStates);
+
+                            for (var currentChildElement : replicatingContainer.getChildren()) {
+                                derive(
+                                        javascriptEngine,
+                                        rootElement,
+                                        currentChildElement,
+                                        (AuthoredElementValues) effectiveChildDataSet,
+                                        (EffectiveElementValues) effectiveChildDataSet,
+                                        childItemElementStates,
+                                        options,
+                                        isVisible,
+                                        logger
+                                );
+                            }
+                        }
+                    }
                 }
-                dataObject.setInputValue(null);
-                dataObject.setComputedValue(null);
-                dataObject.setIsDirty(false);
+            } else if (actualElement instanceof LayoutElement<?> layoutElement) {
+                var children = layoutElement.getChildren();
+                for (var child : children) {
+                    derive(
+                            javascriptEngine,
+                            rootElement,
+                            child,
+                            authoredElementValues,
+                            effectiveElementValues,
+                            computedElementStates,
+                            options,
+                            isVisible,
+                            logger
+                    );
+                }
+            }
+        } catch (Exception e) {
+            logger.error(currentElement, e);
+            elementState.setError(e.getMessage());
+        }
+    }
+
+
+    @Nullable
+    private BaseElement deriveOverride(
+            @Nonnull JavascriptEngine javascriptEngine,
+            @Nonnull BaseElement rootElement,
+            @Nonnull BaseElement currentElement,
+            @Nonnull AuthoredElementValues authoredElementValues,
+            @Nonnull EffectiveElementValues effectiveElementValues,
+            @Nonnull ComputedElementStates computedElementStates,
+            @Nonnull ElementDerivationOptions options,
+            @Nonnull ElementDerivationLogger logger
+    ) throws DerivationException {
+        var override = currentElement.getOverride();
+
+        if (override == null) {
+            return null; // No override to derive if the element has no override
+        }
+
+        // Determine if override generation should be done with JavaScript code
+        if (override.getJavascriptCode() != null && override.getJavascriptCode().isNotEmpty()) {
+            var accumulator = createAccumulator(
+                    authoredElementValues,
+                    computedElementStates,
+                    effectiveElementValues
+            );
+
+            JavascriptResult res;
+            try {
+                res = javascriptEngine
+                        .registerGlobalContextObject(accumulator)
+                        .registerElementObject(currentElement)
+                        .evaluateCode(override.getJavascriptCode());
+            } catch (JavascriptException e) {
+                throw new DerivationException(currentElement, "Fehler bei der Ausführung des Javascript-Codes für die Override-Ableitung: " + e.getMessage(), e);
+            }
+
+            // Check if the result is null, which indicates no override was generated
+            if (res.isNull()) {
+                return null;
+            }
+
+            // Log result output
+            logger.log(currentElement, res);
+
+            // Check if the result is a map, which indicates a valid override
+            var resObject = res.asMap();
+
+            // If the result is not a map, no valid override was generated
+            if (resObject != null) {
+                // Resolve the element from the map and check if a valid element was generated
+                var resolvedElement = ElementResolver
+                        .resolve(resObject);
+
+                if (resolvedElement == null) {
+                    throw new DerivationException(currentElement, "Der erzeugte Datensatz entspricht keinem bekannten Elementtyp");
+                }
+
+                // Overriding ids is not allowed, so we check if the ids match
+                if (!Objects.equals(currentElement.getId(), resolvedElement.getId())) {
+                    throw new DerivationException(currentElement, "Das abgeleitete Element hat eine andere ID als das ursprüngliche Element");
+                }
+
+                // Overriding types is not allowed, so we check if the types match
+                if (!Objects.equals(currentElement.getType(), resolvedElement.getType())) {
+                    throw new DerivationException(currentElement, "Das abgeleitete Element hat einen anderen Typ als das ursprüngliche Element");
+                }
+
+                // Return the resolved element as the override
+                return resolvedElement;
+            } else {
+                return null;
             }
         }
 
-        return dataObject;
+        // Determine if override generation should be done with a no code expression
+        if (override.getFieldNoCodeMap() != null) {
+            var elementMapToUpdate = new ObjectMapper()
+                    .convertValue(currentElement, new TypeReference<Map<String, Object>>() {
+                    });
+
+            for (var entry : override.getFieldNoCodeMap().entrySet()) {
+                var accumulator = createAccumulator(
+                        authoredElementValues,
+                        computedElementStates,
+                        effectiveElementValues
+                );
+
+                var fieldName = entry.getKey();
+                var noCodeExpression = entry.getValue();
+
+                NoCodeResult res = noCodeEvaluationService.evaluate(
+                        noCodeExpression,
+                        accumulator
+                );
+
+                elementMapToUpdate.put(fieldName, res);
+            }
+
+            var resolvedElement = ElementResolver
+                    .resolve(elementMapToUpdate);
+
+            if (resolvedElement == null) {
+                throw new DerivationException(currentElement, "Der erzeugte Datensatz entspricht keinem bekannten Elementtyp.");
+            }
+
+            // Overriding ids is not allowed, so we check if the ids match
+            if (!Objects.equals(currentElement.getId(), resolvedElement.getId())) {
+                throw new DerivationException(currentElement, "Das abgeleitete Element hat eine andere ID als das ursprüngliche Element");
+            }
+
+            // Overriding types is not allowed, so we check if the types match
+            if (!Objects.equals(currentElement.getType(), resolvedElement.getType())) {
+                throw new DerivationException(currentElement, "Das abgeleitete Element hat einen anderen Typ als das ursprüngliche Element");
+            }
+
+            // Return the resolved element as the override
+            return resolvedElement;
+        }
+
+        return null;
     }
 
-    private static boolean userCannotInputElement(@Nonnull BaseElement element) {
-        return !(element instanceof BaseInputElement<?> inputElement) ||
-                Boolean.TRUE.equals(inputElement.getDisabled()) ||
-                Boolean.TRUE.equals(inputElement.getTechnical());
+
+    private boolean deriveVisibility(
+            @Nonnull JavascriptEngine javascriptEngine,
+            @Nonnull BaseElement rootElement,
+            @Nonnull BaseElement currentElement,
+            @Nonnull AuthoredElementValues authoredElementValues,
+            @Nonnull EffectiveElementValues effectiveElementValues,
+            @Nonnull ComputedElementStates computedElementStates,
+            @Nonnull ElementDerivationOptions options,
+            @Nonnull ElementDerivationLogger logger
+    ) throws DerivationException {
+        var vis = currentElement.getVisibility();
+
+        if (vis == null) {
+            return true;
+        }
+
+        // Determine if visibility calculation should be done with JavaScript code
+        if (vis.getJavascriptCode() != null && vis.getJavascriptCode().isNotEmpty()) {
+            var accumulator = createAccumulator(
+                    authoredElementValues,
+                    computedElementStates,
+                    effectiveElementValues
+            );
+
+            JavascriptResult res;
+            try {
+                res = javascriptEngine
+                        .registerGlobalContextObject(accumulator)
+                        .registerElementObject(currentElement)
+                        .evaluateCode(vis.getJavascriptCode());
+            } catch (JavascriptException e) {
+                throw new DerivationException(currentElement, "Fehler bei der Ausführung des Javascript-Codes für die Sichtbarkeits-Ableitung: " + e.getMessage(), e);
+            }
+
+            logger.log(currentElement, res);
+
+            return Boolean.TRUE.equals(res.asBoolean());
+        }
+
+        // Determine if visibility calculation should be done with a no code expression
+        if (vis.getNoCode() != null) {
+            var accumulator = createAccumulator(
+                    authoredElementValues,
+                    computedElementStates,
+                    effectiveElementValues
+            );
+
+            return noCodeEvaluationService
+                    .evaluate(vis.getNoCode(), accumulator)
+                    .getValueAsBoolean();
+        }
+
+        // Determine if visibility calculation should be done with a function
+        if (vis.getConditionSet() != null) {
+            if (rootElement instanceof LayoutElement<?> elementWithChildren) {
+                var accumulator = createAccumulator(
+                        authoredElementValues,
+                        computedElementStates,
+                        effectiveElementValues
+                );
+
+                var res = vis
+                        .getConditionSet()
+                        .evaluate(
+                                elementWithChildren,
+                                accumulator,
+                                currentElement
+                        );
+
+                return res == null;
+            } else {
+                throw new DerivationException(currentElement, "Die Sichtbarkeits-Ableitung mit einer Bedingungsfunktion ist nur für Elemente innerhalb von Layout-Elementen möglich.");
+            }
+        }
+
+        return true;
+    }
+
+    @Nullable
+    private Object deriveValue(
+            @Nonnull JavascriptEngine javascriptEngine,
+            @Nonnull BaseElement rootElement,
+            @Nonnull InputElement<?> inputElement,
+            @Nonnull AuthoredElementValues authoredElementValues,
+            @Nonnull EffectiveElementValues effectiveElementValues,
+            @Nonnull ComputedElementStates computedElementStates,
+            @Nonnull ElementDerivationOptions options,
+            @Nullable Object authoredValue,
+            @Nonnull ComputedElementState elementState,
+            @Nonnull ElementDerivationLogger logger
+    ) throws DerivationException {
+        var baseElement = (BaseElement) inputElement;
+
+        var valueFunction = inputElement.getValue();
+
+        if (valueFunction == null) {
+            effectiveElementValues.put(inputElement.getId(), authoredValue);
+            elementState.setValueSource(EffectiveValueSource.Authored);
+            return authoredValue; // No value to derive if the element has no value setter
+        }
+
+        try {
+            // Determine if the value computation should be done with JavaScript code
+            if (valueFunction.getJavascriptCode() != null && valueFunction.getJavascriptCode().isNotEmpty()) {
+                var accumulator = createAccumulator(
+                        authoredElementValues,
+                        computedElementStates,
+                        effectiveElementValues
+                );
+
+                var res = javascriptEngine
+                        .registerGlobalContextObject(accumulator)
+                        .registerElementObject(baseElement)
+                        .evaluateCode(valueFunction.getJavascriptCode());
+
+                logger.log(baseElement, res);
+
+                effectiveElementValues.put(inputElement.getId(), res.asObject());
+                elementState.setValueSource(EffectiveValueSource.Authored);
+                return res.asObject(); // No value to derive if the element has no value setter
+            }
+
+            // Determine if the value computation should be done with a value expression
+            if (valueFunction.getNoCode() != null) {
+                var accumulator = createAccumulator(
+                        authoredElementValues,
+                        computedElementStates,
+                        effectiveElementValues
+                );
+
+                var derivedValue = noCodeEvaluationService
+                        .evaluate(valueFunction.getNoCode(), accumulator)
+                        .getValue();
+
+                effectiveElementValues.put(inputElement.getId(), derivedValue);
+                elementState.setValueSource(EffectiveValueSource.Authored);
+                return derivedValue;
+            }
+        } catch (Exception e) {
+            throw new DerivationException(baseElement, "Bei der Erzeugung des dynamischen Wertes ist ein Fehler aufgetreten: " + e.getMessage(), e);
+        }
+
+        throw new DerivationException(baseElement, "Der Wert konnte nicht abgeleitet werden, da die Definition des Werteableitungsmechanismus ungültig ist.");
+    }
+
+    @Nullable
+    private String deriveError(
+            @Nonnull JavascriptEngine javascriptEngine,
+            @Nonnull BaseElement rootElement,
+            @Nonnull InputElement<?> inputElement,
+            @Nonnull AuthoredElementValues authoredElementValues,
+            @Nonnull EffectiveElementValues effectiveElementValues,
+            @Nonnull ComputedElementStates computedElementStates,
+            @Nonnull ElementDerivationOptions options,
+            @Nullable Object effectiveValue,
+            @Nonnull ComputedElementState elementState,
+            @Nonnull ElementDerivationLogger logger
+    ) {
+        var baseElement = (BaseElement) inputElement;
+
+        if (effectiveValue == null && !Boolean.TRUE.equals(inputElement.getRequired())) {
+            return null; // No error if the input is not required and no value is provided
+        }
+
+        try {
+            inputElement.validate(effectiveValue);
+        } catch (ValidationException e) {
+            return e.getMessage();
+        }
+
+        var validation = inputElement
+                .getValidation();
+
+        if (validation == null) {
+            return null;
+        }
+
+        if (validation.getJavascriptCode() != null && validation.getJavascriptCode().isNotEmpty()) {
+            var accumulator = createAccumulator(
+                    authoredElementValues,
+                    computedElementStates,
+                    effectiveElementValues
+            );
+
+            JavascriptResult res;
+            try {
+                res = javascriptEngine
+                        .registerGlobalContextObject(accumulator)
+                        .registerElementObject(baseElement)
+                        .evaluateCode(validation.getJavascriptCode());
+            } catch (JavascriptException e) {
+                throw new RuntimeException(e);
+            }
+
+            logger.log(baseElement, res);
+
+            var str = res.asString();
+            if (StringUtils.isNotNullOrEmpty(str)) {
+                return str;
+            }
+            return null;
+        }
+
+        if (validation.getNoCodeList() != null && !validation.getNoCodeList().isEmpty()) {
+            var accumulator = createAccumulator(
+                    authoredElementValues,
+                    computedElementStates,
+                    effectiveElementValues
+            );
+
+            for (var validationExpression : validation.getNoCodeList()) {
+                var res = noCodeEvaluationService
+                        .evaluate(validationExpression.getNoCode(), accumulator);
+                if (!res.getValueAsBoolean()) {
+                    return validationExpression.getMessage();
+                }
+            }
+        }
+
+        if (validation.getConditionSet() != null && rootElement instanceof LayoutElement<?> elementWithChildren) {
+            var accumulator = createAccumulator(
+                    authoredElementValues,
+                    computedElementStates,
+                    effectiveElementValues
+            );
+
+            return validation
+                    .getConditionSet()
+                    .evaluate(
+                            elementWithChildren,
+                            accumulator,
+                            baseElement
+                    );
+        }
+
+        return null;
+    }
+
+    private ElementData createAccumulator(@Nonnull AuthoredElementValues authoredElementValues,
+                                          @Nonnull ComputedElementStates computedElementStates,
+                                          @Nonnull EffectiveElementValues effectiveElementValues) {
+        return new ElementData(
+                authoredElementValues,
+                computedElementStates,
+                effectiveElementValues
+        );
     }
 }

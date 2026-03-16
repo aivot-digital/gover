@@ -59,8 +59,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     public ProcessNodeEntity create(@Nonnull ProcessNodeEntity entity) throws ResponseException {
         entity.setId(null);
 
-        var derivedObjectItemData = deriveDataObjectItemData(entity, true);
-        entity.setConfiguration(derivedObjectItemData);
+        // var derivedObjectItemData = deriveDataObjectItemData(entity, true);
+        // entity.setConfiguration(derivedObjectItemData);
 
         /*
         var provider = processNodeProviderService

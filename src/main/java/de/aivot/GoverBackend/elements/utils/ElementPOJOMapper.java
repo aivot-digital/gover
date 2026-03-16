@@ -5,6 +5,7 @@ import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.ReplicatingContainerLayoutElementElementPOJOBinding;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
+import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
@@ -16,15 +17,15 @@ import jakarta.annotation.Nonnull;
 import java.lang.reflect.*;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A mapper for converting ElementData objects to POJOs and vice versa.
  */
 public class ElementPOJOMapper {
     /**
-     * Convert a given ElementData to an instance of the pojoClass.
-     * Based on the annotations present in the pojoClass, the method maps the data from the ElementData to the fields of the pojoClass.
-     * See {@link InputElementPOJOBinding} and {@link LayoutElementPOJOBinding} for more details on the annotations used for mapping.
+     * Convert a given ElementData to an instance of the pojoClass. Based on the annotations present in the pojoClass, the method maps the data from the ElementData to the fields
+     * of the pojoClass. See {@link InputElementPOJOBinding} and {@link LayoutElementPOJOBinding} for more details on the annotations used for mapping.
      *
      * @param elementData The ElementData to convert.
      * @param pojoClass   The target class to convert to.
@@ -33,6 +34,13 @@ public class ElementPOJOMapper {
      * @throws ElementDataConversionException If there is an error during the conversion process.
      */
     public static <T> T mapToPOJO(ElementData elementData, Class<T> pojoClass) throws ElementDataConversionException {
+        return mapToPOJO(
+                elementData.getEffectiveElementValues(),
+                pojoClass
+        );
+    }
+
+    public static <T> T mapToPOJO(EffectiveElementValues effectiveElementValues, Class<T> pojoClass) throws ElementDataConversionException {
         // Create an instance of the target class to fill the fields into
         T target = instantiateTargetClass(pojoClass);
 
@@ -45,7 +53,7 @@ public class ElementPOJOMapper {
 
             // Check if the field has the relevant annotations and extract the value accordingly
             if (field.isAnnotationPresent(InputElementPOJOBinding.class)) {
-                valueToSet = extractInputFieldValue(elementData, field);
+                valueToSet = extractInputFieldValue(effectiveElementValues, field);
             } else if (List.class.isAssignableFrom(field.getType())) {
                 // Get the generic type of the list. This represents the item type for the replicating container datasets.
                 var genericTypeClass = ReflectionUtils
@@ -57,9 +65,9 @@ public class ElementPOJOMapper {
                     continue;
                 }
 
-                valueToSet = extractReplicatingContainerLayoutValue(elementData, field, genericTypeClass);
+                valueToSet = extractReplicatingContainerLayoutValue(effectiveElementValues, field, genericTypeClass);
             } else if (field.getType().isAnnotationPresent(LayoutElementPOJOBinding.class)) {
-                valueToSet = mapToPOJO(elementData, field.getType());
+                valueToSet = mapToPOJO(effectiveElementValues, field.getType());
             } else {
                 // No relevant annotation present, skip this field
                 continue;
@@ -106,29 +114,26 @@ public class ElementPOJOMapper {
     }
 
     /**
-     * Extract the child items for a replicating container layout pojo.
-     * This always returns a {@link List} consisting of the child item pojo types.
+     * Extract the child items for a replicating container layout pojo. This always returns a {@link List} consisting of the child item pojo types.
      *
      * @param elementData The ElementData to extract the values from.
      * @param field       The field to map the values to.
      * @return The extracted list of child item pojos.
      * @throws ElementDataConversionException If there is a type mismatch or other error during extraction.
      */
-    private static List<Object> extractReplicatingContainerLayoutValue(@Nonnull ElementData elementData,
+    private static List<Object> extractReplicatingContainerLayoutValue(@Nonnull EffectiveElementValues elementData,
                                                                        @Nonnull Field field,
                                                                        @Nonnull Class<?> itemClass) throws ElementDataConversionException {
         var annotation = itemClass
                 .getAnnotation(ReplicatingContainerLayoutElementElementPOJOBinding.class);
 
-        List<?> childElementData = elementData
-                .getOpt(annotation.id())
-                .flatMap(e -> e.getOptionalValue(List.class))
-                .orElse(new LinkedList<>());
+        List<?> childElementData = (List<?>) elementData
+                .getOrDefault(annotation.id(), new LinkedList<>());
 
         List<Object> results = new LinkedList<>();
         for (Object childElementDataObject : childElementData) {
-            if (childElementDataObject instanceof ElementData cd) {
-                var converted = mapToPOJO(cd, itemClass);
+            if (childElementDataObject instanceof Map<?, ?> cd) {
+                var converted = mapToPOJO((EffectiveElementValues) cd, itemClass);
                 results.add(converted);
             } else {
                 throw new ElementDataConversionException(
@@ -146,34 +151,20 @@ public class ElementPOJOMapper {
     /**
      * Extract the value for a field annotated with @InputElementPOJOBinding from the given ElementData.
      *
-     * @param elementData The ElementData to extract the value from.
-     * @param field       The field to extract the value for.
+     * @param elementValues The effective element values.
+     * @param field         The field to extract the value for.
      * @return The extracted value for the field.
      * @throws ElementDataConversionException If there is a type mismatch or other error during extraction.
      */
-    private static Object extractInputFieldValue(@Nonnull ElementData elementData,
+    private static Object extractInputFieldValue(@Nonnull EffectiveElementValues elementValues,
                                                  @Nonnull Field field) throws ElementDataConversionException {
         var annotation = field
                 .getAnnotation(InputElementPOJOBinding.class);
 
         var id = annotation.id();
-        var elementDataObject = elementData
-                .getOpt(id)
-                .orElse(null);
 
-        if (elementDataObject != null && annotation.type() != elementDataObject.getType()) {
-            throw new ElementDataConversionException(
-                    "Type mismatch for field %s of class %s: expected %s but got %s",
-                    StringUtils.quote(field.getName()),
-                    StringUtils.quote(field.getDeclaringClass().getCanonicalName()),
-                    annotation.type().name(),
-                    elementDataObject.getType().name()
-            );
-        }
-
-        return elementDataObject == null ?
-                null :
-                elementDataObject.getValue();
+        return elementValues
+                .getOrDefault(id, null);
     }
 
     public static <T extends LayoutElement<C>, C extends BaseElement, S> T createFromPOJO(Class<S> pojoClass) throws ElementDataConversionException {

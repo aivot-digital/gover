@@ -1,11 +1,10 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.GoverBackend.core.converters.ElementDataConverter;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.enums.ValueFunctionType;
-import de.aivot.GoverBackend.elements.models.ElementData;
-import de.aivot.GoverBackend.elements.models.ElementDataObject;
+import de.aivot.GoverBackend.elements.models.*;
 import de.aivot.GoverBackend.elements.models.elements.ElementValueFunctions;
 import de.aivot.GoverBackend.elements.models.elements.form.input.NoCodeInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.NoCodeInputElementItem;
@@ -14,10 +13,12 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElem
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperand;
 import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
 import de.aivot.GoverBackend.nocode.services.NoCodeEvaluationService;
 import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
@@ -35,13 +36,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Component
 public class NoCodeActionNodeV1 implements ProcessNodeDefinition {
@@ -64,12 +59,10 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition {
     private static final String TARGET_TYPE_DATE = "date";
     private static final String TARGET_TYPE_DATETIME = "datetime";
 
-    private final ElementDataConverter elementDataConverter;
     private final NoCodeEvaluationService noCodeEvaluationService;
 
     public NoCodeActionNodeV1(NoCodeEvaluationService noCodeEvaluationService) {
         this.noCodeEvaluationService = noCodeEvaluationService;
-        this.elementDataConverter = new ElementDataConverter();
     }
 
     @Nonnull
@@ -199,6 +192,14 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Override
+    public void validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity, @Nonnull ElementData configuration) throws ResponseException {
+        // TODO: Check validity of this node configuration.
+        //       - All variables need to be unique.
+        //       - No-Code expressions should be checked for syntax errors (if possible).
+        //       - All types are correct
+    }
+
+    @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
         var sourceRoot = context.getProcessData().get("$");
         if (!(sourceRoot instanceof Map<?, ?> sourceRootRawMap)) {
@@ -224,13 +225,17 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition {
                 evaluatedValue = noCodeEvaluationService
                         .evaluate(
                                 definition.noCode(),
-                                new ElementData(),
+                                new ElementData(
+                                        context.getThisNode().getConfiguration(),
+                                        context.getConfiguration().getElementStates(),
+                                        context.getConfiguration().getEffectiveValues()
+                                ),
                                 processDataContext
                         )
                         .getValue();
             } catch (RuntimeException e) {
                 throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    e,
+                        e,
                         "Der No-Code-Ausdruck in Zeile %d konnte nicht ausgewertet werden: %s",
                         rowIndex,
                         e.getMessage()
@@ -258,137 +263,39 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition {
 
     @Nonnull
     private List<VariableDefinition> parseVariableDefinitions(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        var configuration = context
-                .getThisNode()
-                .getConfiguration();
+        EffectiveElementValues configuration = context
+                .getConfiguration()
+                .getEffectiveValues();
 
-        var rawVariables = configuration
-                .getOpt(VARIABLES_FIELD_ID)
-                .map(ElementDataObject::getValue)
-                .orElse(List.of());
+        ObjectMapper om = ObjectMapperFactory
+                .getInstance();
 
-        if (!(rawVariables instanceof Collection<?> rows)) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Konfiguration im Feld %s ist ungültig. Es wird eine Liste erwartet.",
-                    StringUtils.quote(VARIABLES_FIELD_ID)
-            );
-        }
+        return ObjectMapperFactory
+                .Utils
+                .convertToList(
+                        configuration.getOrDefault(VARIABLES_FIELD_ID, List.of()),
+                        EffectiveElementValues.class
+                )
+                .stream()
+                .map(row -> {
+                    var variableName = StringUtils
+                            .toNullableTrimmedString(row.get(VARIABLE_NAME_FIELD_ID));
 
-        if (rows.isEmpty()) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Es wurde kein Eintrag konfiguriert."
-            );
-        }
+                    var targetType = StringUtils
+                            .toNullableTrimmedString(row.getOrDefault(VARIABLE_TARGET_TYPE_FIELD_ID, TARGET_TYPE_ANY));
 
-        var result = new ArrayList<VariableDefinition>();
-        var usedNames = new HashSet<String>();
+                    NoCodeOperand expressionOperand = om
+                            .convertValue(row.get(VARIABLE_EXPRESSION_FIELD_ID), NoCodeOperand.class);
 
-        int rowIndex = 1;
-        for (var rawRow : rows) {
-            var currentRowIndex = rowIndex;
-            var row = toElementData(rawRow, currentRowIndex);
-
-            var variableName = row
-                    .getOpt(VARIABLE_NAME_FIELD_ID)
-                    .map(ElementDataObject::getValue)
-                    .map(NoCodeActionNodeV1::toNullableTrimmedString)
-                    .orElse(null);
-
-            var targetType = row
-                    .getOpt(VARIABLE_TARGET_TYPE_FIELD_ID)
-                    .map(ElementDataObject::getValue)
-                    .map(NoCodeActionNodeV1::toNullableTrimmedString)
-                    .filter(type -> !StringUtils.isNullOrEmpty(type))
-                    .orElse(TARGET_TYPE_ANY);
-
-            if (StringUtils.isNullOrEmpty(variableName)) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "In Zeile %d fehlt ein gültiger Variablenname.",
-                        currentRowIndex
-                );
-            }
-
-            if (!usedNames.add(variableName)) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Der Variablenname %s wird mehrfach verwendet.",
-                        StringUtils.quote(variableName)
-                );
-            }
-
-            validateTargetType(targetType, currentRowIndex);
-
-            NoCodeOperand expressionOperand = null;
-            var rawExpression = row
-                    .getOpt(VARIABLE_EXPRESSION_FIELD_ID)
-                    .map(ElementDataObject::getValue)
-                    .orElse(null);
-
-            if (rawExpression != null) {
-                var parsedExpression = toNoCodeInputItem(rawExpression, currentRowIndex);
-                expressionOperand = parsedExpression.getNoCode();
-            }
-
-            if (expressionOperand == null) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "In Zeile %d fehlt ein gültiger No-Code-Ausdruck.",
-                        currentRowIndex
-                );
-            }
-
-            result.add(new VariableDefinition(
-                    variableName,
-                    targetType,
-                    expressionOperand
-            ));
-            rowIndex++;
-        }
-
-        return result;
+                    return new VariableDefinition(
+                            variableName,
+                            targetType,
+                            expressionOperand
+                    );
+                })
+                .toList();
     }
 
-    @Nonnull
-    private ElementData toElementData(@Nonnull Object rawRow, int rowIndex) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        if (rawRow instanceof ElementData elementData) {
-            return elementData;
-        }
-
-        try {
-            return elementDataConverter.convertObjectToEntityAttribute(rawRow);
-        } catch (RuntimeException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    e,
-                    "Die Variablendefinition in Zeile %d ist ungültig.",
-                    rowIndex
-            );
-        }
-    }
-
-    @Nonnull
-    private NoCodeInputElementItem toNoCodeInputItem(@Nonnull Object rawValue, int rowIndex) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        if (rawValue instanceof NoCodeInputElementItem item) {
-            return item;
-        }
-
-        try {
-            return ObjectMapperFactory
-                    .getInstance()
-                    .convertValue(rawValue, NoCodeInputElementItem.class);
-        } catch (IllegalArgumentException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    e,
-                    "Der No-Code-Ausdruck in Zeile %d hat ein ungültiges Datenformat.",
-                    rowIndex
-            );
-        }
-    }
-
-    private static String toNullableTrimmedString(Object value) {
-        if (value == null) {
-            return null;
-        }
-        var str = value.toString().trim();
-        return str.isEmpty() ? null : str;
-    }
 
     private static void validateTargetType(@Nonnull String targetType,
                                            int rowIndex) throws ProcessNodeExecutionExceptionInvalidConfiguration {
@@ -837,5 +744,10 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition {
     }
 
     private record ArrayPathPart(int index) implements PathPart {
+    }
+
+
+    private class NoCodeActionNodeConfiguration {
+
     }
 }

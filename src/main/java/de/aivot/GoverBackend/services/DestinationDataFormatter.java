@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.aivot.GoverBackend.core.converters.ElementDataConverter;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
@@ -120,6 +119,8 @@ public class DestinationDataFormatter {
     }
 
     public Map<String, Object> format() {
+        // TODO: Derive Data
+
         createFormData();
         createMetadata();
         createAuthenticationData();
@@ -152,6 +153,7 @@ public class DestinationDataFormatter {
     }
 
     private void createAuthenticationData() {
+        /*
         ElementDataObject rawIdpData = submission
                 .getCustomerInput()
                 .get(IdentityValueKey.IdCustomerInputKey);
@@ -177,12 +179,17 @@ public class DestinationDataFormatter {
         insertValue("authentication.is_authenticated", true);
         insertValue("authentication.identity_provider", identityValue.providerKey());
         insertValue("authentication.data", identityValue.attributes());
+
+         */
     }
 
     private void createCustomerData() {
+        /*
         Map<String, Object> customerData = new HashMap<>();
         extractDataFromElement(customerData, form.getRootElement(), submission.getCustomerInput());
         data.put("data", customerData);
+
+         */
     }
 
     private void createPaymentData() {
@@ -211,6 +218,7 @@ public class DestinationDataFormatter {
     private void extractDataFromElement(Map<String, Object> resultContainer,
                                         BaseElement element,
                                         ElementData contextData) {
+        /*
         var elementDataObject = contextData
                 .getOrDefault(element.getId(), new ElementDataObject(element));
 
@@ -244,11 +252,14 @@ public class DestinationDataFormatter {
                 // Do nothing
             }
         }
+
+         */
     }
 
     private void extractReplicatingContainer(Map<String, Object> resultContainer,
                                              ReplicatingContainerLayoutElement element,
                                              ElementDataObject containerDataObject) {
+        /*
         var rawDataSets = containerDataObject.getValue();
 
         if (!(rawDataSets instanceof Collection<?> dataSets)) {
@@ -281,6 +292,8 @@ public class DestinationDataFormatter {
         }
 
         insertValue(resultContainer, elementDestinationKey, extractedChildDataList);
+
+         */
     }
 
     private void extractFileUploadField(Map<String, Object> resultContainer,
