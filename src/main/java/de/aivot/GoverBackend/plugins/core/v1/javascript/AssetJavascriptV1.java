@@ -9,6 +9,7 @@ import de.aivot.GoverBackend.storage.services.StorageService;
 import jakarta.annotation.Nonnull;
 import org.graalvm.polyglot.HostAccess;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -24,7 +25,7 @@ public class AssetJavascriptV1 implements JavascriptFunctionProvider {
     @Autowired
     public AssetJavascriptV1(
             AssetService assetService,
-            StorageService storageService) {
+            @Lazy StorageService storageService) {
         this.assetService = assetService;
         this.storageService = storageService;
     }
