@@ -1,8 +1,5 @@
 package de.aivot.GoverBackend.storage.services;
 
-import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
-import de.aivot.GoverBackend.elements.models.ElementData;
-import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
@@ -30,16 +27,19 @@ import java.util.Optional;
 public class StorageProviderService implements EntityService<StorageProviderEntity, Integer> {
     private final StorageProviderRepository storageProviderRepository;
     private final StorageProviderDefinitionService storageProviderDefinitionService;
+    private final StorageProviderConfigurationService storageProviderConfigurationService;
     private final RabbitTemplate rabbitTemplate;
     private final DataSize maxFileSize;
 
     @Autowired
     public StorageProviderService(StorageProviderRepository storageProviderRepository,
                                   StorageProviderDefinitionService storageProviderDefinitionService,
+                                  StorageProviderConfigurationService storageProviderConfigurationService,
                                   RabbitTemplate rabbitTemplate,
                                   @Value("${spring.servlet.multipart.max-file-size}") DataSize maxFileSize) {
         this.storageProviderRepository = storageProviderRepository;
         this.storageProviderDefinitionService = storageProviderDefinitionService;
+        this.storageProviderConfigurationService = storageProviderConfigurationService;
         this.rabbitTemplate = rabbitTemplate;
         this.maxFileSize = maxFileSize;
     }
@@ -148,9 +148,7 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
         existingEntity.setTestProvider(entity.getTestProvider());
         existingEntity.setMetadataAttributes(entity.getMetadataAttributes());
 
-        var shouldResync = shouldResync(def,
-                existingEntity.getConfiguration(),
-                entity.getConfiguration());
+        var shouldResync = shouldResync(def, existingEntity, entity);
 
         if (shouldResync) {
             existingEntity.setStatus(StorageProviderStatus.SyncPending);
@@ -169,33 +167,13 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
         return res;
     }
 
-    private static <T> boolean shouldResync(StorageProviderDefinition<T> def, ElementData existing, ElementData updated) throws ResponseException {
-        T existingConfig;
-        try {
-            existingConfig = ElementPOJOMapper.mapToPOJO(existing, def.getConfigClass());
-        } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(
-                    e,
-                    "Fehler beim Verarbeiten der Speicheranbieter-Konfiguration für die Speicheranbieter-Definition %s (%s v%d)",
-                    StringUtils.quote(def.getName()),
-                    StringUtils.quote(def.getKey()),
-                    def.getMajorVersion()
-            );
-        }
-
-        T updatedConfig;
-        try {
-            updatedConfig = ElementPOJOMapper.mapToPOJO(updated, def.getConfigClass());
-        } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(
-                    e,
-                    "Fehler beim Verarbeiten der Speicheranbieter-Konfiguration für die Speicheranbieter-Definition %s (%s v%d)",
-                    StringUtils.quote(def.getName()),
-                    StringUtils.quote(def.getKey()),
-                    def.getMajorVersion()
-            );
-        }
-
+    private <T> boolean shouldResync(@Nonnull StorageProviderDefinition<T> def,
+                                     @Nonnull StorageProviderEntity existing,
+                                     @Nonnull StorageProviderEntity updated) throws ResponseException {
+        var existingConfig = storageProviderConfigurationService
+                .mapToConfig(existing, def);
+        var updatedConfig = storageProviderConfigurationService
+                .mapToConfig(updated, def);
         return def.shouldResync(existingConfig, updatedConfig);
     }
 

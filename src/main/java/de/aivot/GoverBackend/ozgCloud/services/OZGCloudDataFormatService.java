@@ -1,6 +1,11 @@
 package de.aivot.GoverBackend.ozgCloud.services;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.ComputedElementState;
+import de.aivot.GoverBackend.elements.models.ComputedElementStates;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
+import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.form.content.HeadlineContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.*;
@@ -22,9 +27,21 @@ public class OZGCloudDataFormatService {
     @Nonnull
     public List<OZGCloudFormDataItem> buildFormData(
             @Nonnull BaseElement currentElement,
-            @Nonnull ElementData elementData
+            @Nonnull AuthoredElementValues authoredElementValues,
+            @Nonnull DerivedRuntimeElementData runtimeElementData
     ) {
-        var edo = elementData.mustGet(currentElement);
+        return buildFormData(
+                currentElement,
+                new FormattingContext(authoredElementValues, runtimeElementData)
+        );
+    }
+
+    @Nonnull
+    private List<OZGCloudFormDataItem> buildFormData(
+            @Nonnull BaseElement currentElement,
+            @Nonnull FormattingContext context
+    ) {
+        var edo = context.resolve(currentElement);
 
         // Check if the element is visible.
         // If not, yield an empty list.
@@ -36,66 +53,66 @@ public class OZGCloudDataFormatService {
         // Check if there is an override for the element.
         // If yes, we use the override instead of the current element for building the form data.
         var override = edo
-                .getComputedOverrideOrDefault(currentElement);
+                .getResolvedElement();
 
         return switch (override) {
-            case FormLayoutElement rootElement -> buildRoot(rootElement, elementData);
-            case GenericStepElement stepElement -> List.of(buildStep(stepElement, elementData));
-            case GroupLayoutElement groupLayout -> buildGroupLayout(groupLayout, elementData);
+            case FormLayoutElement rootElement -> buildRoot(rootElement, context);
+            case GenericStepElement stepElement -> List.of(buildStep(stepElement, context));
+            case GroupLayoutElement groupLayout -> buildGroupLayout(groupLayout, context);
             case ReplicatingContainerLayoutElement replicatingContainerLayout ->
-                    List.of(buildReplicatingContainerLayout(replicatingContainerLayout, elementData));
-            case CheckboxInputElement cbx -> List.of(buildCheckboxField(cbx, elementData));
-            case DateInputElement dateField -> List.of(buildDateField(dateField, elementData));
-            case DateTimeInputElement dateTimeField -> List.of(buildDateTimeField(dateTimeField, elementData));
-            case DateRangeInputElement dateRangeField -> List.of(buildDateRangeField(dateRangeField, elementData));
-            case TimeRangeInputElement timeRangeField -> List.of(buildTimeRangeField(timeRangeField, elementData));
-            case DateTimeRangeInputElement dateTimeRangeField -> List.of(buildDateTimeRangeField(dateTimeRangeField, elementData));
-            case MapPointInputElement mapPointField -> List.of(buildMapPointField(mapPointField, elementData));
+                    List.of(buildReplicatingContainerLayout(replicatingContainerLayout, context));
+            case CheckboxInputElement cbx -> List.of(buildCheckboxField(cbx, context));
+            case DateInputElement dateField -> List.of(buildDateField(dateField, context));
+            case DateTimeInputElement dateTimeField -> List.of(buildDateTimeField(dateTimeField, context));
+            case DateRangeInputElement dateRangeField -> List.of(buildDateRangeField(dateRangeField, context));
+            case TimeRangeInputElement timeRangeField -> List.of(buildTimeRangeField(timeRangeField, context));
+            case DateTimeRangeInputElement dateTimeRangeField -> List.of(buildDateTimeRangeField(dateTimeRangeField, context));
+            case MapPointInputElement mapPointField -> List.of(buildMapPointField(mapPointField, context));
             case DomainAndUserSelectInputElement domainAndUserSelectField ->
-                    List.of(buildDomainAndUserSelectField(domainAndUserSelectField, elementData));
+                    List.of(buildDomainAndUserSelectField(domainAndUserSelectField, context));
             case AssignmentContextInputElement assignmentContextField ->
-                    List.of(buildAssignmentContextField(assignmentContextField, elementData));
-            case RichTextInputElement richTextInputField -> List.of(buildRichTextInputField(richTextInputField, elementData));
-            case CodeInputElement codeInputField -> List.of(buildCodeInputField(codeInputField, elementData));
-            case NoCodeInputElement noCodeInputField -> List.of(buildNoCodeInputField(noCodeInputField, elementData));
+                    List.of(buildAssignmentContextField(assignmentContextField, context));
+            case RichTextInputElement richTextInputField -> List.of(buildRichTextInputField(richTextInputField, context));
+            case CodeInputElement codeInputField -> List.of(buildCodeInputField(codeInputField, context));
+            case NoCodeInputElement noCodeInputField -> List.of(buildNoCodeInputField(noCodeInputField, context));
             case UiDefinitionInputElement uiDefinitionInputField ->
-                    List.of(buildUiDefinitionInputField(uiDefinitionInputField, elementData));
+                    List.of(buildUiDefinitionInputField(uiDefinitionInputField, context));
             case DataModelSelectInputElement dataModelSelectField ->
-                    List.of(buildDataModelSelectField(dataModelSelectField, elementData));
+                    List.of(buildDataModelSelectField(dataModelSelectField, context));
             case DataObjectSelectInputElement dataObjectSelectField ->
-                    List.of(buildDataObjectSelectField(dataObjectSelectField, elementData));
-            case FileUploadInputElement fileUploadField -> List.of(buildFileUploadField(fileUploadField, elementData));
+                    List.of(buildDataObjectSelectField(dataObjectSelectField, context));
+            case FileUploadInputElement fileUploadField -> List.of(buildFileUploadField(fileUploadField, context));
             case MultiCheckboxInputElement multiCheckboxField ->
-                    List.of(buildMultiCheckboxField(multiCheckboxField, elementData));
-            case NumberInputElement numberField -> List.of(buildNumberField(numberField, elementData));
-            case SelectInputElement selectField -> List.of(buildSelectField(selectField, elementData));
-            case RadioInputElement radioField -> List.of(buildRadioField(radioField, elementData));
-            case TableInputElement tableField -> List.of(buildTableField(tableField, elementData));
-            case TextInputElement textField -> List.of(buildTextField(textField, elementData));
-            case ChipInputElement chipInputField -> List.of(buildChipInputField(chipInputField, elementData));
-            case TimeInputElement timeField -> List.of(buildTimeField(timeField, elementData));
+                    List.of(buildMultiCheckboxField(multiCheckboxField, context));
+            case NumberInputElement numberField -> List.of(buildNumberField(numberField, context));
+            case SelectInputElement selectField -> List.of(buildSelectField(selectField, context));
+            case RadioInputElement radioField -> List.of(buildRadioField(radioField, context));
+            case TableInputElement tableField -> List.of(buildTableField(tableField, context));
+            case TextInputElement textField -> List.of(buildTextField(textField, context));
+            case ChipInputElement chipInputField -> List.of(buildChipInputField(chipInputField, context));
+            case TimeInputElement timeField -> List.of(buildTimeField(timeField, context));
             default -> List.of();
         };
     }
 
     private List<OZGCloudFormDataItem> buildRoot(
             @Nonnull FormLayoutElement rootElement,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
         return rootElement
                 .getChildren()
                 .stream()
-                .flatMap(child -> buildFormData(child, elementData).stream())
+                .flatMap(child -> buildFormData(child, context).stream())
                 .toList();
     }
 
     private OZGCloudFormDataItem buildStep(
             @Nonnull GenericStepElement stepElement,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
         var children = buildChildList(
                 stepElement.getChildren(),
-                elementData
+                context
         );
 
         return new OZGCloudFormDataItem(
@@ -111,7 +128,7 @@ public class OZGCloudDataFormatService {
 
     private List<OZGCloudFormDataItem> buildChildList(
             @Nonnull Collection<? extends BaseElement> childList,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
         var children = new LinkedList<OZGCloudFormDataItem>();
 
@@ -199,7 +216,7 @@ public class OZGCloudDataFormatService {
             // If it's not a headline we might append the form data of the child to the current headline section
             //  or add it directly to the children list.
             else {
-                var childFormData = buildFormData(child, elementData);
+                var childFormData = buildFormData(child, context);
 
                 if (currentSmallHeadline != null) {
                     smallHeadlineBuffer.addAll(childFormData);
@@ -246,36 +263,23 @@ public class OZGCloudDataFormatService {
 
     private List<OZGCloudFormDataItem> buildGroupLayout(
             @Nonnull GroupLayoutElement groupLayout,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        return buildChildList(groupLayout.getChildren(), elementData);
+        return buildChildList(groupLayout.getChildren(), context);
     }
 
     private OZGCloudFormDataItem buildReplicatingContainerLayout(
             @Nonnull ReplicatingContainerLayoutElement replicatingContainerLayout,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        var edo = elementData
-                .mustGet(replicatingContainerLayout);
-
-        var childElementDataObject = edo.getValue();
-        List<ElementData> childElementData = new LinkedList<>();
-
-        if (childElementDataObject instanceof List<?> list) {
-            for (var itemObj : list) {
-                if (itemObj instanceof ElementData str) {
-                    childElementData.add(str);
-                }
-            }
-        }
-
         var childItems = new LinkedList<OZGCloudFormDataItem>();
+        var rowCount = context.getReplicatingRowCount(replicatingContainerLayout);
 
-        for (int i = 0; i < childElementData.size(); i++) {
-            var childED = childElementData.get(i);
+        for (int i = 0; i < rowCount; i++) {
+            var childContext = context.createRowContext(replicatingContainerLayout, i);
             var childFormData = buildChildList(
                     replicatingContainerLayout.getChildren(),
-                    childED
+                    childContext
             );
 
             var childItem = new OZGCloudFormDataItem(
@@ -304,9 +308,9 @@ public class OZGCloudDataFormatService {
 
     private OZGCloudFormDataItem buildCheckboxField(
             @Nonnull CheckboxInputElement cbx,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        var edo = elementData.mustGet(cbx);
+        var edo = context.resolve(cbx);
 
         return new OZGCloudFormDataItem(
                 cbx.getId(),
@@ -321,9 +325,9 @@ public class OZGCloudDataFormatService {
 
     private OZGCloudFormDataItem buildNumberField(
             @Nonnull NumberInputElement cbx,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        var edo = elementData.mustGet(cbx);
+        var edo = context.resolve(cbx);
         var val = edo.getValue(Number.class, null);
 
         return new OZGCloudFormDataItem(
@@ -339,9 +343,9 @@ public class OZGCloudDataFormatService {
 
     private OZGCloudFormDataItem buildDateField(
             @Nonnull DateInputElement dateField,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        var edo = elementData.mustGet(dateField);
+        var edo = context.resolve(dateField);
         var date = dateField
                 .formatValue(edo.getValue());
 
@@ -379,9 +383,9 @@ public class OZGCloudDataFormatService {
 
     private OZGCloudFormDataItem buildDateTimeField(
             @Nonnull DateTimeInputElement dateTimeField,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        var edo = elementData.mustGet(dateTimeField);
+        var edo = context.resolve(dateTimeField);
 
         var dateTime = dateTimeField.formatValue(edo.getValue());
 
@@ -400,9 +404,9 @@ public class OZGCloudDataFormatService {
 
     private OZGCloudFormDataItem buildDateRangeField(
             @Nonnull DateRangeInputElement dateRangeField,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        var edo = elementData.mustGet(dateRangeField);
+        var edo = context.resolve(dateRangeField);
 
         return new OZGCloudFormDataItem(
                 dateRangeField.getId(),
@@ -417,9 +421,9 @@ public class OZGCloudDataFormatService {
 
     private OZGCloudFormDataItem buildTimeRangeField(
             @Nonnull TimeRangeInputElement timeRangeField,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        var edo = elementData.mustGet(timeRangeField);
+        var edo = context.resolve(timeRangeField);
 
         return new OZGCloudFormDataItem(
                 timeRangeField.getId(),
@@ -434,9 +438,9 @@ public class OZGCloudDataFormatService {
 
     private OZGCloudFormDataItem buildDateTimeRangeField(
             @Nonnull DateTimeRangeInputElement dateTimeRangeField,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        var edo = elementData.mustGet(dateTimeRangeField);
+        var edo = context.resolve(dateTimeRangeField);
 
         return new OZGCloudFormDataItem(
                 dateTimeRangeField.getId(),
@@ -451,9 +455,9 @@ public class OZGCloudDataFormatService {
 
     private OZGCloudFormDataItem buildMapPointField(
             @Nonnull MapPointInputElement mapPointField,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        var edo = elementData.mustGet(mapPointField);
+        var edo = context.resolve(mapPointField);
         var value = mapPointField.formatValue(edo.getValue());
 
         return new OZGCloudFormDataItem(
@@ -469,9 +473,9 @@ public class OZGCloudDataFormatService {
 
     private OZGCloudFormDataItem buildFileUploadField(
             @Nonnull FileUploadInputElement fileUploadField,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        var edo = elementData.mustGet(fileUploadField);
+        var edo = context.resolve(fileUploadField);
 
         var items = fileUploadField.formatValue(edo.getValue());
 
@@ -497,9 +501,9 @@ public class OZGCloudDataFormatService {
 
     private OZGCloudFormDataItem buildMultiCheckboxField(
             @Nonnull MultiCheckboxInputElement multiCheckboxField,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        var edo = elementData.mustGet(multiCheckboxField);
+        var edo = context.resolve(multiCheckboxField);
 
         var items = multiCheckboxField.formatValue(edo.getValue());
 
@@ -519,9 +523,9 @@ public class OZGCloudDataFormatService {
 
     private OZGCloudFormDataItem buildRadioField(
             @Nonnull RadioInputElement radioField,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        var edo = elementData.mustGet(radioField);
+        var edo = context.resolve(radioField);
 
         return new OZGCloudFormDataItem(
                 radioField.getId(),
@@ -536,9 +540,9 @@ public class OZGCloudDataFormatService {
 
     private OZGCloudFormDataItem buildSelectField(
             @Nonnull SelectInputElement selectField,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        var edo = elementData.mustGet(selectField);
+        var edo = context.resolve(selectField);
 
         return new OZGCloudFormDataItem(
                 selectField.getId(),
@@ -553,9 +557,9 @@ public class OZGCloudDataFormatService {
 
     private OZGCloudFormDataItem buildTableField(
             @Nonnull TableInputElement tableField,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        var edo = elementData.mustGet(tableField);
+        var edo = context.resolve(tableField);
 
         var rows = tableField.formatValue(edo.getValue());
         if (rows == null || rows.isEmpty()) {
@@ -629,9 +633,9 @@ public class OZGCloudDataFormatService {
 
     private OZGCloudFormDataItem buildTextField(
             @Nonnull TextInputElement textField,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        var edo = elementData.mustGet(textField);
+        var edo = context.resolve(textField);
 
         return new OZGCloudFormDataItem(
                 textField.getId(),
@@ -646,9 +650,9 @@ public class OZGCloudDataFormatService {
 
     private OZGCloudFormDataItem buildChipInputField(
             @Nonnull ChipInputElement chipInputField,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        var edo = elementData.mustGet(chipInputField);
+        var edo = context.resolve(chipInputField);
 
         var items = chipInputField.formatValue(edo.getValue());
 
@@ -668,9 +672,9 @@ public class OZGCloudDataFormatService {
 
     private OZGCloudFormDataItem buildDomainAndUserSelectField(
             @Nonnull DomainAndUserSelectInputElement domainAndUserSelectField,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        var edo = elementData.mustGet(domainAndUserSelectField);
+        var edo = context.resolve(domainAndUserSelectField);
         var value = domainAndUserSelectField.formatValue(edo.getValue());
 
         return new OZGCloudFormDataItem(
@@ -686,9 +690,9 @@ public class OZGCloudDataFormatService {
 
     private OZGCloudFormDataItem buildAssignmentContextField(
             @Nonnull AssignmentContextInputElement assignmentContextField,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        var edo = elementData.mustGet(assignmentContextField);
+        var edo = context.resolve(assignmentContextField);
         var value = assignmentContextField.formatValue(edo.getValue());
 
         return new OZGCloudFormDataItem(
@@ -704,9 +708,9 @@ public class OZGCloudDataFormatService {
 
     private OZGCloudFormDataItem buildRichTextInputField(
             @Nonnull RichTextInputElement richTextInputField,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        var edo = elementData.mustGet(richTextInputField);
+        var edo = context.resolve(richTextInputField);
 
         return new OZGCloudFormDataItem(
                 richTextInputField.getId(),
@@ -721,9 +725,9 @@ public class OZGCloudDataFormatService {
 
     private OZGCloudFormDataItem buildCodeInputField(
             @Nonnull CodeInputElement codeInputField,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        var edo = elementData.mustGet(codeInputField);
+        var edo = context.resolve(codeInputField);
 
         return new OZGCloudFormDataItem(
                 codeInputField.getId(),
@@ -738,9 +742,9 @@ public class OZGCloudDataFormatService {
 
     private OZGCloudFormDataItem buildNoCodeInputField(
             @Nonnull NoCodeInputElement noCodeInputField,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        var edo = elementData.mustGet(noCodeInputField);
+        var edo = context.resolve(noCodeInputField);
 
         return new OZGCloudFormDataItem(
                 noCodeInputField.getId(),
@@ -755,9 +759,9 @@ public class OZGCloudDataFormatService {
 
     private OZGCloudFormDataItem buildUiDefinitionInputField(
             @Nonnull UiDefinitionInputElement uiDefinitionInputField,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        var edo = elementData.mustGet(uiDefinitionInputField);
+        var edo = context.resolve(uiDefinitionInputField);
 
         return new OZGCloudFormDataItem(
                 uiDefinitionInputField.getId(),
@@ -772,9 +776,9 @@ public class OZGCloudDataFormatService {
 
     private OZGCloudFormDataItem buildDataModelSelectField(
             @Nonnull DataModelSelectInputElement dataModelSelectField,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        var edo = elementData.mustGet(dataModelSelectField);
+        var edo = context.resolve(dataModelSelectField);
 
         return new OZGCloudFormDataItem(
                 dataModelSelectField.getId(),
@@ -789,9 +793,9 @@ public class OZGCloudDataFormatService {
 
     private OZGCloudFormDataItem buildDataObjectSelectField(
             @Nonnull DataObjectSelectInputElement dataObjectSelectField,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        var edo = elementData.mustGet(dataObjectSelectField);
+        var edo = context.resolve(dataObjectSelectField);
 
         return new OZGCloudFormDataItem(
                 dataObjectSelectField.getId(),
@@ -806,9 +810,9 @@ public class OZGCloudDataFormatService {
 
     private OZGCloudFormDataItem buildTimeField(
             @Nonnull TimeInputElement timeField,
-            @Nonnull ElementData elementData
+            @Nonnull FormattingContext context
     ) {
-        var edo = elementData.mustGet(timeField);
+        var edo = context.resolve(timeField);
 
         return new OZGCloudFormDataItem(
                 timeField.getId(),
@@ -819,5 +823,117 @@ public class OZGCloudDataFormatService {
                 null,
                 null
         );
+    }
+
+    private static final class FormattingContext {
+        private final AuthoredElementValues authoredElementValues;
+        private final DerivedRuntimeElementData runtimeElementData;
+
+        private FormattingContext(@Nonnull AuthoredElementValues authoredElementValues,
+                                  @Nonnull DerivedRuntimeElementData runtimeElementData) {
+            this.authoredElementValues = authoredElementValues;
+            this.runtimeElementData = runtimeElementData;
+        }
+
+        private ResolvedElementData resolve(@Nonnull BaseElement element) {
+            return new ResolvedElementData(element, authoredElementValues, runtimeElementData);
+        }
+
+        private int getReplicatingRowCount(@Nonnull ReplicatingContainerLayoutElement element) {
+            var authoredRows = ObjectMapperFactory.Utils.convertToList(
+                    authoredElementValues.get(element.getId()),
+                    AuthoredElementValues.class
+            );
+            var effectiveRows = ObjectMapperFactory.Utils.convertToList(
+                    runtimeElementData.getEffectiveValues().get(element.getId()),
+                    EffectiveElementValues.class
+            );
+            var subStates = runtimeElementData
+                    .getElementStates()
+                    .getOrDefault(element.getId(), ComputedElementState.create())
+                    .getSubStates();
+
+            var subStateCount = subStates != null ? subStates.size() : 0;
+            return Math.max(authoredRows.size(), Math.max(effectiveRows.size(), subStateCount));
+        }
+
+        private FormattingContext createRowContext(@Nonnull ReplicatingContainerLayoutElement element, int index) {
+            var authoredRows = ObjectMapperFactory.Utils.convertToList(
+                    authoredElementValues.get(element.getId()),
+                    AuthoredElementValues.class
+            );
+            var effectiveRows = ObjectMapperFactory.Utils.convertToList(
+                    runtimeElementData.getEffectiveValues().get(element.getId()),
+                    EffectiveElementValues.class
+            );
+            var subStates = runtimeElementData
+                    .getElementStates()
+                    .getOrDefault(element.getId(), ComputedElementState.create())
+                    .getSubStates();
+
+            var rowAuthoredValues = index < authoredRows.size()
+                    ? authoredRows.get(index)
+                    : new AuthoredElementValues();
+            var rowEffectiveValues = index < effectiveRows.size()
+                    ? effectiveRows.get(index)
+                    : ObjectMapperFactory
+                    .getInstance()
+                    .convertValue(rowAuthoredValues, EffectiveElementValues.class);
+            var rowElementStates = subStates != null && index < subStates.size()
+                    ? subStates.get(index)
+                    : new ComputedElementStates();
+
+            return new FormattingContext(
+                    rowAuthoredValues,
+                    new DerivedRuntimeElementData(rowEffectiveValues, rowElementStates)
+            );
+        }
+    }
+
+    private static final class ResolvedElementData {
+        private final BaseElement element;
+        private final AuthoredElementValues authoredElementValues;
+        private final DerivedRuntimeElementData runtimeElementData;
+
+        private ResolvedElementData(@Nonnull BaseElement element,
+                                    @Nonnull AuthoredElementValues authoredElementValues,
+                                    @Nonnull DerivedRuntimeElementData runtimeElementData) {
+            this.element = element;
+            this.authoredElementValues = authoredElementValues;
+            this.runtimeElementData = runtimeElementData;
+        }
+
+        @Nonnull
+        private Boolean getIsVisible() {
+            return runtimeElementData
+                    .getElementStates()
+                    .getOrDefault(element.getId(), ComputedElementState.create())
+                    .getVisible();
+        }
+
+        @Nonnull
+        private BaseElement getResolvedElement() {
+            var override = runtimeElementData
+                    .getElementStates()
+                    .getOrDefault(element.getId(), ComputedElementState.create())
+                    .getOverride();
+            return override != null ? override : element;
+        }
+
+        private Object getValue() {
+            var authoredValue = authoredElementValues.get(element.getId());
+            if (authoredValue != null) {
+                return authoredValue;
+            }
+            return runtimeElementData.getEffectiveValues().get(element.getId());
+        }
+
+        private <T> T getValue(@Nonnull Class<T> clazz, T defaultValue) {
+            var value = getValue();
+            if (value == null || !clazz.isAssignableFrom(value.getClass())) {
+                return defaultValue;
+            }
+            return clazz.cast(value);
+        }
     }
 }

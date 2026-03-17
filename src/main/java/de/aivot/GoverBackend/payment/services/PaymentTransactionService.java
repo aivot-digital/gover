@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.payment.services;
 
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.enums.XBezahldienstStatus;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
@@ -13,6 +14,7 @@ import de.aivot.GoverBackend.payment.entities.PaymentTransactionEntity;
 import de.aivot.GoverBackend.payment.exceptions.PaymentException;
 import de.aivot.GoverBackend.payment.filters.PaymentTransactionFilter;
 import de.aivot.GoverBackend.payment.models.PaymentItem;
+import de.aivot.GoverBackend.payment.models.PaymentProviderDefinition;
 import de.aivot.GoverBackend.payment.models.PaymentTransactionChangeListener;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentTransaction;
@@ -44,6 +46,7 @@ public class PaymentTransactionService implements
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
     private final PaymentProviderRepository paymentProviderRepository;
+    private final PaymentProviderConfigurationService paymentProviderConfigurationService;
 
     @Autowired
     public PaymentTransactionService(
@@ -52,13 +55,15 @@ public class PaymentTransactionService implements
             PaymentTransactionRepository paymentTransactionRepository,
             AuditService auditService,
             PaymentProviderDefinitionsService paymentProviderDefinitionsService,
-            PaymentProviderRepository paymentProviderRepository) {
+            PaymentProviderRepository paymentProviderRepository,
+            PaymentProviderConfigurationService paymentProviderConfigurationService) {
         this.auditService = auditService.createScopedAuditService(PaymentTransactionService.class, "Zahlungen");
         this.paymentTransactionChangeListeners = paymentTransactionChangeListeners;
         this.config = config;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
         this.paymentProviderRepository = paymentProviderRepository;
+        this.paymentProviderConfigurationService = paymentProviderConfigurationService;
     }
 
     /**
@@ -98,12 +103,14 @@ public class PaymentTransactionService implements
         // Create initial redirect URL
         var initialRedirectUrl = config.createUrl("/api/public/payment-transaction-callback/", transactionEntity.getKey()) + "/redirect/";
 
+        var derivedConfiguration = derivePaymentProviderConfiguration(paymentProviderEntity, paymentProviderDefinition);
+
         // Create and set payment request
         XBezahldienstePaymentRequest paymentRequest;
         try {
             paymentRequest = paymentProviderDefinition.createPaymentRequest(
                     paymentProviderEntity,
-                    paymentProviderEntity.getConfig(),
+                    derivedConfiguration,
                     purpose,
                     description,
                     paymentItems,
@@ -131,7 +138,7 @@ public class PaymentTransactionService implements
         try {
             xBezahldienstePaymentTransaction = paymentProviderDefinition.initiatePayment(
                     paymentProviderEntity,
-                    paymentProviderEntity.getConfig(),
+                    derivedConfiguration,
                     transactionEntity.getPaymentRequest()
             );
         } catch (PaymentException e) {
@@ -233,6 +240,8 @@ public class PaymentTransactionService implements
         xBezahldiensteTransaction.setPaymentRequest(transaction.getPaymentRequest());
         xBezahldiensteTransaction.setPaymentInformation(transaction.getPaymentInformation());
 
+        var derivedConfiguration = derivePaymentProviderConfiguration(provider, providerDefinition);
+
         // Try to check the payment status. If an error occurs, set the error message on the transaction and rethrow the exception
         XBezahldienstePaymentTransaction xBezahldiensteTransactionUpdated;
         try {
@@ -240,14 +249,14 @@ public class PaymentTransactionService implements
                     providerDefinition
                             .onPaymentResultPush(
                                     provider,
-                                    provider.getConfig(),
+                                    derivedConfiguration,
                                     xBezahldiensteTransaction,
                                     callbackData
                             ) :
                     providerDefinition
                             .onPaymentResultPull(
                                     provider,
-                                    provider.getConfig(),
+                                    derivedConfiguration,
                                     xBezahldiensteTransaction
                             );
         } catch (PaymentException e) {
@@ -308,6 +317,24 @@ public class PaymentTransactionService implements
                         )).log();
                 // TODO: Set error flag on transaction
             }
+        }
+    }
+
+    @Nonnull
+    private DerivedRuntimeElementData derivePaymentProviderConfiguration(
+            @Nonnull PaymentProviderEntity paymentProviderEntity,
+            @Nonnull PaymentProviderDefinition paymentProviderDefinition
+    ) throws PaymentException {
+        try {
+            return paymentProviderConfigurationService
+                    .deriveConfiguration(paymentProviderEntity, paymentProviderDefinition);
+        } catch (ResponseException e) {
+            throw new PaymentException(
+                    e,
+                    "Die Konfiguration des Zahlungsanbieters %s (%s) konnte nicht abgeleitet werden.",
+                    paymentProviderEntity.getName(),
+                    paymentProviderEntity.getKey()
+            );
         }
     }
 }

@@ -2,8 +2,7 @@ package de.aivot.GoverBackend.storage.services;
 
 import de.aivot.GoverBackend.asset.entities.AssetEntity;
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
-import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
-import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.storage.entities.StorageIndexItemEntity;
 import de.aivot.GoverBackend.storage.entities.StorageIndexItemEntityId;
 import de.aivot.GoverBackend.storage.enums.StorageProviderType;
@@ -36,17 +35,20 @@ public class StorageSyncService {
     private final KnownExtensionsService knownExtensions;
     private final StorageProviderRepository storageProviderRepository;
     private final StorageProviderDefinitionService storageProviderDefinitionService;
+    private final StorageProviderConfigurationService storageProviderConfigurationService;
     private final StorageIndexItemRepository storageIndexItemRepository;
     private final AssetRepository assetRepository;
 
     public StorageSyncService(KnownExtensionsService knownExtensions,
                               StorageProviderRepository storageProviderRepository,
                               StorageProviderDefinitionService storageProviderDefinitionService,
+                              StorageProviderConfigurationService storageProviderConfigurationService,
                               StorageIndexItemRepository storageIndexItemRepository,
                               AssetRepository assetRepository) {
         this.knownExtensions = knownExtensions;
         this.storageProviderRepository = storageProviderRepository;
         this.storageProviderDefinitionService = storageProviderDefinitionService;
+        this.storageProviderConfigurationService = storageProviderConfigurationService;
         this.storageIndexItemRepository = storageIndexItemRepository;
         this.assetRepository = assetRepository;
     }
@@ -226,13 +228,12 @@ public class StorageSyncService {
         }
     }
 
-    private static <T> StorageFolder getRoot(StorageProviderEntity e, StorageProviderDefinition<T> def) {
-        // Try to map the configuration to POJO for later usage
+    private <T> StorageFolder getRoot(StorageProviderEntity e, StorageProviderDefinition<T> def) {
         T config;
         try {
-            config = ElementPOJOMapper
-                    .mapToPOJO(e.getConfiguration(), def.getConfigClass());
-        } catch (ElementDataConversionException ex) {
+            config = storageProviderConfigurationService
+                    .mapToConfig(e, def);
+        } catch (ResponseException ex) {
             throw new IllegalStateException(
                     "Die Konfiguration des Speicheranbieters " +
                             e.getName() +

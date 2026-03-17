@@ -2,7 +2,6 @@ package de.aivot.GoverBackend.storage.services;
 
 import com.beust.jcommander.Strings;
 import de.aivot.GoverBackend.av.services.AVService;
-import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.storage.exceptions.StorageException;
 import de.aivot.GoverBackend.storage.entities.StorageIndexItemEntity;
@@ -38,6 +37,7 @@ public class StorageService {
 
     private final StorageProviderRepository storageProviderRepository;
     private final StorageProviderDefinitionService storageProviderDefinitionService;
+    private final StorageProviderConfigurationService storageProviderConfigurationService;
     private final StorageIndexItemRepository storageIndexItemRepository;
     private final KnownExtensionsService knownExtensionsService;
     private final AVService avService;
@@ -45,11 +45,13 @@ public class StorageService {
     @Autowired
     public StorageService(StorageProviderRepository storageProviderRepository,
                           StorageProviderDefinitionService storageProviderDefinitionService,
+                          StorageProviderConfigurationService storageProviderConfigurationService,
                           StorageIndexItemRepository storageIndexItemRepository,
                           KnownExtensionsService knownExtensionsService,
                           AVService avService) {
         this.storageProviderRepository = storageProviderRepository;
         this.storageProviderDefinitionService = storageProviderDefinitionService;
+        this.storageProviderConfigurationService = storageProviderConfigurationService;
         this.storageIndexItemRepository = storageIndexItemRepository;
         this.knownExtensionsService = knownExtensionsService;
         this.avService = avService;
@@ -612,19 +614,8 @@ public class StorageService {
     }
 
     private <T> T createConfig(@Nonnull StorageProviderEntity provider, @Nonnull StorageProviderDefinition<T> definition) throws ResponseException {
-        try {
-            return ElementPOJOMapper
-                    .mapToPOJO(provider.getConfiguration(), definition.getConfigClass());
-        } catch (Exception e) {
-            throw ResponseException
-                    .internalServerError(
-                            e,
-                            "Die Konfiguration des Speicheranbieters %s (ID %d) konnte nicht geladen werden. Die folgende Fehlermeldung wurde protokolliert: %s",
-                            StringUtils.quote(provider.getName()),
-                            provider.getId(),
-                            e.getMessage()
-                    );
-        }
+        return storageProviderConfigurationService
+                .mapToConfig(provider, definition);
     }
 
     private static StorageItemMetadata filterMetadataByRegisteredAttributes(@Nonnull StorageProviderEntity provider,

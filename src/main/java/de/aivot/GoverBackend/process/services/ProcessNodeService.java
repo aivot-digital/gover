@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.process.services;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
@@ -128,15 +128,14 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         // must derive the new provider defaults with skipped validation errors first, just like the
         // create flow does, otherwise the update endpoint would reject the empty reset state before
         // the user even has a chance to configure the new node.
-        var derivedObjectItemData = deriveDataObjectItemData(entity, providerChanged);
+        var derivedObjectItemData = deriveConfiguration(entity, providerChanged, null);
 
         // If derivation has errors, throw bad request
         if (derivedObjectItemData.hasAnyError()) {
             throw ResponseException.badRequest(derivedObjectItemData);
         }
 
-        // Set derived configuration
-        existingEntity.setConfiguration(derivedObjectItemData);
+        existingEntity.setConfiguration(entity.getConfiguration());
 
         if (providerChanged) {
             return processDefinitionNodeRepository.save(existingEntity);
@@ -146,7 +145,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         var provider = processNodeProviderService
                 .getProcessNodeDefinition(entity.getProcessNodeDefinitionKey(), entity.getProcessNodeDefinitionVersion())
                 .orElseThrow(ResponseException::badRequest);
-        provider.validateConfiguration(entity, entity.getConfiguration());
+        provider.validateConfiguration(entity, entity.getConfiguration(), derivedObjectItemData);
 
         return processDefinitionNodeRepository.save(existingEntity);
     }
@@ -157,15 +156,21 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     }
 
     @Nonnull
-    private ElementData deriveDataObjectItemData(@Nonnull ProcessNodeEntity entity, boolean skipErrors) throws ResponseException {
-        UserEntity user = null;
-        if (SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Jwt jwt) {
+    public DerivedRuntimeElementData deriveConfiguration(@Nonnull ProcessNodeEntity entity,
+                                                         boolean skipErrors) throws ResponseException {
+        return deriveConfiguration(entity, skipErrors, null);
+    }
+
+    @Nonnull
+    public DerivedRuntimeElementData deriveConfiguration(@Nonnull ProcessNodeEntity entity,
+                                                         boolean skipErrors,
+                                                         @Nullable UserEntity user) throws ResponseException {
+        if (user == null &&
+                SecurityContextHolder.getContext().getAuthentication() != null &&
+                SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Jwt jwt) {
             user = userService
                     .fromJWT(jwt)
                     .orElseThrow(ResponseException::unauthorized);
-        }
-        if (user == null) {
-            throw ResponseException.unauthorized();
         }
 
         var processDefinition = processDefinitionRepository
@@ -196,17 +201,13 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             edo.setSkipErrorsForElementIds(List.of(ElementDerivationOptions.ALL_ELEMENTS));
         }
 
-        var edr = new ElementDerivationRequest()
-                .setElement(layout)
-                .setElementData(entity.getConfiguration())
-                .setOptions(edo);
+        var edr = new ElementDerivationRequest(
+                layout,
+                entity.getConfiguration(),
+                edo
+        );
         var dummyLogger = new ElementDerivationLogger();
         var derivedData = elementDerivationService.derive(edr, dummyLogger);
-
-        if (derivedData.hasAnyError()) {
-            throw ResponseException
-                    .badRequest(derivedData);
-        }
 
         return derivedData;
     }

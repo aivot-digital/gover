@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.common.contenttype.ContentType;
 import de.aivot.GoverBackend.asset.repositories.VStorageIndexItemWithAssetRepository;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
@@ -192,7 +192,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
     @Override
     public XBezahldienstePaymentTransaction initiatePayment(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config,
+            @Nonnull DerivedRuntimeElementData config,
             @Nonnull XBezahldienstePaymentRequest paymentRequest
     ) throws PaymentException {
         var originatorID = getOriginatorID(paymentProviderEntity, config);
@@ -270,7 +270,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
     @Override
     public XBezahldienstePaymentTransaction onPaymentResultPull(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config,
+            @Nonnull DerivedRuntimeElementData config,
             @Nonnull XBezahldienstePaymentTransaction transaction
     ) throws PaymentException {
         var originatorID = getOriginatorID(paymentProviderEntity, config);
@@ -331,7 +331,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
     @Override
     public XBezahldienstePaymentTransaction onPaymentResultPush(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config,
+            @Nonnull DerivedRuntimeElementData config,
             @Nonnull XBezahldienstePaymentTransaction paymentRequest,
             @Nonnull Map<String, Object> callbackData
     ) throws PaymentException {
@@ -341,9 +341,9 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
     @Nonnull
     private String getOriginatorID(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config
+            @Nonnull DerivedRuntimeElementData config
     ) throws PaymentException {
-        var originatorID = (String) config.get(ORIGINATOR_ID_FIELD).getValue();
+        var originatorID = (String) config.getEffectiveValues().get(ORIGINATOR_ID_FIELD);
         if (StringUtils.isNullOrEmpty(originatorID)) {
             throw new PaymentException("Originator ID for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
@@ -353,9 +353,9 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
     @Nonnull
     private String getEndpointID(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config
+            @Nonnull DerivedRuntimeElementData config
     ) throws PaymentException {
-        var endpointID = (String) config.get(ENDPOINT_ID_FIELD).getValue();
+        var endpointID = (String) config.getEffectiveValues().get(ENDPOINT_ID_FIELD);
         if (StringUtils.isNullOrEmpty(endpointID)) {
             throw new PaymentException("Endpoint ID for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
@@ -363,8 +363,9 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
     }
 
     @Nonnull
-    private static String getNormalizedPaymentTransactionUrl(@Nonnull PaymentProviderEntity paymentProviderEntity, @Nonnull ElementData config) throws PaymentException {
-        var paymentTransactionUrl = (String) config.get(PAYMENT_TRANSACTION_URL_FIELD).getValue();
+    private static String getNormalizedPaymentTransactionUrl(@Nonnull PaymentProviderEntity paymentProviderEntity,
+                                                             @Nonnull DerivedRuntimeElementData config) throws PaymentException {
+        var paymentTransactionUrl = (String) config.getEffectiveValues().get(PAYMENT_TRANSACTION_URL_FIELD);
         if (StringUtils.isNullOrEmpty(paymentTransactionUrl)) {
             throw new PaymentException("Payment transaction URL for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
@@ -374,9 +375,11 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
     @Nonnull
     private SSLContext getSslContext(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config
+            @Nonnull DerivedRuntimeElementData config
     ) throws PaymentException {
-        var paymentProviderPasswordSecretKeyStr = (String) config.get(CERTIFICATE_PASSWORD_FIELD).getValue();
+        var effectiveValues = config.getEffectiveValues();
+
+        var paymentProviderPasswordSecretKeyStr = (String) effectiveValues.get(CERTIFICATE_PASSWORD_FIELD);
         if (StringUtils.isNullOrEmpty(paymentProviderPasswordSecretKeyStr)) {
             throw new PaymentException("Certificate password field is missing for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
@@ -404,7 +407,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
             throw new PaymentException("Certificate password for payment provider %s (%s) is empty", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
-        var paymentProviderClientCertificateAssetKey = (String) config.get(CERTIFICATE_FIELD).getValue();
+        var paymentProviderClientCertificateAssetKey = (String) effectiveValues.get(CERTIFICATE_FIELD);
         if (StringUtils.isNullOrEmpty(paymentProviderClientCertificateAssetKey)) {
             throw new PaymentException("Certificate asset key for payment provider %s (%s) is not specified", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }

@@ -243,6 +243,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
      */
     default Optional<ProcessNodeExecutionResult> onUpdateFromCustomer(@Nonnull ProcessNodeExecutionContextUICustomer context,
                                                                       @Nonnull AuthoredElementValues update,
+                                                                      @Nonnull DerivedRuntimeElementData derived,
                                                                       @Nonnull String event) throws ResponseException, ProcessNodeExecutionException {
         return Optional.empty();
     }

@@ -1,7 +1,8 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.terminators;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.NumberInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
@@ -115,30 +116,25 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition {
 
     @Override
     public void validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                      @Nonnull ElementData configuration) throws ResponseException {
-        configuration
-                .get(RETENTION_VALUE_FIELD_KEY)
-                .getOptionalValue(Number.class)
-                .orElseThrow(ResponseException::badRequest);
+                                      @Nonnull AuthoredElementValues configuration, @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
+        var effectiveValues = derivedRuntimeElementData.getEffectiveValues();
 
-        var retentionUnit = configuration
-                .get(RETENTION_UNIT_FIELD_KEY)
-                .getOptionalValue(String.class)
-                .orElseThrow(ResponseException::badRequest);
+        var retentionValue = effectiveValues.get(RETENTION_VALUE_FIELD_KEY);
+        if (!(retentionValue instanceof Number)) {
+            throw ResponseException.badRequest();
+        }
+
+        var retentionUnitObj = effectiveValues.get(RETENTION_UNIT_FIELD_KEY);
+        if (!(retentionUnitObj instanceof String retentionUnit)) {
+            throw ResponseException.badRequest();
+        }
 
         // Check if retention unit is valid
         if (!retentionUnit.equals(RETENTION_UNIT_DAYS) &&
                 !retentionUnit.equals(RETENTION_UNIT_WEEKS) &&
                 !retentionUnit.equals(RETENTION_UNIT_MONTHS) &&
                 !retentionUnit.equals(RETENTION_UNIT_YEARS)) {
-
-            var retentionUnitField = configuration
-                    .get(RETENTION_UNIT_FIELD_KEY)
-                    .addComputedError("Ungültiger Wert für die Einheit der Aufbewahrungsfrist.");
-            configuration.put(RETENTION_UNIT_FIELD_KEY, retentionUnitField);
-
-            throw ResponseException
-                    .badRequest(configuration);
+            throw ResponseException.badRequest("Ungültiger Wert für die Einheit der Aufbewahrungsfrist.");
         }
     }
 
@@ -150,20 +146,14 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition {
 
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
-        var retentionTimeValue = context
-                .getThisNode()
-                .getConfiguration()
-                .get(RETENTION_VALUE_FIELD_KEY)
-                .getOptionalValue(Number.class)
-                .orElse(DEFAULT_RETENTION_VALUE)
+        var configuration = context.getConfiguration().getEffectiveValues();
+
+        var retentionTimeValue = ((Number) configuration
+                .getOrDefault(RETENTION_VALUE_FIELD_KEY, DEFAULT_RETENTION_VALUE))
                 .longValue();
 
-        var retentionTimeUnit = context
-                .getThisNode()
-                .getConfiguration()
-                .get(RETENTION_UNIT_FIELD_KEY)
-                .getOptionalValue(String.class)
-                .orElse(DEFAULT_RETENTION_UNIT);
+        var retentionTimeUnit = String.valueOf(configuration
+                .getOrDefault(RETENTION_UNIT_FIELD_KEY, DEFAULT_RETENTION_UNIT));
 
         var retentionTime = LocalDateTime.now();
         switch (retentionTimeUnit) {

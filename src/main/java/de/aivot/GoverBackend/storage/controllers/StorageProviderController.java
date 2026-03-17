@@ -1,10 +1,8 @@
 package de.aivot.GoverBackend.storage.controllers;
 
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
-import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
@@ -16,6 +14,7 @@ import de.aivot.GoverBackend.storage.exceptions.StorageException;
 import de.aivot.GoverBackend.storage.filters.StorageProviderFilter;
 import de.aivot.GoverBackend.storage.permissions.StoragePermissionProvider;
 import de.aivot.GoverBackend.storage.repositories.StorageIndexItemRepository;
+import de.aivot.GoverBackend.storage.services.StorageProviderConfigurationService;
 import de.aivot.GoverBackend.storage.services.StorageProviderDefinitionService;
 import de.aivot.GoverBackend.storage.services.StorageProviderService;
 import de.aivot.GoverBackend.storage.services.StorageSyncWorker;
@@ -59,6 +58,7 @@ public class StorageProviderController {
     private final RabbitTemplate rabbitTemplate;
     private final StorageIndexItemRepository storageIndexItemRepository;
     private final StorageProviderDefinitionService storageProviderDefinitionService;
+    private final StorageProviderConfigurationService storageProviderConfigurationService;
 
     @Autowired
     public StorageProviderController(AuditService auditService,
@@ -67,7 +67,8 @@ public class StorageProviderController {
                                      PermissionService permissionService,
                                      RabbitTemplate rabbitTemplate,
                                      StorageIndexItemRepository storageIndexItemRepository,
-                                     StorageProviderDefinitionService storageProviderDefinitionService) {
+                                     StorageProviderDefinitionService storageProviderDefinitionService,
+                                     StorageProviderConfigurationService storageProviderConfigurationService) {
         this.auditService = auditService.createScopedAuditService(StorageProviderController.class, "Speicheranbieter");
         this.userService = userService;
         this.storageProviderService = storageProviderService;
@@ -75,6 +76,7 @@ public class StorageProviderController {
         this.rabbitTemplate = rabbitTemplate;
         this.storageIndexItemRepository = storageIndexItemRepository;
         this.storageProviderDefinitionService = storageProviderDefinitionService;
+        this.storageProviderConfigurationService = storageProviderConfigurationService;
     }
 
     @GetMapping("")
@@ -324,16 +326,13 @@ public class StorageProviderController {
         }
     }
 
-    private static <T> void testConnection(StorageProviderEntity provider, de.aivot.GoverBackend.storage.models.StorageProviderDefinition<T> definition, boolean writable) throws StorageException {
+    private <T> void testConnection(StorageProviderEntity provider, de.aivot.GoverBackend.storage.models.StorageProviderDefinition<T> definition, boolean writable) throws StorageException {
         T config;
 
         try {
-            config = ObjectMapperFactory
-                    .getInstance()
-                    .copy()
-                    .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
-                    .convertValue(provider.getConfiguration(), definition.getConfigClass());
-        } catch (IllegalArgumentException e) {
+            config = storageProviderConfigurationService
+                    .mapToConfig(provider, definition);
+        } catch (ResponseException e) {
             throw new StorageException(e, "Fehler beim Konvertieren der Speicheranbieter-Konfiguration.");
         }
 

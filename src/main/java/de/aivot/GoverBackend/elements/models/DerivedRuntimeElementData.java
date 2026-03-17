@@ -38,7 +38,21 @@ public class DerivedRuntimeElementData implements Serializable {
     public int hashCode() {
         return Objects.hash(effectiveValues, elementStates);
     }
-    
+
+    public boolean hasAnyError() {
+        return hasAnyError(elementStates);
+    }
+
+    private static boolean hasAnyError(@Nonnull ComputedElementStates computedElementStates) {
+        return computedElementStates
+                .values()
+                .stream()
+                .anyMatch(elementState -> elementState.getError() != null || (
+                        elementState.getSubStates() != null &&
+                                elementState.getSubStates().stream().anyMatch(DerivedRuntimeElementData::hasAnyError)
+                ));
+    }
+
     // endregion
 
     // region Getters & Setters

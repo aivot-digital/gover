@@ -1,7 +1,12 @@
 package de.aivot.GoverBackend.process.controllers;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
+import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
+import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
+import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.identity.controllers.IdentityController;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
@@ -43,13 +48,16 @@ public class CitizenProcessInstanceTaskViewController {
     private final ProcessNodeExecutionResultHandler processNodeExecutionResultHandler;
     private final ProcessDataService processDataService;
     private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
+    private final ElementDerivationService elementDerivationService;
 
     public CitizenProcessInstanceTaskViewController(ProcessInstanceService processInstanceService,
                                                     ProcessInstanceTaskService processInstanceTaskService,
                                                     ProcessNodeDefinitionService processNodeProviderService,
                                                     ProcessNodeService processDefinitionNodeService,
                                                     ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
-                                                    ProcessDataService processDataService, ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory) {
+                                                    ProcessDataService processDataService,
+                                                    ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
+                                                    ElementDerivationService elementDerivationService) {
         this.processInstanceService = processInstanceService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.processNodeProviderService = processNodeProviderService;
@@ -57,6 +65,7 @@ public class CitizenProcessInstanceTaskViewController {
         this.processNodeExecutionResultHandler = processNodeExecutionResultHandler;
         this.processDataService = processDataService;
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
+        this.elementDerivationService = elementDerivationService;
     }
 
     @GetMapping("")
@@ -120,7 +129,7 @@ public class CitizenProcessInstanceTaskViewController {
     public TaskViewResponse update(
             @Nonnull @PathVariable UUID procAccess,
             @Nonnull @PathVariable UUID taskAccess,
-            @Nonnull @RequestBody ElementData elementData,
+            @Nonnull @RequestBody AuthoredElementValues elementData,
             @Nullable @RequestParam(value = "event", required = true) String event,
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId
     ) throws ResponseException {
@@ -176,14 +185,18 @@ public class CitizenProcessInstanceTaskViewController {
                 .findFirst()
                 .orElseThrow(() -> ResponseException.badRequest("Invalid event: " + event));
 
-        var valueMap = ElementData
-                .toValueMap(layout, elementData);
+        var derivedElementData = elementDerivationService.derive(
+                new ElementDerivationRequest(
+                        layout,
+                        elementData,
+                        new ElementDerivationOptions()
+                ),
+                new ElementDerivationLogger()
+        );
 
-        var processData = processDataService
-                .foldProcessInstanceData(
-                        taskViewData.instance,
-                        taskViewData.task.getPreviousProcessNodeId()
-                );
+        if(derivedElementData.hasAnyError()) {
+            throw ResponseException.badRequest("Es ist ein Fehler beim Ableiten der Eingabedaten aufgetreten. Bitte überprüfen Sie Ihre Eingaben.", derivedElementData);
+        }
 
         Optional<ProcessNodeExecutionResult> res;
         try {
@@ -191,7 +204,8 @@ public class CitizenProcessInstanceTaskViewController {
                     .provider
                     .onUpdateFromCustomer(
                             context,
-                            valueMap,
+                            elementData,
+                            derivedElementData,
                             event
                     );
         } catch (Exception e) {
@@ -200,11 +214,9 @@ public class CitizenProcessInstanceTaskViewController {
         }
 
         if (res.isEmpty()) {
-            var workingElementData = ElementData
-                    .fromValueMap(layout, taskViewData.task.getProcessData());
             return new TaskViewResponse(
                     layout,
-                    workingElementData,
+                    derivedElementData,
                     events
             );
         }
@@ -304,10 +316,9 @@ public class CitizenProcessInstanceTaskViewController {
             @Nonnull
             GroupLayoutElement layout,
             @Nonnull
-            ElementData data,
+            DerivedRuntimeElementData data,
             @Nonnull
             List<TaskViewEvent> events
     ) {
-
     }
 }
