@@ -451,7 +451,37 @@ public class DestinationSubmitService {
             }
         };
 
+        var paymentTransaction = submission.getPaymentTransactionKey() != null
+                ? paymentTransactionRepository.findById(submission.getPaymentTransactionKey()).orElse(null)
+                : null;
+        var paymentProvider = paymentTransaction != null
+                ? paymentProviderRepository.findById(paymentTransaction.getPaymentProviderKey()).orElse(null)
+                : null;
+
+        byte[] destinationDataBytes;
+        try {
+            var destinationData = DestinationDataFormatter
+                    .createDataWithoutFiles(form, submission, paymentTransaction, paymentProvider)
+                    .format();
+            destinationDataBytes = new ObjectMapper().writeValueAsBytes(destinationData);
+        } catch (JsonProcessingException e) {
+            return new DestinationResponse(
+                    false,
+                    "Die formatierten Antragsdaten konnten nicht als JSON für die Übermittlung an OZG Cloud erstellt werden. Fehler: " + e.getMessage(),
+                    null,
+                    null
+            );
+        }
+
+        var destinationDataRes = new ByteArrayResource(destinationDataBytes) {
+            @Override
+            public String getFilename() {
+                return "Antrag.json";
+            }
+        };
+
         List<Resource> attRes = new LinkedList<>();
+        attRes.add(destinationDataRes);
         for (var attachment : attachments) {
             byte[] bytes;
             try {

@@ -28,6 +28,18 @@ import {SubmissionListResponseDTO} from '../../modules/submissions/dtos/submissi
 const animationStartDelay = 200;
 const animationDuration = 2000;
 
+interface ConfettiAnimationSettings {
+    startVelocity: number;
+    particleCount: number;
+    angle: number;
+    spread: number;
+    origin: {
+        x: number;
+    };
+    colors: string[];
+    disableForReducedMotion: boolean;
+}
+
 interface SubmittedProps {
     submission: SubmissionListResponseDTO;
     form: Form;
@@ -90,8 +102,7 @@ export function Submitted(props: SubmittedProps): JSX.Element {
         left: 0,
     };
 
-    // @ts-expect-error
-    function getAnimationSettings(angle, originX) {
+    function getAnimationSettings(angle: number, originX: number): ConfettiAnimationSettings {
         return {
             startVelocity: 40,
             particleCount: 2,
@@ -103,8 +114,10 @@ export function Submitted(props: SubmittedProps): JSX.Element {
         };
     }
 
-    const refAnimationInstance = useRef(null);
-    const [intervalId, setIntervalId] = useState();
+    const refAnimationInstance = useRef<null | ((settings: ConfettiAnimationSettings) => void)>(null);
+    const animationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const animationStartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const animationStopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const getInstance = useCallback((instance: any) => {
         refAnimationInstance.current = instance;
@@ -112,34 +125,33 @@ export function Submitted(props: SubmittedProps): JSX.Element {
 
     const nextTickAnimation = useCallback(() => {
         if (refAnimationInstance.current) {
-            // @ts-expect-error
             refAnimationInstance.current(getAnimationSettings(60, 0));
-            // @ts-expect-error
             refAnimationInstance.current(getAnimationSettings(120, 1));
         }
     }, []);
 
     const startAnimation = useCallback(() => {
-        if (!intervalId) {
-            // @ts-expect-error
-            setIntervalId(setInterval(nextTickAnimation, 16));
+        if (animationIntervalRef.current == null) {
+            animationIntervalRef.current = setInterval(nextTickAnimation, 16);
         }
-    }, [nextTickAnimation, intervalId]);
+    }, [nextTickAnimation]);
 
     const pauseAnimation = useCallback(() => {
-        clearInterval(intervalId);
-        // @ts-expect-error
-        setIntervalId(null);
-    }, [intervalId]);
+        if (animationIntervalRef.current != null) {
+            clearInterval(animationIntervalRef.current);
+            animationIntervalRef.current = null;
+        }
+    }, []);
 
     /* TODO: This function will be used some time in the future. Do not remove or ask Daniel first.
     const stopAnimation = useCallback(() => {
-        clearInterval(intervalId);
-        // @ts-ignore
-        setIntervalId(null);
+        if (animationIntervalRef.current != null) {
+            clearInterval(animationIntervalRef.current);
+            animationIntervalRef.current = null;
+        }
         // @ts-ignore
         refAnimationInstance.current && refAnimationInstance.current.reset();
-    }, [intervalId]);
+    }, []);
      */
 
     // Mutation Observer to watch the dom for the Canvas element of the confetti to set ARIA attribute
@@ -217,30 +229,33 @@ export function Submitted(props: SubmittedProps): JSX.Element {
     };
 
     useEffect(() => {
-        return () => {
-            clearInterval(intervalId);
-        };
-    }, [intervalId]);
-
-    useEffect(() => {
-        if (confettiDisabled) {
+        if (confettiDisabled || !shouldRenderConfetti) {
+            pauseAnimation();
             return;
         }
 
-        setTimeout(() => {
+        animationStartTimeoutRef.current = setTimeout(() => {
             startAnimation();
         }, animationStartDelay);
-    }, [confettiDisabled, startAnimation]);
 
-    useEffect(() => {
-        if (confettiDisabled) {
-            return;
-        }
-
-        setTimeout(() => {
+        animationStopTimeoutRef.current = setTimeout(() => {
             pauseAnimation();
         }, animationDuration);
-    }, [confettiDisabled, pauseAnimation]);
+
+        return () => {
+            if (animationStartTimeoutRef.current != null) {
+                clearTimeout(animationStartTimeoutRef.current);
+                animationStartTimeoutRef.current = null;
+            }
+
+            if (animationStopTimeoutRef.current != null) {
+                clearTimeout(animationStopTimeoutRef.current);
+                animationStopTimeoutRef.current = null;
+            }
+
+            pauseAnimation();
+        };
+    }, [confettiDisabled, pauseAnimation, shouldRenderConfetti, startAnimation]);
 
     useEffect(() => {
         if (confettiDisabled) {
