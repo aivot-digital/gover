@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.plugins.core.v1.operators.date;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException;
@@ -91,7 +91,7 @@ public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
+    public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
         if (args.length != 3) {
             throw new NoCodeWrongArgumentCountException(3, args.length);
         }

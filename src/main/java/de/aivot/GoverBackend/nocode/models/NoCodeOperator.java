@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.nocode.models;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException;
 
@@ -86,7 +86,7 @@ public abstract class NoCodeOperator {
     public abstract NoCodeSignatur[] getSignatures();
 
     @Nonnull
-    public NoCodeResult evaluate(ElementData data, Object... args) throws NoCodeException {
+    public NoCodeResult evaluate(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
         if (data == null) {
             throw new NullPointerException("Data is null. Needs to be at least an empty map");
         }
@@ -138,7 +138,7 @@ public abstract class NoCodeOperator {
      * @return the result of the evaluation.
      * @throws NoCodeException if an error occurs during the evaluation.
      */
-    protected abstract NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException;
+    protected abstract NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException;
 
     /**
      * Returns the message that should be displayed when the operator is deprecated.

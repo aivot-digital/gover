@@ -215,7 +215,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
         EMailActionNodeConfig configuration;
         try {
             configuration = ElementPOJOMapper
-                    .mapToPOJO(context.getThisNode().getConfiguration(), EMailActionNodeConfig.class);
+                    .mapToPOJO(context.getConfiguration().getEffectiveValues(), EMailActionNodeConfig.class);
         } catch (ElementDataConversionException e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,

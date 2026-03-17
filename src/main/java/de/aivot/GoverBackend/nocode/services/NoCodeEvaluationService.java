@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.nocode.services;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.*;
 import de.aivot.GoverBackend.nocode.providers.NoCodeOperatorsProvider;
@@ -77,14 +77,14 @@ public class NoCodeEvaluationService {
      * @return The result of the evaluation
      */
     @Nonnull
-    public NoCodeResult evaluate(@Nullable NoCodeOperand operand, @Nonnull ElementData elementData) {
+    public NoCodeResult evaluate(@Nullable NoCodeOperand operand, @Nonnull DerivedRuntimeElementData elementData) {
         return evaluate(operand, elementData, Map.of());
     }
 
     @Nonnull
     public NoCodeResult evaluate(
             @Nullable NoCodeOperand operand,
-            @Nonnull ElementData elementData,
+            @Nonnull DerivedRuntimeElementData elementData,
             @Nonnull Map<String, Object> processDataContext
     ) {
         if (operand == null) {
@@ -101,10 +101,9 @@ public class NoCodeEvaluationService {
             // Referenced elements resolve based on their visibility and the values map
             case NoCodeReference reference -> {
                 var elementId = reference.getElementId();
-                var dataObject = elementId == null ? null : elementData.get(elementId);
-                var value = dataObject == null
+                var value = elementId == null
                         ? null
-                        : dataObject.getValue();
+                        : elementData.getEffectiveValues().getOrDefault(elementId, null);
                 yield new NoCodeResult(value);
             }
 
@@ -138,7 +137,7 @@ public class NoCodeEvaluationService {
     @Nonnull
     private NoCodeResult evaluateNoCodeExpression(
             @Nonnull NoCodeExpression expression,
-            @Nonnull ElementData elementData,
+            @Nonnull DerivedRuntimeElementData elementData,
             @Nonnull Map<String, Object> processDataContext
     ) {
         var operands = expression.getOperands();

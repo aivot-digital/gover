@@ -3,8 +3,9 @@ package de.aivot.GoverBackend.plugins.core.v1.nodes.triggers.webhook;
 import com.beust.jcommander.Strings;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
-import de.aivot.GoverBackend.elements.models.ElementData;
-import de.aivot.GoverBackend.elements.models.ElementDataObject;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
+import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
@@ -12,7 +13,6 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElem
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
-import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
@@ -276,7 +276,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
     public GroupLayoutElement getTestingLayout(@Nonnull ProcessNodeDefinitionContextTesting context) throws ResponseException {
         WebhookTriggerConfig config;
         try {
-            config = getWebhookTriggerConfig(context.thisNode().getConfiguration());
+            config = getWebhookTriggerConfig(context.configuration().getEffectiveValues());
         } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
             throw ResponseException.internalServerError(
                     e,
@@ -405,21 +405,18 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
 
     @Override
     public void validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                      @Nonnull ElementData configuration) throws ResponseException {
-
-        var slugEdo = configuration
-                .getOrDefault(
-                        WebhookTriggerConfig.SLUG_CONFIG_KEY,
-                        new ElementDataObject(ElementType.Text)
-                );
-
-        var slug = slugEdo
-                .getOptionalValue(String.class)
-                .orElseThrow(() -> {
-                    slugEdo.addComputedError("Der Webhook-Slug ist ein Pflichtfeld und darf nicht leer sein.");
-                    return ResponseException
-                            .badRequest(configuration);
-                });
+                                      @Nonnull AuthoredElementValues configuration,
+                                      @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
+        var slug = StringUtils.toNullableTrimmedString(configuration.get(WebhookTriggerConfig.SLUG_CONFIG_KEY));
+        var slugState = derivedRuntimeElementData.getElementStates().get(WebhookTriggerConfig.SLUG_CONFIG_KEY);
+        if (StringUtils.isNullOrEmpty(slug)) {
+            var errorMessage = "Der Webhook-Slug ist ein Pflichtfeld und darf nicht leer sein.";
+            slugState.setError(errorMessage);
+            throw ResponseException.badRequest(
+                    errorMessage,
+                    derivedRuntimeElementData
+            );
+        }
 
         var spec = SpecificationBuilder
                 .create(ProcessNodeEntity.class)
@@ -430,17 +427,18 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
                 .exists(spec);
 
         if (otherExists) {
-            slugEdo.setComputedError(
-                    "Der Webhook-Slug %s wird bereits von einem anderen Webhook verwendet. Bitte wählen Sie einen eindeutigen Slug.",
-                    StringUtils.quote(slug)
+            var errorMessage = String.format("Der Webhook-Slug %s wird bereits von einem anderen Webhook verwendet. Bitte wählen Sie einen eindeutigen Slug.", slug);
+            slugState.setError(errorMessage);
+            throw ResponseException.badRequest(
+                    errorMessage,
+                    derivedRuntimeElementData
             );
-            throw ResponseException.badRequest(configuration);
         }
     }
 
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
-        var config = getWebhookTriggerConfig(context.getThisNode().getConfiguration());
+        var config = getWebhookTriggerConfig(context.getConfiguration().getEffectiveValues());
 
         // Determine the result of this init execution
         var result = new ProcessNodeExecutionResultTaskCompleted()
@@ -477,7 +475,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
     }
 
     @Nonnull
-    private static WebhookTriggerConfig getWebhookTriggerConfig(@Nonnull ElementData configuration) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+    private static WebhookTriggerConfig getWebhookTriggerConfig(@Nonnull EffectiveElementValues configuration) throws ProcessNodeExecutionExceptionInvalidConfiguration {
         WebhookTriggerConfig config;
         try {
             config = ElementPOJOMapper

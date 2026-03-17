@@ -25,10 +25,7 @@ values (1,
         null,
         true,
         '{
-          "root": {
-            "$type": 15,
-            "inputValue": "./data/default/"
-          }
+          "root": "./data/default/"
         }',
         10 * 1024 * 1024,
         true,
@@ -47,10 +44,7 @@ values (1,
         null,
         false,
         '{
-          "root": {
-            "$type": 15,
-            "inputValue": "./data/assets/"
-          }
+          "root": "./data/assets/"
         }',
         10 * 1024 * 1024,
         false,
@@ -69,10 +63,7 @@ values (1,
         null,
         false,
         '{
-          "root": {
-            "$type": 15,
-            "inputValue": "./data/attachments/"
-          }
+          "root": "./data/attachments/"
         }',
         10 * 1024 * 1024,
         false,

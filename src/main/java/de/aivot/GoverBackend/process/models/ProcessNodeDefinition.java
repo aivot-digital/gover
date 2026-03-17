@@ -2,7 +2,6 @@ package de.aivot.GoverBackend.process.models;
 
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
-import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
@@ -106,11 +105,13 @@ public interface ProcessNodeDefinition extends PluginComponent {
     /**
      * Validates the configuration of a process definition node entity.
      *
-     * @param processNodeEntity The process definition node entity to be validated.
+     * @param processNodeEntity         The process definition node entity to be validated.
+     * @param derivedRuntimeElementData Derived Runtime Element data.
      * @throws ResponseException If the configuration is invalid.
      */
     default void validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                       @Nonnull AuthoredElementValues configuration) throws ResponseException {
+                                       @Nonnull AuthoredElementValues configuration,
+                                       @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
     }
 
     /**

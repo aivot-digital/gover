@@ -302,15 +302,16 @@ public class WebhookTriggerController {
     }
 
     @Nonnull
-    private static WebhookTriggerConfig getWebhookConfig(@Nonnull ProcessNodeEntity nodeEntity) throws ResponseException {
-        WebhookTriggerConfig config;
+    private WebhookTriggerConfig getWebhookConfig(@Nonnull ProcessNodeEntity nodeEntity) throws ResponseException {
+        var derivedConfiguration = processNodeService
+                .deriveConfiguration(nodeEntity, true);
+
         try {
-            config = ElementPOJOMapper
-                    .mapToPOJO(nodeEntity.getConfiguration(), WebhookTriggerConfig.class);
+            return ElementPOJOMapper
+                    .mapToPOJO(derivedConfiguration.getEffectiveValues(), WebhookTriggerConfig.class);
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(e, "Die Konfiguration des Webhook-Trigger-Knotens ist ungültig.");
         }
-        return config;
     }
 
     private static void checkAuthentication(@Nonnull WebhookTriggerConfig config,

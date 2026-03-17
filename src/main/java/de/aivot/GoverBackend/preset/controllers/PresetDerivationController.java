@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.preset.controllers;
 
 import de.aivot.GoverBackend.elements.dtos.ElementDerivationResponse;
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
@@ -48,7 +48,7 @@ public class PresetDerivationController {
     public ElementDerivationResponse derive(
             @PathVariable UUID presetKey,
             @PathVariable Integer presetVersion,
-            @Valid @RequestBody ElementData elementData,
+            @Valid @RequestBody AuthoredElementValues elementData,
             @RequestParam(value = "disableVisibilities") Optional<Boolean> disableVisibilities,
             @RequestParam(value = "disableValidation") Optional<Boolean> disableValidation
     ) throws ResponseException {
@@ -62,16 +62,15 @@ public class PresetDerivationController {
                 .findById(id)
                 .orElseThrow(ResponseException::notFound);
 
-        var request = new ElementDerivationRequest()
-                .setElement(presetVersionObject.getRootElement())
-                .setElementData(elementData)
-                .setOptions(
-                        new ElementDerivationOptions()
-                                .setSkipValuesForElementIds(List.of())
-                                .setSkipVisibilitiesForElementIds(disableVisibilities.orElse(false) ? List.of(ElementDerivationOptions.ALL_ELEMENTS) : List.of())
-                                .setSkipErrorsForElementIds(disableValidation.orElse(false) ? List.of(ElementDerivationOptions.ALL_ELEMENTS) : List.of())
-                                .setSkipOverridesForElementIds(List.of())
-                );
+        var request = new ElementDerivationRequest(
+                presetVersionObject.getRootElement(),
+                elementData,
+                new ElementDerivationOptions()
+                        .setSkipValuesForElementIds(List.of())
+                        .setSkipVisibilitiesForElementIds(disableVisibilities.orElse(false) ? List.of(ElementDerivationOptions.ALL_ELEMENTS) : List.of())
+                        .setSkipErrorsForElementIds(disableValidation.orElse(false) ? List.of(ElementDerivationOptions.ALL_ELEMENTS) : List.of())
+                        .setSkipOverridesForElementIds(List.of())
+        );
 
         var logger = new ElementDerivationLogger();
         var derivedElementData = elementDerivationService

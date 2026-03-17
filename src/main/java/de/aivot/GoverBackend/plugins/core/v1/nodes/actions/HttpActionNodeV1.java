@@ -180,30 +180,18 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition {
 
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
-        var configuration = context.getThisNode().getConfiguration();
+        var configuration = context.getConfiguration().getEffectiveValues();
 
-        var method = configuration
-                .get(METHOD_FIELD_ID)
-                .getOptionalValue()
-                .orElse("GET")
-                .toString();
+        var method = String.valueOf(configuration.getOrDefault(METHOD_FIELD_ID, "GET"));
 
         var url = processDataService
                 .interpolate(
                         context.getProcessData(),
-                        configuration
-                                .get(URL_FIELD_ID)
-                                .getOptionalValue()
-                                .orElse("")
-                                .toString()
+                        String.valueOf(configuration.getOrDefault(URL_FIELD_ID, ""))
                 );
 
         var isJson = StringUtils.isNotNullOrEmpty(
-                configuration
-                        .get(IS_JSON_FIELD_ID)
-                        .getOptionalValue()
-                        .orElse("")
-                        .toString()
+                String.valueOf(configuration.getOrDefault(IS_JSON_FIELD_ID, ""))
         );
 
         var uri = URI.create(url);
@@ -223,11 +211,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition {
             var payload = processDataService
                     .interpolate(
                             context.getProcessData(),
-                            configuration
-                                    .get(PAYLOAD_FIELD_ID)
-                                    .getOptionalValue()
-                                    .orElse("{}")
-                                    .toString()
+                            String.valueOf(configuration.getOrDefault(PAYLOAD_FIELD_ID, "{}"))
                     );
 
             if (StringUtils.isNullOrEmpty(payload)) {

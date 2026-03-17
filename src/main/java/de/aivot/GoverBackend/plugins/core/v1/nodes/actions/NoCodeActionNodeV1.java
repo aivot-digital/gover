@@ -7,7 +7,6 @@ import de.aivot.GoverBackend.elements.enums.ValueFunctionType;
 import de.aivot.GoverBackend.elements.models.*;
 import de.aivot.GoverBackend.elements.models.elements.ElementValueFunctions;
 import de.aivot.GoverBackend.elements.models.elements.form.input.NoCodeInputElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.NoCodeInputElementItem;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
@@ -192,7 +191,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Override
-    public void validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity, @Nonnull ElementData configuration) throws ResponseException {
+    public void validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity, @Nonnull AuthoredElementValues configuration, @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
         // TODO: Check validity of this node configuration.
         //       - All variables need to be unique.
         //       - No-Code expressions should be checked for syntax errors (if possible).
@@ -225,11 +224,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition {
                 evaluatedValue = noCodeEvaluationService
                         .evaluate(
                                 definition.noCode(),
-                                new ElementData(
-                                        context.getThisNode().getConfiguration(),
-                                        context.getConfiguration().getElementStates(),
-                                        context.getConfiguration().getEffectiveValues()
-                                ),
+                                context.getConfiguration(),
                                 processDataContext
                         )
                         .getValue();

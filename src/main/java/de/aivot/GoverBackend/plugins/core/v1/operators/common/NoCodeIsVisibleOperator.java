@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.plugins.core.v1.operators.common;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.ComputedElementState;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
@@ -73,10 +74,12 @@ public class NoCodeIsVisibleOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
+    public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
         var arg = castToString(args[0]);
-        var dataObject = data.get(arg);
-        var isVisible = dataObject != null && dataObject.getIsVisible();
+        var isVisible = data
+                .getElementStates()
+                .getOrDefault(arg, ComputedElementState.create())
+                .getVisible();
         return new NoCodeResult(isVisible);
     }
 

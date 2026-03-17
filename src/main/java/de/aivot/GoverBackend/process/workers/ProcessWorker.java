@@ -1,5 +1,7 @@
 package de.aivot.GoverBackend.process.workers;
 
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
@@ -16,6 +18,7 @@ import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.process.services.ProcessDataService;
 import de.aivot.GoverBackend.process.services.ProcessNodeDefinitionService;
 import de.aivot.GoverBackend.process.services.ProcessNodeExecutionLoggerFactory;
+import de.aivot.GoverBackend.process.services.ProcessNodeService;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.amqp.core.Queue;
@@ -41,6 +44,7 @@ public class ProcessWorker {
     private final ProcessNodeExecutionResultHandler processNodeExecutionResultHandler;
     private final ProcessDataService processDataService;
     private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
+    private final ProcessNodeService processNodeService;
 
     @Autowired
     public ProcessWorker(ProcessInstanceRepository processInstanceRepository,
@@ -49,7 +53,8 @@ public class ProcessWorker {
                          ProcessInstanceTaskRepository processInstanceTaskRepository,
                          ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
                          ProcessDataService processDataService,
-                         ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory) {
+                         ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
+                         ProcessNodeService processNodeService) {
         this.processInstanceRepository = processInstanceRepository;
         this.processDefinitionNodeRepository = processDefinitionNodeRepository;
         this.processNodeProviderService = processNodeProviderService;
@@ -57,6 +62,7 @@ public class ProcessWorker {
         this.processNodeExecutionResultHandler = processNodeExecutionResultHandler;
         this.processDataService = processDataService;
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
+        this.processNodeService = processNodeService;
     }
 
     @Bean
@@ -173,13 +179,26 @@ public class ProcessWorker {
                         previousNodeId
                 );
 
+        DerivedRuntimeElementData configuration;
+        try {
+            configuration = processNodeService
+                    .deriveConfiguration(currentNode, false);
+        } catch (ResponseException e) {
+            throw new ProcessNodeExecutionExceptionUnknown(
+                    e,
+                    "Die Konfiguration des Prozessknotens „%s“ konnte nicht abgeleitet werden.",
+                    currentNode.resolveName(currentNodeProvider)
+            );
+        }
+
         var context = new ProcessNodeExecutionContextInit(
                 logger,
                 currentNode,
                 processInstance,
                 taskEntity,
                 null,
-                processData
+                processData,
+                configuration
         );
 
         ProcessNodeExecutionResult initResult;

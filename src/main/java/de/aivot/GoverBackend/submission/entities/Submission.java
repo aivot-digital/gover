@@ -3,7 +3,6 @@ package de.aivot.GoverBackend.submission.entities;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.core.converters.AuthoredElementValuesConverter;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
-import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 import jakarta.annotation.Nonnull;

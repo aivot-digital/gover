@@ -8,7 +8,10 @@ import de.aivot.GoverBackend.core.configs.ProviderNameSystemConfigDefinition;
 import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
-import de.aivot.GoverBackend.elements.models.ElementDataObject;
+import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
+import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
+import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
+import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
@@ -60,6 +63,7 @@ public class PdfService {
     private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
     private final FormVersionService formVersionService;
     private final HttpService httpService;
+    private final ElementDerivationService elementDerivationService;
 
     @Autowired
     public PdfService(GotenbergConfig gotenbergConfig,
@@ -72,7 +76,8 @@ public class PdfService {
                       PaymentProviderRepository paymentProviderRepository,
                       PaymentProviderDefinitionsService paymentProviderDefinitionsService,
                       FormVersionService formVersionService,
-                      HttpService httpService) {
+                      HttpService httpService,
+                      ElementDerivationService elementDerivationService) {
         this.gotenbergConfig = gotenbergConfig;
         this.systemConfigService = systemConfigService;
         this.departmentRepository = departmentRepository;
@@ -84,6 +89,7 @@ public class PdfService {
         this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
         this.formVersionService = formVersionService;
         this.httpService = httpService;
+        this.elementDerivationService = elementDerivationService;
     }
 
     public void testGotenbergConnection() throws IOException {
@@ -118,23 +124,33 @@ public class PdfService {
 
     public byte[] generateCustomerSummary(VFormVersionWithDetailsEntity form, Submission submission, FormPdfScope scope) throws IOException, InterruptedException, URISyntaxException, ResponseException {
         var dto = new HashMap<String, Object>();
+        var derivedRuntimeElementData = elementDerivationService
+                .derive(
+                        new ElementDerivationRequest(
+                                form.getRootElement(),
+                                submission.getCustomerInput(),
+                                new ElementDerivationOptions()
+                                        .setSkipErrorsForElementIds(java.util.List.of(ElementDerivationOptions.ALL_ELEMENTS))
+                        ),
+                        new ElementDerivationLogger()
+                );
 
         dto.put("elements", PdfElementsGenerator.generatePdfElements(
                 form.getRootElement(),
-                submission.getCustomerInput(),
+                derivedRuntimeElementData,
                 scope != FormPdfScope.Staff
         ));
         dto.put("form", form);
         dto.put("submission", submission);
 
-        ElementDataObject authData = submission
+        var authData = submission
                 .getCustomerInput()
                 .get(IdentityValueKey.IdCustomerInputKey);
-        if (authData != null && authData.getInputValue() != null) {
+        if (authData != null) {
             IdentityData identityData = null;
             try {
                 identityData = new ObjectMapper()
-                        .convertValue(authData.getInputValue(), IdentityData.class);
+                        .convertValue(authData, IdentityData.class);
             } catch (IllegalArgumentException e) {
                 logger.error("Failed to convert identity data to IdentityData", e);
             }

@@ -39,40 +39,10 @@ values (4,
         null,
         false,
         '{
-          "bucket": {
-            "$type": 15,
-            "isDirty": true,
-            "isVisible": true,
-            "inputValue": "gover",
-            "isPrefilled": false
-          },
-          "config": {
-            "$type": 25,
-            "isDirty": false,
-            "isVisible": true,
-            "isPrefilled": false
-          },
-          "endpoint": {
-            "$type": 15,
-            "isDirty": true,
-            "isVisible": true,
-            "inputValue": "http://localhost:9000",
-            "isPrefilled": false
-          },
-          "access_key": {
-            "$type": 15,
-            "isDirty": true,
-            "isVisible": true,
-            "inputValue": "super-access-key",
-            "isPrefilled": false
-          },
-          "secret_key_secret": {
-            "$type": 12,
-            "isDirty": true,
-            "isVisible": true,
-            "inputValue": "113356ef-8bab-4844-9f3e-6779c4117294",
-            "isPrefilled": false
-          }
+          "bucket": "gover",
+          "endpoint": "http://localhost:9000",
+          "access_key": "super-access-key",
+          "secret_key_secret": "113356ef-8bab-4844-9f3e-6779c4117294"
         }',
         10000000,
         false,

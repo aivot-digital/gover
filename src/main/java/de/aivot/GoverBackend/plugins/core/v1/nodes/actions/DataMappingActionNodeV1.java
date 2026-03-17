@@ -199,11 +199,10 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
 
     @Nonnull
     private List<MappingRule> parseRules(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        var configuration = context.getThisNode().getConfiguration();
-        var rawMappings = configuration
-                .getOpt(MAPPINGS_FIELD_ID)
-                .map(mappingField -> mappingField.getValue())
-                .orElse(List.of());
+        var rawMappings = context
+                .getConfiguration()
+                .getEffectiveValues()
+                .getOrDefault(MAPPINGS_FIELD_ID, List.of());
 
         if (!(rawMappings instanceof Collection<?> rows)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(

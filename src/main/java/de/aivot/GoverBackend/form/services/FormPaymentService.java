@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.form.services;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
@@ -49,7 +50,7 @@ public class FormPaymentService {
     public Optional<PaymentTransactionEntity> createTransaction(
             @Nonnull VFormVersionWithDetailsEntity form,
             @Nonnull String submissionId,
-            @Nonnull ElementData elementData
+            @Nonnull AuthoredElementValues elementData
     ) throws PaymentException, ResponseException {
         var paymentItems = createPaymentItems(form, elementData);
 
@@ -78,18 +79,17 @@ public class FormPaymentService {
 
     public List<PaymentItem> createPaymentItems(
             @Nonnull VFormVersionWithDetailsEntity form,
-            @Nonnull ElementData elementData
+            @Nonnull AuthoredElementValues elementData
     ) throws PaymentException {
-        var derivationRequest = new ElementDerivationRequest()
-                .setElement(form.getRootElement())
-                .setElementData(elementData)
-                .setOptions(
-                        new ElementDerivationOptions()
-                                .setSkipErrorsForElementIds(List.of(ElementDerivationOptions.ALL_ELEMENTS))
-                                .setSkipOverridesForElementIds(List.of())
-                                .setSkipValuesForElementIds(List.of())
-                                .setSkipVisibilitiesForElementIds(List.of())
-                );
+        var derivationRequest = new ElementDerivationRequest(
+                form.getRootElement(),
+                elementData,
+                new ElementDerivationOptions()
+                        .setSkipErrorsForElementIds(List.of(ElementDerivationOptions.ALL_ELEMENTS))
+                        .setSkipOverridesForElementIds(List.of())
+                        .setSkipValuesForElementIds(List.of())
+                        .setSkipVisibilitiesForElementIds(List.of())
+        );
 
         var dummyLogger = new ElementDerivationLogger();
         var derivedElementData = elementDerivationService
@@ -124,7 +124,12 @@ public class FormPaymentService {
                     }
                     yield product.getUpfrontFixedQuantity();
                 }
-                case PaymentType.UpfrontCalculated -> calculateProductQuantity(javascriptEngine, form, derivedElementData, product);
+                case PaymentType.UpfrontCalculated -> calculateProductQuantity(
+                        javascriptEngine,
+                        form,
+                        derivedElementData,
+                        product
+                );
                 default -> 0;
             };
 
@@ -158,7 +163,7 @@ public class FormPaymentService {
     private Long calculateProductQuantity(
             @Nonnull JavascriptEngine javascriptEngine,
             @Nonnull VFormVersionWithDetailsEntity form,
-            @Nonnull ElementData context,
+            @Nonnull DerivedRuntimeElementData context,
             @Nonnull PaymentProduct product
     ) throws PaymentException {
         if (product.getUpfrontQuantityJavascript() != null && product.getUpfrontQuantityJavascript().isNotEmpty()) {

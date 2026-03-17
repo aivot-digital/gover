@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.payment.dtos;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
 
 import jakarta.annotation.Nonnull;
@@ -20,7 +20,7 @@ public record PaymentProviderResponseDTO(
         @Nonnull
         Boolean isEnabled,
         @Nonnull
-        ElementData config
+        AuthoredElementValues config
 ) {
     @Nonnull
     public static PaymentProviderResponseDTO fromEntity(

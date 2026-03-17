@@ -361,7 +361,7 @@ public class SubmitController {
         return submissionCopy;
     }
 
-    private void hydrateCustomerInputWithIdpData(VFormVersionWithDetailsEntity form, Optional<IdentityCacheEntity> optionalIdp, ElementData customerInput) throws ResponseException {
+    private void hydrateCustomerInputWithIdpData(VFormVersionWithDetailsEntity form, Optional<IdentityCacheEntity> optionalIdp, AuthoredElementValues customerInput) throws ResponseException {
         if (form.getIdentityVerificationRequired() && optionalIdp.isEmpty()) {
             throw ResponseException.badRequest("Ein Identitätsnachweis ist erforderlich, um den Antrag einzureichen.");
         }
@@ -405,11 +405,6 @@ public class SubmitController {
             // If the metadata identifier is an identifier of a system identity provider, format the value accordingly
             mappedValue = SystemIdentityProviderFormatter.formatForSystemIdentityProvider(identityCacheEntity.getMetadataIdentifier(), mapping, mappedValue);
 
-            //var existingDataObject = customerInput.getOrDefault(element.getId(), new ElementDataObject(element));
-            //existingDataObject.setType(element.getType());
-            //existingDataObject.setInputValue(mappedValue);
-//
-            //customerInput.put(element, existingDataObject);
         }
 
         // Create the identity value
@@ -420,11 +415,8 @@ public class SubmitController {
                 identityCacheEntity.getIdentityData()
         );
 
-        // var identityValueDataObject = new ElementDataObject(ElementType.SubmittedStep);
-        // identityValueDataObject.setInputValue(identityValue);
-
         // Add the idp data to the customer input
-        // customerInput.put(IdentityValueKey.IdCustomerInputKey, identityValueDataObject);
+        // customerInput.put(IdentityValueKey.IdCustomerInputKey, identityValue);
     }
 
     @PostMapping("/api/public/send-copy/{submissionId}/")

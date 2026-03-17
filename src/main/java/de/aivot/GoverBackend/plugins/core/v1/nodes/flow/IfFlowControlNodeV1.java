@@ -4,8 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.enums.ValueFunctionType;
-import de.aivot.GoverBackend.elements.models.ElementData;
-import de.aivot.GoverBackend.elements.models.ElementDataObject;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
+import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.GoverBackend.elements.models.elements.ElementValueFunctions;
 import de.aivot.GoverBackend.elements.models.elements.form.input.CodeInputElement;
@@ -211,20 +211,12 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition {
 
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
-        var configuration = context.getThisNode().getConfiguration();
-        var lowCodeCondition = configuration
-                .getOpt(CONDITION_LOW_CODE_FIELD_ID)
-                .map(ElementDataObject::getValue)
-                .map(IfFlowControlNodeV1::toNullableTrimmedString)
-                .orElse(null);
+        var configuration = context.getConfiguration().getEffectiveValues();
+        var lowCodeCondition = toNullableTrimmedString(configuration.get(CONDITION_LOW_CODE_FIELD_ID));
 
         var noCodeCondition = parseNoCodeCondition(configuration);
 
-        var configuredConditionType = configuration
-                .getOpt(CONDITION_TYPE_FIELD_ID)
-                .map(ElementDataObject::getValue)
-                .map(IfFlowControlNodeV1::toNullableTrimmedString)
-                .orElse(null);
+        var configuredConditionType = toNullableTrimmedString(configuration.get(CONDITION_TYPE_FIELD_ID));
 
         var conditionType = resolveConditionType(
                 configuredConditionType,
@@ -340,7 +332,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition {
             var noCodeResult = noCodeEvaluationService
                     .evaluate(
                             noCodeCondition,
-                            new ElementData(),
+                            new DerivedRuntimeElementData(),
                             context.getProcessData()
                     );
             noCodeValue = noCodeResult.getValue();
@@ -360,11 +352,8 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition {
         );
     }
 
-    private NoCodeOperand parseNoCodeCondition(@Nonnull ElementData configuration) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        var rawValue = configuration
-                .getOpt(CONDITION_NO_CODE_FIELD_ID)
-                .map(ElementDataObject::getValue)
-                .orElse(null);
+    private NoCodeOperand parseNoCodeCondition(@Nonnull EffectiveElementValues configuration) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        var rawValue = configuration.getOrDefault(CONDITION_NO_CODE_FIELD_ID, null);
 
         if (rawValue == null) {
             return null;

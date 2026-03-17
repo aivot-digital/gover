@@ -237,11 +237,7 @@ public class ElementDerivationService {
 
         // Determine if override generation should be done with JavaScript code
         if (override.getJavascriptCode() != null && override.getJavascriptCode().isNotEmpty()) {
-            var accumulator = createAccumulator(
-                    authoredElementValues,
-                    computedElementStates,
-                    effectiveElementValues
-            );
+            var accumulator = createRuntimeAccumulator(computedElementStates, effectiveElementValues);
 
             JavascriptResult res;
             try {
@@ -298,11 +294,7 @@ public class ElementDerivationService {
                     });
 
             for (var entry : override.getFieldNoCodeMap().entrySet()) {
-                var accumulator = createAccumulator(
-                        authoredElementValues,
-                        computedElementStates,
-                        effectiveElementValues
-                );
+                var accumulator = createRuntimeAccumulator(computedElementStates, effectiveElementValues);
 
                 var fieldName = entry.getKey();
                 var noCodeExpression = entry.getValue();
@@ -358,11 +350,7 @@ public class ElementDerivationService {
 
         // Determine if visibility calculation should be done with JavaScript code
         if (vis.getJavascriptCode() != null && vis.getJavascriptCode().isNotEmpty()) {
-            var accumulator = createAccumulator(
-                    authoredElementValues,
-                    computedElementStates,
-                    effectiveElementValues
-            );
+            var accumulator = createRuntimeAccumulator(computedElementStates, effectiveElementValues);
 
             JavascriptResult res;
             try {
@@ -381,11 +369,7 @@ public class ElementDerivationService {
 
         // Determine if visibility calculation should be done with a no code expression
         if (vis.getNoCode() != null) {
-            var accumulator = createAccumulator(
-                    authoredElementValues,
-                    computedElementStates,
-                    effectiveElementValues
-            );
+            var accumulator = createRuntimeAccumulator(computedElementStates, effectiveElementValues);
 
             return noCodeEvaluationService
                     .evaluate(vis.getNoCode(), accumulator)
@@ -395,11 +379,7 @@ public class ElementDerivationService {
         // Determine if visibility calculation should be done with a function
         if (vis.getConditionSet() != null) {
             if (rootElement instanceof LayoutElement<?> elementWithChildren) {
-                var accumulator = createAccumulator(
-                        authoredElementValues,
-                        computedElementStates,
-                        effectiveElementValues
-                );
+                var accumulator = createRuntimeAccumulator(computedElementStates, effectiveElementValues);
 
                 var res = vis
                         .getConditionSet()
@@ -444,11 +424,7 @@ public class ElementDerivationService {
         try {
             // Determine if the value computation should be done with JavaScript code
             if (valueFunction.getJavascriptCode() != null && valueFunction.getJavascriptCode().isNotEmpty()) {
-                var accumulator = createAccumulator(
-                        authoredElementValues,
-                        computedElementStates,
-                        effectiveElementValues
-                );
+                var accumulator = createRuntimeAccumulator(computedElementStates, effectiveElementValues);
 
                 var res = javascriptEngine
                         .registerGlobalContextObject(accumulator)
@@ -464,11 +440,7 @@ public class ElementDerivationService {
 
             // Determine if the value computation should be done with a value expression
             if (valueFunction.getNoCode() != null) {
-                var accumulator = createAccumulator(
-                        authoredElementValues,
-                        computedElementStates,
-                        effectiveElementValues
-                );
+                var accumulator = createRuntimeAccumulator(computedElementStates, effectiveElementValues);
 
                 var derivedValue = noCodeEvaluationService
                         .evaluate(valueFunction.getNoCode(), accumulator)
@@ -518,11 +490,7 @@ public class ElementDerivationService {
         }
 
         if (validation.getJavascriptCode() != null && validation.getJavascriptCode().isNotEmpty()) {
-            var accumulator = createAccumulator(
-                    authoredElementValues,
-                    computedElementStates,
-                    effectiveElementValues
-            );
+            var accumulator = createRuntimeAccumulator(computedElementStates, effectiveElementValues);
 
             JavascriptResult res;
             try {
@@ -544,11 +512,7 @@ public class ElementDerivationService {
         }
 
         if (validation.getNoCodeList() != null && !validation.getNoCodeList().isEmpty()) {
-            var accumulator = createAccumulator(
-                    authoredElementValues,
-                    computedElementStates,
-                    effectiveElementValues
-            );
+            var accumulator = createRuntimeAccumulator(computedElementStates, effectiveElementValues);
 
             for (var validationExpression : validation.getNoCodeList()) {
                 var res = noCodeEvaluationService
@@ -560,11 +524,7 @@ public class ElementDerivationService {
         }
 
         if (validation.getConditionSet() != null && rootElement instanceof LayoutElement<?> elementWithChildren) {
-            var accumulator = createAccumulator(
-                    authoredElementValues,
-                    computedElementStates,
-                    effectiveElementValues
-            );
+            var accumulator = createRuntimeAccumulator(computedElementStates, effectiveElementValues);
 
             return validation
                     .getConditionSet()
@@ -578,13 +538,11 @@ public class ElementDerivationService {
         return null;
     }
 
-    private ElementData createAccumulator(@Nonnull AuthoredElementValues authoredElementValues,
-                                          @Nonnull ComputedElementStates computedElementStates,
-                                          @Nonnull EffectiveElementValues effectiveElementValues) {
-        return new ElementData(
-                authoredElementValues,
-                computedElementStates,
-                effectiveElementValues
+    private DerivedRuntimeElementData createRuntimeAccumulator(@Nonnull ComputedElementStates computedElementStates,
+                                                               @Nonnull EffectiveElementValues effectiveElementValues) {
+        return new DerivedRuntimeElementData(
+                effectiveElementValues,
+                computedElementStates
         );
     }
 }

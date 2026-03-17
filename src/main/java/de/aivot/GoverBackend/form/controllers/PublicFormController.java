@@ -3,13 +3,11 @@ package de.aivot.GoverBackend.form.controllers;
 import de.aivot.GoverBackend.asset.services.AssetService;
 import de.aivot.GoverBackend.destination.services.DestinationService;
 import de.aivot.GoverBackend.elements.dtos.ElementDerivationResponse;
-import de.aivot.GoverBackend.elements.models.ElementData;
-import de.aivot.GoverBackend.elements.models.ElementDataObject;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
-import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.form.dtos.FormCitizenDetailsResponseDTO;
 import de.aivot.GoverBackend.form.dtos.FormCitizenListResponseDTO;
 import de.aivot.GoverBackend.form.dtos.FormCostCalculationResponseDTO;
@@ -21,7 +19,6 @@ import de.aivot.GoverBackend.form.services.FormPaymentService;
 import de.aivot.GoverBackend.form.services.FormVersionService;
 import de.aivot.GoverBackend.form.services.VFormVersionWithDetailsService;
 import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
-import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
 import de.aivot.GoverBackend.identity.controllers.IdentityController;
 import de.aivot.GoverBackend.identity.dtos.IdentityDetailsDTO;
 import de.aivot.GoverBackend.identity.filters.IdentityProviderFilter;
@@ -189,7 +186,7 @@ public class PublicFormController {
     public FormCostCalculationResponseDTO calculateCosts(@Nullable @AuthenticationPrincipal Jwt jwt,
                                                          @Nonnull @PathVariable String slug,
                                                          @Nullable @RequestParam(value = "version", required = false) Integer version,
-                                                         @Nonnull @RequestBody ElementData customerData) throws PaymentException, ResponseException {
+                                                         @Nonnull @RequestBody AuthoredElementValues customerData) throws PaymentException, ResponseException {
         var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt, false);
 
         if (formVersion.getPaymentProviderKey() == null) {
@@ -267,7 +264,7 @@ public class PublicFormController {
     public ElementDerivationResponse derive(@Nullable @AuthenticationPrincipal Jwt jwt,
                                             @Nonnull @PathVariable String slug,
                                             @Nullable @RequestParam(value = "version", required = false) Integer version,
-                                            @Nonnull @Valid @RequestBody ElementData elementData,
+                                            @Nonnull @Valid @RequestBody AuthoredElementValues elementData,
                                             @Nullable @RequestParam(value = "skipErrorsFor") List<String> skipErrorsFor,
                                             @Nullable @RequestParam(value = "skipVisibilitiesFor") List<String> skipVisibilitiesFor,
                                             @Nullable @RequestParam(value = "skipValuesFor") List<String> skipValuesFor,
@@ -280,31 +277,18 @@ public class PublicFormController {
                 .setSkipErrorsForElementIds(skipErrorsFor)
                 .setSkipVisibilitiesForElementIds(skipVisibilitiesFor);
 
-        var request = new ElementDerivationRequest()
-                .setElement(formVersion.getRootElement())
-                .setElementData(elementData)
-                .setOptions(options);
+        var request = new ElementDerivationRequest(
+                formVersion.getRootElement(),
+                elementData,
+                options
+        );
 
         var derivationLogger = new ElementDerivationLogger();
         var derivedElementData = elementDerivationService
                 .derive(request, derivationLogger);
 
-        var inputIdValue = elementData
-                .getOrDefault(IdentityValueKey.IdCustomerInputKey, new ElementDataObject(ElementType.SubmittedStep))
-                .setComputedErrors(null); // Clear any previous computed errors
-
-        derivedElementData.put(IdentityValueKey.IdCustomerInputKey, inputIdValue);
-
-        /* TODO: Fix identity process
-        if (options.notContainsSkipErrors(formVersion.getRootElement().getIntroductionStep().getId())) {
-            if (formVersion.getIdentityVerificationRequired() && inputIdValue.isEmpty()) {
-                inputIdValue.setComputedErrors(List.of("Bitte melden Sie sich mit einem der Nutzerkonten an."));
-            }
-        }
-         */
-
         return ElementDerivationResponse
-                .from(elementData, derivationLogger, jwt != null);
+                .from(derivedElementData, derivationLogger, jwt != null);
     }
 
     @GetMapping("{slug}/theme/")

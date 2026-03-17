@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.plugins.core.v1.operators.common;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 import jakarta.annotation.Nullable;
@@ -52,7 +52,7 @@ public class NoCodeNotEqualsOperator extends NoCodeEqualsOperator {
     }
 
     @Override
-    public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
+    public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
         var res = super.performEvaluation(data, args);
         return new NoCodeResult(!res.getValueAsBoolean());
     }

@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.lib.exceptions;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import org.springframework.http.HttpStatus;
 
 import jakarta.annotation.Nonnull;
@@ -49,7 +49,7 @@ public class ResponseException extends Exception {
     public ResponseException(
             @Nonnull HttpStatus status,
             @Nonnull String title,
-            @Nonnull ElementData elementData
+            @Nonnull DerivedRuntimeElementData elementData
     ) {
         super(title);
         this.status = status;
@@ -86,7 +86,7 @@ public class ResponseException extends Exception {
         return ResponseException.badRequest("Die Anfrage ist fehlerhaft.");
     }
 
-    public static ResponseException badRequest(ElementData elementData) {
+    public static ResponseException badRequest(DerivedRuntimeElementData elementData) {
         return new ResponseException(
                 HttpStatus.BAD_REQUEST,
                 "Bei der Auswertung der Eingabedaten wurden Fehler gefunden.",

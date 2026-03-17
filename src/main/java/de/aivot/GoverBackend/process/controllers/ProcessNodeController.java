@@ -457,12 +457,16 @@ public class ProcessNodeController {
                 .findByProcessIdAndProcessVersion(node.getProcessId(), node.getProcessVersion())
                 .orElseThrow(ResponseException::badRequest);
 
+        var configuration = processDefinitionNodeService
+                .deriveConfiguration(node, false, user);
+
         var context = new ProcessNodeDefinitionContextTesting(
                 user,
                 processDefinition,
                 processVersion,
                 node,
-                testClaim
+                testClaim,
+                configuration
         );
 
         return provider

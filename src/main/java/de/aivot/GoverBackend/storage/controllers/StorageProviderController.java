@@ -1,8 +1,10 @@
 package de.aivot.GoverBackend.storage.controllers;
 
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
@@ -326,9 +328,12 @@ public class StorageProviderController {
         T config;
 
         try {
-            config = de.aivot.GoverBackend.elements.utils.ElementPOJOMapper
-                    .mapToPOJO(provider.getConfiguration(), definition.getConfigClass());
-        } catch (de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException e) {
+            config = ObjectMapperFactory
+                    .getInstance()
+                    .copy()
+                    .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
+                    .convertValue(provider.getConfiguration(), definition.getConfigClass());
+        } catch (IllegalArgumentException e) {
             throw new StorageException(e, "Fehler beim Konvertieren der Speicheranbieter-Konfiguration.");
         }
 

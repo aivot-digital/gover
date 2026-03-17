@@ -5,7 +5,6 @@ import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.enums.ValueFunctionType;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
-import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
@@ -293,7 +292,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
             valueMap.put(TASK_VIEW_REMARK_FIELD_ID, context.getThisTask().getNodeData().get(TASK_VIEW_REMARK_FIELD_ID));
         }
 
-        return null; //ElementData.fromValueMap(layout, valueMap);
+        return null;
     }
 
     @Nonnull

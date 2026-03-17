@@ -208,18 +208,6 @@ public class StaffProcessInstanceTaskViewController {
             throw ResponseException.internalServerError(e);
         }
 
-        if (res.isEmpty()) {
-            /*
-            var workingElementData = ElementData
-                    .fromValueMap((BaseElement) layout, taskViewData.task.getProcessData());
-            return new TaskViewResponse(
-                    layout,
-                    workingElementData,
-                    events
-            );
-             */
-        }
-
         try {
             processNodeExecutionResultHandler
                     .handleResult(

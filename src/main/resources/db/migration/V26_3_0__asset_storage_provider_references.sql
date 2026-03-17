@@ -22,7 +22,7 @@ insert into storage_index_items
  updated)
 select sp.id,
        sp.type,
-       sp.configuration -> 'root' ->> 'inputValue' || '/' || a.key || '.' || substring(a.filename from '\.([^.]+)$'),
+       sp.configuration ->> 'root' || '/' || a.key || '.' || substring(a.filename from '\.([^.]+)$'),
        false,
        a.filename,
        a.content_type,
@@ -46,7 +46,7 @@ set storage_provider_id    = (select value
                               where key = 'storage.assets.default_storage_provider'
                               limit 1)::integer,
     storage_path_from_root =
-        (select sp.configuration -> 'root' ->> 'inputValue'
+        (select sp.configuration ->> 'root'
          from public.storage_providers sp
          where id = (select value
                      from system_configs

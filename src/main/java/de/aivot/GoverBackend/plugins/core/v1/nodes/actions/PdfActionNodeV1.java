@@ -231,7 +231,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
         PdfActionNodeConfig configuration;
         try {
             configuration = ElementPOJOMapper
-                    .mapToPOJO(context.getThisNode().getConfiguration(), PdfActionNodeConfig.class);
+                    .mapToPOJO(context.getConfiguration().getEffectiveValues(), PdfActionNodeConfig.class);
         } catch (ElementDataConversionException e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
