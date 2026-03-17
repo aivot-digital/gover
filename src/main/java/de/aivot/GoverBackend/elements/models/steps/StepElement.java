@@ -12,6 +12,7 @@ import de.aivot.GoverBackend.utils.ElementResolver;
 import de.aivot.GoverBackend.utils.MapUtils;
 
 import java.util.*;
+import java.util.function.Predicate;
 
 public class StepElement extends BaseElement {
     private String title;
@@ -75,6 +76,32 @@ public class StepElement extends BaseElement {
                         res = groupLayout.findChild(id);
                     } else if (c instanceof ReplicatingContainerLayout replicatingContainerLayout) {
                         res = replicatingContainerLayout.findChild(id);
+                    }
+                    return res;
+                })
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .findFirst();
+    }
+
+    public Optional<BaseFormElement> findChild(Predicate<BaseElement> pred) {
+        Optional<BaseFormElement> matchingChild = children
+                .stream()
+                .filter(pred)
+                .findFirst();
+
+        if (matchingChild.isPresent()) {
+            return matchingChild;
+        }
+
+        return children
+                .stream()
+                .map(c -> {
+                    Optional<BaseFormElement> res = Optional.empty();
+                    if (c instanceof GroupLayout groupLayout) {
+                        res = groupLayout.findChild(pred);
+                    } else if (c instanceof ReplicatingContainerLayout replicatingContainerLayout) {
+                        res = replicatingContainerLayout.findChild(pred);
                     }
                     return res;
                 })

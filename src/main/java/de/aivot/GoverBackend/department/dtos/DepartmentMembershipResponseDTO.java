@@ -6,7 +6,7 @@ import de.aivot.GoverBackend.department.entities.DepartmentWithMembershipEntity;
 import de.aivot.GoverBackend.enums.UserRole;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 public record DepartmentMembershipResponseDTO(
         @Nonnull

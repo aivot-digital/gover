@@ -6,8 +6,8 @@ import de.aivot.GoverBackend.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 public class BaseElementValueDerivationService<Ctx extends BaseElementDerivationContext> {
     private final Logger logger = LoggerFactory.getLogger(BaseElementValueDerivationService.class);

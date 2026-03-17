@@ -12,9 +12,9 @@ import de.aivot.GoverBackend.form.models.FormDerivationContext;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.nocode.services.NoCodeEvaluationService;
 import de.aivot.GoverBackend.services.ScriptService;
-import org.jetbrains.annotations.NotNull;
+import jakarta.annotation.Nonnull;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.List;
 import java.util.Map;
 
@@ -347,7 +347,7 @@ public class FormDerivationService extends BaseElementDerivationService<FormDeri
     }
 
     @Override
-    protected FormDerivationContext prepareContext(@NotNull Map<String, Object> inputValues) {
+    protected FormDerivationContext prepareContext(@Nonnull Map<String, Object> inputValues) {
         return new FormDerivationContext(
                 javascriptEngineFactoryService.getEngine(),
                 ScriptService.getEngine(),

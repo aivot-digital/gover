@@ -11,7 +11,7 @@ import de.aivot.GoverBackend.elements.models.form.content.Headline;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.utils.MapUtils;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;

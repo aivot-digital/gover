@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.mail.dtos;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 public record TestMailRequestDTO(
         @Nonnull

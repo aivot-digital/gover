@@ -1,5 +1,26 @@
 # Changelog
 
+## [4.6.0](https://github.com/aivot-digital/gover/compare/v4.5.4...v4.6.0) (2026-03-17)
+
+### Bug Fixes
+* **App:** Fix issue with restricted url patterns for destinations.
+
+### Features
+* **App:** Add a new destination type for OZG-Cloud. Send customer input data as well as attachments.
+* **App:** Add a new flag to toggle the confetti effect on form submission.
+
+### Improvements
+* **Services:** Updated minor versions of all services in the docker compose setup.
+* **Image:** Updated base image to `eclipse-temurin:21.0.10_7-jre`.
+* **Backend:** Updated the following backend dependencies:
+    * spring-boot to `3.4.13`
+    * postgresql to `42.7.9`
+    * minio to `8.6.0`
+    * altcha-captcha to `1.3.0`
+    * graaljs to `24.2.2`
+* **Backend:** Fixed a broken dependency in the backend (`okhttp3`).
+* **Backend:** Removed outdated references to `javax.annotation` and `org.jetbrains.annotations`
+
 ## [4.5.4](https://github.com/aivot-digital/gover/compare/v4.5.3...v4.5.4) (2025-11-13)
 
 ### Features

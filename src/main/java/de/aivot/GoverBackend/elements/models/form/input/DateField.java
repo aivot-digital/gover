@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
 
 public class DateField extends BaseInputElement<String> {
     private static final Logger logger = LoggerFactory.getLogger(DateField.class);
-    private final static ZoneId zoneId = ZoneId.of("Europe/Berlin");
+    public final static ZoneId zoneId = ZoneId.of("Europe/Berlin");
     private String placeholder;
     private String autocomplete;
     private DateType mode;
@@ -295,7 +295,7 @@ public class DateField extends BaseInputElement<String> {
     private static final Pattern monthAnyYearPattern = Pattern.compile("^\\d{2}\\.\\d{2}\\.$");
     private static final Pattern yearPattern = Pattern.compile("^\\d{4}$");
 
-    private ZonedDateTime getDate(String value) {
+    public ZonedDateTime getDate(String value) {
         if (value == null) {
             return null;
         }

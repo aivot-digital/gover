@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.identity.models;
 
 import de.aivot.GoverBackend.identity.cache.entities.IdentityCacheEntity;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.Map;
 
 public record IdentityData(

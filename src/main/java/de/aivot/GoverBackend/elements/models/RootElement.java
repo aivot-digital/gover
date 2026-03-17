@@ -9,8 +9,9 @@ import de.aivot.GoverBackend.elements.models.steps.SummaryStepElement;
 import de.aivot.GoverBackend.models.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.utils.MapUtils;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.*;
+import java.util.function.Predicate;
 
 public class RootElement extends BaseElement {
     private String headline;
@@ -81,6 +82,24 @@ public class RootElement extends BaseElement {
         return children
                 .stream()
                 .map(s -> s.findChild(id))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .findFirst();
+    }
+
+    public Optional<? extends BaseElement> findChild(@Nonnull Predicate<BaseElement> pred) {
+        Optional<StepElement> matchingStep = children
+                .stream()
+                .filter(pred)
+                .findFirst();
+
+        if (matchingStep.isPresent()) {
+            return matchingStep;
+        }
+
+        return children
+                .stream()
+                .map(s -> s.findChild(pred))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .findFirst();

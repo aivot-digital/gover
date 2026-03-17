@@ -208,6 +208,7 @@ export function generateElementWithDefaultValues<T extends ElementType>(type: T)
                 appVersion,
                 textPreSubmit: 'Sie können Ihren Antrag nun verbindlich bei der zuständigen/bewirtschaftenden Stelle einreichen. Nach der Einreichung können Sie sich den Antrag für Ihre Unterlagen herunterladen oder zusenden lassen.',
                 textPostSubmit: 'Sie können Ihren Antrag herunterladen oder sich per E-Mail zuschicken lassen. Wir empfehlen Ihnen, den Antrag anschließend zu Ihren Unterlagen zu nehmen.',
+                disableConfetti: false,
             };
         case ElementType.SummaryStep:
             return {

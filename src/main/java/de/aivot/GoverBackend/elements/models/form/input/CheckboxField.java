@@ -66,4 +66,8 @@ public class CheckboxField extends BaseInputElement<Boolean> {
             default -> false;
         };
     }
+
+    public Boolean toDisplayValue(Object orDefault) {
+        return null;
+    }
 }

@@ -5,7 +5,7 @@ import de.aivot.GoverBackend.elements.models.BaseElementDerivationContext;
 import de.aivot.GoverBackend.elements.models.BaseElement;
 import de.aivot.GoverBackend.models.functions.conditions.ConditionSet;
 import de.aivot.GoverBackend.utils.MapUtils;
-import org.jetbrains.annotations.NotNull;
+import jakarta.annotation.Nonnull;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -60,7 +60,7 @@ public class FunctionNoCode extends Function {
         return conditionSet == null || (conditionSet.getConditions().isEmpty() && conditionSet.getConditionsSets().isEmpty());
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public Set<String> getReferencedIds() {
         if (conditionSet == null) {

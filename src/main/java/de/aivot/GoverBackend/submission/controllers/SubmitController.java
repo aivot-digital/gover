@@ -60,7 +60,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -349,6 +349,8 @@ public class SubmitController {
         }
 
         if (optionalIdp.isEmpty()) {
+            // Remove the idp data from the customer input if no idp data is present, to avoid confusion in the destination and to keep the customer input clean
+            customerInput.remove(IdentityValueKey.IdCustomerInputKey);
             return;
         }
 
