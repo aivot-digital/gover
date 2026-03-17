@@ -6,7 +6,7 @@
 * **App:** Fix issue with restricted url patterns for destinations.
 
 ### Features
-* **App:** Add a new destination type for OZG-Cloud.
+* **App:** Add a new destination type for OZG-Cloud. Send customer input data as well as attachments.
 * **App:** Add a new flag to toggle the confetti effect on form submission.
 
 ### Improvements
