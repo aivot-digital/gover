@@ -81,9 +81,9 @@ export function Submitted(props: SubmittedProps) {
     }, [confettiDisabled]);
 
     useEffect(() => {
-        new SubmissionsApiService()
+        /*new SubmissionsApiService()
             .getStatus(props.submission.id)
-            .then(setStatus);
+            .then(setStatus);*/
     }, [api, props.submission]);
 
     useEffect(() => {

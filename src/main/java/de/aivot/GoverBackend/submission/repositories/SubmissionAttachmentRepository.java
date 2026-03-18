@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.Collection;
 
+@Deprecated
 public interface SubmissionAttachmentRepository extends JpaRepository<SubmissionAttachment, String>, JpaSpecificationExecutor<SubmissionAttachment> {
 
     Collection<SubmissionAttachment> findAllBySubmissionId(String submissionId);

@@ -13,6 +13,7 @@ import org.hibernate.annotations.ColumnDefault;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+@Deprecated
 @Entity
 @Table(name = "submissions")
 public class Submission {

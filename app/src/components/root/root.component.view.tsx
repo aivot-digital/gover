@@ -224,15 +224,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
         }
 
         setSubmission({
-            id: submissionId,
-            assigneeId: '',
-            destinationId: 0,
-            destinationSuccess: false,
-            fileNumber: '',
-            formId: 0,
-            isTestSubmission: false,
-            status: SubmissionStatus.OpenForManualWork,
-            created: new Date().toISOString(),
+            startedProcessAccessKeys: [submissionId],
         });
 
         dispatch(setCurrentStep(totalStepCount));
@@ -335,17 +327,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
             }
 
             if (submitResponse != null) {
-                setSubmission({
-                    id: submitResponse.id,
-                    assigneeId: '',
-                    created: '',
-                    destinationId: 0,
-                    destinationSuccess: false,
-                    fileNumber: '',
-                    formId: form.form.id,
-                    isTestSubmission: false,
-                    status: SubmissionStatus.Pending,
-                });
+                setSubmission(submitResponse);
                 dispatch(nextStep());
                 // Clear possible identity data from search params
                 setSearchParams({}, {

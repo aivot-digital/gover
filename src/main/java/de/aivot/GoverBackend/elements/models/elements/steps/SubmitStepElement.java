@@ -1,13 +1,19 @@
 package de.aivot.GoverBackend.elements.models.elements.steps;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import de.aivot.GoverBackend.elements.models.elements.*;
+import de.aivot.GoverBackend.captcha.services.AltchaService;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
+import de.aivot.GoverBackend.elements.models.elements.ElementValidationFunctions;
+import de.aivot.GoverBackend.elements.models.elements.ElementValueFunctions;
+import de.aivot.GoverBackend.elements.models.elements.InputElement;
+import de.aivot.GoverBackend.elements.models.elements.PrintableElement;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.exceptions.ValidationException;
+import de.aivot.GoverBackend.utils.SpringContext;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
@@ -49,15 +55,26 @@ public class SubmitStepElement extends BaseStepElement implements InputElement<M
 
             // check expiration
             if (expiresNode != null) {
-                long now = java.time.Instant.now().getEpochSecond();
+                long now = Instant.now().getEpochSecond();
                 long expiresAt = expiresNode.longValue();
 
                 if (expiresAt < now) {
                     throw new ValidationException(this, "Die Captcha-Bestätigung ist abgelaufen. Bitte erneut bestätigen.");
                 }
             }
+
+            var altchaService = SpringContext
+                    .getBean(AltchaService.class);
+
+            var captchaVerificationStatus = altchaService
+                    .verify(payloadNode);
+
+            if (!captchaVerificationStatus) {
+                throw new ValidationException(this, "Captcha-Verifizierung fehlgeschlagen. Bitte erneut bestätigen.");
+            }
+
         } catch (Exception e) {
-            throw new ValidationException(this, "Die Captcha-Daten konnten nicht gelesen werden. Bitte erneut versuchen.");
+            throw new ValidationException(this, "Verifizierung des Captcha fehlgeschlagen.");
         }
     }
 
@@ -80,20 +97,22 @@ public class SubmitStepElement extends BaseStepElement implements InputElement<M
 
     @Nullable
     public static Map<String, Object> _formatValue(@Nullable Object value) {
-        if (value instanceof Map<?, ?> jsonNode) {
-            return (Map<String, Object>) jsonNode;
-        }
+        var om = ObjectMapperFactory
+                .getInstance();
 
         if (value instanceof String sValue) {
             try {
-                var mapper = new ObjectMapper();
-                return mapper.valueToTree(sValue);
+                return om.valueToTree(sValue);
             } catch (Exception e) {
                 return null;
             }
         }
 
-        return null;
+        try {
+            return (Map<String, Object>) om.convertValue(value, Map.class);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     @Nonnull

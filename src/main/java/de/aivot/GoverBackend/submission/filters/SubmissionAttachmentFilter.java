@@ -7,6 +7,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import jakarta.annotation.Nonnull;
 
+@Deprecated
 public class SubmissionAttachmentFilter implements Filter<SubmissionAttachment> {
     private String submissionId;
     private String contentType;
