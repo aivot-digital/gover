@@ -51,10 +51,12 @@ export function ElementTab({
     showElementInfo,
     highlightedElement,
     limitElementTypes,
+    recentElementTypes = [],
 }: BaseTabProps & {
     showElementInfo: (type: ElementType) => void;
     highlightedElement?: ElementType;
     limitElementTypes?: ElementType[];
+    recentElementTypes?: ElementType[];
 }) {
     const [search, setSearch] = useState('');
     const [expandedGroups, setExpandedGroups] = useState<Record<ElementTypeGroups, boolean>>(defaultExpandedGroups);
@@ -97,6 +99,15 @@ export function ElementTab({
         return fuse.search(trimmedSearch).map((entry) => entry.item);
     }, [options, search]);
 
+    const recentOptions = useMemo(() => {
+        const optionsMap = new Map(options.map((option) => [option.type, option]));
+
+        return recentElementTypes.flatMap((type) => {
+            const option = optionsMap.get(type);
+            return option == null ? [] : [option];
+        });
+    }, [options, recentElementTypes]);
+
     const groupedOptions = useMemo(() => {
         const groups = new Map<ElementTypeGroups, ElementOption[]>();
 
@@ -121,6 +132,34 @@ export function ElementTab({
             onAddElement(newElement);
         }
     };
+
+    const renderOptionRows = (elementOptions: ElementOption[], showGroupLabel: boolean = false) => (
+        elementOptions.map((option, index) => (
+            <React.Fragment key={`${showGroupLabel ? 'recent' : 'group'}-${option.type}`}>
+                <ElementRow
+                    option={option}
+                    isSelected={highlightedElement === option.type}
+                    primaryActionLabel={primaryActionLabel}
+                    primaryActionIcon={primaryActionIcon}
+                    titleAdornment={
+                        showGroupLabel ?
+                            <Chip size="small" label={elementTypeGroupLabels[option.group]}/> :
+                            undefined
+                    }
+                    onAdd={() => {
+                        handleAddElement(option.type);
+                    }}
+                    onShowDetails={() => {
+                        showElementInfo(option.type);
+                    }}
+                />
+                {
+                    index < elementOptions.length - 1 &&
+                    <Divider/>
+                }
+            </React.Fragment>
+        ))
+    );
 
     return (
         <Box
@@ -168,6 +207,38 @@ export function ElementTab({
                         <Alert severity="info">
                             Es wurden keine Formularelemente gefunden, die zu Ihrer Suche passen.
                         </Alert>
+                    </Box>
+                }
+
+                {
+                    search.trim().length === 0 && recentOptions.length > 0 &&
+                    <Box
+                        sx={{
+                            borderBottom: '1px solid',
+                            borderColor: 'divider',
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                px: 2,
+                                py: 1.5,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1,
+                                bgcolor: 'rgba(15, 23, 42, 0.035)',
+                                borderBottom: '1px solid',
+                                borderColor: 'divider',
+                            }}
+                        >
+                            <Typography fontWeight={700}>
+                                Zuletzt verwendet
+                            </Typography>
+                            <Chip
+                                size="small"
+                                label={`${recentOptions.length} ${recentOptions.length === 1 ? 'Element' : 'Elemente'}`}
+                            />
+                        </Box>
+                        {renderOptionRows(recentOptions, true)}
                     </Box>
                 }
 
@@ -233,28 +304,7 @@ export function ElementTab({
                             </AccordionSummary>
 
                             <AccordionDetails sx={{p: 0}}>
-                                {
-                                    (groupedOptions.get(group) ?? []).map((option, index, groupOptions) => (
-                                        <React.Fragment key={option.type}>
-                                            <ElementRow
-                                                option={option}
-                                                isSelected={highlightedElement === option.type}
-                                                primaryActionLabel={primaryActionLabel}
-                                                primaryActionIcon={primaryActionIcon}
-                                                onAdd={() => {
-                                                    handleAddElement(option.type);
-                                                }}
-                                                onShowDetails={() => {
-                                                    showElementInfo(option.type);
-                                                }}
-                                            />
-                                            {
-                                                index < groupOptions.length - 1 &&
-                                                <Divider/>
-                                            }
-                                        </React.Fragment>
-                                    ))
-                                }
+                                {renderOptionRows(groupedOptions.get(group) ?? [])}
                             </AccordionDetails>
                         </Accordion>
                     ))
@@ -269,6 +319,7 @@ function ElementRow(props: {
     isSelected: boolean;
     primaryActionLabel: string;
     primaryActionIcon: React.ReactNode;
+    titleAdornment?: React.ReactNode;
     onAdd: () => void;
     onShowDetails: () => void;
 }) {
@@ -277,6 +328,7 @@ function ElementRow(props: {
         isSelected,
         primaryActionLabel,
         primaryActionIcon,
+        titleAdornment,
         onAdd,
         onShowDetails,
     } = props;
@@ -287,6 +339,7 @@ function ElementRow(props: {
         <SelectionListRow
             icon={<Icon sx={{fontSize: 20, color: 'text.secondary'}}/>}
             title={option.name}
+            titleAdornment={titleAdornment}
             description={option.description}
             selected={isSelected}
             primaryActionLabel={primaryActionLabel}
