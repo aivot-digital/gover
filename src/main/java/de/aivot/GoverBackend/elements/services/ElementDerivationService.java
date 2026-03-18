@@ -113,6 +113,7 @@ public class ElementDerivationService {
             var actualElement = overrideElement != null
                     ? overrideElement
                     : currentElement;
+            var childOptions = options.copyForUseInChild(currentElement.getId());
 
             var isVisible = isParentVisible && deriveVisibility(
                     javascriptEngine,
@@ -189,7 +190,7 @@ public class ElementDerivationService {
                                         om.convertValue(effectiveChildDataSet,  AuthoredElementValues.class),
                                         om.convertValue(effectiveChildDataSet,  EffectiveElementValues.class),
                                         childItemElementStates,
-                                        options,
+                                        childOptions,
                                         isVisible,
                                         logger
                                 );
@@ -207,7 +208,7 @@ public class ElementDerivationService {
                             authoredElementValues,
                             effectiveElementValues,
                             computedElementStates,
-                            options,
+                            childOptions,
                             isVisible,
                             logger
                     );
@@ -231,6 +232,10 @@ public class ElementDerivationService {
             @Nonnull ElementDerivationOptions options,
             @Nonnull ElementDerivationLogger logger
     ) throws DerivationException {
+        if (options.containsSkipOverrides(currentElement.getId())) {
+            return null;
+        }
+
         var override = currentElement.getOverride();
 
         if (override == null) {
@@ -344,6 +349,10 @@ public class ElementDerivationService {
             @Nonnull ElementDerivationOptions options,
             @Nonnull ElementDerivationLogger logger
     ) throws DerivationException {
+        if (options.containsSkipVisibilities(currentElement.getId())) {
+            return true;
+        }
+
         var vis = currentElement.getVisibility();
 
         if (vis == null) {
@@ -415,6 +424,12 @@ public class ElementDerivationService {
     ) throws DerivationException {
         var baseElement = (BaseElement) inputElement;
 
+        if (options.containsSkipValues(inputElement.getId())) {
+            effectiveElementValues.put(inputElement.getId(), authoredValue);
+            elementState.setValueSource(EffectiveValueSource.Authored);
+            return authoredValue;
+        }
+
         var valueFunction = inputElement.getValue();
 
         if (valueFunction == null) {
@@ -436,7 +451,7 @@ public class ElementDerivationService {
                 logger.log(baseElement, res);
 
                 effectiveElementValues.put(inputElement.getId(), res.asObject());
-                elementState.setValueSource(EffectiveValueSource.Authored);
+                elementState.setValueSource(EffectiveValueSource.Derived);
                 return res.asObject(); // No value to derive if the element has no value setter
             }
 
@@ -449,7 +464,7 @@ public class ElementDerivationService {
                         .getValue();
 
                 effectiveElementValues.put(inputElement.getId(), derivedValue);
-                elementState.setValueSource(EffectiveValueSource.Authored);
+                elementState.setValueSource(EffectiveValueSource.Derived);
                 return derivedValue;
             }
         } catch (Exception e) {
@@ -472,6 +487,10 @@ public class ElementDerivationService {
             @Nonnull ComputedElementState elementState,
             @Nonnull ElementDerivationLogger logger
     ) {
+        if (options.containsSkipErrors(inputElement.getId())) {
+            return null;
+        }
+
         var baseElement = (BaseElement) inputElement;
 
         if (effectiveValue == null && !Boolean.TRUE.equals(inputElement.getRequired())) {
