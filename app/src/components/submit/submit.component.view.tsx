@@ -29,7 +29,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
         value,
         setValue,
         errors,
-        elementData,
+        authoredElementValues,
     } = props;
 
     const theme = useTheme();
@@ -51,7 +51,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
         }
 
         new FormApiService()
-            .calculateCosts(form.form.slug, form.version.version, elementData)
+            .calculateCosts(form.form.slug, form.version.version, authoredElementValues)
             .then((data) => {
                 setCosts(data);
             });

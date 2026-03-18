@@ -14,7 +14,7 @@ import {useSearchParams} from 'react-router-dom';
 import RestorePageIcon from '@mui/icons-material/RestorePage';
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined';
 import {IdentityStateQueryParam} from '../../modules/identity/constants/identity-state-query-param';
-import {type ElementData, hasElementDataSomeInput, newElementDataObject} from '../../models/element-data';
+import {type AuthoredElementValues, hasAuthoredElementValuesSomeInput} from '../../models/element-data';
 import {IdentityIdQueryParam} from '../../modules/identity/constants/identity-id-query-param';
 import {prefillQueryParamKey} from '../../data/prefill-query-param-key';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
@@ -37,13 +37,13 @@ import {FormApiService} from '../../modules/forms/services/form-api-service';
 interface LoadUserInputDialogProps {
     form: FormEntity;
     version: FormVersionEntity;
-    onElementDataLoad: (elementData: ElementData) => void;
+    onElementDataLoad: (elementData: AuthoredElementValues) => void;
     isBusy: boolean;
 }
 
 interface LocalStorageData {
     date: Date;
-    data: ElementData;
+    data: AuthoredElementValues;
 }
 
 interface IdentityPreloadedData {
@@ -108,7 +108,7 @@ export function CustomerInputLoader(props: LoadUserInputDialogProps) {
         if (urlPrefillData != null) {
             const allElements = flattenElements(version.rootElement, true);
 
-            const cleanedPrefillData: ElementData = {};
+            const cleanedPrefillData: AuthoredElementValues = {};
 
             for (const key of Object.keys(urlPrefillData)) {
                 const value = urlPrefillData[key];
@@ -117,9 +117,7 @@ export function CustomerInputLoader(props: LoadUserInputDialogProps) {
                     .find(e => e.id === key);
 
                 if (elem != null && canPrefillElement(elem)) {
-                    const dataObject = newElementDataObject(elem.type);
-                    dataObject.inputValue = value;
-                    cleanedPrefillData[key] = dataObject;
+                    cleanedPrefillData[key] = value;
                 }
             }
 
@@ -131,17 +129,14 @@ export function CustomerInputLoader(props: LoadUserInputDialogProps) {
 
     const handleContinueAfterIdentitySuccess = () => {
         if (identityData != null && typeof identityData !== 'string') {
-            let prefilledData: ElementData;
+            let prefilledData: AuthoredElementValues;
             if (localStorageData != null) {
                 prefilledData = prefillIdentityData(version.rootElement, localStorageData.data, identityData.identity);
             } else {
                 prefilledData = prefillIdentityData(version.rootElement, {}, identityData.identity);
             }
 
-            prefilledData[IdentityCustomerInputKey] = {
-                ...newElementDataObject(ElementType.IntroductionStep),
-                inputValue: identityData.identity,
-            };
+            prefilledData[IdentityCustomerInputKey] = identityData.identity;
 
             onElementDataLoad(prefilledData);
         }
@@ -332,7 +327,7 @@ function initializeLocalStorageData(form: FormEntity, version: FormVersionEntity
     const date = CustomerInputService.loadCustomerInputDate(form.slug, version.version);
     const data = CustomerInputService.loadCustomerInputState(form.slug, version.version);
 
-    if (date != null && data != null && hasElementDataSomeInput(data)) {
+    if (date != null && data != null && hasAuthoredElementValuesSomeInput(data)) {
         setLocalStorageData({
             date,
             data,

@@ -97,8 +97,8 @@ export function ProcessNodeEditorTestingTab(): ReactNode {
             </Typography>
             <ElementDerivationContext
                 element={layout}
-                elementData={{}}
-                onElementDataChange={() => {
+                authoredElementValues={{}}
+                onAuthoredElementValuesChange={() => {
                     // Nothing to do here, since the data is not persisted.
                 }}
             />

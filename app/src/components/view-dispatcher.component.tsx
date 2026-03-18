@@ -6,8 +6,7 @@ import {views as Views} from '../views';
 import {type BaseViewProps} from '../views/base-view';
 import IconButton from '@mui/material/IconButton';
 import {ElementErrorBoundary} from './element-error-boundary/element-error-boundary';
-import {type ElementData, type ElementDataObject} from '../models/element-data';
-import {resolveErrors, resolveOverride, resolvePrefill, resolveValueForResolvedOverride, resolveVisibility} from '../utils/element-data-utils';
+import {resolveErrors, resolveOverride, resolveValueForResolvedOverride, resolveVisibility} from '../utils/element-data-utils';
 import {useElementEditorNavigationActions} from '../hooks/use-element-editor-navigation';
 import {isAnyContentElement} from '../models/elements/form/content/any-content-element';
 import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
@@ -20,6 +19,7 @@ import {selectDisableElementContextMenu, setComponentTree} from '../slices/admin
 import {generateComponentTitle} from '../utils/generate-component-title';
 import JumpToElement from '@aivot/mui-material-symbols-400-outlined/dist/jump-to-element/JumpToElement';
 import {copyToClipboardText} from '../utils/copy-to-clipboard';
+import {type AuthoredElementValues, type DerivedRuntimeElementData} from '../models/element-data';
 
 interface DispatcherComponentProps<T extends AnyElement> {
     rootElement: AnyElement;
@@ -31,9 +31,11 @@ interface DispatcherComponentProps<T extends AnyElement> {
     isDeriving: boolean;
     mode: 'editor' | 'viewer';
 
-    elementData: ElementData;
-    onElementDataChange: (data: ElementData, triggeringElementIds: string[]) => void;
-    onElementBlur?: (data: ElementData, triggeringElementIds: string[]) => void;
+    authoredElementValues: AuthoredElementValues;
+    derivedData: DerivedRuntimeElementData;
+    onAuthoredElementValuesChange: (data: AuthoredElementValues, triggeringElementIds: string[]) => void;
+    onElementBlur?: (data: AuthoredElementValues, triggeringElementIds: string[]) => void;
+    onDerivedDataChange?: (data: DerivedRuntimeElementData) => void;
 
     disableVisibility?: boolean;
     derivationTriggerIdQueue: string[];
@@ -50,84 +52,56 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         isBusy: baseIsBusy,
         isDeriving: baseIsDeriving,
         mode,
-        elementData,
-        onElementDataChange,
+        authoredElementValues,
+        derivedData,
+        onAuthoredElementValuesChange,
         onElementBlur,
+        onDerivedDataChange,
         disableVisibility,
         derivationTriggerIdQueue,
     } = props;
 
     const {
         id: elementId,
-        type: elementType,
     } = initialElement;
 
-    const elementDataObject: ElementDataObject = useMemo(() => {
-        return elementData[elementId] ?? {
-            $type: elementType,
-            inputValue: null,
-            previousInputValue: null,
-            isVisible: true,
-            isPrefilled: false,
-            isDirty: false,
-            computedOverride: null,
-            computedValue: null,
-            computedErrors: null,
-            value: null,
-        };
-    }, [elementData, elementId, elementType]);
-
     const element: AnyElement = useMemo(() => {
-        return resolveOverride(initialElement, elementData) as AnyElement;
-    }, [initialElement, elementData]);
+        return resolveOverride(initialElement, derivedData) as AnyElement;
+    }, [initialElement, derivedData]);
 
     const value = useMemo(() => {
-        return resolveValueForResolvedOverride(element, elementData);
-    }, [element, elementData]);
-
-    const prefilled = useMemo(() => {
-        return resolvePrefill(element, elementData);
-    }, [element, elementData]);
+        return resolveValueForResolvedOverride(element, authoredElementValues, derivedData);
+    }, [element, authoredElementValues, derivedData]);
 
     const error: string[] | undefined | null = useMemo(() => {
-        return resolveErrors(element, elementData);
-    }, [element, elementData]);
+        return resolveErrors(element, derivedData);
+    }, [element, derivedData]);
 
     const handleSetValue = useCallback((updatedValue: any | null | undefined, triggeringElementIds?: string[]) => {
         if (updatedValue == value) {
             return;
         }
 
-        const newElementData = {
-            ...elementData,
-            [elementId]: {
-                ...elementDataObject,
-                $type: elementType,
-                inputValue: updatedValue ?? null,
-                isDirty: true,
-            },
+        const newAuthoredElementValues = {
+            ...authoredElementValues,
+            [elementId]: updatedValue ?? null,
         };
 
-        onElementDataChange(newElementData, [elementId, ...(triggeringElementIds ?? [])]);
-    }, [value, elementData, elementDataObject, onElementDataChange, elementId, elementType]);
+        onAuthoredElementValuesChange(newAuthoredElementValues, [elementId, ...(triggeringElementIds ?? [])]);
+    }, [value, authoredElementValues, onAuthoredElementValuesChange, elementId]);
 
     const handleOnBlur = useCallback((updatedValue: any | null | undefined, triggeringElementIds?: string[]) => {
         if (updatedValue == value || onElementBlur == null) {
             return;
         }
 
-        const newElementData = {
-            ...elementData,
-            [elementId]: {
-                ...elementDataObject,
-                $type: elementType,
-                inputValue: updatedValue,
-                isDirty: true,
-            },
+        const newAuthoredElementValues = {
+            ...authoredElementValues,
+            [elementId]: updatedValue ?? null,
         };
 
-        onElementBlur(newElementData, [elementId, ...(triggeringElementIds ?? [])]);
-    }, [value, elementData, onElementDataChange, elementId, elementType]);
+        onElementBlur(newAuthoredElementValues, [elementId, ...(triggeringElementIds ?? [])]);
+    }, [value, authoredElementValues, onElementBlur, elementId]);
 
     const Component: ComponentType<BaseViewProps<typeof element, any>> | null = useMemo(() => Views[element.type], [element.type]);
 
@@ -136,8 +110,8 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
             return false;
         }
 
-        return resolveVisibility(element, elementData);
-    }, [elementData, element, mode, disableVisibility]);
+        return resolveVisibility(element, derivedData);
+    }, [derivedData, element, mode, disableVisibility]);
 
     const isBusy: boolean = useMemo(() => {
         return baseIsBusy || baseIsDeriving && (
@@ -156,12 +130,14 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         errors: error,
         value: value,
         scrollContainerRef: scrollContainerRef,
-        isBusy: isBusy || prefilled,
+        isBusy: isBusy,
         isDeriving: baseIsDeriving,
         mode: mode,
-        elementData: elementData,
-        onElementDataChange: onElementDataChange,
+        authoredElementValues: authoredElementValues,
+        derivedData: derivedData,
+        onAuthoredElementValuesChange: onAuthoredElementValuesChange,
         onElementBlur: onElementBlur,
+        onDerivedDataChange: onDerivedDataChange,
         disableVisibility: disableVisibility,
         derivationTriggerIdQueue: derivationTriggerIdQueue,
     }), [
@@ -174,11 +150,12 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         scrollContainerRef,
         isBusy,
         baseIsDeriving,
-        prefilled,
         mode,
-        elementData,
-        onElementDataChange,
+        authoredElementValues,
+        derivedData,
+        onAuthoredElementValuesChange,
         onElementBlur,
+        onDerivedDataChange,
         disableVisibility,
         derivationTriggerIdQueue,
     ]);

@@ -10,6 +10,7 @@ import {
     type TaskView,
     type TaskViewEvent,
 } from '../../services/process-instance-task-api-service';
+import {AuthoredElementValues} from '../../../../models/element-data';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {clearLoadingMessage, setErrorMessage, setLoadingMessage} from '../../../../slices/shell-slice';
 import {showApiErrorSnackbar} from '../../../../slices/snackbar-slice';
@@ -32,6 +33,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
     } = useGenericDetailsPageContext<ProcessTaskDetailsPageItem, undefined>();
 
     const [taskView, setTaskView] = useState<TaskView>();
+    const [taskInputData, setTaskInputData] = useState<AuthoredElementValues>({});
 
     useEffect(() => {
         let cancelled = false;
@@ -51,6 +53,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 }
 
                 setTaskView(view);
+                setTaskInputData(view.data.effectiveValues);
             })
             .catch((err) => {
                 if (cancelled) {
@@ -105,7 +108,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
         withDelay(
             new ProcessInstanceTaskApiService()
-                .putStaffTaskView(item.task.processInstanceId, item.task.id, taskView.data, evt.event),
+                .putStaffTaskView(item.task.processInstanceId, item.task.id, taskInputData, evt.event),
             500,
         )
             .then(async (updatedTaskView) => {
@@ -113,6 +116,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
                 if (updatedTask.status === ProcessTaskStatus.Running) {
                     setTaskView(updatedTaskView);
+                    setTaskInputData(updatedTaskView.data.effectiveValues);
                     return;
                 }
 
@@ -174,17 +178,13 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                         >
                             <ElementDerivationContext
                                 element={taskView.layout}
-                                elementData={taskView.data}
-                                onElementDataChange={(elementData) => {
-                                    setTaskView((currentTaskView) => {
-                                        if (currentTaskView == null) {
-                                            return currentTaskView;
-                                        }
-
-                                        return {
-                                            ...currentTaskView,
-                                            data: elementData,
-                                        };
+                                authoredElementValues={taskInputData}
+                                derivedData={taskView.data}
+                                onAuthoredElementValuesChange={setTaskInputData}
+                                onDerivedDataChange={(derivedData) => {
+                                    setTaskView((currentTaskView) => currentTaskView == null ? currentTaskView : {
+                                        ...currentTaskView,
+                                        data: derivedData,
                                     });
                                 }}
                             />

@@ -1,90 +1,95 @@
 import {ElementType} from '../data/element-type/element-type';
 import {AnyElement} from '../models/elements/any-element';
 import {isAnyElementWithChildren} from '../models/elements/any-element-with-children';
-import {isRootElement} from '../models/elements/root-element';
 import {generateComponentTitle} from './generate-component-title';
 import {ElementWithParents, flattenElementsWithParents} from './flatten-elements';
 import {getElementNameForType} from '../data/element-type/element-names';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
 import {isReplicatingContainerLayout} from '../models/elements/form/layout/replicating-container-layout';
 
-
 export function createLowCodeContextType(rootElement: AnyElement) {
-    // Create element data object interfaces for all elements in the root element.
     const relevantElements = flattenElementsWithParents(rootElement, [], false);
-
-    const elementDataObjectInterfaces = relevantElements
-        .map(elementToContextDataObjectInterface)
+    const elementStateInterfaces = relevantElements
+        .map(elementToContextStateInterface)
         .join('\n\n');
 
+    const effectiveValueFields = elementToEffectiveValueFields(rootElement);
+    const elementStateFields = elementToElementStateFields(rootElement);
 
-    const types = elementToElementDataType(rootElement);
+    return `// Element State Types
+    ${elementStateInterfaces}
 
-    const typeDef = `// Element Types
-    ${elementDataObjectInterfaces}
-    
     // Context Type
     declare interface Context {
-        ${types.join('\n')}
+        effectiveValues: {
+            ${effectiveValueFields.join('\n')}
+        };
+        elementStates: {
+            ${elementStateFields.join('\n')}
+        };
     }
-    
+
     // Global Context Variable
     declare var ctx: Context;
     `;
-
-    return typeDef;
 }
 
-function createElementDataObjectInterfaceName(element: AnyElement): string {
-    return `${element.id}_edo`;
+function createElementStateInterfaceName(element: AnyElement): string {
+    return `${element.id}_state`;
 }
 
-function elementToElementDataType(element: AnyElement): string[] {
+function elementToEffectiveValueFields(element: AnyElement): string[] {
     const fields = [];
 
     if (isAnyInputElement(element)) {
-        fields.push(`/** ${generateComponentTitle(element)}*/
-        ${element.id}: ${element.id}_edo;`);
+        fields.push(`/** ${generateComponentTitle(element)} */
+            ${element.id}: ${elementToValueType(element)} | undefined | null;`);
     }
 
     if (isAnyElementWithChildren(element) && !isReplicatingContainerLayout(element)) {
         for (const child of element.children ?? []) {
-            fields.push(
-                ...elementToElementDataType(child),
-            );
+            fields.push(...elementToEffectiveValueFields(child));
         }
     }
 
     return fields;
 }
 
-function elementToContextDataObjectInterface({element, parents}: ElementWithParents): string {
-    const valueType = elementToValueType(element);
-    const elementType = elementToTypeDefinition(element);
+function elementToElementStateFields(element: AnyElement): string[] {
+    const fields = [];
 
+    if (isAnyInputElement(element)) {
+        fields.push(`/** ${generateComponentTitle(element)} */
+            ${element.id}: ${createElementStateInterfaceName(element)} | undefined;`);
+    }
+
+    if (isAnyElementWithChildren(element) && !isReplicatingContainerLayout(element)) {
+        for (const child of element.children ?? []) {
+            fields.push(...elementToElementStateFields(child));
+        }
+    }
+
+    return fields;
+}
+
+function elementToContextStateInterface({element, parents}: ElementWithParents): string {
     return `
     /**
-     * Der Datensatz für das Element "${generateComponentTitle(element)}".
+     * Der Runtime-State für das Element "${generateComponentTitle(element)}".
      * Das Element hat die ID "${element.id}" und den Typ "${getElementNameForType(element.type)}".
-     * Der Pfad zu diesem Element lauter: ${parents.map(generateComponentTitle).join(' -> ')}
+     * Der Pfad zu diesem Element lautet: ${parents.map(generateComponentTitle).join(' -> ')}
      */
-    declare interface ${createElementDataObjectInterfaceName(element)} {
-        /** Der Typ-Identifikator des Elementes. In diesem Fall ${getElementNameForType(element.type)} */
-        $type: ${element.type};
-        /** Der eingegebene Wert des Elementes. */
-        inputValue: ${valueType} | undefined | null;
+    declare interface ${createElementStateInterfaceName(element)} {
         /** Gibt an, ob das Element sichtbar ist. */
-        isVisible: boolean | undefined | null;
-        /** Gibt an, ob das Element durch ein Nutzerkonto vorausgefüllt ist. */
-        isPrefilled: boolean | undefined | null;
-        /** Gibt an, ob das Element durch eine Nutzer:in verändert wurde. */
-        isDirty: boolean | undefined | null;
-        /** Die berechnete Überschreibung des Elementes. */
-        computedOverride: ${elementType} | undefined | null;
-        /** Der berechnete Wert des Elementes. */
-        computedValue: ${valueType} | undefined | null;
-        /** Die berechneten Fehler des Elementes. */
-        computedErrors: string[] | undefined | null;
+        visible: boolean | undefined | null;
+        /** Die aktuell berechnete Fehlermeldung. */
+        error: string | undefined | null;
+        /** Die aktuell berechnete Überschreibung des Elementes. */
+        override: Record<string, unknown> | undefined | null;
+        /** Gibt an, ob der effektive Wert authored oder derived ist. */
+        valueSource: 'Authored' | 'Derived' | undefined | null;
+        /** Enthält bei strukturierten Listen die States der einzelnen Datensätze. */
+        subStates: Record<string, ${createElementStateInterfaceName(element)}>[] | undefined | null;
     }`;
 }
 
@@ -108,7 +113,7 @@ function elementToValueType(element: AnyElement): string {
             return '{latitude: number | null | undefined; longitude: number | null | undefined; address: string | null | undefined}';
         case ElementType.Radio:
         case ElementType.Select:
-            return element.options?.map(option => `'${option.value}'`).join(' | ') ?? 'string';
+            return element.options?.map((option) => `'${option.value}'`).join(' | ') ?? 'string';
         case ElementType.Number:
             return 'number';
         case ElementType.MultiCheckbox:
@@ -130,20 +135,10 @@ function elementToValueType(element: AnyElement): string {
         case ElementType.SubmitStep:
             return 'object';
         case ElementType.Table:
-            return `{${element.fields?.map(field => `${field.key}: string | number | null | undefined`).join('; ')}}[]`;
+            return `{${element.fields?.map((field) => `${field.key}: string | number | null | undefined`).join('; ')}}[]`;
         case ElementType.ReplicatingContainer:
-            const children = (element.children ?? []).map(element => `${element.id}: ${createElementDataObjectInterfaceName(element)};`).join('\n');
-            return `{${children}}[]`;
+            return 'Record<string, unknown>[]';
         default:
             return 'never';
     }
-}
-
-function elementToTypeDefinition(element: AnyElement): string {
-    const lines = ['{'];
-    for (const e of Object.keys(element)) {
-        lines.push(`        ${e}: ${typeof [element.type]};`);
-    }
-    lines.push('    }');
-    return lines.join('\n');
 }

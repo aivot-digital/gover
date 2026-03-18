@@ -1,6 +1,6 @@
 import {type AnyElement} from '../models/elements/any-element';
 import React, {type FunctionComponent} from 'react';
-import {type ElementData} from '../models/element-data';
+import {type AuthoredElementValues, type DerivedRuntimeElementData} from '../models/element-data';
 
 export interface BaseViewProps<M extends AnyElement, V> {
     rootElement: AnyElement;
@@ -14,9 +14,11 @@ export interface BaseViewProps<M extends AnyElement, V> {
     isBusy: boolean;
     isDeriving: boolean;
     mode: 'editor' | 'viewer';
-    elementData: ElementData;
-    onElementDataChange: (data: ElementData, triggeringElementIds: string[]) => void;
-    onElementBlur?: (data: ElementData, triggeringElementIds: string[]) => void;
+    authoredElementValues: AuthoredElementValues;
+    derivedData: DerivedRuntimeElementData;
+    onAuthoredElementValuesChange: (data: AuthoredElementValues, triggeringElementIds: string[]) => void;
+    onElementBlur?: (data: AuthoredElementValues, triggeringElementIds: string[]) => void;
+    onDerivedDataChange?: (data: DerivedRuntimeElementData) => void;
     disableVisibility?: boolean;
     derivationTriggerIdQueue: string[];
 }

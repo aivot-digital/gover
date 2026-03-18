@@ -3,7 +3,6 @@ import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-objec
 import {BaseApiService} from '../../services/base-api-service';
 import {DataObjectItem} from '../../modules/data-objects/models/data-object-item';
 import {Page} from '../../models/dtos/page';
-import {ElementDataObject} from '../../models/element-data';
 
 export interface DataObjectSelectOption {
     key: string;
@@ -81,8 +80,7 @@ function extractPrimaryLabel(
         return item.id;
     }
 
-    const entry = item.data?.[dataLabelAttributeKey] as ElementDataObject | undefined;
-    const inputValue = entry?.inputValue;
+    const inputValue = item.data?.[dataLabelAttributeKey];
 
     const primitiveLabel = formatPrimitiveLabelValue(inputValue);
     if (primitiveLabel != null) {

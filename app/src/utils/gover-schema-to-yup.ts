@@ -8,9 +8,14 @@ import {isReplicatingContainerLayout, ReplicatingContainerLayout} from '../model
 import {TextFieldElement} from '../models/elements/form/input/text-field-element';
 import {SelectFieldElement} from '../models/elements/form/input/select-field-element';
 import {RadioFieldElement} from '../models/elements/form/input/radio-field-element';
-import {ElementData, ElementDataObject, newElementDataObject} from '../models/element-data';
+import {
+    AuthoredElementValues,
+    ComputedElementState,
+    ComputedElementStates,
+    createDerivedRuntimeElementData,
+    DerivedRuntimeElementData,
+} from '../models/element-data';
 import {DataObjectItem} from '../modules/data-objects/models/data-object-item';
-import {mapElementData} from './element-data-utils';
 import {ChipInputFieldElement} from '../models/elements/form/input/chip-input-field-element';
 import {DateRangeFieldElement} from '../models/elements/form/input/date-range-field-element';
 import {TimeRangeFieldElement} from '../models/elements/form/input/time-range-field-element';
@@ -161,20 +166,10 @@ export function goverSchemaToYup2(elem: AnyElement): Record<string, Schema> {
         // Generate schema for the element
         const elementSchema = schemaMapper(elem);
 
-        // Generate the nested object shape for the underlying ElementDataObject
-        let elementdataObjectShape = yup.object().shape({
-            inputValue: elementSchema,
-        });
-
-        if (elem.required) {
-            elementdataObjectShape = elementdataObjectShape
-                .required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`);
-        }
-
         // Extend the existing shape with the new element schema
         elementDataShape = {
             ...elementDataShape,
-            [elem.id]: elementdataObjectShape,
+            [elem.id]: elementSchema,
         };
     }
 
@@ -706,46 +701,90 @@ function assignmentContextFieldToYup(elem: AssignmentContextFieldElement): Schem
     return assignmentContextSchema;
 }
 
-export function applyYupErrorsToElementData(rootElement: AnyElement, elementData: ElementData, errors: Record<string, string>): ElementData {
-    console.log(errors);
+export function applyYupErrorsToElementData(
+    rootElement: AnyElement,
+    authoredElementValues: AuthoredElementValues,
+    errors: Record<string, string>,
+    baseDerivedData?: DerivedRuntimeElementData,
+): DerivedRuntimeElementData {
+    const nextDerivedData = createDerivedRuntimeElementData(baseDerivedData);
+    nextDerivedData.elementStates = {
+        ...nextDerivedData.elementStates,
+    };
 
-    function applyErrorsToElementData(element: AnyElement, value: ElementDataObject | null | undefined, parents: Array<AnyElement | number>) {
-        if (!isAnyInputElement(element)) {
-            return null;
-        }
+    function buildPath(element: AnyElement, parents: Array<AnyElement | number>): string {
+        let path = 'data';
 
-        let val: ElementDataObject = {
-            ...newElementDataObject(element.type),
-            ...value,
-            computedErrors: null,
-        };
-
-        let path = 'data.';
-        for (const p of parents) {
-            if (typeof p === 'number') {
-                path += `inputValue[${p}].`;
-            } else if (isReplicatingContainerLayout(p)) {
-                path += `${p.id}.`;
+        for (const parent of parents) {
+            if (typeof parent === 'number') {
+                path += `[${parent}]`;
+            } else if (isAnyInputElement(parent)) {
+                path += `.${parent.id}`;
             }
         }
 
-        path += `${element.id}.inputValue`;
-
-        console.log(path);
-
-        const err = errors[path as keyof DataObjectItem];
-        if (err != null) {
-            val.computedErrors = [err];
-        }
-
-        return val;
+        return `${path}.${element.id}`;
     }
 
-    const updatedElementData = mapElementData(
-        rootElement,
-        elementData,
-        applyErrorsToElementData,
-    );
+    function applyErrors(
+        element: AnyElement,
+        currentAuthoredElementValues: AuthoredElementValues,
+        currentElementStates: ComputedElementStates,
+        parents: Array<AnyElement | number> = [],
+    ): ComputedElementStates {
+        const nextElementStates: ComputedElementStates = {
+            ...currentElementStates,
+        };
 
-    return updatedElementData;
+        if (isAnyInputElement(element)) {
+            const currentElementState: ComputedElementState = {
+                visible: currentElementStates[element.id]?.visible ?? true,
+                error: null,
+                override: currentElementStates[element.id]?.override ?? null,
+                valueSource: currentElementStates[element.id]?.valueSource ?? 'Authored',
+                subStates: currentElementStates[element.id]?.subStates ?? null,
+            };
+
+            const error = errors[buildPath(element, parents) as keyof DataObjectItem];
+            if (error != null) {
+                currentElementState.error = error;
+            }
+
+            if (isReplicatingContainerLayout(element)) {
+                const childValues = currentAuthoredElementValues[element.id];
+                const previousSubStates = currentElementState.subStates ?? [];
+
+                currentElementState.subStates = Array.isArray(childValues) ?
+                    childValues.map((childValue, index) => {
+                        if (childValue == null || typeof childValue !== 'object') {
+                            return previousSubStates[index] ?? {};
+                        }
+
+                        let childElementStates: ComputedElementStates = {
+                            ...(previousSubStates[index] ?? {}),
+                        };
+
+                        for (const child of element.children ?? []) {
+                            childElementStates = applyErrors(child, childValue as AuthoredElementValues, childElementStates, [...parents, element, index]);
+                        }
+
+                        return childElementStates;
+                    }) :
+                    [];
+            }
+
+            nextElementStates[element.id] = currentElementState;
+        }
+
+        if (isAnyElementWithChildren(element) && !isReplicatingContainerLayout(element)) {
+            for (const child of element.children ?? []) {
+                Object.assign(nextElementStates, applyErrors(child, currentAuthoredElementValues, nextElementStates, [...parents, element]));
+            }
+        }
+
+        return nextElementStates;
+    }
+
+    nextDerivedData.elementStates = applyErrors(rootElement, authoredElementValues, nextDerivedData.elementStates);
+    return nextDerivedData;
 }

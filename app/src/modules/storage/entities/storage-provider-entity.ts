@@ -1,4 +1,4 @@
-import {type ElementData} from '../../../models/element-data';
+import {type AuthoredElementValues} from '../../../models/element-data';
 import {type StorageProviderStatus} from '../enums/storage-provider-status';
 import {type StorageProviderType} from '../enums/storage-provider-type';
 
@@ -18,7 +18,7 @@ export interface StorageProviderEntity {
     status: StorageProviderStatus;
     statusMessage?: string | null;
     readOnlyStorage: boolean;
-    configuration: ElementData;
+    configuration: AuthoredElementValues;
     maxFileSizeInBytes: number;
     systemProvider: boolean;
     testProvider: boolean;

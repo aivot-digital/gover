@@ -2,7 +2,7 @@ import {BaseCrudApiService} from "../../../services/base-crud-api-service";
 import {ProcessInstanceTaskEntity} from "../entities/process-instance-task-entity";
 import {ProcessTaskStatus} from "../enums/process-task-status";
 import {GroupLayout} from "../../../models/elements/form/layout/group-layout";
-import {ElementData} from "../../../models/element-data";
+import {AuthoredElementValues, DerivedRuntimeElementData} from "../../../models/element-data";
 
 interface ProcessInstanceTaskFilter {
     id: number;
@@ -17,7 +17,7 @@ interface ProcessInstanceTaskFilter {
 
 export interface TaskView {
     layout: GroupLayout;
-    data: ElementData;
+    data: DerivedRuntimeElementData;
     events: TaskViewEvent[];
 }
 
@@ -69,16 +69,16 @@ export class ProcessInstanceTaskApiService extends BaseCrudApiService<
         return this.get(`/api/public/processes/${instanceAccessKey}/tasks/${taskAccessKey}/`);
     }
 
-    public putStaffTaskView(instanceId: number, taskId: number, payload: ElementData, event: string): Promise<TaskView> {
-        return this.put<ElementData, TaskView>(`/api/processes/${instanceId}/tasks/${taskId}/`, payload, {
+    public putStaffTaskView(instanceId: number, taskId: number, payload: AuthoredElementValues, event: string): Promise<TaskView> {
+        return this.put<AuthoredElementValues, TaskView>(`/api/processes/${instanceId}/tasks/${taskId}/`, payload, {
             query: {
                 event: event,
             },
         });
     }
 
-    public putCustomerTaskView(instanceAccessKey: string, taskAccessKey: string, payload: ElementData, event: string): Promise<TaskView> {
-        return this.put<ElementData, TaskView>(`/api/public/processes/${instanceAccessKey}/tasks/${taskAccessKey}/`, payload, {
+    public putCustomerTaskView(instanceAccessKey: string, taskAccessKey: string, payload: AuthoredElementValues, event: string): Promise<TaskView> {
+        return this.put<AuthoredElementValues, TaskView>(`/api/public/processes/${instanceAccessKey}/tasks/${taskAccessKey}/`, payload, {
             query: {
                 event: event,
             },

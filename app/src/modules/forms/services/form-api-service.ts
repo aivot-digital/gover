@@ -7,7 +7,7 @@ import {Theme} from '../../themes/models/theme';
 import {Page} from '../../../models/dtos/page';
 import {IdentityProviderInfo} from '../../identity/models/identity-provider-info';
 import {CustomerInput} from '../../../models/customer-input';
-import {ElementData, ElementDerivationResponse} from '../../../models/element-data';
+import {AuthoredElementValues, ElementDerivationResponse} from '../../../models/element-data';
 import {RequestOptions} from '../../../services/base-api-service';
 import {FormPublishChecklistItem} from '../dtos/form-publish-checklist-item';
 import {VFormVersionWithDetailsEntity} from '../entities/v-form-version-with-details-entity';
@@ -22,6 +22,9 @@ import {SubmissionListResponseDTO} from '../../submissions/dtos/submission-list-
 import {ElementType} from '../../../data/element-type/element-type';
 import {FormCostCalculationResponseDTO} from '../dtos/form-cost-calculation-response-dto';
 import {FormCitizenListResponseDTO} from '../dtos/form-citizen-list-response-dto';
+import {RootElement} from '../../../models/elements/root-element';
+import {isAnyElementWithChildren} from '../../../models/elements/any-element-with-children';
+import {isReplicatingContainerLayout} from '../../../models/elements/form/layout/replicating-container-layout';
 
 export type DerivationSkipIdentifier = string[] | ['ALL'];
 
@@ -218,41 +221,46 @@ export class FormApiService extends BaseCrudApiService<FormEntity, FormEntity, F
     }
 
     public async calculateCosts(slug: string, version: number, customerInput: CustomerInput): Promise<FormCostCalculationResponseDTO> {
-        return await this.post<ElementData, FormCostCalculationResponseDTO>(`/api/public/forms/${slug}/costs/`, customerInput, {query: {version: version}});
+        return await this.post<AuthoredElementValues, FormCostCalculationResponseDTO>(`/api/public/forms/${slug}/costs/`, customerInput, {query: {version: version}});
     }
 
-    public async submit(id: FormVersionEntityId, userInput: CustomerInput, identityId: string | undefined): Promise<SubmissionListResponseDTO> {
+    public async submit(id: FormVersionEntityId, rootElement: RootElement, userInput: CustomerInput, identityId: string | undefined): Promise<SubmissionListResponseDTO> {
         const data = new FormData();
         data.set('inputs', JSON.stringify(userInput));
 
         const files: FileUploadElementItem[] = [];
 
-        function processElementData(ed: ElementData) {
-            for (const key of Object.keys(ed)) {
-                const dataObject = ed[key];
-                if (dataObject == null) {
-                    return;
-                }
+        function processElementValues(element: any, values: AuthoredElementValues) {
+            const value = values[element.id];
 
-                if (dataObject.$type === ElementType.FileUpload) {
-                    const input: FileUploadElementItem[] | any = dataObject.inputValue ?? [];
-                    if (Array.isArray(input)) {
-                        files.push(...input);
-                    }
-                }
+            if (element.type === ElementType.FileUpload && Array.isArray(value)) {
+                files.push(...value);
+            }
 
-                if (dataObject.$type === ElementType.ReplicatingContainer) {
-                    const items: ElementData[] = dataObject.inputValue ?? [];
-                    if (Array.isArray(items)) {
-                        for (const item of items) {
-                            processElementData(item);
+            if (isReplicatingContainerLayout(element)) {
+                if (Array.isArray(value)) {
+                    for (const item of value) {
+                        if (item == null || typeof item !== 'object') {
+                            continue;
+                        }
+
+                        for (const child of element.children ?? []) {
+                            processElementValues(child, item as AuthoredElementValues);
                         }
                     }
+                }
+
+                return;
+            }
+
+            if (isAnyElementWithChildren(element)) {
+                for (const child of element.children ?? []) {
+                    processElementValues(child, values);
                 }
             }
         }
 
-        processElementData(userInput);
+        processElementValues(rootElement, userInput);
 
         for (const file of files) {
             const blob = await fetch(file.uri).then((r) => r.blob());

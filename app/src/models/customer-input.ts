@@ -1,1 +1,3 @@
-export type CustomerInput = Record<string, any>;
+import {AuthoredElementValues} from './element-data';
+
+export type CustomerInput = AuthoredElementValues;

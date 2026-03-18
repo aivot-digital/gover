@@ -67,8 +67,9 @@ export function SelectElementDialog(props: SelectElementDialogProps) {
                             isBusy={false}
                             isDeriving={false}
                             mode="editor"
-                            elementData={{}}
-                            onElementDataChange={() => {
+                            authoredElementValues={{}}
+                            derivedData={{effectiveValues: {}, elementStates: {}}}
+                            onAuthoredElementValuesChange={() => {
                             }}
                             onElementBlur={undefined}
                             disableVisibility={true}

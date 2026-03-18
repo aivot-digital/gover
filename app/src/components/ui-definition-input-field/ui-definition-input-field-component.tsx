@@ -11,7 +11,7 @@ import {ElementTree} from '../element-tree-2/element-tree';
 import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
 import {ElementDerivationContext} from '../../modules/elements/components/element-derivation-context';
 import {Allotment} from 'allotment';
-import {ElementData} from '../../models/element-data';
+import {AuthoredElementValues} from '../../models/element-data';
 
 interface UiDefinitionInputFieldComponentProps {
     label: string;
@@ -56,7 +56,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
     const displayLabel = `${label}${required ? ' *' : ''}`;
     const [showDraftDialog, setShowDraftDialog] = useState<boolean>(false);
     const [draftValue, setDraftValue] = useState<UiDefinitionInputFieldElementItem | null>(null);
-    const [inputData, setInputData] = useState<ElementData>({});
+    const [inputData, setInputData] = useState<AuthoredElementValues>({});
 
     const summary = useMemo(() => {
         return buildSummary(value);
@@ -210,8 +210,8 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                 >
                                     <ElementDerivationContext
                                         element={draftValue ?? value ?? defaultValue}
-                                        elementData={inputData}
-                                        onElementDataChange={setInputData}
+                                        authoredElementValues={inputData}
+                                        onAuthoredElementValuesChange={setInputData}
                                     />
                                 </Box>
                             </Allotment.Pane>

@@ -29,7 +29,7 @@ import {getStepIcon} from '../../data/step-icons';
 import {AlertComponent} from '../../components/alert/alert-component';
 import Chip from '@mui/material/Chip';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import {ElementData} from '../../models/element-data';
+import {AuthoredElementValues, createDerivedRuntimeElementData, DerivedRuntimeElementData} from '../../models/element-data';
 import {copyToClipboardText} from '../../utils/copy-to-clipboard';
 
 interface PrefillFormDialogProps {
@@ -73,7 +73,8 @@ export function canPrefillElement(e: AnyElement): boolean {
 
 export function PrefillFormDialog(props: PrefillFormDialogProps) {
     const dispatch = useAppDispatch();
-    const [elementData, setElementData] = useState<ElementData>({});
+    const [elementData, setElementData] = useState<AuthoredElementValues>({});
+    const [derivedData, setDerivedData] = useState<DerivedRuntimeElementData>(createDerivedRuntimeElementData());
     const [hasPrefillableElements, setHasPrefillableElements] = useState<Boolean>(false);
     const form = useAppSelector(selectLoadedForm);
 
@@ -338,8 +339,10 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                                                             isBusy={false}
                                                             isDeriving={false}
                                                             mode="viewer"
-                                                            elementData={elementData}
-                                                            onElementDataChange={setElementData}
+                                                            authoredElementValues={elementData}
+                                                            derivedData={derivedData}
+                                                            onAuthoredElementValuesChange={setElementData}
+                                                            onDerivedDataChange={setDerivedData}
                                                             onElementBlur={undefined}
                                                             disableVisibility={true}
                                                             scrollContainerRef={undefined}

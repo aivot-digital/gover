@@ -26,7 +26,12 @@ import {hideLoadingOverlay, showLoadingOverlay} from '../../../slices/loading-ov
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
 import {IdentityProviderInfo} from '../../../modules/identity/models/identity-provider-info';
 import {IdentityProvidersApiService} from '../../../modules/identity/identity-providers-api-service';
-import {ElementData, ElementDerivationResponse} from '../../../models/element-data';
+import {
+    AuthoredElementValues,
+    createDerivedRuntimeElementData,
+    DerivedRuntimeElementData,
+    ElementDerivationResponse,
+} from '../../../models/element-data';
 import {FormStatus} from '../../../modules/forms/enums/form-status';
 import {useConfirm} from '../../../providers/confirm-provider';
 import {addDerivationLogItems} from '../../../slices/logging-slice';
@@ -41,6 +46,7 @@ import {ModuleIcons} from '../../../shells/staff/data/module-icons';
 import NewWindow from '@aivot/mui-material-symbols-400-outlined/dist/new-window/NewWindow';
 import HomeStorage from '@aivot/mui-material-symbols-400-outlined/dist/home-storage/HomeStorage';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {collectErrors} from '../../../components/error-alert/error-alert';
 
 export function PresetEditPage() {
     const api = useApi();
@@ -87,7 +93,8 @@ export function PresetEditPage() {
 
     const [showPresetVersions, setShowPresetVersions] = useState(false);
 
-    const [elementData, setElementData] = useState<ElementData>({});
+    const [authoredElementValues, setAuthoredElementValues] = useState<AuthoredElementValues>({});
+    const [derivedData, setDerivedData] = useState<DerivedRuntimeElementData>(createDerivedRuntimeElementData());
 
     const [toolbarHeight, setToolbarHeight] = useState<number>(0);
     const updateToolbarHeight = (height: number) => {
@@ -158,12 +165,12 @@ export function PresetEditPage() {
         }
 
         presetsApiService
-            .determinePresetState(preset.key, presetVersion.version, elementData, {
+            .determinePresetState(preset.key, presetVersion.version, authoredElementValues, {
                 disableVisibilities: false,
                 disableValidation: true,
             })
             .then(({elementData, logItems}) => {
-                setElementData(elementData);
+                setDerivedData(elementData);
                 dispatch(addDerivationLogItems(logItems));
             })
             .catch(err => {
@@ -278,13 +285,13 @@ export function PresetEditPage() {
                 setIsDeriving(true);
 
                 return presetsApiService
-                    .determinePresetState(preset.key, presetVersion.version, elementData, {
+                    .determinePresetState(preset.key, presetVersion.version, authoredElementValues, {
                         disableVisibilities: false,
                         disableValidation: true,
                     });
             })
             .then(({elementData, logItems}) => {
-                setElementData(elementData);
+                setDerivedData(elementData);
                 dispatch(addDerivationLogItems(logItems));
             })
             .catch((err) => {
@@ -309,17 +316,16 @@ export function PresetEditPage() {
         setIsBusy(true);
 
         presetsApiService
-            .determinePresetState(preset.key, presetVersion.version, elementData, {
+            .determinePresetState(preset.key, presetVersion.version, authoredElementValues, {
                 disableValidation: false,
                 disableVisibilities: false,
             })
             .then(({elementData, logItems}) => {
-                setElementData(elementData);
+                setDerivedData(elementData);
 
                 dispatch(addDerivationLogItems(logItems));
 
-                // errors always contains 3 base errors from the form (can change if form will extend in the future)
-                if (elementData.errors && Object.keys(elementData.errors).length <= 3) {
+                if (collectErrors(presetVersion.rootElement, authoredElementValues, elementData).length === 0) {
                     dispatch(showSuccessSnackbar('Bei der Validierung sind keine Fehler aufgetreten.'));
                 }
             })
@@ -332,7 +338,7 @@ export function PresetEditPage() {
             });
     };
 
-    const handleValueChange = (elementData: ElementData) => {
+    const handleValueChange = (elementData: AuthoredElementValues) => {
         if (preset == null || presetVersion == null) {
             return;
         }
@@ -341,7 +347,7 @@ export function PresetEditPage() {
             return;
         }
 
-        setElementData(elementData);
+        setAuthoredElementValues(elementData);
 
         setIsDeriving(true);
         dispatch(showLoadingSnackbar('Berechnungen werden durchgeführt…'));
@@ -360,7 +366,7 @@ export function PresetEditPage() {
                 );
             },
         }).then(({elementData, logItems}) => {
-            setElementData(elementData);
+            setDerivedData(elementData);
             dispatch(addDerivationLogItems(logItems));
         }).catch((err) => {
             console.error(err);
@@ -489,8 +495,10 @@ export function PresetEditPage() {
                                         isBusy={false}
                                         isDeriving={false}
                                         mode="editor"
-                                        elementData={elementData}
-                                        onElementDataChange={setElementData}
+                                        authoredElementValues={authoredElementValues}
+                                        derivedData={derivedData}
+                                        onAuthoredElementValuesChange={handleValueChange}
+                                        onDerivedDataChange={setDerivedData}
                                         onElementBlur={undefined}
                                         derivationTriggerIdQueue={[] /* Not necessary because this is kept internally by the root component view */}
                                         disableVisibility={false}
@@ -550,4 +558,3 @@ export function PresetEditPage() {
         </PageWrapper>
     );
 }
-

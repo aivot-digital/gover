@@ -1,4 +1,4 @@
-import {ElementData} from '../../../models/element-data';
+import {AuthoredElementValues} from '../../../models/element-data';
 
 export interface PaymentProviderResponseDTO {
     key: string;
@@ -7,5 +7,5 @@ export interface PaymentProviderResponseDTO {
     providerKey: string;
     isTestProvider: boolean;
     isEnabled: boolean;
-    config: ElementData;
+    config: AuthoredElementValues;
 }

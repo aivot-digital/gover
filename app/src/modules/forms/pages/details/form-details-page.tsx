@@ -45,7 +45,12 @@ import {withAsyncWrapper} from '../../../../utils/with-async-wrapper';
 import {useDidUpdateEffect} from '../../../../hooks/use-did-update-effect';
 import {IdentityProviderInfo} from '../../../identity/models/identity-provider-info';
 import {setIdentityId} from '../../../../slices/identity-slice';
-import {ElementData, ElementDerivationResponse} from '../../../../models/element-data';
+import {
+    AuthoredElementValues,
+    createDerivedRuntimeElementData,
+    DerivedRuntimeElementData,
+    ElementDerivationResponse,
+} from '../../../../models/element-data';
 import {FormStatus} from '../../enums/form-status';
 import {addDerivationLogItems} from '../../../../slices/logging-slice';
 import {RootState} from '../../../../store.staff';
@@ -115,7 +120,8 @@ export function FormDetailsPage() {
     const [showRevisions, setShowRevisions] = useState(false);
     const showDeveloperTools = useAppSelector(selectDevToolsTab);
 
-    const [elementData, setElementData] = useState<ElementData>({});
+    const [authoredElementValues, setAuthoredElementValues] = useState<AuthoredElementValues>({});
+    const [derivedData, setDerivedData] = useState<DerivedRuntimeElementData>(createDerivedRuntimeElementData());
 
     const {
         disableVisibility,
@@ -290,7 +296,7 @@ export function FormDetailsPage() {
                     .deriveForm(
                         loadedForm.form.slug,
                         loadedForm.version.version,
-                        elementData,
+                        authoredElementValues,
                         {
                             skipErrorsFor: [],
                             skipVisibilitiesFor: disableVisibility ? ['ALL'] : [],
@@ -299,9 +305,9 @@ export function FormDetailsPage() {
                         },
                     );
             },
-        })
+            })
             .then((newState) => {
-                setElementData(newState.elementData);
+                setDerivedData(newState.elementData);
                 dispatch(addDerivationLogItems(newState.logItems));
             })
             .finally(() => {
@@ -361,7 +367,7 @@ export function FormDetailsPage() {
                     .deriveForm(
                         form.slug,
                         version.version,
-                        elementData,
+                        authoredElementValues,
                         {
                             skipErrorsFor: ['ALL'],
                             skipVisibilitiesFor: disableVisibility ? ['ALL'] : [],
@@ -370,7 +376,7 @@ export function FormDetailsPage() {
                         },
                     )
                     .then((state) => {
-                        setElementData(state.elementData);
+                        setDerivedData(state.elementData);
                         dispatch(addDerivationLogItems(state.logItems));
                     });
             })
@@ -404,7 +410,7 @@ export function FormDetailsPage() {
                     .deriveForm(
                         form.slug,
                         version.version,
-                        elementData,
+                        authoredElementValues,
                         {
                             skipErrorsFor: ['ALL'],
                             skipVisibilitiesFor: disableVisibility ? ['ALL'] : [],
@@ -413,7 +419,7 @@ export function FormDetailsPage() {
                         },
                     )
                     .then((state) => {
-                        setElementData(state.elementData);
+                        setDerivedData(state.elementData);
                         dispatch(addDerivationLogItems(state.logItems));
                     });
             })
@@ -535,7 +541,7 @@ export function FormDetailsPage() {
                 .deriveForm(
                     loadedForm.form.slug,
                     loadedForm.version.version,
-                    elementData,
+                    authoredElementValues,
                     {
                         skipErrorsFor: ['ALL'],
                         skipVisibilitiesFor: disableVisibility ? ['ALL'] : [],
@@ -543,7 +549,7 @@ export function FormDetailsPage() {
                         skipOverridesFor: [],
                     },
                 );
-            setElementData(newState.elementData);
+            setDerivedData(newState.elementData);
             dispatch(addDerivationLogItems(newState.logItems));
 
             dispatch(clearLoadingMessage());
@@ -669,8 +675,10 @@ export function FormDetailsPage() {
                                                 isBusy={false}
                                                 isDeriving={false}
                                                 mode="editor"
-                                                elementData={elementData}
-                                                onElementDataChange={setElementData}
+                                                authoredElementValues={authoredElementValues}
+                                                derivedData={derivedData}
+                                                onAuthoredElementValuesChange={setAuthoredElementValues}
+                                                onDerivedDataChange={setDerivedData}
                                                 onElementBlur={undefined}
                                                 derivationTriggerIdQueue={[] /* Not necessary because this is kept internally by the root component view */}
                                                 disableVisibility={disableVisibility}
@@ -752,7 +760,7 @@ export function FormDetailsPage() {
                                     <DeveloperTools
                                         dataLabel={loadedForm.form.internalTitle}
                                         rootElement={loadedForm.version.rootElement}
-                                        elementData={elementData}
+                                        elementData={authoredElementValues}
                                         onElementDataChange={(elementData) => {
                                             dispatch(setLoadingMessage({
                                                 message: 'Element-Daten werden importiert',
@@ -774,7 +782,8 @@ export function FormDetailsPage() {
                                                         },
                                                     ), 500)
                                                 .then((state) => {
-                                                    setElementData(state.elementData);
+                                                    setAuthoredElementValues(elementData);
+                                                    setDerivedData(state.elementData);
                                                     dispatch(addDerivationLogItems(state.logItems));
                                                 })
                                                 .finally(() => {

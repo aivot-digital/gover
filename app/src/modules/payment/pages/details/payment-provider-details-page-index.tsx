@@ -7,7 +7,6 @@ import {useNavigate} from 'react-router-dom';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../../../utils/string-utils';
 import {PaymentProvidersApiService} from '../../payment-providers-api-service';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
-import {ViewDispatcherComponent} from '../../../../components/view-dispatcher.component';
 import {flattenElements} from '../../../../utils/flatten-elements';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
@@ -23,13 +22,14 @@ import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constra
 import HelpIconOutlined from '@mui/icons-material/HelpOutline';
 import Tooltip from '@mui/material/Tooltip';
 import * as yup from 'yup';
-import {goverSchemaToYup} from '../../../../utils/gover-schema-to-yup';
+import {goverSchemaToYup2 as goverSchemaToYup} from '../../../../utils/gover-schema-to-yup';
 import {PaymentProviderDefinitionResponseDTO} from '../../dtos/payment-provider-definition-response-dto';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import {VFormVersionWithDetailsService} from '../../../forms/services/v-form-version-with-details-api-service';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
 
 export const _PaymentProviderSchema = {
     name: yup.string()
@@ -349,19 +349,11 @@ export function PaymentProviderDetailsPageIndex() {
             {
                 definition != null &&
                 definition.configLayout != null &&
-                <ViewDispatcherComponent
-                    rootElement={definition.configLayout}
-                    allElements={flattenElements(definition.configLayout)}
+                <ElementDerivationContext
                     element={definition.configLayout}
-                    isBusy={isBusy || !isEditable}
-                    isDeriving={false}
-                    elementData={paymentProvider.config}
-                    onElementDataChange={handleInputChange('config')}
-                    onElementBlur={undefined}
-                    mode="viewer"
-                    derivationTriggerIdQueue={[]}
-                    disableVisibility={true}
-                    scrollContainerRef={undefined}
+                    authoredElementValues={paymentProvider.config}
+                    onAuthoredElementValuesChange={handleInputChange('config')}
+                    disabled={isBusy || !isEditable}
                 />
             }
 

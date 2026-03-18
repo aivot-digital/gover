@@ -34,9 +34,11 @@ export function ContainerView(props: BaseViewProps<GroupLayout, any>) {
                         isBusy={props.isBusy}
                         isDeriving={props.isDeriving || pass}
                         mode={props.mode}
-                        elementData={props.elementData}
-                        onElementDataChange={props.onElementDataChange}
+                        authoredElementValues={props.authoredElementValues}
+                        derivedData={props.derivedData}
+                        onAuthoredElementValuesChange={props.onAuthoredElementValuesChange}
                         onElementBlur={props.onElementBlur}
+                        onDerivedDataChange={props.onDerivedDataChange}
                         scrollContainerRef={props.scrollContainerRef}
                         disableVisibility={props.disableVisibility}
                         derivationTriggerIdQueue={props.derivationTriggerIdQueue}

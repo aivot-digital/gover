@@ -524,21 +524,10 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 definition.providerConfigLayout != null &&
                 <ElementDerivationContext
                     element={definition.providerConfigLayout}
-                    elementData={editedStorageProvider.configuration}
-                    onElementDataChange={handleInputChange('configuration')}
+                    authoredElementValues={editedStorageProvider.configuration}
+                    onAuthoredElementValuesChange={handleInputChange('configuration')}
                     disabled={inputsDisabled}
-                    onDerivationFinished={(derivedElementData) => {
-                        if (originalStorageProvider == null) {
-                            return
-                        }
-
-                        if (!initialDerivationDone) {
-                            setOriginalStorageProvider((prev) => ({
-                                ...prev,
-                                configuration: derivedElementData,
-                            }));
-                        }
-
+                    onDerivationFinished={() => {
                         setInitialDerivationDone(true);
                     }}
                 />

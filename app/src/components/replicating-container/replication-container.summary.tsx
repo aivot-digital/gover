@@ -8,14 +8,16 @@ import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
 import React from 'react';
 import {type BaseSummaryProps} from '../../summaries/base-summary';
 import SubdirectoryArrowLeftOutlinedIcon from '@mui/icons-material/SubdirectoryArrowLeftOutlined';
-import {type ElementData} from '../../models/element-data';
+import {type AuthoredElementValues} from '../../models/element-data';
+import {resolveReplicatingContainerItemDerivedData} from '../../utils/element-data-utils';
 
-export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingContainerLayout, ElementData[]>) {
+export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingContainerLayout, AuthoredElementValues[]>) {
     const {
         model,
         showTechnical,
         allowStepNavigation,
-        elementData,
+        authoredElementValues,
+        derivedData,
         value,
     } = props;
 
@@ -23,7 +25,7 @@ export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingC
         children,
     } = model;
 
-    const values = (value ?? []) as ElementData[];
+    const values = (value ?? []) as AuthoredElementValues[];
 
     const theme = useTheme();
 
@@ -144,7 +146,8 @@ export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingC
                                         element={child}
                                         showTechnical={showTechnical}
                                         allowStepNavigation={allowStepNavigation}
-                                        elementData={val}
+                                        authoredElementValues={val}
+                                        derivedData={resolveReplicatingContainerItemDerivedData(model, derivedData, index)}
                                     />
                                 ))
                         }

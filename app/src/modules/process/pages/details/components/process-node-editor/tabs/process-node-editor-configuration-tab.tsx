@@ -74,20 +74,17 @@ export function ProcessNodeEditorConfigurationTab() {
             <ElementDerivationContext
                 key={localNode.id}
                 element={layout}
-                elementData={localNode.configuration}
-                onElementDataChange={(elementData) => {
+                authoredElementValues={localNode.configuration}
+                onAuthoredElementValuesChange={(authoredElementValues) => {
                     setLocalNode({
                         ...localNode,
-                        configuration: elementData,
+                        configuration: authoredElementValues,
                     }, false);
                 }}
-                onDerivationFinished={(elementData) => {
+                onDerivationFinished={() => {
                     if (initialDerivationNodeIdRef.current !== localNode.id) {
                         initialDerivationNodeIdRef.current = localNode.id;
-                        setLocalNode({
-                            ...localNode,
-                            configuration: elementData,
-                        }, true);
+                        setLocalNode(localNode, true);
                     }
                 }}
             />

@@ -1,9 +1,9 @@
-import {ElementData} from '../../../models/element-data';
+import {AuthoredElementValues} from '../../../models/element-data';
 
 export interface DataObjectItem {
     id: string;
     schemaKey: string;
-    data: ElementData;
+    data: AuthoredElementValues;
     created: string;
     updated: string;
 }

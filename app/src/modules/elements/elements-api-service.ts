@@ -1,5 +1,5 @@
 import {Api} from '../../hooks/use-api';
-import {ElementData, ElementDerivationResponse} from '../../models/element-data';
+import {AuthoredElementValues, DerivedRuntimeElementData} from '../../models/element-data';
 import {AnyElement} from '../../models/elements/any-element';
 
 interface ElementDerivationOptions {
@@ -11,8 +11,8 @@ interface ElementDerivationOptions {
 
 interface ElementDerivationRequest {
     element: AnyElement;
-    elementData: ElementData;
-    options: ElementDerivationOptions;
+    authoredElementValues: AuthoredElementValues;
+    derivationOptions: ElementDerivationOptions;
 }
 
 export class ElementsApiService {
@@ -22,7 +22,7 @@ export class ElementsApiService {
         this.api = api;
     }
 
-    public async derive(request: ElementDerivationRequest): Promise<ElementDerivationResponse> {
-        return await this.api.post<ElementDerivationResponse>('elements/derive/', request);
+    public async derive(request: ElementDerivationRequest): Promise<DerivedRuntimeElementData> {
+        return await this.api.post<DerivedRuntimeElementData>('elements/derive/', request);
     }
 }

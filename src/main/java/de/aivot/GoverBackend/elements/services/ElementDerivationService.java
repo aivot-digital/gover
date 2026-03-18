@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.elements.services;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.enums.EffectiveValueSource;
 import de.aivot.GoverBackend.elements.exceptions.DerivationException;
 import de.aivot.GoverBackend.elements.models.*;
@@ -180,12 +181,13 @@ public class ElementDerivationService {
                                     .add(childItemElementStates);
 
                             for (var currentChildElement : replicatingContainer.getChildren()) {
+                                var om = ObjectMapperFactory.getInstance();
                                 derive(
                                         javascriptEngine,
                                         rootElement,
                                         currentChildElement,
-                                        (AuthoredElementValues) effectiveChildDataSet,
-                                        (EffectiveElementValues) effectiveChildDataSet,
+                                        om.convertValue(effectiveChildDataSet,  AuthoredElementValues.class),
+                                        om.convertValue(effectiveChildDataSet,  EffectiveElementValues.class),
                                         childItemElementStates,
                                         options,
                                         isVisible,

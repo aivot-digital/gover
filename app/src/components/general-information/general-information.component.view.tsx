@@ -47,8 +47,9 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
         value,
         setValue,
         errors,
-        elementData,
-        onElementDataChange,
+        authoredElementValues,
+        derivedData,
+        onAuthoredElementValuesChange,
     } = props;
 
     const {} = element;
@@ -324,8 +325,9 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 rootElement={rootElement}
                 isBusy={props.isBusy}
                 isDeriving={props.isDeriving}
-                elementData={elementData}
-                onElementDataChange={ed => onElementDataChange(ed, [])}
+                authoredElementValues={authoredElementValues}
+                derivedData={derivedData}
+                onAuthoredElementValuesChange={ed => onAuthoredElementValuesChange(ed, [])}
                 form={application?.form!}
                 version={application?.version!}
             />
