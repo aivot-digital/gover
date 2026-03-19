@@ -452,7 +452,11 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
 
     @Nullable
     private static String readString(@Nonnull AuthoredElementValues configuration, @Nonnull String fieldId) {
-        return configuration.get(fieldId).toString();
+        var fld = configuration.get(fieldId);
+        if (fld != null) {
+            return fld.toString();
+        }
+        return null;
     }
 
     @Nonnull
