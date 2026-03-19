@@ -1,19 +1,9 @@
 import React, {useMemo} from 'react';
-import {
-    FormControl,
-    FormControlLabel,
-    FormHelperText,
-    FormLabel,
-    Radio,
-    RadioGroup,
-    ToggleButton,
-    ToggleButtonGroup
-} from '@mui/material';
 import {type RadioFieldElement} from '../../models/elements/form/input/radio-field-element';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {type BaseViewProps} from '../../views/base-view';
-import {type SelectFieldElementOption} from '../../models/elements/form/input/select-field-element';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
+import {RadioFieldComponent} from './radio-field-component';
 
 export function RadioFieldComponentView(props: BaseViewProps<RadioFieldElement, string>) {
     const {
@@ -26,171 +16,37 @@ export function RadioFieldComponentView(props: BaseViewProps<RadioFieldElement, 
     } = props;
 
     const {
-        disabled,
-        options: baseOptions,
-        displayInline,
-        toggleButtons,
+        disabled: elementDisabled,
     } = element;
 
-    const options = useMemo(() => {
-        if (baseOptions == null) {
-            return [];
-        }
-
-        return baseOptions
-            .map((option: string | SelectFieldElementOption) => {
-                if (typeof option === 'string') {
-                    return {
-                        value: option,
-                        label: option,
-                    };
-                } else {
-                    return option;
-                }
-            });
-    }, [baseOptions]);
-
     const isDisabled = useMemo(() => {
-        return disabled || isGloballyDisabled;
-    }, [disabled, isGloballyDisabled]);
+        return elementDisabled || isGloballyDisabled;
+    }, [elementDisabled, isGloballyDisabled]);
 
     const isBusy = useMemo(() => {
         return isDeriving && hasDerivableAspects(element);
     }, [isDeriving, element]);
 
-    const optionElements = useMemo(() => {
-        return options.map((option) => (
-            <FormControlLabel
-                key={option.value}
-                value={option.value}
-                control={<Radio
-                    sx={{color: isBusy ? "rgba(0, 0, 0, 0.26)!important" : undefined}}
-                />}
-                label={option.label}
-                disabled={isDisabled}
-                sx={{
-                    ...(displayInline ? { mr: 3 } : {}),
-                    ...(isBusy ? {
-                        color: "rgba(0, 0, 0, 0.38)!important",
-                        cursor: "not-allowed",
-                    } : {}),
-                    '& .MuiFormControlLabel-label': {
-                        wordBreak: 'break-word',
-                        whiteSpace: 'normal',
-                    },
-                }}
-            />
-        ));
-    }, [options, displayInline, isDisabled, isBusy]);
-
-    const toggleOptionElements = useMemo(() => {
-        return options.map((option) => (
-            <ToggleButton
-                key={option.value}
-                value={option.value}
-                disabled={isDisabled}
-                size="small"
-                sx={{
-                    textTransform: 'none',
-                    ...(isBusy ? {
-                        color: "rgba(0, 0, 0, 0.38)!important",
-                        borderColor: "rgba(0, 0, 0, 0.12)!important",
-                        cursor: "not-allowed",
-                    } : {}),
-                }}
-            >
-                {option.label}
-            </ToggleButton>
-        ));
-    }, [options, isDisabled, isBusy]);
-
-    const formLabelId = 'label-' + element.id;
+    console.log('RadioFieldComponentView -> element.id', element.id);
+    console.log('RadioFieldComponentView -> value', value);
 
     return (
-        <FormControl
-            error={errors != null}
+        <RadioFieldComponent
+            label={element.label ?? ''}
+            options={element.options}
+            value={value}
+            onChange={(newValue) => {
+                if (!isBusy) {
+                    console.log('RadioFieldComponentView -> onChange -> newValue', newValue);
+                    setValue(isStringNullOrEmpty(newValue) ? undefined : newValue ?? undefined);
+                }
+            }}
+            required={element.required}
+            error={errors != null ? errors.join(' ') : undefined}
+            hint={element.hint}
             disabled={isDisabled}
-        >
-            <FormLabel
-                id={formLabelId}
-            >
-                {element.label} {element.required && ' *'}
-            </FormLabel>
-            {
-                toggleButtons ?
-                    <ToggleButtonGroup
-                        aria-labelledby={formLabelId}
-                        exclusive
-                        value={value ?? null}
-                        onChange={(_, newValue: string | null) => {
-                            if (!isBusy) {
-                                setValue(isStringNullOrEmpty(newValue) ? undefined : newValue ?? undefined);
-                            }
-                        }}
-                        fullWidth={!displayInline}
-                        sx={{
-                            mt: 1,
-                            alignSelf: displayInline ? 'flex-start' : undefined,
-                            '& .MuiToggleButton-root': {
-                                textTransform: 'none',
-                            },
-                        }}
-                    >
-                        {toggleOptionElements}
-                    </ToggleButtonGroup>
-                    :
-                    <RadioGroup
-                        aria-labelledby={formLabelId}
-                        name={'radio-group-' + element.id}
-                        value={value ?? ''}
-                        onChange={(event) => {
-                            if (!isBusy) {
-                                if (isStringNullOrEmpty(event.target.value)) {
-                                    setValue(undefined);
-                                } else {
-                                    setValue(event.target.value ?? '');
-                                }
-                            }
-                        }}
-                        row={element.displayInline ?? false}
-                    >
-                        {
-                            !element.required &&
-                            <FormControlLabel
-                                value={''}
-                                control={<Radio
-                                    sx={{color: isBusy ? "rgba(0, 0, 0, 0.26)!important" : undefined}}
-                                />}
-                                label="Keine Auswahl"
-                                disabled={isDisabled}
-                                sx={{
-                                    ...(isBusy ? {
-                                        color: "rgba(0, 0, 0, 0.38)!important",
-                                        cursor: "not-allowed",
-                                    } : {}),
-                                    fontStyle: 'italic',
-                                    mr: element.displayInline ? 3 : undefined
-                                }}
-                            />
-                        }
-                        {optionElements}
-                    </RadioGroup>
-            }
-            {
-                (element.hint != null || errors != null) &&
-                <FormHelperText sx={{ml: 0}}>
-                    {
-                        element.hint != null &&
-                        errors == null &&
-                        element.hint
-                    }
-                    {
-                        errors != null &&
-                        <span>{errors.join(' ')}</span>
-                    }
-                </FormHelperText>
-            }
-
-        </FormControl>
+            displayInline={element.displayInline}
+            toggleButtons={element.toggleButtons}
+        />
     );
 }

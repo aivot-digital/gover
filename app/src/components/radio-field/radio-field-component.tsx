@@ -6,7 +6,7 @@ import {
     Radio,
     RadioGroup,
     ToggleButton,
-    ToggleButtonGroup
+    ToggleButtonGroup,
 } from '@mui/material';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {SelectFieldComponentOption} from '../select-field/select-field-component-option';
@@ -14,33 +14,34 @@ import {Fragment, useMemo} from 'react';
 
 export interface RadioFieldComponentProps {
     label: string;
-    value?: string;
+    value?: string | undefined | null;
     onChange: (val: string | undefined) => void;
-    options: SelectFieldComponentOption[];
-    error?: string;
-    hint?: string;
-    disabled?: boolean;
-    required?: boolean;
-    displayInline?: boolean;
-    toggleButtons?: boolean;
+    options: SelectFieldComponentOption[] | undefined | null;
+    error?: string | undefined | null;
+    hint?: string | undefined | null;
+    disabled?: boolean | undefined | null;
+    required?: boolean | undefined | null;
+    displayInline?: boolean | undefined | null;
+    toggleButtons?: boolean | undefined | null;
 }
 
 const generateRandomId = () => {
     return 'id-' + Math.random().toString(36).substr(2, 9);
 };
 
-export function RadioFieldComponent({
-                                        label,
-                                        value,
-                                        onChange,
-                                        options,
-                                        error,
-                                        hint,
-                                        disabled,
-                                        required,
-                                        displayInline = false,
-                                        toggleButtons = false,
-                                    }: RadioFieldComponentProps) {
+export function RadioFieldComponent(props: RadioFieldComponentProps) {
+    const {
+        label,
+        value,
+        onChange,
+        options = [],
+        error,
+        hint,
+        disabled = false,
+        required = false,
+        displayInline = false,
+        toggleButtons = false,
+    } = props;
 
     const uniqueId = useMemo(() => generateRandomId(), []);
 
@@ -48,7 +49,7 @@ export function RadioFieldComponent({
         <FormControl
             component="fieldset"
             error={error != null}
-            disabled={disabled}
+            disabled={disabled ?? false}
         >
             <FormLabel
                 id={'label-' + uniqueId}
@@ -59,9 +60,10 @@ export function RadioFieldComponent({
                 toggleButtons ?
                     <ToggleButtonGroup
                         aria-labelledby={'label-' + uniqueId}
-                        exclusive
+                        exclusive={true}
                         value={value ?? null}
                         onChange={(_, newValue: string | null) => {
+                            console.log('RadioFieldComponent -> onChange -> newValue', newValue);
                             onChange(isStringNullOrEmpty(newValue) ? undefined : (newValue ?? undefined));
                         }}
                         fullWidth={!displayInline}
@@ -74,16 +76,17 @@ export function RadioFieldComponent({
                         }}
                     >
                         {
-                            (options ?? []).map(option => (
-                                <ToggleButton
-                                    key={option.value}
-                                    value={option.value}
-                                    disabled={disabled}
-                                    size="small"
-                                >
-                                    {option.label}
-                                </ToggleButton>
-                            ))
+                            (options ?? [])
+                                .map(option => (
+                                    <ToggleButton
+                                        key={option.value}
+                                        value={option.value}
+                                        disabled={disabled ?? false}
+                                        size="small"
+                                    >
+                                        {option.label}
+                                    </ToggleButton>
+                                ))
                         }
                     </ToggleButtonGroup>
                     :
@@ -98,15 +101,15 @@ export function RadioFieldComponent({
                                 onChange(event.target.value ?? '');
                             }
                         }}
-                        row={displayInline}
+                        row={displayInline ?? false}
                     >
                         {
                             !required &&
                             <FormControlLabel
                                 value={''}
-                                control={<Radio />}
+                                control={<Radio/>}
                                 label="Keine Auswahl"
-                                disabled={disabled}
+                                disabled={disabled ?? false}
                                 sx={{
                                     fontStyle: 'italic',
                                     mr: displayInline ? 3 : undefined,
@@ -118,9 +121,9 @@ export function RadioFieldComponent({
                                 <Fragment key={option.value}>
                                     <FormControlLabel
                                         value={option.value}
-                                        control={<Radio />}
+                                        control={<Radio/>}
                                         label={option.label}
-                                        disabled={disabled}
+                                        disabled={disabled ?? false}
                                         sx={{
                                             ...(displayInline ? {mr: 3} : {}),
                                             '& .MuiFormControlLabel-label': {
