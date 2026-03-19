@@ -36,7 +36,8 @@ import {
     type FlowNode,
     layoutElements,
 } from './utils/layout-utils';
-import {Box, Button, Tooltip} from '@mui/material';
+import {Box, Button, Tooltip, useTheme} from '@mui/material';
+import {alpha} from '@mui/material/styles';
 import {type ProcessInstanceEntity} from '../../../../entities/process-instance-entity';
 import {type ProcessInstanceTaskEntity} from '../../../../entities/process-instance-task-entity';
 import {type ProcessInstanceEventEntity} from '../../../../entities/process-instance-event-entity';
@@ -441,6 +442,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         runtimeData,
         topLeftPanel,
     } = props;
+    const theme = useTheme();
 
     const {
         fitView,
@@ -707,6 +709,11 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         >
             <ReactFlow
                 className="process-flow-editor"
+                style={{
+                    '--process-flow-editor-top-fade-color-solid': alpha(theme.palette.background.default, 0.96),
+                    '--process-flow-editor-top-fade-color-mid': alpha(theme.palette.background.default, 0.72),
+                    '--process-flow-editor-top-fade-color-transparent': alpha(theme.palette.background.default, 0),
+                } as React.CSSProperties}
                 nodes={nodes}
                 edges={edges}
                 onNodesChange={handleNodesChange}

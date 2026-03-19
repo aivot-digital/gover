@@ -13,10 +13,17 @@ import java.util.List;
 public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInstanceTaskEntity, Long>, JpaSpecificationExecutor<ProcessInstanceTaskEntity> {
     ProcessInstanceTaskEntity findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(Long processInstanceId, Integer processDefinitionNodeId);
 
+    ProcessInstanceTaskEntity findFirstByProcessInstanceIdAndProcessNodeIdAndIdNotOrderByStartedDesc(Long processInstanceId,
+                                                                                                      Integer processDefinitionNodeId,
+                                                                                                      Long excludedTaskId);
+
     List<ProcessInstanceTaskEntity> findAllByProcessInstanceId(Long processInstanceId);
 
     List<ProcessInstanceTaskEntity> findAllByAssignedUserIdInAndStatusIn(Collection<String> assignedUserIds,
                                                                          Collection<ProcessTaskStatus> statuses);
+
+    long countByAssignedUserIdAndStatusIn(String assignedUserId,
+                                          Collection<ProcessTaskStatus> statuses);
 
     @Query(
             value = """

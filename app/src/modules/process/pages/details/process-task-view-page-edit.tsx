@@ -23,6 +23,7 @@ import {
     type ProcessTaskDetailsPageItem,
 } from './process-task-view-page';
 import Task from '@aivot/mui-material-symbols-400-outlined/dist/task/Task';
+import {dispatchProcessAssignedTaskCountRefreshEvent} from '../../utils/process-assigned-task-count-events';
 
 export function ProcessTaskViewPageEdit(): ReactNode {
     const dispatch = useAppDispatch();
@@ -112,6 +113,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             500,
         )
             .then(async (updatedTaskView) => {
+                dispatchProcessAssignedTaskCountRefreshEvent();
+
                 const updatedTask = await new ProcessInstanceTaskApiService().retrieve(item.task.id);
 
                 if (updatedTask.status === ProcessTaskStatus.Running) {
