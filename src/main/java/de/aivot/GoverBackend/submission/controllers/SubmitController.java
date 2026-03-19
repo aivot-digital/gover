@@ -214,7 +214,7 @@ public class SubmitController {
             }
 
             var initialPayload = new HashMap<String, Object>();
-            initialPayload.put(FormTriggerNodeV1.DATA_KEY_PAYLOAD, elementDataTransformService.build(form.getRootElement(), effectiveValues));
+            initialPayload.put(FormTriggerNodeV1.DATA_KEY_PAYLOAD, elementDataTransformService.buildPayload(form.getRootElement(), effectiveValues));
             initialPayload.put(FormTriggerNodeV1.DATA_KEY_FORM_ID, form.getId());
             initialPayload.put(FormTriggerNodeV1.DATA_KEY_FORM_VERSION, form.getVersion());
             initialPayload.put(FormTriggerNodeV1.DATA_KEY_ATTACHMENTS, attachments.stream().map((a) -> Map.<String, Object>of(

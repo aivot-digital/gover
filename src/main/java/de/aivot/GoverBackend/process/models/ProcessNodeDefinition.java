@@ -171,8 +171,8 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * @return The task view data.
      * @throws ResponseException If an error occurs while generating the data.
      */
-    default DerivedRuntimeElementData getStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
-        return new DerivedRuntimeElementData();
+    default AuthoredElementValues getStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+        return new AuthoredElementValues();
     }
 
     /**
@@ -226,8 +226,8 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * @return The task view data.
      * @throws ResponseException If an error occurs while generating the data.
      */
-    default DerivedRuntimeElementData getCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer context) throws ResponseException {
-        return new DerivedRuntimeElementData();
+    default AuthoredElementValues getCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer context) throws ResponseException {
+        return new AuthoredElementValues();
     }
 
     /**

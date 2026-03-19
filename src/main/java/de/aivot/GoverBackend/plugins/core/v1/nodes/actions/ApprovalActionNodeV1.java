@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.enums.ValueFunctionType;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
-import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
@@ -46,6 +45,7 @@ import de.aivot.GoverBackend.process.models.ProcessNodePort;
 import de.aivot.GoverBackend.process.models.TaskViewEvent;
 import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.services.AssignmentContextAssigneeResolverService;
+import de.aivot.GoverBackend.submission.services.ElementDataTransformService;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
@@ -86,9 +86,11 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
     private static final String OUTPUT_PROCESSED_AT = "processedAt";
 
     private final AssignmentContextAssigneeResolverService assigneeResolverService;
+    private final ElementDataTransformService elementDataTransformService;
 
-    public ApprovalActionNodeV1(AssignmentContextAssigneeResolverService assigneeResolverService) {
+    public ApprovalActionNodeV1(AssignmentContextAssigneeResolverService assigneeResolverService, ElementDataTransformService elementDataTransformService) {
         this.assigneeResolverService = assigneeResolverService;
+        this.elementDataTransformService = elementDataTransformService;
     }
 
     @Nonnull
@@ -278,21 +280,13 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
 
     @Nonnull
     @Override
-    public DerivedRuntimeElementData getStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
-        var config = loadConfigurationForUi(context);
-        var layout = buildStaffTaskView(config);
-
-        var valueMap = new HashMap<String, Object>();
-        if (context.getThisTask().getProcessData() != null) {
-            valueMap.putAll(context.getThisTask().getProcessData());
-        }
-
-        if (context.getThisTask().getNodeData() != null &&
-            context.getThisTask().getNodeData().containsKey(TASK_VIEW_REMARK_FIELD_ID)) {
-            valueMap.put(TASK_VIEW_REMARK_FIELD_ID, context.getThisTask().getNodeData().get(TASK_VIEW_REMARK_FIELD_ID));
-        }
-
-        return null;
+    public AuthoredElementValues getStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+        return elementDataTransformService
+                .buildEffectiveValues(
+                        getStaffTaskView(context),
+                        context.getThisTask().getProcessData()
+                )
+                .toAuthoredElementValues();
     }
 
     @Nonnull

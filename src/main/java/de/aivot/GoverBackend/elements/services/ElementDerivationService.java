@@ -17,6 +17,7 @@ import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 import de.aivot.GoverBackend.nocode.services.NoCodeEvaluationService;
+import de.aivot.GoverBackend.submission.services.ElementDataTransformService;
 import de.aivot.GoverBackend.utils.ElementResolver;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -36,14 +37,16 @@ import java.util.Objects;
 public class ElementDerivationService {
     private final JavascriptEngineFactoryService javascriptEngineFactoryService;
     private final NoCodeEvaluationService noCodeEvaluationService;
+    private final ElementDataTransformService elementDataTransformService;
 
     @Autowired
     public ElementDerivationService(
             JavascriptEngineFactoryService javascriptEngineFactoryService,
-            NoCodeEvaluationService noCodeEvaluationService
-    ) {
+            NoCodeEvaluationService noCodeEvaluationService,
+            ElementDataTransformService elementDataTransformService) {
         this.javascriptEngineFactoryService = javascriptEngineFactoryService;
         this.noCodeEvaluationService = noCodeEvaluationService;
+        this.elementDataTransformService = elementDataTransformService;
     }
 
     @Nonnull
@@ -131,7 +134,7 @@ public class ElementDerivationService {
                 var authoredValue = authoredElementValues
                         .getOrDefault(currentElement.getId(), null);
 
-                var effectiveValue = deriveValue(
+                var effectiveValue = deriveEffectiveValue(
                         javascriptEngine,
                         rootElement,
                         inputElement,
@@ -250,6 +253,7 @@ public class ElementDerivationService {
             try {
                 res = javascriptEngine
                         .registerGlobalContextObject(accumulator)
+                        .registerGlobalObject("$", elementDataTransformService.buildPayload(rootElement, effectiveElementValues))
                         .registerElementObject(currentElement)
                         .evaluateCode(override.getJavascriptCode());
             } catch (JavascriptException e) {
@@ -367,6 +371,7 @@ public class ElementDerivationService {
             try {
                 res = javascriptEngine
                         .registerGlobalContextObject(accumulator)
+                        .registerGlobalObject("$", elementDataTransformService.buildPayload(rootElement, effectiveElementValues))
                         .registerElementObject(currentElement)
                         .evaluateCode(vis.getJavascriptCode());
             } catch (JavascriptException e) {
@@ -410,7 +415,7 @@ public class ElementDerivationService {
     }
 
     @Nullable
-    private Object deriveValue(
+    private Object deriveEffectiveValue(
             @Nonnull JavascriptEngine javascriptEngine,
             @Nonnull BaseElement rootElement,
             @Nonnull InputElement<?> inputElement,
@@ -432,7 +437,8 @@ public class ElementDerivationService {
 
         var valueFunction = inputElement.getValue();
 
-        if (valueFunction == null) {
+        // If the value function is null, or an authored value exists and the element is not disabled, set the authored value as the effective value
+        if (valueFunction == null || (authoredValue != null && !Boolean.TRUE.equals(inputElement.getDisabled()))) {
             effectiveElementValues.put(inputElement.getId(), authoredValue);
             elementState.setValueSource(EffectiveValueSource.Authored);
             return authoredValue; // No value to derive if the element has no value setter
@@ -445,6 +451,7 @@ public class ElementDerivationService {
 
                 var res = javascriptEngine
                         .registerGlobalContextObject(accumulator)
+                        .registerGlobalObject("$", elementDataTransformService.buildPayload(rootElement, effectiveElementValues))
                         .registerElementObject(baseElement)
                         .evaluateCode(valueFunction.getJavascriptCode());
 
@@ -517,6 +524,7 @@ public class ElementDerivationService {
             try {
                 res = javascriptEngine
                         .registerGlobalContextObject(accumulator)
+                        .registerGlobalObject("$", elementDataTransformService.buildPayload(rootElement, effectiveElementValues))
                         .registerElementObject(baseElement)
                         .evaluateCode(validation.getJavascriptCode());
             } catch (JavascriptException e) {
