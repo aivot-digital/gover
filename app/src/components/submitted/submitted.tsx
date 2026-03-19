@@ -101,16 +101,10 @@ export function Submitted(props: SubmittedProps) {
             startVelocity: 40,
             spread: 80,
             angle: 60,
-            origin: {x: 0},
-            colors: ['#fcaa67', '#b0413e'],
-            disableForReducedMotion: true,
-        });
-        animationInstance.current?.({
-            particleCount: 2,
-            startVelocity: 40,
-            spread: 80,
-            angle: 120,
-            origin: {x: 1},
+            particleCount: 20,
+            origin: {
+                x: 0,
+            },
             colors: ['#fcaa67', '#b0413e'],
             disableForReducedMotion: true,
         };
