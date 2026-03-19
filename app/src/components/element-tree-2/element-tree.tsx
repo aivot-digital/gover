@@ -211,6 +211,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
+                minWidth: 0,
             }}
         >
             <Box
@@ -218,29 +219,38 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                     borderBottom: '1px solid #ccc',
                     py: 2,
                     px: 2,
+                    minWidth: 0,
                 }}
             >
                 <Box
                     sx={{
                         display: 'flex',
                         alignItems: 'center',
+                        minWidth: 0,
                     }}
                 >
                     <Icon/>
 
                     <Typography
+                        title={title}
                         sx={{
                             ml: 1,
+                            flex: 1,
+                            minWidth: 0,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
                         }}
                     >
                         {title}
                     </Typography>
 
                     <Actions
-                        dense={true}
-                        sx={{
-                            marginLeft: 'auto',
-                        }}
+                    dense={true}
+                    sx={{
+                        marginLeft: 'auto',
+                        flexShrink: 0,
+                    }}
                         actions={[
                             {
                                 icon: <Search/>,
@@ -269,6 +279,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                         sx={{
                             display: 'flex',
                             mt: 2,
+                            minWidth: 0,
                         }}
                     >
                         <SearchInput
@@ -278,6 +289,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                             placeholder="Name oder ID eingeben"
                             sx={{
                                 flex: 1,
+                                minWidth: 0,
                             }}
                             autoFocus={true}
                         />
@@ -319,6 +331,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                     flexDirection: 'column',
                     justifyContent: 'space-between',
                     height: '100%',
+                    minWidth: 0,
                     overflowY: 'auto',
                     p: 2,
                     pb: 8,
@@ -329,6 +342,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                         display: 'flex',
                         flexDirection: 'column',
                         gap: 0.5,
+                        minWidth: 0,
                     }}
                 >
                     <DndProvider

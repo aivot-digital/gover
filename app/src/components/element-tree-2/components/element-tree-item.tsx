@@ -23,6 +23,7 @@ import {Action} from '../../actions/actions-props';
 import {DefaultTabs} from '../../element-editor/default-tabs';
 import {ElementWithParents} from '../../../utils/flatten-elements';
 import OfflineBoltOutlinedIcon from '@mui/icons-material/OfflineBoltOutlined';
+import {ELEMENT_TREE_LAYOUT} from '../element-tree-layout';
 
 interface ElementTreeItemProps<T extends AnyElement> {
     parents: Array<AnyElement>;
@@ -158,7 +159,15 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
         const leadingIcons: Action[] = getIcons(root, value, allElements);
         const trailingIcons: Action[] = isAnyElementWithChildren(value) ? [
             {
-                icon: <ChevronRight fontSize="small"/>,
+                icon: (
+                    <ChevronRight
+                        fontSize="small"
+                        sx={{
+                            transform: isCollapsed ? 'rotate(0deg)' : 'rotate(90deg)',
+                            transition: 'transform 120ms ease',
+                        }}
+                    />
+                ),
                 tooltip: isCollapsed ? 'Ausklappen' : 'Einklappen',
                 onClick: () => {
                     setIsCollapsed((prev => !prev));
@@ -172,12 +181,19 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
             ...(leadingIcons.length > 0 && trailingIcons.length > 0 ? ['separator'] : []) as Action[],
             ...trailingIcons,
         ];
-    }, [value]);
+    }, [allElements, isCollapsed, root, value]);
+
+    const backgroundColor = isActiveSearchResult ?
+        'action.focus' :
+        (isHighlighted ? 'action.selected' : 'background.paper');
+    const hoverBackgroundColor = isActiveSearchResult ?
+        'action.focus' :
+        (isHighlighted ? 'action.selected' : 'action.hover');
 
     return (
         <>
             <Paper
-                component="button"
+                component="div"
                 ref={(element) => {
                     if (element == null || !editable || !isDraggable) {
                         return;
@@ -188,33 +204,71 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
                 sx={{
                     display: 'flex',
                     alignItems: 'center',
-                    cursor: editable && isDraggable ? 'grab' : 'default',
+                    gap: 0.75,
+                    minWidth: 0,
+                    cursor: editable && isDraggable ? 'grab' : (editable ? 'pointer' : 'default'),
                     opacity: isDragging ? 0.45 : 1,
-                    borderColor: (isActiveSearchResult || isHighlighted) ? 'primary.main' : undefined,
-                    backgroundColor: (isActiveSearchResult || isHighlighted) ? 'action.selected' : undefined,
-                    borderRadius: 2,
+                    minHeight: `${ELEMENT_TREE_LAYOUT.itemHeightPx}px`,
+                    borderColor: (isActiveSearchResult || isHighlighted) ? 'primary.main' : 'divider',
+                    backgroundColor: backgroundColor,
+                    borderRadius: 1,
+                    boxSizing: 'border-box',
                     px: 1,
                     py: 0.5,
                     width: '100%',
+                    maxWidth: '100%',
+                    overflow: 'hidden',
+                    transition: 'background-color 120ms ease, border-color 120ms ease',
+                    '&:hover': {
+                        backgroundColor: hoverBackgroundColor,
+                    },
                 }}
                 variant="outlined"
                 onDoubleClick={() => {
                     navigateToElementEditor(value.id);
                 }}
             >
-                <Icon fontSize="small"/>
-
-                <Typography
+                <Box
                     sx={{
-                        ml: 2,
+                        width: 24,
+                        display: 'flex',
+                        justifyContent: 'center',
+                        flexShrink: 0,
                     }}
                 >
-                    {title}
-                </Typography>
+                    <Icon sx={{fontSize: 20}}/>
+                </Box>
+
+                <Box
+                    sx={{
+                        minWidth: 0,
+                        flex: 1,
+                    }}
+                >
+                    <Typography
+                        variant="body2"
+                        title={title}
+                        sx={{
+                            fontWeight: 500,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                        }}
+                    >
+                        {title}
+                    </Typography>
+                </Box>
 
                 <Actions
                     sx={{
                         ml: 'auto',
+                        flexShrink: 0,
+                        '& .MuiIconButton-root': {
+                            p: 0.375,
+                        },
+                        '& .MuiSvgIcon-root': {
+                            fontSize: 20,
+                        },
                     }}
                     actions={icons}
                     dense={true}
@@ -225,25 +279,19 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
             {
                 isAnyElementWithChildren(value) &&
                 !isCollapsed &&
-                <Box
-                    sx={{
-                        pl: 4,
+                <ElementTreeChildList
+                    parents={[
+                        ...parents,
+                        value,
+                    ]}
+                    value={value.children ?? []}
+                    onChange={(changedChildren) => {
+                        onChange({
+                            ...value,
+                            children: changedChildren,
+                        } as T);
                     }}
-                >
-                    <ElementTreeChildList
-                        parents={[
-                            ...parents,
-                            value,
-                        ]}
-                        value={value.children ?? []}
-                        onChange={(changedChildren) => {
-                            onChange({
-                                ...value,
-                                children: changedChildren,
-                            } as T);
-                        }}
-                    />
-                </Box>
+                />
             }
 
             <ElementTreeEditor
