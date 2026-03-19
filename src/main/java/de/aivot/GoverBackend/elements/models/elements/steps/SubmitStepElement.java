@@ -96,6 +96,12 @@ public class SubmitStepElement extends BaseStepElement implements InputElement<M
     }
 
     @Nullable
+    @Override
+    public Boolean getDisabled() {
+        return false;
+    }
+
+    @Nullable
     public static Map<String, Object> _formatValue(@Nullable Object value) {
         var om = ObjectMapperFactory
                 .getInstance();

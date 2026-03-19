@@ -58,4 +58,7 @@ public interface InputElement<T> {
 
     @Nullable
     ElementValidationFunctions getValidation();
+
+    @Nullable
+    Boolean getDisabled();
 }

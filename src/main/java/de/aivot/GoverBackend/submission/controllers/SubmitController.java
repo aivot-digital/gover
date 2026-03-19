@@ -24,6 +24,7 @@ import de.aivot.GoverBackend.process.filters.ProcessNodeFilter;
 import de.aivot.GoverBackend.process.filters.ProcessTestClaimFilter;
 import de.aivot.GoverBackend.process.services.*;
 import de.aivot.GoverBackend.submission.dtos.SubmissionStatusResponseDTO;
+import de.aivot.GoverBackend.submission.services.ElementDataTransformService;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,9 +45,9 @@ public class SubmitController {
     private final ProcessNodeService processNodeService;
     private final ProcessInstanceService processInstanceService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
-    private final ProcessService processService;
     private final ProcessVersionService processVersionService;
     private final ProcessTestClaimService processTestClaimService;
+    private final ElementDataTransformService elementDataTransformService;
 
     @Autowired
     public SubmitController(AVService avService,
@@ -54,16 +55,19 @@ public class SubmitController {
                             VFormVersionWithDetailsRepository formVersionWithDetailsRepository,
                             ProcessNodeService processNodeService,
                             ProcessInstanceService processInstanceService,
-                            ProcessInstanceAttachmentService processInstanceAttachmentService, ProcessService processService, ProcessVersionService processVersionService, ProcessTestClaimService processTestClaimService) {
+                            ProcessInstanceAttachmentService processInstanceAttachmentService,
+                            ProcessVersionService processVersionService,
+                            ProcessTestClaimService processTestClaimService,
+                            ElementDataTransformService elementDataTransformService) {
         this.avService = avService;
         this.elementDerivationService = elementDerivationService;
         this.formVersionWithDetailsRepository = formVersionWithDetailsRepository;
         this.processNodeService = processNodeService;
         this.processInstanceService = processInstanceService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
-        this.processService = processService;
         this.processVersionService = processVersionService;
         this.processTestClaimService = processTestClaimService;
+        this.elementDataTransformService = elementDataTransformService;
     }
 
     @PostMapping("/api/public/submit/{formId}/{formVersion}/")
@@ -106,6 +110,8 @@ public class SubmitController {
             throw ResponseException.badRequest(derivedRuntimeElementData);
         }
 
+        var effectiveValues = derivedRuntimeElementData.getEffectiveValues();
+
         // Test files for viruses
         avService.testMultipartFiles(files);
         // TODO: Check with default process instance attachment storage provider max file size
@@ -136,7 +142,7 @@ public class SubmitController {
                         testClaim,
                         form,
                         node,
-                        derivedRuntimeElementData.getEffectiveValues(),
+                        effectiveValues,
                         files
                 );
                 startedProcesses.add(processInstance.getAccessKey().toString());
@@ -153,7 +159,7 @@ public class SubmitController {
     private ProcessInstanceEntity startProcess(@Nullable ProcessTestClaimEntity testClaimEntity,
                                                @Nonnull VFormVersionWithDetailsEntity form,
                                                @Nonnull ProcessNodeEntity nodeEntity,
-                                               @Nonnull EffectiveElementValues payload,
+                                               @Nonnull EffectiveElementValues effectiveValues,
                                                @Nullable MultipartFile[] files) throws ResponseException {
         var instance = new ProcessInstanceEntity(
                 null,
@@ -208,7 +214,7 @@ public class SubmitController {
             }
 
             var initialPayload = new HashMap<String, Object>();
-            initialPayload.put(FormTriggerNodeV1.DATA_KEY_PAYLOAD, payload);
+            initialPayload.put(FormTriggerNodeV1.DATA_KEY_PAYLOAD, elementDataTransformService.build(form.getRootElement(), effectiveValues));
             initialPayload.put(FormTriggerNodeV1.DATA_KEY_FORM_ID, form.getId());
             initialPayload.put(FormTriggerNodeV1.DATA_KEY_FORM_VERSION, form.getVersion());
             initialPayload.put(FormTriggerNodeV1.DATA_KEY_ATTACHMENTS, attachments.stream().map((a) -> Map.<String, Object>of(
