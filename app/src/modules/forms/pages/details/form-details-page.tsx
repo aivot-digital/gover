@@ -97,7 +97,7 @@ import Settings from '@aivot/mui-material-symbols-400-outlined/dist/settings/Set
 import History from '@aivot/mui-material-symbols-400-outlined/dist/history/History';
 import {FormDetailsPageMoreMenu, type FormDetailsPageMoreMenuItem} from './components/form-details-page-more-menu';
 import {type Action} from '../../../../components/actions/actions-props';
-import {useElementEditorNavigationActions} from '../../../../hooks/use-element-editor-navigation';
+import {useElementEditorNavigation} from '../../../../hooks/use-element-editor-navigation';
 import Preview from '@aivot/mui-material-symbols-400-outlined/dist/preview/Preview';
 import Link from '@aivot/mui-material-symbols-400-outlined/dist/link/Link';
 import FileExport from '@aivot/mui-material-symbols-400-outlined/dist/file-export/FileExport';
@@ -107,6 +107,7 @@ import AccountTree from '@aivot/mui-material-symbols-400-outlined/dist/account-t
 import SwipeVertical from '@aivot/mui-material-symbols-400-outlined/dist/swipe-vertical/SwipeVertical';
 import TouchApp from '@aivot/mui-material-symbols-400-outlined/dist/touch-app/TouchApp';
 import BugReport from '@aivot/mui-material-symbols-400-outlined/dist/bug-report/BugReport';
+import {ElementEditor} from '../../../../components/element-editor/element-editor';
 
 export const DialogSearchParam = 'dialog';
 
@@ -153,7 +154,11 @@ export function FormDetailsPage() {
     const dispatch = useAppDispatch();
     const api = useApi();
     const navigate = useNavigate();
-    const {navigateToElementEditor} = useElementEditorNavigationActions();
+    const {
+        closeElementEditor,
+        currentEditedElementId,
+        navigateToElementEditor,
+    } = useElementEditorNavigation();
 
     const [showExportFormDialog, setShowExportFormDialog] = useState(false);
     const [showPrefillDialog, setShowPrefillDialog] = useState(false);
@@ -681,6 +686,26 @@ export function FormDetailsPage() {
             dispatch(clearLoadingMessage());
         };
 
+        const handleRootEditorSave = (
+            updatedElement: Partial<RootElement>,
+            updatedLoadedForm: Partial<LoadedForm>,
+        ) => {
+            closeElementEditor();
+
+            void handlePatch({
+                ...updatedLoadedForm,
+                version: {
+                    ...loadedForm.version,
+                    ...updatedLoadedForm.version,
+                    rootElement: {
+                        ...loadedForm.version.rootElement,
+                        ...updatedLoadedForm.version?.rootElement,
+                        ...updatedElement,
+                    },
+                },
+            });
+        };
+
         const moreMenuItems: FormDetailsPageMoreMenuItem[] = [
             {
                 label: 'Vorschau in neuem Tab öffnen',
@@ -813,10 +838,6 @@ export function FormDetailsPage() {
                 tooltip: 'Formular-Einstellungen öffnen',
                 icon: <Settings />,
                 onClick: () => {
-                    if (hideComponentTree) {
-                        dispatch(toggleComponentTree());
-                    }
-
                     navigateToElementEditor(loadedForm.version.rootElement.id);
                 },
             },
@@ -1058,6 +1079,21 @@ export function FormDetailsPage() {
                         setFormToDelete(undefined);
                     }}
                 />
+
+                {
+                    currentEditedElementId === loadedForm.version.rootElement.id &&
+                    <ElementEditor
+                        open={true}
+                        parents={[]}
+                        entity={loadedForm}
+                        element={loadedForm.version.rootElement}
+                        onSave={handleRootEditorSave}
+                        onCancel={closeElementEditor}
+                        editable={isEditable}
+                        scope="application"
+                        rootEditor={true}
+                    />
+                }
             </PageWrapper>
         );
     }
