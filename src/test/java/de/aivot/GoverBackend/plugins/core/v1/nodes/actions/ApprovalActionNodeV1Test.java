@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.elements.form.input.AssignmentContextInputElementValue;
 import de.aivot.GoverBackend.elements.models.elements.form.input.DomainAndUserSelectInputElementValue;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RichTextInputElement;
@@ -23,6 +23,7 @@ import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRep
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.GoverBackend.process.repositories.VPotentialProcessInstanceAccessRepository;
 import de.aivot.GoverBackend.process.services.AssignmentContextAssigneeResolverService;
+import de.aivot.GoverBackend.submission.services.ElementDataTransformService;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,9 +35,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import static de.aivot.GoverBackend.TestData.authored;
+import static de.aivot.GoverBackend.TestData.runtime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -53,7 +57,7 @@ class ApprovalActionNodeV1Test {
     @BeforeEach
     void setUp() {
         assigneeResolverService = new TestAssignmentContextAssigneeResolverService();
-        node = new ApprovalActionNodeV1(assigneeResolverService);
+        node = new ApprovalActionNodeV1(assigneeResolverService, new ElementDataTransformService());
     }
 
     @Test
@@ -70,7 +74,8 @@ class ApprovalActionNodeV1Test {
                 processInstance("process-owner"),
                 task(77, Map.of(), Map.of("approvalValue", "Freizugebender Inhalt")),
                 null,
-                processData
+                processData,
+                runtime(dataModeConfiguration())
         ));
 
         var taskAssigned = assertInstanceOf(ProcessNodeExecutionResultTaskAssigned.class, result);
@@ -99,7 +104,8 @@ class ApprovalActionNodeV1Test {
                         processInstance("process-owner"),
                         task(77, Map.of(), Map.of("approvalValue", "Freizugebender Inhalt")),
                         null,
-                        processData
+                        processData,
+                        runtime(configurationWithPreferenceOnlyAssignmentContext())
                 ))
         );
     }
@@ -112,7 +118,8 @@ class ApprovalActionNodeV1Test {
                 processInstance("process-owner"),
                 task(77, Map.of("approvalRemark", "<p>Schon geprüft</p>"), Map.of("approvalValue", "Freizugebender Inhalt")),
                 null,
-                user("staff-1")
+                user("staff-1"),
+                runtime()
         );
 
         var layout = node.getStaffTaskView(context);
@@ -124,8 +131,8 @@ class ApprovalActionNodeV1Test {
         assertTrue(layout.findChild("approval-actions-spacer").isPresent());
 
         var data = node.getStaffTaskViewData(context);
-        assertEquals("Freizugebender Inhalt", data.get("approvalValue").getValue());
-        assertEquals("<p>Schon geprüft</p>", data.get("approvalRemark").getValue());
+        assertEquals("Freizugebender Inhalt", data.get("approvalValue"));
+        assertNull(data.get("approvalRemark"));
         assertEquals(
                 List.of(
                         new TaskViewEvent("Freigeben", "approve"),
@@ -144,9 +151,10 @@ class ApprovalActionNodeV1Test {
                         processInstance("process-owner"),
                         task(77, Map.of(), Map.of("approvalValue", "Freizugebender Inhalt")),
                         null,
-                        user("staff-1")
+                        user("staff-1"),
+                        runtime()
                 ),
-                Map.of("approvalRemark", "<p>Passt</p>"),
+                authored("approvalRemark", "<p>Passt</p>"),
                 "approve"
         );
 
@@ -161,16 +169,17 @@ class ApprovalActionNodeV1Test {
         assertNotNull(completed.getNodeData().get("processedAt"));
     }
 
-    private static ElementData dataModeConfiguration() {
+    private static AuthoredElementValues dataModeConfiguration() {
         var contentRoot = new GroupLayoutElement();
         contentRoot.setId("approval-data-root");
 
         var valueField = new TextInputElement();
         valueField.setId("approvalValue");
         valueField.setLabel("Wert");
+        valueField.setDestinationKey("approvalValue");
         contentRoot.setChildren(List.of(valueField));
 
-        return ElementData.of(
+        return authored(
                 "criteria", "<p>Bitte fachlich prüfen.</p>",
                 "contentMode", "data",
                 "dataContent", contentRoot,
@@ -186,8 +195,8 @@ class ApprovalActionNodeV1Test {
                 .setPreferProcessInstanceAssignee(false);
     }
 
-    private static ElementData configurationWithPreferenceOnlyAssignmentContext() {
-        return ElementData.of(
+    private static AuthoredElementValues configurationWithPreferenceOnlyAssignmentContext() {
+        return authored(
                 "criteria", "<p>Bitte fachlich prüfen.</p>",
                 "contentMode", "custom",
                 "customContent", "<p>Bitte in Drittsystem prüfen.</p>",
@@ -199,7 +208,7 @@ class ApprovalActionNodeV1Test {
         );
     }
 
-    private static ProcessNodeEntity processNode(ElementData configuration) {
+    private static ProcessNodeEntity processNode(AuthoredElementValues configuration) {
         return new ProcessNodeEntity()
                 .setId(NODE_ID)
                 .setProcessId(PROCESS_ID)

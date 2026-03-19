@@ -1,6 +1,10 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.ComputedElementState;
+import de.aivot.GoverBackend.elements.models.ComputedElementStates;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
+import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
@@ -24,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static de.aivot.GoverBackend.TestData.runtime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -69,7 +74,8 @@ class CounterActionNodeV1Test {
                         processInstance(),
                         task(),
                         null,
-                        processData
+                        processData,
+                        runtime(configuration("loop.count", 3L))
                 ))
         );
 
@@ -100,7 +106,8 @@ class CounterActionNodeV1Test {
                         processInstance(),
                         task(),
                         null,
-                        processData
+                        processData,
+                        runtime(configuration(null, 2L))
                 ))
         );
 
@@ -125,7 +132,8 @@ class CounterActionNodeV1Test {
                         processInstance(),
                         task(),
                         null,
-                        processData
+                        processData,
+                        runtime(configuration(null, null))
                 ))
         );
 
@@ -150,7 +158,8 @@ class CounterActionNodeV1Test {
                         processInstance(),
                         task(),
                         null,
-                        processData
+                        processData,
+                        runtime(configuration("loop.count", 1L))
                 ))
         );
     }
@@ -161,16 +170,16 @@ class CounterActionNodeV1Test {
                 ResponseException.class,
                 () -> node.validateConfiguration(
                         processNode(configuration("loop.count", 0L)),
-                        configuration("loop.count", 0L)
+                        configuration("loop.count", 0L),
+                        validationRuntime(configuration("loop.count", 0L))
                 )
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
-        assertTrue(exception.getDetails() instanceof ElementData);
+        assertTrue(exception.getDetails() instanceof DerivedRuntimeElementData);
 
-        var details = (ElementData) exception.getDetails();
-        assertTrue(details.get("increment").getComputedErrors().stream()
-                .anyMatch(message -> message.contains("mindestens 1")));
+        var details = (DerivedRuntimeElementData) exception.getDetails();
+        assertTrue(details.getElementStates().get("increment").getError().contains("mindestens 1"));
     }
 
     @Test
@@ -179,29 +188,28 @@ class CounterActionNodeV1Test {
 
         var exception = assertThrows(
                 ResponseException.class,
-                () -> node.validateConfiguration(processNode(config), config)
+                () -> node.validateConfiguration(processNode(config), config, validationRuntime(config))
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
-        assertTrue(exception.getDetails() instanceof ElementData);
+        assertTrue(exception.getDetails() instanceof DerivedRuntimeElementData);
 
-        var details = (ElementData) exception.getDetails();
-        assertTrue(details.get("variable").getComputedErrors().stream()
-                .anyMatch(message -> message.contains("Ungültiger Pfad")));
+        var details = (DerivedRuntimeElementData) exception.getDetails();
+        assertTrue(details.getElementStates().get("variable").getError().contains("Ungültiger Pfad"));
     }
 
-    private static ElementData configuration(String variablePath, Long increment) {
-        var config = new ElementData();
+    private static AuthoredElementValues configuration(String variablePath, Long increment) {
+        var config = new AuthoredElementValues();
         if (variablePath != null) {
-            config.putInputValue("variable", de.aivot.GoverBackend.enums.ElementType.Text, variablePath);
+            config.put("variable", variablePath);
         }
         if (increment != null) {
-            config.putInputValue("increment", de.aivot.GoverBackend.enums.ElementType.Number, increment);
+            config.put("increment", increment);
         }
         return config;
     }
 
-    private static ProcessNodeEntity processNode(ElementData configuration) {
+    private static ProcessNodeEntity processNode(AuthoredElementValues configuration) {
         return new ProcessNodeEntity()
                 .setId(NODE_ID)
                 .setProcessId(PROCESS_ID)
@@ -212,6 +220,16 @@ class CounterActionNodeV1Test {
                 .setProcessNodeDefinitionVersion(1)
                 .setConfiguration(configuration)
                 .setOutputMappings(Map.of());
+    }
+
+    private static DerivedRuntimeElementData validationRuntime(AuthoredElementValues configuration) {
+        var states = new ComputedElementStates();
+        states.put("variable", new ComputedElementState());
+        states.put("increment", new ComputedElementState());
+
+        var effectiveValues = new EffectiveElementValues();
+        effectiveValues.putAll(configuration);
+        return new DerivedRuntimeElementData(effectiveValues, states);
     }
 
     private static ProcessInstanceEntity processInstance() {
