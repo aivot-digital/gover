@@ -2,7 +2,8 @@ import {BaseCrudApiService} from "../../../services/base-crud-api-service";
 import {ProcessInstanceTaskEntity} from "../entities/process-instance-task-entity";
 import {ProcessTaskStatus} from "../enums/process-task-status";
 import {GroupLayout} from "../../../models/elements/form/layout/group-layout";
-import {AuthoredElementValues, DerivedRuntimeElementData} from "../../../models/element-data";
+import {AuthoredElementValues, DerivedRuntimeElementData, isAuthoredElementValues} from '../../../models/element-data';
+import {isFileUploadElementItem} from '../../../models/elements/form/input/file-upload-element';
 
 interface ProcessInstanceTaskFilter {
     id: number;
@@ -17,7 +18,7 @@ interface ProcessInstanceTaskFilter {
 
 export interface TaskView {
     layout: GroupLayout;
-    data: DerivedRuntimeElementData;
+    data: AuthoredElementValues;
     events: TaskViewEvent[];
 }
 
@@ -69,16 +70,54 @@ export class ProcessInstanceTaskApiService extends BaseCrudApiService<
         return this.get(`/api/public/processes/${instanceAccessKey}/tasks/${taskAccessKey}/`);
     }
 
-    public putStaffTaskView(instanceId: number, taskId: number, payload: AuthoredElementValues, event: string): Promise<TaskView> {
-        return this.put<AuthoredElementValues, TaskView>(`/api/processes/${instanceId}/tasks/${taskId}/`, payload, {
+    public async putStaffTaskView(instanceId: number, taskId: number, payload: AuthoredElementValues, event: string): Promise<TaskView> {
+        const formData = new FormData();
+        formData.set('inputs', JSON.stringify(payload));
+
+        async function appendFiles(data: AuthoredElementValues) {
+            for (const key of Object.keys(data)) {
+                const value = data[key];
+
+                if (isFileUploadElementItem(value)) {
+                    const blob = await fetch(value.uri).then((r) => r.blob());
+                    formData.append("files", blob);
+                }
+
+                if (isAuthoredElementValues(value)) {
+                    await appendFiles(value);
+                }
+            }
+        }
+        await appendFiles(payload);
+
+        return this.putFormData<TaskView>(`/api/processes/${instanceId}/tasks/${taskId}/`, formData, {
             query: {
                 event: event,
             },
         });
     }
 
-    public putCustomerTaskView(instanceAccessKey: string, taskAccessKey: string, payload: AuthoredElementValues, event: string): Promise<TaskView> {
-        return this.put<AuthoredElementValues, TaskView>(`/api/public/processes/${instanceAccessKey}/tasks/${taskAccessKey}/`, payload, {
+    public async putCustomerTaskView(instanceAccessKey: string, taskAccessKey: string, payload: AuthoredElementValues, event: string): Promise<TaskView> {
+        const formData = new FormData();
+        formData.set('inputs', JSON.stringify(payload));
+
+        async function appendFiles(data: AuthoredElementValues) {
+            for (const key of Object.keys(data)) {
+                const value = data[key];
+
+                if (isFileUploadElementItem(value)) {
+                    const blob = await fetch(value.uri).then((r) => r.blob());
+                    formData.append("files", blob);
+                }
+
+                if (isAuthoredElementValues(value)) {
+                    await appendFiles(value);
+                }
+            }
+        }
+        await appendFiles(payload);
+
+        return this.putFormData<TaskView>(`/api/public/processes/${instanceAccessKey}/tasks/${taskAccessKey}/`, formData, {
             query: {
                 event: event,
             },

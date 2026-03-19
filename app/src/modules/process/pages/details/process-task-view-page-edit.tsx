@@ -178,8 +178,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                         >
                             <ElementDerivationContext
                                 element={taskView.layout}
-                                authoredElementValues={taskInputData}
-                                derivedData={taskView.data}
+                                authoredElementValues={taskInputData ?? taskView.data}
                                 onAuthoredElementValuesChange={setTaskInputData}
                                 onDerivedDataChange={(derivedData) => {
                                     setTaskView((currentTaskView) => currentTaskView == null ? currentTaskView : {
