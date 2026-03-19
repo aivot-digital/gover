@@ -29,6 +29,18 @@ import {FormApiService} from '../../modules/forms/services/form-api-service';
 const animationStartDelay = 200;
 const animationDuration = 2000;
 
+interface ConfettiAnimationSettings {
+    startVelocity: number;
+    particleCount: number;
+    angle: number;
+    spread: number;
+    origin: {
+        x: number;
+    };
+    colors: string[];
+    disableForReducedMotion: boolean;
+}
+
 interface SubmittedProps {
     submission: SubmissionListResponseDTO;
     form: FormEntity;
@@ -84,9 +96,8 @@ export function Submitted(props: SubmittedProps) {
         }
     }, [shouldRenderConfetti, confettiDisabled]);
 
-    const nextTickAnimation = useCallback(() => {
-        animationInstance.current?.({
-            particleCount: 2,
+    function getAnimationSettings(angle: number, originX: number): ConfettiAnimationSettings {
+        return {
             startVelocity: 40,
             spread: 80,
             angle: 60,
@@ -102,29 +113,48 @@ export function Submitted(props: SubmittedProps) {
             origin: {x: 1},
             colors: ['#fcaa67', '#b0413e'],
             disableForReducedMotion: true,
-        });
+        };
+    }
+
+    const refAnimationInstance = useRef<null | ((settings: ConfettiAnimationSettings) => void)>(null);
+    const animationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const animationStartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const animationStopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const getInstance = useCallback((instance: any) => {
+        refAnimationInstance.current = instance;
+    }, []);
+
+    const nextTickAnimation = useCallback(() => {
+        if (refAnimationInstance.current) {
+            refAnimationInstance.current(getAnimationSettings(60, 0));
+            refAnimationInstance.current(getAnimationSettings(120, 1));
+        }
     }, []);
 
     const startAnimation = useCallback(() => {
-        if (!animationInstance.current || intervalId.current) {
-            return;
+        if (animationIntervalRef.current == null) {
+            animationIntervalRef.current = setInterval(nextTickAnimation, 16);
         }
-
-        intervalId.current = setInterval(nextTickAnimation, 16);
     }, [nextTickAnimation]);
 
     const pauseAnimation = useCallback(() => {
-        if (intervalId.current) {
-            clearInterval(intervalId.current);
-            intervalId.current = null;
+        if (animationIntervalRef.current != null) {
+            clearInterval(animationIntervalRef.current);
+            animationIntervalRef.current = null;
         }
     }, []);
 
-    useEffect(() => {
-        return () => {
-            pauseAnimation();
-        };
-    }, [pauseAnimation]);
+    /* TODO: This function will be used some time in the future. Do not remove or ask Daniel first.
+    const stopAnimation = useCallback(() => {
+        if (animationIntervalRef.current != null) {
+            clearInterval(animationIntervalRef.current);
+            animationIntervalRef.current = null;
+        }
+        // @ts-ignore
+        refAnimationInstance.current && refAnimationInstance.current.reset();
+    }, []);
+     */
 
     useEffect(() => {
         if (confettiDisabled || !shouldRenderConfetti) {
@@ -238,6 +268,52 @@ export function Submitted(props: SubmittedProps) {
             }
         }
     };
+
+    useEffect(() => {
+        if (confettiDisabled || !shouldRenderConfetti) {
+            pauseAnimation();
+            return;
+        }
+
+        animationStartTimeoutRef.current = setTimeout(() => {
+            startAnimation();
+        }, animationStartDelay);
+
+        animationStopTimeoutRef.current = setTimeout(() => {
+            pauseAnimation();
+        }, animationDuration);
+
+        return () => {
+            if (animationStartTimeoutRef.current != null) {
+                clearTimeout(animationStartTimeoutRef.current);
+                animationStartTimeoutRef.current = null;
+            }
+
+            if (animationStopTimeoutRef.current != null) {
+                clearTimeout(animationStopTimeoutRef.current);
+                animationStopTimeoutRef.current = null;
+            }
+
+            pauseAnimation();
+        };
+    }, [confettiDisabled, pauseAnimation, shouldRenderConfetti, startAnimation]);
+
+    useEffect(() => {
+        if (confettiDisabled) {
+            setShouldRenderConfetti(false);
+            return;
+        }
+
+        const mediaQuery = window.matchMedia('(prefers-reduced-motion: no-preference)');
+        const handleChange = () => {
+            setShouldRenderConfetti(mediaQuery.matches);
+        };
+        handleChange();
+        mediaQuery.addEventListener('change', handleChange);
+        return () => {
+            mediaQuery.removeEventListener('change', handleChange);
+        };
+    }, [confettiDisabled]);
 
     return (
         <>
