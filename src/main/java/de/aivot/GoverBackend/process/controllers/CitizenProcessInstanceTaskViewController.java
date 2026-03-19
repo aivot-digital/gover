@@ -1,7 +1,8 @@
 package de.aivot.GoverBackend.process.controllers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
-import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
@@ -10,17 +11,17 @@ import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.identity.controllers.IdentityController;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
-import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessTestClaimEntity;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.filters.ProcessInstanceFilter;
 import de.aivot.GoverBackend.process.filters.ProcessInstanceTaskFilter;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextUICustomer;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
-import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.models.TaskViewEvent;
 import de.aivot.GoverBackend.process.services.*;
 import de.aivot.GoverBackend.process.workers.ProcessNodeExecutionResultHandler;
@@ -29,6 +30,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -129,7 +131,8 @@ public class CitizenProcessInstanceTaskViewController {
     public TaskViewResponse update(
             @Nonnull @PathVariable UUID procAccess,
             @Nonnull @PathVariable UUID taskAccess,
-            @Nonnull @RequestBody AuthoredElementValues elementData,
+            @RequestParam(value = "inputs", required = true) String rawInputs,
+            @RequestParam(value = "files", required = false) MultipartFile[] files,
             @Nullable @RequestParam(value = "event", required = true) String event,
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId
     ) throws ResponseException {
@@ -185,16 +188,25 @@ public class CitizenProcessInstanceTaskViewController {
                 .findFirst()
                 .orElseThrow(() -> ResponseException.badRequest("Invalid event: " + event));
 
+        AuthoredElementValues inputs;
+        try {
+            inputs = ObjectMapperFactory
+                    .getInstance()
+                    .readValue(rawInputs, AuthoredElementValues.class);
+        } catch (JsonProcessingException e) {
+            throw ResponseException.badRequest("Ungültige Eingabedaten.", e);
+        }
+
         var derivedElementData = elementDerivationService.derive(
                 new ElementDerivationRequest(
                         layout,
-                        elementData,
+                        inputs,
                         new ElementDerivationOptions()
                 ),
                 new ElementDerivationLogger()
         );
 
-        if(derivedElementData.hasAnyError()) {
+        if (derivedElementData.hasAnyError()) {
             throw ResponseException.badRequest("Es ist ein Fehler beim Ableiten der Eingabedaten aufgetreten. Bitte überprüfen Sie Ihre Eingaben.", derivedElementData);
         }
 
@@ -204,7 +216,7 @@ public class CitizenProcessInstanceTaskViewController {
                     .provider
                     .onUpdateFromCustomer(
                             context,
-                            elementData,
+                            inputs,
                             derivedElementData,
                             event
                     );
@@ -216,7 +228,7 @@ public class CitizenProcessInstanceTaskViewController {
         if (res.isEmpty()) {
             return new TaskViewResponse(
                     layout,
-                    derivedElementData,
+                    null, // TODO: fill correctly from node function
                     events
             );
         }
@@ -316,7 +328,7 @@ public class CitizenProcessInstanceTaskViewController {
             @Nonnull
             GroupLayoutElement layout,
             @Nonnull
-            DerivedRuntimeElementData data,
+            AuthoredElementValues data,
             @Nonnull
             List<TaskViewEvent> events
     ) {

@@ -1,16 +1,20 @@
 package de.aivot.GoverBackend.process.controllers;
 
-import de.aivot.GoverBackend.elements.models.*;
-import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
+import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
+import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.identity.controllers.IdentityController;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
-import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
@@ -44,7 +48,6 @@ public class StaffProcessInstanceTaskViewController {
     private final ProcessNodeDefinitionService processNodeProviderService;
     private final ProcessNodeService processDefinitionNodeService;
     private final ProcessNodeExecutionResultHandler processNodeExecutionResultHandler;
-    private final ProcessDataService processDataService;
     private final UserService userService;
     private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
     private final ElementDerivationService elementDerivationService;
@@ -56,14 +59,12 @@ public class StaffProcessInstanceTaskViewController {
                                                   ProcessNodeDefinitionService processNodeProviderService,
                                                   ProcessNodeService processDefinitionNodeService,
                                                   ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
-                                                  ProcessDataService processDataService,
                                                   UserService userService, ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory, ElementDerivationService elementDerivationService, ProcessService processService, ProcessVersionService processVersionService) {
         this.processInstanceService = processInstanceService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.processNodeProviderService = processNodeProviderService;
         this.processDefinitionNodeService = processDefinitionNodeService;
         this.processNodeExecutionResultHandler = processNodeExecutionResultHandler;
-        this.processDataService = processDataService;
         this.userService = userService;
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
         this.elementDerivationService = elementDerivationService;
@@ -134,7 +135,7 @@ public class StaffProcessInstanceTaskViewController {
             @Nonnull @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Long procId,
             @Nonnull @PathVariable Long taskId,
-            @RequestParam(value = "inputs", required = true) AuthoredElementValues inputs,
+            @RequestParam(value = "inputs", required = true) String rawInputs,
             @RequestParam(value = "files", required = false) MultipartFile[] files,
             @Nullable @RequestParam(value = "event", required = true) String event,
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId
@@ -177,10 +178,6 @@ public class StaffProcessInstanceTaskViewController {
             previousTask = null;
         }
 
-        var layout = taskViewData
-                .provider
-                .getStaffTaskView(context);
-
         var events = taskViewData
                 .provider
                 .getStaffTaskViewEvents(context);
@@ -192,11 +189,14 @@ public class StaffProcessInstanceTaskViewController {
                 .findFirst()
                 .orElseThrow(() -> ResponseException.badRequest("Invalid event: " + event));
 
-        var processData = processDataService
-                .foldProcessInstanceData(
-                        taskViewData.instance,
-                        taskViewData.task.getPreviousProcessNodeId()
-                );
+        AuthoredElementValues inputs;
+        try {
+            inputs = ObjectMapperFactory
+                    .getInstance()
+                    .readValue(rawInputs, AuthoredElementValues.class);
+        } catch (JsonProcessingException e) {
+            throw ResponseException.badRequest("Ungültige Eingabedaten.", e);
+        }
 
         Optional<ProcessNodeExecutionResult> res;
         try {
@@ -327,7 +327,7 @@ public class StaffProcessInstanceTaskViewController {
             @Nonnull
             LayoutElement<?> layout,
             @Nonnull
-            DerivedRuntimeElementData data,
+            AuthoredElementValues data,
             @Nonnull
             List<TaskViewEvent> events
     ) {
