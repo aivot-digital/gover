@@ -2,6 +2,8 @@ package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.elements.enums.ValueFunctionType;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.elements.models.elements.ElementValueFunctions;
@@ -171,51 +173,50 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition {
 
     @Override
     public void validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                      @Nonnull ElementData configuration) throws ResponseException {
+                                      @Nonnull AuthoredElementValues configuration,
+                                      @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
         boolean hasErrors = false;
 
-        var variableField = configuration.getOrDefault(
-                VARIABLE_FIELD_ID,
-                new ElementDataObject(ElementType.Text)
-        );
-        var incrementField = configuration.getOrDefault(
-                INCREMENT_FIELD_ID,
-                new ElementDataObject(ElementType.Number)
-        );
+        var variableField = configuration.get(VARIABLE_FIELD_ID);
 
-        var variablePath = toNullableTrimmedString(variableField.getValue());
+        var variablePath = toNullableTrimmedString(variableField);
         if (variablePath != null) {
             try {
                 parsePath(variablePath, "Vorgangsdatenvariable");
             } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
-                variableField.addComputedError(e.getMessage());
-                configuration.put(VARIABLE_FIELD_ID, variableField);
+                derivedRuntimeElementData
+                        .getElementStates()
+                        .get(VARIABLE_FIELD_ID)
+                        .setError(e.getMessage());
                 hasErrors = true;
             }
         }
 
+        var incrementField = configuration.get(INCREMENT_FIELD_ID);
         try {
-            resolveIncrement(incrementField.getValue());
+            resolveIncrement(incrementField);
         } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
-            incrementField.addComputedError(e.getMessage());
-            configuration.put(INCREMENT_FIELD_ID, incrementField);
+            derivedRuntimeElementData
+                    .getElementStates()
+                    .get(INCREMENT_FIELD_ID)
+                    .setError(e.getMessage());
             hasErrors = true;
         }
 
         if (hasErrors) {
-            throw ResponseException.badRequest(configuration);
+            throw ResponseException
+                    .badRequest(derivedRuntimeElementData);
         }
     }
 
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
-        var configuration = context.getThisNode().getConfiguration();
-        var variablePath = toNullableTrimmedString(configuration.getOpt(VARIABLE_FIELD_ID)
-                .map(ElementDataObject::getValue)
-                .orElse(null));
-        var increment = resolveIncrement(configuration.getOpt(INCREMENT_FIELD_ID)
-                .map(ElementDataObject::getValue)
-                .orElse(null));
+        var configuration = context
+                .getConfiguration()
+                .getEffectiveValues();
+
+        var variablePath = toNullableTrimmedString(configuration.get(VARIABLE_FIELD_ID));
+        var increment = resolveIncrement(configuration.get(INCREMENT_FIELD_ID));
 
         var nodeData = new LinkedHashMap<String, Object>();
 
@@ -289,14 +290,14 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition {
 
         var previousIterationTask = context.getThisTask().getId() != null
                 ? processInstanceTaskRepository.findFirstByProcessInstanceIdAndProcessNodeIdAndIdNotOrderByStartedDesc(
-                        context.getThisProcessInstance().getId(),
-                        context.getThisNode().getId(),
-                        context.getThisTask().getId()
-                )
+                context.getThisProcessInstance().getId(),
+                context.getThisNode().getId(),
+                context.getThisTask().getId()
+        )
                 : processInstanceTaskRepository.findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(
-                        context.getThisProcessInstance().getId(),
-                        context.getThisNode().getId()
-                );
+                context.getThisProcessInstance().getId(),
+                context.getThisNode().getId()
+        );
 
         var previousIterationValue = previousIterationTask == null
                 ? null
