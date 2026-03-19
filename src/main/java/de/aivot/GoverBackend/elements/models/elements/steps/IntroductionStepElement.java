@@ -63,6 +63,12 @@ public class IntroductionStepElement extends BaseStepElement implements InputEle
         return null;
     }
 
+    @Nullable
+    @Override
+    public Boolean getDisabled() {
+        return false;
+    }
+
     @Nonnull
     @Override
     public String toDisplayValue(@Nullable Boolean value) {
