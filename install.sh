@@ -10,9 +10,9 @@ keycloak_setup_version="0.0.17"
 reverse_proxy_version="2.10.2-alpine"
 gover_version="5.0.0"
 
-if [ ! -f .env ]; then
-  read -p "Bitte geben Sie den Hostnamen ein, unter dem die Gover-Anwendung erreichbar sein soll (z.B. https://example.com): " hostname
+read -p "Bitte geben Sie den Hostnamen ein, unter dem die Gover-Anwendung erreichbar sein soll (z.B. https://example.com): " hostname
 
+if [ ! -f .env ]; then
   cat > .env <<EOF
 # --------------------------------- Manuelle Werte - bitte ausfüllen ---------------------------------
 
@@ -72,10 +72,6 @@ EOF
 fi
 
 if [ ! -f Caddyfile ]; then
-  if [ -z ${hostname} ]; then
-    read -p "Bitte geben Sie den Hostnamen ein, unter dem die Gover-Anwendung erreichbar sein soll (z.B. https://example.com): " hostname
-  fi
-
   cat > Caddyfile <<EOF
 ${hostname} {
     @app {
