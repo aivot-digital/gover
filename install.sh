@@ -10,7 +10,24 @@ keycloak_setup_version="0.0.17"
 reverse_proxy_version="2.10.2-alpine"
 gover_version="5.0.0"
 
-read -p "Bitte geben Sie den Hostnamen ein, unter dem die Gover-Anwendung erreichbar sein soll (z.B. https://example.com): " hostname
+prompt_hostname() {
+  local prompt="Bitte geben Sie den Hostnamen ein, unter dem die Gover-Anwendung erreichbar sein soll (z.B. https://example.com): "
+
+  if [ -t 0 ]; then
+    read -r -p "${prompt}" hostname
+    return
+  fi
+
+  if [ -r /dev/tty ]; then
+    read -r -p "${prompt}" hostname < /dev/tty
+    return
+  fi
+
+  echo "Es konnte kein interaktives Terminal fuer die Hostname-Eingabe gefunden werden." >&2
+  exit 1
+}
+
+prompt_hostname
 
 if [ ! -f .env ]; then
   cat > .env <<EOF
