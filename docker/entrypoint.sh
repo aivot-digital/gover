@@ -14,7 +14,7 @@ if [ "$1" = "serve" ]; then
   java \
     -cp /app/gover.jar \
     -Dloader.path=/app/plugins/ \
-    org.springframework.boot.loader.PropertiesLauncher
+    org.springframework.boot.loader.launch.PropertiesLauncher
 else
   cat > /app/app-config.js <<EOF
 window.AppConfig = {
