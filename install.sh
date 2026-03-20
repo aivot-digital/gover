@@ -41,6 +41,8 @@ SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_USERNAME=change-me
 SMTP_PASSWORD=change-me
+SMTP_FROM_DISPLAY=change-me
+SMTP_FROM=mail@example.com
 
 # E-Mail-Adresse für technische Fehlermeldungen
 REPORT_MAIL=change-me
@@ -202,7 +204,7 @@ services:
     environment:
       KC_HTTP_ENABLED: true
       KC_PROXY_HEADERS: xforwarded
-      KC_HOSTNAME: \${HOSTNAME}/idp
+      KC_HOSTNAME: \${HOSTNAME}
       KC_HOSTNAME_PATH: /idp
       KC_HTTP_RELATIVE_PATH: /idp
       KC_BOOTSTRAP_ADMIN_USERNAME: \${KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME}
