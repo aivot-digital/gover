@@ -273,7 +273,7 @@ services:
       GOVER_REPORT_MAIL: \${REPORT_MAIL}
       GOVER_SENTRY_SERVER: "https://4e653c46f8496447bd033f3c477e2ee2@app-monitoring.aivot.cloud/3"
       GOVER_SENTRY_WEB_APP: "https://da7fe01c989214420911c676813a5349@app-monitoring.aivot.cloud/2"
-      GOVER_ENVIRONMENT: {{ env.name }}
+      GOVER_ENVIRONMENT: \${HOSTNAME}
       GOVER_HOSTNAME: \${HOSTNAME}
       GOVER_SECRETS_KEY: \${GOVER_SECRETS_KEY}
       GOVER_CAPTCHA_KEY: \${GOVER_CAPTCHA_KEY}
