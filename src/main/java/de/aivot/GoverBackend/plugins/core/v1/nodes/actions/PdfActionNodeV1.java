@@ -293,14 +293,10 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
         ProcessInstanceAttachmentEntity attachment;
         try {
             attachment = processInstanceAttachmentService.create(
-                    new ProcessInstanceAttachmentEntity(
-                            null,
+                    ProcessInstanceAttachmentEntity.of(
                             fileName,
                             context.getThisProcessInstance().getId(),
-                            null,
-                            null,
-                            null,
-                            null,
+                            context.getThisTask().getId(),
                             pdfBytes
                     )
             );

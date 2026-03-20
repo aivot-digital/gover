@@ -195,13 +195,9 @@ public class SubmitController {
                         throw ResponseException.internalServerError(e, "Fehler beim Lesen der hochgeladenen Datei.");
                     }
 
-                    var attachment = new ProcessInstanceAttachmentEntity(
-                            null,
+                    var attachment = ProcessInstanceAttachmentEntity.of(
                             file.getOriginalFilename() != null ? file.getOriginalFilename() : "Unbenannte Datei.dat",
                             createdInstance.getId(),
-                            null,
-                            null,
-                            null,
                             null,
                             bytes
                     );
