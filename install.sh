@@ -20,13 +20,13 @@ if [ ! -f .env ]; then
 HOSTNAME=${hostname}
 
 # Smtp Server Details
-SMTP_HOST=
-SMTP_PORT=
-SMTP_USERNAME=
-SMTP_PASSWORD=
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USERNAME=change-me
+SMTP_PASSWORD=change-me
 
 # E-Mail-Adresse für technische Fehlermeldungen
-REPORT_MAIL=
+REPORT_MAIL=change-me
 
 # ----------------------------------- Automatisch generierte Werte -----------------------------------
 
