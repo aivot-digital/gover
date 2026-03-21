@@ -53,13 +53,19 @@ public class StaffProcessInstanceTaskViewController {
     private final ElementDerivationService elementDerivationService;
     private final ProcessService processService;
     private final ProcessVersionService processVersionService;
+    private final TaskViewMultipartInputService taskViewMultipartInputService;
 
     public StaffProcessInstanceTaskViewController(ProcessInstanceService processInstanceService,
                                                   ProcessInstanceTaskService processInstanceTaskService,
                                                   ProcessNodeDefinitionService processNodeProviderService,
                                                   ProcessNodeService processDefinitionNodeService,
                                                   ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
-                                                  UserService userService, ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory, ElementDerivationService elementDerivationService, ProcessService processService, ProcessVersionService processVersionService) {
+                                                  UserService userService,
+                                                  ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
+                                                  ElementDerivationService elementDerivationService,
+                                                  ProcessService processService,
+                                                  ProcessVersionService processVersionService,
+                                                  TaskViewMultipartInputService taskViewMultipartInputService) {
         this.processInstanceService = processInstanceService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.processNodeProviderService = processNodeProviderService;
@@ -70,6 +76,7 @@ public class StaffProcessInstanceTaskViewController {
         this.elementDerivationService = elementDerivationService;
         this.processService = processService;
         this.processVersionService = processVersionService;
+        this.taskViewMultipartInputService = taskViewMultipartInputService;
     }
 
     @GetMapping("")
@@ -137,6 +144,7 @@ public class StaffProcessInstanceTaskViewController {
             @Nonnull @PathVariable Long taskId,
             @RequestParam(value = "inputs", required = true) String rawInputs,
             @RequestParam(value = "files", required = false) MultipartFile[] files,
+            @RequestParam(value = "fileUris", required = false) List<String> fileUris,
             @Nullable @RequestParam(value = "event", required = true) String event,
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId
     ) throws ResponseException {
@@ -197,6 +205,14 @@ public class StaffProcessInstanceTaskViewController {
         } catch (JsonProcessingException e) {
             throw ResponseException.badRequest("Ungültige Eingabedaten.", e);
         }
+        inputs = taskViewMultipartInputService.normalizeInputs(
+                inputs,
+                files,
+                fileUris,
+                taskViewData.instance().getId(),
+                taskViewData.task().getId(),
+                user.getId()
+        );
 
         Optional<ProcessNodeExecutionResult> res;
         try {
