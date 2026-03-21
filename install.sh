@@ -242,6 +242,8 @@ services:
       SMTP_PASSWORD: \${SMTP_PASSWORD}
       SMTP_FROM: \${SMTP_FROM}
       SMTP_FROM_DISPLAY: \${SMTP_FROM_DISPLAY}
+    networks:
+      - keycloak-network
 
   gover-api:
     image: ghcr.io/aivot-digital/gover:${gover_version}
@@ -263,7 +265,7 @@ services:
       GOVER_CLAM_HOST: antivirus
       GOVER_CLAM_PORT: 3310
       GOVER_GOTENBERG_HOST: pdf-printer
-      GOVER_GOTENBERG_PORT: 3000
+      GOVER_GOTENBERG_PORT: 9191
       GOVER_SMTP_HOST: \${SMTP_HOST}
       GOVER_SMTP_PORT: \${SMTP_PORT}
       GOVER_SMTP_AUTH: \${SMTP_AUTH}
@@ -286,7 +288,7 @@ services:
       GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET: \${KEYCLOAK_BACKEND_CLIENT_SECRET}
       GOVER_KEYCLOAK_OIDC_HOSTNAME: \${HOSTNAME}/idp
       GOVER_KEYCLOAK_OIDC_REALM: staff
-      GOVER_REDIS_HOST: redis
+      GOVER_REDIS_HOST: cache
       GOVER_REDIS_PORT: 6379
       GOVER_REDIS_DATABASE: 0
       GOVER_LOG_FORMAT: ecs
