@@ -41,10 +41,14 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
         if (item == null) {
             setTaskView(undefined);
+            setTaskInputData({});
             return () => {
                 cancelled = true;
             };
         }
+
+        setTaskView(undefined);
+        setTaskInputData({});
 
         new ProcessInstanceTaskApiService()
             .getStaffTaskView(item.task.processInstanceId, item.task.id)
@@ -54,7 +58,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 }
 
                 setTaskView(view);
-                setTaskInputData(view.data.effectiveValues);
+                setTaskInputData(view.data);
             })
             .catch((err) => {
                 if (cancelled) {
@@ -119,7 +123,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
                 if (updatedTask.status === ProcessTaskStatus.Running) {
                     setTaskView(updatedTaskView);
-                    setTaskInputData(updatedTaskView.data.effectiveValues);
+                    setTaskInputData(updatedTaskView.data);
                     return;
                 }
 
@@ -181,14 +185,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                         >
                             <ElementDerivationContext
                                 element={taskView.layout}
-                                authoredElementValues={taskInputData ?? taskView.data}
+                                authoredElementValues={taskInputData}
                                 onAuthoredElementValuesChange={setTaskInputData}
-                                onDerivedDataChange={(derivedData) => {
-                                    setTaskView((currentTaskView) => currentTaskView == null ? currentTaskView : {
-                                        ...currentTaskView,
-                                        data: derivedData,
-                                    });
-                                }}
                             />
                         </Box>
 
