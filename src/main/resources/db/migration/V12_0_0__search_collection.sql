@@ -1,6 +1,6 @@
---CREATE INDEX idx_assets_filename_full_text
---    ON assets_with_metadata
---        USING GIN (to_tsvector('german', filename));
+CREATE INDEX idx_assets_filename_full_text
+    ON assets
+        USING GIN (to_tsvector('german', filename));
 
 CREATE INDEX idx_data_object_items_id_full_text
     ON data_object_items
@@ -55,15 +55,15 @@ CREATE INDEX idx_themes_name_full_text
         USING GIN (to_tsvector('german', name));
 
 CREATE VIEW search_items AS
-SELECT text 'assets'                                         AS origin_table,
-       filename                                              AS label,
-       storage_provider_id::varchar || ',' || path_from_root AS id,
-       to_tsvector('german', filename)                       AS searchable_element
-FROM v_storage_index_items_with_assets
+SELECT text 'assets'                   AS origin_table,
+       filename                        AS label,
+       key::varchar                    AS id,
+       to_tsvector('german', filename) AS searchable_element
+FROM assets
 UNION ALL
-SELECT text 'data_object_items'                                 AS origin_table,
-       id                                                       AS label,
-       schema_key || ',' || id                                  AS id,
+SELECT text 'data_object_items'  AS origin_table,
+       id                        AS label,
+       schema_key || ',' || id   AS id,
        to_tsvector('german', id) || to_tsvector('german', data) AS searchable_element
 FROM data_object_items
 UNION ALL
