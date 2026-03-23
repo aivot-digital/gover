@@ -8,7 +8,10 @@ import {SelectFieldComponent} from '../components/select-field/select-field-comp
 import {ElementType} from '../data/element-type/element-type';
 import {flattenElements} from '../utils/flatten-elements';
 import {isLoadedForm} from '../slices/app-slice';
-import {generateComponentTitle} from '../utils/generate-component-title';
+import {generateComponentPath, generateComponentTitle} from '../utils/generate-component-title';
+import {useElementTreeEditorContext} from '../components/element-tree-2/components/element-tree-editor-context';
+import {useElementTreeContext} from '../components/element-tree-2/element-tree-context';
+import {SelectFieldComponentOption} from '../components/select-field-2/select-field-component';
 
 export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement, ElementTreeEntity>) {
     const {
@@ -16,12 +19,11 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement, Ele
         editable,
         onPatch,
         scope,
-        entity,
     } = props;
 
-    const rootElement = useMemo(() => {
-        return isLoadedForm(entity) ? entity.version.rootElement : entity.rootElement;
-    }, [entity]);
+    const {
+        allElements,
+    } = useElementTreeContext();
 
     const options = useMemo(() => {
         return (element.options ?? [])
@@ -37,18 +39,18 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement, Ele
             });
     }, [element.options]);
 
-    const dependencyOptions = useMemo(() => {
-        const allElements = flattenElements(rootElement);
-        const currentElementIndex = allElements.findIndex((candidate) => candidate.id === element.id);
+    const dependencyOptions: SelectFieldComponentOption<string>[] = useMemo(() => {
+        const currentElementIndex = allElements.findIndex(({element: candidate}) => candidate.id === element.id);
         const relevantElements = currentElementIndex >= 0 ? allElements.slice(0, currentElementIndex) : allElements;
 
         return relevantElements
-            .filter((candidate) => candidate.type === ElementType.Select && candidate.id !== element.id)
-            .map((candidate) => ({
-                label: `${generateComponentTitle(candidate)} (${candidate.id})`,
+            .filter(({element: candidate}) => candidate.type === ElementType.Select && candidate.id !== element.id)
+            .map(({element: candidate, parents}) => ({
+                label: generateComponentTitle(candidate),
+                subLabel:generateComponentPath(parents),
                 value: candidate.id,
             }));
-    }, [element.id, rootElement]);
+    }, [element.id, allElements]);
 
     return (
         <>
