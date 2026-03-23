@@ -9,6 +9,20 @@ function parseTimestamp(value: string | null): number {
     return Number.isNaN(parsed) ? Number.NEGATIVE_INFINITY : parsed;
 }
 
+function parseTaskEndTimestamp(task: ProcessInstanceTaskEntity): number {
+    const finished = parseTimestamp(task.finished);
+    if (finished !== Number.NEGATIVE_INFINITY) {
+        return finished;
+    }
+
+    const updated = parseTimestamp(task.updated);
+    if (updated !== Number.NEGATIVE_INFINITY) {
+        return updated;
+    }
+
+    return parseTimestamp(task.started);
+}
+
 function isNewerTask(candidate: ProcessInstanceTaskEntity, current: ProcessInstanceTaskEntity): boolean {
     const candidateUpdated = parseTimestamp(candidate.updated);
     const currentUpdated = parseTimestamp(current.updated);
@@ -60,4 +74,23 @@ export function getLatestTaskForEdge(
         task.previousProcessNodeId === fromNodeId &&
         task.processNodeId === toNodeId
     ));
+}
+
+export function getTransferredProcessDataForEdge(
+    tasks: ProcessInstanceTaskEntity[],
+    fromNodeId: number,
+    toNodeId: number,
+): Record<string, any> | null {
+    const targetTask = getLatestTaskForEdge(tasks, fromNodeId, toNodeId);
+    if (targetTask == null) {
+        return null;
+    }
+
+    const targetStarted = parseTimestamp(targetTask.started);
+    const sourceTask = pickLatestTask(tasks, (task) => (
+        task.processNodeId === fromNodeId &&
+        parseTaskEndTimestamp(task) <= targetStarted
+    ));
+
+    return sourceTask?.processData ?? null;
 }

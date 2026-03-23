@@ -1,6 +1,5 @@
 package de.aivot.GoverBackend.plugins.core.v1.operators.date;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import org.junit.jupiter.api.Test;
 
@@ -8,6 +7,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
+import static de.aivot.GoverBackend.TestData.runtime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -16,7 +16,7 @@ class NoCodeDateOperatorsTest {
     @Test
     void createTimeShouldCreateTimeAndValidateRange() throws NoCodeException {
         var operator = new NoCodeCreateTimeOperator();
-        var data = new ElementData();
+        var data = runtime();
 
         var result = (ZonedDateTime) operator.evaluate(data, 13, 45).getValue();
 
@@ -31,7 +31,7 @@ class NoCodeDateOperatorsTest {
     @Test
     void addToDateShouldAddRequestedUnitAndNormalizeUnitInput() throws NoCodeException {
         var operator = new NoCodeAddToDateOperator();
-        var data = new ElementData();
+        var data = runtime();
         var baseDate = ZonedDateTime.of(2026, 3, 1, 12, 0, 0, 0, ZoneId.of("UTC"));
 
         var plusDays = (ZonedDateTime) operator.evaluate(data, baseDate, 5, "  TAGE  ").getValue();
@@ -45,7 +45,7 @@ class NoCodeDateOperatorsTest {
     @Test
     void subtractFromDateShouldSubtractRequestedUnit() throws NoCodeException {
         var operator = new NoCodeSubtractFromDateOperator();
-        var data = new ElementData();
+        var data = runtime();
         var baseDate = ZonedDateTime.of(2026, 3, 10, 12, 0, 0, 0, ZoneId.of("UTC"));
 
         var minusDays = (ZonedDateTime) operator.evaluate(data, baseDate, 5, "tage").getValue();
@@ -59,7 +59,7 @@ class NoCodeDateOperatorsTest {
     @Test
     void createTodayShouldReturnTodayAtMidnight() throws NoCodeException {
         var operator = new NoCodeCreateTodayOperator();
-        var data = new ElementData();
+        var data = runtime();
 
         var result = (ZonedDateTime) operator.evaluate(data).getValue();
 
@@ -73,7 +73,7 @@ class NoCodeDateOperatorsTest {
     @Test
     void createDateShouldCreateDateOrThrowOnInvalidInput() throws NoCodeException {
         var operator = new NoCodeCreateDateOperator();
-        var data = new ElementData();
+        var data = runtime();
 
         var result = (ZonedDateTime) operator.evaluate(data, 15, 8, 2026).getValue();
 

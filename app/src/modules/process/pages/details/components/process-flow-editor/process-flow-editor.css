@@ -1,3 +1,25 @@
+.process-flow-editor {
+    position: relative;
+}
+
+.process-flow-editor::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 15px;
+    pointer-events: none;
+    z-index: 4;
+    background:
+        linear-gradient(
+            180deg,
+            var(--process-flow-editor-top-fade-color-solid) 0%,
+            var(--process-flow-editor-top-fade-color-mid) 45%,
+            var(--process-flow-editor-top-fade-color-transparent) 100%
+        );
+}
+
 .process-flow-editor-controls.react-flow__controls {
     background: rgba(255, 255, 255, 0.96);
     border: 1px solid rgba(15, 23, 42, 0.08);

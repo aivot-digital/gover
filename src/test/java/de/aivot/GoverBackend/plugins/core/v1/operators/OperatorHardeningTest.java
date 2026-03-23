@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.plugins.core.v1.operators;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
-import de.aivot.GoverBackend.elements.models.ElementDataObject;
+import de.aivot.GoverBackend.elements.models.ComputedElementStates;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.plugins.core.v1.operators.common.NoCodeIsInvisibleOperator;
 import de.aivot.GoverBackend.plugins.core.v1.operators.text.NoCodeConcatOperator;
@@ -15,6 +14,8 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 
+import static de.aivot.GoverBackend.TestData.runtime;
+import static de.aivot.GoverBackend.TestData.state;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -25,10 +26,9 @@ class OperatorHardeningTest {
     @Test
     void isInvisibleShouldInvertIsVisibleResult() throws NoCodeException {
         var operator = new NoCodeIsInvisibleOperator();
-        var data = new ElementData();
-        var dataObject = new ElementDataObject();
-        dataObject.setIsVisible(true);
-        data.put("field-1", dataObject);
+        var states = new ComputedElementStates();
+        states.put("field-1", state(true));
+        var data = runtime(new de.aivot.GoverBackend.elements.models.EffectiveElementValues(), states);
 
         var result = operator.performEvaluation(data, "field-1");
 
@@ -38,7 +38,7 @@ class OperatorHardeningTest {
     @Test
     void listContainsShouldHandleNullValuesCorrectly() throws NoCodeException {
         var operator = new NoCodeListContainsOperator();
-        var data = new ElementData();
+        var data = runtime();
 
         assertTrue(operator.performEvaluation(data, Arrays.asList("a", null), null).getValueAsBoolean());
         assertFalse(operator.performEvaluation(data, List.of("a", "b"), null).getValueAsBoolean());
@@ -47,7 +47,7 @@ class OperatorHardeningTest {
     @Test
     void splitShouldTreatSeparatorAsLiteral() throws NoCodeException {
         var operator = new NoCodeSplitOperator();
-        var data = new ElementData();
+        var data = runtime();
 
         var result = operator.performEvaluation(data, "a.b.c", ".");
 
@@ -57,7 +57,7 @@ class OperatorHardeningTest {
     @Test
     void regexOperatorsShouldThrowNoCodeExceptionOnInvalidPattern() {
         var operator = new NoCodeRegexMatchOperator();
-        var data = new ElementData();
+        var data = runtime();
 
         assertThrows(NoCodeException.class, () -> operator.performEvaluation(data, "abc", "["));
     }
@@ -65,7 +65,7 @@ class OperatorHardeningTest {
     @Test
     void createTimeShouldNormalizeSecondsAndValidateRange() throws NoCodeException {
         var operator = new NoCodeCreateTimeOperator();
-        var data = new ElementData();
+        var data = runtime();
 
         var validResult = operator.performEvaluation(data, 13, 45);
         var time = assertInstanceOf(ZonedDateTime.class, validResult.getValue());
@@ -79,7 +79,7 @@ class OperatorHardeningTest {
     @Test
     void concatShouldConcatenateMultipleValues() throws NoCodeException {
         var operator = new NoCodeConcatOperator();
-        var data = new ElementData();
+        var data = runtime();
 
         var result = operator.performEvaluation(data, "User ", 42, " active");
 

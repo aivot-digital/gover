@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.nocode.services;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 import java.util.List;
 
+import static de.aivot.GoverBackend.TestData.runtime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -29,7 +30,7 @@ class NoCodeEvaluationServiceHardeningTest {
     @Test
     void shouldReturnNullForMissingReference() {
         var service = new NoCodeEvaluationService(List.of());
-        var result = service.evaluate(new NoCodeReference("missing"), new ElementData());
+        var result = service.evaluate(new NoCodeReference("missing"), new DerivedRuntimeElementData());
 
         assertNull(result.getValue());
     }
@@ -108,7 +109,7 @@ class NoCodeEvaluationServiceHardeningTest {
                             }
 
                             @Override
-                            protected NoCodeResult performEvaluation(ElementData data, Object... args) {
+                            protected NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) {
                                 return new NoCodeResult(args.length);
                             }
                         }
@@ -123,7 +124,7 @@ class NoCodeEvaluationServiceHardeningTest {
                         new NoCodeStaticValue(2),
                         new NoCodeStaticValue(3)
                 ),
-                new ElementData()
+                new DerivedRuntimeElementData()
         );
 
         assertEquals(3, result.getValue());
@@ -197,7 +198,7 @@ class NoCodeEvaluationServiceHardeningTest {
                             }
 
                             @Override
-                            protected NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
+                            protected NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
                                 throw new NoCodeException("boom");
                             }
                         }
@@ -212,7 +213,7 @@ class NoCodeEvaluationServiceHardeningTest {
                                 "explode",
                                 new NoCodeStaticValue(true)
                         ),
-                        new ElementData()
+                        new DerivedRuntimeElementData()
                 )
         );
 
@@ -235,7 +236,7 @@ class NoCodeEvaluationServiceHardeningTest {
         var processResult = service.evaluate(
                 new NoCodeProcessDataReference()
                         .setPath("applicant.name"),
-                new ElementData(),
+                new DerivedRuntimeElementData(),
                 context
         );
         assertEquals("Ada", processResult.getValue());
@@ -243,7 +244,7 @@ class NoCodeEvaluationServiceHardeningTest {
         var instanceResult = service.evaluate(
                 new NoCodeInstanceDataReference()
                         .setPath("instanceId"),
-                new ElementData(),
+                new DerivedRuntimeElementData(),
                 context
         );
         assertEquals("i-1", instanceResult.getValue());
@@ -252,7 +253,7 @@ class NoCodeEvaluationServiceHardeningTest {
                 new NoCodeNodeDataReference()
                         .setNodeDataKey("nodeA")
                         .setPath("score"),
-                new ElementData(),
+                new DerivedRuntimeElementData(),
                 context
         );
         assertEquals(7, nodeResult.getValue());
@@ -261,7 +262,7 @@ class NoCodeEvaluationServiceHardeningTest {
                 new NoCodeNodeDataReference()
                         .setNodeDataKey("nodeB")
                         .setPath("[1]"),
-                new ElementData(),
+                new DerivedRuntimeElementData(),
                 context
         );
         assertEquals("y", nodeListIndexResult.getValue());

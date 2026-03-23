@@ -23,6 +23,7 @@ import {
     type ProcessTaskDetailsPageItem,
 } from './process-task-view-page';
 import Task from '@aivot/mui-material-symbols-400-outlined/dist/task/Task';
+import {dispatchProcessAssignedTaskCountRefreshEvent} from '../../utils/process-assigned-task-count-events';
 
 export function ProcessTaskViewPageEdit(): ReactNode {
     const dispatch = useAppDispatch();
@@ -40,10 +41,14 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
         if (item == null) {
             setTaskView(undefined);
+            setTaskInputData({});
             return () => {
                 cancelled = true;
             };
         }
+
+        setTaskView(undefined);
+        setTaskInputData({});
 
         new ProcessInstanceTaskApiService()
             .getStaffTaskView(item.task.processInstanceId, item.task.id)
@@ -53,7 +58,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 }
 
                 setTaskView(view);
-                setTaskInputData(view.data.effectiveValues);
+                setTaskInputData(view.data);
             })
             .catch((err) => {
                 if (cancelled) {
@@ -112,11 +117,13 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             500,
         )
             .then(async (updatedTaskView) => {
+                dispatchProcessAssignedTaskCountRefreshEvent();
+
                 const updatedTask = await new ProcessInstanceTaskApiService().retrieve(item.task.id);
 
                 if (updatedTask.status === ProcessTaskStatus.Running) {
                     setTaskView(updatedTaskView);
-                    setTaskInputData(updatedTaskView.data.effectiveValues);
+                    setTaskInputData(updatedTaskView.data);
                     return;
                 }
 
@@ -178,14 +185,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                         >
                             <ElementDerivationContext
                                 element={taskView.layout}
-                                authoredElementValues={taskInputData ?? taskView.data}
+                                authoredElementValues={taskInputData}
                                 onAuthoredElementValuesChange={setTaskInputData}
-                                onDerivedDataChange={(derivedData) => {
-                                    setTaskView((currentTaskView) => currentTaskView == null ? currentTaskView : {
-                                        ...currentTaskView,
-                                        data: derivedData,
-                                    });
-                                }}
                             />
                         </Box>
 

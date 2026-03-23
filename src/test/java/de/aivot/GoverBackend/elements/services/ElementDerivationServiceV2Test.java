@@ -19,6 +19,7 @@ import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.nocode.models.NoCodeReference;
 import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
 import de.aivot.GoverBackend.nocode.services.NoCodeEvaluationService;
+import de.aivot.GoverBackend.submission.services.ElementDataTransformService;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedList;
@@ -149,6 +150,7 @@ class ElementDerivationServiceV2Test {
     void shouldSkipValuesForChildrenOfSkippedElements() {
         var child = new TextInputElement();
         child.setId("child");
+        child.setDisabled(true);
         child.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of("derived value")));
 
         var group = new GroupLayoutElement();
@@ -221,7 +223,8 @@ class ElementDerivationServiceV2Test {
     private static ElementDerivationService createService() {
         return new ElementDerivationService(
                 new JavascriptEngineFactoryService(List.of()),
-                new NoCodeEvaluationService(List.of())
+                new NoCodeEvaluationService(List.of()),
+                new ElementDataTransformService()
         );
     }
 

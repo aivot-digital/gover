@@ -5,7 +5,7 @@ import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.ReplicatingContainerLayoutElementElementPOJOBinding;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.models.elements.form.input.CheckboxInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
@@ -19,39 +19,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class ElementPOJOMapperTest {
-    private ElementData testElementData;
+    private EffectiveElementValues testElementData;
 
     @BeforeEach
     void setUp() {
-        testElementData = new ElementData();
+        testElementData = new EffectiveElementValues();
+        testElementData.put("text_field", "Test Value");
+        testElementData.put("switch_field", true);
 
-        testElementData
-                .putInputValue(
-                        "text_field",
-                        ElementType.Text,
-                        "Test Value"
-                );
-
-        testElementData
-                .putInputValue(
-                        "switch_field",
-                        ElementType.Checkbox,
-                        true
-                );
-
-        var replicatingChildData = new ElementData();
-        replicatingChildData
-                .putInputValue(
-                        "text_field",
-                        ElementType.Text,
-                        "Replicating Value 1"
-                );
-        testElementData
-                .putInputValue(
-                        "replicating_container",
-                        ElementType.ReplicatingContainer,
-                        List.of(replicatingChildData)
-                );
+        var replicatingChildData = new EffectiveElementValues();
+        replicatingChildData.put("text_field", "Replicating Value 1");
+        testElementData.put("replicating_container", List.of(replicatingChildData));
     }
 
     @Test

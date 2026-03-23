@@ -225,7 +225,7 @@ class DestinationKeyPayloadServiceTest {
         var group = new GroupLayoutElement();
         group.setChildren(new LinkedList<>(List.of(firstName, street)));
 
-        var payload = Map.of(
+        Map<String, Object> payload = Map.of(
                 "person", Map.of(
                         "first_name", "Ada",
                         "address", Map.of("street", "Main Street 1")
@@ -253,7 +253,7 @@ class DestinationKeyPayloadServiceTest {
         people.setDestinationKey("payload.people");
         people.setChildren(new LinkedList<>(List.of(firstName, street)));
 
-        var payload = Map.of(
+        Map<String, Object> payload = Map.of(
                 "payload", Map.of(
                         "people", List.of(
                                 Map.of(
@@ -299,7 +299,7 @@ class DestinationKeyPayloadServiceTest {
         people.setId("people");
         people.setChildren(new LinkedList<>(List.of(firstName, tag)));
 
-        var payload = Map.of(
+        Map<String, Object> payload = Map.of(
                 "members", List.of(
                         Map.of(
                                 "first_name", "Ada",

@@ -51,6 +51,7 @@ public class CitizenProcessInstanceTaskViewController {
     private final ProcessDataService processDataService;
     private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
     private final ElementDerivationService elementDerivationService;
+    private final TaskViewMultipartInputService taskViewMultipartInputService;
 
     public CitizenProcessInstanceTaskViewController(ProcessInstanceService processInstanceService,
                                                     ProcessInstanceTaskService processInstanceTaskService,
@@ -59,7 +60,8 @@ public class CitizenProcessInstanceTaskViewController {
                                                     ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
                                                     ProcessDataService processDataService,
                                                     ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
-                                                    ElementDerivationService elementDerivationService) {
+                                                    ElementDerivationService elementDerivationService,
+                                                    TaskViewMultipartInputService taskViewMultipartInputService) {
         this.processInstanceService = processInstanceService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.processNodeProviderService = processNodeProviderService;
@@ -68,6 +70,7 @@ public class CitizenProcessInstanceTaskViewController {
         this.processDataService = processDataService;
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
         this.elementDerivationService = elementDerivationService;
+        this.taskViewMultipartInputService = taskViewMultipartInputService;
     }
 
     @GetMapping("")
@@ -133,6 +136,7 @@ public class CitizenProcessInstanceTaskViewController {
             @Nonnull @PathVariable UUID taskAccess,
             @RequestParam(value = "inputs", required = true) String rawInputs,
             @RequestParam(value = "files", required = false) MultipartFile[] files,
+            @RequestParam(value = "fileUris", required = false) List<String> fileUris,
             @Nullable @RequestParam(value = "event", required = true) String event,
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId
     ) throws ResponseException {
@@ -196,6 +200,14 @@ public class CitizenProcessInstanceTaskViewController {
         } catch (JsonProcessingException e) {
             throw ResponseException.badRequest("Ungültige Eingabedaten.", e);
         }
+        inputs = taskViewMultipartInputService.normalizeInputs(
+                inputs,
+                files,
+                fileUris,
+                taskViewData.instance.getId(),
+                taskViewData.task.getId(),
+                null
+        );
 
         var derivedElementData = elementDerivationService.derive(
                 new ElementDerivationRequest(

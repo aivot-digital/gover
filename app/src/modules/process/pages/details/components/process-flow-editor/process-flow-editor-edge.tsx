@@ -10,7 +10,7 @@ import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-objec
 import Typography from '@mui/material/Typography';
 import {useConfirm} from '../../../../../../providers/confirm-provider';
 import {ExpandableCodeBlock} from '../../../../../../components/expandable-code-block/expandable-code-block';
-import {getLatestTaskForEdge} from './utils/runtime-task-utils';
+import {getLatestTaskForEdge, getTransferredProcessDataForEdge} from './utils/runtime-task-utils';
 
 const EDGE_ARROW_LENGTH = 8;
 const EDGE_ARROW_WIDTH = 12;
@@ -51,6 +51,20 @@ function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
         }
 
         return getLatestTaskForEdge(
+            runtimeData.tasks,
+            graphEdge.edge.fromNodeId,
+            graphEdge.edge.toNodeId,
+        );
+    }, [
+        graphEdge,
+        runtimeData,
+    ]);
+    const transferredProcessData = useMemo(() => {
+        if (runtimeData == null) {
+            return null;
+        }
+
+        return getTransferredProcessDataForEdge(
             runtimeData.tasks,
             graphEdge.edge.fromNodeId,
             graphEdge.edge.toNodeId,
@@ -170,7 +184,7 @@ function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
                                                 Die weitergereichte Vorgangsdatenebene
                                             </Typography>
                                             <ExpandableCodeBlock
-                                                value={JSON.stringify(nextTaskForEdge?.processData, null, 2)}
+                                                value={JSON.stringify(transferredProcessData, null, 2)}
                                             />
                                         </>
                                     ),
