@@ -103,6 +103,11 @@ services:
       KC_SPI_EGOV_BAYERNID_DISPLAY_DESCRIPTION: "{{ ORG_DESCRIPTION }}" # Setzen Sie die Beschreibung Ihrer Organisation. Diese Beschreibung wird an den BayernID-Service übermittelt. Die Beschreibung sollte nicht mehr als 50 Zeichen enthalten. Die Beschreibung wird auf der Login-Seite des BayernID-Service angezeigt.
 
       QUARKUS_HTTP_LIMITS_MAX_FORM_ATTRIBUTE_SIZE: "10M"
+    # Wenn Keycloak eine Verbindung zu einem LDAP-Server oder einem anderen Dienst mit einem selbstsignierten oder internen CA-Zertifikat herstellen soll,
+    # muss das Root-CA-Zertifikat in den Keycloak-Truststore eingebunden werden.
+    # Entfernen Sie die Kommentarzeichen und passen Sie den Pfad zum Zertifikat an.
+    # volumes:
+    #   - /pfad/zum/custom-ca.pem:/opt/keycloak/conf/truststores/custom-ca.pem:ro
     networks:
       - keycloak
       - common
