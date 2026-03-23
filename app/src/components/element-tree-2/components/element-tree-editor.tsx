@@ -141,7 +141,8 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                         sx={{
                             display: 'flex',
                             px: 2,
-                            py: 1,
+                            pt: 1,
+                            pb: 0.5,
                         }}
                     >
                         <Typography
@@ -262,7 +263,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                             flex: '1',
                             overflowY: 'scroll',
                             borderTop: '1px solid #E0E0E0',
-                            p: 4,
+                            p: 2,
                         }}
                     >
                         <ElementTreeEditorContextProvider
@@ -290,8 +291,11 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
 
                     <Box
                         sx={{
-                            p: 4,
+                            pt: 2,
+                            pb: 2.5,
+                            px: 2,
                             display: 'flex',
+                            borderTop: '1px solid #E0E0E0',
                             gap: 2,
                         }}
                     >
