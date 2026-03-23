@@ -16,10 +16,15 @@ import {
 import {
     VTeamUserRoleAssignmentWithDetailsApiService
 } from "../../../teams/services/v-team-user-role-assignment-with-details-api-service";
+import {
+    VDepartmentMembershipWithDetailsService
+} from '../../../departments/services/v-department-membership-with-details-service';
+import {VTeamMembershipWithDetailsService} from '../../../teams/services/v-team-membership-with-details-service';
+import {VTeamMembershipWithDetailsEntity} from '../../../teams/entities/v-team-membership-with-details-entity';
 
-const columns: Array<GridColDef<VTeamUserRoleAssignmentWithDetailsEntity>> = [
+const columns: Array<GridColDef<VTeamMembershipWithDetailsEntity>> = [
     {
-        field: 'fullName',
+        field: 'userFullName',
         headerName: 'Mitarbeiter:in',
         flex: 1,
         renderCell: (params) => (
@@ -32,7 +37,7 @@ const columns: Array<GridColDef<VTeamUserRoleAssignmentWithDetailsEntity>> = [
         ),
     },
     {
-        field: 'name',
+        field: 'teamName',
         headerName: 'Team',
         flex: 1,
         renderCell: (params) => (
@@ -75,7 +80,7 @@ export function UserRolesDetailsPageTeamMemberships() {
                     Organisationseinheiten zugewiesen sind.
                 </Typography>
 
-                <GenericList<VTeamUserRoleAssignmentWithDetailsEntity>
+                <GenericList<VTeamMembershipWithDetailsEntity>
                     disableFullWidthToggle={true}
                     sx={{
                         mx: '-16px',
@@ -83,9 +88,9 @@ export function UserRolesDetailsPageTeamMemberships() {
                     }}
                     columnDefinitions={columns}
                     fetch={(options) => {
-                        return new VTeamUserRoleAssignmentWithDetailsApiService()
+                        return new VTeamMembershipWithDetailsService()
                             .list(options.page, options.size, options.sort, options.order, {
-                                userRoleId: userRole.id,
+                                domainRoleId: userRole.id,
                                 fullName: options.search,
                             });
                     }}

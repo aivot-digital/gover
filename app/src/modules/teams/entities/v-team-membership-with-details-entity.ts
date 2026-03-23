@@ -5,13 +5,8 @@ import {User} from "../../users/models/user";
 
 export interface VTeamMembershipWithDetailsEntity {
     membershipId: number;
-
     membershipHasDeputies: boolean;
     membershipDeputies: KeysToSnakeCase<User>[];
-
-    teamId: number;
-    teamName: string;
-
     userId: string;
     userEmail: string | null;
     userFirstName: string | null;
@@ -21,7 +16,8 @@ export interface VTeamMembershipWithDetailsEntity {
     userVerified: boolean;
     userDeletedInIdp: boolean;
     userSystemRoleId: number;
-
+    teamId: number;
+    teamName: string;
     domainRoles: UserRoleResponseDTO[];
     domainRolePermissions: Permission[];
 }
