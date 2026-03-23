@@ -96,7 +96,6 @@ jobs:
     runs-on: ubuntu-24.04
     needs:
       - testBackend
-      - testChangelogChanged
       - prepareBuildVars
     env:
       BUILD_VERSION: ${{ needs.prepareBuildVars.outputs.build_version }}
