@@ -13,6 +13,7 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.CodeInputElemen
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
@@ -167,7 +168,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
                     element.setOptions(vStorageIndexItemWithAssetRepository
                             .findAllByMimeType("text/html")
                             .stream()
-                            .map((ass) -> RadioInputElementOption.of(
+                            .map((ass) -> SelectInputElementOption.of(
                                     ass.getAssetKey().toString(),
                                     ass.getPathFromRoot()
                             ))

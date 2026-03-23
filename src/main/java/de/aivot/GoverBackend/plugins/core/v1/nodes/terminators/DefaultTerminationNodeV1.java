@@ -5,8 +5,8 @@ import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.NumberInputElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.plugins.core.Core;
@@ -104,10 +104,10 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition {
                 .setRequired(true);
         retentionUnitInput
                 .setOptions(List.of(
-                        RadioInputElementOption.of(RETENTION_UNIT_DAYS, "Tage"),
-                        RadioInputElementOption.of(RETENTION_UNIT_WEEKS, "Wochen"),
-                        RadioInputElementOption.of(RETENTION_UNIT_MONTHS, "Monate"),
-                        RadioInputElementOption.of(RETENTION_UNIT_YEARS, "Jahre")
+                        SelectInputElementOption.of(RETENTION_UNIT_DAYS, "Tage"),
+                        SelectInputElementOption.of(RETENTION_UNIT_WEEKS, "Wochen"),
+                        SelectInputElementOption.of(RETENTION_UNIT_MONTHS, "Monate"),
+                        SelectInputElementOption.of(RETENTION_UNIT_YEARS, "Jahre")
                 ));
         layout.addChild(retentionUnitInput);
 

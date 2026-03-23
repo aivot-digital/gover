@@ -9,8 +9,8 @@ import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.models.elements.ElementValueFunctions;
 import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
@@ -130,13 +130,13 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition {
                 .setType(ValueFunctionType.NoCode)
                 .setNoCode(new NoCodeStaticValue(TYPE_ANY)));
         expectedTypeInput.setOptions(List.of(
-                RadioInputElementOption.of(TYPE_ANY, "Beliebig"),
-                RadioInputElementOption.of(TYPE_STRING, "Text"),
-                RadioInputElementOption.of(TYPE_NUMBER, "Zahl"),
-                RadioInputElementOption.of(TYPE_BOOLEAN, "Ja/Nein"),
-                RadioInputElementOption.of(TYPE_OBJECT, "Objekt"),
-                RadioInputElementOption.of(TYPE_ARRAY, "Array"),
-                RadioInputElementOption.of(TYPE_NULL, "Null")
+                SelectInputElementOption.of(TYPE_ANY, "Beliebig"),
+                SelectInputElementOption.of(TYPE_STRING, "Text"),
+                SelectInputElementOption.of(TYPE_NUMBER, "Zahl"),
+                SelectInputElementOption.of(TYPE_BOOLEAN, "Ja/Nein"),
+                SelectInputElementOption.of(TYPE_OBJECT, "Objekt"),
+                SelectInputElementOption.of(TYPE_ARRAY, "Array"),
+                SelectInputElementOption.of(TYPE_NULL, "Null")
         ));
 
         rulesInput.setChildren(List.of(pathInput, expectedTypeInput));

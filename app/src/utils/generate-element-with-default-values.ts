@@ -250,6 +250,7 @@ const elementConstructors: {
             },
         ],
         autocomplete: undefined,
+        dependsOnSelectFieldId: undefined,
         placeholder: undefined,
     }),
     [ElementType.Spacer]: (id) => ({

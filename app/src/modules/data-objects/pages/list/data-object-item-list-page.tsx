@@ -289,8 +289,12 @@ function dataObjectSchemaExtractDisplayFields(dataObjectSchema: DataObjectSchema
                                 (element.mode ?? TimeFieldComponentModelMode.Minute) === TimeFieldComponentModelMode.Second ? 'HH:mm:ss' : 'HH:mm',
                             );
                         case ElementType.Radio:
-                        case ElementType.Select:
-                            return element.options?.find((opt) => opt.value === value)?.label;
+                        case ElementType.Select: {
+                            const matchedOption = element.options
+                                ?.find((opt) => typeof opt === 'string' ? opt === value : opt.value === value);
+
+                            return typeof matchedOption === 'string' ? matchedOption : matchedOption?.label;
+                        }
                         case ElementType.DataModelSelect:
                         case ElementType.DataObjectSelect:
                             return value;

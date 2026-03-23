@@ -9,8 +9,8 @@ import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.enums.ElementType;
@@ -134,10 +134,10 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
         projectPasswordInput.setLabel("Projekt-Passwort");
         projectPasswordInput.setPlaceholder("Projekt-Passwort");
         projectPasswordInput.setHint("Das Projekt-Passwort finden Sie in Ihrem GiroCockpit. Es muss zuvor unter \"Geheimnisse\" hinterlegt werden, um hier auswählbar zu sein.");
-        List<RadioInputElementOption> clientSecretInputOptions = secretService
+        List<SelectInputElementOption> clientSecretInputOptions = secretService
                 .list()
                 .stream()
-                .map(secret -> new RadioInputElementOption()
+                .map(secret -> new SelectInputElementOption()
                         .setValue(secret.getKey().toString())
                         .setLabel(secret.getName())
                 )

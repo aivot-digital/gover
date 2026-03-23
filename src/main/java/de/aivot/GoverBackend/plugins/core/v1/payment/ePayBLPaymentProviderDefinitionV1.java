@@ -6,8 +6,8 @@ import de.aivot.GoverBackend.asset.repositories.VStorageIndexItemWithAssetReposi
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
@@ -141,7 +141,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
         var clientCertificateInputOptions = vStorageIndexItemWithAssetRepository
                 .findAllByMimeType(CERTIFICATE_MIME_TYPE)
                 .stream()
-                .map(secret -> new RadioInputElementOption()
+                .map(secret -> new SelectInputElementOption()
                         .setValue(secret.getAssetKey().toString())
                         .setLabel(secret.getFilename())
                 )
@@ -159,7 +159,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
         var clientSecretInputOptions = secretService
                 .list()
                 .stream()
-                .map(secret -> new RadioInputElementOption()
+                .map(secret -> new SelectInputElementOption()
                         .setValue(secret.getKey().toString())
                         .setLabel(secret.getName())
                 )

@@ -6,8 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.common.contenttype.ContentType;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
@@ -133,10 +133,10 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
         passwordInput.setLabel("Passwort");
         passwordInput.setPlaceholder("Passwort");
         passwordInput.setHint("Das Passwort für die Authentifizierung am Zahlungsdienstleister.");
-        List<RadioInputElementOption> clientSecretInputOptions = secretService
+        List<SelectInputElementOption> clientSecretInputOptions = secretService
                 .list()
                 .stream()
-                .map(secret -> RadioInputElementOption.of(
+                .map(secret -> SelectInputElementOption.of(
                         secret.getKey().toString(),
                         secret.getName()
                 ))

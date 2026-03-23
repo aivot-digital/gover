@@ -8,8 +8,8 @@ import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
@@ -124,11 +124,11 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
                 .findChild(WebhookTriggerConfig.REQUEST_METHOD_CONFIG_KEY, SelectInputElement.class)
                 .ifPresent(field -> {
                     var options = List.of(
-                            RadioInputElementOption.of(WebhookTriggerConfig.REQUEST_METHOD_OPTION_GET, WebhookTriggerConfig.REQUEST_METHOD_OPTION_GET),
-                            RadioInputElementOption.of(WebhookTriggerConfig.REQUEST_METHOD_OPTION_POST, WebhookTriggerConfig.REQUEST_METHOD_OPTION_POST),
-                            RadioInputElementOption.of(WebhookTriggerConfig.REQUEST_METHOD_OPTION_PATCH, WebhookTriggerConfig.REQUEST_METHOD_OPTION_PATCH),
-                            RadioInputElementOption.of(WebhookTriggerConfig.REQUEST_METHOD_OPTION_PUT, WebhookTriggerConfig.REQUEST_METHOD_OPTION_PUT),
-                            RadioInputElementOption.of(WebhookTriggerConfig.REQUEST_METHOD_OPTION_DELETE, WebhookTriggerConfig.REQUEST_METHOD_OPTION_DELETE)
+                            SelectInputElementOption.of(WebhookTriggerConfig.REQUEST_METHOD_OPTION_GET, WebhookTriggerConfig.REQUEST_METHOD_OPTION_GET),
+                            SelectInputElementOption.of(WebhookTriggerConfig.REQUEST_METHOD_OPTION_POST, WebhookTriggerConfig.REQUEST_METHOD_OPTION_POST),
+                            SelectInputElementOption.of(WebhookTriggerConfig.REQUEST_METHOD_OPTION_PATCH, WebhookTriggerConfig.REQUEST_METHOD_OPTION_PATCH),
+                            SelectInputElementOption.of(WebhookTriggerConfig.REQUEST_METHOD_OPTION_PUT, WebhookTriggerConfig.REQUEST_METHOD_OPTION_PUT),
+                            SelectInputElementOption.of(WebhookTriggerConfig.REQUEST_METHOD_OPTION_DELETE, WebhookTriggerConfig.REQUEST_METHOD_OPTION_DELETE)
                     );
 
                     field.setOptions(options);
@@ -139,9 +139,9 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
                 .findChild(WebhookTriggerConfig.AUTH_METHOD_CONFIG_KEY, SelectInputElement.class)
                 .ifPresent(field -> {
                     var options = List.of(
-                            RadioInputElementOption.of(WebhookTriggerConfig.AUTH_METHOD_OPTION_BASIC, "Basic Auth"),
-                            RadioInputElementOption.of(WebhookTriggerConfig.AUTH_METHOD_OPTION_BEARER, "Bearer Token"),
-                            RadioInputElementOption.of(WebhookTriggerConfig.AUTH_METHOD_OPTION_QUERY_PARAM, "Query-Parameter")
+                            SelectInputElementOption.of(WebhookTriggerConfig.AUTH_METHOD_OPTION_BASIC, "Basic Auth"),
+                            SelectInputElementOption.of(WebhookTriggerConfig.AUTH_METHOD_OPTION_BEARER, "Bearer Token"),
+                            SelectInputElementOption.of(WebhookTriggerConfig.AUTH_METHOD_OPTION_QUERY_PARAM, "Query-Parameter")
                     );
 
                     field.setOptions(options);
@@ -152,9 +152,9 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
                 .findChild(WebhookTriggerConfig.REQUEST_BODY_TYPE_CONFIG_KEY, SelectInputElement.class)
                 .ifPresent(field -> {
                     var options = List.of(
-                            RadioInputElementOption.of(WebhookTriggerConfig.REQUEST_BODY_TYPE_OPTION_JSON, "JSON"),
-                            RadioInputElementOption.of(WebhookTriggerConfig.REQUEST_BODY_TYPE_OPTION_FORM, "Multipart/Form-Data"),
-                            RadioInputElementOption.of(WebhookTriggerConfig.REQUEST_BODY_TYPE_OPTION_XML, "XML")
+                            SelectInputElementOption.of(WebhookTriggerConfig.REQUEST_BODY_TYPE_OPTION_JSON, "JSON"),
+                            SelectInputElementOption.of(WebhookTriggerConfig.REQUEST_BODY_TYPE_OPTION_FORM, "Multipart/Form-Data"),
+                            SelectInputElementOption.of(WebhookTriggerConfig.REQUEST_BODY_TYPE_OPTION_XML, "XML")
                     );
 
                     field.setOptions(options);
@@ -165,8 +165,8 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
                 .findChild(WebhookTriggerConfig.PROCESSING_TYPE_CONFIG_KEY, SelectInputElement.class)
                 .ifPresent(field -> {
                     var options = List.of(
-                            RadioInputElementOption.of(WebhookTriggerConfig.PROCESSING_TYPE_OPTION_AUTOMATIC, "Automatisch"),
-                            RadioInputElementOption.of(WebhookTriggerConfig.PROCESSING_TYPE_OPTION_CODE, "Code")
+                            SelectInputElementOption.of(WebhookTriggerConfig.PROCESSING_TYPE_OPTION_AUTOMATIC, "Automatisch"),
+                            SelectInputElementOption.of(WebhookTriggerConfig.PROCESSING_TYPE_OPTION_CODE, "Code")
                     );
 
                     field.setOptions(options);

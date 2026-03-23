@@ -16,6 +16,8 @@ export interface BaseViewProps<M extends AnyElement, V> {
     mode: 'editor' | 'viewer';
     authoredElementValues: AuthoredElementValues;
     derivedData: DerivedRuntimeElementData;
+    rootAuthoredElementValues: AuthoredElementValues;
+    rootDerivedData: DerivedRuntimeElementData;
     onAuthoredElementValuesChange: (data: AuthoredElementValues, triggeringElementIds: string[]) => void;
     onElementBlur?: (data: AuthoredElementValues, triggeringElementIds: string[]) => void;
     onDerivedDataChange?: (data: DerivedRuntimeElementData) => void;

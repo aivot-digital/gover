@@ -33,6 +33,8 @@ interface DispatcherComponentProps<T extends AnyElement> {
 
     authoredElementValues: AuthoredElementValues;
     derivedData: DerivedRuntimeElementData;
+    rootAuthoredElementValues?: AuthoredElementValues;
+    rootDerivedData?: DerivedRuntimeElementData;
     onAuthoredElementValuesChange: (data: AuthoredElementValues, triggeringElementIds: string[]) => void;
     onElementBlur?: (data: AuthoredElementValues, triggeringElementIds: string[]) => void;
     onDerivedDataChange?: (data: DerivedRuntimeElementData) => void;
@@ -54,6 +56,8 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         mode,
         authoredElementValues,
         derivedData,
+        rootAuthoredElementValues,
+        rootDerivedData,
         onAuthoredElementValuesChange,
         onElementBlur,
         onDerivedDataChange,
@@ -76,6 +80,14 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
     const error: string[] | undefined | null = useMemo(() => {
         return resolveErrors(element, derivedData);
     }, [element, derivedData]);
+
+    const effectiveRootAuthoredElementValues = useMemo(() => {
+        return rootAuthoredElementValues ?? authoredElementValues;
+    }, [rootAuthoredElementValues, authoredElementValues]);
+
+    const effectiveRootDerivedData = useMemo(() => {
+        return rootDerivedData ?? derivedData;
+    }, [rootDerivedData, derivedData]);
 
     const handleSetValue = useCallback((updatedValue: any | null | undefined, triggeringElementIds?: string[]) => {
         if (updatedValue == value) {
@@ -135,6 +147,8 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         mode: mode,
         authoredElementValues: authoredElementValues,
         derivedData: derivedData,
+        rootAuthoredElementValues: effectiveRootAuthoredElementValues,
+        rootDerivedData: effectiveRootDerivedData,
         onAuthoredElementValuesChange: onAuthoredElementValuesChange,
         onElementBlur: onElementBlur,
         onDerivedDataChange: onDerivedDataChange,
@@ -153,6 +167,8 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         mode,
         authoredElementValues,
         derivedData,
+        effectiveRootAuthoredElementValues,
+        effectiveRootDerivedData,
         onAuthoredElementValuesChange,
         onElementBlur,
         onDerivedDataChange,

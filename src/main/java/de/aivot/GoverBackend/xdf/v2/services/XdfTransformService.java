@@ -438,7 +438,7 @@ public class XdfTransformService {
                 if (StringUtils.isNotNullOrEmpty(codeListUrn)) {
                     try {
                         var options = xRepositoryCodeListService
-                                .getRadioFieldOptionCodeList(codeListUrn);
+                                .getSelectFieldOptionCodeList(codeListUrn);
                         selectField.setOptions(options);
                     } catch (ResponseException e) {
                         fields.add(createErrorAlert(

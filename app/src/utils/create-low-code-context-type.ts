@@ -113,7 +113,9 @@ function elementToValueType(element: AnyElement): string {
             return '{latitude: number | null | undefined; longitude: number | null | undefined; address: string | null | undefined}';
         case ElementType.Radio:
         case ElementType.Select:
-            return element.options?.map((option) => `'${option.value}'`).join(' | ') ?? 'string';
+            return element.options
+                ?.map((option) => `'${typeof option === 'string' ? option : option.value}'`)
+                .join(' | ') ?? 'string';
         case ElementType.Number:
             return 'number';
         case ElementType.MultiCheckbox:

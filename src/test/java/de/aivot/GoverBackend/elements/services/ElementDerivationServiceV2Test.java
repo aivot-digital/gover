@@ -9,9 +9,12 @@ import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.ElementOverrideFunctions;
 import de.aivot.GoverBackend.elements.models.elements.ElementValueFunctions;
 import de.aivot.GoverBackend.elements.models.elements.ElementVisibilityFunctions;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.BaseStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
@@ -24,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -209,6 +213,80 @@ class ElementDerivationServiceV2Test {
         assertNull(skippedResult.getElementStates().get("child").getError());
     }
 
+    @Test
+    void shouldClearDependentSelectValueWhenParentSelectIsInOuterScope() {
+        var parent = createGroupedSelect("parent", null, List.of(
+                SelectInputElementOption.of("group_a", "Gruppe A"),
+                SelectInputElementOption.of("group_b", "Gruppe B")
+        ));
+
+        var child = createGroupedSelect("child", "parent", List.of(
+                SelectInputElementOption.of("option_a", "Option A", "group_a"),
+                SelectInputElementOption.of("option_b", "Option B", "group_b")
+        ));
+
+        var rows = new ReplicatingContainerLayoutElement();
+        rows.setId("rows");
+        rows.setChildren(new LinkedList<>(List.of(child)));
+
+        var rowValues = new AuthoredElementValues();
+        rowValues.put("child", "option_a");
+
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.put("parent", "group_b");
+        authoredValues.put("rows", List.of(rowValues));
+
+        var result = derive(
+                createRoot(List.of(parent, rows)),
+                authoredValues,
+                new ElementDerivationOptions()
+        );
+
+        var effectiveRows = assertInstanceOf(List.class, result.getEffectiveValues().get("rows"));
+        var firstRow = assertInstanceOf(Map.class, effectiveRows.get(0));
+
+        assertEquals("group_b", result.getEffectiveValues().get("parent"));
+        assertNull(firstRow.get("child"));
+        assertNull(result.getElementStates().get("rows").getSubStates().get(0).get("child").getError());
+    }
+
+    @Test
+    void shouldClearDependentSelectValueWhenParentSelectIsInCurrentReplicatingRow() {
+        var rowParent = createGroupedSelect("row_parent", null, List.of(
+                SelectInputElementOption.of("group_a", "Gruppe A"),
+                SelectInputElementOption.of("group_b", "Gruppe B")
+        ));
+
+        var rowChild = createGroupedSelect("row_child", "row_parent", List.of(
+                SelectInputElementOption.of("option_a", "Option A", "group_a"),
+                SelectInputElementOption.of("option_b", "Option B", "group_b")
+        ));
+
+        var rows = new ReplicatingContainerLayoutElement();
+        rows.setId("rows");
+        rows.setChildren(new LinkedList<>(List.of(rowParent, rowChild)));
+
+        var rowValues = new AuthoredElementValues();
+        rowValues.put("row_parent", "group_b");
+        rowValues.put("row_child", "option_a");
+
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.put("rows", List.of(rowValues));
+
+        var result = derive(
+                createRoot(List.of(rows)),
+                authoredValues,
+                new ElementDerivationOptions()
+        );
+
+        var effectiveRows = assertInstanceOf(List.class, result.getEffectiveValues().get("rows"));
+        var firstRow = assertInstanceOf(Map.class, effectiveRows.get(0));
+
+        assertEquals("group_b", firstRow.get("row_parent"));
+        assertNull(firstRow.get("row_child"));
+        assertNull(result.getElementStates().get("rows").getSubStates().get(0).get("row_child").getError());
+    }
+
     private static DerivedRuntimeElementData derive(
             FormLayoutElement root,
             AuthoredElementValues authoredValues,
@@ -226,6 +304,18 @@ class ElementDerivationServiceV2Test {
                 new NoCodeEvaluationService(List.of()),
                 new ElementDataTransformService()
         );
+    }
+
+    private static SelectInputElement createGroupedSelect(
+            String id,
+            String dependsOnSelectFieldId,
+            List<SelectInputElementOption> options
+    ) {
+        var field = new SelectInputElement();
+        field.setId(id);
+        field.setOptions(options);
+        field.setDependsOnSelectFieldId(dependsOnSelectFieldId);
+        return field;
     }
 
     private static FormLayoutElement createRoot(List<BaseFormElement> stepChildren) {

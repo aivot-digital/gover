@@ -9,7 +9,9 @@ import de.aivot.GoverBackend.elements.models.*;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.InputElement;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.javascript.exceptions.JavascriptException;
 import de.aivot.GoverBackend.javascript.models.JavascriptResult;
@@ -69,6 +71,8 @@ public class ElementDerivationService {
                 request.element(),
                 request.authoredElementValues(),
                 effectiveElementValues,
+                request.authoredElementValues(),
+                effectiveElementValues,
                 computedElementStates,
                 request.derivationOptions(),
                 true,
@@ -85,6 +89,8 @@ public class ElementDerivationService {
             @Nonnull JavascriptEngine javascriptEngine,
             @Nonnull BaseElement rootElement,
             @Nonnull BaseElement currentElement,
+            @Nonnull AuthoredElementValues rootAuthoredElementValues,
+            @Nonnull EffectiveElementValues rootEffectiveElementValues,
             @Nonnull AuthoredElementValues authoredElementValues,
             @Nonnull EffectiveElementValues effectiveElementValues,
             @Nonnull ComputedElementStates computedElementStates,
@@ -138,6 +144,8 @@ public class ElementDerivationService {
                         javascriptEngine,
                         rootElement,
                         inputElement,
+                        rootAuthoredElementValues,
+                        rootEffectiveElementValues,
                         authoredElementValues,
                         effectiveElementValues,
                         computedElementStates,
@@ -177,6 +185,9 @@ public class ElementDerivationService {
                     // Iterate through the list of all child data sets.
                     for (var rawEffectiveChildDataSet : effectiveChildDataSetList) {
                         if (rawEffectiveChildDataSet instanceof Map<?, ?> effectiveChildDataSet) {
+                            @SuppressWarnings("unchecked")
+                            var mutableEffectiveChildDataSet = (Map<String, Object>) effectiveChildDataSet;
+
                             // Create a new container for the computed element states of the current child data set.
                             // Add this to the list of computed element states of the replicating list container.
                             var childItemElementStates = new ComputedElementStates();
@@ -184,20 +195,28 @@ public class ElementDerivationService {
                                     .getSubStates()
                                     .add(childItemElementStates);
 
+                            var om = ObjectMapperFactory.getInstance();
+                            var childAuthoredElementValues = om.convertValue(mutableEffectiveChildDataSet, AuthoredElementValues.class);
+                            var childEffectiveElementValues = om.convertValue(mutableEffectiveChildDataSet, EffectiveElementValues.class);
+
                             for (var currentChildElement : replicatingContainer.getChildren()) {
-                                var om = ObjectMapperFactory.getInstance();
                                 derive(
                                         javascriptEngine,
                                         rootElement,
                                         currentChildElement,
-                                        om.convertValue(effectiveChildDataSet,  AuthoredElementValues.class),
-                                        om.convertValue(effectiveChildDataSet,  EffectiveElementValues.class),
+                                        rootAuthoredElementValues,
+                                        rootEffectiveElementValues,
+                                        childAuthoredElementValues,
+                                        childEffectiveElementValues,
                                         childItemElementStates,
                                         childOptions,
                                         isVisible,
                                         logger
                                 );
                             }
+
+                            mutableEffectiveChildDataSet.clear();
+                            mutableEffectiveChildDataSet.putAll(childEffectiveElementValues);
                         }
                     }
                 }
@@ -208,6 +227,8 @@ public class ElementDerivationService {
                             javascriptEngine,
                             rootElement,
                             child,
+                            rootAuthoredElementValues,
+                            rootEffectiveElementValues,
                             authoredElementValues,
                             effectiveElementValues,
                             computedElementStates,
@@ -419,6 +440,8 @@ public class ElementDerivationService {
             @Nonnull JavascriptEngine javascriptEngine,
             @Nonnull BaseElement rootElement,
             @Nonnull InputElement<?> inputElement,
+            @Nonnull AuthoredElementValues rootAuthoredElementValues,
+            @Nonnull EffectiveElementValues rootEffectiveElementValues,
             @Nonnull AuthoredElementValues authoredElementValues,
             @Nonnull EffectiveElementValues effectiveElementValues,
             @Nonnull ComputedElementStates computedElementStates,
@@ -439,9 +462,18 @@ public class ElementDerivationService {
 
         // If the value function is null, or an authored value exists and the element is not disabled, set the authored value as the effective value
         if (valueFunction == null || (authoredValue != null && !Boolean.TRUE.equals(inputElement.getDisabled()))) {
-            effectiveElementValues.put(inputElement.getId(), authoredValue);
+            var sanitizedValue = sanitizeSelectEffectiveValue(
+                    rootElement,
+                    inputElement,
+                    authoredValue,
+                    rootAuthoredElementValues,
+                    rootEffectiveElementValues,
+                    authoredElementValues,
+                    effectiveElementValues
+            );
+            effectiveElementValues.put(inputElement.getId(), sanitizedValue);
             elementState.setValueSource(EffectiveValueSource.Authored);
-            return authoredValue; // No value to derive if the element has no value setter
+            return sanitizedValue; // No value to derive if the element has no value setter
         }
 
         try {
@@ -457,9 +489,18 @@ public class ElementDerivationService {
 
                 logger.log(baseElement, res);
 
-                effectiveElementValues.put(inputElement.getId(), res.asObject());
+                var sanitizedValue = sanitizeSelectEffectiveValue(
+                        rootElement,
+                        inputElement,
+                        res.asObject(),
+                        rootAuthoredElementValues,
+                        rootEffectiveElementValues,
+                        authoredElementValues,
+                        effectiveElementValues
+                );
+                effectiveElementValues.put(inputElement.getId(), sanitizedValue);
                 elementState.setValueSource(EffectiveValueSource.Derived);
-                return res.asObject(); // No value to derive if the element has no value setter
+                return sanitizedValue; // No value to derive if the element has no value setter
             }
 
             // Determine if the value computation should be done with a value expression
@@ -470,15 +511,108 @@ public class ElementDerivationService {
                         .evaluate(valueFunction.getNoCode(), accumulator)
                         .getValue();
 
-                effectiveElementValues.put(inputElement.getId(), derivedValue);
+                var sanitizedValue = sanitizeSelectEffectiveValue(
+                        rootElement,
+                        inputElement,
+                        derivedValue,
+                        rootAuthoredElementValues,
+                        rootEffectiveElementValues,
+                        authoredElementValues,
+                        effectiveElementValues
+                );
+                effectiveElementValues.put(inputElement.getId(), sanitizedValue);
                 elementState.setValueSource(EffectiveValueSource.Derived);
-                return derivedValue;
+                return sanitizedValue;
             }
         } catch (Exception e) {
             throw new DerivationException(baseElement, "Bei der Erzeugung des dynamischen Wertes ist ein Fehler aufgetreten: " + e.getMessage(), e);
         }
 
         throw new DerivationException(baseElement, "Der Wert konnte nicht abgeleitet werden, da die Definition des Werteableitungsmechanismus ungültig ist.");
+    }
+
+    @Nullable
+    private Object sanitizeSelectEffectiveValue(
+            @Nonnull BaseElement rootElement,
+            @Nonnull InputElement<?> inputElement,
+            @Nullable Object effectiveValue,
+            @Nonnull AuthoredElementValues rootAuthoredElementValues,
+            @Nonnull EffectiveElementValues rootEffectiveElementValues,
+            @Nonnull AuthoredElementValues authoredElementValues,
+            @Nonnull EffectiveElementValues effectiveElementValues
+    ) {
+        if (!(inputElement instanceof SelectInputElement selectField)) {
+            return effectiveValue;
+        }
+
+        if (StringUtils.isNullOrEmpty(selectField.getDependsOnSelectFieldId())) {
+            return effectiveValue;
+        }
+
+        var selectedValue = selectField.formatValue(effectiveValue);
+        if (selectedValue == null || !selectField.containsOptionValue(selectedValue)) {
+            return effectiveValue;
+        }
+
+        var referencedSelectField = resolveReferencedSelectField(rootElement, selectField.getDependsOnSelectFieldId());
+        if (referencedSelectField == null) {
+            return effectiveValue;
+        }
+
+        var referencedValue = resolveReferencedSelectValue(
+                referencedSelectField,
+                authoredElementValues,
+                effectiveElementValues,
+                rootAuthoredElementValues,
+                rootEffectiveElementValues
+        );
+
+        if (selectField.containsOptionValueForGroup(selectedValue, referencedValue)) {
+            return selectedValue;
+        }
+
+        return null;
+    }
+
+    @Nullable
+    private SelectInputElement resolveReferencedSelectField(
+            @Nonnull BaseElement rootElement,
+            @Nullable String referencedElementId
+    ) {
+        if (StringUtils.isNullOrEmpty(referencedElementId)) {
+            return null;
+        }
+
+        return ElementFlattenUtils
+                .flattenElements(rootElement)
+                .stream()
+                .filter(SelectInputElement.class::isInstance)
+                .map(SelectInputElement.class::cast)
+                .filter(element -> Objects.equals(element.getId(), referencedElementId))
+                .findFirst()
+                .orElse(null);
+    }
+
+    @Nullable
+    private String resolveReferencedSelectValue(
+            @Nonnull SelectInputElement referencedSelectField,
+            @Nonnull AuthoredElementValues authoredElementValues,
+            @Nonnull EffectiveElementValues effectiveElementValues,
+            @Nonnull AuthoredElementValues rootAuthoredElementValues,
+            @Nonnull EffectiveElementValues rootEffectiveElementValues
+    ) {
+        var rawValue = effectiveElementValues.get(referencedSelectField.getId());
+        if (rawValue == null) {
+            rawValue = authoredElementValues.get(referencedSelectField.getId());
+        }
+        if (rawValue == null) {
+            rawValue = rootEffectiveElementValues.get(referencedSelectField.getId());
+        }
+        if (rawValue == null) {
+            rawValue = rootAuthoredElementValues.get(referencedSelectField.getId());
+        }
+
+        return referencedSelectField.formatValue(rawValue);
     }
 
     @Nullable

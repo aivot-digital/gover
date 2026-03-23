@@ -7,8 +7,8 @@ import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.GoverBackend.elements.models.elements.form.input.CheckboxInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.CodeInputElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
@@ -102,10 +102,10 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition {
         method.setHint("Die HTTP-Methode, die für die Anfrage verwendet werden soll.");
         method.setRequired(true);
         method.setOptions(List.of(
-                new RadioInputElementOption()
+                new SelectInputElementOption()
                         .setLabel("GET")
                         .setValue("GET"),
-                new RadioInputElementOption()
+                new SelectInputElementOption()
                         .setLabel("POST")
                         .setValue("POST")
         ));

@@ -7,8 +7,8 @@ import de.aivot.GoverBackend.elements.enums.ValueFunctionType;
 import de.aivot.GoverBackend.elements.models.*;
 import de.aivot.GoverBackend.elements.models.elements.ElementValueFunctions;
 import de.aivot.GoverBackend.elements.models.elements.form.input.NoCodeInputElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
@@ -135,12 +135,12 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition {
                 .setNoCode(new NoCodeStaticValue(TARGET_TYPE_ANY))
         );
         variableTargetTypeInput.setOptions(List.of(
-                RadioInputElementOption.of(TARGET_TYPE_ANY, "Beliebig"),
-                RadioInputElementOption.of(TARGET_TYPE_STRING, "Text"),
-                RadioInputElementOption.of(TARGET_TYPE_NUMBER, "Zahl"),
-                RadioInputElementOption.of(TARGET_TYPE_BOOLEAN, "Ja/Nein"),
-                RadioInputElementOption.of(TARGET_TYPE_DATE, "Datum"),
-                RadioInputElementOption.of(TARGET_TYPE_DATETIME, "Datum und Uhrzeit")
+                SelectInputElementOption.of(TARGET_TYPE_ANY, "Beliebig"),
+                SelectInputElementOption.of(TARGET_TYPE_STRING, "Text"),
+                SelectInputElementOption.of(TARGET_TYPE_NUMBER, "Zahl"),
+                SelectInputElementOption.of(TARGET_TYPE_BOOLEAN, "Ja/Nein"),
+                SelectInputElementOption.of(TARGET_TYPE_DATE, "Datum"),
+                SelectInputElementOption.of(TARGET_TYPE_DATETIME, "Datum und Uhrzeit")
         ));
 
         var variableExpressionInput = new NoCodeInputElement();

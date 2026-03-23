@@ -174,7 +174,14 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                 case ElementType.Radio:
                 case ElementType.Select:
                     if (element.options != null) {
-                        options.push(...element.options);
+                        options.push(...element.options.map((option) => (
+                            typeof option === 'string' ?
+                                {
+                                    value: option,
+                                    label: option,
+                                } :
+                                option
+                        )));
                     }
                     break;
                 case ElementType.MultiCheckbox:

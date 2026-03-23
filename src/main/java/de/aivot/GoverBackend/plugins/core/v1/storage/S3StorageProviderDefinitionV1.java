@@ -4,8 +4,8 @@ import de.aivot.GoverBackend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
@@ -110,7 +110,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                     var options = secretRepository
                             .findAll()
                             .stream()
-                            .map(secret -> RadioInputElementOption.of(
+                            .map(secret -> SelectInputElementOption.of(
                                     secret.getKey().toString(),
                                     secret.getName()
                             ))

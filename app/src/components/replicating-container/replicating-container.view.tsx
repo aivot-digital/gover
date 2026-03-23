@@ -32,6 +32,8 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
         isBusy,
         authoredElementValues,
         derivedData,
+        rootAuthoredElementValues,
+        rootDerivedData,
         onAuthoredElementValuesChange,
         onElementBlur,
         onDerivedDataChange,
@@ -243,6 +245,8 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                         mode={props.mode}
                                         authoredElementValues={val}
                                         derivedData={resolveReplicatingContainerItemDerivedData(element, derivedData, valueIndex)}
+                                        rootAuthoredElementValues={rootAuthoredElementValues}
+                                        rootDerivedData={rootDerivedData}
                                         onAuthoredElementValuesChange={(data, triggeringElementIds) => {
                                             const newValue = (value ?? [])
                                                 .map((v, i) => i === valueIndex ? data : v);

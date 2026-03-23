@@ -282,7 +282,7 @@ function selectFieldToYup(elem: SelectFieldElement | RadioFieldElement): Schema 
 
     if (elem.options) {
         const validValues = (elem.options ?? [])
-            .map(opt => opt.value);
+            .map(opt => typeof opt === 'string' ? opt : opt.value);
 
         if (validValues.length > 0) {
             selectFieldSchema = selectFieldSchema
