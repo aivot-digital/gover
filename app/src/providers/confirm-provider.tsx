@@ -1,4 +1,4 @@
-import React, {createContext, type ReactNode, useContext, useState} from 'react';
+import React, {createContext, type ReactNode, useCallback, useContext, useState} from 'react';
 import {ConfirmDialog} from '../dialogs/confirm-dialog/confirm-dialog';
 import {type Theme, ThemeProvider, useTheme} from '@mui/material';
 
@@ -13,7 +13,6 @@ interface ConfirmDialogOptions {
     children?: React.ReactNode;
     theme?: Theme;
     width?: 'sm' | 'md' | 'lg' | 'xl';
-    zIndex?: number;
 }
 
 interface ConfirmContextProps {
@@ -24,10 +23,19 @@ const ConfirmContext = createContext<ConfirmContextProps | null>(null);
 
 export const useConfirm = () => {
     const context = useContext(ConfirmContext);
+    const theme = useTheme();
+
     if (context == null) {
         throw new Error('useConfirm must be used within a ConfirmProvider');
     }
-    return context.showConfirm;
+
+    return useCallback((options: ConfirmDialogOptions) => {
+        // Preserve the caller's theme because the provider renders the dialog at app level.
+        return context.showConfirm({
+            theme: theme,
+            ...options,
+        });
+    }, [context, theme]);
 };
 
 export const ConfirmProvider = ({children}: { children: ReactNode }): ReactNode => {

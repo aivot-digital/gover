@@ -5,11 +5,12 @@ import {HTML5Backend} from 'react-dnd-html5-backend';
 import {isRootElement} from '../../models/elements/root-element';
 import {AnyElement} from '../../models/elements/any-element';
 import {AnyElementWithChildren, isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
-import {getElementIconForType} from '../../data/element-type/element-icons';
+import {getElementNameForType} from '../../data/element-type/element-names';
 import {Actions} from '../actions/actions';
 import Search from '@aivot/mui-material-symbols-400-outlined/dist/search/Search';
 import Expand from '@aivot/mui-material-symbols-400-outlined/dist/expand/Expand';
 import CollapseAll from '@aivot/mui-material-symbols-400-outlined/dist/collapse-all/CollapseAll';
+import AccountTree from '@aivot/mui-material-symbols-400-outlined/dist/account-tree/AccountTree';
 import {ElementTreeChildList} from './components/element-tree-child-list';
 import {ElementTreeContextProvider, ElementTreeDragItem, ElementTreeExpandCommand} from './element-tree-context';
 import {ElementChildOptions} from '../../data/element-type/element-child-options';
@@ -19,11 +20,13 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
 import {flattenElementsWithParents} from '../../utils/flatten-elements';
+import SearchOff from '@aivot/mui-material-symbols-400-outlined/dist/search-off/SearchOff';
 
 export interface ElementTreeProps<T extends AnyElement> {
     value: T;
     onChange: (patch: T) => void;
     editable: boolean;
+    parentModalZIndex?: number;
 }
 
 interface ElementTreeSearchResult {
@@ -37,6 +40,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
         value,
         onChange,
         editable,
+        parentModalZIndex,
     } = props;
 
     const {
@@ -55,13 +59,9 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
         return flattenElementsWithParents(value, [], false);
     }, [value]);
 
-    const Icon = useMemo(() => {
-        return getElementIconForType(type);
+    const typeLabel = useMemo(() => {
+        return getElementNameForType(type);
     }, [type]);
-
-    const title = useMemo(() => {
-        return generateComponentTitle(value);
-    }, [value]);
 
     const children = useMemo(() => {
         return isAnyElementWithChildren(value) ? value.children ?? [] : [];
@@ -153,6 +153,19 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
         ));
     };
 
+    const handleToggleSearch = () => {
+        setShowSearch((prev) => {
+            const next = !prev;
+
+            if (!next) {
+                setSearch('');
+                setCurrentSearchResultIndex(0);
+            }
+
+            return next;
+        });
+    };
+
     const handleExpandAll = () => {
         setExpandCommand((prev) => ({
             type: 'expand-all',
@@ -211,43 +224,105 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
+                minWidth: 0,
             }}
         >
             <Box
                 sx={{
                     borderBottom: '1px solid #ccc',
-                    py: 2,
-                    px: 2,
+                    minWidth: 0,
                 }}
             >
                 <Box
                     sx={{
                         display: 'flex',
                         alignItems: 'center',
+                        gap: 2,
+                        px: 2,
+                        pt: 1.5,
+                        pb: showSearch ? 2 : 1.5,
+                        minWidth: 0,
                     }}
                 >
-                    <Icon/>
-
-                    <Typography
+                    <Box
                         sx={{
-                            ml: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 38,
+                            height: 38,
+                            minWidth: 38,
+                            minHeight: 38,
+                            aspectRatio: '1 / 1',
+                            flexShrink: 0,
+                            borderRadius: '50%',
+                            bgcolor: 'grey.100',
+                            color: 'text.primary',
                         }}
                     >
-                        {title}
-                    </Typography>
+                        <AccountTree/>
+                    </Box>
+
+                    <Box
+                        sx={{
+                            flex: 1,
+                            minWidth: 0,
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                minWidth: 0,
+                            }}
+                        >
+                            <Typography
+                                variant="caption"
+                                component="div"
+                                sx={{
+                                    display: 'block',
+                                    lineHeight: 1.2,
+                                    mt: 0.5,
+                                }}
+                            >
+                                Struktur
+                            </Typography>
+                        </Box>
+
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1,
+                                minWidth: 0,
+                            }}
+                        >
+                            <Typography
+                                fontWeight="bold"
+                                component="div"
+                                title={typeLabel}
+                                sx={{
+                                    flex: 1,
+                                    minWidth: 0,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                }}
+                            >
+                                {typeLabel}
+                            </Typography>
+                        </Box>
+                    </Box>
 
                     <Actions
                         dense={true}
                         sx={{
                             marginLeft: 'auto',
+                            flexShrink: 0,
                         }}
                         actions={[
                             {
-                                icon: <Search/>,
-                                tooltip: 'Elemente durchsuchen',
-                                onClick: () => {
-                                    setShowSearch(true);
-                                },
+                                icon: showSearch ? <SearchOff sx={{transform: 'translateX(-1px)'}}/> : <Search/>,
+                                tooltip: showSearch ? 'Suche ausblenden' : 'Elemente durchsuchen',
+                                onClick: handleToggleSearch,
                             },
                             {
                                 icon: <Expand/>,
@@ -268,7 +343,10 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                     <Box
                         sx={{
                             display: 'flex',
-                            mt: 2,
+                            px: 2,
+                            pt: 0.5,
+                            pb: 2,
+                            minWidth: 0,
                         }}
                     >
                         <SearchInput
@@ -278,6 +356,8 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                             placeholder="Name oder ID eingeben"
                             sx={{
                                 flex: 1,
+                                minWidth: 0,
+                                mr: 2,
                             }}
                             autoFocus={true}
                         />
@@ -297,15 +377,6 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                                     onClick: handlePreviousSearchResult,
                                     disabled: searchResults.length === 0,
                                 },
-                                {
-                                    tooltip: 'Suche Schließen',
-                                    icon: <CloseOutlinedIcon/>,
-                                    onClick: () => {
-                                        setShowSearch(false);
-                                        setSearch('');
-                                        setCurrentSearchResultIndex(0);
-                                    },
-                                },
                             ]}
                         />
                     </Box>
@@ -319,6 +390,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                     flexDirection: 'column',
                     justifyContent: 'space-between',
                     height: '100%',
+                    minWidth: 0,
                     overflowY: 'auto',
                     p: 2,
                     pb: 8,
@@ -329,6 +401,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                         display: 'flex',
                         flexDirection: 'column',
                         gap: 0.5,
+                        minWidth: 0,
                     }}
                 >
                     <DndProvider
@@ -338,6 +411,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                             value={{
                                 root: value,
                                 editable: editable,
+                                parentModalZIndex: parentModalZIndex,
                                 scrollToElement: handleScrollToElement,
                                 canDropElement: canDropElement,
                                 moveElement: moveElement,
