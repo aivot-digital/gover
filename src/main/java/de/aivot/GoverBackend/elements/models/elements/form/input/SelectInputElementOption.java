@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.elements.models.elements.form.input;
 
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.io.Serializable;
@@ -15,13 +16,13 @@ public class SelectInputElementOption implements Serializable {
     @Nullable
     private String group;
 
-    public static SelectInputElementOption of(String value, String label) {
+    public static SelectInputElementOption of(@Nonnull String value, @Nonnull String label) {
         return new SelectInputElementOption()
                 .setValue(value)
                 .setLabel(label);
     }
 
-    public static SelectInputElementOption of(String value, String label, @Nullable String group) {
+    public static SelectInputElementOption of(@Nonnull String value, @Nonnull String label, @Nullable String group) {
         return of(value, label)
                 .setGroup(group);
     }
