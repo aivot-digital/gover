@@ -110,7 +110,7 @@ public class ProcessNodeFilter implements Filter<ProcessNodeEntity> {
         return this;
     }
 
-    public Filter<ProcessNodeEntity> addConfigEquals(String formId, String string) {
+    public ProcessNodeFilter addConfigEquals(String formId, String string) {
         configEquals.put(formId, string);
         return this;
     }
