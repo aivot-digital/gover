@@ -20,6 +20,7 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
 import {flattenElementsWithParents} from '../../utils/flatten-elements';
+import SearchOff from '@aivot/mui-material-symbols-400-outlined/dist/search-off/SearchOff';
 
 export interface ElementTreeProps<T extends AnyElement> {
     value: T;
@@ -150,6 +151,19 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
         ));
     };
 
+    const handleToggleSearch = () => {
+        setShowSearch((prev) => {
+            const next = !prev;
+
+            if (!next) {
+                setSearch('');
+                setCurrentSearchResultIndex(0);
+            }
+
+            return next;
+        });
+    };
+
     const handleExpandAll = () => {
         setExpandCommand((prev) => ({
             type: 'expand-all',
@@ -224,7 +238,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                         gap: 2,
                         px: 2,
                         pt: 1.5,
-                        pb: showSearch ? 1 : 1.5,
+                        pb: showSearch ? 2 : 1.5,
                         minWidth: 0,
                     }}
                 >
@@ -293,11 +307,9 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                         }}
                         actions={[
                             {
-                                icon: <Search/>,
-                                tooltip: 'Elemente durchsuchen',
-                                onClick: () => {
-                                    setShowSearch(true);
-                                },
+                                icon: showSearch ? <SearchOff sx={{transform: 'translateX(-1px)'}}/> : <Search/>,
+                                tooltip: showSearch ? 'Suche ausblenden' : 'Elemente durchsuchen',
+                                onClick: handleToggleSearch,
                             },
                             {
                                 icon: <Expand/>,
@@ -332,6 +344,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                             sx={{
                                 flex: 1,
                                 minWidth: 0,
+                                mr: 2,
                             }}
                             autoFocus={true}
                         />
@@ -350,15 +363,6 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                                     icon: <ArrowUpwardIcon/>,
                                     onClick: handlePreviousSearchResult,
                                     disabled: searchResults.length === 0,
-                                },
-                                {
-                                    tooltip: 'Suche Schließen',
-                                    icon: <CloseOutlinedIcon/>,
-                                    onClick: () => {
-                                        setShowSearch(false);
-                                        setSearch('');
-                                        setCurrentSearchResultIndex(0);
-                                    },
                                 },
                             ]}
                         />
