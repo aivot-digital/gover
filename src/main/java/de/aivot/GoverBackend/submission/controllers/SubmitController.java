@@ -25,6 +25,8 @@ import de.aivot.GoverBackend.process.filters.ProcessTestClaimFilter;
 import de.aivot.GoverBackend.process.services.*;
 import de.aivot.GoverBackend.submission.dtos.SubmissionStatusResponseDTO;
 import de.aivot.GoverBackend.submission.services.ElementDataTransformService;
+import de.aivot.GoverBackend.utils.specification.SpecificationBuilderJsonEquals;
+import de.aivot.GoverBackend.utils.specification.SpecificationBuilderJsonEqualsNull;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -116,12 +118,34 @@ public class SubmitController {
         avService.testMultipartFiles(files);
         // TODO: Check with default process instance attachment storage provider max file size
 
+        var filter = ProcessNodeFilter
+                .create()
+                .setProcessNodeDefinitionKey(PluginUtils.combineComponentKey(Form.PLUGIN_KEY, FormTriggerNodeV1.NODE_KEY))
+                .addConfigEquals(FormTriggerNodeV1.FormTriggerConfig.FORM_ID, form.getId().toString())
+                .addAdditionalSpecification((root, query, builder) -> {
+                    var explicitVersionCheck = new SpecificationBuilderJsonEquals<ProcessNodeEntity>(
+                            "configuration",
+                            List.of(FormTriggerNodeV1.FormTriggerConfig.FORM_VERSION),
+                            formVersion.toString()
+                    )
+                            .toPredicate(root, query, builder);
+
+                    var emptyVersionCheck = new SpecificationBuilderJsonEquals<ProcessNodeEntity>(
+                            "configuration",
+                            List.of(FormTriggerNodeV1.FormTriggerConfig.FORM_VERSION),
+                            ""
+                    )
+                            .toPredicate(root, query, builder);
+
+                    var nullVersionCheck =  new SpecificationBuilderJsonEqualsNull<ProcessNodeEntity>(
+                            "configuration",
+                            List.of(FormTriggerNodeV1.FormTriggerConfig.FORM_VERSION)
+                    ).toPredicate(root, query, builder);
+
+                    return builder.or(explicitVersionCheck, emptyVersionCheck, nullVersionCheck);
+                });
         var nodes = processNodeService
-                .list(ProcessNodeFilter
-                        .create()
-                        .setProcessNodeDefinitionKey(PluginUtils.combineComponentKey(Form.PLUGIN_KEY, FormTriggerNodeV1.NODE_KEY))
-                        .addConfigEquals(FormTriggerNodeV1.FormTriggerConfig.FORM_ID, form.getId().toString())
-                );
+                .list(filter);
 
         var startedProcesses = new LinkedList<String>();
         for (var node : nodes) {
