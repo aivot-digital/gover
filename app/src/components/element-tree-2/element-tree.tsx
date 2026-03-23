@@ -5,11 +5,12 @@ import {HTML5Backend} from 'react-dnd-html5-backend';
 import {isRootElement} from '../../models/elements/root-element';
 import {AnyElement} from '../../models/elements/any-element';
 import {AnyElementWithChildren, isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
-import {getElementIconForType} from '../../data/element-type/element-icons';
+import {getElementNameForType} from '../../data/element-type/element-names';
 import {Actions} from '../actions/actions';
 import Search from '@aivot/mui-material-symbols-400-outlined/dist/search/Search';
 import Expand from '@aivot/mui-material-symbols-400-outlined/dist/expand/Expand';
 import CollapseAll from '@aivot/mui-material-symbols-400-outlined/dist/collapse-all/CollapseAll';
+import AccountTree from '@aivot/mui-material-symbols-400-outlined/dist/account-tree/AccountTree';
 import {ElementTreeChildList} from './components/element-tree-child-list';
 import {ElementTreeContextProvider, ElementTreeDragItem, ElementTreeExpandCommand} from './element-tree-context';
 import {ElementChildOptions} from '../../data/element-type/element-child-options';
@@ -55,13 +56,9 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
         return flattenElementsWithParents(value, [], false);
     }, [value]);
 
-    const Icon = useMemo(() => {
-        return getElementIconForType(type);
+    const typeLabel = useMemo(() => {
+        return getElementNameForType(type);
     }, [type]);
-
-    const title = useMemo(() => {
-        return generateComponentTitle(value);
-    }, [value]);
 
     const children = useMemo(() => {
         return isAnyElementWithChildren(value) ? value.children ?? [] : [];
@@ -217,8 +214,6 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
             <Box
                 sx={{
                     borderBottom: '1px solid #ccc',
-                    py: 2,
-                    px: 2,
                     minWidth: 0,
                 }}
             >
@@ -226,31 +221,76 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                     sx={{
                         display: 'flex',
                         alignItems: 'center',
+                        gap: 2,
+                        px: 2,
+                        pt: 1.5,
+                        pb: showSearch ? 1 : 1.5,
                         minWidth: 0,
                     }}
                 >
-                    <Icon/>
-
-                    <Typography
-                        title={title}
+                    <AccountTree
                         sx={{
-                            ml: 1,
+                            fontSize: 26,
+                            flexShrink: 0,
+                            color: 'text.primary',
+                        }}
+                    />
+
+                    <Box
+                        sx={{
                             flex: 1,
                             minWidth: 0,
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
                         }}
                     >
-                        {title}
-                    </Typography>
+                        <Box
+                            sx={{
+                                minWidth: 0,
+                            }}
+                        >
+                            <Typography
+                                variant="caption"
+                                component="div"
+                                sx={{
+                                    display: 'block',
+                                    lineHeight: 1.2,
+                                    mt: 0.5,
+                                }}
+                            >
+                                Struktur
+                            </Typography>
+                        </Box>
+
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1,
+                                minWidth: 0,
+                            }}
+                        >
+                            <Typography
+                                fontWeight="bold"
+                                component="div"
+                                title={typeLabel}
+                                sx={{
+                                    flex: 1,
+                                    minWidth: 0,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                }}
+                            >
+                                {typeLabel}
+                            </Typography>
+                        </Box>
+                    </Box>
 
                     <Actions
-                    dense={true}
-                    sx={{
-                        marginLeft: 'auto',
-                        flexShrink: 0,
-                    }}
+                        dense={true}
+                        sx={{
+                            marginLeft: 'auto',
+                            flexShrink: 0,
+                        }}
                         actions={[
                             {
                                 icon: <Search/>,
@@ -278,7 +318,9 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                     <Box
                         sx={{
                             display: 'flex',
-                            mt: 2,
+                            px: 2,
+                            pt: 0.5,
+                            pb: 2,
                             minWidth: 0,
                         }}
                     >
