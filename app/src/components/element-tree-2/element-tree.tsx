@@ -242,13 +242,24 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                         minWidth: 0,
                     }}
                 >
-                    <AccountTree
+                    <Box
                         sx={{
-                            fontSize: 26,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 38,
+                            height: 38,
+                            minWidth: 38,
+                            minHeight: 38,
+                            aspectRatio: '1 / 1',
                             flexShrink: 0,
+                            borderRadius: '50%',
+                            bgcolor: 'grey.100',
                             color: 'text.primary',
                         }}
-                    />
+                    >
+                        <AccountTree/>
+                    </Box>
 
                     <Box
                         sx={{
