@@ -326,6 +326,8 @@ public class ProcessNodeExecutionResultHandler {
                                         @Nonnull ProcessInstanceTaskEntity processInstanceTask,
                                         @Nullable ProcessInstanceTaskEntity previousTask,
                                         @Nonnull ProcessNodeExecutionResultInstanceCompleted instanceCompleted) {
+        var completionTime = LocalDateTime.now();
+
         var newRuntimeData = instanceCompleted.getRuntimeData();
         if (newRuntimeData == null) {
             newRuntimeData = new HashMap<>();
@@ -352,7 +354,7 @@ public class ProcessNodeExecutionResultHandler {
         ));
 
         processInstanceTask.setStatus(ProcessTaskStatus.Completed);
-        processInstanceTask.setFinished(LocalDateTime.now());
+        processInstanceTask.setFinished(completionTime);
 
         if (instanceCompleted.getTaskStatusOverride() != null) {
             processInstanceTask.setStatusOverride(instanceCompleted.getTaskStatusOverride());
@@ -364,7 +366,8 @@ public class ProcessNodeExecutionResultHandler {
         processInstanceTaskRepository.save(processInstanceTask);
 
         processInstance.setStatus(ProcessInstanceStatus.Completed);
-        processInstance.setFinished(LocalDateTime.now());
+        processInstance.setFinished(completionTime);
+        processInstance.setKeepUntil(instanceCompleted.getRetentionDate());
         processInstanceRepository.save(processInstance);
 
         logger.logf(
