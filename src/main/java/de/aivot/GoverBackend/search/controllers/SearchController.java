@@ -34,11 +34,10 @@ import jakarta.annotation.Nullable;
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class SearchController {
 
-    private final SearchEntityRepository searchEntityRepository;
+    //private final SearchEntityRepository searchEntityRepository;
 
-    @Autowired
-    public SearchController(SearchEntityRepository searchEntityRepository) {
-        this.searchEntityRepository = searchEntityRepository;
+    public SearchController(/*SearchEntityRepository searchEntityRepository*/) {
+        //this.searchEntityRepository = searchEntityRepository;
     }
 
     @GetMapping("")
@@ -51,7 +50,8 @@ public class SearchController {
             @Nonnull @PageableDefault Pageable pageable,
             @Nonnull @RequestParam(defaultValue = "") String search
     ) throws ResponseException {
-        return searchEntityRepository
-                .search(search, pageable);
+        return Page.empty();
+        /*return searchEntityRepository
+                .search(search, pageable);*/
     }
 }

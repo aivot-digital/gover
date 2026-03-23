@@ -4,8 +4,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-@Entity
-@Table(name = "search_items")
+//@Entity
+//@Table(name = "search_items")
 public class SearchItemEntity {
     @Id
     private String id;
