@@ -1,0 +1,44 @@
+http://localhost:80 {
+    @customer {
+        path /
+        path /*
+    }
+
+    @staff {
+        path /staff
+        path /staff/*
+    }
+
+    @idp {
+        path /idp
+        path /idp/*
+    }
+
+    @api {
+        path /api
+        path /api/*
+    }
+
+    handle @idp {
+        uri strip_prefix /idp
+        reverse_proxy keycloak:8080
+    }
+
+    handle @api {
+        reverse_proxy host.docker.internal:8080
+    }
+
+    handle @staff {
+        reverse_proxy host.docker.internal:3001
+    }
+
+    handle @customer {
+        reverse_proxy host.docker.internal:3000
+    }
+
+    header /assets/fonts/* {
+        Access-Control-Allow-Origin *
+    }
+
+    redir /security.txt /.well-known/security.txt 301
+}

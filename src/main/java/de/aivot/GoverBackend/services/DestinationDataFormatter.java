@@ -1,23 +1,28 @@
 package de.aivot.GoverBackend.services;
 
-import de.aivot.GoverBackend.data.SpecialCustomerInputKeys;
-import de.aivot.GoverBackend.elements.models.BaseElement;
-import de.aivot.GoverBackend.elements.models.RootElement;
-import de.aivot.GoverBackend.elements.models.form.BaseFormElement;
-import de.aivot.GoverBackend.elements.models.form.BaseInputElement;
-import de.aivot.GoverBackend.elements.models.form.input.FileUploadField;
-import de.aivot.GoverBackend.elements.models.form.layout.GroupLayout;
-import de.aivot.GoverBackend.elements.models.form.layout.ReplicatingContainerLayout;
-import de.aivot.GoverBackend.elements.models.steps.StepElement;
-import de.aivot.GoverBackend.form.entities.Form;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.GoverBackend.elements.models.ElementDataObject;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
+import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.FileUploadInputElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
-import de.aivot.GoverBackend.identity.models.IdentityValue;
+import de.aivot.GoverBackend.identity.models.IdentityData;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
 import de.aivot.GoverBackend.payment.entities.PaymentTransactionEntity;
 import de.aivot.GoverBackend.submission.entities.Submission;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.HashMap;
@@ -27,10 +32,12 @@ import java.util.function.Consumer;
 
 
 public class DestinationDataFormatter {
+    private static final Logger logger = LoggerFactory.getLogger(DestinationDataFormatter.class);
+
     private final Map<String, Object> data;
     private static final String destinationSkipKey = "#";
 
-    private final Form form;
+    private final VFormVersionWithDetailsEntity form;
     private final Submission submission;
     private final PaymentTransactionEntity paymentTransaction;
     private final PaymentProviderEntity paymentProvider;
@@ -39,7 +46,7 @@ public class DestinationDataFormatter {
 
     private DestinationDataFormatter(
             @Nonnull
-            Form form,
+            VFormVersionWithDetailsEntity form,
             @Nonnull
             Submission submission,
             @Nullable
@@ -62,7 +69,7 @@ public class DestinationDataFormatter {
 
     public static DestinationDataFormatter createDataWithoutFiles(
             @Nonnull
-            Form form,
+            VFormVersionWithDetailsEntity form,
             @Nonnull
             Submission submission,
             @Nullable
@@ -81,7 +88,7 @@ public class DestinationDataFormatter {
 
     public static DestinationDataFormatter create(
             @Nonnull
-            Form form,
+            VFormVersionWithDetailsEntity form,
             @Nonnull
             Submission submission,
             @Nullable
@@ -127,10 +134,10 @@ public class DestinationDataFormatter {
 
     private void createFormData() {
         insertValue("form.id", form.getId());
-        insertValue("form.name", form.getTitle());
+        insertValue("form.name", form.getInternalTitle());
         insertValue("form.slug", form.getSlug());
         insertValue("form.version", form.getVersion());
-        insertValue("form.headline", form.getFormTitle());
+        insertValue("form.headline", form.getPublicTitle());
         insertValue("form.managing_department_id", form.getManagingDepartmentId());
         insertValue("form.responsible_department_id", form.getResponsibleDepartmentId());
         insertValue("form.developing_department_id", form.getDevelopingDepartmentId());
@@ -144,29 +151,36 @@ public class DestinationDataFormatter {
     }
 
     private void createAuthenticationData() {
-        var rawIdpData = submission
+        ElementDataObject rawIdpData = submission
                 .getCustomerInput()
                 .get(IdentityValueKey.IdCustomerInputKey);
 
-        if (rawIdpData instanceof Map<?,?> mRawIdpData) {
-            IdentityValue identityValue;
-            try {
-                identityValue = IdentityValue
-                        .fromMap(mRawIdpData);
-            } catch (IllegalArgumentException e) {
-                insertValue("authentication.is_authenticated", false);
-                return;
-            }
-
-            insertValue("authentication.is_authenticated", true);
-            insertValue("authentication.identity_provider", identityValue.identityProviderKey());
-            insertValue("authentication.data", identityValue.userInfo());
+        if (rawIdpData == null || rawIdpData.getInputValue() == null) {
+            insertValue("authentication.is_authenticated", false);
+            return;
         }
+
+        IdentityData identityValue = null;
+        try {
+            identityValue = new ObjectMapper()
+                    .convertValue(rawIdpData.getInputValue(), IdentityData.class);
+        } catch (IllegalArgumentException e) {
+            logger.error("Could not convert IdentityData to IdentityData", e);
+        }
+
+        if (identityValue == null) {
+            insertValue("authentication.is_authenticated", false);
+            return;
+        }
+
+        insertValue("authentication.is_authenticated", true);
+        insertValue("authentication.identity_provider", identityValue.providerKey());
+        insertValue("authentication.data", identityValue.attributes());
     }
 
     private void createCustomerData() {
         Map<String, Object> customerData = new HashMap<>();
-        extractDataFromElement(customerData, form.getRoot(), null);
+        extractDataFromElement(customerData, form.getRootElement(), null);
         data.put("data", customerData);
     }
 
@@ -187,7 +201,7 @@ public class DestinationDataFormatter {
             if (paymentProvider != null) {
                 insertValue("payment.provider.key", paymentProvider.getKey());
                 insertValue("payment.provider.name", paymentProvider.getName());
-                insertValue("payment.provider.provider_identifier", paymentProvider.getProviderKey());
+                insertValue("payment.provider.provider_identifier", paymentProvider.getPaymentProviderDefinitionKey());
                 insertValue("payment.provider.is_test_provider", paymentProvider.getTestProvider());
             }
         }
@@ -199,11 +213,11 @@ public class DestinationDataFormatter {
         switch (element) {
             case BaseFormElement formElement -> {
                 switch (formElement) {
-                    case GroupLayout groupLayout -> {
+                    case GroupLayoutElement groupLayout -> {
                         groupLayout.getChildren().forEach(extractChildData);
                     }
-                    case ReplicatingContainerLayout replicatingContainerLayout -> extractReplicatingContainer(resultContainer, replicatingContainerLayout, idPrefix);
-                    case FileUploadField fileUploadField -> extractFileUploadField(resultContainer, fileUploadField, idPrefix);
+                    case ReplicatingContainerLayoutElement replicatingContainerLayout -> extractReplicatingContainer(resultContainer, replicatingContainerLayout, idPrefix);
+                    case FileUploadInputElement fileUploadField -> extractFileUploadField(resultContainer, fileUploadField, idPrefix);
                     case BaseInputElement<?> baseInputElement -> {
                         extractBaseInput(resultContainer, baseInputElement, idPrefix);
                     }
@@ -212,7 +226,7 @@ public class DestinationDataFormatter {
                     }
                 }
             }
-            case RootElement rootElement -> rootElement.getChildren().forEach(extractChildData);
+            case FormLayoutElement rootElement -> rootElement.getChildren().forEach(extractChildData);
             case StepElement stepElement -> stepElement.getChildren().forEach(extractChildData);
             case null, default -> {
                 // Do nothing
@@ -220,7 +234,7 @@ public class DestinationDataFormatter {
         }
     }
 
-    private void extractReplicatingContainer(Map<String, Object> resultContainer, ReplicatingContainerLayout element, String idPrefix) {
+    private void extractReplicatingContainer(Map<String, Object> resultContainer, ReplicatingContainerLayoutElement element, String idPrefix) {
         var resolvedElementId = getResolvedElementId(idPrefix, element.getId());
         var rawChildIds = submission.getCustomerInput().get(resolvedElementId);
 
@@ -249,7 +263,7 @@ public class DestinationDataFormatter {
         insertValue(resultContainer, elementDestinationKey, extractedChildDataList);
     }
 
-    private void extractFileUploadField(Map<String, Object> resultContainer, FileUploadField element, String idPrefix) {
+    private void extractFileUploadField(Map<String, Object> resultContainer, FileUploadInputElement element, String idPrefix) {
         if (!includeAttachments()) {
             return;
         }

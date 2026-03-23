@@ -4,12 +4,14 @@ import de.aivot.GoverBackend.identity.entities.IdentityProviderEntity;
 import de.aivot.GoverBackend.identity.enums.IdentityProviderType;
 import de.aivot.GoverBackend.identity.models.IdentityAdditionalParameter;
 import de.aivot.GoverBackend.identity.models.IdentityAttributeMapping;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.List;
+import java.util.UUID;
 
 public record IdentityProviderRequestDTO(
         @Nonnull
@@ -25,7 +27,7 @@ public record IdentityProviderRequestDTO(
         @Size(min = 1, max = 255, message = "Die Beschreibung des Nutzerkontenanbieters muss zwischen 1 und 255 Zeichen lang sein.")
         String description,
         @Nullable
-        String iconAssetKey,
+        UUID iconAssetKey,
         @Nonnull
         @NotNull(message = "Der Autorisierungsendpunkt des Nutzerkontenanbieters ist erforderlich.")
         @Size(min = 1, max = 255, message = "Der Autorisierungsendpunkt des Nutzerkontenanbieters muss zwischen 1 und 255 Zeichen lang sein.")
@@ -45,7 +47,7 @@ public record IdentityProviderRequestDTO(
         @Size(min = 1, max = 128, message = "Die Client-ID des Nutzerkontenanbieters muss zwischen 1 und 32 Zeichen lang sein.")
         String clientId,
         @Nullable
-        String clientSecretKey,
+        UUID clientSecretKey,
         @Nonnull
         @NotNull(message = "Die Attribute des Nutzerkontenanbieters sind erforderlich.")
         List<IdentityAttributeMapping> attributes,
@@ -60,12 +62,14 @@ public record IdentityProviderRequestDTO(
         Boolean isEnabled,
         @Nonnull
         @NotNull(message = "Der Teststatus des Nutzerkontenanbieters ist erforderlich.")
-        Boolean isTestProvider
+        Boolean isTestProvider,
+        @Nullable
+        String pkceMethod
 ) {
     @Nonnull
     public IdentityProviderEntity toEntity() {
         return new IdentityProviderEntity()
-                .setKey("")
+                .setKey(null)
                 .setType(IdentityProviderType.Custom)
                 .setName(name)
                 .setDescription(description)
@@ -81,6 +85,7 @@ public record IdentityProviderRequestDTO(
                 .setDefaultScopes(defaultScopes)
                 .setAdditionalParams(additionalParams)
                 .setIsEnabled(isEnabled)
-                .setIsTestProvider(isTestProvider);
+                .setIsTestProvider(isTestProvider)
+                .setPkceMethod(pkceMethod);
     }
 }

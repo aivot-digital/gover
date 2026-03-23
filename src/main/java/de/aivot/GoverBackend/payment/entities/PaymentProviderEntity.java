@@ -1,97 +1,183 @@
 package de.aivot.GoverBackend.payment.entities;
 
-import de.aivot.GoverBackend.core.converters.JsonObjectConverter;
+import de.aivot.GoverBackend.core.converters.ElementDataConverter;
+import de.aivot.GoverBackend.elements.models.ElementData;
+import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.ColumnDefault;
 
-import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 
 @Entity
 @Table(name = "payment_providers")
 public class PaymentProviderEntity {
     @Id
-    @Column(length = 36)
-    private String key;
+    @Nonnull
+    @NotNull
+    private UUID key;
 
+    @Nonnull
     @NotNull
     @Column(length = 32)
-    private String providerKey;
+    private String paymentProviderDefinitionKey;
 
+    @Nonnull
+    @NotNull
+    private Integer paymentProviderDefinitionVersion;
+
+    @Nonnull
     @NotNull
     @Column(length = 64)
     private String name;
 
+    @Nonnull
     @NotNull
     @Column(length = 255)
     private String description;
 
+    @Nonnull
     @NotNull
     @ColumnDefault("FALSE")
     private Boolean isTestProvider;
 
+    @Nonnull
     @NotNull
     @ColumnDefault("FALSE")
     private Boolean isEnabled;
 
+    @Nonnull
     @NotNull
     @Column(columnDefinition = "jsonb")
-    @Convert(converter = JsonObjectConverter.class)
-    private Map<String, Object> config;
+    @Convert(converter = ElementDataConverter.class)
+    private ElementData config;
 
-    public String getKey() {
+    // region Constructors
+
+    // Empty constructor for JPA
+    public PaymentProviderEntity() {
+    }
+
+    // Full constructor
+
+    public PaymentProviderEntity(@Nonnull UUID key,
+                                 @Nonnull String paymentProviderDefinitionKey,
+                                 @Nonnull Integer paymentProviderDefinitionVersion,
+                                 @Nonnull String name,
+                                 @Nonnull String description,
+                                 @Nonnull Boolean isTestProvider,
+                                 @Nonnull Boolean isEnabled,
+                                 @Nonnull ElementData config) {
+        this.key = key;
+        this.paymentProviderDefinitionKey = paymentProviderDefinitionKey;
+        this.paymentProviderDefinitionVersion = paymentProviderDefinitionVersion;
+        this.name = name;
+        this.description = description;
+        this.isTestProvider = isTestProvider;
+        this.isEnabled = isEnabled;
+        this.config = config;
+    }
+
+    // endregion
+
+    // region HashCode and Equals
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        PaymentProviderEntity that = (PaymentProviderEntity) o;
+        return Objects.equals(key, that.key) && Objects.equals(paymentProviderDefinitionKey, that.paymentProviderDefinitionKey) && Objects.equals(paymentProviderDefinitionVersion, that.paymentProviderDefinitionVersion) && Objects.equals(name, that.name) && Objects.equals(description, that.description) && Objects.equals(isTestProvider, that.isTestProvider) && Objects.equals(isEnabled, that.isEnabled) && Objects.equals(config, that.config);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(key, paymentProviderDefinitionKey, paymentProviderDefinitionVersion, name, description, isTestProvider, isEnabled, config);
+    }
+
+    // endregion
+
+    // region Getters and Setters
+
+    @Nonnull
+    public UUID getKey() {
         return key;
     }
 
-    public void setKey(String key) {
+    public PaymentProviderEntity setKey(@Nonnull UUID key) {
         this.key = key;
+        return this;
     }
 
-    public String getProviderKey() {
-        return providerKey;
+    @Nonnull
+    public String getPaymentProviderDefinitionKey() {
+        return paymentProviderDefinitionKey;
     }
 
-    public void setProviderKey(String providerKey) {
-        this.providerKey = providerKey;
+    public PaymentProviderEntity setPaymentProviderDefinitionKey(@Nonnull String paymentProviderDefinitionKey) {
+        this.paymentProviderDefinitionKey = paymentProviderDefinitionKey;
+        return this;
     }
 
+    @Nonnull
+    public Integer getPaymentProviderDefinitionVersion() {
+        return paymentProviderDefinitionVersion;
+    }
+
+    public PaymentProviderEntity setPaymentProviderDefinitionVersion(@Nonnull Integer paymentProviderDefinitionVersion) {
+        this.paymentProviderDefinitionVersion = paymentProviderDefinitionVersion;
+        return this;
+    }
+
+    @Nonnull
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public PaymentProviderEntity setName(@Nonnull String name) {
         this.name = name;
+        return this;
     }
 
+    @Nonnull
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public PaymentProviderEntity setDescription(@Nonnull String description) {
         this.description = description;
+        return this;
     }
 
-    public Map<String, Object> getConfig() {
-        return config;
-    }
-
-    public void setConfig(Map<String, Object> config) {
-        this.config = config;
-    }
-
+    @Nonnull
     public Boolean getTestProvider() {
         return isTestProvider;
     }
 
-    public void setTestProvider(Boolean testProvider) {
+    public PaymentProviderEntity setTestProvider(@Nonnull Boolean testProvider) {
         isTestProvider = testProvider;
+        return this;
     }
 
+    @Nonnull
     public Boolean getIsEnabled() {
         return isEnabled;
     }
 
-    public void setIsEnabled(Boolean isEnabled) {
-        this.isEnabled = isEnabled;
+    public PaymentProviderEntity setIsEnabled(@Nonnull Boolean enabled) {
+        isEnabled = enabled;
+        return this;
     }
+
+    @Nonnull
+    public ElementData getConfig() {
+        return config;
+    }
+
+    public PaymentProviderEntity setConfig(@Nonnull ElementData config) {
+        this.config = config;
+        return this;
+    }
+
+    // endregion
 }

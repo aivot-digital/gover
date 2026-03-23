@@ -8,6 +8,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Configuration
@@ -22,17 +23,28 @@ public class GoverConfig {
     private List<String> contentTypes;
     private String goverHostname;
     private Integer maxSubmissionCopyRetryCount;
+    private List<String> bootstrapAdminMail;
+
+    public String getDefaultLogoUrl() {
+        return createUrl("/assets/default-logo.png");
+    }
+
+    public String getDefaultFaviconUrl() {
+        return createUrl("/assets/default-favicon.ico");
+    }
 
     public String createUrl(String path) {
         var uri = URI.create(goverHostname);
         return uri.resolve(path).toString();
     }
 
-    public String createUrl(String base, String... parts) {
+    public String createUrl(String base, Object... parts) {
         var uri = URI.create(goverHostname);
 
         var resolvedParts = Arrays
                 .stream(parts)
+                .filter(Objects::nonNull)
+                .map(Object::toString)
                 .map(part -> URLEncoder.encode(part, StandardCharsets.UTF_8))
                 .collect(Collectors.joining("/"));
 
@@ -41,6 +53,14 @@ public class GoverConfig {
         } else {
             return uri.resolve(base + "/" + resolvedParts).toString();
         }
+    }
+
+    public String createUrlWithTrailingSlash(String base, Object... parts) {
+        var url = createUrl(base, parts);
+        if (!url.endsWith("/")) {
+            url += "/";
+        }
+        return url;
     }
 
     // region Getters & Setters
@@ -115,6 +135,14 @@ public class GoverConfig {
 
     public void setMaxSubmissionCopyRetryCount(Integer maxSubmissionCopyRetryCount) {
         this.maxSubmissionCopyRetryCount = maxSubmissionCopyRetryCount;
+    }
+
+    public List<String> getBootstrapAdminMail() {
+        return bootstrapAdminMail;
+    }
+
+    public void setBootstrapAdminMail(List<String> bootstrapAdminMail) {
+        this.bootstrapAdminMail = bootstrapAdminMail;
     }
 
     // endregion

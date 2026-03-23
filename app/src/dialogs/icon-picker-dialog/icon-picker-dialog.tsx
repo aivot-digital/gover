@@ -23,7 +23,7 @@ export function IconPickerDialog({
                                      title,
                                      showLabels = false,
                                      autoSelect = false,
-                                 }: IconPickerDialogProps): JSX.Element {
+                                 }: IconPickerDialogProps) {
     const [selected, setSelected] = useState<string | undefined>(selectedIconId);
     const [search, setSearch] = useState('');
 
@@ -97,12 +97,12 @@ export function IconPickerDialog({
                                 const isSelected = selected === icon.id;
                                 return (
                                     <Grid
-                                        item
-                                        xs={12}
-                                        sm={6}
-                                        md={4}
                                         key={icon.id}
-                                    >
+                                        size={{
+                                            xs: 12,
+                                            sm: 6,
+                                            md: 4
+                                        }}>
                                         <Tooltip
                                             title={!showLabels ? icon.label : ''}
                                             arrow

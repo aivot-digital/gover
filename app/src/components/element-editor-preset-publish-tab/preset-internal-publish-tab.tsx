@@ -9,10 +9,11 @@ import {hasUntestedChild} from '../../utils/has-untested-child';
 import {type ChecklistItem} from '../checklist/checklist-props';
 import {type TabProps} from './tab-props';
 import {formatIsoDate} from '../../utils/time-utils';
-import {useApi} from "../../hooks/use-api";
-import {PresetVersionApiService} from "../../modules/presets/preset-version-api-service";
+import {useApi} from '../../hooks/use-api';
+import {PresetVersionApiService} from '../../modules/presets/preset-version-api-service';
+import {FormStatus} from '../../modules/forms/enums/form-status';
 
-export function PresetInternalPublishTab(props: TabProps<GroupLayout, PresetVersion>): JSX.Element {
+export function PresetInternalPublishTab(props: TabProps<GroupLayout, PresetVersion>) {
     const api = useApi();
     const presetVersionApiService = new PresetVersionApiService(api, props.preset.key);
 
@@ -27,16 +28,13 @@ export function PresetInternalPublishTab(props: TabProps<GroupLayout, PresetVers
     ];
 
     const handlePublish = (): void => {
-        presetVersionApiService.update(props.entity.version, {
-            ...props.entity,
-            root: props.element,
-            publishedAt: new Date().toISOString(),
-        })
+        presetVersionApiService
+            .publish(props.entity.presetKey, props.entity.version)
             .then((res) => {
                 props.onChangeEntity(res);
                 props.onPresetChange({
                     ...props.preset,
-                    currentPublishedVersion: props.entity.version,
+                    publishedVersion: props.entity.version,
                 });
                 // TODO: Change saving logic to circumvent the need to hit the save button to update the main entity and element. Maybe via a flag to pass the direct save through.
                 window.location.reload();
@@ -49,16 +47,16 @@ export function PresetInternalPublishTab(props: TabProps<GroupLayout, PresetVers
     return (
         <>
             {
-                props.entity.publishedAt == null &&
+                props.entity.status == FormStatus.Drafted &&
                 <Box>
                     <AlertComponent
                         color="info"
                         title={`Version ${props.entity.version} ist unveröffentlicht`}
                     >
                         Version <strong>{props.entity.version}</strong> der Vorlage <strong>{props.preset.title}</strong> wurde noch nicht veröffentlicht. {
-                            props.preset.currentPublishedVersion != null &&
-                            <>Die aktuelle veröffentlichte Version ist <strong>{props.preset.currentPublishedVersion}</strong>.</>
-                        }
+                        props.preset.publishedVersion != null &&
+                        <>Die aktuelle veröffentlichte Version ist <strong>{props.preset.publishedVersion}</strong>.</>
+                    }
                     </AlertComponent>
 
                     <Typography
@@ -76,7 +74,7 @@ export function PresetInternalPublishTab(props: TabProps<GroupLayout, PresetVers
                         Bevor diese Version der Vorlage veröffentlicht werden kann, müssen die folgenden Punkte erfüllt sein.
                     </Typography>
 
-                    <Checklist items={checklist}/>
+                    <Checklist items={checklist} />
 
                     <Box
                         sx={{
@@ -96,24 +94,28 @@ export function PresetInternalPublishTab(props: TabProps<GroupLayout, PresetVers
 
             {
 
-                props.entity.publishedAt != null &&
+                props.entity.status == FormStatus.Published &&
+                props.entity.published != null &&
                 <Box>
                     <AlertComponent
                         color="info"
                         title="Version veröffentlicht"
                     >
-                        Die Version <strong>{props.entity.version}</strong> der Vorlage <strong>{props.preset.title}</strong> wurde am <strong>{formatIsoDate(props.entity.publishedAt)}</strong> veröffentlicht.
+                        Die Version <strong>{props.entity.version}</strong> der Vorlage <strong>{props.preset.title}</strong> wurde am <strong>{formatIsoDate(props.entity.published)}</strong> veröffentlicht.
                     </AlertComponent>
+                </Box>
+            }
 
-                    {
-                        props.preset.currentPublishedVersion !== props.entity.version &&
-                        <AlertComponent
-                            color="warning"
-                            title="Neuere Version veröffentlicht"
-                        >
-                            Für die Vorlage <strong>{props.preset.title}</strong> wurde bereits eine neuere Version <strong>{props.preset.currentPublishedVersion}</strong> veröffentlicht.
-                        </AlertComponent>
-                    }
+            {
+                props.entity.status == FormStatus.Revoked &&
+                props.entity.revoked != null &&
+                <Box>
+                    <AlertComponent
+                        color="info"
+                        title="Version zurückgezogen"
+                    >
+                        Die Version <strong>{props.entity.version}</strong> der Vorlage <strong>{props.preset.title}</strong> wurde am <strong>{formatIsoDate(props.entity.revoked)}</strong> zurückgezogen.
+                    </AlertComponent>
                 </Box>
             }
         </>

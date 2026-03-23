@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.form.repositories;
 
-import de.aivot.GoverBackend.form.entities.FormRevision;
+import de.aivot.GoverBackend.form.entities.FormRevisionEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,10 +10,10 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Optional;
 
-public interface FormRevisionRepository extends JpaRepository<FormRevision, BigInteger> {
-    Optional<FormRevision> getFirstByFormIdOrderByTimestampAsc(Integer formId);
+public interface FormRevisionRepository extends JpaRepository<FormRevisionEntity, BigInteger> {
+    Optional<FormRevisionEntity> getFirstByFormIdAndFormVersionOrderByTimestampAsc(Integer formId, Integer formVersion);
 
-    Page<FormRevision> getAllByFormIdOrderByTimestampDesc(Integer formId, Pageable pageable);
+    Collection<FormRevisionEntity> getAllByFormIdAndFormVersionAndTimestampIsAfterOrderByTimestampDesc(Integer id, Integer FormVersion, LocalDateTime timestamp);
 
-    Collection<FormRevision> getAllByFormIdAndTimestampIsAfterOrderByTimestampDesc(Integer id, LocalDateTime timestamp);
+    Page<FormRevisionEntity> getAllByFormIdAndFormVersionOrderByTimestampDesc(Integer formId, Integer FormVersion, Pageable pageable);
 }

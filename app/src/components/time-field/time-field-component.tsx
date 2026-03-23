@@ -1,9 +1,12 @@
 import {LocalizationProvider, TimePicker} from '@mui/x-date-pickers';
 import {AdapterDateFns} from '@mui/x-date-pickers/AdapterDateFns';
-import deLocale from 'date-fns/locale/de';
+import {de} from 'date-fns/locale/de';
 import {useEffect, useRef, useState} from 'react';
 import {renderTimeViewClock} from '@mui/x-date-pickers/timeViewRenderers';
-import {SxProps, Theme} from "@mui/material";
+import {SxProps, Theme} from '@mui/material';
+import type {Locale} from 'date-fns';
+
+const deLocale = de as unknown as Locale;
 
 interface TimeFieldComponentProps {
     label: string;
@@ -100,7 +103,7 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
         >
             <TimePicker
                 label={`${props.label}${props.required ? ' *' : ''}`}
-                value={dateValue}
+                value={localValue}
                 onChange={handleChange}
                 onAccept={handleAccept}
                 onClose={handleClose}
@@ -130,9 +133,9 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
                 }}
                 sx={{
                     ...props.sx,
-                    "& .MuiInputBase-root": {
-                        backgroundColor: props.busy ? "#F8F8F8" : undefined,
-                        cursor: props.busy ? "not-allowed" : undefined,
+                    "& .MuiPickersInputBase-root": {
+                        backgroundColor: (props.busy || props.disabled) ? "#F8F8F8" : undefined,
+                        cursor: (props.busy || props.disabled) ? "not-allowed" : undefined,
                     },
                 }}
             />

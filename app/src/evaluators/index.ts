@@ -1,29 +1,29 @@
-import {ElementType} from "../data/element-type/element-type";
-import {CheckboxEvaluator} from "./checkbox-evaluator";
-import {BaseEvaluator} from "./base-evaluator";
-import {DateEvaluator} from "./date-evaluator";
-import {MultiCheckboxEvaluator} from "./multi-checkbox-evaluator";
-import {RadioEvaluator} from "./radio-evaluator";
-import {SelectEvaluator} from "./select-evaluator";
-import {NumberEvaluator} from "./number-evaluator";
-import {TimeEvaluator} from "./time-evaluator";
-import {TextEvaluator} from "./text-evaluator";
+import {ElementType} from '../data/element-type/element-type';
+import {CheckboxEvaluator} from './checkbox-evaluator';
+import {BaseEvaluator} from './base-evaluator';
+import {DateEvaluator} from './date-evaluator';
+import {MultiCheckboxEvaluator} from './multi-checkbox-evaluator';
+import {RadioEvaluator} from './radio-evaluator';
+import {SelectEvaluator} from './select-evaluator';
+import {NumberEvaluator} from './number-evaluator';
+import {TimeEvaluator} from './time-evaluator';
+import {TextEvaluator} from './text-evaluator';
 import {ReplicatingContainerEvaluator} from './replicating-container-evaluator';
 
-const evaluators: {
+export const evaluators: {
     [key in ElementType]: BaseEvaluator<any> | null;
 } = {
-    [ElementType.Root]: null,
+    [ElementType.FormLayout]: null,
     [ElementType.Step]: null,
     [ElementType.Alert]: null,
-    [ElementType.Container]: null,
+    [ElementType.GroupLayout]: null,
     [ElementType.Checkbox]: CheckboxEvaluator,
     [ElementType.Date]: DateEvaluator,
     [ElementType.Headline]: null,
     [ElementType.MultiCheckbox]: MultiCheckboxEvaluator,
     [ElementType.Number]: NumberEvaluator,
     [ElementType.ReplicatingContainer]: ReplicatingContainerEvaluator,
-    [ElementType.Richtext]: null,
+    [ElementType.RichText]: null,
     [ElementType.Radio]: RadioEvaluator,
     [ElementType.Select]: SelectEvaluator,
     [ElementType.Spacer]: null,
@@ -36,6 +36,13 @@ const evaluators: {
     [ElementType.Image]: null,
     [ElementType.SubmittedStep]: null,
     [ElementType.FileUpload]: null,
+    [ElementType.DialogLayout]: null,
+    [ElementType.StepperLayout]: null,
+    [ElementType.ConfigLayout]: null,
+    [ElementType.FunctionInput]: null,
+    [ElementType.CodeInput]: null,
+    [ElementType.RichTextInput]: null,
+    [ElementType.UiDefinitionInput]: null,
+    [ElementType.IdentityInput]: null,
+    [ElementType.TabLayout]: null,
 };
-
-export default evaluators;

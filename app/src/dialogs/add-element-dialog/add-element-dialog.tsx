@@ -8,10 +8,10 @@ import {ElementTab} from './tabs/element-tab';
 import {ElementInfoTab} from './tabs/element-info-tab';
 import {StoreTab} from './tabs/store-tab';
 import {ModuleInfoTab} from './tabs/module-info-tab';
-import {AnyElement} from "../../models/elements/any-element";
+import {AnyElement} from '../../models/elements/any-element';
 
 
-export function AddElementDialog(props: AddElementDialogProps): JSX.Element {
+export function AddElementDialog(props: AddElementDialogProps) {
     const [currentTab, setCurrentTab] = useState(0);
     const [showElementInfo, setShowElementInfo] = useState<ElementType>();
     const [showModuleId, setShowModuleId] = useState<string>();
@@ -39,7 +39,6 @@ export function AddElementDialog(props: AddElementDialogProps): JSX.Element {
             >
                 Neues Element hinzufügen
             </DialogTitleWithClose>
-
             <Tabs
                 value={currentTab}
                 onChange={(evt, val) => {
@@ -54,20 +53,24 @@ export function AddElementDialog(props: AddElementDialogProps): JSX.Element {
                     label="Basis-Elemente"
                     value={0}
                 />
-                <Tab
-                    label="Vorlagen"
-                    value={1}
-                />
-                <Tab
-                    label="Gover Store"
-                    value={2}
-                />
+                {
+                    props.hidePresets !== true &&
+                    <Tab
+                        label="Vorlagen"
+                        value={1}
+                    />
+                }
+                {
+                    props.hideGoverStore !== true &&
+                    <Tab
+                        label="Gover Store"
+                        value={2}
+                    />
+                }
             </Tabs>
-
             <Grid container>
                 <Grid
-                    item
-                    xs={(currentTab === 0 && showElementInfo != null) || (currentTab === 2 && showModuleId != null) ? 6 : 12}
+                    size={(currentTab === 0 && showElementInfo != null) || (currentTab === 2 && showModuleId != null) ? 6 : 12}
                 >
                     <Box
                         sx={{
@@ -82,6 +85,7 @@ export function AddElementDialog(props: AddElementDialogProps): JSX.Element {
                                 onAddElement={handleAddElement}
                                 showElementInfo={setShowElementInfo}
                                 highlightedElement={showElementInfo}
+                                limitElementTypes={props.limitElementTypes}
                             />
                         }
                         {
@@ -106,10 +110,7 @@ export function AddElementDialog(props: AddElementDialogProps): JSX.Element {
                 {
                     currentTab === 0 &&
                     showElementInfo != null &&
-                    <Grid
-                        item
-                        xs={6}
-                    >
+                    <Grid size={6}>
                         <Box
                             sx={{
                                 height: '50vh',
@@ -129,10 +130,7 @@ export function AddElementDialog(props: AddElementDialogProps): JSX.Element {
                 {
                     currentTab === 2 &&
                     showModuleId != null &&
-                    <Grid
-                        item
-                        xs={6}
-                    >
+                    <Grid size={6}>
                         <Box
                             sx={{
                                 height: '50vh',

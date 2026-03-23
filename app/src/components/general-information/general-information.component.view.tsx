@@ -1,10 +1,14 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {Box, Grid, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
+import Box from '@mui/material/Box';
+import ListItem from '@mui/material/ListItem';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import Typography from '@mui/material/Typography';
+import {useTheme} from '@mui/material/styles';
 import {type IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {FadingPaper} from '../fading-paper/fading-paper';
 import {Preamble} from '../preamble/preamble';
-import {type Department} from '../../modules/departments/models/department';
-import {selectCustomerInputError, selectCustomerInputValue, selectLoadedForm, showDialog, updateCustomerInput} from '../../slices/app-slice';
+import {selectLoadedForm, showDialog} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
 import {type BaseViewProps} from '../../views/base-view';
@@ -16,50 +20,56 @@ import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
-import {useApi} from '../../hooks/use-api';
-import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
 import {AccessibilityDialogId} from '../../dialogs/accessibility-dialog/accessibility-dialog';
 import {PrivacyDialogId} from '../../dialogs/privacy-dialog/privacy-dialog';
 import {ImprintDialogId} from '../../dialogs/imprint-dialog/imprint-dialog';
 import {HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
-import ExpandableList from '../expandable-list/expandable-list';
+import {ExpandableList} from '../expandable-list/expandable-list';
 import {IdentityButtonGroup} from '../../modules/identity/components/identity-button-group/identity-button-group';
+import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
+import {VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
 
-export const PrivacyUserInputKey = '__privacy__';
+function cleanDocuments(documents: Array<string> | undefined | null) {
+    if (documents) {
+        return documents.filter(document => document.trim() !== '');
+    } else {
+        return [];
+    }
+}
 
-export function GeneralInformationComponentView(props: BaseViewProps<IntroductionStepElement, void>): JSX.Element {
-    const api = useApi();
+export function GeneralInformationComponentView(props: BaseViewProps<IntroductionStepElement, boolean>) {
     const dispatch = useAppDispatch();
     const theme = useTheme();
+
+    const {
+        rootElement,
+        element,
+        value,
+        setValue,
+        errors,
+        elementData,
+        onElementDataChange,
+    } = props;
+
+    const {} = element;
 
     const application = useAppSelector(selectLoadedForm);
     const providerName = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
 
-    const privacyValue = useAppSelector(selectCustomerInputValue(PrivacyUserInputKey));
-    const privacyError = useAppSelector(selectCustomerInputError(PrivacyUserInputKey));
-
-    const [responsibleDepartment, setResponsibleDepartment] = useState<Department>();
-    const [managingDepartment, setManagingDepartment] = useState<Department>();
+    const [responsibleDepartment, setResponsibleDepartment] = useState<VDepartmentShadowedEntity>();
+    const [managingDepartment, setManagingDepartment] = useState<VDepartmentShadowedEntity>();
 
     const initialDisplayCount = 4;
 
-    function cleanDocuments(documents: Array<string> | undefined) {
-        if (documents) {
-            return documents.filter(document => document.trim() !== '');
-        } else {
-            return [];
-        }
-    }
-
-    const supportingDocuments = cleanDocuments(props.element.supportingDocuments);
-    const documentsToAttach = cleanDocuments(props.element.documentsToAttach);
+    const supportingDocuments = cleanDocuments(element.supportingDocuments);
+    const documentsToAttach = cleanDocuments(element.documentsToAttach);
 
     useEffect(() => {
         if (application != null) {
-            if (application.responsibleDepartmentId != null) {
-                if (responsibleDepartment == null || responsibleDepartment.id !== application.responsibleDepartmentId) {
-                    new DepartmentsApiService(api)
-                        .retrievePublic(application.responsibleDepartmentId)
+            if (application.version.responsibleDepartmentId != null) {
+                if (responsibleDepartment == null || responsibleDepartment.id !== application.version.responsibleDepartmentId) {
+                    new DepartmentApiService()
+                        .retrievePublic(application.version.responsibleDepartmentId)
                         .then(setResponsibleDepartment)
                         .catch((err) => {
                             console.error(err);
@@ -70,10 +80,10 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 setResponsibleDepartment(undefined);
             }
 
-            if (application.managingDepartmentId != null) {
-                if (managingDepartment == null || managingDepartment.id !== application.managingDepartmentId) {
-                    new DepartmentsApiService(api)
-                        .retrievePublic(application.managingDepartmentId)
+            if (application.version.managingDepartmentId != null) {
+                if (managingDepartment == null || managingDepartment.id !== application.version.managingDepartmentId) {
+                    new DepartmentApiService()
+                        .retrievePublic(application.version.managingDepartmentId)
                         .then(setManagingDepartment)
                         .catch((err) => {
                             console.error(err);
@@ -84,7 +94,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 setManagingDepartment(undefined);
             }
         }
-    }, [props.element, application?.responsibleDepartmentId, application?.managingDepartmentId]);
+    }, [props.element, application?.version.responsibleDepartmentId, application?.version.managingDepartmentId]);
 
     const renderEligiblePerson = (person: string, index: number) => (
         <ListItem
@@ -122,7 +132,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
         </ListItem>
     );
 
-    const sections: JSX.Element[] = [];
+    const sections: React.ReactNode[] = [];
 
     if (responsibleDepartment != null) {
         sections.push(
@@ -130,7 +140,6 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 <Typography
                     component={'h3'}
                     variant="h5"
-                    color="primary"
                 >
                     Zuständige Stelle
                 </Typography>
@@ -145,7 +154,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                         responsibleDepartment.address,
                     ].filter(Boolean).join('\n')}
                 </Typography>
-            </Box>
+            </Box>,
         );
     }
 
@@ -155,7 +164,6 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 <Typography
                     component={'h3'}
                     variant="h5"
-                    color="primary"
                 >
                     Bewirtschaftende Stelle
                 </Typography>
@@ -169,7 +177,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                         managingDepartment.address,
                     ].filter(Boolean).join('\n')}
                 </Typography>
-            </Box>
+            </Box>,
         );
     }
 
@@ -185,7 +193,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 pluralLabel="Personen"
                 listId="eligible-persons-list"
                 renderItem={renderEligiblePerson}
-            />
+            />,
         );
     }
 
@@ -200,7 +208,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 pluralLabel="Dokumente"
                 listId="supporting-documents-list"
                 renderItem={renderSupportingDocument}
-            />
+            />,
         );
     }
 
@@ -215,18 +223,17 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 pluralLabel="Dokumente"
                 listId="documents-to-attach-list"
                 renderItem={renderDocumentToAttach}
-            />
+            />,
         );
     }
 
     if (application != null &&
-        !isStringNullOrEmpty(application?.root.expiring)) {
+        !isStringNullOrEmpty(application?.version.rootElement.expiring)) {
         sections.push(
             <Box key="deadline">
                 <Typography
                     component={'h3'}
                     variant="h5"
-                    color="primary"
                 >
                     Antragsfristen
                 </Typography>
@@ -235,9 +242,9 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                     variant="body2"
                     sx={{mt: 1}}
                 >
-                    {application.root.expiring}
+                    {application.version.rootElement.expiring}
                 </Typography>
-            </Box>
+            </Box>,
         );
     }
 
@@ -248,33 +255,34 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 <Typography
                     component={'h3'}
                     variant="h5"
-                    color="primary"
                 >
                     Gebühren dieses Antrages
                 </Typography>
 
                 <Typography
-                    component={"div"}
+                    component={'div'}
                     variant="body2"
-                    className={"content-without-margin-on-childs"}
+                    className={'content-without-margin-on-childs'}
                     sx={{mt: 1}}
                     dangerouslySetInnerHTML={{__html: props.element.expectedCosts ?? ''}}
                 />
-            </Box>
+            </Box>,
         );
     }
-
-
 
     return (
         <>
             {
-                props.element.teaserText != null &&
-                isStringNotNullOrEmpty(props.element.teaserText) &&
+                element.teaserText != null &&
+                element.initiativeLogoLink != null &&
+                element.initiativeName != null &&
+                isStringNotNullOrEmpty(element.teaserText) &&
+                isStringNotNullOrEmpty(element.initiativeLogoLink) &&
+                isStringNotNullOrEmpty(element.initiativeName) &&
                 <Preamble
-                    text={props.element.teaserText}
-                    logoLink={props.element.initiativeLogoLink}
-                    logoAlt={props.element.initiativeName}
+                    text={element.teaserText}
+                    logoLink={element.initiativeLogoLink}
+                    logoAlt={element.initiativeName}
                 />
             }
 
@@ -285,13 +293,13 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                     (props.element.eligiblePersons ?? []).length > 0 ||
                     (props.element.supportingDocuments ?? []).length > 0 ||
                     (props.element.documentsToAttach ?? []).length > 0 ||
-                    !isStringNullOrEmpty(application?.root.expiring) ||
+                    !isStringNullOrEmpty(application?.version.rootElement.expiring) ||
                     !isStringNullOrEmpty(props.element.expectedCosts)
                 ) &&
                 <FadingPaper>
                     <Box
                         sx={{
-                            columnCount: { xs: 1, md: 2 },
+                            columnCount: {xs: 1, md: 2},
                             columnGap: 7,
                         }}
                     >
@@ -313,13 +321,18 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             }
 
             <IdentityButtonGroup
+                rootElement={rootElement}
                 isBusy={props.isBusy}
+                isDeriving={props.isDeriving}
+                elementData={elementData}
+                onElementDataChange={ed => onElementDataChange(ed, [])}
+                form={application?.form!}
+                version={application?.version!}
             />
 
             <Typography
-                component={'h4'}
+                component="h4"
                 variant="h5"
-                color="primary"
                 sx={{
                     mt: 4,
                 }}
@@ -328,7 +341,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             </Typography>
 
             {
-                application?.root.privacyText != null &&
+                application?.version.rootElement.privacyText != null &&
                 <Box
                     sx={{
                         maxWidth: '600px',
@@ -336,31 +349,26 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                     }}
                 >
                     <FormattedTextWithDialogTags
-                        text={application.root.privacyText}
+                        text={application.version.rootElement.privacyText}
                     />
                 </Box>
             }
 
-            <Box id={PrivacyUserInputKey}>
+            <Box id={element.id}>
                 <CheckboxFieldComponent
                     label="Ich habe die Hinweise zum Datenschutz zur Kenntnis genommen."
-                    value={privacyValue}
+                    value={value ?? undefined}
                     onChange={(checked) => {
-                        if (application != null) {
-                            dispatch(updateCustomerInput({
-                                key: PrivacyUserInputKey,
-                                value: checked,
-                            }));
-                        }
+                        setValue(checked);
                     }}
                     required={true}
-                    error={privacyError}
+                    error={errors != null ? errors[0] ?? undefined : undefined}
                     disabled={props.isBusy}
                 />
             </Box>
 
             <Typography
-                variant={'caption'}
+                variant="caption"
                 sx={{
                     mt: 4,
                 }}

@@ -20,7 +20,6 @@ import * as yup from 'yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {IdentityProvidersApiService} from '../../identity-providers-api-service';
 import {IdentityProviderDetailsDTO} from '../../models/identity-provider-details-dto';
-import {FormsApiService} from '../../../forms/forms-api-service';
 import {SecretEntityResponseDTO} from '../../../secrets/dtos/secret-entity-response-dto';
 import {SecretsApiService} from '../../../secrets/secrets-api-service';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
@@ -32,11 +31,13 @@ import {IdentityAdditionalParameter} from '../../models/identity-additional-para
 import {IdentityAttributeMapping} from '../../models/identity-attribute-mapping';
 import {TableFieldComponent2} from '../../../../components/table-field/table-field-component-2';
 import {StringListInput2} from '../../../../components/string-list-input/string-list-input-2';
-import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import {IdentityProviderIcon} from '../../components/identity-provider-icon/identity-provider-icon';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../../slices/loading-overlay-slice';
+import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
+import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
+import {VFormVersionWithDetailsService} from '../../../forms/services/v-form-version-with-details-api-service';
 
 // allows absolute and relative URLs
 const urlRegex = /^(https?:\/\/[^\s]+|\/[^\s]*)$/;
@@ -95,21 +96,21 @@ export const formSchema = yup.object({
             }).test('row-completeness', 'Bitte füllen Sie alle Felder aus oder löschen Sie die Zeile.', function (row) {
                 if (!row) return true;
 
-                const { label, description, keyInData } = row;
+                const {label, description, keyInData} = row;
 
                 const isAnyFilled = !!label?.trim() || !!description?.trim() || !!keyInData?.trim();
                 const areAllFilled = !!label?.trim() && !!description?.trim() && !!keyInData?.trim();
 
                 if (!isAnyFilled) {
-                    return this.createError({ message: 'Bitte füllen Sie alle Felder aus oder löschen Sie die Zeile.' });
+                    return this.createError({message: 'Bitte füllen Sie alle Felder aus oder löschen Sie die Zeile.'});
                 }
 
                 if (!areAllFilled) {
-                    return this.createError({ message: 'Bitte füllen Sie alle Felder vollständig aus.' });
+                    return this.createError({message: 'Bitte füllen Sie alle Felder vollständig aus.'});
                 }
 
                 return true;
-            })
+            }),
         ),
     defaultScopes: yup.array()
         .of(
@@ -117,7 +118,7 @@ export const formSchema = yup.object({
                 .trim()
                 .test('not-empty-if-present', 'Ein Scope darf nicht leer sein.', val => {
                     return val == null || val.trim().length > 0;
-                })
+                }),
         ),
     additionalParams: yup.array()
         .of(
@@ -127,28 +128,28 @@ export const formSchema = yup.object({
             }).test('row-completeness', 'Bitte füllen Sie Schlüssel und Wert aus oder löschen Sie die Zeile.', function (row) {
                 if (!row) return true;
 
-                const { key, value } = row;
+                const {key, value} = row;
 
                 const isAnyFilled = !!key?.trim() || !!value?.trim();
                 const areAllFilled = !!key?.trim() && !!value?.trim();
 
                 if (!isAnyFilled) {
-                    return this.createError({ message: 'Bitte füllen Sie Schlüssel und Wert aus oder löschen Sie die Zeile.' });
+                    return this.createError({message: 'Bitte füllen Sie Schlüssel und Wert aus oder löschen Sie die Zeile.'});
                 }
 
                 if (!areAllFilled) {
-                    return this.createError({ message: 'Bitte füllen Sie Schlüssel und Wert vollständig aus.' });
+                    return this.createError({message: 'Bitte füllen Sie Schlüssel und Wert vollständig aus.'});
                 }
 
                 return true;
-            })
-        )
+            }),
+        ),
 });
 
 function getIndexedFieldError(
     errors: Record<string, any> | undefined,
     fieldName: string,
-    message: string
+    message: string,
 ): string | undefined {
     if (!errors) return undefined;
 
@@ -158,12 +159,29 @@ function getIndexedFieldError(
 }
 
 export function IdentityProviderDetailsPageIndex() {
-    useAdminGuard();
-
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const api = useApi();
     const showConfirm = useConfirm();
+
+    const userIsAdmin = useUserIsAdmin();
+
+    useEffect(() => {
+        if (userIsAdmin) {
+            return;
+        }
+
+        dispatch(addSnackbarMessage({
+            key: 'access-denied-identity-provider-details',
+            message: 'Dieser Nutzerkontenanbieter kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
+            type: SnackbarType.Dismissable,
+            severity: SnackbarSeverity.Warning,
+        }));
+
+        return () => {
+            dispatch(removeSnackbarMessage('access-denied-identity-provider-details'));
+        };
+    }, []);
 
     const [assets, setAssets] = useState<Asset[]>();
     const [secrets, setSecrets] = useState<SecretEntityResponseDTO[]>();
@@ -205,9 +223,9 @@ export function IdentityProviderDetailsPageIndex() {
         handleInputChange,
         validate,
         reset,
-    } = useFormManager<IdentityProviderDetailsDTO>(originalIdentityProvider, dynamicFormSchema as any);
+    } = useFormManager<IdentityProviderDetailsDTO>(originalIdentityProvider, dynamicFormSchema as any, true);
 
-    const changeBlocker = useChangeBlocker(originalIdentityProvider, identityProvider);
+    const changeBlocker = useChangeBlocker(originalIdentityProvider, identityProvider, undefined, undefined, true);
 
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [showConstraintDialog, setShowConstraintDialog] = useState(false);
@@ -225,8 +243,8 @@ export function IdentityProviderDetailsPageIndex() {
     }, [api]);
 
     const inputsDisabled = useMemo(() => (
-        isBusy || identityProvider == null
-    ), [isBusy, identityProvider]);
+        isBusy || identityProvider == null || !userIsAdmin
+    ), [isBusy, identityProvider, userIsAdmin]);
 
     if (identityProvider == null || assets == null || secrets == null) {
         return (
@@ -358,7 +376,7 @@ export function IdentityProviderDetailsPageIndex() {
         setIsBusy(true);
 
         try {
-            const relatedForms = await new FormsApiService(api)
+            const relatedForms = await new VFormVersionWithDetailsService()
                 .listAll({
                     identityProviderKey: identityProvider.key,
                 });
@@ -366,7 +384,7 @@ export function IdentityProviderDetailsPageIndex() {
             if (relatedForms.content.length > 0) {
                 const maxVisibleLinks = 5;
                 let processedLinks = relatedForms.content.slice(0, maxVisibleLinks).map(f => ({
-                    label: f.title,
+                    label: f.internalTitle,
                     to: `/forms/${f.id}`,
                 }));
 
@@ -465,19 +483,19 @@ export function IdentityProviderDetailsPageIndex() {
     const defaultScopesError = getIndexedFieldError(
         errors,
         'defaultScopes',
-        'Bitte entfernen Sie leere Scopes.'
+        'Bitte entfernen Sie leere Scopes.',
     );
 
     const attributesError = getIndexedFieldError(
         errors,
         'attributes',
-        'Bitte füllen Sie alle Attributszuweisungen vollständig aus.'
+        'Bitte füllen Sie alle Attributszuweisungen vollständig aus.',
     );
 
     const additionalParamsError = getIndexedFieldError(
         errors,
         'additionalParams',
-        'Bitte füllen Sie alle Schlüssel/Wert-Paare vollständig aus.'
+        'Bitte füllen Sie alle Schlüssel/Wert-Paare vollständig aus.',
     );
 
     return (
@@ -526,27 +544,25 @@ export function IdentityProviderDetailsPageIndex() {
                     <Divider sx={{my: 4}} />
                 </>
             }
-
             <Typography
                 variant="h5"
                 sx={{mt: 1.5, mb: 1}}
             >
                 Nutzerkontenanbieter konfigurieren
             </Typography>
-
             <Typography sx={{mb: 3, maxWidth: 900}}>
                 Konfigurieren Sie den Nutzerkontenanbieter, um Nutzerkonten dieses Anbieters zur Authentifizierung in Formularen verwenden zu können. Sie können die Einstellungen jederzeit anpassen, auch wenn die Konfiguration bereits für
                 Formulare verwendet wird.
             </Typography>
-
             <Grid
                 container
                 spacing={2}
             >
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
                 >
                     <TextFieldComponent
                         label="Name"
@@ -562,14 +578,15 @@ export function IdentityProviderDetailsPageIndex() {
                 </Grid>
 
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
                     sx={{
                         display: 'flex',
                         justifyContent: 'center',
                         alignItems: 'center',
                         transform: 'translateY(-10px)',
+                    }}
+                    size={{
+                        xs: 12,
+                        md: 6,
                     }}
                 >
                     {
@@ -593,9 +610,10 @@ export function IdentityProviderDetailsPageIndex() {
                 </Grid>
 
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
                 >
                     <TextFieldComponent
                         label="Interne Beschreibung"
@@ -612,9 +630,10 @@ export function IdentityProviderDetailsPageIndex() {
                 </Grid>
 
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
                 >
                     {
                         identityProvider.type != IdentityProviderType.Custom &&
@@ -622,15 +641,17 @@ export function IdentityProviderDetailsPageIndex() {
                             color="info"
                             sx={{mt: 2}}
                         >
-                            <strong>Hinweis:</strong> Die Konfigurationen für die offiziellen Nutzerkonten von Bund und Ländern werden von Gover bereitgestellt und sind nicht veränderbar.
+                            <strong>Hinweis:</strong>
+                            Die Konfigurationen für die offiziellen Nutzerkonten von Bund und Ländern werden von Gover bereitgestellt und sind nicht veränderbar.
                         </AlertComponent>
                     }
                 </Grid>
 
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
                 >
                     <SelectFieldComponent
                         label="Logo-Grafik"
@@ -657,15 +678,17 @@ export function IdentityProviderDetailsPageIndex() {
                 </Grid>
 
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
                 />
 
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
                 >
                     <CheckboxFieldComponent
                         label="Aktiv (kann in konfigurierten Formularen genutzt werden)"
@@ -678,9 +701,10 @@ export function IdentityProviderDetailsPageIndex() {
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
                 >
                     <CheckboxFieldComponent
                         label="Es handelt sich um eine vorproduktive Konfiguration"
@@ -692,11 +716,26 @@ export function IdentityProviderDetailsPageIndex() {
                         disabled={inputsDisabled || isSystemProvider}
                     />
                 </Grid>
-
                 <Grid
-                    item
-                    xs={12}
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
                 >
+                    <CheckboxFieldComponent
+                        label="PKCE S256 (Proof Key for Code Exchange) verwenden"
+                        value={identityProvider.pkceMethod === 'S256'}
+                        onChange={(value) => {
+                            handleInputChange('pkceMethod')(value ? 'S256' : null);
+                        }}
+                        variant="switch"
+                        error={errors.pkceMethod}
+                        hint="Gibt an, ob bei der Authorisierung das PKCE-Verfahren mit dem S256-Hashalgorithmus verwendet werden soll. Dies erhöht die Sicherheit bei der Authorisierung, insbesondere bei öffentlichen Clients."
+                        disabled={inputsDisabled || isSystemProvider}
+                    />
+                </Grid>
+
+                <Grid size={12}>
                     <Typography
                         variant="h6"
                         sx={{mt: 4, mb: 0}}
@@ -704,10 +743,7 @@ export function IdentityProviderDetailsPageIndex() {
                         Technische Konfiguration
                     </Typography>
                 </Grid>
-                <Grid
-                    item
-                    xs={12}
-                >
+                <Grid size={12}>
                     <TextFieldComponent
                         label="Metadaten-Identifikator"
                         required
@@ -720,10 +756,7 @@ export function IdentityProviderDetailsPageIndex() {
                     />
                 </Grid>
 
-                <Grid
-                    item
-                    xs={12}
-                >
+                <Grid size={12}>
                     <TextFieldComponent
                         label="Endpunkt zur Authorisierung"
                         placeholder="https://auth.example.com/xyz oder /idp/xyz"
@@ -737,10 +770,7 @@ export function IdentityProviderDetailsPageIndex() {
                     />
                 </Grid>
 
-                <Grid
-                    item
-                    xs={12}
-                >
+                <Grid size={12}>
                     <TextFieldComponent
                         label="Endpunkt zum Erstellen des Tokens"
                         placeholder="https://auth.example.com/xyz oder /idp/xyz"
@@ -754,10 +784,7 @@ export function IdentityProviderDetailsPageIndex() {
                     />
                 </Grid>
 
-                <Grid
-                    item
-                    xs={12}
-                >
+                <Grid size={12}>
                     <TextFieldComponent
                         label="Endpunkt für Informationen über die Nutzer:in"
                         placeholder="https://auth.example.com/xyz oder /idp/xyz"
@@ -772,10 +799,7 @@ export function IdentityProviderDetailsPageIndex() {
                     />
                 </Grid>
 
-                <Grid
-                    item
-                    xs={12}
-                >
+                <Grid size={12}>
                     <TextFieldComponent
                         label="Endpunkt zum Beenden der Session"
                         placeholder="https://auth.example.com/xyz oder /idp/xyz"
@@ -791,9 +815,10 @@ export function IdentityProviderDetailsPageIndex() {
                 </Grid>
 
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
                 >
                     <TextFieldComponent
                         label="Client ID"
@@ -808,9 +833,10 @@ export function IdentityProviderDetailsPageIndex() {
                 </Grid>
 
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
                 >
                     <SelectFieldComponent
                         label="Client Secret"
@@ -834,7 +860,6 @@ export function IdentityProviderDetailsPageIndex() {
                     />
                 </Grid>
             </Grid>
-
             <StringListInput2
                 label="Scopes"
                 hint=""
@@ -849,7 +874,6 @@ export function IdentityProviderDetailsPageIndex() {
                 error={defaultScopesError}
                 sx={{my: 4}}
             />
-
             <TableFieldComponent2<IdentityAdditionalParameter>
                 label="Zusätzliche Parameter"
                 fields={[
@@ -875,11 +899,7 @@ export function IdentityProviderDetailsPageIndex() {
                 error={additionalParamsError}
                 sx={{my: 4}}
             />
-
-            <Grid
-                item
-                xs={12}
-            >
+            <Grid size={12}>
                 <Typography
                     variant="h6"
                     sx={{mt: 4, mb: 0}}
@@ -887,7 +907,6 @@ export function IdentityProviderDetailsPageIndex() {
                     Attributszuweisungen
                 </Typography>
             </Grid>
-
             <TableFieldComponent2<IdentityAttributeMapping>
                 label="Attributszuweisungen"
                 fields={[
@@ -940,22 +959,28 @@ export function IdentityProviderDetailsPageIndex() {
                             </Typography>
                             <ul style={{marginTop: '1rem', paddingLeft: '1.1rem'}}>
                                 <li>
-                                    <strong>Titel</strong> – Anzeigename, der später in der Gover-Oberfläche
+                                    <strong>Titel</strong>
+                                    – Anzeigename, der später in der Gover-Oberfläche
                                     erscheint (z.&nbsp;B. „E-Mail“ oder „Nachname“).
                                 </li>
 
                                 <li>
-                                    <strong>Beschreibung</strong> – Kurze Erklärung, wofür das Attribut
+                                    <strong>Beschreibung</strong>
+                                    – Kurze Erklärung, wofür das Attribut
                                     verwendet wird bzw. welche Daten es enthält.
                                 </li>
 
                                 <li>
-                                    <strong>Feldname</strong> – Schlüssel in den Daten / Claim-Name
-                                    (<code>email</code>, <code>given_name</code>, …), so wie er im <em>userinfo</em>-Response bzw. ID-Token vorkommt.
+                                    <strong>Feldname</strong>
+                                    – Schlüssel in den Daten / Claim-Name
+                                    (
+                                    <code>email</code>
+                                    , <code>given_name</code>, …), so wie er im <em>userinfo</em>-Response bzw. ID-Token vorkommt.
                                 </li>
 
                                 <li>
-                                    <strong>Anzeigeattribut</strong> – Steuert, ob der Wert später
+                                    <strong>Anzeigeattribut</strong>
+                                    – Steuert, ob der Wert später
                                     zur Identifikation in Übersichten von Gover (z. B. in Anträgen) angezeigt wird.
                                 </li>
                             </ul>
@@ -965,7 +990,6 @@ export function IdentityProviderDetailsPageIndex() {
                 error={attributesError}
                 sx={{my: 4}}
             />
-
             <Box
                 sx={{
                     display: 'flex',
@@ -985,6 +1009,7 @@ export function IdentityProviderDetailsPageIndex() {
 
                 {
                     !isSystemProvider &&
+                    !inputsDisabled &&
                     <Tooltip title={'Aktualisieren Sie die Auswahllisten für z.B. Dateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'}>
                         <Button
                             onClick={handleRefreshRelatedEntities}
@@ -1039,9 +1064,7 @@ export function IdentityProviderDetailsPageIndex() {
                     </Box>
                 }
             </Box>
-
             {changeBlocker.dialog}
-
             <ConfirmDialog
                 title="Nutzerkontenanbieter löschen"
                 onCancel={() => setShowConfirmDialog(false)}
@@ -1054,7 +1077,6 @@ export function IdentityProviderDetailsPageIndex() {
                     Möchten Sie diesen Nutzerkontenanbieter wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
                 </Typography>
             </ConfirmDialog>
-
             <ConstraintDialog
                 open={showConstraintDialog}
                 onClose={() => setShowConstraintDialog(false)}

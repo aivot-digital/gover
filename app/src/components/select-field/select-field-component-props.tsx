@@ -1,5 +1,6 @@
-import {SelectFieldComponentOption} from "./select-field-component-option";
-import {SxProps, Theme} from "@mui/material";
+import {SelectFieldComponentOption} from './select-field-component-option';
+import {SxProps, TextFieldProps, Theme} from '@mui/material';
+import {EndAction} from '../text-field/text-field-component-props';
 
 export interface SelectFieldComponentProps {
     label: string;
@@ -15,4 +16,7 @@ export interface SelectFieldComponentProps {
     options: SelectFieldComponentOption[];
     emptyStatePlaceholder?: string;
     sx?: SxProps<Theme>;
+    startIcon?: React.ReactNode;
+    endAction?: EndAction | Array<EndAction>;
+    muiPassTroughProps?: TextFieldProps;
 }

@@ -8,10 +8,11 @@ import de.aivot.GoverBackend.identity.models.IdentityAdditionalParameter;
 import de.aivot.GoverBackend.identity.models.IdentityAttributeMapping;
 import jakarta.persistence.*;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Represents an identity provider in the Gover system, used for authenticating citizens.
@@ -35,7 +36,7 @@ public class IdentityProviderEntity {
     @Id
     @Nonnull
     @Column(length = 36, columnDefinition = "uuid")
-    private String key;
+    private UUID key;
 
     @Nonnull
     @Column(length = 64)
@@ -54,8 +55,8 @@ public class IdentityProviderEntity {
     private String description;
 
     @Nullable
-    @Column(length = 36, columnDefinition = "uuid")
-    private String iconAssetKey;
+    @Column(columnDefinition = "uuid")
+    private UUID iconAssetKey;
 
     @Nonnull
     @Column(length = 255)
@@ -78,8 +79,8 @@ public class IdentityProviderEntity {
     private String clientId;
 
     @Nullable
-    @Column(length = 36, columnDefinition = "uuid")
-    private String clientSecretKey;
+    @Column(columnDefinition = "uuid")
+    private UUID clientSecretKey;
 
     @Column(columnDefinition = "jsonb")
     @Convert(converter = IdentityAttributesConverter.class)
@@ -101,14 +102,17 @@ public class IdentityProviderEntity {
     @Nonnull
     private Boolean isTestProvider;
 
+    @Nullable
+    private String pkceMethod;
+
     // Equals and HashCode
 
     @Override
-    public boolean equals(Object object) {
-        if (object == null || getClass() != object.getClass()) return false;
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
 
-        IdentityProviderEntity provider = (IdentityProviderEntity) object;
-        return key.equals(provider.key) && metadataIdentifier.equals(provider.metadataIdentifier) && type == provider.type && name.equals(provider.name) && description.equals(provider.description) && Objects.equals(iconAssetKey, provider.iconAssetKey) && authorizationEndpoint.equals(provider.authorizationEndpoint) && tokenEndpoint.equals(provider.tokenEndpoint) && Objects.equals(userinfoEndpoint, provider.userinfoEndpoint) && Objects.equals(endSessionEndpoint, provider.endSessionEndpoint) && clientId.equals(provider.clientId) && Objects.equals(clientSecretKey, provider.clientSecretKey) && Objects.equals(attributes, provider.attributes) && defaultScopes.equals(provider.defaultScopes) && additionalParams.equals(provider.additionalParams) && isEnabled.equals(provider.isEnabled) && isTestProvider.equals(provider.isTestProvider);
+        IdentityProviderEntity that = (IdentityProviderEntity) o;
+        return key.equals(that.key) && metadataIdentifier.equals(that.metadataIdentifier) && type == that.type && name.equals(that.name) && description.equals(that.description) && Objects.equals(iconAssetKey, that.iconAssetKey) && authorizationEndpoint.equals(that.authorizationEndpoint) && tokenEndpoint.equals(that.tokenEndpoint) && Objects.equals(userinfoEndpoint, that.userinfoEndpoint) && Objects.equals(endSessionEndpoint, that.endSessionEndpoint) && clientId.equals(that.clientId) && Objects.equals(clientSecretKey, that.clientSecretKey) && Objects.equals(attributes, that.attributes) && defaultScopes.equals(that.defaultScopes) && additionalParams.equals(that.additionalParams) && isEnabled.equals(that.isEnabled) && isTestProvider.equals(that.isTestProvider) && Objects.equals(pkceMethod, that.pkceMethod);
     }
 
     @Override
@@ -130,6 +134,7 @@ public class IdentityProviderEntity {
         result = 31 * result + additionalParams.hashCode();
         result = 31 * result + isEnabled.hashCode();
         result = 31 * result + isTestProvider.hashCode();
+        result = 31 * result + Objects.hashCode(pkceMethod);
         return result;
     }
 
@@ -138,11 +143,11 @@ public class IdentityProviderEntity {
     // Getters & Setters
 
     @Nonnull
-    public String getKey() {
+    public UUID getKey() {
         return key;
     }
 
-    public IdentityProviderEntity setKey(@Nonnull String key) {
+    public IdentityProviderEntity setKey(@Nonnull UUID key) {
         this.key = key;
         return this;
     }
@@ -188,11 +193,11 @@ public class IdentityProviderEntity {
     }
 
     @Nullable
-    public String getIconAssetKey() {
+    public UUID getIconAssetKey() {
         return iconAssetKey;
     }
 
-    public IdentityProviderEntity setIconAssetKey(@Nullable String iconAssetKey) {
+    public IdentityProviderEntity setIconAssetKey(@Nullable UUID iconAssetKey) {
         this.iconAssetKey = iconAssetKey;
         return this;
     }
@@ -248,11 +253,11 @@ public class IdentityProviderEntity {
     }
 
     @Nullable
-    public String getClientSecretKey() {
+    public UUID getClientSecretKey() {
         return clientSecretKey;
     }
 
-    public IdentityProviderEntity setClientSecretKey(@Nullable String clientSecretKey) {
+    public IdentityProviderEntity setClientSecretKey(@Nullable UUID clientSecretKey) {
         this.clientSecretKey = clientSecretKey;
         return this;
     }
@@ -303,6 +308,16 @@ public class IdentityProviderEntity {
 
     public IdentityProviderEntity setIsTestProvider(@Nonnull Boolean testProvider) {
         isTestProvider = testProvider;
+        return this;
+    }
+
+    @Nullable
+    public String getPkceMethod() {
+        return pkceMethod;
+    }
+
+    public IdentityProviderEntity setPkceMethod(@Nullable String pkceMethod) {
+        this.pkceMethod = pkceMethod;
         return this;
     }
 

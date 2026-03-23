@@ -10,7 +10,7 @@ import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentTransaction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -33,7 +33,7 @@ public class PaymentProviderTestService {
     }
 
     public PaymentProviderTestResult test(
-            @Nonnull String paymentProviderKey,
+            @Nonnull UUID paymentProviderKey,
             @Nonnull String purpose,
             @Nonnull String description,
             @Nonnull BigDecimal amount
@@ -43,7 +43,7 @@ public class PaymentProviderTestService {
                 .orElseThrow(() -> new BadRequestException("Invalid provider key"));
 
         var paymentProviderDefinition = paymentProviderService
-                .getProviderDefinition(paymentProviderEntity.getProviderKey())
+                .getProviderDefinition(paymentProviderEntity.getPaymentProviderDefinitionKey())
                 .orElseThrow(() -> new BadRequestException("Invalid provider key"));
 
         var paymentItem = new PaymentItem();

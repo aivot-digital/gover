@@ -10,20 +10,20 @@ import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component
 import {EditorDispatcher} from '../editor-dispatcher';
 import React from 'react';
 import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
-import {showSuccessSnackbar} from '../../slices/snackbar-slice';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import ContentPasteIcon from '@mui/icons-material/ContentPaste';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 import {getElementNameForType} from '../../data/element-type/element-names';
 import {AlertComponent} from '../alert/alert-component';
-import Editors from '../../editors';
+import {editors as Editors} from '../../editors';
 
-export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorContentProps<T, E>): JSX.Element {
+export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorContentProps<T, E>) {
     const dispatch = useAppDispatch();
 
     const tabDescription = (() => {
         switch (props.element.type) {
-            case ElementType.Root:
+            case ElementType.FormLayout:
                 return {
                     title: 'Eigenschaften des Formulars',
                     description: 'Hier konfigurieren Sie allgemeine Eigenschaften des gesamten Formulars, z. B. Titel oder technische Einstellungen.',
@@ -75,14 +75,12 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
             >
                 {tabDescription.description}
             </ElementEditorSectionHeader>
-
             {
                 props.element.type === ElementType.SummaryStep &&
                 <AlertComponent color={'info'}>
                     Dieser Abschnitt hat derzeit keine weiteren Konfigurationsmöglichkeiten.
                 </AlertComponent>
             }
-
             {
                 tabDescription.isElement &&
                 <ElementEditorSectionHeader
@@ -90,21 +88,21 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                     variant={'h5'}
                 />
             }
-
             <Grid
                 container
                 columnSpacing={4}
             >
 
                 {
-                    props.element.type !== ElementType.Root &&
+                    props.element.type !== ElementType.FormLayout &&
                     props.element.type !== ElementType.IntroductionStep &&
                     props.element.type !== ElementType.SummaryStep &&
                     props.element.type !== ElementType.SubmitStep &&
                     <Grid
-                        item
-                        xs={12}
-                        lg={6}
+                        size={{
+                            xs: 12,
+                            lg: 6,
+                        }}
                     >
                         <TextFieldComponent
                             label="Interner Name"
@@ -123,15 +121,16 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                 }
 
                 {
-                    props.element.type !== ElementType.Root &&
+                    props.element.type !== ElementType.FormLayout &&
                     props.element.type !== ElementType.IntroductionStep &&
                     props.element.type !== ElementType.Step &&
                     props.element.type !== ElementType.SummaryStep &&
                     props.element.type !== ElementType.SubmitStep &&
                     <Grid
-                        item
-                        xs={12}
-                        lg={6}
+                        size={{
+                            xs: 12,
+                            lg: 6,
+                        }}
                     >
                         <SelectFieldComponent
                             label="Breite des Elements in der Darstellung"
@@ -186,9 +185,10 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                     isAnyInputElement(props.element) &&
                     <>
                         <Grid
-                            item
-                            xs={12}
-                            lg={6}
+                            size={{
+                                xs: 12,
+                                lg: 6,
+                            }}
                         >
                             <TextFieldComponent
                                 value={props.element.label}
@@ -206,9 +206,10 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                             />
                         </Grid>
                         <Grid
-                            item
-                            xs={12}
-                            lg={6}
+                            size={{
+                                xs: 12,
+                                lg: 6,
+                            }}
                         >
                             <TextFieldComponent
                                 value={props.element.hint}
@@ -226,7 +227,6 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                     </>
                 }
             </Grid>
-
             {
                 tabDescription.isElement &&
                 // elements without additional properties – should be replaced with a more generic check if element contains additional properties
@@ -236,15 +236,14 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                     variant={'h5'}
                 />
             }
-
             <EditorDispatcher
                 props={props.element}
                 onPatch={props.onChange}
                 entity={props.entity}
                 onPatchEntity={props.onChangeEntity}
                 editable={props.editable}
+                scope={props.scope}
             />
-
             {
                 isAnyInputElement(props.element) &&
                 <>
@@ -258,16 +257,17 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                         columnSpacing={4}
                     >
                         <Grid
-                            item
-                            xs={12}
-                            lg={4}
+                            size={{
+                                xs: 12,
+                                lg: 4,
+                            }}
                         >
                             <CheckboxFieldComponent
                                 label="Pflichtangabe"
-                                value={props.element.required}
+                                value={props.element.required ?? undefined}
                                 onChange={(checked) => {
                                     props.onChange({
-                                        // @ts-expect-error
+                                        // @ts-ignore
                                         required: checked,
                                         disabled: false,
                                         technical: false,
@@ -278,88 +278,101 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                             />
                         </Grid>
                         <Grid
-                            item
-                            xs={12}
-                            lg={4}
+                            size={{
+                                xs: 12,
+                                lg: 4,
+                            }}
                         >
-                            <CheckboxFieldComponent
-                                label="Eingabe deaktiviert"
-                                value={props.element.disabled}
-                                onChange={(checked) => {
-                                    props.onChange({
-                                        // @ts-expect-error
-                                        required: false,
-                                        disabled: checked,
-                                        technical: false,
-                                    });
-                                }}
-                                hint="Deaktivierte Eingaben können nicht bearbeitet werden."
-                                disabled={!props.editable || Boolean(props.element.required) || Boolean(props.element.technical)}
-                            />
+                            {
+                                props.scope !== 'data_modelling' &&
+                                <CheckboxFieldComponent
+                                    label="Eingabe deaktiviert"
+                                    value={props.element.disabled ?? undefined}
+                                    onChange={(checked) => {
+                                        props.onChange({
+                                            // @ts-ignore
+                                            required: false,
+                                            disabled: checked,
+                                            technical: false,
+                                        });
+                                    }}
+                                    hint="Deaktivierte Eingaben können nicht bearbeitet werden."
+                                    disabled={!props.editable || Boolean(props.element.required) || Boolean(props.element.technical)}
+                                />
+                            }
                         </Grid>
                         <Grid
-                            item
-                            xs={12}
-                            lg={4}
+                            size={{
+                                xs: 12,
+                                lg: 4,
+                            }}
                         >
-                            <CheckboxFieldComponent
-                                label="Technisches Feld"
-                                value={props.element.technical}
-                                onChange={(checked) => {
-                                    props.onChange({
-                                        // @ts-expect-error
-                                        required: false,
-                                        disabled: false,
-                                        technical: checked,
-                                    });
-                                }}
-                                hint="Technische Felder sind für Antragstellende unsichtbar und nicht bearbeitbar."
-                                disabled={!props.editable || Boolean(props.element.required) || Boolean(props.element.disabled)}
-                            />
+                            {
+                                props.scope !== 'data_modelling' &&
+                                <CheckboxFieldComponent
+                                    label="Technisches Feld"
+                                    value={props.element.technical ?? undefined}
+                                    onChange={(checked) => {
+                                        props.onChange({
+                                            // @ts-ignore
+                                            required: false,
+                                            disabled: false,
+                                            technical: checked,
+                                        });
+                                    }}
+                                    hint="Technische Felder sind für Antragstellende unsichtbar und nicht bearbeitbar."
+                                    disabled={!props.editable || Boolean(props.element.required) || Boolean(props.element.disabled)}
+                                />
+                            }
                         </Grid>
                     </Grid>
                 </>
             }
-
             <ElementEditorSectionHeader
                 title="Technische Informationen für Entwickler:innen"
                 sx={{mt: 8}}
             >
                 Hier finden Sie technische Zusatzinformationen, die insbesondere für Entwickler:innen von Bedeutung sein können.
             </ElementEditorSectionHeader>
-
             <Grid
                 container
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
                 >
                     <TextFieldComponent
                         label="ID des Elements"
                         value={props.element.id ?? ''}
-                        disabled
-                        onChange={(_) => {
+                        disabled={props.scope === 'application' || props.scope === 'preset' || !props.editable}
+                        onChange={(id) => {
+                            if (props.scope === 'data_modelling') {
+                                // @ts-ignore
+                                props.onChange({
+                                    id: id ?? '',
+                                });
+                            }
                         }}
                         endAction={{
                             icon: <ContentPasteIcon />,
                             onClick: () => {
                                 navigator.clipboard.writeText(props.element.id ?? '')
                                     .then(() => {
-                                        dispatch(showSuccessSnackbar('ID des Elements kopiert'));
+                                        dispatch(showSuccessSnackbar('Element-ID in Zwischenablage kopiert'));
                                     })
                                     .catch((error) => {
                                         console.error('Failed to copy ID', error);
-                                        dispatch(showSuccessSnackbar('ID konnte nicht kopiert werden'));
+                                        dispatch(showErrorSnackbar('Element-ID konnte nicht in Zwischenablage kopiert werden'));
                                     });
                             },
                         }}
+                        hint={props.scope === 'data_modelling' ? 'Wenn Sie eine bereits in Verwendung befindliche ID nachträglich ändern, werden bereits erfasste Daten verworfen. Eine automatische Migration findet derzeit nicht statt. Bitte verwenden Sie daher von Beginn an stabile, eindeutige IDs.' : undefined}
                     />
                 </Grid>
             </Grid>
-
         </Box>
     );
 }

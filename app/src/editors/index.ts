@@ -11,14 +11,18 @@ import {SelectFieldEditor} from './select-field-editor';
 import {DateFieldEditor} from './date-field-editor';
 import {RootComponentEditorTabLegal} from '../components/root/root.component.editor-tab.legal';
 import {ImageEditor} from '../components/image/image-editor';
-import {MultiCheckboxFieldComponentEditor} from '../components/multi-checkbox-field/multi-checkbox-field.component.editor';
+import {
+    MultiCheckboxFieldComponentEditor
+} from '../components/multi-checkbox-field/multi-checkbox-field.component.editor';
 import {HeadlineComponentEditor} from '../components/headline/headline.component.editor';
 import {ReplicatingContainerEditor} from '../components/replicating-container/replicating-container.editor';
 import {RichtextComponentEditor} from '../components/richtext/richtext.component.editor';
 import {RadioFieldComponentEditor} from '../components/radio-field/radio-field.component.editor';
 import {SpacerComponentEditor} from '../components/spacer/spacer.component.editor';
 import {TableFieldComponentEditor} from '../components/table-field/table-field.component.editor';
-import {GeneralInformationComponentEditor} from '../components/general-information/general-information.component.editor';
+import {
+    GeneralInformationComponentEditor
+} from '../components/general-information/general-information.component.editor';
 import {SubmitComponentEditor} from '../components/submit/submit.component.editor';
 import {FileUploadEditor} from '../components/file-upload-field/file-upload.editor';
 import {ContainerEditor} from './container-editor';
@@ -34,8 +38,8 @@ export interface EditorSet {
     additionalTabs?: EditorTab[];
 }
 
-const editors: ElementTypesMap<EditorSet | null> = {
-    [ElementType.Root]: {
+export const editors: ElementTypesMap<EditorSet | null> = {
+    [ElementType.FormLayout]: {
         default: RootComponentEditor,
         additionalTabs: [
             {
@@ -61,7 +65,7 @@ const editors: ElementTypesMap<EditorSet | null> = {
     [ElementType.Image]: {
         default: ImageEditor,
     },
-    [ElementType.Container]: {
+    [ElementType.GroupLayout]: {
         default: ContainerEditor,
     },
     [ElementType.Checkbox]: null,
@@ -80,7 +84,7 @@ const editors: ElementTypesMap<EditorSet | null> = {
     [ElementType.ReplicatingContainer]: {
         default: ReplicatingContainerEditor,
     },
-    [ElementType.Richtext]: {
+    [ElementType.RichText]: {
         default: RichtextComponentEditor,
     },
     [ElementType.Radio]: {
@@ -112,6 +116,13 @@ const editors: ElementTypesMap<EditorSet | null> = {
     [ElementType.FileUpload]: {
         default: FileUploadEditor,
     },
+    [ElementType.DialogLayout]: null,
+    [ElementType.StepperLayout]: null,
+    [ElementType.ConfigLayout]: null,
+    [ElementType.FunctionInput]: null,
+    [ElementType.CodeInput]: null,
+    [ElementType.RichTextInput]: null,
+    [ElementType.UiDefinitionInput]: null,
+    [ElementType.IdentityInput]: null,
+    [ElementType.TabLayout]: null,
 };
-
-export default editors;

@@ -1,20 +1,21 @@
 import React from 'react';
 import {type TextFieldElement} from '../models/elements/form/input/text-field-element';
 import {TextFieldComponent} from '../components/text-field/text-field-component';
-import {type BaseEditor} from './base-editor';
+import {BaseEditorProps} from './base-editor';
 import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
 import {NumberFieldComponent} from '../components/number-field/number-field-component';
 import {type ElementTreeEntity} from '../components/element-tree/element-tree-entity';
-import {HtmlAutofillAttributeOptions} from "../data/html-autofill-attribute-options";
-import {Autocomplete, Box, Grid, TextField, Typography} from "@mui/material";
-import {getAutofillOptionsForElementType} from "../data/element-type/element-autofill-options";
-import {ElementType} from "../data/element-type/element-type";
+import {Grid} from '@mui/material';
+import {AutocompleteSelect} from '../components/autocomple-select/autocomplete-select';
 
-export const TextFieldEditor: BaseEditor<TextFieldElement, ElementTreeEntity> = ({
-                                                                                     element,
-                                                                                     onPatch,
-                                                                                     editable,
-                                                                                 }) => {
+export function TextFieldEditor(props: BaseEditorProps<TextFieldElement, ElementTreeEntity>) {
+    const {
+        element,
+        onPatch,
+        editable,
+        scope,
+    } = props;
+
     return (
         <>
             <Grid
@@ -22,9 +23,10 @@ export const TextFieldEditor: BaseEditor<TextFieldElement, ElementTreeEntity> = 
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
                 >
                     <TextFieldComponent
                         value={element.placeholder}
@@ -34,67 +36,39 @@ export const TextFieldEditor: BaseEditor<TextFieldElement, ElementTreeEntity> = 
                                 placeholder: value,
                             });
                         }}
-                        hint={"Ein Platzhalter zeigt ein Beispiel für die erwartete Eingabe an, z. B. „hallo@bad-musterstadt.de“ bei einer E-Mail-Adresse."}
+                        hint={'Ein Platzhalter zeigt ein Beispiel für die erwartete Eingabe an, z. B. „hallo@bad-musterstadt.de“ bei einer E-Mail-Adresse.'}
                         disabled={!editable}
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
                 >
-
-                    <Autocomplete
-                        id="autocomplete-select"
-                        value={HtmlAutofillAttributeOptions.find(item => item.value === element.autocomplete) ?? null}
-                        onChange={(event, val) => {
-                            onPatch({
-                                autocomplete: val?.value,
-                            });
-                        }}
-                        options={getAutofillOptionsForElementType(ElementType.Text)}
-                        autoHighlight
-                        getOptionLabel={(option) => option.label + ' (' + option.value + ')'}
-                        renderOption={(props, option) => (
-                            <Box component="li" sx={{display: 'block!important'}} {...props}>
-                                <Typography
-                                    component={'div'}
-                                    variant="body1"
-                                >
-                                    <b>{option.label}</b> ({option.value})
-                                </Typography>
-                                <Typography
-                                    component={'div'}
-                                    variant="caption"
-                                    color="textSecondary"
-                                    sx={{maxWidth: 740, my: 0}}
-                                >
-                                    {option.description}
-                                </Typography>
-                            </Box>
-                        )}
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                label="Automatisches Ausfüllen durch den Browser (Autocomplete)"
-                                inputProps={{
-                                    ...params.inputProps,
-                                    autoComplete: 'new-password', // disable autocomplete and autofill
-                                }}
-                                helperText={"Legen Sie fest, welches Datenfeld der Browser zur Autovervollständigung vorschlagen soll (z. B. Name, E-Mail). Vorschläge sind browserabhängig."}
-                            />
-                        )}
-                        disabled={!editable}
-                    />
+                    {
+                        scope !== 'data_modelling' &&
+                        <AutocompleteSelect
+                            type={element.type}
+                            value={element.autocomplete}
+                            onChange={(val) => {
+                                onPatch({
+                                    autocomplete: val,
+                                });
+                            }}
+                            editable={editable}
+                        />
+                    }
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={4}
+                    size={{
+                        xs: 12,
+                        lg: 4,
+                    }}
                 >
                     <NumberFieldComponent
                         label="Minimalanzahl an Zeichen"
-                        value={element.minCharacters}
+                        value={element.minCharacters ?? undefined}
                         onChange={(val) => {
                             onPatch({
                                 minCharacters: val,
@@ -106,13 +80,14 @@ export const TextFieldEditor: BaseEditor<TextFieldElement, ElementTreeEntity> = 
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={4}
+                    size={{
+                        xs: 12,
+                        lg: 4,
+                    }}
                 >
                     <NumberFieldComponent
                         label="Maximalanzahl an Zeichen"
-                        value={element.maxCharacters}
+                        value={element.maxCharacters ?? undefined}
                         onChange={(val) => {
                             onPatch({
                                 maxCharacters: val,
@@ -124,20 +99,21 @@ export const TextFieldEditor: BaseEditor<TextFieldElement, ElementTreeEntity> = 
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={4}
+                    size={{
+                        xs: 12,
+                        lg: 4,
+                    }}
                 >
                     <CheckboxFieldComponent
                         label="Mehrzeilige Texteingabe"
-                        value={element.isMultiline}
+                        value={element.isMultiline ?? undefined}
                         onChange={(checked) => {
                             onPatch({
                                 isMultiline: checked,
                             });
                         }}
                         disabled={!editable}
-                        hint={"Ermöglicht die Eingabe mehrzeiliger Texte statt einer einzelnen Zeile."}
+                        hint={'Ermöglicht die Eingabe mehrzeiliger Texte statt einer einzelnen Zeile.'}
                     />
                 </Grid>
             </Grid>

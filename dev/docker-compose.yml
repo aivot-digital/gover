@@ -1,12 +1,13 @@
 # -------------------------- Usage --------------------------
 # Start this with: docker compose -f ./docker-compose.yml up -d
 # -----------------------------------------------------------
+name: gover_dev_environment
 
 services:
 
-  gover_database:
-    image: postgres:16.4-alpine3.20
-    restart: always
+  gover-database:
+    image: postgres:16.12-alpine3.23
+    restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: gover
       POSTGRES_USER: gover
@@ -17,28 +18,28 @@ services:
     ports:
       - "5432:5432"
 
-  clamav:
-    image: clamav/clamav-debian:1.4.1
-    restart: always
+  antivirus:
+    image: clamav/clamav-debian:1.5.1
+    restart: unless-stopped
     ports:
       - "3310:3310"
 
-  redis:
-    image: redis:7.4.1-alpine3.20
-    restart: always
+  cache:
+    image: redis:8.2.4-alpine3.22
+    restart: unless-stopped
     ports:
       - "6379:6379"
 
-  puppet:
-    image: ghcr.io/aivot-digital/puppet-pdf:2.0.0
-    restart: always
-    environment:
-      PORT: 9090
+  pdf-printer:
+    image: gotenberg/gotenberg:8.26.0
+    restart: unless-stopped
     network_mode: host
+    environment:
+      API_PORT: 9191
 
-  minio:
-    image: minio/minio:RELEASE.2024-11-07T00-52-20Z
-    restart: always
+  s3-object-storage:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: admin
@@ -49,43 +50,35 @@ services:
       - "9000:9000"
       - "9001:9001"
 
-  mailpit:
-    image: axllent/mailpit
-    restart: always
-    volumes:
-      - mailpit_data:/data
-    ports:
-      - "9025:8025"
-      - "2025:1025"
+  s3-object-storage-setup:
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    depends_on:
+      - s3-object-storage
+    entrypoint: >
+      /bin/sh -c "
+      sleep 10 &&
+      mc alias set local http://s3-object-storage:9000 admin adminpassword &&
+      mc mb --ignore-existing local/gover &&
+      mc admin accesskey create local/ --access-key super-access-key --secret-key super-secret-key
+      "
+
+  smtp:
+    image: axllent/mailpit:v1.29.1
+    restart: unless-stopped
     environment:
       MP_MAX_MESSAGES: 5000
       MP_DATABASE: /data/mailpit.db
       MP_SMTP_AUTH_ACCEPT_ANY: 1
       MP_SMTP_AUTH_ALLOW_INSECURE: 1
-
-  lldap:
-    image: lldap/lldap:stable
-    restart: always
-    ports:
-      - "3890:3890"
-      - "6360:6360"
-      - "17170:17170"
     volumes:
-      - "lldap_data:/data"
-    environment:
-      - UID=1000
-      - GID=1000
-      - TZ=Europe/Berlin
-      - LLDAP_JWT_SECRET=faskn23hwex1oip0buo90x1w9biu1df3
-      - LLDAP_KEY_SEED=d3w1nb91wd7g1wx0hx1w91wx8x1w
-      - LLDAP_LDAP_BASE_DN=dc=aivot,dc=de
-      - LLDAP_LDAP_USER_PASS=adminpassword
-    networks:
-      - keycloak
+      - mailpit_data:/data
+    ports:
+      - "9025:8025"
+      - "2025:1025"
 
-  keycloak_database:
-    image: postgres:16.4-alpine3.20
-    restart: always
+  keycloak-database:
+    image: postgres:16.12-alpine3.23
+    restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: keycloak
       POSTGRES_USER: keycloak
@@ -93,50 +86,80 @@ services:
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - keycloak_pg_data:/var/lib/postgresql/data
-    networks:
-      - keycloak
+    ports:
+      - "5433:5432"
 
   keycloak:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.2.4.1
-    restart: always
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.5.3.0
+    restart: unless-stopped
     depends_on:
-      - keycloak_database
-    command: [ 'start-dev', '--http-port=8080' ]
+      - keycloak-database
+    command: [ 'start-dev' ]
     environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
-      KC_HTTP_ENABLED: true
-      KC_HOSTNAME: http://localhost:8888/idp
-      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: false
-      KC_HOSTNAME_DEBUG: true
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://keycloak_database:5432/keycloak
-      KC_DB_USERNAME: keycloak
-      KC_DB_PASSWORD: keycloak
-      KC_FEATURES: transient-users,update-email,hostname:v2
-    networks:
-      - keycloak
-      - common
+      KC_BOOTSTRAP_ADMIN_USERNAME: "admin"
+      KC_BOOTSTRAP_ADMIN_PASSWORD: "admin"
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_PORT: "8080"
+      KC_HOSTNAME: "http://localhost:9595/idp"
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "false"
+      KC_HOSTNAME_DEBUG: "true"
+      KC_DB: "postgres"
+      KC_DB_URL: "jdbc:postgresql://keycloak-database:5432/keycloak"
+      KC_DB_USERNAME: "keycloak"
+      KC_DB_PASSWORD: "keycloak"
+      KC_FEATURES: "transient-users,update-email,hostname:v2"
 
-  reverse_proxy:
-    image: nginx:1.27.2-alpine
+  keycloak_setup:
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.17
     depends_on:
       - keycloak
-    restart: always
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    networks:
-      - common
+    environment:
+      KEYCLOAK_URL: "http://keycloak:8080"
+      HOSTNAME: "http://localhost:9595"
+      KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME: "admin"
+      KEYCLOAK_BOOTSTRAP_ADMIN_PASSWORD: "admin"
+      KEYCLOAK_DEPLOYMENT_CLIENT_NAME: "deployment"
+      KEYCLOAK_DEPLOYMENT_CLIENT_SECRET: "my-super-secret-key"
+      KEYCLOAK_ADMIN_EMAIL: "mail@example.com"
+      KEYCLOAK_ADMIN_USERNAME: "superuser"
+      KEYCLOAK_ADMIN_PASSWORD: "My-Super-Secret-Password-No.1"
+      KEYCLOAK_AVAILABILITYCHECK_ENABLED: "true"
+      KEYCLOAK_AVAILABILITYCHECK_TIMEOUT: "120s"
+      LOGGING_LEVEL_HTTP: "ERROR"
+      SMTP_HOST: "smtp"
+      SMTP_PORT: "1025"
+      SMTP_USERNAME: "username"
+      SMTP_PASSWORD: "my-super-secret-password"
+      SMTP_FROM: "mail@example.com"
+      SMTP_FROM_DISPLAY: "Mail Test"
+      BACKEND_CLIENT_SECRET: "my-super-secret-key"
+
+  message-broker:
+    image: rabbitmq:4.2.4-management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: adminpassword
     ports:
-      - "8888:8888"
+      - "15672:15672"
+      - "5672:5672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  reverse-proxy:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:Z
+    ports:
+      - "9595:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
 
 volumes:
   gover_pg_data:
   keycloak_pg_data:
   minio_data:
   mailpit_data:
-  lldap_data:
-
-networks:
-  keycloak:
-  common:
+  rabbitmq_data:

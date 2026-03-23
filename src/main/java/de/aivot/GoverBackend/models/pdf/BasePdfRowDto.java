@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.models.pdf;
 
-import de.aivot.GoverBackend.elements.models.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 
 public abstract class BasePdfRowDto {
     public final PdfRowDtoType type;

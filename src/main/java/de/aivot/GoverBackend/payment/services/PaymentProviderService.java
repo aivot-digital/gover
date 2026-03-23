@@ -1,7 +1,8 @@
 package de.aivot.GoverBackend.payment.services;
 
-import de.aivot.GoverBackend.form.filters.FormFilter;
+import de.aivot.GoverBackend.form.filters.FormVersionFilter;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
+import de.aivot.GoverBackend.form.repositories.FormVersionRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
@@ -10,7 +11,7 @@ import de.aivot.GoverBackend.payment.filters.PaymentTransactionFilter;
 import de.aivot.GoverBackend.payment.models.PaymentProviderDefinition;
 import de.aivot.GoverBackend.payment.repositories.PaymentProviderRepository;
 import de.aivot.GoverBackend.payment.repositories.PaymentTransactionRepository;
-import org.jetbrains.annotations.NotNull;
+import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,17 +19,18 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.*;
 
 @Service
-public class PaymentProviderService implements EntityService<PaymentProviderEntity, String> {
+public class PaymentProviderService implements EntityService<PaymentProviderEntity, UUID> {
     private final PaymentProviderRepository paymentProviderRepository;
     private final FormRepository formRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final PaymentTransactionService paymentTransactionService;
     private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
+    private final FormVersionRepository formVersionRepository;
 
     @Autowired
     public PaymentProviderService(
@@ -36,12 +38,13 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
             FormRepository formRepository,
             PaymentTransactionRepository paymentTransactionRepository,
             PaymentTransactionService paymentTransactionService,
-            PaymentProviderDefinitionsService paymentProviderDefinitionsService) {
+            PaymentProviderDefinitionsService paymentProviderDefinitionsService, FormVersionRepository formVersionRepository) {
         this.formRepository = formRepository;
         this.paymentProviderRepository = paymentProviderRepository;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.paymentTransactionService = paymentTransactionService;
         this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
+        this.formVersionRepository = formVersionRepository;
     }
 
     @Nonnull
@@ -55,17 +58,17 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
             @Nonnull PaymentProviderEntity paymentProviderEntity
     ) throws ResponseException {
         // Retrieve the payment provider definition
-        getProviderDefinition(paymentProviderEntity.getProviderKey())
+        getProviderDefinition(paymentProviderEntity.getPaymentProviderDefinitionKey())
                 .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Der ausgewählte Zahlungsanbieter ist nicht vorhanden"));
 
         // Create new key for the payment provider entity
-        paymentProviderEntity.setKey(UUID.randomUUID().toString());
+        paymentProviderEntity.setKey(UUID.randomUUID());
 
         // Save and return the payment provider entity
         return paymentProviderRepository.save(paymentProviderEntity);
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public Page<PaymentProviderEntity> performList(
             @Nonnull Pageable pageable,
@@ -78,7 +81,7 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
     @Nonnull
     @Override
     public Optional<PaymentProviderEntity> retrieve(
-            @Nonnull String key
+            @Nonnull UUID key
     ) {
         return paymentProviderRepository
                 .findById(key);
@@ -94,7 +97,7 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
     }
 
     @Override
-    public boolean exists(@Nonnull String id) {
+    public boolean exists(@Nonnull UUID id) {
         return paymentProviderRepository.existsById(id);
     }
 
@@ -106,12 +109,12 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
     @Nonnull
     @Override
     public PaymentProviderEntity performUpdate(
-            @Nonnull String id,
+            @Nonnull UUID id,
             @Nonnull PaymentProviderEntity entity,
             @Nonnull PaymentProviderEntity existingEntity
     ) throws ResponseException {
         // Retrieve the payment provider definition
-        var providerDefinition = getProviderDefinition(entity.getProviderKey())
+        var providerDefinition = getProviderDefinition(entity.getPaymentProviderDefinitionKey())
                 .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Der ausgewählte Zahlungsanbieter ist nicht vorhanden"));
 
         // Test if the provider key is valid
@@ -136,11 +139,11 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
     public void performDelete(
             @Nonnull PaymentProviderEntity entity
     ) throws ResponseException {
-        var formSpec = new FormFilter()
-                .setPaymentProvider(entity.getKey())
+        var formSpec = new FormVersionFilter()
+                .setPaymentProviderKey(entity.getKey())
                 .build();
 
-        if (formRepository.exists(formSpec)) {
+        if (formVersionRepository.exists(formSpec)) {
             throw ResponseException.conflict(
                     "Der Zahlungsanbieter %s (%s) wird noch in Formularen verwendet",
                     entity.getName(),
@@ -172,7 +175,7 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
         paymentProviderRepository.delete(entity);
     }
 
-    public boolean isTestProvider(String providerKey) {
+    public boolean isTestProvider(UUID providerKey) {
         return paymentProviderRepository.findById(providerKey)
                 .map(PaymentProviderEntity::getTestProvider)
                 .orElse(false);

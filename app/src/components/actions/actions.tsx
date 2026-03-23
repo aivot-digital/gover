@@ -1,38 +1,75 @@
-import {Action, ActionsProps} from './actions-props';
+import {type Action, type ActionColor, type ActionsProps, type ActionTooltipPlacement} from './actions-props';
 import {Box, Button, IconButton, Tooltip} from '@mui/material';
-import React from 'react';
+import React, {type ReactNode} from 'react';
 import {Link} from 'react-router-dom';
 
-export function Actions(props: ActionsProps) {
+export function Actions(props: ActionsProps): ReactNode {
     return (
         <Box
             sx={{
-                ...props.sx,
                 display: 'flex',
+                flexDirection: props.direction ?? 'row',
                 alignItems: 'center',
+                height: props.direction == null || props.direction === 'row' || props.direction === 'row-reverse' ? '100%' : undefined,
+                width: props.direction === 'column' || props.direction === 'column-reverse' ? '100%' : undefined,
+                gap: (props.dense === true) ? 1 : 2,
+                ...props.sx,
             }}
         >
             {
-                props.actions != null &&
-                props.actions
-                    .map((action, index) => dispatchToolbarAction(action, index, props.isBusy ?? false, props.dense ??  false))
+                props
+                    .actions
+                    ?.map((action, index) => (
+                        <ToolbarActionDispatcher
+                            key={action === 'separator' ? index : (action.label ?? action.tooltip ?? index)}
+                            action={action}
+                            color={props.color ?? 'primary'}
+                            index={index}
+                            isBusy={props.isBusy ?? false}
+                            isFirst={index === 0}
+                            isLast={index === ((props.actions?.length ?? 0) - 1)}
+                            tooltipPlacement={props.tooltipPlacement ?? 'bottom'}
+                            size={props.size ?? 'small'}
+                        />
+                    ))
             }
         </Box>
     );
 }
 
-function dispatchToolbarAction(action: Action, index: number, isBusy: boolean, dense: boolean) {
-    // Check if this action is a separator and render a simple separator div
+interface ToolbarActionDispatcherProps {
+    action: Action;
+    color: ActionColor;
+    index: number;
+    isBusy: boolean;
+    isFirst: boolean;
+    isLast: boolean;
+    tooltipPlacement: ActionTooltipPlacement;
+    size: 'small' | 'medium' | 'large';
+}
+
+function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps): ReactNode {
+    const {
+        action,
+        color,
+        index,
+        isBusy,
+        isFirst,
+        isLast,
+        tooltipPlacement,
+        size,
+    } = props;
+
     if (action === 'separator') {
         return (
             <Box
-                key={action + index}
+                key={action + index.toString()}
                 sx={{
-                    ml: dense ? 1 : 2,
                     width: '1px',
                     height: '2em',
                     backgroundColor: 'black',
                     opacity: '.15',
+                    m: 0,
                 }}
             />
         );
@@ -52,18 +89,20 @@ function dispatchToolbarAction(action: Action, index: number, isBusy: boolean, d
     const target = 'href' in action ? '_blank' : undefined;
     const onClick = 'onClick' in action ? action.onClick : undefined;
     const shouldDisable = action.ignoreBusy ? action.disabled : (action.disabled || isBusy);
+    const activeStyle = 'activeStyle' in action ? action.activeStyle : undefined;
 
     // Build the element for this action which will then be encapsulated in a tooltip
     let element;
     if (action.label != null) {
         element = (
             <Button
-                size="small"
-                color="primary"
-                variant={action.variant}
+                size={size}
+                color={color}
                 sx={{
-                    ml: dense ? 0.5 : 1,
+                    m: 0,
+                    ...(activeStyle != null ? activeStyle : {}),
                 }}
+                variant={action.variant}
                 onClick={onClick}
                 component={component}
                 href={href}
@@ -78,10 +117,11 @@ function dispatchToolbarAction(action: Action, index: number, isBusy: boolean, d
     } else {
         element = (
             <IconButton
-                size="small"
-                color="primary"
+                size={size}
+                color={color}
                 sx={{
-                    ml: dense ? 0.5 : 1,
+                    m: 0,
+                    ...(activeStyle != null ? activeStyle : {}),
                 }}
                 onClick={onClick}
                 component={component}
@@ -89,16 +129,24 @@ function dispatchToolbarAction(action: Action, index: number, isBusy: boolean, d
                 to={to}
                 target={target}
                 disabled={shouldDisable}
+                edge={isFirst ? 'start' : isLast ? 'end' : false}
             >
                 {action.icon}
             </IconButton>
         );
     }
 
-    if (action.tooltip) {
+    if (action.tooltip != null || (shouldDisable === true && action.disabledTooltip != null)) {
         return (
-            <Tooltip key={index} title={action.tooltip} arrow>
-                <span>{element}</span>
+            <Tooltip
+                key={index}
+                title={shouldDisable === true && action.disabledTooltip != null ? action.disabledTooltip : action.tooltip}
+                arrow
+                placement={tooltipPlacement}
+            >
+                <span>
+                    {element}
+                </span>
             </Tooltip>
         );
     }

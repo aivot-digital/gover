@@ -1,12 +1,14 @@
 import {Grid, Typography, useTheme} from '@mui/material';
-import {BaseSummary} from './base-summary';
+import {BaseSummaryProps} from './base-summary';
 import {CheckboxFieldElement} from '../models/elements/form/input/checkbox-field-element';
 
-export const CheckboxFieldSummary: BaseSummary<CheckboxFieldElement, boolean> = ({
-                                                                                     model,
-                                                                                     value,
-                                                                                 }) => {
+export function CheckboxFieldSummary(props: BaseSummaryProps<CheckboxFieldElement, boolean>) {
     const theme = useTheme();
+
+    const {
+        model,
+        value,
+    } = props;
 
     return (
         <Grid
@@ -17,9 +19,6 @@ export const CheckboxFieldSummary: BaseSummary<CheckboxFieldElement, boolean> = 
             }}
         >
             <Grid
-                item
-                xs={12}
-                md={4}
                 sx={{
                     textAlign: 'left',
                     pr: 5,
@@ -27,7 +26,10 @@ export const CheckboxFieldSummary: BaseSummary<CheckboxFieldElement, boolean> = 
                         textAlign: 'right',
                     },
                 }}
-            >
+                size={{
+                    xs: 12,
+                    md: 4
+                }}>
                 <Typography
                     variant={'body2'}
                     sx={{
@@ -41,10 +43,10 @@ export const CheckboxFieldSummary: BaseSummary<CheckboxFieldElement, boolean> = 
                 </Typography>
             </Grid>
             <Grid
-                item
-                xs={12}
-                md={8}
-            >
+                size={{
+                    xs: 12,
+                    md: 8
+                }}>
                 <Typography variant="body2">
                     {
                         value ? 'Ja' : 'Nein'

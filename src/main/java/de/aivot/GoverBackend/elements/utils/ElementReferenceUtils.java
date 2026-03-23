@@ -1,11 +1,14 @@
 package de.aivot.GoverBackend.elements.utils;
 
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
-import de.aivot.GoverBackend.models.functions.Function;
+import de.aivot.GoverBackend.models.functions.conditions.ConditionSet;
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
+import de.aivot.GoverBackend.nocode.models.NoCodeOperand;
+import de.aivot.GoverBackend.nocode.models.NoCodeReference;
+import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -13,18 +16,24 @@ public class ElementReferenceUtils {
     @Nonnull
     public static Set<String> getReferencedIds(
             @Nullable JavascriptCode jsCode,
-            @Nullable NoCodeExpression expression,
-            @Nullable Function func
+            @Nullable NoCodeOperand expression,
+            @Nullable ConditionSet conditionSet
     ) {
         var referencedIds = new HashSet<String>();
         if (jsCode != null) {
             referencedIds.addAll(jsCode.getReferencedIds());
         }
         if (expression != null) {
-            referencedIds.addAll(expression.getReferencedIds());
+            switch (expression) {
+                case NoCodeReference reference -> referencedIds.add(reference.getElementId());
+                case NoCodeExpression noCodeExpression -> referencedIds.addAll(noCodeExpression.getReferencedIds());
+                default -> {
+                    // Do nothing
+                }
+            }
         }
-        if (func != null) {
-            referencedIds.addAll(func.getReferencedIds());
+        if (conditionSet != null) {
+            referencedIds.addAll(conditionSet.getReferencedIds());
         }
         return referencedIds;
     }

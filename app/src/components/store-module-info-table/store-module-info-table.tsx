@@ -4,7 +4,7 @@ import React from 'react';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 
-export function StoreModuleInfoTable(props: StoreModuleInfoTableProps): JSX.Element {
+export function StoreModuleInfoTable(props: StoreModuleInfoTableProps) {
     return (
 
         <Box>

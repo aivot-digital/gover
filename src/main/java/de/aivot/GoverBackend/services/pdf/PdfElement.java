@@ -1,9 +1,9 @@
 package de.aivot.GoverBackend.services.pdf;
 
-import de.aivot.GoverBackend.elements.models.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.List;
 
 public record PdfElement(

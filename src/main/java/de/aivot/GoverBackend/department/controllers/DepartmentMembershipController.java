@@ -3,22 +3,24 @@ package de.aivot.GoverBackend.department.controllers;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
-import de.aivot.GoverBackend.department.dtos.DepartmentMembershipRequestDTO;
-import de.aivot.GoverBackend.department.dtos.DepartmentMembershipResponseDTO;
 import de.aivot.GoverBackend.department.entities.DepartmentMembershipEntity;
 import de.aivot.GoverBackend.department.filters.DepartmentMembershipFilter;
-import de.aivot.GoverBackend.department.filters.DepartmentWithMembershipFilter;
+import de.aivot.GoverBackend.department.filters.VDepartmentMembershipWithPermissionsFilter;
 import de.aivot.GoverBackend.department.services.DepartmentMembershipService;
-import de.aivot.GoverBackend.department.services.DepartmentService;
-import de.aivot.GoverBackend.department.services.DepartmentWithMembershipService;
-import de.aivot.GoverBackend.enums.UserRole;
+import de.aivot.GoverBackend.department.services.VDepartmentMembershipWithPermissionsService;
 import de.aivot.GoverBackend.exceptions.InvalidUserEMailException;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.services.DepartmentMembershipMailService;
 import de.aivot.GoverBackend.mail.services.ExceptionMailService;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,247 +29,212 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.io.IOException;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/department-memberships/")
+@Tag(
+        name = "Department Memberships",
+        description = "Department Memberships link users to organisational units (departments) within the system. " +
+                      "They define which users belong to which departments and what roles or permissions they have within those departments. " +
+                      "Managing department memberships is crucial for controlling access to resources and functionalities based on organisational structure."
+)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class DepartmentMembershipController {
     private final ScopedAuditService auditService;
 
-    private final DepartmentWithMembershipService departmentWithMembershipService;
     private final DepartmentMembershipService departmentMembershipService;
     private final DepartmentMembershipMailService departmentMembershipMailService;
     private final ExceptionMailService exceptionMailService;
+    private final VDepartmentMembershipWithPermissionsService vDepartmentMembershipWithPermissionsService;
     private final UserService userService;
-    private final DepartmentService departmentService;
 
     @Autowired
-    public DepartmentMembershipController(
-            AuditService auditService,
-            DepartmentWithMembershipService departmentWithMembershipService,
-            DepartmentMembershipService departmentMembershipService,
-            DepartmentMembershipMailService departmentMembershipMailService,
-            ExceptionMailService exceptionMailService,
-            UserService userService,
-            DepartmentService departmentService
-    ) {
+    public DepartmentMembershipController(AuditService auditService,
+                                          DepartmentMembershipService departmentMembershipService,
+                                          DepartmentMembershipMailService departmentMembershipMailService,
+                                          ExceptionMailService exceptionMailService,
+                                          VDepartmentMembershipWithPermissionsService vDepartmentMembershipWithPermissionsService,
+                                          UserService userService) {
         this.auditService = auditService.createScopedAuditService(DepartmentMembershipController.class);
 
-        this.departmentWithMembershipService = departmentWithMembershipService;
         this.departmentMembershipService = departmentMembershipService;
         this.departmentMembershipMailService = departmentMembershipMailService;
         this.exceptionMailService = exceptionMailService;
+        this.vDepartmentMembershipWithPermissionsService = vDepartmentMembershipWithPermissionsService;
         this.userService = userService;
-        this.departmentService = departmentService;
     }
 
     @GetMapping("")
-    public Page<DepartmentMembershipResponseDTO> list(
-            @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PageableDefault Pageable pageable,
-            @Nonnull @Valid DepartmentWithMembershipFilter filter
+    @Operation(
+            summary = "List department memberships",
+            description = "List department memberships with pagination and filtering."
+    )
+    public Page<DepartmentMembershipEntity> list(
+            @Nonnull @ParameterObject @PageableDefault Pageable pageable,
+            @Nonnull @ParameterObject @Valid DepartmentMembershipFilter filter
 
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
-        return departmentWithMembershipService
-                .list(pageable, filter)
-                .map(DepartmentMembershipResponseDTO::fromEntity);
+        return departmentMembershipService
+                .list(pageable, filter);
     }
 
     @PostMapping("")
-    public DepartmentMembershipResponseDTO create(
+    @Operation(
+            summary = "Create department membership",
+            description = "Create a new department membership linking a user to a department. " +
+                          "Requires super admin permissions or department edit permissions for the membership's target department."
+    )
+    public DepartmentMembershipEntity create(
             @AuthenticationPrincipal Jwt jwt,
-            @Valid @RequestBody DepartmentMembershipRequestDTO requestDTO
+            @Valid @RequestBody DepartmentMembershipEntity newMembership
     ) throws ResponseException {
-        var user = UserService
+        var execUser = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!user.getGlobalAdmin()) {
-            var spec = DepartmentMembershipFilter
+        if (!execUser.getIsSuperAdmin()) {
+            var filter = VDepartmentMembershipWithPermissionsFilter
                     .create()
-                    .setDepartmentId(requestDTO.departmentId())
-                    .setUserId(user.getId())
-                    .setRole(UserRole.Admin)
-                    .build();
+                    .setUserId(execUser.getId())
+                    .setDepartmentId(newMembership.getDepartmentId())
+                    .setDepartmentPermissionEdit(true);
 
-            if (!departmentMembershipService.exists(spec)) {
-                throw ResponseException.forbidden("Nur globale Administrator:innen oder Fachbereichsadministrator:innen können Fachbereichsmitglieder hinzufügen.");
+            var hasPermissionToEdit = vDepartmentMembershipWithPermissionsService
+                    .exists(filter.build());
+
+            if (!hasPermissionToEdit) {
+                throw ResponseException
+                        .noPermission(PermissionLabels.DepartmentPermissionEdit);
             }
         }
 
-        var targetUser = userService
-                .retrieve(requestDTO.userId())
-                .orElseThrow(ResponseException::badRequest);
+        var createdMembership = departmentMembershipService
+                .create(newMembership);
 
-        var department = departmentService
-                .retrieve(requestDTO.departmentId())
-                .orElseThrow(ResponseException::badRequest);
-
-        var departmentMembership = departmentMembershipService
-                .create(requestDTO.toEntity());
-
-        auditService.logAction(user, AuditAction.Create, DepartmentMembershipEntity.class, Map.of(
-                "id", departmentMembership.getId(),
-                "departmentId", departmentMembership.getDepartmentId(),
-                "userId", departmentMembership.getUserId()
+        auditService.logAction(execUser, AuditAction.Create, DepartmentMembershipEntity.class, Map.of(
+                "id", createdMembership.getId(),
+                "departmentId", createdMembership.getDepartmentId(),
+                "userId", createdMembership.getUserId()
         ));
 
-        if (!user.getId().equals(departmentMembership.getUserId())) {
+        if (!execUser.getId().equals(createdMembership.getUserId())) {
             try {
                 departmentMembershipMailService
-                        .sendAdded(user, departmentMembership);
+                        .sendAdded(execUser, createdMembership);
             } catch (MessagingException | IOException | InvalidUserEMailException e) {
                 exceptionMailService
                         .send(e);
             }
         }
 
-        return new DepartmentMembershipResponseDTO(
-                departmentMembership.getId(),
-                departmentMembership.getDepartmentId(),
-                department.getName(),
-                departmentMembership.getUserId(),
-                departmentMembership.getRole(),
-                targetUser.getFirstName(),
-                targetUser.getLastName(),
-                targetUser.getFullName(),
-                targetUser.getEmail(),
-                targetUser.getEnabled(),
-                targetUser.getVerified(),
-                targetUser.getDeletedInIdp(),
-                targetUser.getGlobalAdmin()
-        );
+        return createdMembership;
     }
 
     @GetMapping("{id}/")
-    public DepartmentMembershipResponseDTO retrieve(
-            @AuthenticationPrincipal Jwt jwt,
+    @Operation(
+            summary = "Retrieve department membership",
+            description = "Retrieve a department membership by its id."
+    )
+    public DepartmentMembershipEntity retrieve(
             @PathVariable Integer id
     ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
-        var mem = departmentMembershipService
+        return departmentMembershipService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
-
-        var department = departmentService
-                .retrieve(mem.getDepartmentId())
-                .orElseThrow(ResponseException::notFound);
-
-        var user = userService
-                .retrieve(mem.getUserId())
-                .orElseThrow(ResponseException::notFound);
-
-        return DepartmentMembershipResponseDTO
-                .fromEntity(mem, department, user);
     }
 
     @PutMapping("{id}/")
-    public DepartmentMembershipResponseDTO update(
+    @Operation(
+            summary = "Update department membership",
+            description = "Update an existing department membership. " +
+                          "Requires super admin permissions or department edit permissions for the membership's department."
+    )
+    public DepartmentMembershipEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id,
-            @Nonnull @Valid @RequestBody DepartmentMembershipRequestDTO requestDTO
+            @Nonnull @Valid @RequestBody DepartmentMembershipEntity updatedMembership
     ) throws ResponseException {
-        var user = UserService
+        var execUser = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!user.getGlobalAdmin()) {
-            var spec = DepartmentMembershipFilter
-                    .create()
-                    .setDepartmentId(requestDTO.departmentId())
-                    .setUserId(user.getId())
-                    .setRole(UserRole.Admin)
-                    .build();
+        // Fetch existing membership to get department ID reliably
+        var existingMembership = departmentMembershipService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
 
-            if (!departmentMembershipService.exists(spec)) {
-                throw ResponseException.forbidden("Nur globale Administrator:innen oder Fachbereichsadministrator:innen können Fachbereichsmitglieder bearbeiten.");
+        if (!execUser.getIsSuperAdmin()) {
+            var filter = VDepartmentMembershipWithPermissionsFilter
+                    .create()
+                    .setUserId(execUser.getId())
+                    .setDepartmentId(existingMembership.getDepartmentId())
+                    .setDepartmentPermissionEdit(true);
+
+            var hasPermissionToEdit = vDepartmentMembershipWithPermissionsService
+                    .exists(filter.build());
+
+            if (!hasPermissionToEdit) {
+                throw ResponseException
+                        .noPermission(PermissionLabels.DepartmentPermissionEdit);
             }
         }
+
+        var savedMembership = departmentMembershipService
+                .update(id, updatedMembership);
+
+        auditService.logAction(execUser, AuditAction.Update, DepartmentMembershipEntity.class, Map.of(
+                "id", savedMembership.getId(),
+                "departmentId", savedMembership.getDepartmentId(),
+                "userId", savedMembership.getUserId()
+        ));
+
+        return savedMembership;
+    }
+
+    @DeleteMapping("{id}/")
+    @Operation(
+            summary = "Delete department membership",
+            description = "Delete an existing department membership. " +
+                          "Requires super admin permissions or department edit permissions for the membership's department."
+    )
+    public void delete(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer id
+    ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
 
         var existingMembership = departmentMembershipService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        UserRole oldRole = existingMembership.getRole();
-        UserRole newRole = requestDTO.role();
-
-        var targetUser = userService
-                .retrieve(requestDTO.userId())
-                .orElseThrow(ResponseException::notFound);
-
-        var department = departmentService
-                .retrieve(requestDTO.departmentId())
-                .orElseThrow(ResponseException::notFound);
-
-        var updatedMembership = departmentMembershipService
-                .update(id, requestDTO.toEntity());
-
-        if (!oldRole.equals(newRole)) {
-            try {
-                departmentMembershipMailService.sendRoleChanged(user, updatedMembership, oldRole, newRole);
-            } catch (MessagingException | IOException | InvalidUserEMailException e) {
-                exceptionMailService.send(e);
-            }
-        }
-
-        return new DepartmentMembershipResponseDTO(
-                updatedMembership.getId(),
-                updatedMembership.getDepartmentId(),
-                department.getName(),
-                updatedMembership.getUserId(),
-                updatedMembership.getRole(),
-                targetUser.getFirstName(),
-                targetUser.getLastName(),
-                targetUser.getFullName(),
-                targetUser.getEmail(),
-                targetUser.getEnabled(),
-                targetUser.getVerified(),
-                targetUser.getDeletedInIdp(),
-                targetUser.getGlobalAdmin()
-        );
-    }
-
-    @DeleteMapping("{id}/")
-    public void delete(
-            @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable Integer id
-    ) throws ResponseException {
-        var user = UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
-        if (!user.getGlobalAdmin()) {
-            var membershipToDelete = departmentMembershipService
-                    .retrieve(id)
-                    .orElseThrow(ResponseException::notFound);
-
-            var spec = DepartmentMembershipFilter
+        if (!user.getIsSuperAdmin()) {
+            var filter = VDepartmentMembershipWithPermissionsFilter
                     .create()
-                    .setDepartmentId(membershipToDelete.getDepartmentId())
                     .setUserId(user.getId())
-                    .setRole(UserRole.Admin)
-                    .build();
+                    .setDepartmentId(existingMembership.getDepartmentId())
+                    .setDepartmentPermissionEdit(true);
 
-            if (!departmentMembershipService.exists(spec)) {
-                throw ResponseException.forbidden("Nur globale Administrator:innen oder Fachbereichsadministrator:innen können Fachbereichsmitglieder löschen.");
+            var hasPermissionToEdit = vDepartmentMembershipWithPermissionsService
+                    .exists(filter.build());
+
+            if (!hasPermissionToEdit) {
+                throw ResponseException
+                        .noPermission(PermissionLabels.DepartmentPermissionEdit);
             }
         }
 
-        var deletedMembership = departmentMembershipService.delete(id);
+        var deletedMembership = departmentMembershipService
+                .deleteEntity(existingMembership);
 
         auditService.logAction(user, AuditAction.Delete, DepartmentMembershipEntity.class, Map.of(
                 "id", deletedMembership.getId(),
-                "departmentId", deletedMembership.getDepartmentId(),
+                "orgUnitId", deletedMembership.getDepartmentId(),
                 "userId", deletedMembership.getUserId()
         ));
 

@@ -1,0 +1,40 @@
+<!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
+<!--/*@thymesVar id="element" type="de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement"*/-->
+<!--/*@thymesVar id="value" type="java.lang.Object"*/-->
+
+<div class="input-element text-element">
+    <div class="input">
+        <div class="label">
+            <strong th:text="${ element.label }"></strong>
+            <span th:if="${ base.isBlankPrint && element?.required != null && element?.required }">(Pflichtangabe)</span>
+        </div>
+
+        <div
+                class="content"
+                th:text="${ base.isBlankPrint ? '' : element.toDisplayValue(value) }"
+                th:style="${ (base.isBlankPrint && element.isMultiline != null && element.isMultiline ? 'min-height: 12em;' : '') + 'white-space: pre-wrap;' }"
+        >
+        </div>
+    </div>
+
+    <div class="hint-wrapper">
+        <div th:insert="./form-parts/elements/_hint.html"></div>
+
+        <div
+                class="hint"
+                th:if="${ base.isBlankPrint && element.minCharacters != null && element.minCharacters > 0 }"
+        >
+            Mindestens
+            <span th:text="${ element.minCharacters }"></span>
+            Zeichen
+        </div>
+        <div
+                class="hint"
+                th:if="${ base.isBlankPrint && element.maxCharacters != null && element.maxCharacters > 0 }"
+        >
+            Maximal
+            <span th:text="${ element.maxCharacters }"></span>
+            Zeichen
+        </div>
+    </div>
+</div>

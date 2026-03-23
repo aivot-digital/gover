@@ -11,4 +11,5 @@ export interface CheckboxFieldComponentProps {
     onChange: (val: boolean) => void;
     variant?: 'standard' | 'switch';
     sx?: SxProps;
+    invisibleLabel?: boolean;
 }

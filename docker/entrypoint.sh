@@ -1,27 +1,43 @@
 #!/bin/sh
 
-if [ $# -eq 0 ]
-  then
-    echo "Missing command! Options are serve, staff, customer"
-    exit 1
-fi
+echo "Starting Gover version ${BUILD_VERSION} build ${BUILD_NUMBER}"
 
-if [ "$1" = "serve" ]
-  then
-    echo "Starting server…"
-    java -jar /app/gover.jar
-fi
+if [ "$1" = "serve" ]; then
+  echo "Waiting for IDP to be available at ${GOVER_HOSTNAME}/idp/realms/staff…"
 
-if [ "$1" = "staff" ]
-  then
-    echo "Starting staff…"
-    ln -sf /etc/nginx/sites-available/staff.conf /etc/nginx/sites-enabled/staff.conf
-    nginx
-fi
+  until curl --output /dev/null --silent --head --fail "${GOVER_HOSTNAME}/idp/realms/staff/"; do
+      sleep 5
+  done
 
-if [ "$1" = "customer" ]
-  then
-    echo "Starting customer…"
-    ln -sf /etc/nginx/sites-available/customer.conf /etc/nginx/sites-enabled/customer.conf
-    nginx
+  echo "IDP is available, starting api…"
+
+  java -jar /app/gover.jar
+else
+  cat > /app/app-config.js <<EOF
+window.AppConfig = {
+    oidc: {
+        realm: '$GOVER_KEYCLOAK_OIDC_REALM',
+        client: '$GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID',
+        hostname: '$GOVER_KEYCLOAK_OIDC_HOSTNAME',
+        idp_hint: '$GOVER_KEYCLOAK_OIDC_IDP_HINT',
+    },
+    api: {
+        hostname: '$GOVER_HOSTNAME',
+    },
+    sentry: {
+        dsn: '$GOVER_SENTRY_WEB_APP',
+    },
+};
+EOF
+
+  cp /app/app-config.js /app/www/app-config.js
+  cp /app/app-config.js /app/www/staff/app-config.js
+
+  echo "Waiting for the API to be available at ${GOVER_HOSTNAME}/api/actuator/health…"
+  until curl --output /dev/null --silent --head --fail "${GOVER_HOSTNAME}/api/actuator/health"; do
+    sleep 5
+  done
+
+  echo "Starting app…"
+  nginx -g "daemon off;"
 fi

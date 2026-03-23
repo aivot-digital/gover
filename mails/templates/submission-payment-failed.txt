@@ -1,7 +1,7 @@
 Hallo,
 
 bei der Abwicklung einer Zahlung ist ein Fehler aufgetreten.
-Antrag auf: [(${form.title})] - Version [(${form.version})]
+Antrag auf: [(${form.internalTitle})] - Version [(${form.version})]
 Hinterlegter Zahlungsdienstleister: [(${paymentProvider.name})]
 Fehlermeldung: [# th:if="${#strings.isEmpty(paymentTransaction.paymentError)}"][(${paymentTransaction.paymentError})][/][# th:unless="${#strings.isEmpty(paymentTransaction.paymentError)}"][(${paymentTransaction.paymentError})][/]
 Zeitpunkt des Fehlers: [(${#temporals.format(paymentTransaction.updated, 'dd.MM.yyyy HH:mm')})]

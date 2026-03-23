@@ -24,8 +24,8 @@ interface CodeTabCodeEditorProps {
 }
 
 export function CodeTabCodeEditor(props: CodeTabCodeEditorProps) {
-    const monacoRef = useRef<Monaco>();
-    const editorRef = useRef<any>();
+    const monacoRef = useRef<Monaco>(undefined);
+    const editorRef = useRef<any>(undefined);
     const loadedForm = useAppSelector(selectLoadedForm);
     const [elementSearchDialogOpen, setElementSearchDialogOpen] = useState(false);
 
@@ -53,7 +53,7 @@ export function CodeTabCodeEditor(props: CodeTabCodeEditorProps) {
     useEffect(() => {
         if (monacoRef.current != null && loadedForm != null) {
             monacoRef.current?.languages.typescript.javascriptDefaults.addExtraLib(
-                formToTypeDefinition(loadedForm),
+                formToTypeDefinition(loadedForm.version),
                 '@types/data.d.ts',
             );
         }
@@ -126,7 +126,7 @@ function LookupElementIdDialog(props: { open: boolean, onClose: () => void }) {
         if (form == null) {
             return [];
         }
-        return form.root.children
+        return (form.version.rootElement.children ?? [])
             .flatMap(ch => flattenElementsWithParents(ch, []))
             .map((e) => ({
                 ...e,

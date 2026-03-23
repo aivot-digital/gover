@@ -13,7 +13,7 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import {type StoreModuleListProps} from './store-module-list-props';
 import {filterItems} from '../../utils/filter-items';
 
-export function StoreModuleList(props: StoreModuleListProps): JSX.Element {
+export function StoreModuleList(props: StoreModuleListProps) {
     const theme = useTheme();
     const dispatch = useAppDispatch();
     const [modules, setModules] = useState<StoreListModule[]>();

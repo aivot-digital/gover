@@ -1,9 +1,8 @@
 import {OperatorInfoProps} from './operator-info-props';
 import ReactMarkdown from 'react-markdown';
-import {StatusTable} from '../status-table/status-table';
 import {NoCodeDataTypeLabels} from '../../data/no-code-data-type';
 import React from 'react';
-import {Table, TableBody, TableCell, TableContainer, TableRow, Typography} from '@mui/material';
+import {Table, TableBody, TableCell, TableContainer, TableRow} from '@mui/material';
 import {Collapse} from '../collapse/collapse';
 
 export function OperatorInfo(props: OperatorInfoProps) {
@@ -46,7 +45,7 @@ export function OperatorInfo(props: OperatorInfoProps) {
                                 </TableCell>
                                 <TableCell>
                                     <ul>
-                                        {props.operator.parameters.map((parameter, i) => (
+                                        {props.operator.signatures[0].parameters.map((parameter, i) => (
                                             <li key={i}>
                                                 {parameter.label}: {NoCodeDataTypeLabels[parameter.type]}
                                             </li>
@@ -60,7 +59,7 @@ export function OperatorInfo(props: OperatorInfoProps) {
                                     Rückgabewert
                                 </TableCell>
                                 <TableCell>
-                                    {NoCodeDataTypeLabels[props.operator.returnType]}
+                                    {NoCodeDataTypeLabels[props.operator.signatures[0].returnType]}
                                 </TableCell>
                             </TableRow>
                         </TableBody>

@@ -1,0 +1,17 @@
+export enum ServerEntityType {
+    Assets = 'assets',
+    Departments = 'departments',
+    DataObjectItems = 'data_object_items',
+    DataObjectSchemas = 'data_object_schemas',
+    Destinations = 'destinations',
+    Forms = 'forms',
+    IdentityProviders = 'identity_providers',
+    PaymentProviders = 'payment_providers',
+    Presets = 'presets',
+    ProviderLinks = 'provider_links',
+    Secrets = 'secrets',
+    Submissions = 'submissions',
+    Themes = 'themes',
+    UserRoles = 'user_roles',
+    SystemRoles = 'system_roles',
+}

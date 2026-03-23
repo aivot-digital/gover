@@ -1,54 +1,61 @@
 import React, {useContext} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {GenericList} from '../../../../components/generic-list/generic-list';
-import {Form} from '../../../../models/entities/form';
-import {FormsApiService} from '../../../forms/forms-api-service';
 import {GridColDef} from '@mui/x-data-grid';
-import {Department} from '../../models/department';
 import {EditOutlined} from '@mui/icons-material';
 import {Box, Typography} from '@mui/material';
-import {CellLink} from "../../../../components/cell-link/cell-link";
+import {CellLink} from '../../../../components/cell-link/cell-link';
+import {FormStatusChipGroup} from '../../../forms/components/form-status-chip-group';
+import {DepartmentEntity} from '../../entities/department-entity';
+import {FormApiService} from '../../../forms/services/form-api-service';
+import {FormEntity} from '../../../forms/entities/form-entity';
 
 const filters = [
     {
-        label: 'Entwicklung',
-        value: 'dev',
+        label: 'Im Eigentum',
+        value: 'developed',
     },
     {
-        label: 'Zuständig',
-        value: 'responsible',
-    },
-    {
-        label: 'Bewirtschaftung',
-        value: 'managing',
+        label: 'Für diese Organisationseinheit freigegeben',
+        value: 'accessible',
     },
 ];
 
-const columns: GridColDef<Form>[] = [
+const columns: GridColDef<FormEntity>[] = [
     {
-        field: 'title',
+        field: 'internalTitle',
         headerName: 'Titel des Formulars',
         flex: 2,
         renderCell: (params) => (
             <CellLink
                 to={`/forms/${params.id}`}
-                title={`Formular bearbeiten`}
+                title="Formular anzeigen"
             >
                 {String(params.value)}
             </CellLink>
-        )
+        ),
     },
     {
         field: 'version',
         headerName: 'Version',
         flex: 1,
     },
+    {
+        field: 'status',
+        headerName: 'Status',
+        flex: 1,
+        renderCell: (params) => (
+            <FormStatusChipGroup
+                form={params.row}
+            />
+        ),
+    },
 ];
 
 export function DepartmentsDetailsPageForms() {
     const {
         item,
-    } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<Department, undefined>;
+    } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<DepartmentEntity, undefined>;
 
     if (item == null) {
         return null;
@@ -67,7 +74,7 @@ export function DepartmentsDetailsPageForms() {
                 Eine Liste aller Formulare, die von diesem Fachbereich entwickelt, bewirtschaftet oder verwaltet werden.
             </Typography>
 
-            <GenericList<Form>
+            <GenericList<FormEntity>
                 disableFullWidthToggle={true}
                 sx={{
                     mx: '-16px',
@@ -75,34 +82,33 @@ export function DepartmentsDetailsPageForms() {
                 }}
                 columnDefinitions={columns}
                 filters={filters}
-                defaultFilter="dev"
+                defaultFilter="developed"
                 fetch={(options) => {
-                    return new FormsApiService(options.api)
+                    return new FormApiService()
                         .list(
                             options.page,
                             options.size,
-                            options.sort,
+                            'internalTitle',
                             options.order,
                             {
-                                title: options.search,
-                                developingDepartmentId: (options.filter == null || options.filter === 'dev') ? item.id : undefined,
-                                managingDepartmentId: options.filter === 'managing' ? item.id : undefined,
-                                responsibleDepartmentId: options.filter === 'responsible' ? item.id : undefined,
+                                internalTitle: options.search,
+                                developingDepartmentId: options.filter !== 'accessible' ? item.id : undefined,
+                                developingDepartmentIdNot: options.filter === 'accessible' ? item.id : undefined,
                             },
                         );
                 }}
                 getRowIdentifier={(item) => item.id.toString()}
                 searchLabel="Formular suchen"
                 searchPlaceholder="Titel des Formulars eingeben…"
-                defaultSortField="title"
+                defaultSortField="internalTitle"
                 rowMenuItems={[]}
                 noDataPlaceholder="Keine Formulare vorhanden"
                 loadingPlaceholder="Lade Formulare…"
                 noSearchResultsPlaceholder="Keine Formulare gefunden"
-                rowActions={(item: Form) => [{
+                rowActions={(item) => [{
                     icon: <EditOutlined />,
                     to: `/forms/${item.id}`,
-                    tooltip: 'Formular bearbeiten',
+                    tooltip: 'Formular anzeigen',
                 }]}
                 preSearchElements={[]}
             />

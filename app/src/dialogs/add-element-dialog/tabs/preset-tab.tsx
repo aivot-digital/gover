@@ -1,30 +1,19 @@
 import React, {useEffect, useState} from 'react';
 import {type Preset} from '../../../models/entities/preset';
 import {type BaseTabProps} from './base-tab-props';
-import {
-    Box,
-    DialogContent,
-    List,
-    ListItem,
-    ListItemButton,
-    ListItemIcon,
-    ListItemText,
-    Typography
-} from '@mui/material';
-import {
-    LoadingPlaceholder
-} from '../../../components/loading-placeholder/loading-placeholder';
+import {Box, DialogContent, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography} from '@mui/material';
+import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {cloneElement} from '../../../utils/clone-element';
 import {AlertComponent} from '../../../components/alert/alert-component';
 import {Link} from 'react-router-dom';
 import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
-import {useApi} from "../../../hooks/use-api";
-import {filterItems} from "../../../utils/filter-items";
-import {TextFieldComponent} from "../../../components/text-field/text-field-component";
-import {PresetsApiService} from "../../../modules/presets/presets-api-service";
-import {PresetVersionApiService} from "../../../modules/presets/preset-version-api-service";
+import {useApi} from '../../../hooks/use-api';
+import {filterItems} from '../../../utils/filter-items';
+import {TextFieldComponent} from '../../../components/text-field/text-field-component';
+import {PresetsApiService} from '../../../modules/presets/presets-api-service';
+import {PresetVersionApiService} from '../../../modules/presets/preset-version-api-service';
 
-export function PresetTab(props: BaseTabProps): JSX.Element {
+export function PresetTab(props: BaseTabProps) {
     const api = useApi();
     const [presets, setPresets] = useState<Preset[]>();
     const [search, setSearch] = useState('');
@@ -32,20 +21,25 @@ export function PresetTab(props: BaseTabProps): JSX.Element {
     const presetsApiService = new PresetsApiService(api);
 
     useEffect(() => {
-        presetsApiService.listAll({ publishedInternally: true })
+        presetsApiService.listAll({
+            published: true,
+        })
             .then(page => setPresets(page.content))
             .catch(() => setPresets([]));
     }, [props.parentType, setPresets]);
 
     const addPresetElement = (preset: Preset): void => {
-        if (!preset.currentPublishedVersion) return;
+        if (preset.publishedVersion == null) {
+            return;
+        }
 
         const presetVersionApiService = new PresetVersionApiService(api, preset.key);
 
-        presetVersionApiService.retrieve(preset.currentPublishedVersion)
+        presetVersionApiService
+            .retrieve(preset.publishedVersion)
             .then((presetVersion) => {
                 props.onAddElement(cloneElement({
-                    ...presetVersion.root,
+                    ...presetVersion.rootElement,
                     name: preset.title,
                 }, true));
             })
@@ -114,7 +108,7 @@ export function PresetTab(props: BaseTabProps): JSX.Element {
                                             </ListItemIcon>
                                             <ListItemText
                                                 primary={preset.title}
-                                                secondary={`Aktuelle Version ${preset.currentPublishedVersion ?? ''}`}
+                                                secondary={`Aktuelle Version ${preset.publishedVersion ?? ''}`}
                                             />
                                         </ListItemButton>
                                     </ListItem>

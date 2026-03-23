@@ -6,7 +6,7 @@ import {DefaultTabs} from '../element-editor/default-tabs';
 import {ElementType} from '../../data/element-type/element-type';
 import {ElementIsInput} from '../../data/element-type/element-is-input';
 
-export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabsProps<T>): JSX.Element {
+export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabsProps<T>) {
     const handleTabChange = useCallback((_: any, newTab: string) => {
         props.onTabChange(newTab);
     }, [props.onTabChange]);
@@ -24,6 +24,7 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
             />
 
             {
+                (props.scope === 'application' || props.scope === 'preset') &&
                 ElementIsInput[props.component.type] &&
                 <Tab
                     label="Datenzuordnung"
@@ -32,6 +33,7 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
             }
 
             {
+                (props.scope === 'application' || props.scope === 'preset') &&
                 props.additionalTabs.map((add) => (
                     <Tab
                         key={add.label}
@@ -52,7 +54,8 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
             />
 
             {
-                props.component.type !== ElementType.Root &&
+                (props.scope === 'application' || props.scope === 'preset') &&
+                props.component.type !== ElementType.FormLayout &&
                 props.component.type !== ElementType.IntroductionStep &&
                 props.component.type !== ElementType.SummaryStep &&
                 props.component.type !== ElementType.SubmitStep &&
@@ -70,6 +73,7 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
             }
 
             {
+                (props.scope === 'application' || props.scope === 'preset') &&
                 ElementIsInput[props.component.type] &&
                 <Tab
                     label="Dynamischer Wert"
@@ -78,7 +82,7 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
             }
 
             {
-                props.component.type !== ElementType.Root &&
+                props.component.type !== ElementType.FormLayout &&
                 props.component.type !== ElementType.IntroductionStep &&
                 props.component.type !== ElementType.SummaryStep &&
                 props.component.type !== ElementType.SubmitStep &&
@@ -88,29 +92,45 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
                 />
             }
 
-
+            {
+                (props.scope === 'application' || props.scope === 'preset') &&
+                props.component.type !== ElementType.FormLayout &&
+                <Tab
+                    label="Referenzen"
+                    value={DefaultTabs.references}
+                />
+            }
 
             <Tab
                 label="Elementstruktur"
                 value={DefaultTabs.structure}
             />
 
-            <Box
-                sx={{
-                    height: 24,
-                    alignSelf: 'center',
-                    borderLeft: '1px solid',
-                    borderColor: 'divider',
-                    mx: 1,
-                }}
-            />
-
-            <Tab
-                label="Prüfung"
-                value={DefaultTabs.test}
-            />
+            {
+                (props.scope === 'application' || props.scope === 'preset') &&
+                <Box
+                    sx={{
+                        height: 24,
+                        alignSelf: 'center',
+                        borderLeft: '1px solid',
+                        borderColor: 'divider',
+                        mx: 1,
+                    }}
+                />
+            }
 
             {
+                /* TODO: Check permissions for formAnnotate */
+                (props.scope === 'application' || props.scope === 'preset') &&
+                <Tab
+                    label="Prüfung"
+                    value={DefaultTabs.test}
+                />
+            }
+
+            {
+                /* TODO: Check permissions for formPublish */
+                (props.scope === 'application' || props.scope === 'preset') &&
                 props.rootEditor &&
                 <Tab
                     label="Veröffentlichen"

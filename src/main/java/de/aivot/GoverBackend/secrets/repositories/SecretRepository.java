@@ -8,5 +8,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface SecretRepository extends JpaRepository<SecretEntity, String>, JpaSpecificationExecutor<SecretEntity> {
+import java.util.UUID;
+
+public interface SecretRepository extends JpaRepository<SecretEntity, UUID>, JpaSpecificationExecutor<SecretEntity> {
 }

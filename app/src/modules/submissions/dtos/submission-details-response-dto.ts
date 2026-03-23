@@ -1,16 +1,17 @@
 import {SubmissionStatus} from '../enums/submission-status';
-import {CustomerInput} from '../../../models/customer-input';
+import {ElementData} from '../../../models/element-data';
 
 export interface SubmissionDetailsResponseDTO {
     id: string;
     formId: number;
+    formVersion: number;
     created: string;
     updated: string;
     archived: string;
     status: SubmissionStatus;
     assigneeId: string | null | undefined;
     fileNumber: string | null | undefined;
-    customerInput: CustomerInput;
+    customerInput: ElementData;
     destinationId: number;
     destinationSuccess: boolean;
     destinationResult: string;

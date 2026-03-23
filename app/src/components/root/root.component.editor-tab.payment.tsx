@@ -1,8 +1,7 @@
-import React, {useEffect, useReducer, useState} from 'react';
-import {Box, Button, Grid, IconButton, Typography} from '@mui/material';
+import React, {useEffect, useMemo, useReducer, useState} from 'react';
+import {Box, Button, Grid, IconButton, Skeleton, Typography} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
-import {Form, Form as Application} from '../../models/entities/form';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {PaymentProduct, PaymentType} from '../../models/payment/payment-product';
 import {NumberFieldComponent} from '../number-field/number-field-component';
@@ -25,15 +24,22 @@ import {Link} from 'react-router-dom';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 import {CodeEditor} from '../code-editor/code-editor';
 import {createLowCodeContextType} from '../../utils/create-low-code-context-type';
-import {showSuccessSnackbar} from '../../slices/snackbar-slice';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-element-dialog';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
+import {ElementWithParents, flattenElementsWithParents} from '../../utils/flatten-elements';
+import {withDelay} from '../../utils/with-delay';
+import {isLoadedForm, LoadedForm} from '../../slices/app-slice';
+import {FormEntity} from '../../modules/forms/entities/form-entity';
+import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
 
 interface PaymentPositionItemProps {
+    allElements: ElementWithParents[];
     index: number;
     product: PaymentProduct;
-    form: Form;
+    form: FormEntity;
+    version: FormVersionEntity;
     onDelete: () => void;
     onPatch: (patch: Partial<PaymentProduct>) => void;
     disabled?: boolean;
@@ -88,7 +94,6 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                     </Button>
                 }
             </Box>
-
             {
                 expanded &&
                 <>
@@ -97,10 +102,7 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                         columnSpacing={4}
                         sx={{mt: 2}}
                     >
-                        <Grid
-                            item
-                            xs={6}
-                        >
+                        <Grid size={6}>
                             <TextFieldComponent
                                 label="Referenz"
                                 value={props.product.reference}
@@ -121,9 +123,10 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                         </Grid>
 
                         <Grid
-                            item
-                            xs={12}
-                            lg={6}
+                            size={{
+                                xs: 12,
+                                lg: 6,
+                            }}
                         >
                             <TextFieldComponent
                                 label="ID"
@@ -146,9 +149,10 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                         </Grid>
 
                         <Grid
-                            item
-                            xs={12}
-                            lg={6}
+                            size={{
+                                xs: 12,
+                                lg: 6,
+                            }}
                         >
                             <TextFieldComponent
                                 label="Beschreibung"
@@ -172,15 +176,17 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                         </Grid>
 
                         <Grid
-                            item
-                            xs={12}
-                            lg={6}
+                            size={{
+                                xs: 12,
+                                lg: 6,
+                            }}
                         />
 
                         <Grid
-                            item
-                            xs={12}
-                            lg={3}
+                            size={{
+                                xs: 12,
+                                lg: 3,
+                            }}
                         >
                             <NumberFieldComponent
                                 label="Einzelpreis (Netto)"
@@ -201,9 +207,10 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                         </Grid>
 
                         <Grid
-                            item
-                            xs={12}
-                            lg={3}
+                            size={{
+                                xs: 12,
+                                lg: 3,
+                            }}
                         >
                             <NumberFieldComponent
                                 label="Steuersatz"
@@ -224,9 +231,10 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                         </Grid>
 
                         <Grid
-                            item
-                            xs={12}
-                            lg={3}
+                            size={{
+                                xs: 12,
+                                lg: 3,
+                            }}
                         >
                             <NumberFieldComponent
                                 label="Einzelpreis (Brutto)"
@@ -245,9 +253,10 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                         {
                             props.product.taxRate === 0 &&
                             <Grid
-                                item
-                                xs={12}
-                                lg={6}
+                                size={{
+                                    xs: 12,
+                                    lg: 6,
+                                }}
                             >
                                 <TextFieldComponent
                                     label="Begründung des Steuersatzes"
@@ -337,9 +346,10 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                             sx={{mt: 1}}
                         >
                             <Grid
-                                item
-                                xs={12}
-                                lg={3}
+                                size={{
+                                    xs: 12,
+                                    lg: 3,
+                                }}
                             >
                                 <NumberFieldComponent
                                     label="Menge"
@@ -360,9 +370,10 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                             </Grid>
 
                             <Grid
-                                item
-                                xs={12}
-                                lg={3}
+                                size={{
+                                    xs: 12,
+                                    lg: 3,
+                                }}
                             >
                                 <NumberFieldComponent
                                     label="Gesamtpreis (Netto)"
@@ -379,9 +390,10 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                             </Grid>
 
                             <Grid
-                                item
-                                xs={12}
-                                lg={3}
+                                size={{
+                                    xs: 12,
+                                    lg: 3,
+                                }}
                             >
                                 <NumberFieldComponent
                                     label="Enthaltener Steuerbetrag"
@@ -397,9 +409,10 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                                 />
                             </Grid>
                             <Grid
-                                item
-                                xs={12}
-                                lg={3}
+                                size={{
+                                    xs: 12,
+                                    lg: 3,
+                                }}
                             >
                                 <NumberFieldComponent
                                     label="Gesamtpreis (Brutto)"
@@ -451,7 +464,7 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                             ]}
                             typeHints={[{
                                 name: 'ctx',
-                                content: createLowCodeContextType(undefined, props.form.root),
+                                content: createLowCodeContextType(props.version.rootElement),
                             }]}
                             onChange={val => {
                                 props.onPatch({
@@ -475,8 +488,8 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                     }
                 </>
             }
-
             <SelectElementDialog
+                allElements={props.allElements}
                 open={showElementSelectDialog}
                 onSelect={(element) => {
                     navigator.clipboard.writeText(element.id);
@@ -489,41 +502,60 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
     );
 }
 
-export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement, Application>): JSX.Element {
+export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement, LoadedForm>) {
     const api = useApi();
+    const dispatch = useAppDispatch();
 
     const [availablePaymentProviders, setAvailablePaymentProviders] = useState<Page<PaymentProviderResponseDTO>>();
     const selectedPaymentProvider = availablePaymentProviders?.content.find(
-        provider => provider.key === props.entity.paymentProvider,
+        provider => provider.key === props.entity.version.paymentProviderKey,
     );
     const isTestPaymentProvider = selectedPaymentProvider?.isTestProvider ?? false;
 
+    const allElements = useMemo(() => {
+        if (isLoadedForm(props.entity)) {
+            return flattenElementsWithParents(props.entity.version.rootElement, [], true);
+        }
+        return [];
+    }, [props.entity]);
+
     useEffect(() => {
-        new PaymentProvidersApiService(api)
-            .listAllOrdered('name', 'ASC', {
-                isEnabled: true,
-            })
+        withDelay(
+            new PaymentProvidersApiService(api)
+                .listAllOrdered('name', 'ASC', {
+                    isEnabled: true,
+                }),
+            600,
+        )
             .then(setAvailablePaymentProviders)
             .catch(error => {
+                dispatch(showErrorSnackbar('Zahlungsdienstleister konnten nicht geladen werden'));
                 console.error('Failed to load payment providers', error);
             });
     }, [api]);
 
     const handleProductPatch = (index: number, patch: Partial<PaymentProduct>) => {
-        if (props.entity.products != null) {
-            const products = [...props.entity.products];
+        if (props.entity.version.paymentProducts != null) {
+            const products = [...props.entity.version.paymentProducts];
             products[index] = {
                 ...products[index],
                 ...patch,
             };
             props.onPatchEntity({
                 ...props.entity,
-                products,
+                version: {
+                    ...props.entity.version,
+                    paymentProducts: products,
+                },
             });
         }
     };
 
-    if (availablePaymentProviders == null || availablePaymentProviders.size === 0) {
+    if (availablePaymentProviders == null) {
+        return EditorSkeleton;
+    }
+
+    if (availablePaymentProviders.size === 0) {
         return (
             <>
                 <ElementEditorSectionHeader
@@ -561,24 +593,27 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
             >
                 Wählen Sie einen Zahlungsdienstleister aus und hinterlegen Sie Zahlungspositionen, um Online-Zahlungen über dieses Formular zu ermöglichen.
             </ElementEditorSectionHeader>
-
             <Grid
                 container
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
                 >
 
                     <SelectFieldComponent
                         label="Zahlungsdienstleister"
-                        value={props.entity.paymentProvider}
+                        value={props.entity.version.paymentProviderKey ?? undefined}
                         onChange={val => {
                             props.onPatchEntity({
                                 ...props.entity,
-                                paymentProvider: val,
+                                version: {
+                                    ...props.entity.version,
+                                    paymentProviderKey: val ?? null,
+                                },
                             });
                         }}
                         disabled={!props.editable}
@@ -604,26 +639,29 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
 
                 </Grid>
             </Grid>
-
             {
-                isStringNotNullOrEmpty(props.entity.paymentProvider) &&
+                isStringNotNullOrEmpty(props.entity.version.paymentProviderKey) &&
                 <>
                     <Grid
                         container
                         columnSpacing={4}
                     >
                         <Grid
-                            item
-                            xs={12}
-                            lg={6}
+                            size={{
+                                xs: 12,
+                                lg: 6,
+                            }}
                         >
                             <TextFieldComponent
                                 label="Buchungstext"
-                                value={props.entity.paymentPurpose}
+                                value={props.entity.version.paymentPurpose}
                                 onChange={val => {
                                     props.onPatchEntity({
                                         ...props.entity,
-                                        paymentPurpose: val,
+                                        version: {
+                                            ...props.entity.version,
+                                            paymentPurpose: val ?? '',
+                                        },
                                     });
                                 }}
                                 disabled={!props.editable}
@@ -639,11 +677,14 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
 
                             <TextFieldComponent
                                 label="Beschreibung"
-                                value={props.entity.paymentDescription}
+                                value={props.entity.version.paymentDescription}
                                 onChange={val => {
                                     props.onPatchEntity({
                                         ...props.entity,
-                                        paymentDescription: val,
+                                        version: {
+                                            ...props.entity.version,
+                                            paymentDescription: val ?? '',
+                                        },
                                     });
                                 }}
                                 disabled={!props.editable}
@@ -682,20 +723,23 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
                                 onClick={() => {
                                     props.onPatchEntity({
                                         ...props.entity,
-                                        products: [
-                                            ...props.entity.products ?? [],
-                                            {
-                                                id: uuid4(),
-                                                reference: '',
-                                                description: '',
-                                                type: PaymentType.UPFRONT_FIXED,
-                                                netPrice: 1,
-                                                taxRate: 19,
-                                                upfrontFixedQuantity: 1,
-                                                bookingData: [],
-                                                taxInformation: '',
-                                            },
-                                        ],
+                                        version: {
+                                            ...props.entity.version,
+                                            paymentProducts: [
+                                                ...(props.entity.version.paymentProducts ?? []),
+                                                {
+                                                    id: uuid4(),
+                                                    reference: '',
+                                                    description: '',
+                                                    type: PaymentType.UPFRONT_FIXED,
+                                                    netPrice: 1,
+                                                    taxRate: 19,
+                                                    upfrontFixedQuantity: 1,
+                                                    bookingData: [],
+                                                    taxInformation: '',
+                                                },
+                                            ],
+                                        }
                                     });
                                 }}
                             >
@@ -706,27 +750,32 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
 
                     <Box>
                         {
-                            (props.entity.products == null ||
-                                props.entity.products.length === 0) &&
+                            (props.entity.version.paymentProducts == null ||
+                                props.entity.version.paymentProducts.length === 0) &&
                             <AlertComponent color="info">
                                 Es sind noch keine Zahlungspositionen konfiguriert.
                                 Fügen Sie mindestens eine Zahlungsposition hinzu.
                             </AlertComponent>
                         }
                         {
-                            props.entity.products != null &&
-                            props.entity.products.map((product, index) => (
+                            props.entity.version.paymentProducts != null &&
+                            props.entity.version.paymentProducts.map((product, index) => (
                                 <PaymentPositionItem
                                     key={index}
+                                    allElements={allElements}
                                     index={index}
                                     product={product}
-                                    form={props.entity}
+                                    form={props.entity.form}
+                                    version={props.entity.version}
                                     onDelete={() => {
-                                        const products = [...props.entity.products ?? []];
+                                        const products = [...(props.entity.version.paymentProducts ?? [])];
                                         products.splice(index, 1);
                                         props.onPatchEntity({
                                             ...props.entity,
-                                            products,
+                                            version: {
+                                                ...props.entity.version,
+                                                paymentProducts: products,
+                                            }
                                         });
                                     }}
                                     onPatch={patch => {
@@ -742,3 +791,23 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
         </>
     );
 }
+
+
+const EditorSkeleton = (
+    <>
+        <Skeleton
+            width={200}
+            height={30}
+        />
+
+        <Skeleton
+            width={900}
+            height={48}
+        />
+
+        <Skeleton
+            width={248}
+            height={200}
+        />
+    </>
+);

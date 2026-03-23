@@ -1,13 +1,15 @@
 import {Box, Button, Grid, Typography, useTheme} from '@mui/material';
 import {useState} from 'react';
-import {stringOrDefault} from "../utils/string-utils";
-import {TextFieldElement} from "../models/elements/form/input/text-field-element";
-import {BaseSummary} from "./base-summary";
+import {stringOrDefault} from '../utils/string-utils';
+import {TextFieldElement} from '../models/elements/form/input/text-field-element';
+import {BaseSummaryProps} from './base-summary';
 
-export const TextFieldSummary: BaseSummary<TextFieldElement, string> = ({
-                                                                            model,
-                                                                            value,
-                                                                        }) => {
+export function TextFieldSummary(props: BaseSummaryProps<TextFieldElement, string>) {
+    const {
+        model,
+        value,
+    } = props;
+
     const theme = useTheme();
     const [expanded, setExpanded] = useState(false);
     const content = stringOrDefault(value != null ? value.toString() : null, 'Keine Angabe');
@@ -16,14 +18,11 @@ export const TextFieldSummary: BaseSummary<TextFieldElement, string> = ({
         <Grid
             container
             sx={{
-                borderBottom: "1px solid #D4D4D4",
+                borderBottom: '1px solid #D4D4D4',
                 py: 1,
             }}
         >
             <Grid
-                item
-                xs={12}
-                md={4}
                 sx={{
                     textAlign: 'left',
                     pr: 5,
@@ -31,7 +30,10 @@ export const TextFieldSummary: BaseSummary<TextFieldElement, string> = ({
                         textAlign: 'right',
                     },
                 }}
-            >
+                size={{
+                    xs: 12,
+                    md: 4
+                }}>
                 <Typography
                     variant="body2"
                     sx={{
@@ -45,10 +47,10 @@ export const TextFieldSummary: BaseSummary<TextFieldElement, string> = ({
                 </Typography>
             </Grid>
             <Grid
-                item
-                xs={12}
-                md={8}
-            >
+                size={{
+                    xs: 12,
+                    md: 8
+                }}>
                 <Typography
                     variant="body2"
                 >

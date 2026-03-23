@@ -1,4 +1,4 @@
-import React, {useState, useMemo, useEffect, useRef} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {Box, IconButton, InputAdornment, TextField, Typography} from '@mui/material';
 import {type TextFieldComponentProps} from './text-field-component-props';
 import Tooltip from '@mui/material/Tooltip';
@@ -42,7 +42,7 @@ function cleanValue(originalValue: string | undefined, flag: 'keepTrailingWhites
     return cleanedValue;
 }
 
-export function TextFieldComponent(props: TextFieldComponentProps): JSX.Element {
+export function TextFieldComponent(props: TextFieldComponentProps) {
     const [inputValue, setInputValue] = useState(props.value ?? '');
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -51,6 +51,10 @@ export function TextFieldComponent(props: TextFieldComponentProps): JSX.Element 
 
     // Handle input change
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (props.readonly) {
+            return; // Ignore changes if readonly
+        }
+
         const newValue = event.target.value;
         setInputValue(newValue); // update UI directly!
 
@@ -149,6 +153,7 @@ export function TextFieldComponent(props: TextFieldComponentProps): JSX.Element 
 
     return (
         <TextField
+            {...props.muiPassTroughProps}
             label={props.label}
             type={props.type}
             autoComplete={props.autocomplete}
@@ -214,10 +219,12 @@ export function TextFieldComponent(props: TextFieldComponentProps): JSX.Element 
             onChange={handleChange}
             onBlur={handleBlur}
             inputProps={{
+                ...(props.muiPassTroughProps?.inputProps),
                 ...(props.maxCharacters ? {maxLength: props.maxCharacters} : undefined),
                 'aria-disabled': props.busy || props.disabled,
             }}
             InputProps={{
+                ...(props.muiPassTroughProps?.InputProps),
                 startAdornment: props.startIcon && (
                     <InputAdornment position="start">{props.startIcon}</InputAdornment>
                 ),
@@ -244,3 +251,19 @@ export function TextFieldComponent(props: TextFieldComponentProps): JSX.Element 
         />
     );
 }
+
+export const renderIconButton = (action: { icon: React.ReactNode; onClick: () => void; tooltip?: string }, key?: number) => (
+    action.tooltip ? (
+        <Tooltip
+            key={key}
+            title={action.tooltip}
+        >
+            <IconButton onClick={action.onClick}>{action.icon}</IconButton>
+        </Tooltip>
+    ) : (
+        <IconButton
+            key={key}
+            onClick={action.onClick}
+        >{action.icon}</IconButton>
+    )
+);

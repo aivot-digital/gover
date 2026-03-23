@@ -141,10 +141,10 @@ export const ConditionOperatorMessage: Record<ConditionOperator, (valueA: any, v
 };
 
 export const ConditionOperatorHint: Record<ElementType, Partial<Record<ConditionOperator, string>> | string | null> = {
-    [ElementType.Root]: null,
+    [ElementType.FormLayout]: null,
     [ElementType.Step]: null,
     [ElementType.Alert]: null,
-    [ElementType.Container]: null,
+    [ElementType.GroupLayout]: null,
     [ElementType.Checkbox]: null,
     [ElementType.Date]: {
         [ConditionOperator.Equals]: 'Bitte im Format TT.MM.JJJJ / MM.JJJJ / JJJJ / TT.MM. / TT. eingeben.',
@@ -158,13 +158,13 @@ export const ConditionOperatorHint: Record<ElementType, Partial<Record<Condition
         [ConditionOperator.MonthsInPast]: 'Bitte Anzahl Monate eingeben.',
         [ConditionOperator.MonthsInFuture]: 'Bitte Anzahl Monate eingeben.',
         [ConditionOperator.DaysInPast]: 'Bitte Anzahl Tage eingeben.',
-        [ConditionOperator.DaysInPast]: 'Bitte Anzahl Tage eingeben.',
+        [ConditionOperator.DaysInFuture]: 'Bitte Anzahl Tage eingeben.',
     },
     [ElementType.Headline]: null,
     [ElementType.MultiCheckbox]: null,
     [ElementType.Number]: null,
     [ElementType.ReplicatingContainer]: null,
-    [ElementType.Richtext]: null,
+    [ElementType.RichText]: null,
     [ElementType.Radio]: null,
     [ElementType.Select]: null,
     [ElementType.Spacer]: null,
@@ -177,6 +177,15 @@ export const ConditionOperatorHint: Record<ElementType, Partial<Record<Condition
     [ElementType.Image]: null,
     [ElementType.SubmittedStep]: null,
     [ElementType.FileUpload]: null,
+    [ElementType.DialogLayout]: null,
+    [ElementType.StepperLayout]: null,
+    [ElementType.ConfigLayout]: null,
+    [ElementType.FunctionInput]: null,
+    [ElementType.CodeInput]: null,
+    [ElementType.RichTextInput]: null,
+    [ElementType.UiDefinitionInput]: null,
+    [ElementType.IdentityInput]: null,
+    [ElementType.TabLayout]: null,
 };
 
 export function getConditionOperatorHint(elementType?: ElementType, operator?: ConditionOperator): string | null {

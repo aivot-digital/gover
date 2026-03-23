@@ -5,17 +5,17 @@ import {type BaseEditorProps} from '../../editors/base-editor';
 import {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {Grid} from '@mui/material';
 
-export function RichtextComponentEditor(props: BaseEditorProps<RichtextElement, ElementTreeEntity>): JSX.Element {
+export function RichtextComponentEditor(props: BaseEditorProps<RichtextElement, ElementTreeEntity>) {
     return (
         <Grid
             container
             columnSpacing={4}
         >
             <Grid
-                item
-                xs={12}
-                lg={6}
-            >
+                size={{
+                    xs: 12,
+                    lg: 6
+                }}>
                 <RichTextEditorComponentView
                     value={props.element.content ?? ''}
                     onChange={(value) => {

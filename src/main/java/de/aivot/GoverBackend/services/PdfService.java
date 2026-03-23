@@ -1,22 +1,24 @@
 package de.aivot.GoverBackend.services;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.asset.entities.AssetEntity;
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
 import de.aivot.GoverBackend.config.services.SystemConfigService;
-import de.aivot.GoverBackend.core.configs.LogoSystemConfigDefinition;
 import de.aivot.GoverBackend.core.configs.ProviderNameSystemConfigDefinition;
+import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
+import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
+import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 import de.aivot.GoverBackend.enums.ElementType;
-import de.aivot.GoverBackend.form.entities.Form;
-import de.aivot.GoverBackend.form.services.FormDerivationService;
-import de.aivot.GoverBackend.form.services.FormDerivationServiceFactory;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.services.FormVersionService;
 import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
-import de.aivot.GoverBackend.identity.models.IdentityValue;
+import de.aivot.GoverBackend.identity.models.IdentityData;
 import de.aivot.GoverBackend.identity.repositories.IdentityProviderRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.models.config.GotenbergConfig;
 import de.aivot.GoverBackend.models.config.GoverConfig;
-import de.aivot.GoverBackend.models.config.PuppetPdfConfig;
 import de.aivot.GoverBackend.payment.repositories.PaymentProviderRepository;
 import de.aivot.GoverBackend.payment.repositories.PaymentTransactionRepository;
 import de.aivot.GoverBackend.payment.services.PaymentProviderDefinitionsService;
@@ -24,9 +26,11 @@ import de.aivot.GoverBackend.pdf.enums.FormPdfScope;
 import de.aivot.GoverBackend.pdf.models.FormPdfContext;
 import de.aivot.GoverBackend.services.pdf.PdfElementsGenerator;
 import de.aivot.GoverBackend.submission.entities.Submission;
-import de.aivot.GoverBackend.theme.repositories.ThemeRepository;
+import de.aivot.GoverBackend.theme.entities.ThemeEntity;
+import de.aivot.GoverBackend.utils.MultipartUtils;
 import de.aivot.GoverBackend.utils.StringUtils;
-import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.thymeleaf.templatemode.TemplateMode;
@@ -34,83 +38,73 @@ import org.thymeleaf.templatemode.TemplateMode;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class PdfService {
-    private final PuppetPdfConfig puppetPdfConfig;
+    private static final Logger logger = LoggerFactory.getLogger(PdfService.class);
+
+    private final GotenbergConfig gotenbergConfig;
     private final SystemConfigService systemConfigService;
     private final DepartmentRepository departmentRepository;
     private final AssetRepository assetRepository;
     private final GoverConfig goverConfig;
-    private final ThemeRepository themeRepository;
-    private final FormDerivationServiceFactory formDerivationServiceFactory;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final IdentityProviderRepository identityProviderRepository;
     private final PaymentProviderRepository paymentProviderRepository;
     private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
+    private final FormVersionService formVersionService;
+    private final HttpService httpService;
 
     @Autowired
-    public PdfService(
-            PuppetPdfConfig puppetPdfConfig,
-            SystemConfigService systemConfigService,
-            DepartmentRepository departmentRepository,
-            AssetRepository assetRepository,
-            GoverConfig goverConfig,
-            ThemeRepository themeRepository,
-            FormDerivationServiceFactory formDerivationServiceFactory,
-            PaymentTransactionRepository paymentTransactionRepository,
-            IdentityProviderRepository identityProviderRepository,
-            PaymentProviderRepository paymentProviderRepository,
-            PaymentProviderDefinitionsService paymentProviderDefinitionsService
-    ) {
-        this.puppetPdfConfig = puppetPdfConfig;
+    public PdfService(GotenbergConfig gotenbergConfig,
+                      SystemConfigService systemConfigService,
+                      DepartmentRepository departmentRepository,
+                      AssetRepository assetRepository,
+                      GoverConfig goverConfig,
+                      PaymentTransactionRepository paymentTransactionRepository,
+                      IdentityProviderRepository identityProviderRepository,
+                      PaymentProviderRepository paymentProviderRepository,
+                      PaymentProviderDefinitionsService paymentProviderDefinitionsService,
+                      FormVersionService formVersionService,
+                      HttpService httpService) {
+        this.gotenbergConfig = gotenbergConfig;
         this.systemConfigService = systemConfigService;
         this.departmentRepository = departmentRepository;
         this.assetRepository = assetRepository;
         this.goverConfig = goverConfig;
-        this.themeRepository = themeRepository;
-        this.formDerivationServiceFactory = formDerivationServiceFactory;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.identityProviderRepository = identityProviderRepository;
         this.paymentProviderRepository = paymentProviderRepository;
         this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
+        this.formVersionService = formVersionService;
+        this.httpService = httpService;
     }
 
-    public void testPuppetPdfConnection() throws IOException, InterruptedException {
-        try (var client = HttpClient.newHttpClient()) {
-            var request = HttpRequest
-                    .newBuilder(URI.create("http://" + puppetPdfConfig.getHost() + ":" + puppetPdfConfig.getPort() + "/health"))
-                    .GET()
-                    .build();
-            var response = client
-                    .send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() != 200) {
-                throw new IOException("Failed to connect to Puppet PDF with status code: " + response.statusCode());
-            }
-        }
-    }
+    public void testGotenbergConnection() throws IOException {
+        var healthUri = URI.create("http://" + gotenbergConfig.getHost() + ":" + gotenbergConfig.getPort() + "/health");
 
-    public byte[] generatePrintableForm(Form form) throws IOException, URISyntaxException, InterruptedException, ResponseException {
-        var allElements = ElementFlattenUtils.flattenElements(form.getRoot());
-
-        var derivationContext = formDerivationServiceFactory
-                .create(form, List.of(), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER))
-                .derive(form.getRoot(), new HashMap<>());
+        HttpResponse<String> response;
         try {
-            derivationContext.close();
-        } catch (Exception e) {
-            throw new IOException("Failed to close derivation context", e);
+            response = httpService.get(healthUri);
+        } catch (HttpConnectionException e) {
+            throw new IOException("Failed to connect to Gotenberg.", e);
         }
+
+        if (response.statusCode() != 200) {
+            throw new IOException("Failed to connect to Gotenberg. Status code: " + response.statusCode());
+        }
+    }
+
+    public byte[] generatePrintableForm(VFormVersionWithDetailsEntity form) throws IOException, URISyntaxException, InterruptedException, ResponseException {
+        var allElements = ElementFlattenUtils.flattenElements(form.getRootElement());
 
         var dto = new HashMap<String, Object>();
         dto.put("elements", PdfElementsGenerator.generatePdfElements(
-                form.getRoot(),
-                Optional.empty(),
-                derivationContext.getFormState(),
+                form.getRootElement(),
+                null,
                 true
         ));
         dto.put("form", form);
@@ -119,41 +113,37 @@ public class PdfService {
         return generatePdf(form, dto, FormPdfScope.Blank);
     }
 
-    public byte[] generateCustomerSummary(Form form, Submission submission, FormPdfScope scope) throws IOException, InterruptedException, URISyntaxException, ResponseException {
+    public byte[] generateCustomerSummary(VFormVersionWithDetailsEntity form, Submission submission, FormPdfScope scope) throws IOException, InterruptedException, URISyntaxException, ResponseException {
         var dto = new HashMap<String, Object>();
 
-        var derivationContext = formDerivationServiceFactory
-                .create(form, List.of(), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER))
-                .derive(form.getRoot(), submission.getCustomerInput());
-        try {
-            derivationContext.close();
-        } catch (Exception e) {
-            throw new IOException("Failed to close derivation context", e);
-        }
-
         dto.put("elements", PdfElementsGenerator.generatePdfElements(
-                form.getRoot(),
-                Optional.of(submission.getCustomerInput()),
-                derivationContext.getFormState(),
+                form.getRootElement(),
+                submission.getCustomerInput(),
                 scope != FormPdfScope.Staff
         ));
         dto.put("form", form);
         dto.put("submission", submission);
 
-        var authData = submission
+        ElementDataObject authData = submission
                 .getCustomerInput()
                 .get(IdentityValueKey.IdCustomerInputKey);
+        if (authData != null && authData.getInputValue() != null) {
+            IdentityData identityData = null;
+            try {
+                identityData = new ObjectMapper()
+                        .convertValue(authData.getInputValue(), IdentityData.class);
+            } catch (IllegalArgumentException e) {
+                logger.error("Failed to convert identity data to IdentityData", e);
+            }
 
-        if (authData instanceof Map<?, ?> mAuthData) {
-            var identityData = IdentityValue
-                    .fromMap(mAuthData);
+            if (identityData != null) {
+                var identityProvider = identityProviderRepository
+                        .findById(identityData.providerKey());
 
-            var identityProvider = identityProviderRepository
-                    .findById(identityData.identityProviderKey());
-
-            if (identityProvider.isPresent()) {
-                dto.put("identityProvider", identityProvider.get());
-                dto.put("identityData", identityData);
+                if (identityProvider.isPresent()) {
+                    dto.put("identityProvider", identityProvider.get());
+                    dto.put("identityData", identityData);
+                }
             }
         }
 
@@ -171,7 +161,7 @@ public class PdfService {
             dto.put("paymentProvider", paymentProvider);
 
             var paymentProviderDefinition = paymentProviderDefinitionsService
-                    .getProviderDefinition(paymentProvider.getProviderKey())
+                    .getProviderDefinition(paymentProvider.getPaymentProviderDefinitionKey())
                     .orElseThrow(() -> new RuntimeException("Payment provider definition not found"));
 
             dto.put("paymentProviderDefinition", paymentProviderDefinition);
@@ -180,62 +170,59 @@ public class PdfService {
         return generatePdf(form, dto, scope);
     }
 
-    private byte[] generatePdf(Form form, Map<String, Object> dto, FormPdfScope scope) throws IOException, URISyntaxException, InterruptedException, ResponseException {
-        dto.put("base", createBaseContext(scope));
+    private byte[] generatePdf(VFormVersionWithDetailsEntity form, Map<String, Object> dto, FormPdfScope scope) throws IOException, URISyntaxException, InterruptedException, ResponseException {
+        var formTheme = formVersionService
+                .getFormThemesInOrderOfImportance(form.getFormId(), form.getVersion())
+                .getFirst();
+
+        dto.put("base", createBaseContext(formTheme, scope));
         dto.put("department",
                 departmentRepository
                         .findById(form.getRelevantDepartmentId())
                         .orElseThrow(() -> new RuntimeException("Department not found"))
         );
-        dto.put("theme",
-                form.getThemeId() != null ?
-                        themeRepository
-                                .findById(form.getThemeId())
-                                .orElse(null)
-                        : null
-        );
+        dto.put("theme", formTheme);
 
-        return generatePuppetPdf(form, dto);
+        return generateGotenbergPdf(form, dto);
     }
 
-    private byte[] generatePuppetPdf(Form form, Map<String, Object> dto) throws IOException, InterruptedException, URISyntaxException {
-        String template = loadContentTemplate(form, dto).replaceAll("(?m)^[ \\t]*\\r?\\n", "");
+    private byte[] generateGotenbergPdf(VFormVersionWithDetailsEntity form, Map<String, Object> dto) throws IOException, InterruptedException, URISyntaxException {
+        String template = loadContentTemplate(form, dto);
         String headerTemplate = loadTemplate("pp_form_header.html", dto);
         String footerTemplate = loadTemplate("pp_form_footer.html", dto);
 
-        var uri = new URI("http://" + puppetPdfConfig.getHost() + ":" + puppetPdfConfig.getPort() + "/print");
+        var multipart = new MultipartUtils.MultipartBodyPublisher()
+                .addPart("files", "index.html", template)
+                .addPart("files", "header.html", headerTemplate)
+                .addPart("files", "footer.html", footerTemplate)
+                .addPart("index", "index.html")
+                .addPart("header", "header.html")
+                .addPart("footer", "footer.html")
+                .addPart("paperHeight", "297mm")
+                .addPart("paperWidth", "210mm");
 
-        JSONObject json = new JSONObject();
-        json.put("html", template);
-        json.put("headerTemplate", headerTemplate);
-        json.put("footerTemplate", footerTemplate);
+        var convertUri = new URI("http://" + gotenbergConfig.getHost() + ":" + gotenbergConfig.getPort() + "/forms/chromium/convert/html");
 
-        var client = HttpClient.newHttpClient();
-        var request = HttpRequest
-                .newBuilder(uri)
-                .headers("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(json.toString()))
-                .build();
-        var response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
-        if (response.statusCode() != 200) {
-            throw new IOException("Failed to generate PDF with status code: " + response.statusCode());
+        HttpResponse<byte[]> response;
+        try {
+            response = httpService.postMultipart(convertUri, multipart);
+        } catch (HttpConnectionException e) {
+            throw new IOException("Failed to generate PDF with Gotenberg.", e);
         }
 
-        var body = response.body();
-        var bytes = body.readAllBytes();
-        body.close();
+        if (response.statusCode() != 200) {
+            throw new IOException("Failed to generate PDF with Gotenberg. Status: " + response.statusCode());
+        }
 
-        client.close();
-
-        return bytes;
+        return response.body();
     }
 
-    private String loadContentTemplate(Form form, Map<String, Object> dto) {
-        var template = form.getPdfBodyTemplateKey();
+    private String loadContentTemplate(VFormVersionWithDetailsEntity form, Map<String, Object> dto) {
+        var template = form.getPdfTemplateKey();
 
         if (template != null) {
             try {
-                var res = loadTemplate(form.getPdfBodyTemplateKey(), dto);
+                var res = loadTemplate(form.getPdfTemplateKey().toString(), dto);
                 if (StringUtils.isNotNullOrEmpty(res)) {
                     return res;
                 }
@@ -258,26 +245,24 @@ public class PdfService {
     }
 
     // TODO: This is a copy from the MailService. Needs unification!
-    private FormPdfContext createBaseContext(FormPdfScope scope) throws ResponseException {
+    private FormPdfContext createBaseContext(ThemeEntity theme, FormPdfScope scope) throws ResponseException {
         var providerName = systemConfigService
                 .retrieve(ProviderNameSystemConfigDefinition.KEY)
                 .getValue();
 
-        var logoAssetKey = systemConfigService
-                .retrieve(LogoSystemConfigDefinition.KEY)
-                .getValue();
-
+        var logoAssetKey = theme.getLogoKey();
         var logoAssetName = "";
         try {
-            var assetKeyUUID = UUID.fromString(logoAssetKey);
-            logoAssetName = assetRepository
-                    .findById(assetKeyUUID.toString())
-                    .map(AssetEntity::getFilename)
-                    .orElse("");
+            if (logoAssetKey != null) {
+                logoAssetName = assetRepository
+                        .findById(logoAssetKey)
+                        .map(AssetEntity::getFilename)
+                        .orElse("");
+            }
         } catch (Exception e) {
             // Ignore
         }
 
-        return new FormPdfContext(providerName, logoAssetKey, logoAssetName, goverConfig, scope);
+        return new FormPdfContext(providerName, logoAssetKey != null ? logoAssetKey.toString() : "", logoAssetName, goverConfig, scope);
     }
 }

@@ -6,13 +6,20 @@ export interface NoCodeOperatorDetailsDTO {
     label: string;
     description: string;
     abstractDescription: string;
-    parameters: NoCodeParameter[];
+    humanReadableTemplate: string | null;
+    tags: string[];
+    signatures: NoCodeSignature[];
+}
+
+export interface NoCodeSignature {
     returnType: NoCodeDataType;
+    parameters: NoCodeParameter[];
 }
 
 export interface NoCodeParameter {
     type: NoCodeDataType;
     label: string;
+    description: string | null | undefined;
     options: NoCodeParameterOption[];
 }
 

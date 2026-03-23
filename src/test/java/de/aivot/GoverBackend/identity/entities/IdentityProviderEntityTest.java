@@ -5,6 +5,7 @@ import de.aivot.GoverBackend.identity.models.IdentityAdditionalParameter;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -12,8 +13,11 @@ class IdentityProviderEntityTest {
 
     @Test
     void testEquals() {
+        UUID key1 = UUID.randomUUID();
+        UUID key2 = UUID.randomUUID();
+
         IdentityProviderEntity entity1 = new IdentityProviderEntity()
-                .setKey("key1")
+                .setKey(key1)
                 .setMetadataIdentifier("meta1")
                 .setType(IdentityProviderType.BayernId)
                 .setName("Provider1")
@@ -29,7 +33,7 @@ class IdentityProviderEntityTest {
                 .setIsTestProvider(false);
 
         IdentityProviderEntity entity2 = new IdentityProviderEntity()
-                .setKey("key1")
+                .setKey(key1)
                 .setMetadataIdentifier("meta1")
                 .setType(IdentityProviderType.BayernId)
                 .setName("Provider1")
@@ -45,7 +49,7 @@ class IdentityProviderEntityTest {
                 .setIsTestProvider(false);
 
         IdentityProviderEntity entity3 = new IdentityProviderEntity()
-                .setKey("key2")
+                .setKey(key2)
                 .setMetadataIdentifier("meta2")
                 .setType(IdentityProviderType.BundId)
                 .setName("Provider2")
@@ -66,8 +70,11 @@ class IdentityProviderEntityTest {
 
     @Test
     void testHashCode() {
+        var key1 = UUID.randomUUID();
+        var key2 = UUID.randomUUID();
+
         IdentityProviderEntity entity1 = new IdentityProviderEntity()
-                .setKey("key1")
+                .setKey(key1)
                 .setMetadataIdentifier("meta1")
                 .setType(IdentityProviderType.BayernId)
                 .setName("Provider1")
@@ -83,7 +90,7 @@ class IdentityProviderEntityTest {
                 .setIsTestProvider(false);
 
         IdentityProviderEntity entity2 = new IdentityProviderEntity()
-                .setKey("key1")
+                .setKey(key1)
                 .setMetadataIdentifier("meta1")
                 .setType(IdentityProviderType.BayernId)
                 .setName("Provider1")
@@ -99,7 +106,7 @@ class IdentityProviderEntityTest {
                 .setIsTestProvider(false);
 
         IdentityProviderEntity entity3 = new IdentityProviderEntity()
-                .setKey("key2")
+                .setKey(key2)
                 .setMetadataIdentifier("meta2")
                 .setType(IdentityProviderType.BundId)
                 .setName("Provider2")

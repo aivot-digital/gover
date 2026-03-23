@@ -9,8 +9,6 @@ import {type TestTabProps} from './test-tab-props';
 import {type AnyElement} from '../../models/elements/any-element';
 import {type TestProtocol as TestProtocolModel} from '../../models/lib/test-protocol';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
-import {useApi} from '../../hooks/use-api';
-import {useUsersApi} from '../../hooks/use-users-api';
 import {isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
 import {hasUntestedChild} from '../../utils/has-untested-child';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
@@ -18,7 +16,7 @@ import {isRootElement} from '../../models/elements/root-element';
 import {UsersApiService} from '../../modules/users/users-api-service';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 
-export function TestTab<T extends AnyElement>(props: TestTabProps<T>): JSX.Element {
+export function TestTab<T extends AnyElement>(props: TestTabProps<T>) {
     const dispatch = useDispatch();
     const user = useSelector(selectUser);
 
@@ -77,7 +75,7 @@ export function TestTab<T extends AnyElement>(props: TestTabProps<T>): JSX.Eleme
                                     dispatch(showSuccessSnackbar('Alle Kindelemente wurden als geprüft markiert.'));
                                 }
                             }}
-                            disabled={!hasUntestedChild(props.elementModel)}
+                            disabled={!props.editable || !hasUntestedChild(props.elementModel)}
                         >
                             {
                                 isRootElement(props.elementModel) ?
@@ -141,12 +139,11 @@ export function TestTab<T extends AnyElement>(props: TestTabProps<T>): JSX.Eleme
     );
 }
 
-function TestProtocol(protocol: TestProtocolModel): JSX.Element | null {
-    const api = useApi();
+function TestProtocol(protocol: TestProtocolModel): React.ReactNode | null {
     const [user, setUser] = useState<User>();
 
     useEffect(() => {
-        new UsersApiService(api)
+        new UsersApiService()
             .retrieve(protocol.userId)
             .then(setUser)
             .catch((err) => {
@@ -194,42 +191,50 @@ function markAsTestedRecursively<T extends AnyElement>(user: User, element: T): 
     }
 
     if (isRootElement(updatedElement)) {
-        updatedElement.introductionStep = {
-            ...updatedElement.introductionStep,
-            testProtocolSet: {
-                ...updatedElement.introductionStep.testProtocolSet,
-                professionalTest: {
-                    userId: user.id,
-                    timestamp: new Date().toISOString(),
+        if (updatedElement.introductionStep != null) {
+            updatedElement.introductionStep = {
+                ...updatedElement.introductionStep,
+                testProtocolSet: {
+                    ...updatedElement.introductionStep.testProtocolSet,
+                    professionalTest: {
+                        userId: user.id,
+                        timestamp: new Date().toISOString(),
+                    },
                 },
-            },
-        };
-        updatedElement.summaryStep = {
-            ...updatedElement.summaryStep,
-            testProtocolSet: {
-                ...updatedElement.summaryStep.testProtocolSet,
-                professionalTest: {
-                    userId: user.id,
-                    timestamp: new Date().toISOString(),
+            };
+        }
+
+        if (updatedElement.summaryStep != null) {
+            updatedElement.summaryStep = {
+                ...updatedElement.summaryStep,
+                testProtocolSet: {
+                    ...updatedElement.summaryStep.testProtocolSet,
+                    professionalTest: {
+                        userId: user.id,
+                        timestamp: new Date().toISOString(),
+                    },
                 },
-            },
-        };
-        updatedElement.submitStep = {
-            ...updatedElement.submitStep,
-            testProtocolSet: {
-                ...updatedElement.submitStep.testProtocolSet,
-                professionalTest: {
-                    userId: user.id,
-                    timestamp: new Date().toISOString(),
+            };
+        }
+
+        if (updatedElement.submitStep != null) {
+            updatedElement.submitStep = {
+                ...updatedElement.submitStep,
+                testProtocolSet: {
+                    ...updatedElement.submitStep.testProtocolSet,
+                    professionalTest: {
+                        userId: user.id,
+                        timestamp: new Date().toISOString(),
+                    },
                 },
-            },
-        };
+            };
+        }
     }
 
-    if (isRootElement(updatedElement)) {
+    if (isRootElement(updatedElement) && updatedElement.children != null) {
         updatedElement.children = updatedElement.children.map(child => markAsTestedRecursively(user, child));
-    } else if (isAnyElementWithChildren(updatedElement)) {
-        updatedElement.children = updatedElement.children.map(child => markAsTestedRecursively(user, child));
+    } else if (isAnyElementWithChildren(updatedElement) && updatedElement.children != null) {
+        updatedElement.children = updatedElement.children.map(child => markAsTestedRecursively(user, child)) as any[];
     }
 
     return updatedElement;

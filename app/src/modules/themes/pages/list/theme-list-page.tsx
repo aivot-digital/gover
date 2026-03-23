@@ -3,10 +3,6 @@ import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Box, Typography} from '@mui/material';
 import {DescriptionOutlined, EditOutlined} from '@mui/icons-material';
-import {useSelector} from 'react-redux';
-import {selectUser} from '../../../../slices/user-slice';
-import {useMemo} from 'react';
-import {isAdmin} from '../../../../utils/is-admin';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {type Theme} from '../../models/theme';
 import {ThemesApiService} from '../../themes-api-service';
@@ -15,14 +11,30 @@ import Chip from '@mui/material/Chip';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../../data/system-config-keys';
-import {useAdminGuard} from '../../../../hooks/use-admin-guard';
+import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
+import {useAccessGuard} from '../../../../hooks/use-admin-guard';
+import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
+
+const activeThemeChip = (
+    <Chip
+        label="Standard"
+        color="info"
+        variant="outlined"
+        size="small"
+        title="Aktives Farbschema der Gover-Instanz"
+        sx={{
+            ml: 1,
+        }}
+    />
+);
 
 export function ThemeListPage() {
-    useAdminGuard();
-
-    const user = useSelector(selectUser);
-    const userIsAdmin = useMemo(() => isAdmin(user), [user]);
     const appThemeId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
+
+    const hasAccess = useAccessGuard({
+        onlyGlobalAdmin: true,
+        messageType: 'snackbar',
+    });
 
     return (
         <PageWrapper
@@ -38,10 +50,9 @@ export function ThemeListPage() {
                         {
                             label: 'Neues Farbschema',
                             icon: <AddOutlinedIcon />,
-                            disabled: !userIsAdmin,
-                            tooltip: userIsAdmin ? undefined : 'Sie müssen globale Administrator:in sein, um diese Aktion durchführen zu können.',
                             to: '/themes/new',
                             variant: 'contained',
+                            disabled: !hasAccess,
                         },
                     ],
                     helpDialog: {
@@ -78,7 +89,7 @@ export function ThemeListPage() {
                     {
                         field: 'icon',
                         headerName: '',
-                        renderCell: () => <PaletteOutlinedIcon />,
+                        renderCell: () => <CellContentWrapper><PaletteOutlinedIcon /></CellContentWrapper>,
                         disableColumnMenu: true,
                         width: 24,
                         sortable: false,
@@ -90,10 +101,10 @@ export function ThemeListPage() {
                         renderCell: (params) => (
                             <CellLink
                                 to={`/themes/${params.id}`}
-                                title={`Farbschema bearbeiten`}
+                                title={hasAccess ? 'Farbschema bearbeiten' : 'Farbschema ansehen'}
                             >
                                 {String(params.value)}
-                                {params.row.id === Number(appThemeId) && <Chip label="Standard" color="info" variant="outlined" size={"small"} title="Aktives Farbschema der Gover-Instanz" sx={{ml:1}}/>}
+                                {params.row.id === Number(appThemeId) && activeThemeChip}
                             </CellLink>
                         ),
                     },
@@ -108,10 +119,13 @@ export function ThemeListPage() {
                             const colorKeys = ['main', 'mainDark', 'accent', '|', 'error', 'warning', 'info', 'success'];
 
                             return (
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <CellContentWrapper sx={{gap: 1, position: 'relative', zIndex: 2}}>
                                     {colorKeys.map((key, index) => (
                                         key === '|' ? (
-                                            <Box key={index} sx={{ width: 2, height: 16, backgroundColor: '#D4D4D4', mx: 0.5 }} />
+                                            <Box
+                                                key={index}
+                                                sx={{width: 2, height: 16, backgroundColor: '#D4D4D4', mx: 0.5}}
+                                            />
                                         ) : (
                                             <Box
                                                 key={index}
@@ -134,14 +148,14 @@ export function ThemeListPage() {
                                                         borderRadius: '50%',
                                                         backgroundColor: '#C0C0C0',
                                                         zIndex: -1,
-                                                    }
+                                                    },
                                                 }}
                                             />
                                         )
                                     ))}
-                                </Box>
+                                </CellContentWrapper>
                             );
-                        }
+                        },
                     },
                 ]}
                 getRowIdentifier={row => row.id.toString()}
@@ -150,15 +164,15 @@ export function ThemeListPage() {
                 rowActionsCount={2}
                 rowActions={(item: Theme) => [
                     {
-                        icon: <EditOutlined />,
+                        icon: hasAccess ? <EditOutlined /> : <Visibility/>,
                         to: `/themes/${item.id}`,
-                        tooltip: 'Farbschema bearbeiten',
+                        tooltip: hasAccess ? 'Farbschema bearbeiten' : 'Farbschema ansehen',
                     },
                     {
                         icon: <DescriptionOutlined />,
                         to: `/themes/${item.id}/forms`,
                         tooltip: 'Formulare mit diesem Schema ansehen',
-                    }
+                    },
                 ]}
                 defaultSortField="name"
                 disableFullWidthToggle={true}

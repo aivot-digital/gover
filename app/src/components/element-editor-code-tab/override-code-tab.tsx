@@ -1,124 +1,112 @@
-import React, {useMemo, useReducer} from 'react';
+import React, {useMemo, useReducer, useRef} from 'react';
 import {BaseCodeTab} from './base-code-tab';
-import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 import {CodeEditor} from '../code-editor/code-editor';
 import {OverrideCodeTabProps} from './override-code-tab-props';
-import {useLogger} from '../../hooks/use-logging';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-element-dialog';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {ReferenceCheck} from './components/reference-check/reference-check';
-
-const exampleLegacyOverrideCode = `/**
- * Diese Funktion wird aufgerufen, die Struktur des Elements zu überschreiben.
- * Die Funktion muss eine gültige Elementstruktur zurückgeben.
- *
- * @param{Data} data Die Nutzereingaben
- * @param{CurrentElement} element Das aktuelle Element
- * @param{string} id Die ID des aktuellen Elements\
- */
-function main(data, element, id) {
-    console.log(data, element, id);
-    return {
-        ...element,
-    };
-}`;
+import {createLowCodeContextType} from '../../utils/create-low-code-context-type';
+import {ElementOverrideFunction} from '../../models/elements/element-override-function';
+import {editor} from 'monaco-editor';
 
 const exampleOverrideCode = `(function(){
     // Hier kann der Code eingefügt werden, um die Struktur des Elements zu überschreiben.
     // Die Funktion muss eine gültige Elementstruktur zurückgeben.
     return {
-        ...ctx.element,
+        ...element,
     };
 })();`;
 
 export function OverrideCodeTab(props: OverrideCodeTabProps) {
+    const dispatch = useAppDispatch();
+
     const {
+        allElements,
         element,
+        onChange,
     } = props;
 
-    const log = useLogger('OverrideCodeTab');
-    const dispatch = useAppDispatch();
-    const [showElementSelectDialog, toggleShowElementSelectDialog] = useReducer((state) => !state, false);
+    const {
+        override: _override,
+    } = element;
+
+    const override: ElementOverrideFunction = useMemo(() => _override ?? {
+        type: undefined,
+        requirements: undefined,
+        javascriptCode: undefined,
+        fieldNoCodeMap: undefined,
+        referencedIds: undefined,
+    }, [_override]);
 
     const hasOverrideFunction = useMemo(() => {
-        return (
-            isStringNotNullOrEmpty(element.patchElement?.code) ||
-            element.overrideCode?.code != null
-        );
-    }, [element]);
+        return override.type != null;
+    }, [override]);
+
+    const editorRef = useRef<editor.IStandaloneCodeEditor>(undefined);
+    const [showElementSelectDialog, toggleShowElementSelectDialog] = useReducer((state) => !state, false);
+
+    const handleChange = (patch: Partial<ElementOverrideFunction>) => {
+        onChange({
+            override: {
+                ...override,
+                ...patch,
+            },
+        });
+    };
 
     return (
         <>
             <BaseCodeTab
                 label="Dynamische Struktur"
                 description="Hier können Sie die Struktur des Elements dynamisch anpassen bzw. überschreiben. Dies ist besonders nützlich, wenn die Struktur des Elements von den Nutzereingaben abhängt oder wenn Sie eine komplexe Logik implementieren möchten."
-                requirements={props.element.patchElement?.requirements}
-                onRequirementsChange={(req) => {
-                    props.onChange({
-                        patchElement: {
-                            ...props.element.patchElement,
-                            requirements: req ?? '',
-                        },
-                    });
-                }}
-                onDeleteFunction={() => {
-                    props.onChange({
-                        patchElement: {
-                            requirements: props.element.patchElement?.requirements ?? '',
-                        },
-                        overrideCode: undefined,
-                        overrideExpression: undefined,
-                    });
-                }}
                 editable={props.editable}
                 allowsNoCode={false}
                 allowsExpression={false}
+                requirements={override.requirements ?? undefined}
+                onRequirementsChange={(req) => {
+                    handleChange({
+                        requirements: req,
+                    });
+                }}
                 onSelectFunction={(type) => {
                     switch (type) {
-                        case 'legacy-code':
-                            props.onChange({
-                                patchElement: {
-                                    requirements: props.element.patchElement?.requirements ?? '',
-                                    code: exampleLegacyOverrideCode,
-                                    conditionSet: undefined,
-                                },
-                                overrideCode: undefined,
-                                overrideExpression: undefined,
-                            });
-                            break;
-                        case 'legacy-condition':
-                            log.error('Legacy condition set is not supported for overrides.');
-                            break;
                         case 'code':
-                            props.onChange({
-                                patchElement: {
-                                    requirements: props.element.patchElement?.requirements ?? '',
-                                    code: undefined,
-                                    conditionSet: undefined,
-                                },
-                                overrideCode: {
+                            handleChange({
+                                type: 'Javascript',
+                                javascriptCode: {
                                     code: exampleOverrideCode,
                                 },
-                                overrideExpression: undefined,
+                                fieldNoCodeMap: undefined,
                             });
                             break;
                         case 'expression':
-                            log.error('Expression is not yet supported for overrides.');
+                            handleChange({
+                                type: 'NoCode',
+                                javascriptCode: undefined,
+                                fieldNoCodeMap: {},
+                            });
                             break;
                     }
+                }}
+                onDeleteFunction={() => {
+                    handleChange({
+                        javascriptCode: undefined,
+                        fieldNoCodeMap: undefined,
+                        referencedIds: undefined,
+                        type: undefined,
+                    });
                 }}
                 hasFunction={hasOverrideFunction}
             >
                 {
-                    props.element.patchElement?.code != null && (
+                    override.type === 'Javascript' && (
                         <CodeEditor
-                            value={props.element.patchElement.code}
+                            value={override.javascriptCode?.code ?? undefined}
                             onChange={(code) => {
-                                props.onChange({
-                                    patchElement: {
-                                        requirements: props.element.patchElement?.requirements ?? '',
+                                handleChange({
+                                    javascriptCode: {
                                         code: code,
                                     },
                                 });
@@ -131,60 +119,59 @@ export function OverrideCodeTab(props: OverrideCodeTabProps) {
                                 },
                             ] : []}
                             disabled={!props.editable}
-                            alert={{
-                                color: 'warning',
-                                title: 'Diese Version des Low-Codes ist veraltet',
-                                richtext: true,
-                                text: `
-                                    Sie wird künftig nicht mehr unterstützt und zu einem späteren Zeitpunkt entfernt. Bitte verwenden Sie ausschließlich den neuen Low-Code. 
-                                    Um auf die neue Version umzustellen, klicken Sie im Code-Editor oben rechts auf das Drei-Punkte-Menü und wählen Sie <strong>„Anderen Funktionstyp auswählen“</strong>.
-                                    Beachten Sie bitte: Der bisherige Code wird dabei <strong>nicht automatisch übernommen</strong> und muss manuell übertragen und angepasst werden.
-                                `,
-                                sx: {
-                                    mb: 1,
-                                }
+                            typeHints={[{
+                                name: 'Context',
+                                content: createLowCodeContextType(props.parents[0]),
+                            }]}
+                            onEditorMount={(editor) => {
+                                editorRef.current = editor;
                             }}
                         />
                     )
                 }
+
                 {
-                    props.element.overrideCode?.code != null && (
-                        <CodeEditor
-                            value={props.element.overrideCode.code}
-                            onChange={(code) => {
-                                props.onChange({
-                                    overrideCode: {
-                                        code: code,
-                                    },
-                                });
-                            }}
-                            actions={props.editable ? [
-                                {
-                                    tooltip: 'Element-ID nachschlagen',
-                                    icon: <LocationSearchingIcon />,
-                                    onClick: toggleShowElementSelectDialog,
-                                },
-                            ] : []}
-                            disabled={!props.editable}
-                        />
+                    override.type === 'NoCode' && (
+                        <div>
+                            No-Code Überschreibungsfunktionen sind derzeit nicht unterstützt.
+                        </div>
                     )
                 }
 
                 <ReferenceCheck
+                    allElements={allElements}
                     element={element}
-                    lowCodeOld={[element.patchElement?.code]}
-                    lowCode={[element.overrideCode?.code]}
-                    noCodeOld={[element.patchElement?.conditionSet]}
-                    noCode={[element.overrideExpression]}
+                    lowCodeOld={[]}
+                    lowCode={override.javascriptCode?.code != null ? [override.javascriptCode.code] : []}
+                    noCodeOld={[]}
+                    noCode={[]}
                 />
             </BaseCodeTab>
 
             <SelectElementDialog
+                allElements={allElements}
                 open={showElementSelectDialog}
                 onSelect={(element) => {
-                    navigator.clipboard.writeText(element.id);
+                    const _editor = editorRef.current;
+                    const _selection = _editor?.getSelection();
+
+                    if (_editor != null && _selection != null) {
+                        const editOperation: editor.IIdentifiedSingleEditOperation = {
+                            range: _selection,
+                            text: element.id,
+                            forceMoveMarkers: true,
+                        };
+
+                        _editor
+                            .executeEdits('my-source', [editOperation]);
+
+                        dispatch(showSuccessSnackbar('Element-ID eingefügt'));
+                    } else {
+                        navigator.clipboard.writeText(element.id);
+                        dispatch(showSuccessSnackbar('Element-ID kopiert'));
+                    }
+
                     toggleShowElementSelectDialog();
-                    dispatch(showSuccessSnackbar('Element-ID kopiert'));
                 }}
                 onClose={toggleShowElementSelectDialog}
             />

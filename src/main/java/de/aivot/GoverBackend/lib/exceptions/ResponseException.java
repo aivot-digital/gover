@@ -1,9 +1,10 @@
 package de.aivot.GoverBackend.lib.exceptions;
 
+import de.aivot.GoverBackend.elements.models.ElementData;
 import org.springframework.http.HttpStatus;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 public class ResponseException extends Exception {
     @Nonnull
@@ -11,7 +12,7 @@ public class ResponseException extends Exception {
     @Nonnull
     private final String title;
     @Nullable
-    private final String details;
+    private final Object details;
 
     // region Constructors
 
@@ -48,12 +49,23 @@ public class ResponseException extends Exception {
     public ResponseException(
             @Nonnull HttpStatus status,
             @Nonnull String title,
+            @Nonnull ElementData elementData
+    ) {
+        super(title);
+        this.status = status;
+        this.title = title;
+        this.details = elementData;
+    }
+
+    public ResponseException(
+            @Nonnull HttpStatus status,
+            @Nonnull String title,
             @Nonnull Throwable cause
     ) {
         super(title, cause);
         this.status = status;
         this.title = title;
-        this.details = null;
+        this.details = cause.getMessage();
     }
 
     public ResponseException(
@@ -74,8 +86,25 @@ public class ResponseException extends Exception {
         return ResponseException.badRequest("Die Anfrage ist fehlerhaft.");
     }
 
+    public static ResponseException badRequest(ElementData elementData) {
+        return new ResponseException(
+                HttpStatus.BAD_REQUEST,
+                "Bei der Auswertung der Eingabedaten wurden Fehler gefunden.",
+                elementData
+        );
+    }
+
     public static ResponseException badRequest(String message) {
         return new ResponseException(HttpStatus.BAD_REQUEST, message);
+    }
+
+    public static ResponseException badRequest(String format, Object... args) {
+        String message = String.format(format, args);
+        return ResponseException.badRequest(message);
+    }
+
+    public static ResponseException badRequest(String message, Throwable cause) {
+        return new ResponseException(HttpStatus.BAD_REQUEST, message, cause);
     }
 
     public static ResponseException badRequest(String message, String details) {
@@ -98,11 +127,28 @@ public class ResponseException extends Exception {
         return new ResponseException(HttpStatus.FORBIDDEN, message);
     }
 
+    public static ResponseException forbidden(String format, Object... args) {
+        return ResponseException.forbidden(String.format(format, args));
+    }
+
+    public static ResponseException noSuperAdminPermission() {
+        return ResponseException.forbidden("Sie müssen die Systemrolle „Superadministrator:in“ besitzen, um diese Aktion durchzuführen.");
+    }
+
+    public static ResponseException noSystemAdminPermission() {
+        return ResponseException.forbidden("Sie müssen die Systemrolle „Systemadministrator:in“ besitzen, um diese Aktion durchzuführen.");
+    }
+
+    public static ResponseException noPermission(String permissionName) {
+        return ResponseException.forbidden(String.format(
+                "Sie müssen die Systemrolle „Superadministrator:in“ besitzen, oder benötigen eine Domänenrolle mit der Berechtigung „%s“, um diese Aktion durchzuführen.", permissionName));
+    }
+
     public static ResponseException notFound() {
         return ResponseException.notFound("Die angeforderte Ressource wurde nicht gefunden.");
     }
 
-    public static ResponseException notFound(String message, Object ... args) {
+    public static ResponseException notFound(String message, Object... args) {
         return new ResponseException(HttpStatus.NOT_FOUND, String.format(message, args));
     }
 
@@ -110,7 +156,7 @@ public class ResponseException extends Exception {
         return new ResponseException(HttpStatus.NOT_FOUND, message);
     }
 
-    public static ResponseException conflict(String message, Object ... args) {
+    public static ResponseException conflict(String message, Object... args) {
         return ResponseException.conflict(String.format(message, args));
     }
 
@@ -138,12 +184,12 @@ public class ResponseException extends Exception {
         return new ResponseException(HttpStatus.INTERNAL_SERVER_ERROR, message, details);
     }
 
-    public static ResponseException internalServerError(String message, Object ... args) {
-        return ResponseException.internalServerError(String.format(message, args));
+    public static ResponseException internalServerError(String format, Object... args) {
+        return ResponseException.internalServerError(String.format(format, args));
     }
 
-    public static ResponseException internalServerError(Throwable cause, String message, Object ... args) {
-        return ResponseException.internalServerError(String.format(message, args), cause);
+    public static ResponseException internalServerError(Throwable cause, String format, Object... args) {
+        return ResponseException.internalServerError(String.format(format, args), cause);
     }
 
     public static ResponseException internalServerError(String message, Throwable cause) {
@@ -152,6 +198,22 @@ public class ResponseException extends Exception {
 
     public static ResponseException internalServerError(Throwable cause) {
         return new ResponseException(HttpStatus.INTERNAL_SERVER_ERROR, "Ein unbekannter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.", cause);
+    }
+
+    public static ResponseException notAcceptable() {
+        return ResponseException.conflict("Die angeforderte Ressource ist nicht in dem gewünschten Format verfügbar.");
+    }
+
+    public static ResponseException notAcceptable(String message) {
+        return new ResponseException(HttpStatus.NOT_ACCEPTABLE, "Die angeforderte Ressource ist nicht in dem gewünschten Format verfügbar.");
+    }
+
+    public static ResponseException methodNotAllowed(String message) {
+        return new ResponseException(HttpStatus.METHOD_NOT_ALLOWED, message);
+    }
+
+    public static ResponseException methodNotAllowed(String format, Object... args) {
+        return new ResponseException(HttpStatus.METHOD_NOT_ALLOWED, String.format(format, args));
     }
 
     // endregion
@@ -169,7 +231,7 @@ public class ResponseException extends Exception {
     }
 
     @Nullable
-    public String getDetails() {
+    public Object getDetails() {
         return details;
     }
 

@@ -1,15 +1,7 @@
-import React, { useState, useEffect, ReactNode } from "react";
-import {
-    Box,
-    Button,
-    Divider,
-    List,
-    Typography,
-    SxProps,
-    Theme, useTheme,
-} from "@mui/material";
-import UnfoldLessOutlinedIcon from "@mui/icons-material/UnfoldLessOutlined";
-import UnfoldMoreOutlinedIcon from "@mui/icons-material/UnfoldMoreOutlined";
+import React, {ReactNode, useEffect, useState} from 'react';
+import {Box, Button, Divider, List, SxProps, Theme, Typography, useTheme} from '@mui/material';
+import UnfoldLessOutlinedIcon from '@mui/icons-material/UnfoldLessOutlined';
+import UnfoldMoreOutlinedIcon from '@mui/icons-material/UnfoldMoreOutlined';
 
 const srOnly: SxProps<Theme> = {
     position: 'absolute',
@@ -34,7 +26,7 @@ interface ExpandableListProps<T> {
     listId?: string;
 }
 
-const ExpandableList = <T,>({
+export const ExpandableList = <T,>({
                                 title,
                                 items = [],
                                 initialVisible = 3,
@@ -84,7 +76,6 @@ const ExpandableList = <T,>({
                 <Typography
                     component="h3"
                     variant="h5"
-                    color="primary"
                 >
                     {title}
                 </Typography>
@@ -153,5 +144,3 @@ const ExpandableList = <T,>({
         </Box>
     );
 };
-
-export default ExpandableList;

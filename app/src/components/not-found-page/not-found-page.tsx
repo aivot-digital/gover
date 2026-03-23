@@ -6,7 +6,7 @@ interface NotFoundPageProps {
     msg?: string;
 }
 
-export function NotFoundPage(props: PropsWithChildren<NotFoundPageProps>): JSX.Element {
+export function NotFoundPage(props: PropsWithChildren<NotFoundPageProps>) {
     return (
         <Container sx={{display: 'flex', justifyContent: 'center'}}>
             <Alert

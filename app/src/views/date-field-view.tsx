@@ -10,7 +10,7 @@ export function DateFieldView(props: BaseViewProps<DateFieldElement, string>) {
         element,
         setValue,
         value,
-        error,
+        errors,
         isBusy: isGloballyDisabled,
         isDeriving,
     } = props;
@@ -30,13 +30,13 @@ export function DateFieldView(props: BaseViewProps<DateFieldElement, string>) {
     return (
         <DateFieldComponent
             label={element.label ?? ''}
-            autocomplete={element.autocomplete}
+            autocomplete={element.autocomplete ?? undefined}
             value={value ?? undefined}
-            error={error}
+            error={errors?.join(', ') ?? undefined}
             onChange={setValue}
             disabled={isDisabled}
-            required={element.required}
-            hint={element.hint}
+            required={element.required ?? false}
+            hint={element.hint ?? undefined}
             mode={element.mode ?? DateFieldComponentModelMode.Day}
             busy={isBusy}
             debounce={1000}

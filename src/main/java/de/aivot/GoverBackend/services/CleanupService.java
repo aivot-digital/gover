@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.services;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
-import de.aivot.GoverBackend.form.services.FormService;
+import de.aivot.GoverBackend.form.services.FormVersionService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.services.ExceptionMailService;
 import de.aivot.GoverBackend.services.storages.SubmissionStorageService;
@@ -25,24 +25,22 @@ public class CleanupService {
     private final ScopedAuditService auditService;
 
     private final SubmissionService submissionService;
-    private final FormService formService;
     private final SubmissionStorageService submissionStorageService;
     private final ExceptionMailService exceptionMailService;
+    private final FormVersionService formVersionService;
 
     @Autowired
-    public CleanupService(
-            AuditService auditService,
-            SubmissionService submissionService,
-            FormService formService,
-            SubmissionStorageService submissionStorageService,
-            ExceptionMailService exceptionMailService
-    ) {
+    public CleanupService(AuditService auditService,
+                          SubmissionService submissionService,
+                          SubmissionStorageService submissionStorageService,
+                          ExceptionMailService exceptionMailService,
+                          FormVersionService formVersionService) {
         this.auditService = auditService.createScopedAuditService(CleanupService.class);
 
         this.submissionService = submissionService;
-        this.formService = formService;
         this.submissionStorageService = submissionStorageService;
         this.exceptionMailService = exceptionMailService;
+        this.formVersionService = formVersionService;
     }
 
     @Scheduled(
@@ -65,8 +63,8 @@ public class CleanupService {
 
         for (var submission : archivedSubmission.getContent()) {
             try {
-                var form = formService
-                        .retrieve(submission.getFormId())
+                var form = formVersionService
+                        .retrieve(submission.getFormId(), submission.getFormVersion())
                         .orElse(null);
 
                 if (form == null) {
@@ -77,7 +75,7 @@ public class CleanupService {
                     continue;
                 }
 
-                var deletionWeeks = form.getSubmissionDeletionWeeks();
+                var deletionWeeks = form.getSubmissionRetentionWeeks();
                 if (deletionWeeks == null || deletionWeeks < 1) {
                     deletionWeeks = 4;
                 }

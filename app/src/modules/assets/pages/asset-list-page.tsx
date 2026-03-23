@@ -1,7 +1,7 @@
 import {GenericListPage} from '../../../components/generic-list-page/generic-list-page';
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
-import {Box, Stack, Typography} from '@mui/material';
+import {Stack, Typography} from '@mui/material';
 import {DownloadOutlined, EditOutlined} from '@mui/icons-material';
 import React from 'react';
 import {CellLink} from '../../../components/cell-link/cell-link';
@@ -14,20 +14,21 @@ import {getFileTypeIcon} from '../../../utils/file-type-icon';
 import DriveFolderUploadOutlinedIcon from '@mui/icons-material/DriveFolderUploadOutlined';
 import {getFileTypeLabel} from '../../../utils/file-type-label';
 import Chip from '@mui/material/Chip';
+import {CellContentWrapper} from '../../../components/cell-content-wrapper/cell-content-wrapper';
 
 export function AssetListPage() {
     const dispatch = useAppDispatch();
 
     return (
         <PageWrapper
-            title="Dokumente & Medieninhalte"
+            title="Dateien & Medien"
             fullWidth
             background
         >
             <GenericListPage<Asset>
                 header={{
                     icon: <DriveFolderUploadOutlinedIcon />,
-                    title: 'Dokumente & Medieninhalte',
+                    title: 'Dateien & Medien',
                     actions: [
                         {
                             label: 'Datei hochladen',
@@ -76,9 +77,9 @@ export function AssetListPage() {
                         renderCell: (params) => {
                             const fileType = getFileTypeLabel(params.row.contentType ?? 'application/octet-stream');
                             return (
-                                <Box sx={{display: 'flex', alignItems: 'center'}} title={fileType}>
+                                <CellContentWrapper title={fileType}>
                                     {getFileTypeIcon(params.row.contentType ?? 'application/octet-stream')}
-                                </Box>
+                                </CellContentWrapper>
                             );
                         },
                         disableColumnMenu: true,

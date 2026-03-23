@@ -5,29 +5,32 @@ import de.aivot.GoverBackend.asset.repositories.AssetRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
+import de.aivot.GoverBackend.models.config.GoverConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
-public class AssetService implements EntityService<AssetEntity, String> {
+public class AssetService implements EntityService<AssetEntity, UUID> {
+    private final GoverConfig goverConfig;
     private final AssetRepository repository;
 
     @Autowired
-    public AssetService(AssetRepository repository) {
+    public AssetService(GoverConfig goverConfig, AssetRepository repository) {
+        this.goverConfig = goverConfig;
         this.repository = repository;
     }
 
     @Nonnull
     @Override
     public AssetEntity create(@Nonnull AssetEntity entity) throws ResponseException {
-        entity.setKey(UUID.randomUUID().toString());
+        entity.setKey(UUID.randomUUID());
         return repository.save(entity);
     }
 
@@ -48,7 +51,7 @@ public class AssetService implements EntityService<AssetEntity, String> {
     @Nonnull
     @Override
     public AssetEntity performUpdate(
-            @Nonnull String id,
+            @Nonnull UUID id,
             @Nonnull AssetEntity entity,
             @Nonnull AssetEntity existingEntity
     ) throws ResponseException {
@@ -59,7 +62,7 @@ public class AssetService implements EntityService<AssetEntity, String> {
 
     @Nonnull
     @Override
-    public Optional<AssetEntity> retrieve(@Nonnull String id) {
+    public Optional<AssetEntity> retrieve(@Nonnull UUID id) {
         return repository.findById(id);
     }
 
@@ -72,7 +75,7 @@ public class AssetService implements EntityService<AssetEntity, String> {
     }
 
     @Override
-    public boolean exists(@Nonnull String id) {
+    public boolean exists(@Nonnull UUID id) {
         return repository.existsById(id);
     }
 
@@ -81,5 +84,17 @@ public class AssetService implements EntityService<AssetEntity, String> {
             @Nonnull Specification<AssetEntity> specification
     ) {
         return repository.exists(specification);
+    }
+
+    public String createUrl(String assetKey) {
+        return goverConfig.createUrl("/api/public/assets/" + assetKey);
+    }
+
+    public String createUrl(UUID assetKey) {
+        return createUrl(assetKey.toString());
+    }
+
+    public String createUrl(AssetEntity asset) {
+        return createUrl(asset.getKey());
     }
 }

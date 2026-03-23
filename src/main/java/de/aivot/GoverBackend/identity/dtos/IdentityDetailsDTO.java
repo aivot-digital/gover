@@ -3,18 +3,19 @@ package de.aivot.GoverBackend.identity.dtos;
 import de.aivot.GoverBackend.identity.entities.IdentityProviderEntity;
 import de.aivot.GoverBackend.identity.enums.IdentityProviderType;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import java.util.UUID;
 
 public record IdentityDetailsDTO(
         @Nonnull
         IdentityProviderType type,
         @Nonnull
-        String key,
+        UUID key,
         @Nonnull
         String name,
         @Nullable
-        String iconAssetKey,
+        UUID iconAssetKey,
         @Nonnull
         String metadataIdentifier
 ) {

@@ -1,11 +1,11 @@
 import React from 'react';
-import {Dialog, DialogContent, DialogActions, Button, Box, Skeleton, DialogContentText} from '@mui/material';
+import {Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, Skeleton} from '@mui/material';
 import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined';
-import { useDispatch } from 'react-redux';
-import {TextFieldComponent} from "../../components/text-field/text-field-component";
-import {showSuccessSnackbar} from "../../slices/snackbar-slice";
-import {DialogTitleWithClose} from "../../components/dialog-title-with-close/dialog-title-with-close";
-import {AlertComponent} from "../../components/alert/alert-component";
+import {useDispatch} from 'react-redux';
+import {TextFieldComponent} from '../../components/text-field/text-field-component';
+import {showSuccessSnackbar} from '../../slices/snackbar-slice';
+import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
+import {AlertComponent} from '../../components/alert/alert-component';
 
 interface SamlMetadataDialogProps {
     open: boolean;

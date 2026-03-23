@@ -39,17 +39,17 @@ function countIdOccurrences(comp: AnyElement, id: string): number {
 }
 
 const prefixMap: Record<ElementType, string> = {
-    [ElementType.Root]: 'rt',
+    [ElementType.FormLayout]: 'rt',
     [ElementType.Step]: 'st',
     [ElementType.Alert]: 'al',
-    [ElementType.Container]: 'gp',
+    [ElementType.GroupLayout]: 'gp',
     [ElementType.Checkbox]: 'cx',
     [ElementType.Date]: 'dt',
     [ElementType.Headline]: 'hd',
     [ElementType.MultiCheckbox]: 'mx',
     [ElementType.Number]: 'nm',
     [ElementType.ReplicatingContainer]: 'rp',
-    [ElementType.Richtext]: 'rx',
+    [ElementType.RichText]: 'rx',
     [ElementType.Radio]: 'rd',
     [ElementType.Select]: 'sl',
     [ElementType.Spacer]: 'sp',
@@ -62,31 +62,26 @@ const prefixMap: Record<ElementType, string> = {
     [ElementType.Image]: 'im',
     [ElementType.SubmittedStep]: 'sx',
     [ElementType.FileUpload]: 'fu',
+    [ElementType.DialogLayout]: 'da',
+    [ElementType.StepperLayout]: 'sr',
+    [ElementType.ConfigLayout]: 'cl',
+    [ElementType.FunctionInput]: 'fi',
+    [ElementType.CodeInput]: 'ci',
+    [ElementType.RichTextInput]: 'ri',
+    [ElementType.UiDefinitionInput]: 'ui',
+    [ElementType.IdentityInput]: 'ii',
+    [ElementType.TabLayout]: 'tl',
 };
 
 export function generateElementIdForType(type: ElementType): string {
     return generateElementId(prefixMap[type]);
 }
 
-export function generateElementIdForReplicatingContainerChild(): string {
-    return generateElementId(prefixMap[ElementType.ReplicatingContainer] + '_c');
-}
-
 function generateElementId(prefix: string): string {
-    //@ts-expect-error Something is wrong with the types of the ShortUniqueId library
     const _uid = uid.rnd(10);
     return prefix + '_' + _uid;
 }
 
-/**
- * @deprecated Use resolveId instead
- * @param element
- * @param idPrefix
- */
-export function makeId(element: AnyElement, idPrefix?: string | null): string {
-    return idPrefix != null ? (idPrefix + element.id) : element.id;
-}
-
-export function resolveId(id: string, idPrefix?: string | null): string {
-    return idPrefix != null ? (idPrefix + id) : id;
+export function generateId(length: number = 10) {
+    return uid.rnd(length);
 }

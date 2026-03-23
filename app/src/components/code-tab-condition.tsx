@@ -1,10 +1,9 @@
-import {type AnyElement} from '../models/elements/any-element';
 import {type Condition} from '../models/functions/conditions/condition';
 import {Box, IconButton, Tooltip, Typography} from '@mui/material';
 import {type ConditionOperator, ConditionOperatorIsUnary, ConditionOperatorLabel, getConditionOperatorHint} from '../data/condition-operator';
 import React from 'react';
 import {ElementType} from '../data/element-type/element-type';
-import Evaluators from '../evaluators';
+import {evaluators as Evaluators} from '../evaluators';
 import {SelectFieldComponent} from './select-field/select-field-component';
 import {generateComponentTitle} from '../utils/generate-component-title';
 import {TextFieldComponent} from './text-field/text-field-component';
@@ -30,7 +29,7 @@ export function CodeTabCondition({
                                      onDelete,
                                      onChange,
                                      editable,
-                                 }: CodeTabConditionProps): JSX.Element {
+                                 }: CodeTabConditionProps) {
     const referencedElement = allElements.find((e) => e.element.id === cond.reference);
 
     const evaluator = referencedElement != null ? Evaluators[referencedElement.element.type] : null;
@@ -177,7 +176,7 @@ export function CodeTabCondition({
                                                                 value: val != null ? val.toString() : '',
                                                             });
                                                         }}
-                                                        decimalPlaces={referencedElement.element.type === ElementType.Number ? referencedElement.element.decimalPlaces : 0}
+                                                        decimalPlaces={referencedElement.element.type === ElementType.Number ? (referencedElement.element.decimalPlaces ?? 0) : 0}
                                                         hint={valueHelperText ?? undefined}
                                                         disabled={!editable}
                                                     />

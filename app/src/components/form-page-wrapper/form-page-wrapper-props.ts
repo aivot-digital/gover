@@ -9,6 +9,6 @@ export interface FormPageWrapperProps extends PageWrapperProps {
 
     tabs?: Array<{
         label: string;
-        content: JSX.Element;
+        content: React.ReactNode;
     }>;
 }

@@ -10,5 +10,5 @@ export interface ElementTreeHeaderProps<T extends RootElement | GroupLayout, E e
     onPatch: (updatedElement: Partial<T>, updatedEntity: Partial<E>) => void;
     editable: boolean;
     scope: ElementTreeScope;
-    scrollContainerRef?: RefObject<HTMLDivElement | undefined>;
+    scrollContainerRef?: RefObject<HTMLDivElement | undefined | null>;
 }

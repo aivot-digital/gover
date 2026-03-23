@@ -1,9 +1,10 @@
 package de.aivot.GoverBackend.identity.models;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Represents a link between an entity and an identity provider.
@@ -35,7 +36,7 @@ import java.util.Objects;
  */
 public class IdentityProviderLink implements Serializable {
     @Nullable
-    private String identityProviderKey;
+    private UUID identityProviderKey;
 
     @Nullable
     private List<String> additionalScopes;
@@ -62,11 +63,11 @@ public class IdentityProviderLink implements Serializable {
     // region Getters & Setters
 
     @Nullable
-    public String getIdentityProviderKey() {
+    public UUID getIdentityProviderKey() {
         return identityProviderKey;
     }
 
-    public IdentityProviderLink setIdentityProviderKey(@Nullable String identityProviderKey) {
+    public IdentityProviderLink setIdentityProviderKey(@Nullable UUID identityProviderKey) {
         this.identityProviderKey = identityProviderKey;
         return this;
     }

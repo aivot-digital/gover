@@ -8,7 +8,7 @@ import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {RichTextEditorComponentView} from '../richt-text-editor/rich-text-editor.component.view';
 import {ElementTreeEntity} from '../element-tree/element-tree-entity';
-import {isStringNotNullOrEmpty, isStringNullOrEmpty} from "../../utils/string-utils";
+import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 
 const eligibleEntities: CheckboxTreeOption[] = [
@@ -83,7 +83,7 @@ function orderEligiblePersons(value: string[]): string[] {
         .filter((opt) => value.includes(opt));
 }
 
-export function GeneralInformationComponentEditor(props: BaseEditorProps<IntroductionStepElement, ElementTreeEntity>): JSX.Element {
+export function GeneralInformationComponentEditor(props: BaseEditorProps<IntroductionStepElement, ElementTreeEntity>) {
     return (
         <>
             <Grid
@@ -91,10 +91,10 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <RichTextEditorComponentView
                         value={props.element.teaserText ?? ''}
                         label="Kurzbeschreibung"
@@ -108,15 +108,15 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                />
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }} />
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         value={props.element.initiativeLogoLink ?? ''}
                         label="Die Kurzbeschreibung ergänzendes Logo (z.B. für Projekt, Programm o.Ä.)"
@@ -130,10 +130,10 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         value={props.element.initiativeName ?? ''}
                         label="Alternativtext (Alt-Text) für das ergänzende Logo"
@@ -148,21 +148,19 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                     />
                 </Grid>
             </Grid>
-
             <ElementEditorSectionHeader
                 title="Informationen für antragstellende Personen"
                 variant={"h5"}
             />
-
             <Grid
                 container
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <FormGroup
                         sx={{
                             mt: 2,
@@ -198,18 +196,16 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                     />
                 </Grid>
             </Grid>
-
             <ElementEditorSectionHeader
                 title="Dokumente des Antrages"
                 variant={"h5"}
             />
-
             <StringListInput
                 label="Relevante Dokumente"
                 hint="Geben Sie hier Dokumente an, welche Antragsberechtigte vor Antragstellung lesen sollten."
                 addLabel="Dokument hinzufügen"
                 noItemsHint="Keine relevanten Dokumente angegeben"
-                value={props.element.supportingDocuments}
+                value={props.element.supportingDocuments ?? undefined}
                 onChange={(supportingDocuments) => {
                     props.onPatch({
                         supportingDocuments,
@@ -218,13 +214,12 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 allowEmpty={true}
                 disabled={!props.editable}
             />
-
             <StringListInput
                 label="Einzureichende Dokumente"
                 hint="Geben Sie hier Dokumente an, welche Antragsberechtigte einzureichen haben."
                 addLabel="Dokument hinzufügen"
                 noItemsHint="Keine einzureichenden Dokumente angegeben"
-                value={props.element.documentsToAttach}
+                value={props.element.documentsToAttach ?? undefined}
                 onChange={(supportingDocuments) => {
                     props.onPatch({
                         documentsToAttach: supportingDocuments,
@@ -233,7 +228,6 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 allowEmpty={true}
                 disabled={!props.editable}
             />
-
         </>
     );
 }

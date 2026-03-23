@@ -2,7 +2,7 @@ import React from 'react';
 import {Checkbox, FormControl, FormControlLabel, FormHelperText, Switch} from '@mui/material';
 import {type CheckboxFieldComponentProps} from './checkbox-field-component-props';
 
-export function CheckboxFieldComponent(props: CheckboxFieldComponentProps): JSX.Element {
+export function CheckboxFieldComponent(props: CheckboxFieldComponentProps) {
     return (
         <FormControl
             error={props.error != null}
@@ -20,7 +20,9 @@ export function CheckboxFieldComponent(props: CheckboxFieldComponentProps): JSX.
                                 }
                             }}
                             disabled={props.disabled}
-                            sx={{color: props.busy ? "rgba(0, 0, 0, 0.26)!important" : undefined}}
+                            sx={{
+                                color: props.busy ? "rgba(0, 0, 0, 0.26)!important" : undefined,
+                            }}
                         /> :
                         <Checkbox
                             checked={props.value ?? false}
@@ -30,7 +32,9 @@ export function CheckboxFieldComponent(props: CheckboxFieldComponentProps): JSX.
                                 }
                             }}
                             disabled={props.disabled}
-                            sx={{color: props.busy ? "rgba(0, 0, 0, 0.26)!important" : undefined}}
+                            sx={{
+                                color: props.busy ? "rgba(0, 0, 0, 0.26)!important" : undefined,
+                            }}
                         />
                 }
                 label={props.label + (props.required === true ? ' *' : '')}
@@ -42,7 +46,9 @@ export function CheckboxFieldComponent(props: CheckboxFieldComponentProps): JSX.
                     '& .MuiFormControlLabel-label': {
                         wordBreak: 'break-word',
                         whiteSpace: 'normal',
+                        display: props.invisibleLabel === true ? 'none' : 'block',
                     },
+                    marginRight: 0,
                 }}
             />
 

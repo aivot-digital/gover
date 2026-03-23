@@ -1,0 +1,130 @@
+<!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
+<!--/*@thymesVar id="form" type="de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity"*/-->
+<!--/*@thymesVar id="#qrcode" type="de.aivot.GoverBackend.services.pdf.QrCodeDialect"*/-->
+
+<section
+        id="general-information"
+        th:fragment="general-information"
+>
+    <h2>Allgemeine Informationen</h2>
+
+    <!--/* Hier wird der Teaser-Text angezeigt, welcher grob das Formular zusammenfasst. */-->
+    <div
+            th:if="${ not #strings.isEmpty(form.rootElement?.introductionStep?.teaserText) }"
+            th:utext="${ form.rootElement?.introductionStep?.teaserText }"
+            class="content-without-margin-on-childs"
+    >
+        Allgemeine Informationen für antragstellende Personen
+    </div>
+
+    <!--/* Die Liste der antragsberechtigten Personen des Formulars. Dient als Fragment, welches später wiederverwendet werden kann. */-->
+    <th:block th:with="list=${ form.rootElement?.introductionStep?.eligiblePersons }, label='Antragsberechtigte'">
+        <div
+                class="avoid-break-inside"
+                th:fragment="list"
+                th:if="${ list != null && not list.isEmpty() }"
+        >
+            <h4 th:text="${ label }"></h4>
+            <ul>
+                <li
+                        th:each="doc : ${ list }"
+                        th:text="${ doc }"
+                >
+                    Person
+                </li>
+            </ul>
+        </div>
+    </th:block>
+
+    <!--/* Die Liste der relevanten Dokumente */-->
+    <th:block th:with="list=${ form.rootElement?.introductionStep?.supportingDocuments }, label='Relevante Dokumente'">
+        <th:block th:replace="~{::list}"></th:block>
+    </th:block>
+
+    <!--/* Die Liste der einzureichenden Dokumente */-->
+    <th:block th:with="list=${ form.rootElement?.introductionStep?.documentsToAttach }, label='Einzureichende Dokumente'">
+        <th:block th:replace="~{::list}"></th:block>
+    </th:block>
+
+    <!--/* Informationen über die Antragsfristen */-->
+    <div
+            class="avoid-break-inside"
+            th:if="${ not #strings.isEmpty(form.rootElement.expiring) }"
+    >
+        <h4>Antragsfristen</h4>
+        <div th:utext="${ form.rootElement.expiring }">
+            Antragsfristen
+        </div>
+    </div>
+
+    <!--/* Informationen über die Gebühren des Antrages */-->
+    <div
+            class="avoid-break-inside"
+            th:if="${ not #strings.isEmpty(form.rootElement?.introductionStep?.expectedCosts) }"
+    >
+        <h4>Gebühren dieses Antrages</h4>
+        <div th:utext="${ form.rootElement?.introductionStep?.expectedCosts }" class="content-without-margin-on-childs">
+            Gebühren
+        </div>
+    </div>
+
+    <!--/* Informationen zum Datenschutz */-->
+    <div class="avoid-break-inside">
+        <h3>
+            Hinweise zum Datenschutz
+        </h3>
+
+        <div th:utext="${ form.rootElement.cleanedPrivacyText }">
+            Datenschutzhinweise
+        </div>
+
+        <div th:if="${ base.isBlankPrint || base.isCitizenPrint || base.isDestinationPrint }">
+            <a
+                    class="do-not-print-link"
+                    th:utext="${ base.createUrl(form.slug) + '&dialog=privacy' }"
+                    th:href="${ base.createUrl(form.slug) + '&dialog=privacy' }"
+                    target="_blank"
+            >
+                Link zur Datenschutzerklärung
+            </a>
+        </div>
+
+        <div th:if="${ base.isCitizenPrint }">
+                    <span
+                            class="checked"
+                    ></span>
+            Ich habe die Hinweise zum Datenschutz zur Kenntnis genommen.
+        </div>
+    </div>
+
+    <!--/* ***********************************************************************
+    Bereich für Informationen über die Ausfüllbarkeit dieses Antrags online.
+    *********************************************************************** */-->
+
+    <!-- Der Bereich für die "Online-Ausfüllbarkeit" wird nur auf ausfüllbaren Formularen angezeigt -->
+    <div
+            class="avoid-break-inside d-flex"
+            th:if="${ base.isBlankPrint }"
+            style="margin-top: 2rem"
+    >
+        <div style="margin-right: 2rem;">
+            <h2>Wussten Sie schon? Sie können dieses Formular <br/>bequem online ausfüllen und einreichen.</h2>
+            <p>
+                Besuchen Sie dazu die folgende URL bzw. den Link
+                <a
+                        class="do-not-print-link"
+                        th:href="${ base.createUrl(form.slug) }"
+                        th:text="${ base.createUrl(form.slug) }"
+                ></a>
+                mit Ihrem Webbrowser oder scannen Sie den nebenstehenden QR-Code mit der Kamera Ihres mobilen Endgeräts.
+            </p>
+        </div>
+        <div style="margin-left: auto; margin-top: -1rem;">
+            <img
+                    th:src="${ #qrcode.create(base.createUrl(form.slug)) }"
+                    width="160px"
+                    height="160px"
+            >
+        </div>
+    </div>
+</section>

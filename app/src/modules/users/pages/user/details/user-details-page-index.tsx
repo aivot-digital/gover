@@ -1,34 +1,53 @@
-import {Box, Button, Link, Typography} from '@mui/material';
-import React, {useContext, useMemo, useState} from 'react';
-import {AppConfig} from '../../../../../app-config';
-import {StatusTablePropsItem} from '../../../../../components/status-table/status-table-props';
-import {StatusTable} from '../../../../../components/status-table/status-table';
-import {ApiOutlined, BadgeOutlined, Inventory2Outlined, LockOutlined, MailOutlined, ToggleOnOutlined, WarningOutlined} from '@mui/icons-material';
+import {Box, Button, Grid, Typography} from '@mui/material';
+import React, {useContext, useId, useState} from 'react';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {useNavigate} from 'react-router-dom';
-import {isAdmin} from '../../../../../utils/is-admin';
-import {useApi} from '../../../../../hooks/use-api';
-import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../../components/generic-details-page/generic-details-page-context';
+import {
+    GenericDetailsPageContext,
+    GenericDetailsPageContextType
+} from '../../../../../components/generic-details-page/generic-details-page-context';
 import {type User} from '../../../../../models/entities/user';
-import {UsersApiService} from '../../../users-api-service';
-import {showErrorSnackbar, showSuccessSnackbar} from '../../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../../slices/snackbar-slice';
 import {isApiError} from '../../../../../models/api-error';
 import {GenericDetailsSkeleton} from '../../../../../components/generic-details-page/generic-details-skeleton';
-import {SubmissionsApiService} from '../../../../submissions/submissions-api-service';
 import {ConstraintLinkProps} from '../../../../../dialogs/constraint-dialog/constraint-link-props';
 import {ConfirmDialog} from '../../../../../dialogs/confirm-dialog/confirm-dialog';
 import {ConstraintDialog} from '../../../../../dialogs/constraint-dialog/constraint-dialog';
-import {resolveUserName} from '../../../utils/resolve-user-name';
+import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
+import {TextFieldComponent} from '../../../../../components/text-field/text-field-component';
+import {CheckboxFieldComponent} from '../../../../../components/checkbox-field/checkbox-field-component';
+import {useFormManager} from '../../../../../hooks/use-form-manager';
+import * as yup from 'yup';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {SelectFieldComponent} from '../../../../../components/select-field-2/select-field-component';
+import {SystemUserRole} from '../../../models/user';
+import {UsersApiService} from '../../../users-api-service';
+import {useConfirm} from "../../../../../providers/confirm-provider";
+
+const Schema = yup.object({});
 
 export function UserDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
-    const api = useApi();
     const {
         item: user,
+        isNewItem: isNewUser,
+        setItem,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<User, undefined>;
+
+    const {
+        currentItem: updatedUser,
+        handleInputChange,
+    } = useFormManager<User>(user, Schema as any);
+
+    const confirm = useConfirm();
+
+    const hasAccess = useAccessGuard({
+        onlyGlobalAdmin: true,
+        messageType: 'snackbar',
+    });
 
     const [isBusy, setIsBusy] = useState(false);
 
@@ -36,133 +55,36 @@ export function UserDetailsPageIndex() {
     const [confirmDeleteAction, setConfirmDeleteAction] = useState<(() => void) | undefined>(undefined);
     const [relatedSubmissions, setRelatedSubmissions] = useState<ConstraintLinkProps[] | undefined>(undefined);
 
-    const userInfo: StatusTablePropsItem[] | undefined = useMemo(() => {
-        if (user == null) {
-            return undefined;
-        }
-
-        const userInfoItems: StatusTablePropsItem[] = [
-            {
-                label: 'Name',
-                icon: <BadgeOutlined />,
-                children: resolveUserName(user),
-            },
-            {
-                label: 'E-Mail-Adresse',
-                icon: <MailOutlined />,
-                children: user.email ?
-                    <Link
-                        href={`mailto:${user.email}`}
-                        title="E-Mail an Mitarbeiter:in verfassen (im Standard-Mailprogramm, wenn verfügbar)"
-                        sx={{
-                            textDecoration: 'none',
-                            color: 'inherit',
-                        }}
-                    >
-                        {String(user.email)}
-                    </Link> :
-                    'Keine E-Mail-Adresse hinterlegt',
-            },
-            {
-                label: 'Passwort',
-                icon: <LockOutlined />,
-                children: '****************',
-            },
-            {
-                label: 'Kontostatus',
-                icon: user?.enabled ? <ToggleOnOutlined /> : <WarningOutlined sx={{color: 'warning.main'}} />,
-                children: user?.enabled ?
-                    'Aktiv' :
-                    <Box
-                        sx={{
-                            color: 'warning.dark',
-                        }}
-                    >
-                        {user?.deletedInIdp ? 'Gelöscht' : 'Inaktiv'} – {user?.deletedInIdp ?
-                            'Dieses Konto wurde im IDP gelöscht und hat keinen Zugriff mehr auf das System.'
-                            :
-                            'Dieses Konto wurde im IDP deaktiviert und hat derzeit keinen Zugriff auf das System.'
-                        }
-                    </Box>,
-            },
-            {
-                label: 'Verwendeter IDP',
-                icon: <ApiOutlined />,
-                children: <Typography>
-                    Gover Identity Provider{' '}
-                    <Typography component="span" color="text.secondary" fontSize="0.875rem">
-                        (basierend auf Keycloak)
-                    </Typography>
-                </Typography>,
-            },
-        ];
-
-        if (isAdmin(user)) {
-            userInfoItems.splice(4, 0, {
-                label: 'Administrator:innen-Status',
-                icon: <BadgeOutlined />,
-                children: 'Globale Administrator:in – Diese Mitarbeiter:in hat Administratorrechte für das gesamte System.',
-            });
-        }
-
-        if (user?.deletedInIdp) {
-            userInfoItems.push({
-                label: 'Hinweis zur Datenhaltung gelöschter Konten',
-                icon: <Inventory2Outlined />,
-                alignTop: true,
-                children:
-                    <>
-                        <Typography>
-                            Diese Mitarbeiter:in wurde im IDP gelöscht. Zur Wahrung der Nachvollziehbarkeit von Zuweisungen, Rollen und Mitgliedschaften (z. B. in Fachbereichen und Anträgen) wird eine pseudonymisierte Version des Nutzerkontos in der Plattform archiviert.
-                        </Typography>
-                        <Typography sx={{ mt: 2 }}>
-                            Diese Maßnahme erfolgt unter Berücksichtigung der DSGVO, insbesondere im Rahmen von Art. 5 Abs. 1 lit. e (Speicherbegrenzung) und Art. 6 Abs. 1 lit. f (berechtigtes Interesse), um die Integrität historischer Systemdaten sicherzustellen, ohne eine Rückverfolgbarkeit der betroffenen Person zu ermöglichen.
-                        </Typography>
-                    </>,
-            });
-        }
-
-        return userInfoItems;
-    }, [user]);
-
-    if (user == null || userInfo == null) {
+    if (user == null) {
         return (
             <GenericDetailsSkeleton />
         );
     }
 
-    const checkAndHandleDelete = async () => {
-        if (!user.id) return;
-
-        setIsBusy(true);
-        try {
-            const submissionsApi = new SubmissionsApiService(api);
-            const submissions = await submissionsApi.list(0, 999, undefined, undefined, { assigneeId: user.id, notArchived: true });
-
-            if (submissions.content.length > 0) {
-                const maxVisibleLinks = 5;
-                let processedLinks = submissions.content.slice(0, maxVisibleLinks).map(f => ({
-                    label: f.fileNumber ? `Antrag mit Aktenzeichen ${f.fileNumber}` : `Antrag ohne Aktenzeichen (${f.id})`,
-                    to: `/submissions/${f.id}`
-                }));
-
-                if (submissions.content.length > maxVisibleLinks) {
-                    processedLinks.push({
-                        label: "Weitere Anträge anzeigen…",
-                        to: `/submissions`
+    const handleSave = () => {
+        if (isNewUser) {
+            new UsersApiService()
+                .create(updatedUser!)
+                .then(createdUser => {
+                    navigate(`/users/${createdUser.id}`, {
+                        replace: true,
                     });
-                }
-
-                setRelatedSubmissions(processedLinks);
-                setShowConstraintDialog(true);
-            } else {
-                setConfirmDeleteAction(() => confirmDelete);
-            }
-        } catch (error) {
-            console.error(error);
-            dispatch(showErrorSnackbar('Fehler beim Prüfen der Löschbarkeit.'));
-        } finally {
-            setIsBusy(false);
+                    dispatch(showSuccessSnackbar('Die Mitarbeiter:in wurde erfolgreich erstellt.'));
+                    setItem(createdUser);
+                })
+                .catch(err => {
+                    dispatch(showApiErrorSnackbar(err, 'Beim Erstellen der Mitarbeiter:in ist ein Fehler aufgetreten.'));
+                });
+        } else {
+            new UsersApiService()
+                .update(user.id, updatedUser!)
+                .then(updatedUser => {
+                    dispatch(showSuccessSnackbar('Die Mitarbeiter:in wurde erfolgreich gespeichert.'));
+                    setItem(updatedUser);
+                })
+                .catch(err => {
+                    dispatch(showApiErrorSnackbar(err, 'Beim Speichern der Mitarbeiter:in ist ein Fehler aufgetreten.'));
+                });
         }
     };
 
@@ -170,7 +92,7 @@ export function UserDetailsPageIndex() {
         if (!user.id) return;
 
         setIsBusy(true);
-        new UsersApiService(api)
+        new UsersApiService()
             .destroy(user.id)
             .then(() => {
                 navigate('/users', {
@@ -190,29 +112,100 @@ export function UserDetailsPageIndex() {
             .finally(() => setIsBusy(false));
     };
 
+    const handlePasswordReset = () => {
+        confirm({
+            title: 'Passwort zurücksetzen',
+            children: (
+                <>
+                    <Typography>
+                        Möchten Sie das Passwort für diese Mitarbeiter:in wirklich zurücksetzen?
+                    </Typography>
+                    <Typography>
+                        Dazu wird an die hinterlegte E-Mail-Adresse ein Link zum Zurücksetzen des Passworts gesendet.
+                    </Typography>
+                </>
+            ),
+        })
+            .then((confirm) => {
+                if (confirm) {
+                    new UsersApiService()
+                        .resetPassword(user.id)
+                        .then(() => {
+                            dispatch(showSuccessSnackbar('Der Passwort-Zurücksetzen-Link wurde erfolgreich versendet.'));
+                        })
+                        .catch(err => {
+                            dispatch(showApiErrorSnackbar(err, 'Beim Zurücksetzen des Passworts ist ein Fehler aufgetreten.'));
+                        });
+                }
+            });
+    };
+
     return (
         <>
-            <Box sx={{pt: 1.5}}>
-                <Typography
-                    variant="h5"
-                    sx={{mb: 1}}
+            <Box
+                sx={{
+                    pt: 1.5,
+                }}
+            >
+                <Grid
+                    container
+                    columnSpacing={2}
                 >
-                    Kontoinformationen dieser Mitarbeiter:in
-                </Typography>
-
-                <Typography sx={{mb: 2, maxWidth: 900}}>
-                    Die hier angezeigten Kontoinformationen stammen aus dem Identity-Provider-System (IDP) und werden in einer lokal synchronisierten Kopie vorgehalten.
-                    Bitte beachten Sie, dass Änderungen an diesen Daten ausschließlich über die Verwaltungsoberfläche des IDP vorgenommen werden können.
-                    Änderungen werden im System nach der nächsten Synchronisierung (alle fünf Minuten) sichtbar.
-                </Typography>
-
-                <StatusTable
-                    cardSx={{
-                        mt: 3,
-                    }}
-                    cardVariant="outlined"
-                    items={userInfo}
-                />
+                    <Grid size={6}>
+                        <TextFieldComponent
+                            label="Vorname"
+                            value={updatedUser?.firstName}
+                            onChange={handleInputChange('firstName')}
+                            required
+                        />
+                    </Grid>
+                    <Grid size={6}>
+                        <TextFieldComponent
+                            label="Nachname"
+                            value={updatedUser?.lastName}
+                            onChange={handleInputChange('lastName')}
+                            required
+                        />
+                    </Grid>
+                    <Grid size={6}>
+                        <TextFieldComponent
+                            label="E-Mail-Adresse"
+                            value={updatedUser?.email}
+                            onChange={handleInputChange('email')}
+                            required
+                        />
+                    </Grid>
+                    <Grid size={6}>
+                        <SelectFieldComponent
+                            label="Konto aktiviert"
+                            value={updatedUser?.globalRole}
+                            onChange={handleInputChange('globalRole')}
+                            options={[
+                                {
+                                    label: 'Mitarbeiter:in',
+                                    value: SystemUserRole.Default,
+                                },
+                                {
+                                    label: 'Systemadministrator:in',
+                                    value: SystemUserRole.SystemAdmin,
+                                },
+                                {
+                                    label: 'Superadministrator:in',
+                                    value: SystemUserRole.SuperAdmin,
+                                },
+                            ]}
+                            required
+                        />
+                    </Grid>
+                    <Grid size={6}>
+                        <CheckboxFieldComponent
+                            label="Konto aktiviert"
+                            value={updatedUser?.enabled}
+                            onChange={handleInputChange('enabled')}
+                            variant="switch"
+                        />
+                    </Grid>
+                </Grid>
 
                 <Box
                     sx={{
@@ -222,34 +215,46 @@ export function UserDetailsPageIndex() {
                     }}
                 >
                     {
-                        !user.deletedInIdp &&
-                            <Button
-                            target="_blank"
-                            href={`${AppConfig.staff.host}/admin/${AppConfig.staff.realm}/console/#/${AppConfig.staff.realm}/users/${user?.id}/settings`}
+                        hasAccess &&
+                        <Button
                             variant="contained"
                             color="primary"
                             startIcon={<OpenInNewIcon />}
                             disabled={isBusy}
+                            onClick={handleSave}
                         >
-                            Daten der Mitarbeiter:in verwalten
+                            Speichern
                         </Button>
                     }
 
-                    {/* TODO: Remove code for user deletion in the future
+                    {
+                        hasAccess &&
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            startIcon={<OpenInNewIcon />}
+                            disabled={isBusy}
+                            onClick={handlePasswordReset}
+                        >
+                            Passwort zurücksetzen
+                        </Button>
+                    }
+
+                    {
                         user.deletedInIdp &&
                         <Button
-                            onClick={checkAndHandleDelete}
+                            onClick={() => setConfirmDeleteAction(() => confirmDelete)}
                             variant="outlined"
                             color="error"
-                            startIcon={<DeleteOutlinedIcon />}
+                            startIcon={<Delete />}
                             sx={{
                                 ml: 'auto',
                             }}
                             disabled={isBusy}
                         >
-                            Mitarbeiter:in endgültig löschen
+                            Mitarbeiter:in löschen
                         </Button>
-                    */}
+                    }
                 </Box>
             </Box>
 

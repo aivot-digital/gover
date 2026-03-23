@@ -8,7 +8,7 @@ describe('hasChildElement', () => {
     it('should return true if the child element is a direct child', () => {
         const childElement = generateElementWithDefaultValues(ElementType.Text) as TextFieldElement;
 
-        const element = generateElementWithDefaultValues(ElementType.Container) as GroupLayout;
+        const element = generateElementWithDefaultValues(ElementType.GroupLayout) as GroupLayout;
         element.children.push(childElement);
 
         expect(hasChildElement(element, childElement)).toBe(true);
@@ -17,10 +17,10 @@ describe('hasChildElement', () => {
     it('should return true if the child element is a nested child', () => {
         const nestedChildElement = generateElementWithDefaultValues(ElementType.Text) as TextFieldElement;
 
-        const childElement = generateElementWithDefaultValues(ElementType.Container) as GroupLayout;
+        const childElement = generateElementWithDefaultValues(ElementType.GroupLayout) as GroupLayout;
         childElement.children.push(nestedChildElement);
 
-        const element = generateElementWithDefaultValues(ElementType.Container) as GroupLayout;
+        const element = generateElementWithDefaultValues(ElementType.GroupLayout) as GroupLayout;
         element.children.push(childElement);
 
         expect(hasChildElement(element, nestedChildElement)).toBe(true);
@@ -29,7 +29,7 @@ describe('hasChildElement', () => {
     it('should return false if the child element is not present', () => {
         const childElement = generateElementWithDefaultValues(ElementType.Text) as TextFieldElement;
 
-        const element = generateElementWithDefaultValues(ElementType.Container) as GroupLayout;
+        const element = generateElementWithDefaultValues(ElementType.GroupLayout) as GroupLayout;
 
         expect(hasChildElement(element, childElement)).toBe(false);
     });
@@ -37,10 +37,10 @@ describe('hasChildElement', () => {
     it('should return false if the child element is not present in a nested child', () => {
         const nestedChildElement = generateElementWithDefaultValues(ElementType.Text) as TextFieldElement;
 
-        const childElement = generateElementWithDefaultValues(ElementType.Container) as GroupLayout;
+        const childElement = generateElementWithDefaultValues(ElementType.GroupLayout) as GroupLayout;
         childElement.children.push(nestedChildElement);
 
-        const element = generateElementWithDefaultValues(ElementType.Container) as GroupLayout;
+        const element = generateElementWithDefaultValues(ElementType.GroupLayout) as GroupLayout;
         element.children.push(childElement);
 
         const otherChildElement = generateElementWithDefaultValues(ElementType.Text) as TextFieldElement;

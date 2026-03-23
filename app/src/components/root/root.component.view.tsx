@@ -1,5 +1,10 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {Container, Dialog, DialogContent, Stepper, useTheme} from '@mui/material';
+import Box from '@mui/material/Box';
+import Container from '@mui/material/Container';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import Stepper from '@mui/material/Stepper';
+import {useTheme} from '@mui/material/styles';
 import {type RootElement} from '../../models/elements/root-element';
 import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import Chip from '@mui/material/Chip';
@@ -9,75 +14,122 @@ import {SummaryAttachmentsTooLargeKey} from '../summary/summary.component.view';
 import {SubmitPaymentDataKey} from '../submit/submit.component.view';
 import {ProcessingDataLoaderComponentView} from '../processing-data-loader/processing-data-loader.component.view';
 import {CustomerInputService} from '../../services/customer-input-service';
-import {AppFooter} from '../app-footer/app-footer';
-import {AppMode} from '../../data/app-mode';
-import {AppHeader} from '../app-header/app-header';
+import {RootComponentFooter} from './root-component-footer';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {
-    addError,
-    clearErrors,
-    dequeueDerivationTriggerId,
-    hydrateFromDerivation,
-    hydrateFromDerivationWithoutErrors,
-    selectCustomerInputs,
-    selectDerivationTriggerIdQueue,
-    selectLoadedForm,
-    selectVisibilies,
-    updateCustomerInput,
-} from '../../slices/app-slice';
+import {selectLoadedForm} from '../../slices/app-slice';
 import {nextStep, previousStep, selectCurrentStep, selectUpcomingStepDirection, setCurrentStep} from '../../slices/stepper-slice';
 import {ElementType} from '../../data/element-type/element-type';
 import {removeLoadingSnackbar, showErrorSnackbar, showLoadingSnackbar} from '../../slices/snackbar-slice';
-import {useLogger} from '../../hooks/use-logging';
-import {type FileUploadElementItem, isFileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
-import ProjectPackage from '../../../package.json';
+import {type FileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
 import {type BaseViewProps} from '../../views/base-view';
 import {withAsyncWrapper} from '../../utils/with-async-wrapper';
 import GppGoodOutlinedIcon from '@mui/icons-material/GppGoodOutlined';
 import {CustomStep} from '../custom-step/custom-step';
-import {useApi} from '../../hooks/use-api';
+import {Api, useApi} from '../../hooks/use-api';
 import {useSearchParams} from 'react-router-dom';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
-import {DerivationStepIdentifiers, FormsApiService} from '../../modules/forms/forms-api-service';
 import {SubmissionListResponseDTO} from '../../modules/submissions/dtos/submission-list-response-dto';
 import {SubmissionStatus} from '../../modules/submissions/enums/submission-status';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {useSingleUpdateEffect} from '../../hooks/use-single-update-effect';
 import {ApiError, isApiError} from '../../models/api-error';
-import {selectIdentityId} from '../../slices/identity-slice';
+import {StepElement} from '../../models/elements/steps/step-element';
+import {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
+import {SummaryStepElement} from '../../models/elements/steps/summary-step-element';
+import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
+import {ElementData, ElementDataObject, isElementData, newElementDataObject} from '../../models/element-data';
+import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
+import {SubmittedStepElement} from '../../models/elements/steps/submitted-step-element';
+import {collectErrors, ErrorAlert} from '../error-alert/error-alert';
+import {ElementWithParents, flattenElementsWithParents} from '../../utils/flatten-elements';
+import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
+import {mapElementData, mergeDerivedElementDataWithLocal, walkElementData} from '../../utils/element-data-utils';
+import {isElementChangedByTrigger} from '../../utils/element-reference-utils';
+import {IdentityCustomerInputKey} from '../../modules/identity/constants/identity-customer-input-key';
+import {IdentityData} from '../../modules/identity/models/identity-data';
+import {CustomerInputLoader} from '../../dialogs/customer-input-loader/customer-input-loader';
+import {addDerivationLogItems} from '../../slices/logging-slice';
+import {RootComponentHeader} from './root-component-header';
+import {FormEntity} from '../../modules/forms/entities/form-entity';
+import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
+import {FormApiService} from '../../modules/forms/services/form-api-service';
+
+type AnyStepElement = StepElement | IntroductionStepElement | SummaryStepElement | SubmitStepElement | SubmittedStepElement;
 
 const SubmissionIdSearchParam = 'submissionId';
 
 const checkTimeoutMinMs = 1000;
 
-export function RootComponentView({
-                                      allElements,
-                                      element,
-                                      scrollContainerRef,
-                                      mode,
-                                  }: BaseViewProps<RootElement, void>) {
-    const log = useLogger('RootComponentView');
+function extractVisibleSteps(children: StepElement[] | null | undefined, introductionStep: IntroductionStepElement | null | undefined, summaryStep: SummaryStepElement | null | undefined, submitStep: SubmitStepElement | null | undefined, elementData: ElementData): AnyStepElement[] {
+    if (children == null || introductionStep == null || summaryStep == null || submitStep == null) {
+        return [];
+    }
+
+    const visibleChildren = [];
+    for (const child of children) {
+        const childData = elementData[child.id];
+        console.log('CHILD STEP', child, childData);
+        if (childData?.isVisible ?? true) {
+            visibleChildren.push(child);
+        }
+    }
+
+    return [
+        introductionStep,
+        ...visibleChildren,
+        summaryStep,
+        submitStep,
+    ];
+}
+
+function extractCurrentStep(currentStep: number, allVisibleSteps: AnyStepElement[]) {
+    if (currentStep < 0 || currentStep >= allVisibleSteps.length) {
+        return null;
+    }
+    return allVisibleSteps[currentStep];
+}
+
+
+export function RootComponentView(props: BaseViewProps<RootElement, void>) {
+    const {
+        rootElement,
+        allElements,
+        element,
+        scrollContainerRef,
+        mode,
+        elementData,
+        onElementDataChange,
+        onElementBlur,
+        disableVisibility,
+    } = props;
+
     const api = useApi();
     const theme = useTheme();
     const [searchParams, setSearchParams] = useSearchParams();
 
     const dispatch = useAppDispatch();
+
+    // TODO: internalize these information
     const form = useAppSelector(selectLoadedForm);
-    const customerInput = useAppSelector(selectCustomerInputs);
     const adminSettings = useAppSelector((state) => state.adminSettings);
     const currentStep = useAppSelector(selectCurrentStep);
     const upcomingStepDirection = useAppSelector(selectUpcomingStepDirection);
-    const visibilities = useAppSelector(selectVisibilies);
-    const derivationTriggerIdQueue = useAppSelector(selectDerivationTriggerIdQueue);
-    const identityId = useAppSelector(selectIdentityId);
+
+    const [derivationTriggerIdQueue, setDerivationTriggerIdQueue] = useState<string[]>([]);
+    const elementDataBufferRef = useRef<ElementData | undefined>(undefined);
 
     const [isBusy, setIsBusy] = useState(false);
-    const [isDeriving, setIsDeriving] = useState<boolean | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     const [submission, setSubmission] = useState<SubmissionListResponseDTO>();
+
+    // The `isDeriving` state is used to indicate if the form is currently deriving its state.
+    // Deriving is active when there are items in the `derivationTriggerIdQueue`.
+    const isDeriving = useMemo(() => {
+        return derivationTriggerIdQueue.length > 0;
+    }, [derivationTriggerIdQueue]);
 
     // Deconstruct the element to get the steps.
     const {
@@ -87,42 +139,40 @@ export function RootComponentView({
         submitStep,
     } = element;
 
-    // Determine the steps to be displayed.
-    const visibleChildSteps = useMemo(() => {
-        if (children == null) {
-            return [];
-        }
-
-        return children
-            .filter((stepElement) => {
-                return visibilities[stepElement.id] ?? true;
-            });
-    }, [children, visibilities]);
-
     // Collecting all steps including the fixed steps
-    const allSteps = useMemo(() => [
-        introductionStep,
-        ...visibleChildSteps,
-        summaryStep,
-        submitStep,
-    ], [introductionStep, summaryStep, submitStep, visibleChildSteps]);
+    const allVisibleSteps = useMemo(() => extractVisibleSteps(children, introductionStep, summaryStep, submitStep, elementData), [children, introductionStep, summaryStep, submitStep, elementData]);
+
+    // Extract the current step based on the current step index and all visible steps
+    const currentStepElement = useMemo(() => extractCurrentStep(currentStep, allVisibleSteps), [currentStep, allVisibleSteps]);
 
     // Determine the total number of steps
-    const totalStepCount = useMemo(() => {
-        return allSteps.length;
-    }, [allSteps]);
+    const totalStepCount = useMemo(() => allVisibleSteps.length, [allVisibleSteps]);
 
-    const stepRefs = useRef(allSteps.map(() => React.createRef<HTMLDivElement>()));
+    // Create a ref for each step to allow scrolling to the step when it becomes active.
+    const stepRefs = useRef(allVisibleSteps.map(() => React.createRef<HTMLDivElement>()));
 
     // Check if a form derivation is necessary, when the form is loaded and some of the steps have derivable aspects.
     useSingleUpdateEffect(() => {
-        if (form != null && form.root.children.some(step => hasDerivableAspects(step, true))) {
-            determineFormState(false, 'busy', ['ALL']);
+        if (element.children == null) {
+            return;
         }
-    }, [form]);
+
+        const stepsWithDerivableAspectsExist = element
+            .children
+            .some(step => hasDerivableAspects(step, true));
+
+        if (stepsWithDerivableAspectsExist) {
+            determineFormState({
+                triggeringElementIds: [],
+                performValidation: false,
+                forceAll: true,
+                lookahead: false,
+            });
+        }
+    }, [element]);
 
     // Set basic submission data from query params.
-    // This is used, when redirected from payment provider.
+    // This is used when redirected from payment provider.
     useEffect(() => {
         const submissionId = searchParams.get(SubmissionIdSearchParam);
 
@@ -145,14 +195,25 @@ export function RootComponentView({
         dispatch(setCurrentStep(totalStepCount));
     }, [searchParams, totalStepCount]);
 
+    // Handle the derivation trigger queue.
+    // This effect runs whenever there are items in the derivationTriggerIdQueue.
     useEffect(() => {
         if (derivationTriggerIdQueue.length === 0) {
             return;
         }
 
-        determineFormState(false, 'deriving')
+        determineFormState({
+            triggeringElementIds: derivationTriggerIdQueue,
+            performValidation: false,
+            forceAll: false,
+            lookahead: false,
+        })
             .finally(() => {
-                dispatch(dequeueDerivationTriggerId());
+                setDerivationTriggerIdQueue(prevState => {
+                    const copy = [...prevState];
+                    copy.shift();
+                    return copy;
+                });
             });
     }, [derivationTriggerIdQueue]);
 
@@ -162,11 +223,13 @@ export function RootComponentView({
             return;
         }
 
-        // Clear existing errors
-        dispatch(clearErrors());
-
         // Check if the current step is valid
-        const currentPageValid = await determineFormState(true, 'busy');
+        const currentPageValid = await determineFormState({
+            triggeringElementIds: [],
+            performValidation: true,
+            forceAll: false,
+            lookahead: true,
+        });
 
         if (!currentPageValid) {
             return;
@@ -194,24 +257,42 @@ export function RootComponentView({
 
         // Check if submit step
         else if (currentStep === (totalStepCount - 1)) {
-
-            const formsApiService = new FormsApiService(api);
+            const formsApiService = new FormApiService();
 
             setIsSubmitting(true);
 
+            const identityId = (elementData[IdentityCustomerInputKey]?.inputValue as IdentityData | undefined | null)?.identityId;
+
             let submitResponse: SubmissionListResponseDTO | null = null;
             try {
+                const submitElementData: ElementData = mapElementData(rootElement, elementData, (_, data) => {
+                    if (data != null) {
+                        const updated: ElementDataObject = {
+                            ...data,
+                            previousInputValue: null,
+                        };
+                        return updated;
+                    }
+                    return null;
+                });
                 submitResponse = await formsApiService
-                    .submit(form.id, customerInput, identityId);
+                    .submit({
+                        formId: form.form.id,
+                        version: form.version.version,
+                    }, submitElementData, identityId);
             } catch (error: ApiError | any) {
                 if (isApiError(error) || 'status' in error) {
-                    switch (error.status) {
-                        case 406:
-                            dispatch(showErrorSnackbar('Der Antrag konnte nicht korrekt übertragen werden. In den von Ihnen hochgeladenen Dokumenten wurde Schadsoftware erkannt.'));
-                            break;
-                        default:
-                            dispatch(showErrorSnackbar('Der Antrag konnte nicht korrekt übertragen werden. Bitte probieren Sie es zu einem späteren Zeitpunkt erneut.'));
-                            break;
+                    if (isApiError(error) && error.details != null && typeof error.details === 'object' && isElementData(error.details)) {
+                        onElementDataChange(error.details as ElementData, []);
+                    } else {
+                        switch (error.status) {
+                            case 406:
+                                dispatch(showErrorSnackbar('Der Antrag konnte nicht korrekt übertragen werden. In den von Ihnen hochgeladenen Dokumenten wurde Schadsoftware erkannt.'));
+                                break;
+                            default:
+                                dispatch(showErrorSnackbar('Der Antrag konnte nicht korrekt übertragen werden. Bitte probieren Sie es zu einem späteren Zeitpunkt erneut.'));
+                                break;
+                        }
                     }
                 } else {
                     dispatch(showErrorSnackbar('Der Antrag konnte nicht korrekt übertragen werden. Bitte probieren Sie es zu einem späteren Zeitpunkt erneut.'));
@@ -228,14 +309,16 @@ export function RootComponentView({
                     destinationId: 0,
                     destinationSuccess: false,
                     fileNumber: '',
-                    formId: form.id,
+                    formId: form.form.id,
                     isTestSubmission: false,
                     status: SubmissionStatus.Pending,
                 });
                 dispatch(nextStep());
                 // Clear possible identity data from search params
-                setSearchParams({});
-                CustomerInputService.cleanCustomerInput(form);
+                setSearchParams({}, {
+                    replace: true,
+                });
+                CustomerInputService.cleanCustomerInput(form.form.slug, form.version.version);
             }
         }
 
@@ -245,117 +328,226 @@ export function RootComponentView({
         }
     };
 
-    const determineFormState = async (validate: boolean, blockingMode: 'busy' | 'deriving', stepOverride?: DerivationStepIdentifiers): Promise<boolean> => {
-        log.debug('Determine form state.');
+    const handlePreviousStep = () => {
+        const clearedErrors = mapElementData(element, elementData, (el, data) => {
+            if (data != null) {
+                return {
+                    ...data,
+                    computedErrors: null,
+                };
+            } else {
+                return newElementDataObject(el.type);
+            }
+        });
+        dispatch(previousStep());
+        onElementDataChange(clearedErrors, []);
+    };
 
+    const determineFormState = async (options: {
+        performValidation: boolean;
+        triggeringElementIds: string[];
+        forceAll: boolean;
+        lookahead: boolean;
+    }): Promise<boolean> => {
         // Can't derive state for null application
-        if (form == null) {
-            log.warn('Cannot determine form state: No form was loaded.');
+        if (form == null || element == null || children == null || currentStepElement == null) {
             return false;
         }
 
-        const currentStepId = allSteps[currentStep]?.id as string | undefined;
+        console.group('Start determining form state with options:', options);
 
-        if (currentStepId == null) {
-            return false;
-        }
+        // Get the id of the current step and the next step.
+        const currentStepId: string = currentStepElement.id;
+        const nextStepId: string | undefined = allVisibleSteps[currentStep + 1]?.id;
 
-        const nextStepId = allSteps[currentStep + 1]?.id as string | undefined;
+        console.log('Current step id:', currentStepId);
+        console.log('Next step id:', nextStepId);
 
-        const otherStepsToDerive = form.root.children
-            .filter(step => hasDerivableAspects(step, true))
-            .map(step => step.id);
+        // Get the list of all steps, which are relevant for the derivation.
+        // This includes the introduction step, all children that do not have derivable aspects, the summary step and the submit step.
+        const allStepsWithoutDerivableAspects = [
+            element.introductionStep?.id ?? '',
+            ...children
+                .filter(step => !hasDerivableAspects(step, true))
+                .map(step => step.id),
+            element.summaryStep?.id ?? '',
+            element.submitStep?.id ?? '',
+        ];
 
-        const blocker = blockingMode === 'busy' ? setIsBusy : setIsDeriving;
+        const allSteps = [
+            element.introductionStep?.id ?? '',
+            ...children
+                .map(step => step.id),
+            element.summaryStep?.id ?? '',
+            element.submitStep?.id ?? '',
+        ];
 
-        blocker(true);
+        console.log('Found steps without derivable aspects:', allStepsWithoutDerivableAspects);
 
-        if (blockingMode === 'deriving') {
+        // Determine the list of step ids that should be skipped for errors, visibilities, overrides and values.
+
+        const skipErrorsForStepIds = allSteps
+            .filter((stepId) => stepId != currentStepId);
+
+        console.log('Skip errors for step ids:', skipErrorsForStepIds);
+
+        const skipVisibilitiesForStepIds = allStepsWithoutDerivableAspects
+            .filter((stepId) => stepId != currentStepId && (!options.lookahead || stepId != nextStepId));
+
+        console.log('Skip visibilities for step ids:', skipVisibilitiesForStepIds);
+
+        const skipOverridesForStepIds = allStepsWithoutDerivableAspects
+            .filter((stepId) => stepId != currentStepId && (!options.lookahead || stepId != nextStepId));
+
+        console.log('Skip overrides for step ids:', skipOverridesForStepIds);
+
+        const skipValuesForStepIds = allStepsWithoutDerivableAspects
+            .filter((stepId) => stepId != currentStepId && (!options.lookahead || stepId != nextStepId));
+
+        console.log('Skip values for step ids:', skipValuesForStepIds);
+
+        // Check if we should perform validation or visibility derivation.
+        const doNotPerformErrorDerivation = !options.performValidation || adminSettings.disableValidation;
+        const doNotPerformVisibilityDerivation = adminSettings.disableVisibility;
+
+        // If no derivation is triggered were running in blocking mode 'busy'.
+        const mode = (options.triggeringElementIds ?? []).length > 0 ? 'deriving' : 'busy';
+
+        console.log('Determined mode:', mode);
+
+        // Set a busy state if we are in deriving mode or busy mode.
+        // If we are in deriving mode, we show a loading snackbar.
+        if (mode === 'busy') {
+            setIsBusy(true);
+        } else {
             dispatch(showLoadingSnackbar('Berechnungen werden durchgeführt…'));
         }
 
         try {
             const derivationResult = await withAsyncWrapper({
                 desiredMinRuntime: 600,
-                main: () => new FormsApiService(api).determineFormState(
-                    form.id,
-                    customerInput,
+                main: () => new FormApiService().deriveForm(
+                    form.form.slug,
+                    form.version.version,
+                    elementData,
                     {
-                        stepsToValidate: stepOverride ?? ((adminSettings.disableValidation || !validate) ? ['NONE'] : [currentStepId]),
-                        stepsToCalculateVisibilities: stepOverride ?? (adminSettings.disableVisibility ? ['NONE'] : (nextStepId != null ? [currentStepId, nextStepId, ...otherStepsToDerive] : [currentStepId, ...otherStepsToDerive])),
-                        stepsToCalculateValues: stepOverride ?? (nextStepId != null ? [currentStepId, nextStepId] : [currentStepId]),
-                        stepsToCalculateOverrides: stepOverride ?? (nextStepId != null ? [currentStepId, nextStepId] : [currentStepId]),
+                        skipErrorsFor: options.forceAll ? [] : (doNotPerformErrorDerivation ? ['ALL'] : skipErrorsForStepIds),
+                        skipVisibilitiesFor: options.forceAll ? [] : (doNotPerformVisibilityDerivation ? ['ALL'] : skipVisibilitiesForStepIds),
+                        skipValuesFor: options.forceAll ? [] : (skipValuesForStepIds),
+                        skipOverridesFor: options.forceAll ? [] : (skipOverridesForStepIds),
                     },
                 ),
-                after: async (derivationResult) => {
-                    if (validate) {
-                        dispatch(hydrateFromDerivation(derivationResult));
-                    } else {
-                        dispatch(hydrateFromDerivationWithoutErrors(derivationResult));
-                    }
-                },
             }).finally(() => {
-                blocker(false);
-
-                if (blockingMode === 'deriving') {
+                if (mode === 'busy') {
+                    setIsBusy(false);
+                } else {
                     dispatch(removeLoadingSnackbar());
                 }
             });
 
-            return Object.keys(derivationResult.errors).length === 0 || adminSettings.disableValidation;
+            if (elementDataBufferRef.current != null) {
+                console.log('Merging derived element data with local element data buffer');
+                console.log('Derivation result:', derivationResult);
+                console.log('Element data buffer:', elementDataBufferRef.current);
+
+                dispatch(addDerivationLogItems(derivationResult.logItems));
+
+                const mergedElementData = mergeDerivedElementDataWithLocal(
+                    derivationResult.elementData,
+                    elementDataBufferRef.current,
+                    element,
+                    {
+                        dontOverwriteErrors: options.performValidation ? false : true,
+                    },
+                );
+                elementDataBufferRef.current = undefined;
+                onElementDataChange(mergedElementData, []);
+            } else {
+                console.log('Setting derived element data directly');
+                onElementDataChange(derivationResult.elementData, []);
+            }
+
+            console.groupEnd();
+
+            return collectErrors(currentStepElement, derivationResult.elementData).length === 0 || adminSettings.disableValidation;
         } catch (err) {
             console.error(err);
             dispatch(showErrorSnackbar('Dynamische Funktionen konnten nicht ausgewertet werden.'));
+
+            console.groupEnd();
 
             return adminSettings.disableValidation;
         }
     };
 
     const determineUploadSize = (): Promise<boolean> => {
-        return withAsyncWrapper<undefined, boolean>({
+        return withAsyncWrapper<undefined, string | null>({
             desiredMinRuntime: checkTimeoutMinMs,
             runtimeCallback: setIsLoading,
-            main: async () => {
-                try {
-                    const {maxFileSize} = await new FormsApiService(api).getMaxFileSize(form!.id);
-                    const maxFileSizeBytes = maxFileSize * 1000 * 1000;
-                    const totalFileSize = Object.keys(customerInput)
-                        .map((c) => customerInput[c])
-                        .filter((c) => Array.isArray(c) && c.length > 0 && isFileUploadElementItem(c[0]))
-                        .map((c) => c.reduce((acc: number, item: FileUploadElementItem) => acc + item.size, 0))
-                        .reduce((acc, size) => acc + size, 0);
-                    if (totalFileSize > maxFileSizeBytes) {
-                        dispatch(addError({
-                            key: SummaryAttachmentsTooLargeKey,
-                            error: `Die Gesamtgröße der von Ihnen hinzugefügten Anlagen überschreitet das Maximum von ${maxFileSize.toFixed(0)} Megabyte.`,
-                        }));
-
-                        return false;
-                    }
-                    return true;
-                } catch (error) {
-                    console.error(error);
-                    dispatch(showErrorSnackbar('Der Maximalgröße der Anlagen konnte nicht korrekt überprüft werden. Bitte probieren Sie es zu einem späteren Zeitpunkt erneut.'));
+            main: () => determineUploadSizeError(
+                element,
+                elementData,
+                form!.form,
+                form!.version,
+                api,
+            ),
+        })
+            .then((errorMessage) => {
+                if (errorMessage != null) {
+                    onElementDataChange({
+                        ...elementData,
+                        [SummaryAttachmentsTooLargeKey]: {
+                            $type: ElementType.FileUpload,
+                            inputValue: [],
+                            previousInputValue: null,
+                            isVisible: true,
+                            isPrefilled: false,
+                            isDirty: true,
+                            computedErrors: [errorMessage],
+                            computedOverride: undefined,
+                            computedValue: undefined,
+                        },
+                    }, []);
                     return false;
+                } else {
+                    return true;
                 }
-            },
-        });
+            })
+            .catch((error) => {
+                console.error(error);
+                dispatch(showErrorSnackbar('Der Maximalgröße der Anlagen konnte nicht korrekt überprüft werden. Bitte probieren Sie es zu einem späteren Zeitpunkt erneut.'));
+                return false;
+            });
     };
 
     // Calculates the price for the current form and customer input.
     // Returns false, if the price could not be calculated.
     const calculatePrice = (): Promise<boolean> => {
+        if (form == null) {
+            return Promise.resolve(false);
+        }
+
         return withAsyncWrapper<undefined, boolean>({
             desiredMinRuntime: checkTimeoutMinMs,
             runtimeCallback: setIsLoading,
             main: async () => {
                 try {
-                    const calculatedCosts = await new FormsApiService(api)
-                        .calculateCosts(form!.id, customerInput);
-                    dispatch(updateCustomerInput({
-                        key: SubmitPaymentDataKey,
-                        value: calculatedCosts,
-                    }));
+                    const calculatedCosts = await new FormApiService()
+                        .calculateCosts(form.form.slug, form.version.version, elementData);
+                    onElementDataChange({
+                        ...elementData,
+                        [SubmitPaymentDataKey]: {
+                            $type: ElementType.Number,
+                            inputValue: calculatedCosts,
+                            previousInputValue: null,
+                            isVisible: true,
+                            isPrefilled: false,
+                            isDirty: true,
+                            computedErrors: undefined,
+                            computedOverride: undefined,
+                            computedValue: calculatedCosts,
+                        },
+                    }, []);
                 } catch (error: any) {
                     console.error(error);
                     dispatch(showErrorSnackbar('Die Kosten konnten nicht korrekt berechnet werden. Bitte probieren Sie es zu einem späteren Zeitpunkt erneut.'));
@@ -367,9 +559,80 @@ export function RootComponentView({
         });
     };
 
+    const handleElementDataChange = (elementData: ElementData, triggeringElementIds: string[]): void => {
+        if (currentStepElement == null || children == null) {
+            return;
+        }
+
+        console.group('Start element data change', elementData, triggeringElementIds);
+
+        onElementDataChange(elementData, []);
+
+        const flatCurrentElements = flattenElementsWithParents(currentStepElement, [], false);
+        const flatChildren = children.map((e, i) => ({
+            element: e,
+            parents: [element],
+            index: i,
+        }));
+
+        const allElementsToConsider: ElementWithParents[] = [
+            ...flatCurrentElements,
+            ...flatChildren,
+        ].filter(e => {
+            return e.element.visibility != null ||
+                e.element.override != null ||
+                (isAnyInputElement(e.element) && e.element.value != null);
+        });
+
+        const relevantTriggeringElementIds = triggeringElementIds
+            .filter((id) => allElementsToConsider.some((element) => isElementChangedByTrigger(element, id)));
+
+        if (relevantTriggeringElementIds.length > 0) {
+            console.log('Found relevant triggering element ids:', relevantTriggeringElementIds);
+
+            elementDataBufferRef.current = elementData;
+            setDerivationTriggerIdQueue((prev) => [
+                ...prev,
+                ...relevantTriggeringElementIds,
+            ]);
+        } else {
+            console.log('No relevant triggering element ids found');
+
+            if (derivationTriggerIdQueue.length > 0) {
+                console.log('Setting element data buffer to current element data as no relevant triggering element ids were found, but derivation queue is not empty');
+                elementDataBufferRef.current = elementData;
+            } else {
+                console.log('Setting element data buffer to undefined as no relevant triggering element ids were found and derivation queue is empty');
+                elementDataBufferRef.current = undefined;
+            }
+        }
+
+        console.groupEnd();
+    };
+
     return (
         <>
-            <AppHeader mode={AppMode.Customer} />
+            {
+                form != null &&
+                <RootComponentHeader
+                    form={form.form}
+                    version={form.version}
+                    onDeleteFormData={() => {
+                        onElementDataChange({}, []);
+                        dispatch(setCurrentStep(0));
+                    }}
+                />
+            }
+
+            {
+                form != null &&
+                <CustomerInputLoader
+                    form={form.form}
+                    version={form.version}
+                    onElementDataLoad={data => onElementDataChange(data, [])}
+                    isBusy={isBusy || isDeriving}
+                />
+            }
 
             <main role="main">
                 <span
@@ -392,7 +655,7 @@ export function RootComponentView({
                     sx={{
                         mt: 5,
                         mb: 5,
-                        /* Remove spacing for richtext components that are immediately preceded by a headline component  */
+                        /* Remove spacing for richtext components that are immediately preceded by a headline component */
                         '& .MuiGrid-item:has(.headline-component-content) + .MuiGrid-item.MuiGrid-grid-md-12:has(.richtext-component-content)': {
                             paddingTop: 0,
                         },
@@ -418,19 +681,16 @@ export function RootComponentView({
                             orientation="vertical"
                         >
                             {
-                                allSteps
+                                allVisibleSteps
                                     .map((step, index) => (
                                         <CustomStep
                                             key={index}
                                             step={step}
                                             stepIndex={index}
                                             isFirstStep={index === 0}
-                                            isLastStep={index === allSteps.length - 1}
+                                            isLastStep={index === allVisibleSteps.length - 1}
                                             onNext={handleNextStep}
-                                            onPrevious={() => {
-                                                dispatch(clearErrors());
-                                                dispatch(previousStep());
-                                            }}
+                                            onPrevious={handlePreviousStep}
                                             active={currentStep === index}
                                             navDirection={upcomingStepDirection}
                                             stepRefs={stepRefs}
@@ -439,11 +699,23 @@ export function RootComponentView({
                                             isDeriving={isDeriving ?? false}
                                         >
                                             <ViewDispatcherComponent
+                                                rootElement={rootElement}
                                                 allElements={allElements}
                                                 element={step}
                                                 isBusy={isBusy}
                                                 isDeriving={isDeriving ?? false}
                                                 mode={mode}
+                                                elementData={elementData}
+                                                onElementDataChange={handleElementDataChange}
+                                                onElementBlur={onElementBlur}
+                                                scrollContainerRef={scrollContainerRef}
+                                                disableVisibility={disableVisibility}
+                                                derivationTriggerIdQueue={derivationTriggerIdQueue}
+                                            />
+
+                                            <ErrorAlert
+                                                element={step}
+                                                elementData={elementData}
                                             />
                                         </CustomStep>
                                     ))
@@ -470,11 +742,7 @@ export function RootComponentView({
                                 stepIndex={-1}
                                 isFirstStep={false}
                                 isLastStep={false}
-                                step={{
-                                    id: '',
-                                    type: ElementType.SubmittedStep,
-                                    appVersion: ProjectPackage.version,
-                                }}
+                                step={generateElementWithDefaultValues(ElementType.SubmittedStep) as SubmittedStepElement}
                                 title="Ihr Antrag wurde erfolgreich eingereicht"
                                 active
                                 navDirection={upcomingStepDirection}
@@ -488,7 +756,8 @@ export function RootComponentView({
                                     form != null &&
                                     <Submitted
                                         submission={submission}
-                                        form={form}
+                                        form={form.form}
+                                        version={form.version}
                                     />
                                 }
                             </CustomStep>
@@ -519,12 +788,13 @@ export function RootComponentView({
                                     pr: 1,
                                     cursor: 'help',
                                 }}
-                                icon={<span
-                                    style={{
-                                        color: 'var(--hw-primary)',
+                                icon={<Box
+                                    component="span"
+                                    sx={{
+                                        color: (theme) => theme.palette.primary.main,
                                         transform: 'translateY(2px)',
                                     }}
-                                ><GppGoodOutlinedIcon fontSize="small" /></span>}
+                                ><GppGoodOutlinedIcon fontSize="small" /></Box>}
                                 label="Lokal auf Ihrem Gerät zwischengespeichert"
                                 variant="outlined"
                             />
@@ -533,9 +803,13 @@ export function RootComponentView({
                 }
             </main>
 
-            <AppFooter
-                mode={AppMode.Customer}
-            />
+            {
+                form != null &&
+                <RootComponentFooter
+                    form={form.form}
+                    version={form.version}
+                />
+            }
 
             <Dialog
                 open={isLoading}
@@ -562,3 +836,36 @@ export function RootComponentView({
     );
 }
 
+/**
+ * Returns null if the file sizes are within the limits, returns an error message if the total file size exceeds the maximum allowed size.
+ */
+async function determineUploadSizeError(element: RootElement, elementData: ElementData, form: FormEntity, version: FormVersionEntity, api: Api): Promise<string | null> {
+    let totalFileSize = 0;
+
+    walkElementData(
+        element,
+        elementData,
+        (element, value) => {
+            if (element.type === ElementType.FileUpload && value != null) {
+                totalFileSize += (value as FileUploadElementItem[])
+                    .reduce((acc, item) => acc + item.size, 0);
+            }
+        },
+    );
+
+    if (totalFileSize === 0) {
+        // No file uploads, so no size check needed
+        return null;
+    }
+
+    const {maxFileSize} = await new FormApiService()
+        .getMaxFileSize(form.slug, version.version);
+
+    const maxFileSizeBytes = maxFileSize * 1000 * 1000;
+
+    if (totalFileSize > maxFileSizeBytes) {
+        return `Die Gesamtgröße der von Ihnen hinzugefügten Anlagen überschreitet das Maximum von ${maxFileSize.toFixed(0)} Megabyte.`;
+    }
+
+    return null;
+}

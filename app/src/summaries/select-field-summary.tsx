@@ -1,10 +1,10 @@
 import React from 'react';
-import {Box, Button, Grid, Typography, useTheme} from '@mui/material';
+import {Grid, Typography, useTheme} from '@mui/material';
 import {type BaseSummaryProps} from './base-summary';
 import {type SelectFieldElement} from '../models/elements/form/input/select-field-element';
 import {stringOrDefault} from '../utils/string-utils';
 
-export function SelectFieldSummary(props: BaseSummaryProps<SelectFieldElement, string>): JSX.Element {
+export function SelectFieldSummary(props: BaseSummaryProps<SelectFieldElement, string>) {
     const options = (props.model.options ?? []).map((option) => {
         if (typeof option === 'string') {
             return {
@@ -27,9 +27,6 @@ export function SelectFieldSummary(props: BaseSummaryProps<SelectFieldElement, s
             }}
         >
             <Grid
-                item
-                xs={12}
-                md={4}
                 sx={{
                     textAlign: 'left',
                     pr: 5,
@@ -37,7 +34,10 @@ export function SelectFieldSummary(props: BaseSummaryProps<SelectFieldElement, s
                         textAlign: 'right',
                     },
                 }}
-            >
+                size={{
+                    xs: 12,
+                    md: 4
+                }}>
                 <Typography
                     variant="body2"
                     sx={{
@@ -51,10 +51,10 @@ export function SelectFieldSummary(props: BaseSummaryProps<SelectFieldElement, s
                 </Typography>
             </Grid>
             <Grid
-                item
-                xs={12}
-                md={8}
-            >
+                size={{
+                    xs: 12,
+                    md: 8
+                }}>
                 <Typography
                     variant="body2"
                 >

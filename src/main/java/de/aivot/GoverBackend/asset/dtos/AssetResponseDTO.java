@@ -2,12 +2,13 @@ package de.aivot.GoverBackend.asset.dtos;
 
 import de.aivot.GoverBackend.asset.entities.AssetEntity;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public record AssetResponseDTO(
         @Nonnull
-        String key,
+        UUID key,
         @Nonnull
         String filename,
         @Nonnull

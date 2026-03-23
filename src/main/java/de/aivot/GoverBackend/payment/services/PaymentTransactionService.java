@@ -18,7 +18,7 @@ import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentTransaction;
 import de.aivot.GoverBackend.payment.repositories.PaymentProviderRepository;
 import de.aivot.GoverBackend.payment.repositories.PaymentTransactionRepository;
-import org.jetbrains.annotations.Nullable;
+import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,7 +27,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -84,8 +84,8 @@ public class PaymentTransactionService implements
     ) throws PaymentException {
         // Fetch corresponding payment provider definition
         var paymentProviderDefinition = paymentProviderDefinitionsService
-                .getProviderDefinition(paymentProviderEntity.getProviderKey())
-                .orElseThrow(() -> new PaymentException("Für den Zahlungsdienstleister " + paymentProviderEntity.getProviderKey() + " wurde keine Definition gefunden."));
+                .getProviderDefinition(paymentProviderEntity.getPaymentProviderDefinitionKey())
+                .orElseThrow(() -> new PaymentException("Für den Zahlungsdienstleister " + paymentProviderEntity.getPaymentProviderDefinitionKey() + " wurde keine Definition gefunden."));
 
         // Prepare transaction entity
         var transactionEntity = new PaymentTransactionEntity();
@@ -209,10 +209,10 @@ public class PaymentTransactionService implements
 
         // Fetch corresponding payment provider definition. If not found, set error and throw exception
         var providerDefinition = paymentProviderDefinitionsService
-                .getProviderDefinition(provider.getProviderKey())
+                .getProviderDefinition(provider.getPaymentProviderDefinitionKey())
                 .orElse(null);
         if (providerDefinition == null) {
-            var error = new PaymentException("Die Definition \"%s\"des referenzierten Zahlungsdienstleisters \"%s\" konnte nicht gefunden werden.", provider.getProviderKey(), provider.getKey());
+            var error = new PaymentException("Die Definition \"%s\"des referenzierten Zahlungsdienstleisters \"%s\" konnte nicht gefunden werden.", provider.getPaymentProviderDefinitionKey(), provider.getKey());
             transaction.setPaymentError(error.getMessage());
             paymentTransactionRepository.save(transaction);
             throw error;

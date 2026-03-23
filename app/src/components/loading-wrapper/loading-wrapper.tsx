@@ -2,7 +2,7 @@ import React, {type PropsWithChildren} from 'react';
 import {type LoadingWrapperProps} from './loading-wrapper-props';
 import {Backdrop, CircularProgress} from '@mui/material';
 
-export function LoadingWrapper(props: PropsWithChildren<LoadingWrapperProps>): JSX.Element {
+export function LoadingWrapper(props: PropsWithChildren<LoadingWrapperProps>) {
     return (
         <>
             {

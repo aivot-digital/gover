@@ -1,5 +1,6 @@
 import {type AnyElement} from '../models/elements/any-element';
 import {ElementTreeEntity} from './element-tree/element-tree-entity';
+import {ElementTreeScope} from './element-tree/element-tree-scope';
 
 export interface EditorDispatcherProps<T extends AnyElement, E extends ElementTreeEntity> {
     props: T;
@@ -11,4 +12,6 @@ export interface EditorDispatcherProps<T extends AnyElement, E extends ElementTr
     additionalTabIndex?: number;
 
     editable: boolean;
+
+    scope: ElementTreeScope;
 }

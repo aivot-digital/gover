@@ -16,7 +16,7 @@ import {type AnyInputElement, isAnyInputElement} from '../models/elements/form/i
 import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
 import {TextFieldComponent} from '../components/text-field/text-field-component';
 
-export function ContainerEditor(props: BaseEditorProps<GroupLayout, ElementTreeEntity>): JSX.Element {
+export function ContainerEditor(props: BaseEditorProps<GroupLayout, ElementTreeEntity>) {
     const [storeModule, setStoreModule] = useState<StoreDetailModule>();
     const [confirmRemoveStore, setConfirmRemoveStore] = useState<() => void>();
     const storeKey = useAppSelector(selectSystemConfigValue(SystemConfigKeys.gover.storeKey));
@@ -62,10 +62,10 @@ export function ContainerEditor(props: BaseEditorProps<GroupLayout, ElementTreeE
                     columnSpacing={4}
                 >
                     <Grid
-                        item
-                        xs={12}
-                        lg={6}
-                    >
+                        size={{
+                            xs: 12,
+                            lg: 6
+                        }}>
                         <TextFieldComponent
                             value={onlyInputChild.destinationKey ?? undefined}
                             label="HTTP-Schnittstellen-Schlüssel"
@@ -84,13 +84,13 @@ export function ContainerEditor(props: BaseEditorProps<GroupLayout, ElementTreeE
                         />
                     </Grid>
                     <Grid
-                        item
-                        xs={12}
-                        lg={6}
-                    >
+                        size={{
+                            xs: 12,
+                            lg: 6
+                        }}>
                         <CheckboxFieldComponent
                             label="Pflichtangabe"
-                            value={onlyInputChild.required}
+                            value={onlyInputChild.required ?? false}
                             onChange={(val) => {
                                 props.onPatch({
                                     children: [
@@ -106,7 +106,6 @@ export function ContainerEditor(props: BaseEditorProps<GroupLayout, ElementTreeE
                     </Grid>
                 </Grid>
             }
-
             <AlertComponent
                 color="info"
                 title="Store-Baustein"
@@ -121,7 +120,6 @@ export function ContainerEditor(props: BaseEditorProps<GroupLayout, ElementTreeE
                 rel="noreferrer noopener"
             >Dokumentation</a>.
             </AlertComponent>
-
             {props.editable &&
                 <Button
                     fullWidth
@@ -132,7 +130,6 @@ export function ContainerEditor(props: BaseEditorProps<GroupLayout, ElementTreeE
                     Verknüpfung auflösen
                 </Button>
             }
-
             <Paper
                 sx={{
                     p: 2,
@@ -144,7 +141,6 @@ export function ContainerEditor(props: BaseEditorProps<GroupLayout, ElementTreeE
                     currentVersion={props.element.storeLink.storeVersion}
                 />
             </Paper>
-
             <ConfirmDialog
                 title="Verknüpfung auflösen"
                 onConfirm={confirmRemoveStore}

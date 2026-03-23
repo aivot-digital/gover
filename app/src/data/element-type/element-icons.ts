@@ -30,15 +30,15 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.Alert]: ErrorOutlineOutlinedIcon,
     [ElementType.Checkbox]: CheckBoxOutlinedIcon,
     [ElementType.Image]: ImageOutlinedIcon,
-    [ElementType.Container]: MenuOutlinedIcon,
+    [ElementType.GroupLayout]: MenuOutlinedIcon,
     [ElementType.Date]: CalendarMonthOutlinedIcon,
     [ElementType.Step]: InsertDriveFileOutlinedIcon,
-    [ElementType.Root]: DescriptionOutlinedIcon,
+    [ElementType.FormLayout]: DescriptionOutlinedIcon,
     [ElementType.Headline]: TitleOutlinedIcon,
     [ElementType.MultiCheckbox]: ChecklistOutlinedIcon,
     [ElementType.Number]: NumbersOutlinedIcon,
     [ElementType.ReplicatingContainer]: PlaylistAddOutlinedIcon,
-    [ElementType.Richtext]: NotesOutlinedIcon,
+    [ElementType.RichText]: NotesOutlinedIcon,
     [ElementType.Radio]: CheckCircleOutlineOutlinedIcon,
     [ElementType.Select]: ListAltOutlinedIcon,
     [ElementType.Spacer]: ExpandOutlinedIcon,
@@ -50,10 +50,19 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.SubmitStep]: CheckCircleOutlineOutlinedIcon,
     [ElementType.SubmittedStep]: CheckCircleOutlinedIcon,
     [ElementType.FileUpload]: UploadFileOutlinedIcon,
+    [ElementType.DialogLayout]: UploadFileOutlinedIcon,
+    [ElementType.StepperLayout]: UploadFileOutlinedIcon,
+    [ElementType.ConfigLayout]: UploadFileOutlinedIcon,
+    [ElementType.FunctionInput]: UploadFileOutlinedIcon,
+    [ElementType.CodeInput]: UploadFileOutlinedIcon,
+    [ElementType.RichTextInput]: UploadFileOutlinedIcon,
+    [ElementType.UiDefinitionInput]: UploadFileOutlinedIcon,
+    [ElementType.IdentityInput]: UploadFileOutlinedIcon,
+    [ElementType.TabLayout]: UploadFileOutlinedIcon,
 };
 
 export function getElementIcon(element: AnyElement): typeof SvgIcon {
-    if (element.type === ElementType.Container && element.storeLink != null) {
+    if (element.type === ElementType.GroupLayout && element.storeLink != null) {
         return ExtensionOutlinedIcon;
     }
 

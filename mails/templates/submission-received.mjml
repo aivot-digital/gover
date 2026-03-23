@@ -18,7 +18,7 @@
                         ein neuer Antrag ist in Gover eingegangen.
                         <br/>
                         <br/>
-                        Antrag auf: <b th:text="${form.title}">Beispielformular</b> - Version
+                        Antrag auf: <b th:text="${form.internalTitle}">Beispielformular</b> - Version
                         <b th:text="${form.version}">1.2.3</b>
                         <br/>
                         Antragseingang: <b th:text="${#temporals.format(submission.created, 'dd.MM.yyyy HH:mm')}">29.02.2024 11:54:34</b> Uhr

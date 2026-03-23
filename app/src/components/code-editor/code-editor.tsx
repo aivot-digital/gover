@@ -1,27 +1,66 @@
-import Editor, {Monaco} from '@monaco-editor/react';
+import Editor, {loader, Monaco} from '@monaco-editor/react';
+import * as monaco from 'monaco-editor';
+import {editor} from 'monaco-editor';
 import {Box, Typography} from '@mui/material';
 import React, {useCallback, useEffect, useRef} from 'react';
 import {CodeEditorProps} from './code-editor-props';
 import {ActionsProps} from '../actions/actions-props';
 import {Actions} from '../actions/actions';
 import {AlertComponent} from '../alert/alert-component';
+import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
+import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
+import {JavascriptApiService} from '../../modules/javascript/javascript-api-service';
+
+self.MonacoEnvironment = {
+    getWorker(_, label) {
+        if (label === 'typescript' || label === 'javascript') {
+            return new tsWorker();
+        }
+        return new editorWorker();
+    },
+};
+
+loader.config({monaco});
+loader.init();
 
 export function CodeEditor(props: CodeEditorProps & ActionsProps) {
     const {
         onChange,
         value,
         typeHints,
+        onEditorMount,
     } = props;
 
-    const monacoRef = useRef<Monaco>();
-    const editorRef = useRef<any>();
+    const monacoRef = useRef<Monaco>(undefined);
+    const editorRef = useRef<editor.IStandaloneCodeEditor>(undefined);
+
+    useEffect(() => {
+        new JavascriptApiService()
+            .getTypes()
+            .then((globalTypeHints) => {
+                if (monacoRef.current == null) {
+                    return;
+                }
+
+                monacoRef
+                    .current
+                    .languages
+                    .typescript
+                    .javascriptDefaults
+                    .addExtraLib(globalTypeHints, `@types/global.d.ts`,)
+            });
+    }, []);
 
     const hasTopContent = props.label != null || props.actions.length > 0;
 
-    const handleEditorMount = useCallback((editor: any, monaco: Monaco) => {
+    const handleEditorMount = useCallback((editor: editor.IStandaloneCodeEditor, monaco: Monaco) => {
         monacoRef.current = monaco;
         editorRef.current = editor;
         editorRef.current.setValue(value ?? '');
+
+        if (onEditorMount) {
+            onEditorMount(editor);
+        }
 
         monacoApplyTypeHints(monaco, typeHints);
     }, []);

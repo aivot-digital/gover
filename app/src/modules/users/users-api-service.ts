@@ -1,16 +1,16 @@
-import {CrudApiService} from '../../services/crud-api-service';
-import {Api} from '../../hooks/use-api';
-import {User} from './models/user';
+import {SystemUserRole, User} from './models/user';
+import {BaseCrudApiService} from '../../services/base-crud-api-service';
 
 export interface UserFilter {
-    name: string;
+    fullName: string;
     deletedInIdp: boolean;
     disabledInIdp: boolean;
+    systemRoleId: number;
 }
 
-export class UsersApiService extends CrudApiService<User, User, User, User, User, string, UserFilter> {
-    public constructor(api: Api) {
-        super(api, 'users/');
+export class UsersApiService extends BaseCrudApiService<User, User, User, User, string, UserFilter> {
+    public constructor() {
+        super('/api/users/');
     }
 
     public async retrieve(id: string): Promise<User> {
@@ -26,8 +26,11 @@ export class UsersApiService extends CrudApiService<User, User, User, User, User
                     fullName: '',
                     enabled: false,
                     verified: false,
-                    globalAdmin: false,
+                    isSuperAdmin: false,
+                    isSystemAdmin: false,
+                    globalRole: SystemUserRole.Default,
                     deletedInIdp: false,
+                    systemRoleId: null,
                 };
             }
             throw err;
@@ -47,8 +50,15 @@ export class UsersApiService extends CrudApiService<User, User, User, User, User
             fullName: '',
             enabled: false,
             verified: false,
-            globalAdmin: false,
+            isSuperAdmin: false,
+            isSystemAdmin: false,
+            globalRole: SystemUserRole.Default,
             deletedInIdp: false,
+            systemRoleId: null,
         };
+    }
+
+    public async resetPassword(id: string): Promise<void> {
+        await this.put<any, void>(`/api/users/${id}/reset-password/`, {});
     }
 }

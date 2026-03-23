@@ -13,12 +13,12 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import javax.crypto.*;
-import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -39,7 +39,7 @@ import java.util.UUID;
  * The service is used by the {@link de.aivot.GoverBackend.secrets.controllers.SecretController} to handle API requests related to secrets.
  */
 @Service
-public class SecretService implements EntityService<SecretEntity, String> {
+public class SecretService implements EntityService<SecretEntity, UUID> {
     private final SecretConfigurationProperties secretConfigurationProperties;
     private final SecretRepository secretRepository;
 
@@ -49,7 +49,6 @@ public class SecretService implements EntityService<SecretEntity, String> {
     // Constants for encryption and decryption
     private static final int SALT_LENGTH = 16;
     private static final int KEY_LENGTH = 256;
-    private static final int IV_LENGTH = 16;
     private static final int ITERATION_COUNT = 65536;
 
     @Autowired
@@ -65,7 +64,7 @@ public class SecretService implements EntityService<SecretEntity, String> {
     @Override
     public Page<SecretEntity> performList(
             @Nonnull Pageable pageable,
-            @Nonnull Specification<SecretEntity> specification,
+            @Nullable Specification<SecretEntity> specification,
             Filter<SecretEntity> filter) {
         return secretRepository
                 .findAll(specification, pageable);
@@ -76,7 +75,7 @@ public class SecretService implements EntityService<SecretEntity, String> {
     public SecretEntity create(@Nonnull SecretEntity newEntity) throws ResponseException {
         var secretEntity = new SecretEntity();
 
-        secretEntity.setKey(UUID.randomUUID().toString());
+        secretEntity.setKey(UUID.randomUUID());
         secretEntity.setName(newEntity.getName());
         secretEntity.setDescription(newEntity.getDescription());
         secretEntity.setSalt(createRandomSalt());
@@ -106,7 +105,7 @@ public class SecretService implements EntityService<SecretEntity, String> {
     @Nonnull
     @Override
     public Optional<SecretEntity> retrieve(
-            @Nonnull String id
+            @Nonnull UUID id
     ) {
         return secretRepository
                 .findById(id);
@@ -120,7 +119,7 @@ public class SecretService implements EntityService<SecretEntity, String> {
     }
 
     @Override
-    public boolean exists(@Nonnull String id) {
+    public boolean exists(@Nonnull UUID id) {
         return secretRepository.existsById(id);
     }
 
@@ -151,7 +150,7 @@ public class SecretService implements EntityService<SecretEntity, String> {
     @Nonnull
     @Override
     public SecretEntity performUpdate(
-            @Nonnull String id,
+            @Nonnull UUID id,
             @Nonnull SecretEntity updatedEntity,
             @Nonnull SecretEntity originalEntity
     ) throws ResponseException {
@@ -187,10 +186,10 @@ public class SecretService implements EntityService<SecretEntity, String> {
     }
 
     /**
-     * Encrypts a string using AES encryption.
+     * Encrypts a string using AES-256-GCM encryption.
      * The method uses a secret key and salt to encrypt the string.
      * The method returns the encrypted string as a Base64 encoded string.
-     * The method throws an exception if an error occurs during encryption.
+     * The IV is prepended to the ciphertext in the output.
      *
      * @param strToEncrypt The string to encrypt.
      * @param secretKey    The secret key used for encryption.
@@ -201,23 +200,25 @@ public class SecretService implements EntityService<SecretEntity, String> {
      * @throws NoSuchPaddingException             If the padding is not available.
      * @throws InvalidAlgorithmParameterException If the algorithm parameters are invalid.
      * @throws InvalidKeyException                If the key is invalid.
-     * @throws UnsupportedEncodingException       If the encoding is not supported.
      * @throws IllegalBlockSizeException          If the block size is illegal.
      * @throws BadPaddingException                If the padding is bad.
      */
-    public static String encryptDataAES(String strToEncrypt, String secretKey, String salt) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, UnsupportedEncodingException, IllegalBlockSizeException, BadPaddingException {
+    public static String encryptDataAES(String strToEncrypt, String secretKey, String salt) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+        final int GCM_IV_LENGTH = 12; // 12 bytes for GCM
+        final int GCM_TAG_LENGTH = 128; // 128 bits authentication tag
+
         SecureRandom secureRandom = new SecureRandom();
-        byte[] iv = new byte[IV_LENGTH];
+        byte[] iv = new byte[GCM_IV_LENGTH];
         secureRandom.nextBytes(iv);
-        IvParameterSpec ivspec = new IvParameterSpec(iv);
+        GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
 
         SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
         KeySpec spec = new PBEKeySpec(secretKey.toCharArray(), salt.getBytes(), ITERATION_COUNT, KEY_LENGTH);
         SecretKey tmp = factory.generateSecret(spec);
         SecretKeySpec secretKeySpec = new SecretKeySpec(tmp.getEncoded(), "AES");
 
-        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-        cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, ivspec);
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, gcmSpec);
 
         byte[] cipherText = cipher.doFinal(strToEncrypt.getBytes(StandardCharsets.UTF_8));
         byte[] encryptedData = new byte[iv.length + cipherText.length];
@@ -228,9 +229,10 @@ public class SecretService implements EntityService<SecretEntity, String> {
     }
 
     /**
-     * Decrypts a string using AES decryption.
+     * Decrypts a string using AES-256-GCM decryption.
      * The method uses a secret key and salt to decrypt the string.
      * The method returns the decrypted string.
+     * The IV is expected to be prepended to the ciphertext in the input.
      *
      * @param strToDecrypt The string to decrypt.
      * @param secretKey    The secret key used for decryption.
@@ -243,24 +245,26 @@ public class SecretService implements EntityService<SecretEntity, String> {
      * @throws InvalidKeyException                If the key is invalid.
      * @throws IllegalBlockSizeException          If the block size is illegal.
      * @throws BadPaddingException                If the padding is bad.
-     * @throws UnsupportedEncodingException       If the encoding is not supported.
      */
-    public static String decryptDataAES(String strToDecrypt, String secretKey, String salt) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, UnsupportedEncodingException {
+    public static String decryptDataAES(String strToDecrypt, String secretKey, String salt) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+        final int GCM_IV_LENGTH = 12; // 12 bytes for GCM
+        final int GCM_TAG_LENGTH = 128; // 128 bits authentication tag
+
         byte[] encryptedData = Base64.getDecoder().decode(strToDecrypt);
-        byte[] iv = new byte[IV_LENGTH];
+        byte[] iv = new byte[GCM_IV_LENGTH];
         System.arraycopy(encryptedData, 0, iv, 0, iv.length);
-        IvParameterSpec ivspec = new IvParameterSpec(iv);
+        GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
 
         SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
         KeySpec spec = new PBEKeySpec(secretKey.toCharArray(), salt.getBytes(), ITERATION_COUNT, KEY_LENGTH);
         SecretKey tmp = factory.generateSecret(spec);
         SecretKeySpec secretKeySpec = new SecretKeySpec(tmp.getEncoded(), "AES");
 
-        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-        cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivspec);
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, gcmSpec);
 
-        byte[] cipherText = new byte[encryptedData.length - 16];
-        System.arraycopy(encryptedData, 16, cipherText, 0, cipherText.length);
+        byte[] cipherText = new byte[encryptedData.length - GCM_IV_LENGTH];
+        System.arraycopy(encryptedData, GCM_IV_LENGTH, cipherText, 0, cipherText.length);
 
         byte[] decryptedText = cipher.doFinal(cipherText);
         return new String(decryptedText, StandardCharsets.UTF_8);

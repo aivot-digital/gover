@@ -1,5 +1,5 @@
 import {CollapseProps} from './collapse-props';
-import {Box, Typography, Collapse as MuiCollapse} from '@mui/material';
+import {Box, Collapse as MuiCollapse, Typography} from '@mui/material';
 import {IconButton} from '../icon-button/icon-button';
 import {ExpandLessOutlined, ExpandMoreOutlined} from '@mui/icons-material';
 import React, {PropsWithChildren, useReducer} from 'react';

@@ -1,13 +1,11 @@
 package de.aivot.GoverBackend.core.converters;
 
 import de.aivot.GoverBackend.enums.PaymentProvider;
-import de.aivot.GoverBackend.enums.SubmissionStatus;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
 import java.util.stream.Stream;
 
-// TODO: Remove
 @Converter(autoApply = true)
 public class PaymentProviderConverter implements AttributeConverter<PaymentProvider, String> {
     @Override

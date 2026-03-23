@@ -1,8 +1,9 @@
 package de.aivot.GoverBackend.javascript.services;
 
-import de.aivot.GoverBackend.elements.models.RootElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
+import jakarta.annotation.Nonnull;
 import org.graalvm.polyglot.HostAccess;
 import org.junit.jupiter.api.Test;
 
@@ -64,7 +65,7 @@ class JavascriptEngineTest {
 
         try (var service = new JavascriptEngine(List.of())) {
             var res = service
-                    .registerGlobalObject("test", new RootElement(Map.of()))
+                    .registerGlobalObject("test", new FormLayoutElement())
                     .evaluateCode(new JavascriptCode().setCode("test.headline;"));
             assertTrue(res.isNull());
         } catch (Exception e) {
@@ -90,21 +91,6 @@ class JavascriptEngineTest {
     }
 
     public static class TestJavascriptFunctionProvider implements JavascriptFunctionProvider {
-        @Override
-        public String getPackageName() {
-            return "de.aivot.gover.test";
-        }
-
-        @Override
-        public String getLabel() {
-            return "";
-        }
-
-        @Override
-        public String getDescription() {
-            return "";
-        }
-
         @HostAccess.Export
         public String getValue() {
             return "value";
@@ -113,6 +99,46 @@ class JavascriptEngineTest {
         @HostAccess.Export
         public String echoValue(String value) {
             return value;
+        }
+
+        @Override
+        public String getObjectName() {
+            return "de_aivot_gover_test";
+        }
+
+        @Override
+        public String[] getMethodTypeDefinitions() {
+            return new String[0];
+        }
+
+        @Nonnull
+        @Override
+        public String getParentPluginKey() {
+            return "de.aivot";
+        }
+
+        @Nonnull
+        @Override
+        public String getComponentKey() {
+            return "test";
+        }
+
+        @Nonnull
+        @Override
+        public String getComponentVersion() {
+            return "1.0.0";
+        }
+
+        @Nonnull
+        @Override
+        public String getName() {
+            return "";
+        }
+
+        @Nonnull
+        @Override
+        public String getDescription() {
+            return "";
         }
     }
 }

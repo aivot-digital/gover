@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.secrets.dtos;
 
-import de.aivot.GoverBackend.lib.ReqeustDTO;
+import de.aivot.GoverBackend.lib.RequestDTO;
 import de.aivot.GoverBackend.secrets.entities.SecretEntity;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -23,7 +23,7 @@ public record SecretEntityRequestDTO(
         @NotNull(message = "Der Wert muss definiert sein")
         @NotBlank(message = "Der Wert darf nicht leer sein")
         String value
-) implements ReqeustDTO<SecretEntity> {
+) implements RequestDTO<SecretEntity> {
         public SecretEntity toEntity() {
                 var entity = new SecretEntity();
                 entity.setName(name);

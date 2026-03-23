@@ -1,5 +1,5 @@
 import {AnyElement} from '../models/elements/any-element';
-import {Form} from '../models/entities/form';
+import {FormVersionEntity} from '../modules/forms/entities/form-version-entity';
 
 
 export interface DeletedElementReference {
@@ -11,11 +11,11 @@ export function isDeletedElementReference(element: any): element is DeletedEleme
     return element != null && (element as DeletedElementReference).deleted_element;
 }
 
-export function resolveElementPath(form: Form, path: string): (Form | AnyElement | DeletedElementReference)[] {
-    return _resolveElementPath(form, path.split('/').slice(1)).filter((element) => !Array.isArray(element));
+export function resolveElementPath(version: FormVersionEntity, path: string): (FormVersionEntity | AnyElement | DeletedElementReference)[] {
+    return _resolveElementPath(version, path.split('/').slice(1)).filter((element) => !Array.isArray(element));
 }
 
-function _resolveElementPath(currentElement: Form | AnyElement, path: string[]): (Form | AnyElement | DeletedElementReference)[] {
+function _resolveElementPath(currentElement: FormVersionEntity | AnyElement, path: string[]): (FormVersionEntity | AnyElement | DeletedElementReference)[] {
     if (path.length === 1) {
         return [currentElement];
     }

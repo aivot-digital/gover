@@ -1,13 +1,23 @@
 package de.aivot.GoverBackend.enums;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.form.content.*;
+import de.aivot.GoverBackend.elements.models.elements.form.input.*;
+import de.aivot.GoverBackend.elements.models.elements.layout.*;
+import de.aivot.GoverBackend.elements.models.elements.steps.IntroductionStepElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.SummaryStepElement;
 import de.aivot.GoverBackend.lib.models.Identifiable;
+import jakarta.annotation.Nonnull;
 
 import java.util.Arrays;
 import java.util.Optional;
 
 public enum ElementType implements Identifiable<Integer> {
-    Root(0),
+    FormLayout(0),
     Step(1),
     Alert(2),
     Group(3),
@@ -17,7 +27,7 @@ public enum ElementType implements Identifiable<Integer> {
     MultiCheckbox(7),
     Number(8),
     ReplicatingContainer(9),
-    Richtext(10),
+    RichText(10),
     Radio(11),
     Select(12),
     Spacer(13),
@@ -28,8 +38,51 @@ public enum ElementType implements Identifiable<Integer> {
     SubmitStep(18),
     SummaryStep(19),
     Image(20),
-    SubmittedStep(21),
-    FileUpload(22);
+    SubmittedStep(21), // This step does not exist anymore, but is kept for compatibility
+    FileUpload(22),
+    DialogLayout(23),
+    StepperLayout(24),
+    ConfigLayout(25),
+    FunctionInput(26),
+    CodeInput(27),
+    RichTextInput(28),
+    UiDefinitionInput(29),
+    IdentityInput(30),
+    TabLayout(30),
+    ;
+
+    public static final String ID_FormLayout = "0";
+    public static final String ID_Step = "1";
+    public static final String ID_Alert = "2";
+    public static final String ID_Group = "3";
+    public static final String ID_Checkbox = "4";
+    public static final String ID_Date = "5";
+    public static final String ID_Headline = "6";
+    public static final String ID_MultiCheckbox = "7";
+    public static final String ID_Number = "8";
+    public static final String ID_ReplicatingContainer = "9";
+    public static final String ID_RichText = "10";
+    public static final String ID_Radio = "11";
+    public static final String ID_Select = "12";
+    public static final String ID_Spacer = "13";
+    public static final String ID_Table = "14";
+    public static final String ID_Text = "15";
+    public static final String ID_Time = "16";
+    public static final String ID_IntroductionStep = "17";
+    public static final String ID_SubmitStep = "18";
+    public static final String ID_SummaryStep = "19";
+    public static final String ID_Image = "20";
+    public static final String ID_SubmittedStep = "21"; // This step does not exist anymore, but is kept for compatibility
+    public static final String ID_FileUpload = "22";
+    public static final String ID_DialogLayout = "23";
+    public static final String ID_StepperLayout = "24";
+    public static final String ID_ConfigLayout = "25";
+    public static final String ID_FunctionInput = "26";
+    public static final String ID_CodeInput = "27";
+    public static final String ID_RichTextInput = "28";
+    public static final String ID_UiDefinitionInput = "29";
+    public static final String ID_IdentityInput = "30";
+    public static final String ID_TabLayout = "31";
 
     private final Integer key;
 
@@ -53,5 +106,45 @@ public enum ElementType implements Identifiable<Integer> {
                 .stream(ElementType.values())
                 .filter(e -> e.matches(id))
                 .findFirst();
+    }
+
+    @Nonnull
+    public static BaseElement getElementClass(ElementType type) throws ElementDataConversionException {
+        return switch (type) {
+            case FormLayout -> new FormLayoutElement();
+            case Step -> new StepElement();
+            case Alert -> new AlertContentElement();
+            case Group -> new GroupLayoutElement();
+            case Checkbox -> new CheckboxInputElement();
+            case Date -> new DateInputElement();
+            case Headline -> new HeadlineContentElement();
+            case MultiCheckbox -> new MultiCheckboxInputElement();
+            case Number -> new NumberInputElement();
+            case ReplicatingContainer -> new ReplicatingContainerLayoutElement();
+            case RichText -> new RichTextContentElement();
+            case Radio -> new RadioInputElement();
+            case Select -> new SelectInputElement();
+            case Spacer -> new SpacerContentElement();
+            case Table -> new TableInputElement();
+            case Text -> new TextInputElement();
+            case Time -> new TimeInputElement();
+            case IntroductionStep -> new IntroductionStepElement();
+            case SubmitStep -> new SubmitStepElement();
+            case SummaryStep -> new SummaryStepElement();
+            case Image -> new ImageContentElement();
+            case SubmittedStep ->
+                    throw new ElementDataConversionException("Element type SubmittedStep is no longer supported.");
+            case FileUpload -> new FileUploadInputElement();
+            case DialogLayout -> new DialogLayoutElement();
+            case StepperLayout -> new StepperLayoutElement();
+            case ConfigLayout -> new ConfigLayoutElement();
+            case FunctionInput -> new FunctionInputElement();
+            case CodeInput -> new CodeInputElement();
+            case RichTextInput -> new RichTextInputElement();
+            case UiDefinitionInput -> new UiDefinitionInputElement();
+            case IdentityInput -> new IdentityInputElement();
+            case TabLayout -> new TabLayoutElement();
+            default -> throw new ElementDataConversionException("Unsupported element type: %s", type.name());
+        };
     }
 }

@@ -1,38 +1,25 @@
 package de.aivot.GoverBackend.models.functions.conditions;
 
-import de.aivot.GoverBackend.elements.models.BaseElementDerivationContext;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.enums.ConditionSetOperator;
-import de.aivot.GoverBackend.utils.MapUtils;
 
-import java.util.*;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
-public class ConditionSet {
+public class ConditionSet implements Serializable {
     private ConditionSetOperator operator;
     private Collection<Condition> conditions;
     private Collection<ConditionSet> conditionsSets;
     private String conditionSetUnmetMessage;
 
-    public ConditionSet(Map<String, Object> data) {
-        operator = MapUtils.getEnum(data, "operator", Integer.class, ConditionSetOperator.class, ConditionSetOperator.values());
-        if (data.containsKey("conditions")) {
-            List<Map<String, Object>> conditionsData = (List<Map<String, Object>>) data.get("conditions");
-            if (conditionsData != null) {
-                conditions = new LinkedList<>();
-                for (Map<String, Object> conditionData : conditionsData) {
-                    conditions.add(new Condition(conditionData));
-                }
-            }
-        }
-        if (data.containsKey("conditionsSets")) {
-            List<Map<String, Object>> conditionSetsData = (List<Map<String, Object>>) data.get("conditionsSets");
-            if (conditionSetsData != null) {
-                conditionsSets = new LinkedList<>();
-                for (Map<String, Object> conditionSetData : conditionSetsData) {
-                    conditionsSets.add(new ConditionSet(conditionSetData));
-                }
-            }
-        }
-        conditionSetUnmetMessage = MapUtils.getString(data, "conditionSetUnmetMessage");
+    public ConditionSet() {
+
     }
 
     public ConditionSet(ConditionSetOperator operator, Collection<Condition> conditions, Collection<ConditionSet> conditionsSets, String conditionSetUnmetMessage) {
@@ -42,10 +29,10 @@ public class ConditionSet {
         this.conditionSetUnmetMessage = conditionSetUnmetMessage;
     }
 
-    public String evaluate(String idPrefix, BaseElementDerivationContext context) {
+    public String evaluate(LayoutElement<?> rootElement, ElementData elementData, BaseElement element) {
         return switch (operator) {
-            case All -> evaluateAll(idPrefix, context);
-            case Any -> evaluateAny(idPrefix, context);
+            case All -> evaluateAll(rootElement, elementData, element);
+            case Any -> evaluateAny(rootElement, elementData, element);
         };
     }
 
@@ -53,10 +40,10 @@ public class ConditionSet {
      * Evaluates if all conditions and condition sets return no error message.
      * Returns NULL if no error message was returned, otherwise returns the occurred error message.
      */
-    private String evaluateAll(String idPrefix, BaseElementDerivationContext context) {
+    private String evaluateAll(LayoutElement<?> rootElement, ElementData elementData, BaseElement element) {
         if (conditions != null) {
             for (var condition : conditions) {
-                var conditionResult = condition.evaluate(idPrefix, context);
+                var conditionResult = condition.evaluate(rootElement, elementData, element);
                 if (conditionResult != null) {
                     return conditionResult;
                 }
@@ -65,7 +52,7 @@ public class ConditionSet {
 
         if (conditionsSets != null) {
             for (var conditionSet : conditionsSets) {
-                var conditionSerResult = conditionSet.evaluate(idPrefix, context);
+                var conditionSerResult = conditionSet.evaluate(rootElement, elementData, element);
                 if (conditionSerResult != null) {
                     return conditionSerResult;
                 }
@@ -79,10 +66,10 @@ public class ConditionSet {
      * Evaluates if at least one condition or condition set returns no error message.
      * Returns NULL at least one condition or condition set returns no error message, otherwise returns the condition set unmet message.
      */
-    private String evaluateAny(String idPrefix, BaseElementDerivationContext context) {
+    private String evaluateAny(LayoutElement<?> rootElement, ElementData elementData, BaseElement element) {
         if (conditions != null) {
             for (var condition : conditions) {
-                var conditionResult = condition.evaluate(idPrefix, context);
+                var conditionResult = condition.evaluate(rootElement, elementData, element);
                 if (conditionResult == null) {
                     return null;
                 }
@@ -91,7 +78,7 @@ public class ConditionSet {
 
         if (conditionsSets != null) {
             for (var conditionSet : conditionsSets) {
-                var conditionSetResult = conditionSet.evaluate(idPrefix, context);
+                var conditionSetResult = conditionSet.evaluate(rootElement, elementData, element);
                 if (conditionSetResult == null) {
                     return null;
                 }
@@ -164,6 +151,7 @@ public class ConditionSet {
         this.conditionSetUnmetMessage = conditionSetUnmetMessage;
     }
 
+    @JsonIgnore
     public Set<String> getReferencedIds() {
         var referencedIds = new HashSet<String>();
 

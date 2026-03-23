@@ -2,8 +2,6 @@ name: Check a pull request
 
 on:
   push:
-    branches:
-      - "main"
     tags:
       - "*"
 
@@ -17,14 +15,15 @@ on:
       - "milestone/*"
       - "patch/*"
       - "main"
+      - "next"
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
   PR_NUMBER: ${{ github.event.pull_request.number }}
-  IS_ALPHA_RELEASE: ${{ github.event_name == 'pull_request' && github.head_ref != 'main' }}
-  IS_BETA_RELEASE: ${{ github.event_name == 'pull_request' && github.head_ref == 'main' }}
-  IS_RELEASE: ${{ github.event_name == 'push' }}
+  IS_BETA_RELEASE: ${{ github.event_name == 'pull_request' && (github.base_ref == 'main' || github.base_ref == 'next') }}
+  IS_ALPHA_RELEASE: ${{ github.event_name == 'pull_request' && !(github.base_ref == 'main' || github.base_ref == 'next') }}
+  IS_RELEASE: ${{ github.event_name == 'push' && github.base_ref == 'main' }}
+  IS_NEXT: ${{ github.event_name == 'push' && github.base_ref == 'next' }}
 
 jobs:
   testBackend:
@@ -74,6 +73,8 @@ jobs:
     outputs:
       build_date: ${{ steps.build_date.outputs.value }}
       build_version: ${{ steps.build_version.outputs.value }}
+      package_name: ${{ steps.build_image_vars.outputs.package_name }}
+      image_name: ${{ steps.build_image_vars.outputs.image_name }}
     steps:
       - name: Get current date
         id: build_date
@@ -83,7 +84,7 @@ jobs:
         id: build_version
         run: |
           if ${{ github.event_name == 'pull_request' }}; then
-            if ${{ github.event.pull_request.base.ref == 'main' }}; then
+            if [[ "${{ github.event.pull_request.base.ref }}" == "main" || "${{ github.event.pull_request.base.ref }}" == "next" ]]; then
               SOURCE_BRANCH=${{ github.event.pull_request.head.ref }}
               echo "value=${SOURCE_BRANCH##*/}-beta-${PR_NUMBER}" >> "$GITHUB_OUTPUT"
             else
@@ -91,8 +92,164 @@ jobs:
               echo "value=${TARGET_BRANCH##*/}-alpha-${PR_NUMBER}" >> "$GITHUB_OUTPUT"
             fi
           else
-            echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+            if ${{ github.base_ref == 'next' }}; then
+              echo "value=${GITHUB_RUN_NUMBER#n}" >> "$GITHUB_OUTPUT"
+            else
+              echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+            fi
           fi
+
+      - name: Determine package name and set image name
+        id: build_image_vars
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "package_name=gover-next" >> $GITHUB_OUTPUT
+          else
+            echo "package_name=gover" >> $GITHUB_OUTPUT
+          fi
+          echo "image_name=${{ github.repository_owner }}/$(cat $GITHUB_OUTPUT | grep package_name | cut -d '=' -f2)" >> $GITHUB_OUTPUT
+
+  generateSbom:
+    name: Generate SBOMs and verify license compliance
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-24.04
+    needs:
+      - testBackend
+      - testChangelogChanged
+      - prepareBuildVars
+    env:
+      BUILD_VERSION: ${{ needs.prepareBuildVars.outputs.build_version }}
+      BUILD_DATE: ${{ needs.prepareBuildVars.outputs.build_date }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java and Node.js
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: temurin
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Prepare sbom output directory
+        run: mkdir -p app/public/sbom/partials
+
+      - name: Update package.json versions
+        run: |
+          echo "Injecting version: ${{ env.BUILD_VERSION }}"
+          jq --arg v "${{ env.BUILD_VERSION }}" '.version = $v' app/package.json > app/tmp.json && mv app/tmp.json app/package.json
+          jq --arg v "${{ env.BUILD_VERSION }}" '.version = $v' mails/package.json > mails/tmp.json && mv mails/tmp.json mails/package.json
+
+      - name: Install dependencies
+        run: |
+          npm install --prefix app
+          npm install --prefix mails
+          npm install @cyclonedx/cyclonedx-npm --prefix app
+          npm install @cyclonedx/cyclonedx-npm --prefix mails
+
+      - name: Generate frontend & mail SBOMs
+        run: |
+          (cd app && npx --yes @cyclonedx/cyclonedx-npm --output-file ../app/public/sbom/partials/sbom.frontend.json)
+          (cd mails && npx --yes @cyclonedx/cyclonedx-npm --output-file ../app/public/sbom/partials/sbom.mails.json)
+
+      - name: Inject backend version and generate SBOM
+        run: |
+          mvn versions:set -DnewVersion=${{ env.BUILD_VERSION }} -DgenerateBackupPoms=false
+          mvn org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeAggregateBom
+          cp target/bom.json app/public/sbom/partials/sbom.backend.json
+
+      - name: Install cyclonedx-cli
+        run: |
+          curl -sSL https://github.com/CycloneDX/cyclonedx-cli/releases/latest/download/cyclonedx-linux-x64 -o cyclonedx
+          chmod +x cyclonedx
+          sudo mv cyclonedx /usr/local/bin/
+
+      - name: Verify SBOM files exist
+        run: |
+          test -f app/public/sbom/partials/sbom.frontend.json || (echo "Missing sbom.frontend.json" && exit 1)
+          test -f app/public/sbom/partials/sbom.mails.json || (echo "Missing sbom.mails.json" && exit 1)
+          test -f app/public/sbom/partials/sbom.backend.json || (echo "Missing sbom.backend.json" && exit 1)
+
+      - name: Merge SBOMs
+        run: |
+          cyclonedx merge \
+            --input-files app/public/sbom/partials/sbom.frontend.json \
+                           app/public/sbom/partials/sbom.mails.json \
+                           app/public/sbom/partials/sbom.backend.json \
+            --output-file app/public/sbom/sbom.json
+
+      - name: Generate manifest.json
+        run: |
+          cat <<EOF > app/public/sbom/manifest.json
+          {
+            "name": "gover",
+            "version": "${{ env.BUILD_VERSION }}",
+            "commit": "${{ github.sha }}",
+            "buildDate": "${{ env.BUILD_DATE }}",
+            "sbomFormat": "CycloneDX",
+            "sbomSpecVersion": "1.6",
+            "sboms": {
+              "frontend": "partials/sbom.frontend.json",
+              "mails": "partials/sbom.mails.json",
+              "backend": "partials/sbom.backend.json",
+              "merged": "sbom.json"
+            },
+            "reports": [
+              "licenses.csv",
+              "licenses.txt"
+            ]
+          }
+          EOF
+
+      - name: Generate license reports (CSV and TXT)
+        run: python3 .github/scripts/generate_license_reports.py
+
+      - name: Run license compliance check
+        id: license-check
+        run: |
+          python3 .github/scripts/check_licenses.py || true
+
+      - name: Post or update license compliance comment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('license_report.md', 'utf8');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            const existing = comments.find(comment =>
+              comment.body.includes('<!-- license-check -->')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                comment_id: existing.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body,
+              });
+            }
+
+      - name: Upload SBOM bundle as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-bundle
+          path: app/public/sbom/
 
   buildArm64Image:
     name: Build and push ARM64 image
@@ -102,12 +259,16 @@ jobs:
       - testBackend
       - testChangelogChanged
       - prepareBuildVars
+      - generateSbom
     permissions:
       contents: read
       packages: write
     env:
       BUILD_DATE: ${{ needs.prepareBuildVars.outputs.build_date }}
       BUILD_VERSION: ${{ needs.prepareBuildVars.outputs.build_version }}
+      BUILD_NUMBER: ${{ github.run_number }}
+      PACKAGE_NAME: ${{ needs.prepareBuildVars.outputs.package_name }}
+      IMAGE_NAME: ${{ needs.prepareBuildVars.outputs.image_name }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -130,6 +291,12 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Download SBOM bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: sbom-bundle
+          path: app/public/sbom/
 
       - name: Build and push image
         uses: docker/build-push-action@v5
@@ -141,8 +308,9 @@ jobs:
           provenance: false # Disable provenance to avoid unknown/unknown
           sbom: false       # Disable sbom to avoid unknown/unknown
           build-args: |
-            buildDate=${{ env.BUILD_DATE }}
-            version=${{ env.BUILD_VERSION }}
+            BUILD_VERSION=${{ env.BUILD_VERSION }}
+            BUILD_NUMBER=${{ env.BUILD_NUMBER }}
+            BUILD_DATE=${{ env.BUILD_DATE }}
 
   buildAmd64Image:
     name: Build and push AMD64 image
@@ -151,6 +319,7 @@ jobs:
       - testBackend
       - testChangelogChanged
       - prepareBuildVars
+      - generateSbom
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -158,6 +327,9 @@ jobs:
     env:
       BUILD_DATE: ${{ needs.prepareBuildVars.outputs.build_date }}
       BUILD_VERSION: ${{ needs.prepareBuildVars.outputs.build_version }}
+      BUILD_NUMBER: ${{ github.run_number }}
+      PACKAGE_NAME: ${{ needs.prepareBuildVars.outputs.package_name }}
+      IMAGE_NAME: ${{ needs.prepareBuildVars.outputs.image_name }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -180,6 +352,12 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Download SBOM bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: sbom-bundle
+          path: app/public/sbom/
 
       - name: Build and push image
         uses: docker/build-push-action@v5
@@ -193,8 +371,9 @@ jobs:
           provenance: false # Disable provenance to avoid unknown/unknown
           sbom: false       # Disable sbom to avoid unknown/unknown
           build-args: |
-            buildDate=${{ env.BUILD_DATE }}
-            version=${{ env.BUILD_VERSION }}
+            BUILD_VERSION=${{ env.BUILD_VERSION }}
+            BUILD_NUMBER=${{ env.BUILD_NUMBER }}
+            BUILD_DATE=${{ env.BUILD_DATE }}
 
   mergeImages:
     name: Merge ARM64 and AMD64 images and push to registry
@@ -205,6 +384,8 @@ jobs:
       packages: write
     env:
       BUILD_VERSION: ${{ needs.prepareBuildVars.outputs.build_version }}
+      PACKAGE_NAME: ${{ needs.prepareBuildVars.outputs.package_name }}
+      IMAGE_NAME: ${{ needs.prepareBuildVars.outputs.image_name }}
     needs:
       - prepareBuildVars
       - buildArm64Image
@@ -229,4 +410,6 @@ jobs:
           --append ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BUILD_VERSION }}-arm64 \
           --append ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BUILD_VERSION }}-amd64 \
           --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BUILD_VERSION }} \
-          --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          $( [ "${IS_RELEASE}" = "true" ] && echo "--tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" )
+        env:
+          IS_RELEASE: ${{ env.IS_RELEASE }}

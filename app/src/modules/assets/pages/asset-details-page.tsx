@@ -5,6 +5,7 @@ import {Asset} from '../models/asset';
 import {AssetsApiService} from '../assets-api-service';
 import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
 import React from 'react';
+import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
 
 export function AssetDetailsPage() {
     return (
@@ -55,11 +56,12 @@ export function AssetDetailsPage() {
                     if (isNewItem) return "Neue Datei hochladen";
                     return `Datei: ${item?.filename ?? "Unbenannt"}`;
                 }}
-                idParam={'key'}
+                idParam="key"
                 parentLink={{
                     label: "Liste der Dateien",
                     to: "/assets",
                 }}
+                entityType={ServerEntityType.Assets}
             />
         </PageWrapper>
     );

@@ -6,6 +6,8 @@ import {clearAuthData, selectAuthData, setAuthData} from '../slices/auth-slice';
 import {isApiError} from '../models/api-error';
 import {ApiOptions, ApiService} from '../services/api-service';
 import {Api} from '@mui/icons-material';
+import {BaseApiService, RequestOptions} from '../services/base-api-service';
+import {AuthService} from '../services/auth-service';
 
 export interface Api {
     isAuthenticated: boolean;
@@ -21,6 +23,8 @@ export interface Api {
     postFormData<T>(url: string, data: FormData, options?: ApiOptions): Promise<T>;
 
     postFormUrlEncoded<T>(url: string, data: Record<string, string>, options?: ApiOptions): Promise<T>;
+
+    postXML<T>(url: string, data: string | ArrayBuffer, options?: ApiOptions): Promise<T>;
 
     put<T>(url: string, data: any, options?: ApiOptions): Promise<T>;
 
@@ -58,80 +62,84 @@ export function useApi(): Api {
     }, []);
 
     return useMemo(() => {
-        return {
-            isAuthenticated: isAuthenticated,
-            get: async <T>(url: string, options?: ApiOptions): Promise<T> => {
-                try {
-                    return await serviceRef
-                        .current
-                        .get<T>(`/api/${url}`, undefined, options);
-                } catch (err) {
-                    throw handleUnauthorized(err);
-                }
-            },
-            getPublic: async <T>(url: string, options?: ApiOptions): Promise<T> => {
-                try {
-                    return await serviceRef
-                        .current
-                        .get<T>(`/api/public/${url}`, undefined, options);
-                } catch (err) {
-                    throw handleUnauthorized(err);
-                }
-            },
-            getBlob: async (url: string, options?: ApiOptions): Promise<Blob> => {
-                try {
-                    return await serviceRef
-                        .current
-                        .getBlob(`/api/${url}`, options);
-                } catch (err) {
-                    throw handleUnauthorized(err);
-                }
-            },
-            post: async <T>(url: string, data: any, options?: ApiOptions): Promise<T> => {
-                try {
-                    return await serviceRef
-                        .current
-                        .post(`/api/${url}`, data, options);
-                } catch (err) {
-                    throw handleUnauthorized(err);
-                }
-            },
-            postFormData: async <T>(url: string, data: FormData, options?: ApiOptions): Promise<T> => {
-                try {
-                    return await serviceRef
-                        .current
-                        .postFormData(`/api/${url}`, data, options);
-                } catch (err) {
-                    throw handleUnauthorized(err);
-                }
-            },
-            postFormUrlEncoded: async <T>(url: string, data: Record<string, string>, options?: ApiOptions): Promise<T> => {
-                try {
-                    return await serviceRef
-                        .current
-                        .postFormUrlEncoded(`/api/${url}`, data, options);
-                } catch (err) {
-                    throw handleUnauthorized(err);
-                }
-            },
-            put: async <T>(url: string, data: any, options?: ApiOptions): Promise<T> => {
-                try {
-                    return await serviceRef
-                        .current
-                        .put(`/api/${url}`, data, options);
-                } catch (err) {
-                    throw handleUnauthorized(err);
-                }
-            },
-            destroy: async <T>(url: string, options?: ApiOptions): Promise<void> => {
-                try {
-                    return await serviceRef
-                        .current
-                        .delete(`/api/${url}`, options);
-                } catch (err) {
-                    throw handleUnauthorized(err);
-                }
-            },
-        };
+        return baseApiServiceAsApi();
     }, [isAuthenticated]);
+}
+
+function baseApiServiceAsApi(): Api {
+    const auth = new AuthService();
+    const api = new BaseApiService();
+
+    return {
+        isAuthenticated: auth.isAuthenticated(),
+        get: async <T>(url: string, options?: ApiOptions): Promise<T> => {
+            return await api
+                .get<T>(`/api/${url}`, apiOptionsToRequestOptions(options));
+        },
+        getPublic: async <T>(url: string, options?: ApiOptions): Promise<T> => {
+            return await api
+                .get<T>(`/api/public/${url}`, {
+                    ...apiOptionsToRequestOptions(options),
+                    skipAuthCheck: true,
+                });
+        },
+        getBlob: async (url: string, options?: ApiOptions): Promise<Blob> => {
+            return await api
+                .getBlob(`/api/${url}`, apiOptionsToRequestOptions(options));
+        },
+        post: async <T>(url: string, data: any, options?: ApiOptions): Promise<T> => {
+            return await api
+                .post(`/api/${url}`, data, {
+                    ...apiOptionsToRequestOptions(options),
+                    skipAuthCheck: true,
+                });
+        },
+        postXML: async <T>(url: string, data: ArrayBuffer | string, options?: ApiOptions): Promise<T> => {
+            return await api
+                .postXml(`/api/${url}`, data, apiOptionsToRequestOptions(options));
+        },
+        postFormData: async <T>(url: string, data: FormData, options?: ApiOptions): Promise<T> => {
+            return await api
+                .postFormData(`/api/${url}`, data, apiOptionsToRequestOptions(options));
+        },
+        postFormUrlEncoded: async <T>(url: string, data: Record<string, string>, options?: ApiOptions): Promise<T> => {
+            return await api
+                .postFormUrlEncoded(`/api/${url}`, new URLSearchParams(data), apiOptionsToRequestOptions(options));
+        },
+        put: async <T>(url: string, data: any, options?: ApiOptions): Promise<T> => {
+            return await api
+                .put(`/api/${url}`, data, apiOptionsToRequestOptions(options));
+        },
+        destroy: async <T>(url: string, options?: ApiOptions): Promise<void> => {
+            return await api
+                .delete(`/api/${url}`, apiOptionsToRequestOptions(options));
+        },
+    };
+}
+
+function apiOptionsToRequestOptions(options?: ApiOptions): RequestOptions | undefined {
+    if (options == null) {
+        return undefined;
+    }
+
+    const requestOptions: RequestOptions = {};
+
+    if (options.queryParams) {
+        const params = new URLSearchParams();
+        for (const [key, value] of Object.entries(options.queryParams)) {
+            if (value !== undefined && value !== null) {
+                params.append(key, String(value));
+            }
+        }
+        requestOptions.query = params;
+    }
+
+    if (options.requestOptions != null) {
+        requestOptions.headers = options.requestOptions.headers as Record<string, string>;
+    }
+    if (options.abortController != null) {
+        requestOptions.abort = options.abortController.signal;
+    }
+
+    return requestOptions;
 }

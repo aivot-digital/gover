@@ -2,9 +2,8 @@ import React from 'react';
 import {Grid, List, ListItem, Typography, useTheme} from '@mui/material';
 import {type MultiCheckboxFieldElement} from '../../models/elements/form/input/multi-checkbox-field-element';
 import {type BaseSummaryProps} from '../../summaries/base-summary';
-import {stringOrDefault} from "../../utils/string-utils";
 
-export function MultiCheckboxFieldComponentSummary(props: BaseSummaryProps<MultiCheckboxFieldElement, string[]>): JSX.Element {
+export function MultiCheckboxFieldComponentSummary(props: BaseSummaryProps<MultiCheckboxFieldElement, string[]>) {
     const options = (props.model.options ?? []).map((option) => {
         if (typeof option === 'string') {
             return {
@@ -30,9 +29,6 @@ export function MultiCheckboxFieldComponentSummary(props: BaseSummaryProps<Multi
             }}
         >
             <Grid
-                item
-                xs={12}
-                md={4}
                 sx={{
                     textAlign: 'left',
                     pr: 5,
@@ -40,7 +36,10 @@ export function MultiCheckboxFieldComponentSummary(props: BaseSummaryProps<Multi
                         textAlign: 'right',
                     },
                 }}
-            >
+                size={{
+                    xs: 12,
+                    md: 4
+                }}>
                 <Typography
                     variant="body2"
                     sx={{
@@ -54,10 +53,10 @@ export function MultiCheckboxFieldComponentSummary(props: BaseSummaryProps<Multi
                 </Typography>
             </Grid>
             <Grid
-                item
-                xs={12}
-                md={8}
-            >
+                size={{
+                    xs: 12,
+                    md: 8
+                }}>
                 {
                     values.length > 0 &&
                     <List

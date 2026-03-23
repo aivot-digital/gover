@@ -16,7 +16,7 @@ export function cloneElement<T extends AnyElement>(element: T, skipSuffix?: bool
 
 type IdMap = Record<string, string>;
 
-function deepCloneElement<T extends AnyElement>(element: T, skipSuffix?: boolean): {clone: T, idMap: IdMap} {
+function deepCloneElement<T extends AnyElement>(element: T, skipSuffix?: boolean): { clone: T, idMap: IdMap } {
     const newId = generateElementIdForType(element.type);
 
     const idMap = {
@@ -30,9 +30,9 @@ function deepCloneElement<T extends AnyElement>(element: T, skipSuffix?: boolean
     if (isAnyElementWithChildren(clone)) {
         const clonedChildren = [];
 
-        const isStoreElement = clone.type === ElementType.Container && clone.storeLink != null;
+        const isStoreElement = clone.type === ElementType.GroupLayout && clone.storeLink != null;
 
-        for (const child of clone.children) {
+        for (const child of clone.children ?? []) {
             const res = deepCloneElement(child, skipSuffix || isStoreElement);
             for (const key of Object.keys(res.idMap)) {
                 idMap[key] = res.idMap[key];
@@ -55,23 +55,23 @@ function fixNoCodeReferences<T extends AnyElement>(element: T, idMap: IdMap): T 
         ...element,
     };
 
-    if (fixedElement.isVisible != null && fixedElement.isVisible.conditionSet != null) {
+    if (fixedElement.visibility != null && fixedElement.visibility.conditionSet != null) {
         fixedElement = {
             ...fixedElement,
-            isVisible: {
-                ...fixedElement.isVisible,
-                conditionSet: fixConditionSetReferences(fixedElement.isVisible.conditionSet, idMap),
+            visibility: {
+                ...fixedElement.visibility,
+                conditionSet: fixConditionSetReferences(fixedElement.visibility.conditionSet, idMap),
             },
         };
     }
 
     if (isAnyInputElement(fixedElement)) {
-        if (fixedElement.validate != null && fixedElement.validate.conditionSet != null) {
+        if (fixedElement.validation != null && fixedElement.validation.conditionSet != null) {
             fixedElement = {
                 ...fixedElement,
                 validate: {
-                    ...fixedElement.validate,
-                    conditionSet: fixConditionSetReferences(fixedElement.validate.conditionSet, idMap),
+                    ...fixedElement.validation,
+                    conditionSet: fixConditionSetReferences(fixedElement.validation.conditionSet, idMap),
                 },
             };
         }
@@ -80,7 +80,7 @@ function fixNoCodeReferences<T extends AnyElement>(element: T, idMap: IdMap): T 
     if (isAnyElementWithChildren(fixedElement)) {
         fixedElement = {
             ...fixedElement,
-            children: fixedElement.children.map((c) => fixNoCodeReferences(c, idMap)),
+            children: (fixedElement.children ?? []).map((c) => fixNoCodeReferences(c, idMap)),
         };
     }
 

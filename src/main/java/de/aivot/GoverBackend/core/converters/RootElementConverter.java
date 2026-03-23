@@ -1,29 +1,34 @@
 package de.aivot.GoverBackend.core.converters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import de.aivot.GoverBackend.elements.models.RootElement;
-import org.json.JSONObject;
-
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
+import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
 @Converter
-public class RootElementConverter implements AttributeConverter<RootElement, String> {
+public class RootElementConverter implements AttributeConverter<FormLayoutElement, String> {
     @Override
-    public String convertToDatabaseColumn(RootElement baseElement) {
-        ObjectMapper mapper = new ObjectMapper();
+    public String convertToDatabaseColumn(FormLayoutElement baseElement) {
+        var mapper = ObjectMapperFactory
+                .getInstance();
+
         try {
-            var res = mapper.writeValueAsString(baseElement);
-            return res;
+            return mapper.writeValueAsString(baseElement);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public RootElement convertToEntityAttribute(String s) {
-        var elem = new RootElement(new JSONObject(s).toMap());
-        return elem;
+    public FormLayoutElement convertToEntityAttribute(String s) {
+        var mapper = ObjectMapperFactory
+                .getInstance();
+
+        try {
+            return mapper.readValue(s, FormLayoutElement.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

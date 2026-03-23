@@ -14,9 +14,9 @@ import {Box, Paper, Typography, useEventCallback} from '@mui/material';
 import {RichTextEditorMenuComponentView} from '../rich-text-editor-menu.component.view';
 import './rich-text-editor.component.scss';
 
-interface RichTextEditorComponentViewProps {
+export interface RichTextEditorComponentViewProps {
     label?: string;
-    value: string;
+    value: string | null | undefined;
     onChange: (text: string | undefined) => void;
     required?: boolean;
     error?: string;
@@ -24,7 +24,7 @@ interface RichTextEditorComponentViewProps {
     hint?: string;
 }
 
-export function RichTextEditorComponentView(props: RichTextEditorComponentViewProps): JSX.Element {
+export function RichTextEditorComponentView(props: RichTextEditorComponentViewProps) {
     const onChangeCallback = useEventCallback(({editor}: any) => {
         if (editor.isEmpty) {
             props.onChange(undefined);
@@ -96,7 +96,7 @@ export function RichTextEditorComponentView(props: RichTextEditorComponentViewPr
                     cursor: (props.disabled ?? false) ? 'not-allowed' : 'text',
                     border: '1px solid rgba(0, 0, 0, 0.23)',
                     '&:hover': (props.disabled ?? false) ? {} : {border: '1px solid rgba(0, 0, 0, 0.87)'},
-                    '&:focus-within': {borderColor: 'var(--hw-primary)'},
+                    '&:focus-within': {borderColor: (theme) => theme.palette.primary.main},
                 }}
                 className="editorWrapper"
                 onClick={() => {

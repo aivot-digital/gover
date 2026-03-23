@@ -6,7 +6,7 @@ import {Link} from 'react-router-dom';
 import HelpIconOutlined from '@mui/icons-material/HelpOutline';
 import {HintTooltip} from '../hint-tooltip/hint-tooltip';
 
-export function ListHeader(props: ListHeaderProps): JSX.Element {
+export function ListHeader(props: ListHeaderProps) {
     return (
         <Box
             sx={{

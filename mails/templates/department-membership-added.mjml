@@ -19,8 +19,6 @@
                         <br/>
                         Fachbereich: <b th:text="${department.name}">Beispiel-Fachbereich</b>
                         <br/>
-                        Rolle: <b th:text="${membership.role.getLabel}">Rolle</b>
-                        <br/>
                         Zugeordnet durch: <b th:text="${admin.getFullName()}">Max Mustermann</b>
                     </p>
                 </mj-text>

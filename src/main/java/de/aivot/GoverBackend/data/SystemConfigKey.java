@@ -19,18 +19,16 @@ public enum SystemConfigKey implements Identifiable<String> {
     PROVIDER__LISTINGPAGE__DISABLE("ProviderListingPageDisablePublicListingPage", true),
 
     SYSTEM__THEME("SystemTheme", true),
-    SYSTEM__LOGO("SystemLogo", true),
-    SYSTEM__FAVICON("SystemFavicon", true),
 
-    EXPERIMENTAL_FEATURES__COMPLEXITY("ExperimentalFeaturesComplexity", false),
-    EXPERIMENTAL_FEATURES__ADDITIONAL_DIALOGS("ExperimentalFeaturesAdditionalDialogs", false),
+    EXPERIMENTAL_FEATURES__COMPLEXITY("ExperimentalFeaturesComplexity", false), // TODO: Check usage and remove this
+    EXPERIMENTAL_FEATURES__ADDITIONAL_DIALOGS("ExperimentalFeaturesAdditionalDialogs", false),  // TODO: Check usage and remove this
 
     GOVER__STORE_KEY("GoverStoreKey", false),
 
-    NUTZERKONTEN__BUNDID("BundIDActive", true),
-    NUTZERKONTEN__BAYERN_ID("BayernIDActive", true),
-    NUTZERKONTEN__SCHLESWIG_HOLSTEIN_ID("SHActive", true),
-    NUTZERKONTEN__MUK("MukActive", true),
+    NUTZERKONTEN__BUNDID("BundIDActive", true), // TODO: Check usage and remove this
+    NUTZERKONTEN__BAYERN_ID("BayernIDActive", true), // TODO: Check usage and remove this
+    NUTZERKONTEN__SCHLESWIG_HOLSTEIN_ID("SHActive", true), // TODO: Check usage and remove this
+    NUTZERKONTEN__MUK("MukActive", true), // TODO: Check usage and remove this
     ;
 
     public static final String SYSTEM_CONFIG_TRUE = "true";

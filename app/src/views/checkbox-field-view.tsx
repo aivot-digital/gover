@@ -9,7 +9,7 @@ export function CheckboxFieldView(props: BaseViewProps<CheckboxFieldElement, boo
         element,
         setValue,
         value,
-        error,
+        errors,
         isBusy: isGloballyDisabled,
         isDeriving,
     } = props;
@@ -31,10 +31,10 @@ export function CheckboxFieldView(props: BaseViewProps<CheckboxFieldElement, boo
             label={element.label ?? ''}
             onChange={setValue}
             value={value ?? undefined}
-            error={error}
-            hint={element.hint}
+            error={errors?.join(', ') ?? undefined}
+            hint={element.hint ?? undefined}
             disabled={isDisabled}
-            required={element.required}
+            required={element.required ?? false}
             busy={isBusy}
         />
     );

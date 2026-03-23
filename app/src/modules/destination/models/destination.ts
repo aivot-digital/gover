@@ -1,4 +1,4 @@
-import {DestinationType} from "../../../data/destination-type";
+import {DestinationType} from '../../../data/destination-type';
 
 
 export interface Destination {
@@ -12,6 +12,8 @@ export interface Destination {
 
     apiAddress?: string;
     authorizationHeader?: string;
+
+    script?: string;
 
     maxAttachmentMegaBytes?: number;
 }

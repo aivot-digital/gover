@@ -1,0 +1,24 @@
+<!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
+<!--/*@thymesVar id="attachments" type="java.util.List<de.aivot.GoverBackend.elements.models.elements.form.input.FileUploadInputElement>"*/-->
+
+<section
+        th:if="${ base.isBlankPrint && not #lists.isEmpty(attachments) }"
+        class="avoid-break-inside"
+>
+    <h2>Anlagen</h2>
+    <p>
+        Bitte reichen Sie die folgenden Anlagen ein:
+    </p>
+    <ul>
+        <li
+                th:each="container : ${attachments}"
+                style="margin-bottom: 0.5rem;"
+        >
+            <strong th:text="${ container.label }"></strong>
+            <span th:if="${ container.required }">(Pflichtanlage)</span>
+            <span th:unless="${ container.required }">(optionale Anlage)</span>
+            <br />
+            <span th:text="${ container.hint }"></span>
+        </li>
+    </ul>
+</section>

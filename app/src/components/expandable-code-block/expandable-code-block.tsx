@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
-import { Box, Button } from '@mui/material';
+import React, {useMemo, useState} from 'react';
+import {Box, Button, SxProps} from '@mui/material';
 
-function syntaxHighlight(jsonString: string): JSX.Element[] {
+function syntaxHighlight(jsonString: string): React.ReactNode[] {
     const json = jsonString
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -9,7 +9,7 @@ function syntaxHighlight(jsonString: string): JSX.Element[] {
 
     const regex = /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g;
 
-    const elements: JSX.Element[] = [];
+    const elements: React.ReactNode[] = [];
     let lastIndex = 0;
     let match: RegExpExecArray | null;
     let index = 0;
@@ -54,7 +54,17 @@ function syntaxHighlight(jsonString: string): JSX.Element[] {
     return elements;
 }
 
-export function ExpandableCodeBlock({ value }: { value: string }) {
+interface ExpandableCodeBlockProps {
+    value: string;
+    sx?: SxProps;
+}
+
+export function ExpandableCodeBlock(props: ExpandableCodeBlockProps) {
+    const {
+        value,
+        sx,
+    } = props;
+
     const [expanded, setExpanded] = useState(false);
 
     const lineCount = useMemo(() => {
@@ -79,6 +89,7 @@ export function ExpandableCodeBlock({ value }: { value: string }) {
                     fontSize: '0.875rem',
                     whiteSpace: 'pre',
                     tabSize: 4,
+                    ...sx,
                 }}
             >
                 {syntaxHighlight(value)}

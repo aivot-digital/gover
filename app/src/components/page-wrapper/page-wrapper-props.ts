@@ -1,4 +1,3 @@
-import {type AppToolbarAction} from '../app-toolbar/app-toolbar-props';
 import {type LoadingWrapperProps} from '../loading-wrapper/loading-wrapper-props';
 
 export interface PageWrapperProps extends LoadingWrapperProps {
@@ -6,6 +5,6 @@ export interface PageWrapperProps extends LoadingWrapperProps {
     error?: string;
     title: string;
     fullWidth?: boolean;
+    fullHeight?: boolean;
     background?: boolean;
-    toolbarActions?: AppToolbarAction[];
 }

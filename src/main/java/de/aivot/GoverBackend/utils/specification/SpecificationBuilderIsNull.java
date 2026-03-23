@@ -5,8 +5,7 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 
-import javax.annotation.Nonnull;
-import java.util.Collection;
+import jakarta.annotation.Nonnull;
 
 public record SpecificationBuilderIsNull<T>(
         @Nonnull String field

@@ -1,7 +1,7 @@
 import {AnyElement} from '../../models/elements/any-element';
 import {IconButton, Tooltip} from '@mui/material';
 import React, {ReactNode, useMemo} from 'react';
-import {FunctionTypeLabels, getFunctionStatus} from '../../utils/function-status-utils';
+import {getFunctionStatus} from '../../utils/function-status-utils';
 import GradingOutlinedIcon from '@mui/icons-material/GradingOutlined';
 import InventoryOutlinedIcon from '@mui/icons-material/InventoryOutlined';
 import {isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
@@ -16,10 +16,9 @@ import BuildCircleOutlinedIcon from '@mui/icons-material/BuildCircleOutlined';
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {selectAllElements, selectFunctionReferences, selectLoadedForm} from '../../slices/app-slice';
+import {selectAllElements, selectLoadedForm} from '../../slices/app-slice';
 import {selectUseTestMode, selectWarnDuplicateIds} from '../../slices/admin-settings-slice';
 import {IdentityProviderInfo} from '../../modules/identity/models/identity-provider-info';
-import {ElementMetadata} from '../../models/elements/element-metadata';
 import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
 import {getMetadataMapping} from '../../utils/prefill-elements';
 
@@ -35,7 +34,6 @@ interface StatusIcon {
 
 export function ElementStatusIcons(props: ElementStatusIconsProps) {
     const form = useAppSelector(selectLoadedForm);
-    const references = useAppSelector(selectFunctionReferences);
     const allElements = useAppSelector(selectAllElements);
     const useTestMode = useAppSelector(selectUseTestMode);
     const warnDuplicateIds = useAppSelector(selectWarnDuplicateIds);
@@ -46,7 +44,7 @@ export function ElementStatusIcons(props: ElementStatusIconsProps) {
     } = props;
 
     const icons = useMemo(() => {
-        if (references == null || allElements == null) {
+        if (allElements == null) {
             return [];
         }
 
@@ -91,7 +89,7 @@ export function ElementStatusIcons(props: ElementStatusIconsProps) {
         }
 
         if (warnDuplicateIds && form != null) {
-            const msg = checkId(form.root, element.id);
+            const msg = checkId(form.version.rootElement, element.id);
             if (msg != null) {
                 icons.push({
                     icon: <ReportOutlinedIcon color="error" />,
@@ -100,11 +98,11 @@ export function ElementStatusIcons(props: ElementStatusIconsProps) {
             }
         }
 
-        const referencesToThisElement = references.filter(ref => ref.target.id === element.id);
+        const referencesToThisElement = allElements.filter(ref => /* TODO: ref.target.id === element.id */ false);
         if (referencesToThisElement.length > 0) {
             icons.push({
                 icon: <OfflineBoltOutlinedIcon />,
-                tooltip: 'Von Funktion referenziert: ' + referencesToThisElement.map(ref => `${generateComponentTitle(ref.source)} (${FunctionTypeLabels[ref.functionType]})`).join(', '),
+                tooltip: 'Von Funktion referenziert: ' + referencesToThisElement.map(ref => `${generateComponentTitle(ref)}`).join(', '),
             });
         }
 
@@ -144,7 +142,7 @@ export function ElementStatusIcons(props: ElementStatusIconsProps) {
         }
 
         return icons;
-    }, [element, allElements, references, useTestMode, warnDuplicateIds, form, enabledIdentityProviderInfos]);
+    }, [element, allElements, useTestMode, warnDuplicateIds, form, enabledIdentityProviderInfos]);
 
     return (
         <>

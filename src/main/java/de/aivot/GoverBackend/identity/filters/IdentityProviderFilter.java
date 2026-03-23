@@ -7,10 +7,11 @@ import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
+import java.util.UUID;
 
 public class IdentityProviderFilter implements Filter<IdentityProviderEntity> {
-    private String key;
-    private List<String> keys;
+    private UUID key;
+    private List<UUID> keys;
     private String name;
     private String iconAssetKey;
     private String clientSecretKey;
@@ -37,20 +38,20 @@ public class IdentityProviderFilter implements Filter<IdentityProviderEntity> {
                 .build();
     }
 
-    public String getKey() {
+    public UUID getKey() {
         return key;
     }
 
-    public IdentityProviderFilter setKey(String key) {
+    public IdentityProviderFilter setKey(UUID key) {
         this.key = key;
         return this;
     }
 
-    public List<String> getKeys() {
+    public List<UUID> getKeys() {
         return keys;
     }
 
-    public IdentityProviderFilter setKeys(List<String> keys) {
+    public IdentityProviderFilter setKeys(List<UUID> keys) {
         this.keys = keys;
         return this;
     }

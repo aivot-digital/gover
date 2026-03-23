@@ -6,8 +6,8 @@ export interface MultiCheckboxFieldElementOption {
     label: string;
 }
 
-export interface MultiCheckboxFieldElement extends BaseInputElement<string[] | MultiCheckboxFieldElementOption[], ElementType.MultiCheckbox> {
-    options?: string[] | MultiCheckboxFieldElementOption[];
-    minimumRequiredOptions?: number;
-    displayInline?: boolean;
+export interface MultiCheckboxFieldElement extends BaseInputElement<ElementType.MultiCheckbox> {
+    options: MultiCheckboxFieldElementOption[] | null | undefined;
+    minimumRequiredOptions: number | null | undefined;
+    displayInline: boolean | null | undefined;
 }

@@ -1,25 +1,25 @@
 package de.aivot.GoverBackend.form.dtos;
 
-import de.aivot.GoverBackend.form.entities.Form;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.time.LocalDateTime;
 
 public record FormCitizenListResponseDTO(
         @Nonnull
         String slug,
         @Nonnull
-        String version,
+        Integer version,
         @Nonnull
         String title,
         @Nonnull
         LocalDateTime updated
 ) {
-    public static FormCitizenListResponseDTO fromEntity(Form form) {
+    public static FormCitizenListResponseDTO fromEntity(VFormVersionWithDetailsEntity form) {
         return new FormCitizenListResponseDTO(
                 form.getSlug(),
-                form.getVersion(),
-                form.getFormTitle(),
+                form.getPublishedVersion(),
+                form.getPublicTitle(),
                 form.getUpdated()
         );
     }

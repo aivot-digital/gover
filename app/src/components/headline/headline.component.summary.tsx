@@ -1,10 +1,9 @@
 import {Grid, Typography} from '@mui/material';
 import {HeadlineElement} from '../../models/elements/form/content/headline-element';
-import {BaseSummaryProps} from "../../summaries/base-summary";
+import {BaseSummaryProps} from '../../summaries/base-summary';
 
 export function HeadlineComponentSummary({model}: BaseSummaryProps<HeadlineElement, any>) {
     return (
-
         <Grid
             container
             sx={{
@@ -14,13 +13,13 @@ export function HeadlineComponentSummary({model}: BaseSummaryProps<HeadlineEleme
             }}
         >
             <Grid
-                item
-                md={4}
                 sx={{
                     textAlign: "right",
                     pr: 5,
                 }}
-            >
+                size={{
+                    md: 4
+                }}>
                 <Typography
                     variant="body2"
                     sx={{

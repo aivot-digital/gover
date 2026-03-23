@@ -1,10 +1,11 @@
 package de.aivot.GoverBackend.mail.services;
 
+import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.exceptions.NoValidUserEMailsInDepartmentException;
-import de.aivot.GoverBackend.form.entities.Form;
+import de.aivot.GoverBackend.form.entities.FormEntity;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.enums.MailTemplate;
-import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,14 +30,14 @@ public class FormMailService {
         this.departmentService = departmentService;
     }
 
-    public void sendAdded(UserEntity triggeringUser, Form form) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
+    public void sendAdded(UserEntity triggeringUser, VFormVersionWithDetailsEntity form) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
         Set<Integer> departmentsToNotify = new HashSet<>();
         departmentsToNotify.add(form.getDevelopingDepartmentId());
         var title = "Ein neues Formular wurde erstellt";
         send(triggeringUser, title, departmentsToNotify, form, MailTemplate.FormAdded);
     }
 
-    public void sendPublished(UserEntity triggeringUser, Form form) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
+    public void sendPublished(UserEntity triggeringUser, VFormVersionWithDetailsEntity form) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
         Set<Integer> departmentsToNotify = new HashSet<>();
         if (form.getManagingDepartmentId() != null) {
             departmentsToNotify.add(form.getManagingDepartmentId());
@@ -50,7 +51,7 @@ public class FormMailService {
         send(triggeringUser, title, departmentsToNotify, form, MailTemplate.FormPublished);
     }
 
-    public void sendRevoked(UserEntity triggeringUser, Form form) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
+    public void sendRevoked(UserEntity triggeringUser, VFormVersionWithDetailsEntity form) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
         Set<Integer> departmentsToNotify = new HashSet<>();
         if (form.getManagingDepartmentId() != null) {
             departmentsToNotify.add(form.getManagingDepartmentId());
@@ -64,14 +65,21 @@ public class FormMailService {
         send(triggeringUser, title, departmentsToNotify, form, MailTemplate.FormRevoked);
     }
 
-    public void sendDeleted(UserEntity triggeringUser, Form form) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
+    public void sendDeleted(UserEntity triggeringUser, FormEntity form) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
+        Set<Integer> departmentsToNotify = new HashSet<>();
+        departmentsToNotify.add(form.getDevelopingDepartmentId());
+        var title = "Ein bestehendes Formular wurde gelöscht";
+        send(triggeringUser, title, departmentsToNotify, form, MailTemplate.FormDeletedAll);
+    }
+
+    public void sendDeleted(UserEntity triggeringUser, VFormVersionWithDetailsEntity form) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
         Set<Integer> departmentsToNotify = new HashSet<>();
         departmentsToNotify.add(form.getDevelopingDepartmentId());
         var title = "Ein bestehendes Formular wurde gelöscht";
         send(triggeringUser, title, departmentsToNotify, form, MailTemplate.FormDeleted);
     }
 
-    private void send(UserEntity triggeringUser, String title, Set<Integer> departmentIds, Form form, MailTemplate template) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
+    private void send(UserEntity triggeringUser, String title, Set<Integer> departmentIds, VFormVersionWithDetailsEntity form, MailTemplate template) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
         var context = new HashMap<String, Object>();
         context.put("title", title);
         context.put("triggeringUser", triggeringUser);
@@ -91,7 +99,27 @@ public class FormMailService {
         );
     }
 
-    private void addDepartmentsToContext(Form form, Map<String, Object> context) {
+    private void send(UserEntity triggeringUser, String title, Set<Integer> departmentIds, FormEntity form, MailTemplate template) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
+        var context = new HashMap<String, Object>();
+        context.put("title", title);
+        context.put("triggeringUser", triggeringUser);
+        context.put("form", form);
+
+        addDepartmentsToContext(form, context);
+
+        var userIdsToIgnore = new HashSet<String>();
+        userIdsToIgnore.add(triggeringUser.getId());
+
+        mailService.sendMailToDepartmentsById(
+                departmentIds,
+                "[Gover] " + title,
+                template,
+                context,
+                userIdsToIgnore
+        );
+    }
+
+    private void addDepartmentsToContext(VFormVersionWithDetailsEntity form, Map<String, Object> context) {
         if (form.getDevelopingDepartmentId() != null) {
             departmentService.retrieve(form.getDevelopingDepartmentId())
                     .ifPresent(dept -> context.put("developingDepartment", dept));
@@ -103,6 +131,13 @@ public class FormMailService {
         if (form.getManagingDepartmentId() != null) {
             departmentService.retrieve(form.getManagingDepartmentId())
                     .ifPresent(dept -> context.put("managingDepartment", dept));
+        }
+    }
+
+    private void addDepartmentsToContext(FormEntity form, Map<String, Object> context) {
+        if (form.getDevelopingDepartmentId() != null) {
+            departmentService.retrieve(form.getDevelopingDepartmentId())
+                    .ifPresent(dept -> context.put("developingDepartment", dept));
         }
     }
 

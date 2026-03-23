@@ -1,11 +1,9 @@
-import React, {useMemo, useReducer} from 'react';
+import React, {useMemo, useReducer, useRef} from 'react';
 import {ConditionSetOperator} from '../../data/condition-set-operator';
 import {BaseCodeTab} from './base-code-tab';
-import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 import {ConditionOperator} from '../../data/condition-operator';
 import {CodeEditor} from '../code-editor/code-editor';
 import {CodeTabNoCodeEditor} from '../code-tab-no-code-editor';
-import {ExpressionEditorWrapper} from './components/expression-editor-wrapper/expression-editor-wrapper';
 import {NoCodeDataType} from '../../data/no-code-data-type';
 import {ValidationCodeTabProps} from './validation-code-tab-props';
 import {Box, Button, Typography} from '@mui/material';
@@ -17,21 +15,11 @@ import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-element-dialog';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
+import {createLowCodeContextType} from '../../utils/create-low-code-context-type';
 import {ReferenceCheck} from './components/reference-check/reference-check';
-
-const exampleLegacyValidationCode = `/**
- * Diese Funktion wird aufgerufen, um zu überprüfen, ob das Element valide ist.
- * Gibt die Funktion einen String zurück, wird dieser als Fehler angezeigt.
- * Gibt die Funktion null zurück, ist das Element valide.
- *
- * @param{Data} data Die Nutzereingaben
- * @param{CurrentElement} element Das aktuelle Element
- * @param{string} id Die ID des aktuellen Elements\
- */
-function main(data, element, id) {
-    console.log(data, element, id);
-    return null;
-}`;
+import {editor} from 'monaco-editor';
+import {ElementValidationFunction} from '../../models/elements/element-validation-function';
+import {NoCodeEditorWrapper} from './components/no-code-editor-wrapper/no-code-editor-wrapper';
 
 const exampleValidationCode = `(function(){
     // Hier kann der Code eingefügt werden, der bestimmt, ob das Element valide ist.
@@ -41,43 +29,61 @@ const exampleValidationCode = `(function(){
 })();`;
 
 export function ValidationCodeTab(props: ValidationCodeTabProps) {
+    const dispatch = useAppDispatch();
+
     const {
+        allElements,
         element,
+        onChange,
     } = props;
 
-    const dispatch = useAppDispatch();
-    const [showElementSelectDialog, toggleShowElementSelectDialog] = useReducer((state) => !state, false);
+    const {
+        validation: _validation,
+    } = element;
+
+    const validation: ElementValidationFunction = useMemo(() => _validation ?? {
+        type: undefined,
+        requirements: undefined,
+        conditionSet: undefined,
+        noCodeList: undefined,
+        javascriptCode: undefined,
+        referencedIds: undefined,
+    }, [_validation]);
 
     const hasValidationFunction = useMemo(() => {
-        return (
-            isStringNotNullOrEmpty(element.validate?.code) ||
-            element.validate?.conditionSet != null ||
-            element.validationCode?.code != null ||
-            element.validationExpressions != null
-        );
-    }, [element]);
+        return validation.type != null;
+    }, [validation]);
+
+    const editorRef = useRef<editor.IStandaloneCodeEditor>(undefined);
+    const [showElementSelectDialog, toggleShowElementSelectDialog] = useReducer((state) => !state, false);
+
+    const handleChange = (patch: Partial<ElementValidationFunction>) => {
+        onChange({
+            validation: {
+                ...validation,
+                ...patch,
+            },
+        });
+    };
 
     return (
         <>
             <BaseCodeTab
                 label="Validierung"
-                description={'Hier können Sie die Validierung des Elements konfigurieren. Hierzu definieren Sie die Regeln, die das Element erfüllen muss, um als valide/gültig zu gelten.'}
-                requirements={props.element.validate?.requirements}
+                description="Hier können Sie die Validierung des Elements konfigurieren. Hierzu definieren Sie die Regeln, die das Element erfüllen muss, um als valide/gültig zu gelten."
+                requirements={validation.requirements ?? undefined}
                 onRequirementsChange={(req) => {
-                    props.onChange({
-                        validate: {
-                            ...props.element.validate,
-                            requirements: req ?? '',
-                        },
+                    handleChange({
+                        requirements: req ?? '',
                     });
                 }}
                 onDeleteFunction={() => {
-                    props.onChange({
-                        validate: {
-                            requirements: props.element.validate?.requirements ?? '',
-                        },
-                        validationCode: undefined,
-                        validationExpressions: undefined,
+                    handleChange({
+                        conditionSet: undefined,
+                        noCodeList: undefined,
+                        javascriptCode: undefined,
+                        referencedIds: undefined,
+                        type: undefined,
                     });
                 }}
                 editable={props.editable}
@@ -85,70 +91,47 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                 allowsExpression={true}
                 onSelectFunction={(type) => {
                     switch (type) {
-                        case 'legacy-code':
-                            props.onChange({
-                                validate: {
-                                    requirements: props.element.validate?.requirements ?? '',
-                                    code: exampleLegacyValidationCode,
-                                    conditionSet: undefined,
-                                },
-                                validationCode: undefined,
-                                validationExpressions: undefined,
-                            });
-                            break;
                         case 'legacy-condition':
-                            props.onChange({
-                                validate: {
-                                    requirements: props.element.validate?.requirements ?? '',
-                                    code: undefined,
-                                    conditionSet: {
-                                        operator: ConditionSetOperator.Any,
-                                        conditions: [
-                                            {
-                                                reference: '',
-                                                operator: ConditionOperator.Equals,
-                                                value: '',
-                                                conditionUnmetMessage: '',
-                                            },
-                                        ],
-                                        conditionsSets: [],
-                                        conditionSetUnmetMessage: '',
-                                    },
+                            handleChange({
+                                type: 'ConditionSet',
+                                conditionSet: {
+                                    operator: ConditionSetOperator.Any,
+                                    conditions: [
+                                        {
+                                            reference: '',
+                                            operator: ConditionOperator.Equals,
+                                            value: '',
+                                            conditionUnmetMessage: '',
+                                        },
+                                    ],
+                                    conditionsSets: [],
+                                    conditionSetUnmetMessage: '',
                                 },
-                                validationCode: undefined,
-                                validationExpressions: undefined,
+                                noCodeList: undefined,
+                                javascriptCode: undefined,
                             });
                             break;
                         case 'code':
-                            props.onChange({
-                                validate: {
-                                    requirements: props.element.validate?.requirements ?? '',
-                                    code: undefined,
-                                    conditionSet: undefined,
-                                },
-                                validationCode: {
+                            handleChange({
+                                type: 'Javascript',
+                                conditionSet: undefined,
+                                noCodeList: undefined,
+                                javascriptCode: {
                                     code: exampleValidationCode,
                                 },
-                                validationExpressions: undefined,
                             });
                             break;
                         case 'expression':
-                            props.onChange({
-                                validate: {
-                                    requirements: props.element.validate?.requirements ?? '',
-                                    code: undefined,
-                                    conditionSet: undefined,
-                                },
-                                validationCode: undefined,
-                                validationExpressions: [
+                            handleChange({
+                                type: 'NoCode',
+                                conditionSet: undefined,
+                                noCodeList: [
                                     {
-                                        expression: {
-                                            operatorIdentifier: '',
-                                            operands: [],
-                                        },
+                                        noCode: undefined,
                                         message: '',
                                     },
                                 ],
+                                javascriptCode: undefined,
                             });
                             break;
                     }
@@ -156,13 +139,12 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                 hasFunction={hasValidationFunction}
             >
                 {
-                    props.element.validate?.code != null && (
+                    validation.type === 'Javascript' && (
                         <CodeEditor
-                            value={props.element.validate.code}
+                            value={validation.javascriptCode?.code ?? undefined}
                             onChange={(code) => {
-                                props.onChange({
-                                    validate: {
-                                        requirements: props.element.validate?.requirements ?? '',
+                                handleChange({
+                                    javascriptCode: {
                                         code: code,
                                     },
                                 });
@@ -175,53 +157,28 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                                 },
                             ] : []}
                             disabled={!props.editable}
-                            alert={{
-                                color: 'warning',
-                                title: 'Diese Version des Low-Codes ist veraltet',
-                                richtext: true,
-                                text: `
-                                    Sie wird künftig nicht mehr unterstützt und zu einem späteren Zeitpunkt entfernt. Bitte verwenden Sie ausschließlich den neuen Low-Code. 
-                                    Um auf die neue Version umzustellen, klicken Sie im Code-Editor oben rechts auf das Drei-Punkte-Menü und wählen Sie <strong>„Anderen Funktionstyp auswählen“</strong>.
-                                    Beachten Sie bitte: Der bisherige Code wird dabei <strong>nicht automatisch übernommen</strong> und muss manuell übertragen und angepasst werden.
-                                `,
-                                sx: {
-                                    mb: 1,
-                                }
+                            typeHints={[{
+                                name: 'Context',
+                                content: createLowCodeContextType(props.parents[0]),
+                            }]}
+                            onEditorMount={(editor) => {
+                                editorRef.current = editor;
                             }}
                         />
                     )
                 }
                 {
-                    props.element.validationCode?.code != null && (
-                        <CodeEditor
-                            value={props.element.validationCode.code}
-                            onChange={(code) => {
-                                props.onChange({
-                                    validationCode: {
-                                        code: code,
-                                    },
-                                });
-                            }}
-                            actions={props.editable ? [
-                                {
-                                    tooltip: 'Element-ID nachschlagen',
-                                    icon: <LocationSearchingIcon />,
-                                    onClick: toggleShowElementSelectDialog,
-                                },
-                            ] : []}
-                            disabled={!props.editable}
-                        />
-                    )
-                }
-                {
-                    props.element.validate?.conditionSet != null && (
+                    validation.type === 'ConditionSet' && (
                         <CodeTabNoCodeEditor
                             parents={props.parents}
                             element={props.element}
-                            func={props.element.validate}
+                            func={{
+                                requirements: '',
+                                conditionSet: validation.conditionSet ?? undefined,
+                            }}
                             onChange={(updatedFunc) => {
-                                props.onChange({
-                                    validate: updatedFunc,
+                                handleChange({
+                                    conditionSet: updatedFunc.conditionSet,
                                 });
                             }}
                             shouldReturnString={true}
@@ -230,12 +187,12 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                     )
                 }
                 {
-                    props.element.validationExpressions != null && (
+                    validation.type === 'NoCode' && (
                         <>
                             <Box>
                                 {
-                                    props.element.validationExpressions
-                                        .map(({message, expression}, index) => (
+                                    (validation.noCodeList ?? [])
+                                        .map(({message, noCode}, index) => (
                                             <Box
                                                 key={index}
                                                 sx={{
@@ -264,11 +221,11 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                                                                 tooltip: 'Delete Expression',
                                                                 onClick: () => {
                                                                     const updatedValidationExpressions = [
-                                                                        ...props.element.validationExpressions ?? [],
+                                                                        ...(validation.noCodeList ?? []),
                                                                     ];
                                                                     updatedValidationExpressions.splice(index, 1);
-                                                                    props.onChange({
-                                                                        validationExpressions: updatedValidationExpressions,
+                                                                    handleChange({
+                                                                        noCodeList: updatedValidationExpressions,
                                                                     });
                                                                 },
                                                             },
@@ -283,38 +240,38 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                                                 >
                                                     <TextFieldComponent
                                                         label="Fehlermeldung"
-                                                        value={message}
+                                                        value={message ?? undefined}
                                                         onChange={errorMessage => {
                                                             const updatedValidationExpressions = [
-                                                                ...props.element.validationExpressions ?? [],
+                                                                ...(validation.noCodeList ?? []),
                                                             ];
                                                             updatedValidationExpressions[index] = {
                                                                 message: errorMessage ?? '',
-                                                                expression: updatedValidationExpressions[index].expression,
+                                                                noCode: updatedValidationExpressions[index].noCode,
                                                             };
-                                                            props.onChange({
-                                                                validationExpressions: updatedValidationExpressions,
+                                                            handleChange({
+                                                                noCodeList: updatedValidationExpressions,
                                                             });
                                                         }}
                                                         hint="Diese Fehlermeldung wird angezeigt, sollte die Bedingung nicht zutreffen"
                                                         disabled={!props.editable}
                                                     />
 
-                                                    <ExpressionEditorWrapper
+                                                    <NoCodeEditorWrapper
                                                         label="Bedingung"
                                                         hint="Hier kann eine Bedingung definiert werden, die bestimmt, ob das Element valide ist."
                                                         parents={props.parents}
-                                                        expression={expression}
-                                                        onChange={(expression) => {
+                                                        noCode={noCode}
+                                                        onChange={(noCode) => {
                                                             const updatedValidationExpressions = [
-                                                                ...props.element.validationExpressions ?? [],
+                                                                ...(validation.noCodeList ?? []),
                                                             ];
                                                             updatedValidationExpressions[index] = {
                                                                 message: updatedValidationExpressions[index].message,
-                                                                expression: expression,
+                                                                noCode: noCode,
                                                             };
-                                                            props.onChange({
-                                                                validationExpressions: updatedValidationExpressions,
+                                                            handleChange({
+                                                                noCodeList: updatedValidationExpressions,
                                                             });
                                                         }}
                                                         editable={props.editable}
@@ -330,14 +287,11 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                                 variant="outlined"
                                 fullWidth
                                 onClick={() => {
-                                    props.onChange({
-                                        validationExpressions: [
-                                            ...props.element.validationExpressions ?? [],
+                                    handleChange({
+                                        noCodeList: [
+                                            ...(validation.noCodeList ?? []),
                                             {
-                                                expression: {
-                                                    operatorIdentifier: '',
-                                                    operands: [],
-                                                },
+                                                noCode: null,
                                                 message: '',
                                             },
                                         ],
@@ -352,20 +306,38 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                 }
 
                 <ReferenceCheck
+                    allElements={allElements}
                     element={props.element}
-                    lowCodeOld={[props.element.validate?.code]}
-                    lowCode={[props.element.validationCode?.code]}
-                    noCodeOld={[props.element.validate?.conditionSet]}
-                    noCode={props.element.validationExpressions?.map(value => value.expression) ?? []}
+                    lowCodeOld={[]}
+                    lowCode={validation.javascriptCode?.code != null ? [validation.javascriptCode.code] : []}
+                    noCodeOld={validation.conditionSet != null ? [validation.conditionSet] : []}
+                    noCode={validation.noCodeList?.map(value => value.noCode) ?? []}
                 />
             </BaseCodeTab>
-
             <SelectElementDialog
+                allElements={allElements}
                 open={showElementSelectDialog}
                 onSelect={(element) => {
-                    navigator.clipboard.writeText(element.id);
+                    const _editor = editorRef.current;
+                    const _selection = _editor?.getSelection();
+
+                    if (_editor != null && _selection != null) {
+                        const editOperation: editor.IIdentifiedSingleEditOperation = {
+                            range: _selection,
+                            text: element.id,
+                            forceMoveMarkers: true,
+                        };
+
+                        _editor
+                            .executeEdits('my-source', [editOperation]);
+
+                        dispatch(showSuccessSnackbar('Element-ID eingefügt'));
+                    } else {
+                        navigator.clipboard.writeText(element.id);
+                        dispatch(showSuccessSnackbar('Element-ID kopiert'));
+                    }
+
                     toggleShowElementSelectDialog();
-                    dispatch(showSuccessSnackbar('Element-ID kopiert'));
                 }}
                 onClose={toggleShowElementSelectDialog}
             />

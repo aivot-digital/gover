@@ -1,7 +1,7 @@
-import React from "react";
-import { Alert, AlertTitle, Typography } from "@mui/material";
+import React from 'react';
+import {Alert, AlertTitle, Typography} from '@mui/material';
 
-export function MailProcessingNotice(): JSX.Element {
+export function MailProcessingNotice() {
     return (
         <Alert severity="warning" sx={{ mt: 2 }}>
             <AlertTitle>Wichtiger Hinweis zum E-Mail-Versand</AlertTitle>

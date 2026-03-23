@@ -11,7 +11,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -144,5 +144,26 @@ public class SystemConfigService {
     public Optional<SystemConfigDefinition> getDefinition(@Nonnull String key) {
         var res = configDefinitions.get(key);
         return Optional.ofNullable(res);
+    }
+
+    @Nonnull
+    public Map<String, Object> getPublicConfigsAsMap() throws ResponseException {
+        var publicConfigs = configRepository.findAll(
+                SystemConfigFilter
+                        .create()
+                        .setPublicConfig(true)
+                        .build()
+        );
+
+        Map<String, Object> result = new HashMap<>();
+        for (var entity : publicConfigs) {
+            var def = getDefinition(entity.getKey())
+                    .orElseThrow(() -> ResponseException.internalServerError("Unbekannte Systemkonfiguration \"" + entity.getKey() + "\" gefunden."));
+
+            var value = def.parseValueFromDB(entity.getValue());
+            result.put(entity.getKey(), value);
+        }
+
+        return result;
     }
 }

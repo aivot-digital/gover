@@ -6,7 +6,7 @@ import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import {type StringListInputProps} from './string-list-input-props';
 
-export function StringListInput(props: StringListInputProps): JSX.Element {
+export function StringListInput(props: StringListInputProps) {
     const {
         label,
         hint,

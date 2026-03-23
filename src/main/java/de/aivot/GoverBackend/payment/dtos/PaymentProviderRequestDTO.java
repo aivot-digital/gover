@@ -1,12 +1,12 @@
 package de.aivot.GoverBackend.payment.dtos;
 
+import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.Length;
 
-import javax.annotation.Nonnull;
-import java.util.Map;
+import jakarta.annotation.Nonnull;
 
 public record PaymentProviderRequestDTO(
         @Nonnull
@@ -36,13 +36,13 @@ public record PaymentProviderRequestDTO(
 
         @Nonnull
         @NotNull(message = "Config is required")
-        Map<String, Object> config
+        ElementData config
 ) {
     public PaymentProviderEntity toEntity() {
         var entity = new PaymentProviderEntity();
         entity.setName(name);
         entity.setDescription(description);
-        entity.setProviderKey(providerKey);
+        entity.setPaymentProviderDefinitionKey(providerKey);
         entity.setTestProvider(isTestProvider);
         entity.setIsEnabled(isEnabled);
         entity.setConfig(config);

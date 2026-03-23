@@ -23,7 +23,7 @@ function getChildValues(treeOption: CheckboxTreeOption): string[] {
     return vals;
 }
 
-export function CheckboxTreeItem(props: CheckboxTreeItemProps): JSX.Element {
+export function CheckboxTreeItem(props: CheckboxTreeItemProps) {
     const [isExtended, setIsExtended] = useState(false);
     const childValues = getChildValues(props.item);
 

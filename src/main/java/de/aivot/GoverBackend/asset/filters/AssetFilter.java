@@ -26,39 +26,4 @@ public class AssetFilter implements Filter<AssetEntity> {
                 .build();
     }
 
-    public String getFilename() {
-        return filename;
-    }
-
-    public AssetFilter setFilename(String filename) {
-        this.filename = filename;
-        return this;
-    }
-
-    public String getUploaderId() {
-        return uploaderId;
-    }
-
-    public AssetFilter setUploaderId(String uploaderId) {
-        this.uploaderId = uploaderId;
-        return this;
-    }
-
-    public String getContentType() {
-        return contentType;
-    }
-
-    public AssetFilter setContentType(String contentType) {
-        this.contentType = contentType;
-        return this;
-    }
-
-    public Boolean getIsPrivate() {
-        return isPrivate;
-    }
-
-    public AssetFilter setIsPrivate(Boolean isPrivate) {
-        this.isPrivate = isPrivate;
-        return this;
-    }
 }

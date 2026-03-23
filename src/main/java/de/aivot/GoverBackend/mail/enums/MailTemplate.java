@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.mail.enums;
 import de.aivot.GoverBackend.lib.models.Identifiable;
 import de.aivot.GoverBackend.mail.config.*;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 public enum MailTemplate implements Identifiable<String> {
     CustomerSubmissionCopy("customer-submission-copy", null),
@@ -14,6 +14,7 @@ public enum MailTemplate implements Identifiable<String> {
 
     FormAdded("form-added", FormNotificationAddedFormUserConfigDefinition.KEY),
     FormDeleted("form-deleted", FormNotificationDeletedFormUserConfigDefinition.KEY),
+    FormDeletedAll("form-deleted-all", FormNotificationDeletedFormUserConfigDefinition.KEY),
     FormPublished("form-published", FormNotificationPublishedFormUserConfigDefinition.KEY),
     FormRevoked("form-revoked", FormNotificationRevokedFormUserConfigDefinition.KEY),
 

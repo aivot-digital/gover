@@ -1,31 +1,34 @@
 export interface NoCodeExpression {
-    operatorIdentifier: string;
-    operands: (NoCodeOperand | null)[];
+    type: 'NoCodeExpression';
+    operatorIdentifier: string | null | undefined;
+    operands: (NoCodeOperand | null)[] | null | undefined;
 }
 
 export function isNoCodeExpression(obj: any): obj is NoCodeExpression {
-    return obj != null && (obj as NoCodeExpression).operatorIdentifier !== undefined;
+    return obj != null && obj.type === 'NoCodeExpression';
 }
 
 export interface NoCodeReference {
-    elementId: string;
+    type: 'NoCodeReference';
+    elementId: string | null | undefined;
 }
 
 export function isNoCodeReference(obj: any): obj is NoCodeReference {
-    return obj != null && (obj as NoCodeReference).elementId !== undefined;
+    return obj != null && obj.type === 'NoCodeReference';
 }
 
 export interface NoCodeStaticValue {
-    value: string;
+    type: 'NoCodeStaticValue';
+    value: string | null | undefined;
 }
 
 export function isNoCodeStaticValue(obj: any): obj is NoCodeStaticValue {
-    return obj != null && (obj as NoCodeStaticValue).value !== undefined;
+    return obj != null && obj.type === 'NoCodeStaticValue';
 }
 
 export type NoCodeOperand = NoCodeExpression | NoCodeReference | NoCodeStaticValue;
 
 export interface ValidationExpressionWrapper {
-    expression: NoCodeExpression;
-    message: string;
+    noCode: NoCodeOperand | null | undefined;
+    message: string | null | undefined;
 }

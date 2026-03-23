@@ -11,7 +11,7 @@ export function RadioFieldComponentView(props: BaseViewProps<RadioFieldElement, 
         element,
         setValue,
         value,
-        error,
+        errors,
         isBusy: isGloballyDisabled,
         isDeriving,
     } = props;
@@ -19,6 +19,7 @@ export function RadioFieldComponentView(props: BaseViewProps<RadioFieldElement, 
     const {
         disabled,
         options: baseOptions,
+        displayInline,
     } = element;
 
     const options = useMemo(() => {
@@ -47,9 +48,34 @@ export function RadioFieldComponentView(props: BaseViewProps<RadioFieldElement, 
         return isDeriving && hasDerivableAspects(element);
     }, [isDeriving, element]);
 
+    const optionElements = useMemo(() => {
+        return options.map((option) => (
+            <FormControlLabel
+                key={option.value}
+                value={option.value}
+                control={<Radio
+                    sx={{color: isBusy ? "rgba(0, 0, 0, 0.26)!important" : undefined}}
+                />}
+                label={option.label}
+                disabled={isDisabled}
+                sx={{
+                    ...(displayInline ? { mr: 3 } : {}),
+                    ...(isBusy ? {
+                        color: "rgba(0, 0, 0, 0.38)!important",
+                        cursor: "not-allowed",
+                    } : {}),
+                    '& .MuiFormControlLabel-label': {
+                        wordBreak: 'break-word',
+                        whiteSpace: 'normal',
+                    },
+                }}
+            />
+        ));
+    }, [options, displayInline, isDisabled, isBusy]);
+
     return (
         <FormControl
-            error={error != null}
+            error={errors != null}
             disabled={isDisabled}
         >
             <FormLabel
@@ -91,42 +117,19 @@ export function RadioFieldComponentView(props: BaseViewProps<RadioFieldElement, 
                         }}
                     />
                 }
-                {
-                    options.map((option) => (
-                        <FormControlLabel
-                            key={option.value}
-                            value={option.value}
-                            control={<Radio
-                                sx={{color: isBusy ? "rgba(0, 0, 0, 0.26)!important" : undefined}}
-                            />}
-                            label={option.label}
-                            disabled={isDisabled}
-                            sx={{
-                                ...(element.displayInline ? { mr: 3 } : {}),
-                                ...(isBusy ? {
-                                    color: "rgba(0, 0, 0, 0.38)!important",
-                                    cursor: "not-allowed",
-                                } : {}),
-                                '& .MuiFormControlLabel-label': {
-                                    wordBreak: 'break-word',
-                                    whiteSpace: 'normal',
-                                },
-                            }}
-                        />
-                    ))
-                }
+                {optionElements}
             </RadioGroup>
             {
-                (element.hint != null || error != null) &&
+                (element.hint != null || errors != null) &&
                 <FormHelperText sx={{ml: 0}}>
                     {
                         element.hint != null &&
-                        error == null &&
+                        errors == null &&
                         element.hint
                     }
                     {
-                        error != null &&
-                        <span>{error}</span>
+                        errors != null &&
+                        <span>{errors.join(' ')}</span>
                     }
                 </FormHelperText>
             }

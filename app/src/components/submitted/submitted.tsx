@@ -1,9 +1,7 @@
 import {Box, Button, Divider, Grid, Link, Typography} from '@mui/material';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Preamble} from '../preamble/preamble';
-import ReactCanvasConfetti from 'react-canvas-confetti';
-import {useSelector} from 'react-redux';
-import {selectLoadedForm, showDialog} from '../../slices/app-slice';
+import {showDialog} from '../../slices/app-slice';
 import {validateEmail} from '../../utils/validate-email';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {InfoDialog} from '../../dialogs/info-dialog/info-dialog';
@@ -18,19 +16,35 @@ import {Rating} from '../rating/rating';
 import {useApi} from '../../hooks/use-api';
 import {AlertComponent} from '../alert/alert-component';
 import qrcode from 'qrcode';
-import {Form} from '../../models/entities/form';
 import {HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
-import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {SubmissionStatusResponseDTO} from '../../modules/submissions/dtos/submission-status-response-dto';
 import {SubmissionsApiService} from '../../modules/submissions/submissions-api-service';
 import {SubmissionListResponseDTO} from '../../modules/submissions/dtos/submission-list-response-dto';
+import {createApiPath} from '../../utils/url-path-utils';
+import confetti from 'canvas-confetti';
+import {FormEntity} from '../../modules/forms/entities/form-entity';
+import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
+import {FormApiService} from '../../modules/forms/services/form-api-service';
 
 const animationStartDelay = 200;
 const animationDuration = 2000;
 
+interface ConfettiAnimationSettings {
+    startVelocity: number;
+    particleCount: number;
+    angle: number;
+    spread: number;
+    origin: {
+        x: number;
+    };
+    colors: string[];
+    disableForReducedMotion: boolean;
+}
+
 interface SubmittedProps {
     submission: SubmissionListResponseDTO;
-    form: Form;
+    form: FormEntity;
+    version: FormVersionEntity;
 }
 
 const useSetMailErrorWithSnackbar = (setMailError: (message: string) => void) => {
@@ -51,18 +65,137 @@ const useSetPrivacyErrorWithSnackbar = (setPrivacyError: (message: string) => vo
     };
 };
 
-export function Submitted(props: SubmittedProps): JSX.Element {
+export function Submitted(props: SubmittedProps) {
     const api = useApi();
-    const application = useSelector(selectLoadedForm);
-    const submitStep = application?.root.submitStep;
+    const submitStep = props.version.rootElement.submitStep;
+    const confettiDisabled = submitStep?.disableConfetti === true;
 
     const [status, setStatus] = useState<SubmissionStatusResponseDTO>();
 
     const [qrCode, setQrCode] = useState<string>();
     const [shouldRenderConfetti, setShouldRenderConfetti] = useState(false);
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const animationInstance = useRef<ReturnType<typeof confetti.create> | null>(null);
+    const intervalId = useRef<ReturnType<typeof setInterval> | null>(null);
 
     useEffect(() => {
-        new SubmissionsApiService(api)
+        if (!shouldRenderConfetti || confettiDisabled) {
+            if (intervalId.current) {
+                clearInterval(intervalId.current);
+                intervalId.current = null;
+            }
+            animationInstance.current = null;
+            return;
+        }
+
+        if (canvasRef.current && !animationInstance.current) {
+            animationInstance.current = confetti.create(canvasRef.current, {
+                resize: true,
+                useWorker: true,
+            });
+        }
+    }, [shouldRenderConfetti, confettiDisabled]);
+
+    function getAnimationSettings(angle: number, originX: number): ConfettiAnimationSettings {
+        return {
+            startVelocity: 40,
+            spread: 80,
+            angle: 60,
+            particleCount: 20,
+            origin: {
+                x: 0,
+            },
+            colors: ['#fcaa67', '#b0413e'],
+            disableForReducedMotion: true,
+        };
+    }
+
+    const refAnimationInstance = useRef<null | ((settings: ConfettiAnimationSettings) => void)>(null);
+    const animationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const animationStartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const animationStopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const getInstance = useCallback((instance: any) => {
+        refAnimationInstance.current = instance;
+    }, []);
+
+    const nextTickAnimation = useCallback(() => {
+        if (refAnimationInstance.current) {
+            refAnimationInstance.current(getAnimationSettings(60, 0));
+            refAnimationInstance.current(getAnimationSettings(120, 1));
+        }
+    }, []);
+
+    const startAnimation = useCallback(() => {
+        if (animationIntervalRef.current == null) {
+            animationIntervalRef.current = setInterval(nextTickAnimation, 16);
+        }
+    }, [nextTickAnimation]);
+
+    const pauseAnimation = useCallback(() => {
+        if (animationIntervalRef.current != null) {
+            clearInterval(animationIntervalRef.current);
+            animationIntervalRef.current = null;
+        }
+    }, []);
+
+    /* TODO: This function will be used some time in the future. Do not remove or ask Daniel first.
+    const stopAnimation = useCallback(() => {
+        if (animationIntervalRef.current != null) {
+            clearInterval(animationIntervalRef.current);
+            animationIntervalRef.current = null;
+        }
+        // @ts-ignore
+        refAnimationInstance.current && refAnimationInstance.current.reset();
+    }, []);
+     */
+
+    useEffect(() => {
+        if (confettiDisabled || !shouldRenderConfetti) {
+            pauseAnimation();
+            return;
+        }
+
+        const timeoutId = setTimeout(() => {
+            startAnimation();
+        }, animationStartDelay);
+        return () => {
+            clearTimeout(timeoutId);
+        };
+    }, [confettiDisabled, shouldRenderConfetti, startAnimation, pauseAnimation]);
+
+    useEffect(() => {
+        if (confettiDisabled || !shouldRenderConfetti) {
+            return;
+        }
+
+        const timeoutId = setTimeout(() => {
+            pauseAnimation();
+        }, animationDuration);
+        return () => {
+            clearTimeout(timeoutId);
+        };
+    }, [confettiDisabled, shouldRenderConfetti, pauseAnimation]);
+
+    useEffect(() => {
+        if (confettiDisabled) {
+            setShouldRenderConfetti(false);
+            return;
+        }
+
+        const mediaQuery = window.matchMedia('(prefers-reduced-motion: no-preference)');
+        const handleChange = () => {
+            setShouldRenderConfetti(mediaQuery.matches);
+        };
+        handleChange();
+        mediaQuery.addEventListener('change', handleChange);
+        return () => {
+            mediaQuery.removeEventListener('change', handleChange);
+        };
+    }, [confettiDisabled]);
+
+    useEffect(() => {
+        new SubmissionsApiService()
             .getStatus(props.submission.id)
             .then(setStatus);
     }, [api, props.submission]);
@@ -79,91 +212,6 @@ export function Submitted(props: SubmittedProps): JSX.Element {
             setQrCode(url);
         });
     }, [status]);
-
-    const canvasStyles = {
-        position: 'fixed',
-        pointerEvents: 'none',
-        width: '100%',
-        height: '100%',
-        top: 0,
-        left: 0,
-    };
-
-    // @ts-expect-error
-    function getAnimationSettings(angle, originX) {
-        return {
-            startVelocity: 40,
-            particleCount: 2,
-            angle,
-            spread: 80,
-            origin: {x: originX},
-            colors: ['#fcaa67', '#b0413e'],
-            disableForReducedMotion: true,
-        };
-    }
-
-    const refAnimationInstance = useRef(null);
-    const [intervalId, setIntervalId] = useState();
-
-    const getInstance = useCallback((instance: any) => {
-        refAnimationInstance.current = instance;
-    }, []);
-
-    const nextTickAnimation = useCallback(() => {
-        if (refAnimationInstance.current) {
-            // @ts-expect-error
-            refAnimationInstance.current(getAnimationSettings(60, 0));
-            // @ts-expect-error
-            refAnimationInstance.current(getAnimationSettings(120, 1));
-        }
-    }, []);
-
-    const startAnimation = useCallback(() => {
-        if (!intervalId) {
-            // @ts-expect-error
-            setIntervalId(setInterval(nextTickAnimation, 16));
-        }
-    }, [nextTickAnimation, intervalId]);
-
-    const pauseAnimation = useCallback(() => {
-        clearInterval(intervalId);
-        // @ts-expect-error
-        setIntervalId(null);
-    }, [intervalId]);
-
-    /* TODO: This function will be used some time in the future. Do not remove or ask Daniel first.
-    const stopAnimation = useCallback(() => {
-        clearInterval(intervalId);
-        // @ts-ignore
-        setIntervalId(null);
-        // @ts-ignore
-        refAnimationInstance.current && refAnimationInstance.current.reset();
-    }, [intervalId]);
-     */
-
-    // Mutation Observer to watch the dom for the Canvas element of the confetti to set ARIA attribute
-    useEffect(() => {
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.type === 'childList') {
-                    const canvasElement = document.querySelector('canvas');
-                    if (canvasElement) {
-                        canvasElement.setAttribute('aria-hidden', 'true');
-                        observer.disconnect();
-                    }
-                }
-            });
-        });
-
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true,
-        });
-
-        return () => {
-            observer.disconnect();
-        };
-    }, []);
 
     const dispatch = useAppDispatch();
 
@@ -184,7 +232,7 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     setPrivacyError(undefined);
                     setMailError(undefined);
 
-                    new FormsApiService(api)
+                    new FormApiService()
                         .sendApplicationCopy(status.submissionId, email)
                         .then(() => {
                             setShowMailSentDialog(true);
@@ -216,24 +264,40 @@ export function Submitted(props: SubmittedProps): JSX.Element {
     };
 
     useEffect(() => {
-        return () => {
-            clearInterval(intervalId);
-        };
-    }, [intervalId]);
+        if (confettiDisabled || !shouldRenderConfetti) {
+            pauseAnimation();
+            return;
+        }
 
-    useEffect(() => {
-        setTimeout(() => {
+        animationStartTimeoutRef.current = setTimeout(() => {
             startAnimation();
         }, animationStartDelay);
-    }, []);
 
-    useEffect(() => {
-        setTimeout(() => {
+        animationStopTimeoutRef.current = setTimeout(() => {
             pauseAnimation();
         }, animationDuration);
-    }, []);
+
+        return () => {
+            if (animationStartTimeoutRef.current != null) {
+                clearTimeout(animationStartTimeoutRef.current);
+                animationStartTimeoutRef.current = null;
+            }
+
+            if (animationStopTimeoutRef.current != null) {
+                clearTimeout(animationStopTimeoutRef.current);
+                animationStopTimeoutRef.current = null;
+            }
+
+            pauseAnimation();
+        };
+    }, [confettiDisabled, pauseAnimation, shouldRenderConfetti, startAnimation]);
 
     useEffect(() => {
+        if (confettiDisabled) {
+            setShouldRenderConfetti(false);
+            return;
+        }
+
         const mediaQuery = window.matchMedia('(prefers-reduced-motion: no-preference)');
         const handleChange = () => {
             setShouldRenderConfetti(mediaQuery.matches);
@@ -243,7 +307,7 @@ export function Submitted(props: SubmittedProps): JSX.Element {
         return () => {
             mediaQuery.removeEventListener('change', handleChange);
         };
-    }, []);
+    }, [confettiDisabled]);
 
     return (
         <>
@@ -258,9 +322,10 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                         columnSpacing={4}
                     >
                         <Grid
-                            item
-                            xs={12}
-                            md={8}
+                            size={{
+                                xs: 12,
+                                md: 8,
+                            }}
                         >
                             <AlertComponent
                                 color="warning"
@@ -280,13 +345,14 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                         </Grid>
 
                         <Grid
-                            item
-                            xs={12}
-                            md={4}
                             sx={{
                                 display: 'flex',
                                 flexDirection: 'column',
                                 alignItems: 'center',
+                            }}
+                            size={{
+                                xs: 12,
+                                md: 4,
                             }}
                         >
                             <Box
@@ -327,7 +393,6 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     </Grid>
                 </Box>
             }
-
             {
                 status != null &&
                 status.paymentDone &&
@@ -344,7 +409,6 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     Vielen Dank!
                 </AlertComponent>
             }
-
             {
                 status != null &&
                 status.paymentFailed &&
@@ -361,24 +425,21 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     Zur eindeutigen Identifizierung Ihrer Einreichung geben Sie bitte folgende Kennung an: {status.submissionId}.
                 </AlertComponent>
             }
-
             {
                 status != null &&
                 status.paymentProviderName != null &&
                 status.paymentProviderUrl != null &&
                 <Divider sx={{my: 8}} />
             }
-
             {
                 submitStep?.textPostSubmit != null &&
                 !isStringNullOrEmpty(submitStep?.textPostSubmit) &&
                 <Preamble
                     text={submitStep?.textPostSubmit}
-                    logoLink={application?.root.introductionStep.initiativeLogoLink}
-                    logoAlt={application?.root.introductionStep.initiativeName}
+                    logoLink={props.version.rootElement.introductionStep?.initiativeLogoLink ?? undefined}
+                    logoAlt={props.version.rootElement.introductionStep?.initiativeName ?? undefined}
                 />
             }
-
             {
                 status != null &&
                 !status.accessExpired &&
@@ -390,13 +451,13 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     }}
                 >
                     <Grid
-                        item
-                        md={6}
+                        size={{
+                            md: 6,
+                        }}
                     >
                         <Typography
                             component="h3"
                             variant="h5"
-                            color="primary"
                         >
                             Antrag als PDF herunterladen
                         </Typography>
@@ -419,20 +480,20 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                             />}
                             component="a"
                             target="_blank"
-                            href={`/api/public/prints/${status.submissionId}`}
-                            size={'large'}
+                            href={createApiPath(`/api/public/prints/${status.submissionId}`)}
+                            size="large"
                         >
                             Antrag als PDF herunterladen
                         </Button>
                     </Grid>
                     <Grid
-                        item
-                        md={6}
+                        size={{
+                            md: 6,
+                        }}
                     >
                         <Typography
                             component="h3"
                             variant="h5"
-                            color="primary"
                         >
                             Antrag per E-Mail erhalten
                         </Typography>
@@ -484,8 +545,6 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     </Grid>
                 </Grid>
             }
-
-
             {
                 status != null &&
                 status.accessExpired &&
@@ -509,14 +568,11 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     </AlertComponent>
                 </Box>
             }
-
             <Divider sx={{my: 8}} />
-
             <Typography
                 component="h3"
                 variant="h5"
                 sx={{textAlign: 'center'}}
-                color="primary"
             >
                 Wie hat Ihnen dieser Prozess gefallen?
             </Typography>
@@ -525,7 +581,7 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     textAlign: 'center',
                     mt: 1,
                     maxWidth: 500,
-                    mx: "auto",
+                    mx: 'auto',
                 }}
                 variant={'body2'}
             >
@@ -542,18 +598,27 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                 <Rating
                     onChange={(newValue) => {
                         if (status != null && newValue != null) {
-                            new FormsApiService(api)
+                            new FormApiService()
                                 .rateApplication(status.submissionId, newValue);
                         }
                     }}
                 />
             </Box>
-
-            {shouldRenderConfetti && (
-                <ReactCanvasConfetti
-                    refConfetti={getInstance}
-                    // @ts-expect-error
-                    style={canvasStyles}
+            {!confettiDisabled && shouldRenderConfetti && (
+                <canvas
+                    ref={canvasRef}
+                    style={{
+                        position: 'fixed',
+                        pointerEvents: 'none',
+                        width: '100%',
+                        height: '100%',
+                        top: 0,
+                        left: 0,
+                        zIndex: 9999,
+                        display: 'block',
+                        background: 'transparent',
+                    }}
+                    aria-hidden="true"
                 />
             )}
 

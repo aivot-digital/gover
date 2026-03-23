@@ -1,47 +1,32 @@
 import {Box, Paper, Typography} from '@mui/material';
 import {AnyElement} from '../../../../models/elements/any-element';
 import {ConditionSet} from '../../../../models/functions/conditions/condition-set';
-import {isNoCodeExpression, isNoCodeReference, NoCodeExpression} from '../../../../models/functions/no-code-expression';
-import {useAppSelector} from '../../../../hooks/use-app-selector';
-import {selectAllElements} from '../../../../slices/app-slice';
+import {isNoCodeExpression, isNoCodeReference, NoCodeExpression, NoCodeOperand} from '../../../../models/functions/no-code-expression';
 import {useMemo} from 'react';
 import {isStringNotNullOrEmpty} from '../../../../utils/string-utils';
 import {generateComponentTitle} from '../../../../utils/generate-component-title';
 import {getElementIcon} from '../../../../data/element-type/element-icons';
 import {Hint} from '../../../hint/hint';
-
-const JavascriptEngine = {
-    JS_CONTEXT_OBJECT_NAME: 'ctx',
-};
-
-const BaseElementDerivationContext = {
-    INPUT_VALUES_JS_CONTEXT_OBJECT_NAME: 'inputValues',
-    COMPUTED_VALUES_JS_CONTEXT_OBJECT_NAME: 'computedValues',
-    VALUES_JS_CONTEXT_OBJECT_NAME: 'values',
-    VISIBILITIES_JS_CONTEXT_OBJECT_NAME: 'visibilities',
-    ERRORS_JS_CONTEXT_OBJECT_NAME: 'errors',
-    OVERRIDES_JS_CONTEXT_OBJECT_NAME: 'overrides',
-};
-
+import {ElementWithParents} from '../../../../utils/flatten-elements';
 
 interface ReferenceCheckProps {
+    allElements: ElementWithParents[];
     element: AnyElement;
     lowCodeOld: (string | undefined)[];
     lowCode: (string | undefined)[];
     noCodeOld: (ConditionSet | undefined)[];
-    noCode: (NoCodeExpression | null | undefined)[];
+    noCode: (NoCodeOperand | null | undefined)[];
 }
 
 export function ReferenceCheck(props: ReferenceCheckProps) {
     const {
+        allElements,
         element,
         lowCodeOld,
         lowCode,
         noCodeOld,
         noCode,
     } = props;
-
-    const allElements = useAppSelector(selectAllElements);
 
     const referencedElements = useMemo(() => determineReferencedElements(
         element,
@@ -122,7 +107,8 @@ export function ReferenceCheck(props: ReferenceCheckProps) {
                                                             component="div"
                                                         >
                                                             Es darf nur auf Elemente verwiesen werden, die im Formular vor dem aktuellen Element positioniert sind.
-                                                            Grund dafür ist, dass spätere Elemente zum Zeitpunkt der Berechnung noch nicht bekannt sind. Verweise auf solche „zukünftigen“ Elemente – sogenannte Vorwärtsreferenzen – können zu unerwartetem Verhalten führen und die Nachvollziehbarkeit der Logik erschweren.
+                                                            Grund dafür ist, dass spätere Elemente zum Zeitpunkt der Berechnung noch nicht bekannt sind. Verweise auf solche „zukünftigen“ Elemente – sogenannte Vorwärtsreferenzen – können zu
+                                                            unerwartetem Verhalten führen und die Nachvollziehbarkeit der Logik erschweren.
                                                         </Typography>
                                                         <Typography
                                                             variant="body1"
@@ -165,11 +151,11 @@ export function ReferenceCheck(props: ReferenceCheckProps) {
 
 function determineReferencedElements(
     element: AnyElement,
-    allElements: AnyElement[] | undefined,
-    lowCodeOld: (string | undefined)[],
+    allElements: ElementWithParents[] | undefined,
+    lowCodeOld: (string | undefined)[], // TODO: Remove legacy low code
     lowCode: (string | undefined)[],
     noCodeOld: (ConditionSet | undefined)[],
-    noCode: (NoCodeExpression | null | undefined)[],
+    noCode: (NoCodeOperand | null | undefined)[],
 ): {
     element: AnyElement;
     isForwardReference: boolean;
@@ -179,10 +165,6 @@ function determineReferencedElements(
     }
 
     let referencedIds: string[] = [];
-
-    if (lowCodeOld.some(c => isStringNotNullOrEmpty(c))) {
-        referencedIds = getLowCodeOldReferencedIds(lowCodeOld.filter(isStringNotNullOrEmpty).join('\n'));
-    }
 
     if (lowCode.some(c => isStringNotNullOrEmpty(c))) {
         referencedIds = getLowCodeReferencedIds(lowCode.join('\n'));
@@ -200,8 +182,14 @@ function determineReferencedElements(
     if (noCode.some(c => c != null)) {
         for (const expression of noCode) {
             if (expression != null) {
-                const ids = getNoCodeReferencedIds(expression);
-                referencedIds.push(...ids);
+                if (isNoCodeExpression(expression)) {
+                    const ids = getNoCodeReferencedIds(expression);
+                    referencedIds.push(...ids);
+                } else if (isNoCodeReference(expression)) {
+                    if (expression.elementId != null) {
+                        referencedIds.push(expression.elementId);
+                    }
+                }
             }
         }
     }
@@ -218,15 +206,15 @@ function determineReferencedElements(
         isForwardReference: boolean;
     }[] = [];
 
-    const indexOfElement = allElements.findIndex(e => e.id === element.id);
+    const indexOfElement = allElements.findIndex(({element: e}) => e.id === element.id);
 
     for (const id of Array.from(referencedElementIdsSet)) {
-        const elementFound = allElements.find(e => e.id === id);
-        const indexOfReference = allElements.findIndex(e => e.id === id);
+        const elementFound = allElements.find(({element: e}) => e.id === id);
+        const indexOfReference = allElements.findIndex(({element: e}) => e.id === id);
 
         if (elementFound) {
             const isForwardReference = indexOfReference > indexOfElement;
-            referencedElements.push({element: elementFound, isForwardReference});
+            referencedElements.push({element: elementFound.element, isForwardReference});
         }
     }
 
@@ -235,59 +223,26 @@ function determineReferencedElements(
     return referencedElements;
 }
 
-function getLowCodeOldReferencedIds(code: string): string[] {
-    if (!code || code.trim() === '') {
-        return [];
-    }
-
-    const referencedIds = new Set<string>();
-
-    const explicitReferencePattern = />>>([a-zA-Z0-9_-]+)/g;
-    const implicitReferencePattern = /data\.([a-zA-Z0-9_-]+)/g;
-
-    let match: RegExpExecArray | null;
-
-    // Match explicit references
-    while ((match = explicitReferencePattern.exec(code)) !== null) {
-        referencedIds.add(match[1]);
-    }
-
-    // Match implicit references
-    while ((match = implicitReferencePattern.exec(code)) !== null) {
-        referencedIds.add(match[1]);
-    }
-
-    return Array.from(referencedIds);
-}
-
 function getLowCodeReferencedIds(code: string): string[] {
     if (!code || code.trim() === '') {
         return [];
     }
 
-    const expliciteReferencePattern = />>>([a-zA-Z0-9_-]+)/g;
-
-    const implicitRegex = `(${JavascriptEngine.JS_CONTEXT_OBJECT_NAME}\\.)?` +
-        `(${BaseElementDerivationContext.INPUT_VALUES_JS_CONTEXT_OBJECT_NAME}|` +
-        `${BaseElementDerivationContext.COMPUTED_VALUES_JS_CONTEXT_OBJECT_NAME}|` +
-        `${BaseElementDerivationContext.VALUES_JS_CONTEXT_OBJECT_NAME}|` +
-        `${BaseElementDerivationContext.VISIBILITIES_JS_CONTEXT_OBJECT_NAME}|` +
-        `${BaseElementDerivationContext.ERRORS_JS_CONTEXT_OBJECT_NAME}|` +
-        `${BaseElementDerivationContext.OVERRIDES_JS_CONTEXT_OBJECT_NAME})\\.([a-zA-Z0-9_-]+)`;
-    const implicitReferencePattern = new RegExp(implicitRegex, 'g');
+    const explicitReferencePattern = />>>([a-zA-Z0-9_-]+)/g;
+    const implicitRegexPattern = /ctx\.([a-zA-Z0-9_-]+)/g;
 
     const ids = new Set<string>();
 
     let match: RegExpExecArray | null;
 
     // Match explicit references
-    while ((match = expliciteReferencePattern.exec(code)) !== null) {
+    while ((match = explicitReferencePattern.exec(code)) !== null) {
         ids.add(match[1]);
     }
 
     // Match implicit references
-    while ((match = implicitReferencePattern.exec(code)) !== null) {
-        ids.add(match[3]);
+    while ((match = implicitRegexPattern.exec(code)) !== null) {
+        ids.add(match[1]);
     }
 
     return Array.from(ids);
@@ -332,7 +287,7 @@ function getNoCodeReferencedIds(noCodeExpression: NoCodeExpression): string[] {
 
     if (noCodeExpression.operands != null) {
         for (const operand of noCodeExpression.operands) {
-            if (isNoCodeReference(operand)) {
+            if (isNoCodeReference(operand) && operand.elementId != null) {
                 referencedIds.add(operand.elementId);
             } else if (isNoCodeExpression(operand)) {
                 const nestedReferencedIds = getNoCodeReferencedIds(operand);

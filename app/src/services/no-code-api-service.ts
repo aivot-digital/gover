@@ -17,9 +17,9 @@ export class NoCodeApiService {
     }
 
     public async evaluateNoCode(expression: NoCodeExpression, data: any): Promise<any> {
-        return this.api.post('no-code/evaluate', {
+        return this.api.post('no-code/test', {
             expression: expression,
-            data: data
+            elementData: data
         }, {});
     }
 }

@@ -1,12 +1,10 @@
-import React, {useMemo, useReducer} from 'react';
+import React, {useMemo, useReducer, useRef} from 'react';
 import {ConditionSetOperator} from '../../data/condition-set-operator';
 import {VisibilityCodeTabProps} from './visibility-code-tab-props';
 import {BaseCodeTab} from './base-code-tab';
-import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 import {ConditionOperator} from '../../data/condition-operator';
 import {CodeEditor} from '../code-editor/code-editor';
 import {CodeTabNoCodeEditor} from '../code-tab-no-code-editor';
-import {ExpressionEditorWrapper} from './components/expression-editor-wrapper/expression-editor-wrapper';
 import {NoCodeDataType} from '../../data/no-code-data-type';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
@@ -14,19 +12,9 @@ import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-el
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {createLowCodeContextType} from '../../utils/create-low-code-context-type';
 import {ReferenceCheck} from './components/reference-check/reference-check';
-
-const exampleLegacyVisibilityCode = `/**
- * Diese Funktion wird aufgerufen, um zu überprüfen, ob das Element sichtbar ist.
- * Gibt die Funktion true zurück, wird das Element angezeigt, andernfalls nicht.
- *
- * @param{Data} data Die Nutzereingaben
- * @param{CurrentElement} element Das aktuelle Element
- * @param{string} id Die ID des aktuellen Elements\
- */
-function main(data, element, id) {
-    console.log(data, element, id);
-    return true;
-}`;
+import {ElementVisibilityFunction} from '../../models/elements/element-visibility-function';
+import {editor} from 'monaco-editor';
+import {NoCodeEditorWrapper} from './components/no-code-editor-wrapper/no-code-editor-wrapper';
 
 const exampleVisibilityCode = `(function(){
     // Hier kann der Code eingefügt werden, der bestimmt, ob das Element sichtbar ist.
@@ -36,124 +24,116 @@ const exampleVisibilityCode = `(function(){
 
 export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
     const dispatch = useAppDispatch();
-    const [showElementSelectDialog, toggleShowElementSelectDialog] = useReducer((state) => !state, false);
+
+    const {
+        allElements,
+        element,
+        onChange,
+    } = props;
+
+    const {
+        visibility: _visibility,
+    } = element;
+
+    const visibility: ElementVisibilityFunction = useMemo(() => _visibility ?? {
+        type: undefined,
+        requirements: undefined,
+        conditionSet: undefined,
+        javascriptCode: undefined,
+        noCode: undefined,
+        referencedIds: undefined,
+    }, [_visibility]);
 
     const hasVisibilityFunction = useMemo(() => {
-        return (
-                props.element.isVisible != null && (
-                    isStringNotNullOrEmpty(props.element.isVisible.code) ||
-                    (
-                        props.element.isVisible.conditionSet != null &&
-                        (props.element.isVisible.conditionSet.conditions != null && props.element.isVisible.conditionSet.conditions.length > 0) ||
-                        (props.element.isVisible.conditionSet?.conditionsSets != null && props.element.isVisible.conditionSet.conditionsSets.length > 0)
-                    )
-                )
-            ) ||
-            props.element.visibilityCode?.code != null ||
-            props.element.visibilityExpression != null;
-    }, [props.element]);
+        return visibility.type != null;
+    }, [visibility]);
+
+    const editorRef = useRef<editor.IStandaloneCodeEditor>(undefined);
+    const [showElementSelectDialog, toggleShowElementSelectDialog] = useReducer((state) => !state, false);
+
+    const handleChange = (patch: Partial<ElementVisibilityFunction>) => {
+        onChange({
+            visibility: {
+                ...visibility,
+                ...patch,
+            },
+        });
+    };
 
     return (
         <>
             <BaseCodeTab
                 label="Sichtbarkeit"
-                description={'Hier können Sie die Sichtbarkeit des Elements dynamisch bestimmen. Dies ist besonders nützlich, wenn die Sichtbarkeit des Elements von den Nutzereingaben abhängt oder wenn Sie eine komplexe Logik implementieren möchten.'}
-                requirements={props.element.isVisible?.requirements}
-                onRequirementsChange={(req) => {
-                    props.onChange({
-                        isVisible: {
-                            ...props.element.isVisible,
-                            requirements: req ?? '',
-                        },
-                    });
-                }}
-                onDeleteFunction={() => {
-                    props.onChange({
-                        isVisible: {
-                            requirements: props.element.isVisible?.requirements ?? '',
-                        },
-                        visibilityCode: undefined,
-                        visibilityExpression: undefined,
-                    });
-                }}
+                description="Hier können Sie die Sichtbarkeit des Elements dynamisch bestimmen. Dies ist besonders nützlich, wenn die Sichtbarkeit des Elements von den Nutzereingaben abhängt oder wenn Sie eine komplexe Logik implementieren möchten."
                 editable={props.editable}
                 allowsNoCode={true}
                 allowsExpression={true}
+                requirements={visibility.requirements ?? undefined}
+                onRequirementsChange={(req) => {
+                    handleChange({
+                        requirements: req,
+                    });
+                }}
                 onSelectFunction={(type) => {
                     switch (type) {
-                        case 'legacy-code':
-                            props.onChange({
-                                isVisible: {
-                                    requirements: props.element.isVisible?.requirements ?? '',
-                                    code: exampleLegacyVisibilityCode,
-                                    conditionSet: undefined,
-                                },
-                                visibilityCode: undefined,
-                                visibilityExpression: undefined,
-                            });
-                            break;
                         case 'legacy-condition':
-                            props.onChange({
-                                isVisible: {
-                                    requirements: props.element.isVisible?.requirements ?? '',
-                                    code: undefined,
-                                    conditionSet: {
-                                        operator: ConditionSetOperator.Any,
-                                        conditions: [
-                                            {
-                                                reference: '',
-                                                operator: ConditionOperator.Equals,
-                                                value: '',
-                                                conditionUnmetMessage: '',
-                                            },
-                                        ],
-                                        conditionsSets: [],
-                                        conditionSetUnmetMessage: '',
-                                    },
+                            handleChange({
+                                type: 'ConditionSet',
+                                conditionSet: {
+                                    operator: ConditionSetOperator.Any,
+                                    conditions: [
+                                        {
+                                            reference: '',
+                                            operator: ConditionOperator.Equals,
+                                            value: '',
+                                            conditionUnmetMessage: '',
+                                        },
+                                    ],
+                                    conditionsSets: [],
+                                    conditionSetUnmetMessage: '',
                                 },
-                                visibilityCode: undefined,
-                                visibilityExpression: undefined,
+                                noCode: undefined,
+                                javascriptCode: undefined,
                             });
                             break;
                         case 'code':
-                            props.onChange({
-                                isVisible: {
-                                    requirements: props.element.isVisible?.requirements ?? '',
-                                    code: undefined,
-                                    conditionSet: undefined,
-                                },
-                                visibilityCode: {
+                            handleChange({
+                                type: 'Javascript',
+                                conditionSet: undefined,
+                                noCode: undefined,
+                                javascriptCode: {
                                     code: exampleVisibilityCode,
                                 },
-                                visibilityExpression: undefined,
                             });
                             break;
                         case 'expression':
-                            props.onChange({
-                                isVisible: {
-                                    requirements: props.element.isVisible?.requirements ?? '',
-                                    code: undefined,
-                                    conditionSet: undefined,
-                                },
-                                visibilityCode: undefined,
-                                visibilityExpression: {
-                                    operatorIdentifier: '',
-                                    operands: [],
-                                },
+                            handleChange({
+                                type: 'NoCode',
+                                conditionSet: undefined,
+                                noCode: undefined,
+                                javascriptCode: undefined,
                             });
                             break;
                     }
                 }}
+                onDeleteFunction={() => {
+                    handleChange({
+                        javascriptCode: undefined,
+                        conditionSet: undefined,
+                        noCode: undefined,
+                        referencedIds: undefined,
+                        type: undefined,
+                    });
+                }}
                 hasFunction={hasVisibilityFunction}
             >
                 {
-                    props.element.isVisible?.code != null && (
+                    visibility.type === 'Javascript' && (
                         <CodeEditor
-                            value={props.element.isVisible.code}
+                            value={visibility.javascriptCode?.code ?? undefined}
                             onChange={(code) => {
-                                props.onChange({
-                                    isVisible: {
-                                        requirements: props.element.isVisible?.requirements ?? '',
+                                handleChange({
+                                    javascriptCode: {
                                         code: code,
                                     },
                                 });
@@ -166,53 +146,28 @@ export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
                                 },
                             ] : []}
                             disabled={!props.editable}
-                            alert={{
-                                color: 'warning',
-                                title: 'Diese Version des Low-Codes ist veraltet',
-                                richtext: true,
-                                text: `
-                                    Sie wird künftig nicht mehr unterstützt und zu einem späteren Zeitpunkt entfernt. Bitte verwenden Sie ausschließlich den neuen Low-Code. 
-                                    Um auf die neue Version umzustellen, klicken Sie im Code-Editor oben rechts auf das Drei-Punkte-Menü und wählen Sie <strong>„Anderen Funktionstyp auswählen“</strong>.
-                                    Beachten Sie bitte: Der bisherige Code wird dabei <strong>nicht automatisch übernommen</strong> und muss manuell übertragen und angepasst werden.
-                                `,
-                                sx: {
-                                    mb: 1,
-                                }
+                            typeHints={[{
+                                name: 'Context',
+                                content: createLowCodeContextType(props.parents[0]),
+                            }]}
+                            onEditorMount={(editor) => {
+                                editorRef.current = editor;
                             }}
                         />
                     )
                 }
                 {
-                    props.element.visibilityCode?.code != null && (
-                        <CodeEditor
-                            value={props.element.visibilityCode.code}
-                            onChange={(code) => {
-                                props.onChange({
-                                    visibilityCode: {
-                                        code: code,
-                                    },
-                                });
-                            }}
-                            actions={props.editable ? [
-                                {
-                                    tooltip: 'Element-ID nachschlagen',
-                                    icon: <LocationSearchingIcon />,
-                                    onClick: toggleShowElementSelectDialog,
-                                },
-                            ] : []}
-                            disabled={!props.editable}
-                        />
-                    )
-                }
-                {
-                    props.element.isVisible?.conditionSet != null && (
+                    visibility.type === 'ConditionSet' && (
                         <CodeTabNoCodeEditor
                             parents={props.parents}
                             element={props.element}
-                            func={props.element.isVisible}
+                            func={{
+                                requirements: '',
+                                conditionSet: visibility.conditionSet ?? undefined,
+                            }}
                             onChange={(updatedFunc) => {
-                                props.onChange({
-                                    isVisible: updatedFunc,
+                                handleChange({
+                                    conditionSet: updatedFunc.conditionSet,
                                 });
                             }}
                             shouldReturnString={false}
@@ -221,36 +176,58 @@ export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
                     )
                 }
                 {
-                    props.element.visibilityExpression != null && (
-                        <ExpressionEditorWrapper
+                    visibility.type === 'NoCode' && (
+                        <NoCodeEditorWrapper
                             parents={props.parents}
-                            expression={props.element.visibilityExpression}
-                            onChange={(expression) => {
-                                props.onChange({
-                                    visibilityExpression: expression,
+                            noCode={visibility.noCode}
+                            onChange={(noCode) => {
+                                handleChange({
+                                    noCode: noCode,
                                 });
                             }}
                             editable={props.editable}
-                            desiredReturnType={NoCodeDataType.Boolean}
+                            desiredReturnType={NoCodeDataType.Runtime}
+
+                            label="Sichtbarkeit"
+                            hint='Der Ausdruck muss einen Wahrheitswert (Boolean) zurückgeben. Wenn der Ausdruck "Wahr" ergibt, wird das Element angezeigt; andernfalls wird es ausgeblendet.'
                         />
                     )
                 }
 
                 <ReferenceCheck
+                    allElements={allElements}
                     element={props.element}
-                    lowCodeOld={[props.element.isVisible?.code]}
-                    lowCode={[props.element.visibilityCode?.code]}
-                    noCodeOld={[props.element.isVisible?.conditionSet]}
-                    noCode={[props.element.visibilityExpression]}
+                    lowCodeOld={[]}
+                    lowCode={visibility.javascriptCode?.code != null ? [visibility.javascriptCode.code] : []}
+                    noCodeOld={visibility.conditionSet != null ? [visibility.conditionSet] : []}
+                    noCode={visibility.noCode != null ? [visibility.noCode] : []}
                 />
             </BaseCodeTab>
 
             <SelectElementDialog
+                allElements={allElements}
                 open={showElementSelectDialog}
                 onSelect={(element) => {
-                    navigator.clipboard.writeText(element.id);
+                    const _editor = editorRef.current;
+                    const _selection = _editor?.getSelection();
+
+                    if (_editor != null && _selection != null) {
+                        const editOperation: editor.IIdentifiedSingleEditOperation = {
+                            range: _selection,
+                            text: element.id,
+                            forceMoveMarkers: true,
+                        };
+
+                        _editor
+                            .executeEdits('my-source', [editOperation]);
+
+                        dispatch(showSuccessSnackbar('Element-ID eingefügt'));
+                    } else {
+                        navigator.clipboard.writeText(element.id);
+                        dispatch(showSuccessSnackbar('Element-ID kopiert'));
+                    }
+
                     toggleShowElementSelectDialog();
-                    dispatch(showSuccessSnackbar('Element-ID kopiert'));
                 }}
                 onClose={toggleShowElementSelectDialog}
             />

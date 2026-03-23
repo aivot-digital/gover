@@ -1,27 +1,23 @@
 import React, {useState} from 'react';
 import {Box, Button, Dialog, DialogContent, FormControlLabel, FormGroup, FormHelperText, Grid, Switch, Typography} from '@mui/material';
-import {useDispatch} from 'react-redux';
-import {type AppDispatch, type RootState} from '../../store';
-import {type AdminSettingsState, setDevToolsTab, toggleAutoScrollForSteps, toggleValidation, toggleVisibility} from '../../slices/admin-settings-slice';
+import {type AppDispatch, type RootState} from '../../store.staff';
+import {type AdminSettingsState, setDevToolsTab, toggleAutoScrollForSteps, toggleElementContextMenu, toggleValidation, toggleVisibility} from '../../slices/admin-settings-slice';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {type AdminToolsDialogProps} from './admin-tools-dialog-props';
 import {selectLoadedForm} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {downloadBlobFile, downloadConfigFile} from '../../utils/download-utils';
+import {downloadBlobFile, downloadFormExportFile} from '../../utils/download-utils';
 import ImportExportOutlinedIcon from '@mui/icons-material/ImportExportOutlined';
-import StackedLineChart from '@mui/icons-material/StackedLineChart';
-import {FormMetrics} from '../../components/form-metrics/form-metrics';
-import {selectBooleanSystemConfigValue} from '../../slices/system-config-slice';
-import {SystemConfigKeys} from '../../data/system-config-keys';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
-import {Form} from '../../models/entities/form';
 import {useApi} from '../../hooks/use-api';
 import {hideLoadingOverlay, hideLoadingOverlayWithTimeout, showLoadingOverlay} from '../../slices/loading-overlay-slice';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import DrawIcon from '@mui/icons-material/Draw';
-import ExportApplicationDialog from '../application-dialogs/export-application-dialog/export-application-dialog';
 import {PrefillFormDialog} from '../prefill-form-dialog/prefill-form-dialog';
+import {useAppDispatch} from '../../hooks/use-app-dispatch';
+import {FormApiService} from '../../modules/forms/services/form-api-service';
+import {ExportFormDialog} from '../../modules/forms/dialogs/export-form-dialog';
 
 const switches: Array<{
     label: string;
@@ -47,26 +43,34 @@ const switches: Array<{
         onToggle: (dispatch) => dispatch(toggleAutoScrollForSteps()),
         isActive: (settings) => !settings.disableAutoScrollForSteps,
     },
+    {
+        label: 'Element-Kontextmenü',
+        hint: 'Das Element-Kontextmenü zeigt einen Button mit Menü an jedem Element an, mit dem Sie Kontextoptionen zu diesem Element erreichen. Sie können diesen Button z.B. für Demonstrationen oder Testläufe deaktivieren.',
+        onToggle: (dispatch) => dispatch(toggleElementContextMenu()),
+        isActive: (settings) => !settings.disableElementContextMenu,
+    },
 ];
 
-export function AdminToolsDialog(props: AdminToolsDialogProps): JSX.Element {
-    const dispatch = useDispatch();
+export function AdminToolsDialog(props: AdminToolsDialogProps) {
+    const dispatch = useAppDispatch();
     const api = useApi();
 
     const form = useAppSelector(selectLoadedForm);
     const adminSettings = useAppSelector((state: RootState) => state.adminSettings);
-    const experimentalFeatureComplexity = useAppSelector(selectBooleanSystemConfigValue(SystemConfigKeys.experimentalFeatures.complexity));
 
-    const [showMetrics, setShowMetrics] = useState(false);
     const [showPrefill, setShowPrefill] = useState(false);
     const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
-    const downloadPdfFile = (form: Form) => {
+    const downloadPdfFile = () => {
+        if (form == null) {
+            return;
+        }
+
         dispatch(showLoadingOverlay('Vordruck wird generiert'));
         api
-            .getBlob(`forms/${form.id}/print/`)
+            .getBlob(`forms/${form.form.id}/${form.version.version}/print/`)
             .then((blob) => {
-                downloadBlobFile(`vordruck - ${form.slug} - ${form.version}.pdf`, blob);
+                downloadBlobFile(`vordruck - ${form.form.slug} - ${form.version.version}.pdf`, blob);
                 dispatch(hideLoadingOverlayWithTimeout(1000));
             })
             .catch((error) => {
@@ -81,8 +85,15 @@ export function AdminToolsDialog(props: AdminToolsDialogProps): JSX.Element {
     };
 
     const startExportForm = () => {
+        if (form == null) {
+            return;
+        }
+
         try {
-            downloadConfigFile(form);
+            new FormApiService()
+                .export(form.form.id, form.version.version)
+                .then(downloadFormExportFile);
+
             dispatch(showSuccessSnackbar('Formular wurde erfolgreich exportiert.'));
         } catch (error) {
             console.error(error);
@@ -95,18 +106,12 @@ export function AdminToolsDialog(props: AdminToolsDialogProps): JSX.Element {
         {
             label: 'Formular exportieren (.gov)',
             icon: <ImportExportOutlinedIcon />,
-            onClick: () => {
-                openExportDialog();
-            },
+            onClick: openExportDialog,
         },
         {
             label: 'Vordruck exportieren (.pdf)',
             icon: <PictureAsPdfOutlinedIcon />,
-            onClick: () => {
-                if (form != null) {
-                    downloadPdfFile(form);
-                }
-            },
+            onClick: downloadPdfFile,
         },
         {
             label: 'Entwicklerwerkzeuge öffnen',
@@ -124,16 +129,6 @@ export function AdminToolsDialog(props: AdminToolsDialogProps): JSX.Element {
             },
         },
     ];
-
-    if (experimentalFeatureComplexity) {
-        actions.push({
-            label: 'Komplexitätseinschätzung',
-            icon: <StackedLineChart />,
-            onClick: () => {
-                setShowMetrics(true);
-            },
-        });
-    }
 
     return (
         <>
@@ -189,10 +184,11 @@ export function AdminToolsDialog(props: AdminToolsDialogProps): JSX.Element {
                         {
                             actions.map(action => (
                                 <Grid
-                                    item
                                     key={action.label}
-                                    xs={12}
-                                    md={6}
+                                    size={{
+                                        xs: 12,
+                                        md: 6,
+                                    }}
                                 >
                                     <Button
                                         fullWidth
@@ -212,30 +208,7 @@ export function AdminToolsDialog(props: AdminToolsDialogProps): JSX.Element {
                 </DialogContent>
             </Dialog>
 
-            <Dialog
-                open={showMetrics}
-                onClose={() => {
-                    setShowMetrics(false);
-                }}
-                fullWidth
-                maxWidth="md"
-            >
-                <DialogTitleWithClose
-                    onClose={() => {
-                        setShowMetrics(false);
-                    }}
-                >
-                    Komplexitätseinschätzung
-                </DialogTitleWithClose>
-                <DialogContent tabIndex={0}>
-                    {
-                        form?.root != null &&
-                        <FormMetrics root={form.root} />
-                    }
-                </DialogContent>
-            </Dialog>
-
-            <ExportApplicationDialog
+            <ExportFormDialog
                 open={exportDialogOpen}
                 onCancel={() => setExportDialogOpen(false)}
                 onExport={startExportForm}

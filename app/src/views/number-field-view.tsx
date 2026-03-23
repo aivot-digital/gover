@@ -9,13 +9,13 @@ export function NumberFieldView(props: BaseViewProps<NumberFieldElement, number>
         element,
         setValue,
         value,
-        error,
+        errors,
         isBusy: isGloballyDisabled,
         isDeriving,
     } = props;
 
     const {
-        disabled
+        disabled,
     } = element;
 
     const isDisabled = useMemo(() => {
@@ -31,18 +31,17 @@ export function NumberFieldView(props: BaseViewProps<NumberFieldElement, number>
             label={element.label ?? ''}
             value={value ?? undefined}
             onChange={setValue}
-            placeholder={element.placeholder}
-            decimalPlaces={element.decimalPlaces}
-            hint={element.hint}
-            error={error}
-            suffix={element.suffix}
-            required={element.required}
+            placeholder={element.placeholder ?? undefined}
+            decimalPlaces={element.decimalPlaces ?? undefined}
+            hint={element.hint ?? undefined}
+            error={errors != null ? errors.join(' ') : undefined}
+            suffix={element.suffix ?? undefined}
+            required={element.required ?? undefined}
             disabled={isDisabled}
             debounce={1000}
-
             sx={{
-                backgroundColor: isBusy ? "#F8F8F8" : undefined,
-                cursor: isBusy ? "not-allowed" : undefined,
+                backgroundColor: isBusy ? '#F8F8F8' : undefined,
+                cursor: isBusy ? 'not-allowed' : undefined,
             }}
             readOnly={isBusy}
         />

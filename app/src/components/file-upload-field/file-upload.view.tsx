@@ -14,7 +14,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
         element,
         setValue,
         value,
-        error,
+        errors,
         isBusy: isGloballyDisabled,
         isDeriving,
     } = props;
@@ -87,7 +87,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
         const maxFiles = element.isMultifile ? (element.maxFiles != null && element.maxFiles > 0 ? element.maxFiles : null) : 1;
 
         const fileUploadItems: FileUploadElementItem[] = [
-            ...value ?? [],
+            ...(value ?? []),
         ];
         let addedItems = 0;
         for (let i = 0; (i < cleanedFiles.length && (maxFiles == null || fileUploadItems.length < maxFiles)); i++) {
@@ -126,7 +126,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
             >
                 <FormLabel
                     htmlFor={element.id + '-input'}
-                    error={error != null}
+                    error={errors != null && errors.length > 0}
                 >
                     {element.label}
                     {element.required && ' *'}
@@ -199,7 +199,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
             <Box
                 sx={{
                     p: 2,
-                    border: `2px ${isFocused ? 'solid' : 'dashed'} ${error != null ? theme.palette.error.main : (isFocused ? theme.palette.primary.main : theme.palette.grey['500'])}`,
+                    border: `2px ${isFocused ? 'solid' : 'dashed'} ${errors != null && errors.length > 0 ? theme.palette.error.main : (isFocused ? theme.palette.primary.main : theme.palette.grey['500'])}`,
                     backgroundColor: theme.palette.grey['100'],
                     transition: 'background-color 250ms ease-in-out',
                     '&:hover': {
@@ -207,6 +207,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
                     },
                     boxShadow: (isDraggedOver && !isDisabled) ? `0 0 0.5em ${theme.palette.primary.main}` : undefined,
                     pointerEvents: isBusy ? 'none' : 'auto',
+                    cursor: (isBusy || isDisabled) ? 'not-allowed' : undefined,
                 }}
                 onDragOver={(event) => {
                     event.preventDefault();
@@ -246,7 +247,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
                         id={element.id + '-input'}
                         ref={inputRef}
                         type="file"
-                        multiple={element.isMultifile}
+                        multiple={element.isMultifile ?? undefined}
                         accept={element.extensions != null ? element.extensions.map(ext => '.' + ext).join(',') : undefined}
                         onChange={handleChange}
                         onFocus={() => setIsFocused(true)}
@@ -302,7 +303,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
 
             {
                 (
-                    error != null ||
+                    errors != null && errors.length > 0 ||
                     element.hint != null ||
                     (
                         element.minFiles != null &&
@@ -320,10 +321,10 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
                     }}
                 >
                     <Typography
-                        color={error != null ? theme.palette.error.main : theme.palette.grey['600']}
+                        color={errors != null && errors.length > 0 ? theme.palette.error.main : theme.palette.grey['600']}
                         variant="caption"
                     >
-                        {error || element.hint}
+                        {errors?.join(', ') || element.hint}
                     </Typography>
 
                     {

@@ -4,7 +4,7 @@ import {PageWrapper} from '../page-wrapper/page-wrapper';
 import {type GridValidRowModel} from '@mui/x-data-grid';
 import {TableWrapper} from '../table-wrapper/table-wrapper';
 
-export function TablePageWrapper<T extends GridValidRowModel>(props: PropsWithChildren<TablePageWrapperProps<T>>): JSX.Element {
+export function TablePageWrapper<T extends GridValidRowModel>(props: PropsWithChildren<TablePageWrapperProps<T>>) {
     const {
         columns,
         rows,

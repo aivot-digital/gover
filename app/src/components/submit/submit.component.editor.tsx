@@ -1,12 +1,13 @@
 import React from 'react';
 import {type SubmitStepElement} from '../../models/elements/steps/submit-step-element';
 import {type BaseEditorProps} from '../../editors/base-editor';
-import {type Form as Application} from '../../models/entities/form';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {StringListInput} from '../string-list-input/string-list-input';
-import {RichTextEditorComponentView} from "../richt-text-editor/rich-text-editor.component.view";
+import {RichTextEditorComponentView} from '../richt-text-editor/rich-text-editor.component.view';
+import {LoadedForm} from '../../slices/app-slice';
+import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 
-export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement, Application>): JSX.Element {
+export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement, LoadedForm>) {
     return (
         <>
             <RichTextEditorComponentView
@@ -46,7 +47,7 @@ export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement, 
             />
 
             <StringListInput
-                value={props.element.documentsToReceive}
+                value={props.element.documentsToReceive ?? undefined}
                 label="Dokumente die antragstellende Personen erhalten"
                 onChange={(val) => {
                     props.onPatch({
@@ -58,6 +59,18 @@ export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement, 
                 allowEmpty
                 addLabel="Dokument hinzufügen"
                 noItemsHint="Keine Dokumente angegeben"
+            />
+
+            <CheckboxFieldComponent
+                label="Konfetti nach dem Absenden deaktivieren"
+                value={props.element.disableConfetti ?? false}
+                onChange={(val) => {
+                    props.onPatch({
+                        disableConfetti: val,
+                    });
+                }}
+                disabled={!props.editable}
+                hint="Wenn aktiviert, wird nach erfolgreicher Antragseinreichung keine Konfetti-Animation angezeigt."
             />
         </>
     );

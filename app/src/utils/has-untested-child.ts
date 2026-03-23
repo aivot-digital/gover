@@ -5,7 +5,7 @@ import {ElementType} from '../data/element-type/element-type';
 import {isRootElement} from '../models/elements/root-element';
 
 export function hasUntestedChild(element: AnyElementWithChildren): boolean {
-    if (element.type === ElementType.Container && element.storeLink != null) {
+    if (element.type === ElementType.GroupLayout && element.storeLink != null) {
         return false;
     }
 
@@ -21,8 +21,8 @@ export function hasUntestedChild(element: AnyElementWithChildren): boolean {
         }
     }
 
-    return element
-        .children
+    return (element
+        .children ?? [])
         .some((child: AnyElement) => {
             return !isElementTested(child) || (isAnyElementWithChildren(child) && hasUntestedChild(child));
         });

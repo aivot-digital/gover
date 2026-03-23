@@ -4,7 +4,7 @@ import {type RadioFieldElement} from '../../models/elements/form/input/radio-fie
 import {stringOrDefault} from '../../utils/string-utils';
 import {type BaseSummaryProps} from '../../summaries/base-summary';
 
-export function RadioFieldComponentSummary(props: BaseSummaryProps<RadioFieldElement, string>): JSX.Element {
+export function RadioFieldComponentSummary(props: BaseSummaryProps<RadioFieldElement, string>) {
     const options = (props.model.options ?? []).map((option) => {
         if (typeof option === 'string') {
             return {
@@ -27,9 +27,6 @@ export function RadioFieldComponentSummary(props: BaseSummaryProps<RadioFieldEle
             }}
         >
             <Grid
-                item
-                xs={12}
-                md={4}
                 sx={{
                     textAlign: 'left',
                     pr: 5,
@@ -37,7 +34,10 @@ export function RadioFieldComponentSummary(props: BaseSummaryProps<RadioFieldEle
                         textAlign: 'right',
                     },
                 }}
-            >
+                size={{
+                    xs: 12,
+                    md: 4
+                }}>
                 <Typography
                     variant="body2"
                     sx={{
@@ -51,10 +51,10 @@ export function RadioFieldComponentSummary(props: BaseSummaryProps<RadioFieldEle
                 </Typography>
             </Grid>
             <Grid
-                item
-                xs={12}
-                md={8}
-            >
+                size={{
+                    xs: 12,
+                    md: 8
+                }}>
                 <Typography
                     variant="body2"
                 >

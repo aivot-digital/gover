@@ -14,13 +14,13 @@ import java.io.IOException;
 
 @Component
 public class SubmissionStorageService {
-    private final StorageService storageService;
+    private final LegacyStorageService storageService;
     private final SubmissionAttachmentRepository submissionAttachmentRepository;
     private final StorageConfig storageConfig;
 
     @Autowired
     public SubmissionStorageService(
-            StorageService storageService,
+            LegacyStorageService storageService,
             SubmissionAttachmentRepository submissionAttachmentRepository,
             StorageConfig storageConfig) {
         this.storageService = storageService;

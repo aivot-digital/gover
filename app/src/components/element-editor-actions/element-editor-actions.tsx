@@ -8,7 +8,7 @@ import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
 import LibraryAddOutlinedIcon from '@mui/icons-material/LibraryAddOutlined';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
 
-export function ElementEditorActions(props: ElementEditorActionsProps): JSX.Element {
+export function ElementEditorActions(props: ElementEditorActionsProps) {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>): void => {

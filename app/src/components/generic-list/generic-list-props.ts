@@ -1,10 +1,20 @@
-import {ReactNode} from 'react';
+import {ReactNode, RefObject} from 'react';
 import {BadgeProps, SxProps} from '@mui/material';
-import {GridColDef} from '@mui/x-data-grid';
+import {GridColDef, GridRowModel} from '@mui/x-data-grid';
 import {Api} from '../../hooks/use-api';
 import {GenericListRowModel} from './generic-list-row-models';
 import {Action} from '../actions/actions-props';
 import {Page} from '../../models/dtos/page';
+
+export type GenericListColDef<T extends GridRowModel> = GridColDef<T> & {
+    onlyFullScreen?: boolean;
+};
+
+export interface GenericListFilter {
+    label: string;
+    value: string;
+    badge?: BadgeProps;
+}
 
 export interface GenericListProps<ItemType extends GenericListRowModel> {
     disableFullWidthToggle?: boolean;
@@ -18,7 +28,8 @@ export interface GenericListProps<ItemType extends GenericListRowModel> {
     }>;
     searchLabel?: string;
     searchPlaceholder?: string;
-    columnDefinitions: Array<GridColDef<ItemType, ItemType, ItemType> & { onlyFullScreen?: boolean; }>;
+    columnIcon?: ReactNode | ((item: ItemType) => ReactNode);
+    columnDefinitions: Array<GenericListColDef<ItemType> & { onlyFullScreen?: boolean; }>;
     getRowIdentifier: (item: ItemType) => string;
     noDataPlaceholder?: ReactNode;
     noSearchResultsPlaceholder?: ReactNode;
@@ -31,16 +42,21 @@ export interface GenericListProps<ItemType extends GenericListRowModel> {
     rowActions?: (item: ItemType) => Action[];
     rowActionsCount?: number;
     defaultSortField?: keyof ItemType;
-    filters?: {
-        label: string;
-        value: string;
-        badge?: BadgeProps;
-    }[];
+    // TODO: We should add a defaultSortOrder too
+    filters?: GenericListFilter[];
     defaultFilter?: string;
     fetch: (options: GenericListPropsFetchOptions<ItemType>) => Promise<Page<ItemType>>;
 
     onFullWidthChange?: (isFullWidth: boolean) => void;
     onBusyChange?: (isBusy: boolean) => void;
+
+    dynamicRowHeight?: boolean;
+
+    controlRef?: RefObject<ListControlRef | null>;
+}
+
+export type ListControlRef = {
+    refresh: () => void;
 }
 
 export type SortOrder = 'ASC' | 'DESC';

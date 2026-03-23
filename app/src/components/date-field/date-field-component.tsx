@@ -1,9 +1,14 @@
 import {DateFieldComponentModelMode} from '../../models/elements/form/input/date-field-element';
 import {DatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import {AdapterDateFns} from '@mui/x-date-pickers/AdapterDateFns';
-import deLocale from 'date-fns/locale/de';
-import {DateFieldComponentProps} from "./date-field-component-props";
-import {useEffect, useRef, useState} from "react";
+import {de} from 'date-fns/locale/de';
+import {DateFieldComponentProps} from './date-field-component-props';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
+import type {Locale} from 'date-fns';
+import {InputAdornment} from '@mui/material';
+import {renderIconButton} from '../text-field/text-field-component';
+
+const deLocale = de as unknown as Locale;
 
 const formatMap = {
     [DateFieldComponentModelMode.Day]: 'dd.MM.yyyy',
@@ -42,6 +47,9 @@ export function DateFieldComponent({
                                        sx,
                                        bufferInputUntilBlur,
                                        debounce,
+                                       muiPassTroughProps,
+                                       startIcon,
+                                       endAction,
                                    }: DateFieldComponentProps) {
     const dateValue = value != null ? new Date(value) : null;
     const [localValue, setLocalValue] = useState<Date | null>(dateValue);
@@ -55,22 +63,25 @@ export function DateFieldComponent({
         lastPickerValueRef.current = parsed;
     }, [value]);
 
-    let computedLabel = label;
-    if (computedLabel) {
-        computedLabel += ` (${formatReadableMap[mode ?? DateFieldComponentModelMode.Day]})`;
-    }
-    if (required) {
+    const computedLabel = useMemo(() => {
+        let computedLabel = label;
         if (computedLabel) {
-            computedLabel += ' *';
-        } else {
-            computedLabel = '*';
+            computedLabel += ` (${formatReadableMap[mode ?? DateFieldComponentModelMode.Day]})`;
         }
-    }
+        if (required) {
+            if (computedLabel) {
+                computedLabel += ' *';
+            } else {
+                computedLabel = '*';
+            }
+        }
+        return computedLabel;
+    }, [label, mode, required]);
 
-    const format = formatMap[mode ?? DateFieldComponentModelMode.Day];
-    const views = viewsMap[mode ?? DateFieldComponentModelMode.Day];
-    const opensTo = mode ?? 'day';
-    const helper = error != null ? error : hint;
+    const format = useMemo(() => formatMap[mode ?? DateFieldComponentModelMode.Day], [mode]);
+    const views = useMemo(() => viewsMap[mode ?? DateFieldComponentModelMode.Day], [mode]);
+    const opensTo = useMemo(() => mode ?? 'day', [mode]);
+    const helper = useMemo(() => error != null ? error : hint, [error, hint]);
 
     const triggerChange = (date: Date | null) => {
         if (date === null) {
@@ -135,6 +146,35 @@ export function DateFieldComponent({
         setLastInputWasTyping(false);
     };
 
+    const slotProps = useMemo(() => ({
+        textField: {
+            variant: 'outlined',
+            error: error != null,
+            helperText: helper,
+            autoComplete: autocomplete,
+            InputLabelProps: {
+                title: computedLabel,
+            },
+            onInput: () => setLastInputWasTyping(true),
+            onBlur: handleBlur,
+            InputProps: {
+                startAdornment: startIcon && (
+                    <InputAdornment position="start">{startIcon}</InputAdornment>
+                ),
+                endAdornment: endAction && (
+                    <InputAdornment position="end">
+                        {Array.isArray(endAction)
+                            ? endAction.map(renderIconButton)
+                            : renderIconButton(endAction)}
+                    </InputAdornment>
+                ),
+            }
+        },
+        actionBar: {
+            actions: ['accept', 'cancel', 'clear'],
+        },
+    }), [error, autocomplete, computedLabel, helper]);
+
     return (
         <LocalizationProvider
             dateAdapter={AdapterDateFns}
@@ -160,27 +200,12 @@ export function DateFieldComponent({
                 disabled={disabled}
 
                 // @ts-ignore
-                slotProps={{
-                    textField: {
-                        variant: 'outlined',
-                        error: error != null,
-                        helperText: helper,
-                        autoComplete: autocomplete,
-                        InputLabelProps: {
-                            title: computedLabel
-                        },
-                        onInput: () => setLastInputWasTyping(true),
-                        onBlur: handleBlur,
-                    },
-                    actionBar: {
-                        actions: ['accept', 'cancel', 'clear'],
-                    },
-                }}
+                slotProps={slotProps}
                 sx={{
                     ...sx,
-                    "& .MuiInputBase-root": {
-                        backgroundColor: busy ? "#F8F8F8" : undefined,
-                        cursor: busy ? "not-allowed" : undefined,
+                    '& .MuiPickersInputBase-root': {
+                        backgroundColor: (busy || disabled) ? '#F8F8F8' : undefined,
+                        cursor: (busy || disabled) ? 'not-allowed' : undefined,
                     },
                 }}
                 readOnly={busy}

@@ -13,7 +13,7 @@ interface RatingProps {
 }
 
 const customIcons: Record<string, {
-    icon: React.ReactElement;
+    icon: React.ReactElement<any>;
     label: string;
 }> = {
     1: {
@@ -63,7 +63,7 @@ const customIcons: Record<string, {
     },
 };
 
-export function Rating(props: RatingProps): JSX.Element {
+export function Rating(props: RatingProps) {
     const theme = useTheme();
 
     return (
@@ -87,7 +87,7 @@ export function Rating(props: RatingProps): JSX.Element {
     );
 }
 
-function IconContainer(props: IconContainerProps): JSX.Element {
+function IconContainer(props: IconContainerProps) {
     const {
         value,
         ...other

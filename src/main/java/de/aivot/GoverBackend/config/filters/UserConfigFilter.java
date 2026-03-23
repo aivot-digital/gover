@@ -18,7 +18,7 @@ public class UserConfigFilter implements Filter<UserConfigEntity> {
     public Specification<UserConfigEntity> build() {
         return SpecificationBuilder
                 .create(UserConfigEntity.class)
-                .withContains("key", key)
+                .withEquals("key", key)
                 .withEquals("userId", userId)
                 .withEquals("publicConfig", publicConfig)
                 .build();

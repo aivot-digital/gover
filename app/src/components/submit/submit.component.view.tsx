@@ -3,10 +3,8 @@ import {type SubmitStepElement} from '../../models/elements/steps/submit-step-el
 import {Preamble} from '../preamble/preamble';
 import {Box, FormHelperText, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
 import {FadingPaper} from '../fading-paper/fading-paper';
-import {type Department} from '../../modules/departments/models/department';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {selectCustomerInputError, selectCustomerInputValue, selectLoadedForm, updateCustomerInput} from '../../slices/app-slice';
-import {useAppDispatch} from '../../hooks/use-app-dispatch';
+import {selectLoadedForm} from '../../slices/app-slice';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
 import {type BaseViewProps} from '../../views/base-view';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
@@ -16,29 +14,33 @@ import {useApi} from '../../hooks/use-api';
 import {AlertComponent} from '../alert/alert-component';
 import {formatNumToGermanNum} from '../../utils/format-german-numbers';
 import {FormCostCalculationResponseDTO} from '../../modules/forms/dtos/form-cost-calculation-response-dto';
-import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
-import {FormsApiService} from '../../modules/forms/forms-api-service';
-import ExpandableList from '../expandable-list/expandable-list';
+import {ExpandableList} from '../expandable-list/expandable-list';
 import {AltchaWidget} from '../altcha/altcha-widget';
+import {VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
+import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
+import {FormApiService} from '../../modules/forms/services/form-api-service';
 
-export const SubmitHumanKey = '__human__';
 export const SubmitPaymentDataKey = '__payment_data__';
 
-export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void>): JSX.Element | null {
-    const api = useApi();
+export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>): React.ReactNode | null {
+    const {
+        element,
+        value,
+        setValue,
+        errors,
+        elementData,
+    } = props;
+
     const theme = useTheme();
-    const dispatch = useAppDispatch();
+
     const initialDisplayCount = 4;
 
-    const customerInputs = useAppSelector(state => state.app.inputs);
-    const isHuman = useAppSelector(selectCustomerInputValue(SubmitHumanKey));
-    const error = useAppSelector(selectCustomerInputError(SubmitHumanKey));
     const providerName = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
 
     const form = useAppSelector(selectLoadedForm);
 
-    const [responsibleDepartment, setResponsibleDepartment] = useState<Department>();
-    const [managingDepartment, setManagingDepartment] = useState<Department>();
+    const [responsibleDepartment, setResponsibleDepartment] = useState<VDepartmentShadowedEntity>();
+    const [managingDepartment, setManagingDepartment] = useState<VDepartmentShadowedEntity>();
 
     const [costs, setCosts] = useState<FormCostCalculationResponseDTO>();
 
@@ -47,8 +49,8 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
             return;
         }
 
-        new FormsApiService(api)
-            .calculateCosts(form.id, customerInputs)
+        new FormApiService()
+            .calculateCosts(form.form.slug, form.version.version, elementData)
             .then((data) => {
                 setCosts(data);
             });
@@ -56,20 +58,20 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
 
     useEffect(() => {
         if (form != null) {
-            if (form.responsibleDepartmentId != null) {
-                if (responsibleDepartment == null || responsibleDepartment.id !== form.responsibleDepartmentId) {
-                    new DepartmentsApiService(api)
-                        .retrievePublic(form.responsibleDepartmentId)
+            if (form.version.responsibleDepartmentId != null) {
+                if (responsibleDepartment == null || responsibleDepartment.id !== form.version.responsibleDepartmentId) {
+                    new DepartmentApiService()
+                        .retrievePublic(form.version.responsibleDepartmentId)
                         .then(setResponsibleDepartment);
                 }
             } else {
                 setResponsibleDepartment(undefined);
             }
 
-            if (form.managingDepartmentId != null) {
-                if (managingDepartment == null || managingDepartment.id !== form.managingDepartmentId) {
-                    new DepartmentsApiService(api)
-                        .retrievePublic(form.managingDepartmentId)
+            if (form.version.managingDepartmentId != null) {
+                if (managingDepartment == null || managingDepartment.id !== form.version.managingDepartmentId) {
+                    new DepartmentApiService()
+                        .retrievePublic(form.version.managingDepartmentId)
                         .then(setManagingDepartment);
                 }
             } else {
@@ -79,9 +81,12 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
     }, [form]);
 
     const renderDocumentToReceive = (doc: string, index: number) => (
-        <ListItem disableGutters key={String(index) + doc}>
-            <ListItemIcon sx={{ minWidth: '34px' }}>
-                <UploadFileOutlinedIcon sx={{ color: theme.palette.primary.main }} />
+        <ListItem
+            disableGutters
+            key={String(index) + doc}
+        >
+            <ListItemIcon sx={{minWidth: '34px'}}>
+                <UploadFileOutlinedIcon sx={{color: theme.palette.primary.main}} />
             </ListItemIcon>
             <ListItemText>{doc}</ListItemText>
         </ListItem>
@@ -91,7 +96,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
         return null;
     }
 
-    const sections: JSX.Element[] = [];
+    const sections: React.ReactNode[] = [];
 
     if (responsibleDepartment != null) {
         sections.push(
@@ -104,18 +109,18 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
                     Zuständige Stelle
                 </Typography>
                 <Typography
-                    component={"pre"}
+                    component={'pre'}
                     variant="body2"
                     sx={{mt: 1}}
                 >
                     {[
                         isStringNotNullOrEmpty(providerName) ? providerName : null,
                         responsibleDepartment.name,
-                        responsibleDepartment.address
-                    ].filter(Boolean).join("\n")}
+                        responsibleDepartment.address,
+                    ].filter(Boolean).join('\n')}
                 </Typography>
-            </Box>
-        )
+            </Box>,
+        );
     }
 
     if (managingDepartment != null) {
@@ -129,18 +134,18 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
                     Bewirtschaftende Stelle
                 </Typography>
                 <Typography
-                    component={"pre"}
+                    component={'pre'}
                     variant="body2"
                     sx={{mt: 1}}
                 >
                     {[
                         isStringNotNullOrEmpty(providerName) ? providerName : null,
                         managingDepartment.name,
-                        managingDepartment.address
-                    ].filter(Boolean).join("\n")}
+                        managingDepartment.address,
+                    ].filter(Boolean).join('\n')}
                 </Typography>
-            </Box>
-        )
+            </Box>,
+        );
     }
 
     if (props.element.textProcessingTime) {
@@ -160,8 +165,8 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
                 >
                     {props.element.textProcessingTime}
                 </Typography>
-            </Box>
-        )
+            </Box>,
+        );
     }
 
     if ((props.element.documentsToReceive != null)
@@ -176,8 +181,8 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
                 pluralLabel="Dokumente"
                 listId="documents-to-receive"
                 renderItem={renderDocumentToReceive}
-            />
-        )
+            />,
+        );
     }
 
     return (
@@ -187,8 +192,8 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
                 !isStringNullOrEmpty(props.element.textPreSubmit) &&
                 <Preamble
                     text={props.element.textPreSubmit}
-                    logoLink={form.root.introductionStep.initiativeLogoLink}
-                    logoAlt={form.root.introductionStep.initiativeName}
+                    logoLink={form.version.rootElement.introductionStep?.initiativeLogoLink ?? undefined}
+                    logoAlt={form.version.rootElement.introductionStep?.initiativeName ?? undefined}
                 />
             }
 
@@ -202,7 +207,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
                 <FadingPaper>
                     <Box
                         sx={{
-                            columnCount: { xs: 1, md: 2 },
+                            columnCount: {xs: 1, md: 2},
                             columnGap: 7,
                         }}
                     >
@@ -294,10 +299,9 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
 
             <Box sx={{mt: 4}}>
                 <Typography
-                    id={SubmitHumanKey}
+                    id={element.id}
                     component={'h3'}
                     variant="h5"
-                    color="primary"
                 >
                     Schutz vor automatisierten Einreichungen
                 </Typography>
@@ -318,23 +322,18 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
                     }}
                 >
                     <AltchaWidget
-                        onChallengeSuccess={(solution) => {
-                            dispatch(updateCustomerInput({
-                                key: SubmitHumanKey,
-                                value: JSON.stringify(solution),
-                            }));
-                        }}
+                        onChallengeSuccess={setValue}
                     />
+
                     {
-                        error &&
+                        errors != null &&
                         <Box sx={{mt: 2}}>
                             <FormHelperText error={true}>
-                                {error}
+                                {errors.join(' ')}
                             </FormHelperText>
                         </Box>
                     }
                 </Box>
-
             </Box>
         </>
     );

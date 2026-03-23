@@ -1,10 +1,10 @@
 package de.aivot.GoverBackend.elements.utils;
 
-import de.aivot.GoverBackend.elements.models.BaseElement;
-import de.aivot.GoverBackend.elements.models.RootElement;
-import de.aivot.GoverBackend.elements.models.form.layout.GroupLayout;
-import de.aivot.GoverBackend.elements.models.form.layout.ReplicatingContainerLayout;
-import de.aivot.GoverBackend.elements.models.steps.StepElement;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
 
 import java.util.function.Consumer;
 
@@ -13,7 +13,7 @@ public class ElementStreamUtils {
         action.accept(element);
 
         switch (element) {
-            case RootElement rootElement:
+            case FormLayoutElement rootElement:
                 action.accept(rootElement.getIntroductionStep());
                 action.accept(rootElement.getSummaryStep());
                 action.accept(rootElement.getSubmitStep());
@@ -27,12 +27,12 @@ public class ElementStreamUtils {
                     applyAction(child, action);
                 }
                 break;
-            case GroupLayout groupLayout:
+            case GroupLayoutElement groupLayout:
                 for (BaseElement child : groupLayout.getChildren()) {
                     applyAction(child, action);
                 }
                 break;
-            case ReplicatingContainerLayout replicatingContainerLayout:
+            case ReplicatingContainerLayoutElement replicatingContainerLayout:
                 for (BaseElement child : replicatingContainerLayout.getChildren()) {
                     applyAction(child, action);
                 }

@@ -1,6 +1,6 @@
-import {ConditionOperator} from "../data/condition-operator";
-import {BaseEvaluator} from "./base-evaluator";
-import {addDays, addMonths, addYears, isAfter, isBefore, isSameDay, isValid, parse, parseISO, subDays, subMonths, subYears} from "date-fns";
+import {ConditionOperator} from '../data/condition-operator';
+import {BaseEvaluator} from './base-evaluator';
+import {addDays, addMonths, addYears, isAfter, isBefore, isSameDay, isValid, parse, parseISO, subDays, subMonths, subYears} from 'date-fns';
 
 const dayRegex = /^\d\d\.\d\d\.\d\d\d\d$/;
 const dayAnyMonthAnyYearRegex = /^\d\d\.$/;

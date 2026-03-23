@@ -5,7 +5,8 @@ import de.aivot.GoverBackend.lib.models.Identifiable;
 
 public enum TableColumnDataType implements Identifiable<String> {
     String("string"),
-    Number("number");
+    Number("number"),
+    ;
 
     private final String key;
 

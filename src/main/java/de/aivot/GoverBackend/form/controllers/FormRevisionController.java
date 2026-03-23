@@ -1,21 +1,28 @@
 package de.aivot.GoverBackend.form.controllers;
 
+import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
-import de.aivot.GoverBackend.department.services.DepartmentMembershipService;
-import de.aivot.GoverBackend.form.cache.entities.FormLock;
-import de.aivot.GoverBackend.form.dtos.FormDetailsResponseDTO;
-import de.aivot.GoverBackend.form.dtos.FormRevisionResponseDTO;
+import de.aivot.GoverBackend.form.cache.entities.FormLockCacheEntity;
+import de.aivot.GoverBackend.form.entities.*;
 import de.aivot.GoverBackend.form.services.FormLockService;
 import de.aivot.GoverBackend.form.services.FormRevisionService;
-import de.aivot.GoverBackend.form.services.FormService;
+import de.aivot.GoverBackend.form.services.VFormVersionWithDetailsService;
+import de.aivot.GoverBackend.form.services.VFormWithPermissionsService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,100 +30,132 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.math.BigInteger;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/forms/{formId}/revisions/")
+@RequestMapping("/api/forms/{formId}/{version}/revisions/")
+@Tag(
+        name = "Form Version Revisions",
+        description = "Form revisions track the changes made to form versions over time. " +
+                      "They allow administrators to view the history of modifications and revert to previous states if necessary."
+)
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 public class FormRevisionController {
     private final ScopedAuditService auditService;
 
-    private final FormService formService;
     private final FormLockService formLockService;
-    private final DepartmentMembershipService departmentMembershipService;
     private final FormRevisionService formRevisionService;
+    private final VFormWithPermissionsService vFormWithPermissionsService;
+    private final VFormVersionWithDetailsService vFormVersionWithDetailsService;
+    private final UserService userService;
 
     @Autowired
-    public FormRevisionController(
-            AuditService auditService,
-            FormService formService,
-            DepartmentMembershipService departmentMembershipService,
-            FormLockService formLockService,
-            FormRevisionService formRevisionService
-    ) {
+    public FormRevisionController(AuditService auditService,
+                                  FormLockService formLockService,
+                                  FormRevisionService formRevisionService,
+                                  VFormWithPermissionsService vFormWithPermissionsService,
+                                  VFormVersionWithDetailsService vFormVersionWithDetailsService,
+                                  UserService userService) {
         this.auditService = auditService.createScopedAuditService(FormRevisionController.class);
-        this.formService = formService;
+
         this.formLockService = formLockService;
-        this.departmentMembershipService = departmentMembershipService;
         this.formRevisionService = formRevisionService;
+        this.vFormWithPermissionsService = vFormWithPermissionsService;
+        this.vFormVersionWithDetailsService = vFormVersionWithDetailsService;
+        this.userService = userService;
     }
 
     @GetMapping("")
-    public Page<FormRevisionResponseDTO> list(
+    @Operation(
+            summary = "List form revisions",
+            description = "Retrieve a paginated list of revisions for a specific form version." +
+                          "Requires \"" + PermissionLabels.FormPermissionRead + "\" permission unless the user is a global admin."
+    )
+    public Page<FormRevisionEntity> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PageableDefault Pageable pageable,
-            @Nonnull @PathVariable Integer formId
+            @Nonnull @ParameterObject @PageableDefault Pageable pageable,
+            @Nonnull @PathVariable Integer formId,
+            @Nonnull @PathVariable Integer version
     ) throws ResponseException {
-        var user = UserService
+        // Determine the user for the permission check
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var form = formService
-                .retrieve(formId)
-                .orElseThrow(ResponseException::notFound);
-
-        if (!user.getGlobalAdmin() && departmentMembershipService.checkUserNotInDepartment(user, form.getDevelopingDepartmentId())) {
-            throw ResponseException.forbidden("Nur globale Administrator:innen oder Mitarbeiter:innen des Fachbereich können die Formular-Historie ansehen.");
+        // Check if the user has the permission to revoke the form
+        if (!user.getIsSuperAdmin()) {
+            vFormWithPermissionsService.checkUserPermission(
+                    formId,
+                    user.getId(),
+                    VFormWithPermissionsEntity::getFormPermissionRead,
+                    PermissionLabels.FormPermissionRead
+            );
         }
 
+        // Return the paginated list of form revisions
         return formRevisionService
-                .list(formId, pageable)
-                .map(FormRevisionResponseDTO::fromEntity);
+                .list(formId, version, pageable);
     }
 
     @GetMapping("rollback/{revisionId}/")
-    public FormDetailsResponseDTO rollback(
+    @Operation(
+            summary = "Rollback form to revision",
+            description = "Rollback a specific form version to a previous revision." +
+                          "Requires \"" + PermissionLabels.FormPermissionEdit + "\" permission unless the user is a global admin."
+    )
+    public VFormVersionWithDetailsEntity rollback(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer formId,
+            @PathVariable Integer version,
             @PathVariable BigInteger revisionId
     ) throws ResponseException {
-        var user = UserService
+        var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var form = formService
-                .retrieve(formId)
+        // Check if the user has the permission to revoke the form
+        if (!user.getIsSuperAdmin()) {
+            vFormWithPermissionsService.checkUserPermission(
+                    formId,
+                    user.getId(),
+                    VFormWithPermissionsEntity::getFormPermissionEdit,
+                    PermissionLabels.FormPermissionEdit);
+        }
+
+        // Check if the form is locked by another user
+        formLockService
+                .checkFormLock(formId, user);
+
+        // Create a form lock for the current user because this operation might take some time
+        formLockService.create(new FormLockCacheEntity()
+                .setFormId(formId)
+                .setUserId(user.getId()));
+
+        var formVersionEntity = vFormVersionWithDetailsService
+                .retrieve(new VFormVersionWithDetailsEntityId(formId, version))
                 .orElseThrow(ResponseException::notFound);
 
-        if (!user.getGlobalAdmin() && departmentMembershipService.checkUserNotInDepartment(user, form.getDevelopingDepartmentId())) {
-            throw ResponseException.forbidden("Nur globale Administrator:innen oder Mitarbeiter:innen des Fachbereich können Formulare zurücksetzen.");
-        }
+        var rolledBackForm = formRevisionService
+                .rollback(formVersionEntity, revisionId);
 
-        var existingFormLock = formLockService
-                .retrieve(formId)
-                .orElse(null);
+        auditService.logAction(user, AuditAction.Update, FormEntity.class, Map.of(
+                "formId", rolledBackForm.getId(),
+                "formSlug", rolledBackForm.getSlug(),
+                "developingDepartmentId", rolledBackForm.getDevelopingDepartmentId()
+        ));
 
-        if (existingFormLock != null) {
-            if (!existingFormLock.getUserId().equals(user.getId())) {
-                throw new ResponseException(HttpStatus.LOCKED, "Das Formular ist aktuell durch eine andere Mitarbeiter:in gesperrt. Bitte versuchen Sie es später erneut.");
-            }
-        } else {
-            var formLock = new FormLock()
-                    .setFormId(formId)
-                    .setUserId(user.getId());
-
-            formLockService.create(formLock);
-        }
-
-        var rolledBackForm = formRevisionService.rollback(form, revisionId);
-
-        // TODO: Add audit log
+        auditService.logAction(user, AuditAction.Update, FormEntity.class, Map.of(
+                "formId", rolledBackForm.getFormId(),
+                "formVersion", rolledBackForm.getVersion()
+        ));
 
         // Create a revision for the form
-        formRevisionService.create(user, rolledBackForm, form);
+        formRevisionService
+                .create(user, rolledBackForm, formVersionEntity);
 
-        return FormDetailsResponseDTO
-                .fromEntity(rolledBackForm);
+        return rolledBackForm;
     }
 }

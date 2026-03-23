@@ -1,35 +1,24 @@
 package de.aivot.GoverBackend.form.filters;
 
-import de.aivot.GoverBackend.form.enums.FormStatus;
-import de.aivot.GoverBackend.form.entities.Form;
-import de.aivot.GoverBackend.form.enums.FormType;
+import de.aivot.GoverBackend.form.entities.FormEntity;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
-public class FormFilter implements Filter<Form> {
+public class FormFilter implements Filter<FormEntity> {
     private Integer id;
-    private String title;
     private String slug;
-    private String version;
-    private FormStatus status;
-    private FormType type;
-    private Integer destinationId;
-    private Integer legalSupportDepartmentId;
-    private Integer technicalSupportDepartmentId;
-    private Integer imprintDepartmentId;
-    private Integer privacyDepartmentId;
-    private Integer accessibilityDepartmentId;
+    private String internalTitle;
     private Integer developingDepartmentId;
-    private Integer managingDepartmentId;
-    private Integer responsibleDepartmentId;
-    private Integer themeId;
-    private String pdfBodyTemplateKey;
-    private String paymentProvider;
-    private Boolean identityRequired;
-    private String identityProviderKey;
+    private Integer developingDepartmentIdNot;
+    private Integer publishedVersion;
+    private Integer draftedVersion;
+
+    private Boolean isDrafted;
+    private Boolean isPublished;
+    private Boolean isRevoked;
 
     public static FormFilter create() {
         return new FormFilter();
@@ -37,30 +26,31 @@ public class FormFilter implements Filter<Form> {
 
     @Nonnull
     @Override
-    public Specification<Form> build() {
-        return SpecificationBuilder
-                .create(Form.class)
+    public Specification<FormEntity> build() {
+        var builder = SpecificationBuilder
+                .create(FormEntity.class)
                 .withEquals("id", id)
-                .withContains("title", title)
-                .withEquals("slug", slug)
-                .withEquals("version", version)
-                .withEquals("status", status)
-                .withEquals("type", type)
-                .withEquals("destinationId", destinationId)
-                .withEquals("legalSupportDepartmentId", legalSupportDepartmentId)
-                .withEquals("technicalSupportDepartmentId", technicalSupportDepartmentId)
-                .withEquals("imprintDepartmentId", imprintDepartmentId)
-                .withEquals("privacyDepartmentId", privacyDepartmentId)
-                .withEquals("accessibilityDepartmentId", accessibilityDepartmentId)
+                .withContains("slug", slug)
+                .withContains("internalTitle", internalTitle)
                 .withEquals("developingDepartmentId", developingDepartmentId)
-                .withEquals("managingDepartmentId", managingDepartmentId)
-                .withEquals("responsibleDepartmentId", responsibleDepartmentId)
-                .withEquals("themeId", themeId)
-                .withEquals("pdfBodyTemplateKey", pdfBodyTemplateKey)
-                .withEquals("paymentProvider", paymentProvider)
-                .withEquals("identityRequired", identityRequired)
-                .withJsonArrayElementFieldEquals("identityProviders", "identityProviderKey", identityProviderKey)
-                .build();
+                .withNotEquals("developingDepartmentId", developingDepartmentIdNot)
+                .withEquals("publishedVersion", publishedVersion)
+                .withEquals("draftedVersion", draftedVersion);
+
+        if (Boolean.TRUE.equals(isDrafted)) {
+            builder.withNotNull("draftedVersion");
+        }
+
+        if (Boolean.TRUE.equals(isPublished)) {
+            builder.withNotNull("publishedVersion");
+        }
+
+        if (Boolean.TRUE.equals(isRevoked)) {
+            builder.withNull("draftedVersion");
+            builder.withNull("publishedVersion");
+        }
+
+        return builder.build();
     }
 
     public Integer getId() {
@@ -69,15 +59,6 @@ public class FormFilter implements Filter<Form> {
 
     public FormFilter setId(Integer id) {
         this.id = id;
-        return this;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public FormFilter setTitle(String title) {
-        this.title = title;
         return this;
     }
 
@@ -90,84 +71,12 @@ public class FormFilter implements Filter<Form> {
         return this;
     }
 
-    public String getVersion() {
-        return version;
+    public String getInternalTitle() {
+        return internalTitle;
     }
 
-    public FormFilter setVersion(String version) {
-        this.version = version;
-        return this;
-    }
-
-    public FormStatus getStatus() {
-        return status;
-    }
-
-    public FormFilter setStatus(FormStatus status) {
-        this.status = status;
-        return this;
-    }
-
-    public FormType getType() {
-        return type;
-    }
-
-    public FormFilter setType(FormType type) {
-        this.type = type;
-        return this;
-    }
-
-    public Integer getDestinationId() {
-        return destinationId;
-    }
-
-    public FormFilter setDestinationId(Integer destinationId) {
-        this.destinationId = destinationId;
-        return this;
-    }
-
-    public Integer getLegalSupportDepartmentId() {
-        return legalSupportDepartmentId;
-    }
-
-    public FormFilter setLegalSupportDepartmentId(Integer legalSupportDepartmentId) {
-        this.legalSupportDepartmentId = legalSupportDepartmentId;
-        return this;
-    }
-
-    public Integer getTechnicalSupportDepartmentId() {
-        return technicalSupportDepartmentId;
-    }
-
-    public FormFilter setTechnicalSupportDepartmentId(Integer technicalSupportDepartmentId) {
-        this.technicalSupportDepartmentId = technicalSupportDepartmentId;
-        return this;
-    }
-
-    public Integer getImprintDepartmentId() {
-        return imprintDepartmentId;
-    }
-
-    public FormFilter setImprintDepartmentId(Integer imprintDepartmentId) {
-        this.imprintDepartmentId = imprintDepartmentId;
-        return this;
-    }
-
-    public Integer getPrivacyDepartmentId() {
-        return privacyDepartmentId;
-    }
-
-    public FormFilter setPrivacyDepartmentId(Integer privacyDepartmentId) {
-        this.privacyDepartmentId = privacyDepartmentId;
-        return this;
-    }
-
-    public Integer getAccessibilityDepartmentId() {
-        return accessibilityDepartmentId;
-    }
-
-    public FormFilter setAccessibilityDepartmentId(Integer accessibilityDepartmentId) {
-        this.accessibilityDepartmentId = accessibilityDepartmentId;
+    public FormFilter setInternalTitle(String internalTitle) {
+        this.internalTitle = internalTitle;
         return this;
     }
 
@@ -180,66 +89,84 @@ public class FormFilter implements Filter<Form> {
         return this;
     }
 
-    public Integer getManagingDepartmentId() {
-        return managingDepartmentId;
+    public Integer getPublishedVersion() {
+        return publishedVersion;
     }
 
-    public FormFilter setManagingDepartmentId(Integer managingDepartmentId) {
-        this.managingDepartmentId = managingDepartmentId;
+    public FormFilter setPublishedVersion(Integer publishedVersion) {
+        this.publishedVersion = publishedVersion;
         return this;
     }
 
-    public Integer getResponsibleDepartmentId() {
-        return responsibleDepartmentId;
+    public Integer getDraftedVersion() {
+        return draftedVersion;
     }
 
-    public FormFilter setResponsibleDepartmentId(Integer responsibleDepartmentId) {
-        this.responsibleDepartmentId = responsibleDepartmentId;
+    public FormFilter setDraftedVersion(Integer draftedVersion) {
+        this.draftedVersion = draftedVersion;
         return this;
     }
 
-    public Integer getThemeId() {
-        return themeId;
+    public Boolean getIsDrafted() {
+        return isDrafted;
     }
 
-    public FormFilter setThemeId(Integer themeId) {
-        this.themeId = themeId;
+    public FormFilter setIsDrafted(Boolean drafted) {
+        isDrafted = drafted;
         return this;
     }
 
-    public String getPdfBodyTemplateKey() {
-        return pdfBodyTemplateKey;
+    public Boolean getIsPublished() {
+        return isPublished;
     }
 
-    public FormFilter setPdfBodyTemplateKey(String pdfBodyTemplateKey) {
-        this.pdfBodyTemplateKey = pdfBodyTemplateKey;
+    public FormFilter setIsPublished(Boolean published) {
+        isPublished = published;
         return this;
     }
 
-    public String getPaymentProvider() {
-        return paymentProvider;
+    public Boolean getIsRevoked() {
+        return isRevoked;
     }
 
-    public FormFilter setPaymentProvider(String paymentProvider) {
-        this.paymentProvider = paymentProvider;
+    public FormFilter setIsRevoked(Boolean revoked) {
+        isRevoked = revoked;
         return this;
     }
 
-    public Boolean getIdentityRequired() {
-        return identityRequired;
+    public Integer getDevelopingDepartmentIdNot() {
+        return developingDepartmentIdNot;
     }
 
-    public FormFilter setIdentityRequired(Boolean identityRequired) {
-        this.identityRequired = identityRequired;
+    public FormFilter setDevelopingDepartmentIdNot(Integer developingDepartmentIdNot) {
+        this.developingDepartmentIdNot = developingDepartmentIdNot;
         return this;
     }
 
-    public String getIdentityProviderKey() {
-        return identityProviderKey;
+    public Boolean getDrafted() {
+        return isDrafted;
     }
 
-    public FormFilter setIdentityProviderKey(String identityProviderKey) {
-        this.identityProviderKey = identityProviderKey;
+    public FormFilter setDrafted(Boolean drafted) {
+        isDrafted = drafted;
+        return this;
+    }
+
+    public Boolean getPublished() {
+        return isPublished;
+    }
+
+    public FormFilter setPublished(Boolean published) {
+        isPublished = published;
+        return this;
+    }
+
+    public Boolean getRevoked() {
+        return isRevoked;
+    }
+
+    public FormFilter setRevoked(Boolean revoked) {
+        isRevoked = revoked;
         return this;
     }
 }

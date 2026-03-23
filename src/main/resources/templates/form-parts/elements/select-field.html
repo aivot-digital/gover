@@ -1,0 +1,45 @@
+<!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
+<!--/*@thymesVar id="element" type="de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement"*/-->
+<!--/*@thymesVar id="value" type="java.lang.Object"*/-->
+
+<div class="input-element select-element">
+    <div class="input">
+        <div class="label">
+            <strong th:text="${element.label}"></strong>
+            <span th:if="${base.isBlankPrint()}">(<span th:if="${element.required != null && element.required}">Pflichtangabe, </span>Bitte nur eine Option auswählen)</span>
+        </div>
+
+        <ul class="content">
+            <!--/* Iteriere über alle Optionen des Select-Elements */-->
+            <th:block
+                    th:each="option : ${element.options}"
+                    th:with="label=${option != null && option.class != null && option.class.name == 'java.lang.String' ? option : option.label}, value=${option != null && option.class != null && option.class.name == 'java.lang.String' ? option : option.value}"
+            >
+                <!--/* Erzeuge ein Listenelement für jede Option, falls der Wert gewählt wurde oder es sich um das ausfüllbare Formular handelt */-->
+                <li th:if="${base.isBlankPrint() || (hasValue && value.equals(value))}">
+                    <!--/* Checked-Icon */-->
+                    <div
+                            th:if="${base.isNotBlankPrint() && hasValue && value.equals(value)}"
+                            class="checked"
+                    ></div>
+
+                    <!--/* Unchecked-Icon */-->
+                    <div
+                            th:unless="${base.isNotBlankPrint() && hasValue && value.equals(value)}"
+                            class="unchecked"
+                    ></div>
+
+                    <!--/* Beschriftung der Checkbox */-->
+                    <div th:text="${label}"></div>
+                </li>
+            </th:block>
+            <li th:if="${ base.isNotBlankPrint() && !hasValue }">
+                Keine Angabe
+            </li>
+        </ul>
+    </div>
+
+    <div class="hint-wrapper">
+        <div th:insert="./form-parts/elements/_hint.html"></div>
+    </div>
+</div>

@@ -1,13 +1,18 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {type ImageElement} from '../../models/elements/form/content/image-element';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {ElementTreeEntity} from '../element-tree/element-tree-entity';
-import {isStringNotNullOrEmpty, isStringNullOrEmpty} from "../../utils/string-utils";
+import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
 import {Alert, AlertTitle, Grid, Typography} from '@mui/material';
 import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
+import ImageSearchOutlinedIcon from '@mui/icons-material/ImageSearchOutlined';
+import {SelectAssetDialog} from '../../dialogs/select-asset-dialog/select-asset-dialog';
+import {AssetsApiService} from '../../modules/assets/assets-api-service';
 
-export function ImageEditor(props: BaseEditorProps<ImageElement, ElementTreeEntity>): JSX.Element {
+export function ImageEditor(props: BaseEditorProps<ImageElement, ElementTreeEntity>) {
+    const [showImageSearch, setShowImageSearch] = useState(false);
+
     return (
         <>
             <TextFieldComponent
@@ -19,16 +24,23 @@ export function ImageEditor(props: BaseEditorProps<ImageElement, ElementTreeEnti
                     });
                 }}
                 disabled={!props.editable}
+                endAction={{
+                    icon: <ImageSearchOutlinedIcon />,
+                    tooltip: 'Bild suchen',
+                    onClick: () => {
+                        setShowImageSearch(true);
+                    },
+                }}
             />
-
             <Grid
                 container
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
                 >
                     <TextFieldComponent
                         value={props.element.caption ?? ''}
@@ -43,9 +55,10 @@ export function ImageEditor(props: BaseEditorProps<ImageElement, ElementTreeEnti
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
                 >
                     <TextFieldComponent
                         value={props.element.alt ?? ''}
@@ -61,8 +74,11 @@ export function ImageEditor(props: BaseEditorProps<ImageElement, ElementTreeEnti
                     />
                 </Grid>
             </Grid>
-
-            <Alert severity="info" sx={{mt: 4}} icon={<AccessibilityNewIcon/>}>
+            <Alert
+                severity="info"
+                sx={{mt: 4}}
+                icon={<AccessibilityNewIcon />}
+            >
                 <AlertTitle>Hinweis zur Barrierefreiheit von eingebundenen Bildern</AlertTitle>
                 <Typography sx={{maxWidth: 860}}>
                     Bitte beachten Sie, dass eingebundene Bilder ein Kontrastverhältnis von mindestens 3:1 aufweisen
@@ -72,6 +88,22 @@ export function ImageEditor(props: BaseEditorProps<ImageElement, ElementTreeEnti
                     Diagrammen oder anderen Grafiken).
                 </Typography>
             </Alert>
+
+            <SelectAssetDialog
+                title="Bild auswählen"
+                show={showImageSearch}
+                mimetype="image/"
+                onSelect={(assetKey) => {
+                    props.onPatch({
+                        src: AssetsApiService.useAssetLink(assetKey),
+                    });
+                    setShowImageSearch(false);
+                }}
+                onCancel={() => {
+                    setShowImageSearch(false);
+                }}
+                mode="public"
+            />
         </>
     );
 }

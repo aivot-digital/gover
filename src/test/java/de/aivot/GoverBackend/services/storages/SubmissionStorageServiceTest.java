@@ -24,7 +24,7 @@ class SubmissionStorageServiceTest {
     private StorageConfig storageConfig;
 
     @InjectMocks
-    private StorageService storageService;
+    private LegacyStorageService storageService;
 
     @Mock
     private SubmissionAttachmentRepository submissionAttachmentRepository;

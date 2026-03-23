@@ -1,21 +1,4 @@
-import {
-    Alert,
-    Box,
-    Button,
-    FormControl,
-    FormHelperText,
-    FormLabel,
-    IconButton,
-    Paper,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableRow,
-    TextField,
-    Tooltip,
-    Typography,
-} from '@mui/material';
+import {Alert, Box, Button, FormControl, FormHelperText, FormLabel, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableRow, TextField, Tooltip, Typography} from '@mui/material';
 import React, {useCallback, useMemo, useReducer, useState} from 'react';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
@@ -24,7 +7,7 @@ import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined
 import {type OptionListInputProps} from './option-list-input-props';
 import {TableVirtuoso} from 'react-virtuoso';
 
-export function OptionListInput(props: OptionListInputProps): JSX.Element {
+export function OptionListInput(props: OptionListInputProps) {
     const [textInputMode, toggleTextInputMode] = useReducer((state: boolean) => !state, false);
     const [textInputBuffer, setTextInputBuffer] = useState<string>();
 

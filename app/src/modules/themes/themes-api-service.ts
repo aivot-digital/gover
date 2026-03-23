@@ -1,17 +1,17 @@
 import {CrudApiService} from '../../services/crud-api-service';
 import {Api} from '../../hooks/use-api';
-import {Theme} from './models/theme';
+import {ThemeRequestDTO, ThemeResponseDTO} from './models/theme';
 
 interface ThemeFilter {
     name: string;
 }
 
-export class ThemesApiService extends CrudApiService<Theme, Theme, Theme, Theme, Theme, number, ThemeFilter> {
+export class ThemesApiService extends CrudApiService<ThemeRequestDTO, ThemeResponseDTO, ThemeResponseDTO, ThemeResponseDTO, ThemeResponseDTO, number, ThemeFilter> {
     public constructor(api: Api) {
         super(api, 'themes/');
     }
 
-    public initialize(): Theme {
+    public initialize(): ThemeResponseDTO {
         return {
             id: 0,
             name: '',
@@ -22,6 +22,8 @@ export class ThemesApiService extends CrudApiService<Theme, Theme, Theme, Theme,
             info: '#1F7894',
             warning: '#B55E06',
             success: '#378550',
+            faviconKey: null,
+            logoKey: null,
         };
     }
 }

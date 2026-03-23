@@ -1,4 +1,4 @@
-import {SxProps, Theme} from "@mui/material";
+import {SxProps, Theme} from '@mui/material';
 
 export interface NumberFieldComponentProps {
     label: string;

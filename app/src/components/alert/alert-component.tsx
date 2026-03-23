@@ -1,9 +1,8 @@
-import React from 'react';
-import {Box, Alert, AlertTitle} from '@mui/material';
+import React, {type PropsWithChildren} from 'react';
+import {Alert, AlertTitle, Box} from '@mui/material';
 import {type AlertComponentProps} from './alert-component-props';
-import {type PropsWithChildren} from 'react';
 
-export function AlertComponent(props: PropsWithChildren<AlertComponentProps>): JSX.Element {
+export function AlertComponent(props: PropsWithChildren<AlertComponentProps>) {
     const renderTextWithParagraphs = (text: string) => {
         const paragraphs = text.split('\n').filter(paragraph => paragraph.length > 0);
 

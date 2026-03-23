@@ -1,15 +1,15 @@
 import {TimeFieldElement} from '../../models/elements/form/input/time-field-element';
 import {useCallback, useMemo} from 'react';
-import {BaseViewProps} from "../../views/base-view";
+import {BaseViewProps} from '../../views/base-view';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
-import {TimeFieldComponent} from "./time-field-component";
+import {TimeFieldComponent} from './time-field-component';
 
 export function TimeFieldComponentView(props: BaseViewProps<TimeFieldElement, string>) {
     const {
         element,
         setValue,
         value,
-        error,
+        errors,
         isBusy: isGloballyDisabled,
         isDeriving,
     } = props;
@@ -42,11 +42,11 @@ export function TimeFieldComponentView(props: BaseViewProps<TimeFieldElement, st
             value={dateValue}
             onChange={handleChange}
             autocomplete="off"
-            hint={element.hint}
-            required={element.required}
+            hint={element.hint ?? undefined}
+            required={element.required ?? false}
             disabled={isDisabled}
             busy={isBusy}
-            error={error}
+            error={errors?.join(', ') ?? undefined}
             debounce={1000}
         />
     );

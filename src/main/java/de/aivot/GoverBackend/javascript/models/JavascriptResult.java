@@ -2,8 +2,8 @@ package de.aivot.GoverBackend.javascript.models;
 
 import org.graalvm.polyglot.Value;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -15,9 +15,13 @@ import java.util.Map;
  */
 public class JavascriptResult {
     private final Value value;
+    private final String stdOutput;
+    private final String errOutput;
 
-    public JavascriptResult(@Nullable Value value) {
+    public JavascriptResult(@Nullable Value value, @Nonnull String stdOutput, @Nonnull String errOutput) {
         this.value = value;
+        this.stdOutput = stdOutput;
+        this.errOutput = errOutput;
     }
 
     public boolean isNull() {
@@ -31,22 +35,28 @@ public class JavascriptResult {
         }
         try {
             return value.asInt();
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         try {
             return value.asLong();
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         try {
             return value.asDouble();
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         try {
             return value.asFloat();
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         try {
             return value.asShort();
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         try {
             return value.asByte();
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         return null;
     }
 
@@ -143,5 +153,20 @@ public class JavascriptResult {
         }
 
         return result;
+    }
+
+    public String getStdOutput() {
+        return stdOutput;
+    }
+
+    public String getErrOutput() {
+        return errOutput;
+    }
+
+    public String toString() {
+        if (isNull() || value == null) {
+            return "null";
+        }
+        return value.toString();
     }
 }

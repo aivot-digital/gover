@@ -8,7 +8,7 @@ export interface StoreModuleListProps {
     onSelect: (module: StoreDetailModule, element: GroupLayout) => void;
     itemAction?: {
         tooltip: string;
-        icon: JSX.Element;
+        icon: React.ReactNode;
         onClick: (module: StoreListModule) => void;
     };
 }

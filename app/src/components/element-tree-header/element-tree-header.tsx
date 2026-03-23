@@ -29,13 +29,14 @@ import GradingOutlinedIcon from '@mui/icons-material/GradingOutlined';
 import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
 import {SearchInput} from '../search-input-2/search-input';
-import {selectAllElements} from '../../slices/app-slice';
+import {isLoadedForm, selectAllElements} from '../../slices/app-slice';
 import Fuse from 'fuse.js';
 import {generateComponentTitle} from '../../utils/generate-component-title';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import {Actions} from '../actions/actions';
+import {useElementEditorNavigation} from '../../hooks/use-element-editor-navigation';
 
 const StyledBox = styled(Box)({
     position: 'relative',
@@ -59,12 +60,18 @@ const StyledBox = styled(Box)({
 
 const SEARCH_DEBOUNCE_TIMEOUT = 600; // 2 seconds
 
-export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends ElementTreeEntity>(props: ElementTreeHeaderProps<T, E>): JSX.Element {
+export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends ElementTreeEntity>(props: ElementTreeHeaderProps<T, E>) {
     const dispatch = useAppDispatch();
 
-    const searchDebounceTimeout = useRef<NodeJS.Timeout>();
+    const searchDebounceTimeout = useRef<NodeJS.Timeout>(undefined);
 
     const theme = useTheme();
+
+    const {
+        currentEditedElementId,
+        navigateToElementEditor,
+        closeElementEditor,
+    } = useElementEditorNavigation();
 
     const testMode = useAppSelector(selectUseTestMode);
     const useIdsInComponentTree = useAppSelector(selectUseIdsInComponentTree);
@@ -72,7 +79,6 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
     const allElements = useAppSelector(selectAllElements);
     const searchResult = useAppSelector(selectTreeElementSearch);
 
-    const [showEditor, setShowEditor] = useState(false);
     const [cTMenuAnchorEl, setCTMenuAnchorEl] = useState<null | HTMLElement>(null);
 
     const [search, setSearch] = useState<string>();
@@ -288,7 +294,7 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                             <IconButton
                                 size="small"
                                 onClick={() => {
-                                    setShowEditor(true);
+                                    navigateToElementEditor(props.element.id);
                                 }}
                                 sx={{
                                     marginRight: '7px',
@@ -415,17 +421,18 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
             </Menu>
 
             {
-                showEditor &&
+                currentEditedElementId === props.element.id &&
                 <ElementEditor
+                    open={true}
                     parents={[] /* Uppermost element so no parents here */}
                     entity={props.entity}
-                    element={props.entity.root as any /* TODO: Fix this any type */}
+                    element={isLoadedForm(props.entity) ? props.entity.version.rootElement : props.entity.rootElement as any /* TODO: Fix this any type */}
                     onSave={(updatedElement: Partial<T>, updatedApplication: Partial<E>) => {
-                        setShowEditor(false);
+                        closeElementEditor();
                         props.onPatch(updatedElement, updatedApplication);
                     }}
                     onCancel={() => {
-                        setShowEditor(false);
+                        closeElementEditor();
                     }}
                     editable={props.editable}
                     scope={props.scope}

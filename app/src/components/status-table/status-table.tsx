@@ -81,7 +81,7 @@ export function StatusTable(props: StatusTableProps) {
                                                     alignItems={item.alignTop ? 'flex-start' : 'center'}
                                                 >
                                                     {item.icon}
-                                                    <Box sx={{ml: 1}}>
+                                                    <Box sx={{ml: 1.5}}>
                                                         {item.children}
                                                     </Box>
                                                 </Box>

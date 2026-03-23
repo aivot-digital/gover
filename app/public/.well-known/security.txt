@@ -1,0 +1,5 @@
+# security.txt for Gover developed by Aivot
+# visit https://gover.digital for more information
+Contact: mailto:security@aivot.de
+Expires: 2026-10-014T23:59:59Z
+Preferred-Languages: de, en

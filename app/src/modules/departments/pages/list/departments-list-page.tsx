@@ -3,21 +3,19 @@ import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Typography} from '@mui/material';
 import {DescriptionOutlined, EditOutlined, GroupOutlined} from '@mui/icons-material';
-import {DepartmentsApiService} from '../../departments-api-service';
-import {Department} from '../../models/department';
-import {useSelector} from 'react-redux';
-import {selectUser} from '../../../../slices/user-slice';
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
-import {useMemo} from 'react';
-import {isAdmin} from '../../../../utils/is-admin';
-import {useAdminMembershipGuard} from '../../../../hooks/use-admin-membership-guard';
-import {CellLink} from "../../../../components/cell-link/cell-link";
+import {CellLink} from '../../../../components/cell-link/cell-link';
+import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
+import {useAccessGuard} from '../../../../hooks/use-admin-guard';
+import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
+import {VDepartmentShadowedApiService} from '../../services/v-department-shadowed-api-service';
+import {VDepartmentShadowedEntity} from '../../entities/v-department-shadowed-entity';
 
 export function DepartmentsListPage() {
-    const user = useSelector(selectUser);
-    const userIsAdmin = useMemo(() => isAdmin(user), [user]);
-
-    useAdminMembershipGuard();
+    const hasAccess = useAccessGuard({
+        onlyGlobalAdmin: true,
+        messageType: 'snackbar',
+    });
 
     return (
         <PageWrapper
@@ -25,7 +23,7 @@ export function DepartmentsListPage() {
             fullWidth
             background
         >
-            <GenericListPage<Department>
+            <GenericListPage<VDepartmentShadowedEntity>
                 header={{
                     icon: <BusinessOutlinedIcon />,
                     title: 'Fachbereiche',
@@ -33,10 +31,9 @@ export function DepartmentsListPage() {
                         {
                             label: 'Neuer Fachbereich',
                             icon: <AddOutlinedIcon />,
-                            disabled: !userIsAdmin,
-                            tooltip: userIsAdmin ? undefined : 'Sie müssen globale Administrator:in sein, um diese Aktion durchführen zu können.',
                             to: '/departments/new',
                             variant: 'contained',
+                            disabled: !hasAccess,
                         },
                     ],
                     helpDialog: {
@@ -58,16 +55,14 @@ export function DepartmentsListPage() {
                 searchLabel="Fachbereich suchen"
                 searchPlaceholder="Name des Fachbereichs eingeben…"
                 fetch={(options) => {
-                    return new DepartmentsApiService(options.api)
+                    return new VDepartmentShadowedApiService()
                         .list(
                             options.page,
                             options.size,
                             options.sort,
                             options.order,
                             {
-                                departmentName: options.search,
-                                userId: isAdmin(user) ? undefined : user?.id,
-                                membershipRole: isAdmin(user) ? undefined : 'Admin',
+                                name: options.search,
                             },
                         );
                 }}
@@ -75,7 +70,7 @@ export function DepartmentsListPage() {
                     {
                         field: 'icon',
                         headerName: '',
-                        renderCell: () => <BusinessOutlinedIcon />,
+                        renderCell: () => <CellContentWrapper><BusinessOutlinedIcon /></CellContentWrapper>,
                         disableColumnMenu: true,
                         width: 24,
                         sortable: false,
@@ -87,11 +82,11 @@ export function DepartmentsListPage() {
                         renderCell: (params) => (
                             <CellLink
                                 to={`/departments/${params.id}`}
-                                title={`Fachbereich bearbeiten`}
+                                title={hasAccess ? 'Fachbereich bearbeiten' : 'Fachbereich ansehen'}
                             >
                                 {String(params.value)}
                             </CellLink>
-                        )
+                        ),
                     },
                     {
                         field: 'address',
@@ -103,22 +98,22 @@ export function DepartmentsListPage() {
                 noDataPlaceholder="Keine Fachbereiche angelegt"
                 noSearchResultsPlaceholder="Keine Fachbereiche gefunden"
                 rowActionsCount={3}
-                rowActions={(item: Department) => [
+                rowActions={(item) => [
                     {
-                        icon: <EditOutlined />,
+                        icon: hasAccess ? <EditOutlined /> : <Visibility />,
                         to: `/departments/${item.id}`,
-                        tooltip: 'Fachbereich bearbeiten',
+                        tooltip: hasAccess ? 'Fachbereich bearbeiten' : 'Fachbereich ansehen',
                     },
                     {
                         icon: <GroupOutlined />,
                         to: `/departments/${item.id}/members`,
-                        tooltip: 'Mitarbeiter:innen verwalten',
+                        tooltip: hasAccess ? 'Mitarbeiter:innen verwalten' : 'Mitarbeiter:innen ansehen',
                     },
                     {
                         icon: <DescriptionOutlined />,
                         to: `/departments/${item.id}/forms`,
                         tooltip: 'Formulare des Fachbereichs ansehen',
-                    }
+                    },
                 ]}
                 defaultSortField="name"
                 disableFullWidthToggle={true}

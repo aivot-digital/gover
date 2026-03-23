@@ -1,11 +1,13 @@
 package de.aivot.GoverBackend.services.storages;
 
-import de.aivot.GoverBackend.exceptions.NotFoundException;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.StorageConfig;
 import io.minio.*;
 import io.minio.errors.*;
 import io.minio.messages.ErrorResponse;
+import okhttp3.HttpUrl;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,7 +35,7 @@ class StorageServiceTest {
     private MinioClient storageClient;
 
     @InjectMocks
-    private StorageService storageService;
+    private LegacyStorageService storageService;
 
     @BeforeEach
     void setUp() {
@@ -91,7 +93,24 @@ class StorageServiceTest {
         when(storageClient.getPresignedObjectUrl(any(GetPresignedObjectUrlArgs.class))).thenThrow(new IOException());
         assertThrows(ResponseException.class, () -> storageService.getRemoteFileUrl("test-file", "test-file", "application/json"));
 
-        when(storageClient.getPresignedObjectUrl(any(GetPresignedObjectUrlArgs.class))).thenThrow(new ErrorResponseException(new ErrorResponse(), null, ""));
+        when(storageClient.getPresignedObjectUrl(any(GetPresignedObjectUrlArgs.class)))
+                .thenThrow(
+                        new ErrorResponseException(
+                                new ErrorResponse(),
+                                new Response
+                                        .Builder()
+                                        .code(404)
+                                        .protocol(okhttp3.Protocol.HTTP_1_1)
+                                        .message("Not Found")
+                                        .request(
+                                                new Request
+                                                        .Builder()
+                                                        .url("http://localhost:9000/test-bucket/test-file")
+                                                        .build()
+                                        )
+                                        .build(),
+                                ""
+                        ));
         assertThrows(ResponseException.class, () -> storageService.getRemoteFileUrl("test-file", "test-file", "application/json"));
     }
 

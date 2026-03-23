@@ -1,9 +1,9 @@
 import {AnyElement} from '../models/elements/any-element';
 import {isStringNotNullOrEmpty} from './string-utils';
 import {AnyInputElement, isAnyInputElement} from '../models/elements/form/input/any-input-element';
-import {Function} from '../models/functions/function';
 import {JavascriptCode} from '../models/functions/javascript-code';
-import {NoCodeExpression, ValidationExpressionWrapper} from '../models/functions/no-code-expression';
+import {NoCodeOperand, ValidationExpressionWrapper} from '../models/functions/no-code-expression';
+import {ConditionSet} from '../models/functions/conditions/condition-set';
 
 export function hasDerivableAspects(element: AnyElement, ignoreValidationCode: boolean = true): boolean {
     if (extractVisibility(element) != null) {
@@ -27,113 +27,81 @@ export function hasDerivableAspects(element: AnyElement, ignoreValidationCode: b
     return false;
 }
 
-export function extractVisibility(element: AnyElement): Function | JavascriptCode | NoCodeExpression | undefined {
-    if (element.isVisible != null) {
-        if (isStringNotNullOrEmpty(element.isVisible.code)) {
-            return element.isVisible;
-        }
+export function extractVisibility(element: AnyElement): ConditionSet | JavascriptCode | NoCodeOperand | undefined {
+    const vis = element.visibility;
 
-        if (element.isVisible.conditionSet != null) {
-            if (element.isVisible.conditionSet.conditions != null && element.isVisible.conditionSet.conditions.length > 0) {
-                return element.isVisible;
-            }
-
-            if (element.isVisible.conditionSet.conditionsSets != null && element.isVisible.conditionSet.conditionsSets.length > 0) {
-                return element.isVisible;
-            }
-        }
+    if (vis == null) {
+        return undefined;
     }
 
-    if (element.visibilityCode != null && isStringNotNullOrEmpty(element.visibilityCode.code)) {
-        return element.visibilityCode;
+    if (vis.javascriptCode != null && isStringNotNullOrEmpty(vis.javascriptCode.code)) {
+        return vis.javascriptCode;
     }
 
-    if (element.visibilityExpression != null && isStringNotNullOrEmpty(element.visibilityExpression.operatorIdentifier)) {
-        return element.visibilityExpression;
+    if (vis.conditionSet != null) {
+        return vis.conditionSet;
+    }
+
+    if (vis.noCode != null) {
+        return vis.noCode;
     }
 
     return undefined;
 }
 
-export function extractOverride(element: AnyElement): Function | JavascriptCode | NoCodeExpression | undefined {
-    if (element.patchElement != null) {
-        if (isStringNotNullOrEmpty(element.patchElement.code)) {
-            return element.patchElement;
-        }
+export function extractOverride(element: AnyElement): ConditionSet | JavascriptCode | Record<string, NoCodeOperand> | undefined {
+    var override = element.override;
 
-        if (element.patchElement.conditionSet != null) {
-            if (element.patchElement.conditionSet.conditions != null && element.patchElement.conditionSet.conditions.length > 0) {
-                return element.patchElement;
-            }
-
-            if (element.patchElement.conditionSet.conditionsSets != null && element.patchElement.conditionSet.conditionsSets.length > 0) {
-                return element.patchElement;
-            }
-        }
+    if (override == null) {
+        return undefined;
     }
 
-    if (element.overrideCode != null && isStringNotNullOrEmpty(element.overrideCode.code)) {
-        return element.overrideCode;
+    if (override.javascriptCode != null && isStringNotNullOrEmpty(override.javascriptCode.code)) {
+        return override.javascriptCode;
     }
 
-    if (element.overrideExpression != null && isStringNotNullOrEmpty(element.overrideExpression.operatorIdentifier)) {
-        return element.overrideExpression;
+    if (override.fieldNoCodeMap != null) {
+        return override.fieldNoCodeMap;
     }
 
     return undefined;
 }
 
-export function extractValidation(element: AnyInputElement): Function | JavascriptCode | ValidationExpressionWrapper[] | undefined {
-    if (element.validate != null) {
-        if (isStringNotNullOrEmpty(element.validate.code)) {
-            return element.validate;
-        }
+export function extractValidation(element: AnyInputElement): ConditionSet | JavascriptCode | ValidationExpressionWrapper[] | undefined {
+    const validation = element.validation;
 
-        if (element.validate.conditionSet != null) {
-            if (element.validate.conditionSet.conditions != null && element.validate.conditionSet.conditions.length > 0) {
-                return element.computeValue;
-            }
-
-            if (element.validate.conditionSet.conditionsSets != null && element.validate.conditionSet.conditionsSets.length > 0) {
-                return element.computeValue;
-            }
-        }
+    if (validation == null) {
+        return undefined;
     }
 
-    if (element.validationCode != null && isStringNotNullOrEmpty(element.validationCode.code)) {
-        return element.validationCode;
+    if (validation.javascriptCode != null && isStringNotNullOrEmpty(validation.javascriptCode.code)) {
+        return validation.javascriptCode;
     }
 
-    if (element.validationExpressions != null && element.validationExpressions.length > 0) {
-        return element.validationExpressions;
+    if (validation.conditionSet != null) {
+        return validation.conditionSet;
+    }
+
+    if (validation.noCodeList != null && validation.noCodeList.length > 0) {
+        return validation.noCodeList;
     }
 
     return undefined;
 }
 
-export function extractValue(element: AnyInputElement): Function | JavascriptCode | NoCodeExpression | undefined {
-    if (element.computeValue != null) {
-        if (isStringNotNullOrEmpty(element.computeValue.code)) {
-            return element.computeValue;
-        }
+export function extractValue(element: AnyInputElement): ConditionSet | JavascriptCode | NoCodeOperand | undefined {
+    const value = element.value;
 
-        if (element.computeValue.conditionSet != null) {
-            if (element.computeValue.conditionSet.conditions != null && element.computeValue.conditionSet.conditions.length > 0) {
-                return element.computeValue;
-            }
-
-            if (element.computeValue.conditionSet.conditionsSets != null && element.computeValue.conditionSet.conditionsSets.length > 0) {
-                return element.computeValue;
-            }
-        }
+    if (value == null) {
+        return undefined;
     }
 
-    if (element.valueCode != null && isStringNotNullOrEmpty(element.valueCode.code)) {
-        return element.valueCode;
+    if (value.javascriptCode != null && isStringNotNullOrEmpty(value.javascriptCode.code)) {
+        return value.javascriptCode;
     }
 
-    if (element.valueExpression != null && isStringNotNullOrEmpty(element.valueExpression.operatorIdentifier)) {
-        return element.valueExpression;
+    if (value.noCode != null) {
+        return value.noCode;
     }
 
     return undefined;

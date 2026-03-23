@@ -1,15 +1,15 @@
 package de.aivot.GoverBackend.nocode.services;
 
-import de.aivot.GoverBackend.elements.models.ElementDerivationData;
+import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.*;
-import de.aivot.GoverBackend.nocode.providers.NoCodeOperatorServiceProvider;
+import de.aivot.GoverBackend.nocode.providers.NoCodeOperatorsProvider;
+import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -18,7 +18,7 @@ class NoCodeEvaluationServiceTest {
 
     @Test
     void evaluate() {
-        var context = new ElementDerivationData(Map.of());
+        var context = new ElementData();
 
         var testProvider = getNoCodeOperatorSPI();
 
@@ -26,83 +26,73 @@ class NoCodeEvaluationServiceTest {
 
         var res = evalService.evaluate(
                 new NoCodeExpression(
-                        "de.aivot.gover.test.and",
+                        "and",
                         new NoCodeStaticValue(true),
                         new NoCodeStaticValue(true)
                 ),
-                context,
-                null
+                context
         );
 
-        assertEquals(NoCodeDataType.Boolean, res.getDataType());
         assertEquals(true, res.getValue());
 
-        context.setValue("a", true);
-        context.setValue("b", false);
-        context.setValue("c", true);
+        context.putInputValue("a", ElementType.Checkbox, true);
+        context.putInputValue("b", ElementType.Checkbox, false);
+        context.putInputValue("c", ElementType.Checkbox, true);
 
         var result = evalService.evaluate(
                 new NoCodeExpression(
-                        "de.aivot.gover.test.and",
+                        "and",
                         new NoCodeReference("a"),
                         new NoCodeReference("a")
                 ),
-                context,
-                null
+                context
         );
 
-        assertEquals(NoCodeDataType.Boolean, result.getDataType());
         assertEquals(true, result.getValue());
 
         result = evalService.evaluate(
                 new NoCodeExpression(
-                        "de.aivot.gover.test.and",
+                        "and",
                         new NoCodeReference("a"),
                         new NoCodeReference("b")
                 ),
-                context,
-                null
+                context
         );
 
-        assertEquals(NoCodeDataType.Boolean, result.getDataType());
         assertEquals(false, result.getValue());
 
         result = evalService.evaluate(
                 new NoCodeExpression(
-                        "de.aivot.gover.test.and",
+                        "and",
                         new NoCodeReference("a"),
                         new NoCodeReference("c")
                 ),
-                context,
-                null
+                context
         );
 
-        assertEquals(NoCodeDataType.Boolean, result.getDataType());
         assertEquals(true, result.getValue());
 
         result = evalService.evaluate(
                 new NoCodeExpression(
-                        "de.aivot.gover.test.and",
+                        "and",
                         new NoCodeStaticValue(true),
                         new NoCodeExpression(
-                                "de.aivot.gover.test.and",
+                                "and",
                                 new NoCodeStaticValue(true),
                                 new NoCodeExpression(
-                                        "de.aivot.gover.test.and",
+                                        "and",
                                         new NoCodeStaticValue(true),
                                         new NoCodeReference("a")
                                 )
                         )
                 ),
-                context,
-                null
+                context
         );
 
-        assertEquals(NoCodeDataType.Boolean, result.getDataType());
         assertEquals(true, result.getValue());
     }
 
-    private static NoCodeOperatorServiceProvider getNoCodeOperatorSPI() {
+    private static NoCodeOperatorsProvider getNoCodeOperatorSPI() {
         var testOperator = new NoCodeOperator() {
             @Override
             public String getIdentifier() {
@@ -125,39 +115,51 @@ class NoCodeEvaluationServiceTest {
             }
 
             @Override
-            public NoCodeParameter[] getParameters() {
-                return new NoCodeParameter[]{
-                        new NoCodeParameter(NoCodeDataType.Boolean, "a"),
-                        new NoCodeParameter(NoCodeDataType.Boolean, "b"),
-                };
+            public NoCodeSignatur[] getSignatures() {
+                return NoCodeSignatur.of(
+                        NoCodeSignatur.of(
+                                NoCodeDataType.Boolean,
+                                new NoCodeParameter(NoCodeDataType.Boolean, "a", ""),
+                                new NoCodeParameter(NoCodeDataType.Boolean, "b", "")
+                        )
+                );
             }
 
             @Override
-            public NoCodeDataType getReturnType() {
-                return null;
-            }
-
-
-            @Override
-            public NoCodeResult performEvaluation(ElementDerivationData data, Object... args) throws NoCodeException {
-                return new NoCodeResult(NoCodeDataType.Boolean, Objects.equals(args[0], args[1]));
+            public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
+                return new NoCodeResult(Objects.equals(args[0], args[1]));
             }
         };
 
-        return new NoCodeOperatorServiceProvider() {
+        return new NoCodeOperatorsProvider() {
+            @Nonnull
             @Override
-            public String getPackageName() {
-                return "de.aivot.gover.test";
+            public String getParentPluginKey() {
+                return "de.aivot";
             }
 
+            @Nonnull
             @Override
-            public String getLabel() {
+            public String getComponentKey() {
                 return "test";
             }
 
+            @Nonnull
+            @Override
+            public String getComponentVersion() {
+                return "1.0.0";
+            }
+
+            @Nonnull
+            @Override
+            public String getName() {
+                return "";
+            }
+
+            @Nonnull
             @Override
             public String getDescription() {
-                return "test";
+                return "";
             }
 
             @Override

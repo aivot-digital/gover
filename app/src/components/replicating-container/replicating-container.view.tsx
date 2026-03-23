@@ -1,81 +1,47 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {type ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
 import {ViewDispatcherComponent} from '../view-dispatcher.component';
-import {Box, Button, FormHelperText, FormLabel, Grid, Skeleton, Typography} from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import FormHelperText from '@mui/material/FormHelperText';
+import FormLabel from '@mui/material/FormLabel';
+import Grid from '@mui/material/Grid';
+import Skeleton from '@mui/material/Skeleton';
+import Typography from '@mui/material/Typography';
 import {stringOrDefault} from '../../utils/string-utils';
-import {generateElementIdForReplicatingContainerChild} from '../../utils/id-utils';
 import {type BaseViewProps} from '../../views/base-view';
 import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {flattenElements} from '../../utils/flatten-elements';
-import {useAppSelector} from '../../hooks/use-app-selector';
-import {enqueueDerivationTriggerId, selectFunctionReferences} from '../../slices/app-slice';
-import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {FunctionType} from '../../utils/function-status-utils';
+import {type ElementData} from '../../models/element-data';
 
-export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContainerLayout, string[]>) {
-    const dispatch = useAppDispatch();
+export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContainerLayout, ElementData[]>) {
     const [confirmDelete, setConfirmDelete] = useState<() => void>();
-    const references = useAppSelector(selectFunctionReferences);
-    const derivationTriggerIdQueue = useAppSelector((state) => state.app.derivationTriggerIdQueue);
 
     const {
+        rootElement,
         element,
         value,
         setValue,
+        onBlur,
         allElements,
         isDeriving,
         isBusy,
+        elementData,
+        onElementDataChange,
+        onElementBlur,
+        disableVisibility,
+        mode,
+        errors,
+        scrollContainerRef,
+        derivationTriggerIdQueue,
     } = props;
 
     const {
         children,
     } = element;
-
-    const someChildWithAReferenceExists = useMemo(() => {
-        if (references == null) {
-            return false;
-        }
-
-        const flattenedChildren = [];
-        for (const child of children ?? []) {
-            const flattened = flattenElements(child, false);
-            flattenedChildren.push(...flattened);
-        }
-
-        for (const child of flattenedChildren) {
-            const childReferences = references
-                .filter(ref => (
-                    ref.source.id === child.id &&
-                    ref.isSameStep &&
-                    ref.functionType !== FunctionType.VALIDATION
-                ));
-
-            if (childReferences.length > 0) {
-                return true;
-            }
-        }
-
-        return false;
-    }, [children, references]);
-
-    const someChildWithDerivableAspectsExists = useMemo(() => {
-        const flattenedChildren = [];
-        for (const child of children ?? []) {
-            const flattened = flattenElements(child, false);
-            flattenedChildren.push(...flattened);
-        }
-
-        for (const child of flattenedChildren) {
-            if (hasDerivableAspects(child)) {
-                return true;
-            }
-        }
-
-        return false;
-    }, [children]);
 
     const isDisabled = useMemo(() => {
         if (element.disabled) {
@@ -89,39 +55,36 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
         if (isDeriving && hasDerivableAspects(element)) {
             return true;
         }
+
+        return false;
     }, [element, isBusy, isDeriving]);
 
     const minRequiredSets = element.required === true ? (element.minimumRequiredSets ?? 1) : 0;
 
     useEffect(() => {
         if (minRequiredSets > 0 && (value == null || value.length < minRequiredSets)) {
-            const forcedChildren = Array.from({length: minRequiredSets}, () => generateElementIdForReplicatingContainerChild());
-
+            const forcedChildren = Array.from({length: minRequiredSets}, () => ({} as ElementData));
             setValue(forcedChildren);
-
-            if (someChildWithAReferenceExists || someChildWithDerivableAspectsExists) {
-                dispatch(enqueueDerivationTriggerId(forcedChildren[0]));
-            }
         }
     }, [setValue, value, element]);
 
     const handleAdd = useCallback(() => {
-        const newChildId = generateElementIdForReplicatingContainerChild();
-        // Keep this order of operations to guarantee that listeners consuming the derivation queue have the updated customer input in place
-        setValue([
+        const updatedValue: ElementData[] = [
             ...(value ?? []),
-            newChildId,
-        ]);
-        // Check if any child has references to trigger the derivation queue
-        if (someChildWithAReferenceExists || someChildWithDerivableAspectsExists) {
-            dispatch(enqueueDerivationTriggerId(newChildId));
-        }
-    }, [element, setValue, value, someChildWithAReferenceExists]);
+            {},
+        ];
 
-    const handleDelete = useCallback((id: string) => {
+        setValue(updatedValue, [`${element.id}.${updatedValue.length - 1}`]);
+    }, [element, setValue, value]);
+
+    const handleDelete = useCallback((_: ElementData, index: number) => {
         const newValue = (value ?? [])
-            .filter((val: string) => val !== id);
-        setValue(newValue.length === 0 ? undefined : newValue);
+            .filter((_: ElementData, i: number) => i !== index);
+
+        const allChildIds = flattenElements(element, false)
+            .map(child => child.id);
+
+        setValue(newValue.length === 0 ? undefined : newValue, allChildIds);
         setConfirmDelete(undefined);
     }, [setValue, value]);
 
@@ -129,23 +92,33 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
         <Box sx={{mt: 2}}>
             {
                 (element.label != null) &&
-                <FormLabel>
+                <FormLabel
+                    error={errors != null && errors.length > 0}
+                >
                     {element.label}
                 </FormLabel>
             }
-
             {
-                (element.hint != null) &&
+                (errors == null || errors.length === 0) &&
+                element.hint != null &&
                 <FormHelperText>
                     {element.hint}
                 </FormHelperText>
             }
-
             {
-                value?.map((val: string, valueIndex: number) => derivationTriggerIdQueue.includes(val) ? (
+                errors != null &&
+                errors.length > 0 &&
+                <FormHelperText
+                    error={true}
+                >
+                    {errors.join(' ')}
+                </FormHelperText>
+            }
+            {
+                value?.map((val: ElementData, valueIndex: number) => derivationTriggerIdQueue.includes(`${element.id}.${valueIndex}`) ? ( /* TODO: Fix skeletons */
                     // Skeleton
-                    <Box
-                        key={val}
+                    (<Box
+                        key={valueIndex}
                         sx={{
                             my: 2,
                             px: 3,
@@ -181,11 +154,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                         >
                             {
                                 Array.from({length: (element.children?.length ?? 2)}).map((_, i) => (
-                                    <Grid
-                                        item
-                                        xs={12}
-                                        key={i}
-                                    >
+                                    <Grid key={i} size={12}>
                                         <Skeleton
                                             variant="rectangular"
                                             height={56}
@@ -195,10 +164,10 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                 ))
                             }
                         </Grid>
-                    </Box>
+                    </Box>)
                 ) : (
                     <Box
-                        key={val}
+                        key={valueIndex}
                         sx={{
                             my: 2,
                             px: 3,
@@ -225,11 +194,11 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                             </Typography>
 
                             {
-                                (element.disabled !== true) &&
                                 (minRequiredSets === 0 || valueIndex >= minRequiredSets) &&
                                 <Box
                                     sx={{
                                         ml: 'auto',
+                                        cursor: (isDisabled || isBusy) ? 'not-allowed' : undefined,
                                     }}
                                 >
                                     <Button
@@ -243,7 +212,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                             />
                                         }
                                         onClick={() => {
-                                            setConfirmDelete(() => () => handleDelete(val));
+                                            setConfirmDelete(() => () => handleDelete(val, valueIndex));
                                         }}
                                         disabled={isDisabled || (minRequiredSets > 0 && (value ?? []).length <= minRequiredSets)}
                                     >
@@ -262,17 +231,27 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                             {
                                 (element.children ?? []).map((child, childIndex) => (
                                     <ViewDispatcherComponent
+                                        rootElement={rootElement}
                                         allElements={allElements}
                                         key={childIndex}
                                         element={child}
-                                        idPrefix={`${element.id}_${val}_`}
                                         isBusy={isBusy}
                                         isDeriving={props.isDeriving}
-                                        valueOverride={props.valueOverride}
-                                        errorsOverride={props.errorsOverride}
-                                        visibilitiesOverride={props.visibilitiesOverride}
-                                        overridesOverride={props.overridesOverride}
                                         mode={props.mode}
+                                        elementData={val}
+                                        onElementDataChange={(data, triggeringElementIds) => {
+                                            const newValue = (value ?? [])
+                                                .map((v, i) => i === valueIndex ? data : v);
+                                            setValue(newValue, triggeringElementIds);
+                                        }}
+                                        onElementBlur={(data, triggeringElementIds) => {
+                                            const newValue = (value ?? [])
+                                                .map((v, i) => i === valueIndex ? data : v);
+                                            onBlur(newValue, triggeringElementIds);
+                                        }}
+                                        disableVisibility={disableVisibility}
+                                        scrollContainerRef={scrollContainerRef}
+                                        derivationTriggerIdQueue={derivationTriggerIdQueue}
                                     />
                                 ))
                             }
@@ -280,28 +259,26 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                     </Box>
                 ))
             }
-            {
-                (element.disabled !== true) &&
-                <div>
-                    <Button
-                        startIcon={<AddCircleOutlineOutlinedIcon
-                            sx={{marginTop: '-2px'}}
-                        />}
-                        sx={{
-                            mt: 2,
-                            mb: 3,
-                        }}
-                        onClick={handleAdd}
-                        variant={'outlined'}
-                        disabled={isDisabled || (element.maximumSets != null && element.maximumSets > 0 && (value ?? []).length >= element.maximumSets)}
-                    >
-                        {
-                            stringOrDefault(element.addLabel, 'Datensatz hinzufügen')
-                        }
-                    </Button>
-                </div>
-            }
-
+            <Box
+                sx={{cursor: (isDisabled || isBusy) ? 'not-allowed' : undefined,}}
+            >
+                <Button
+                    startIcon={<AddCircleOutlineOutlinedIcon
+                        sx={{marginTop: '-2px'}}
+                    />}
+                    sx={{
+                        mt: 2,
+                        mb: 3,
+                    }}
+                    onClick={handleAdd}
+                    variant={'outlined'}
+                    disabled={isDisabled || (element.maximumSets != null && element.maximumSets > 0 && (value ?? []).length >= element.maximumSets)}
+                >
+                    {
+                        stringOrDefault(element.addLabel, 'Datensatz hinzufügen')
+                    }
+                </Button>
+            </Box>
             <ConfirmDialog
                 title="Möchten Sie diesen Datensatz wirklich löschen?"
                 onConfirm={confirmDelete}

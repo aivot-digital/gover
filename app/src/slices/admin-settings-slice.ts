@@ -1,5 +1,5 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
-import {RootState} from '../store';
+import {RootState} from '../store.staff';
 import {AnyElement} from '../models/elements/any-element';
 
 export interface AdminSettingsState {
@@ -12,6 +12,7 @@ export interface AdminSettingsState {
     expandElementTree: undefined | 'expanded' | 'collapsed';
     warnDuplicateIds: boolean;
     disableAutoScrollForSteps: boolean;
+    disableElementContextMenu: boolean;
     treeElementSearch?: {
         foundIds: string[];
         currentLookupIndex: number;
@@ -29,6 +30,7 @@ const initialState: AdminSettingsState = {
     expandElementTree: undefined,
     warnDuplicateIds: false,
     disableAutoScrollForSteps: false,
+    disableElementContextMenu: false,
     treeElementSearch: undefined,
     devToolsTab: undefined,
 };
@@ -49,6 +51,9 @@ const adminSettingsSlice = createSlice({
         toggleComponentTree: (state) => {
             state.hideComponentTree = !state.hideComponentTree;
         },
+        setComponentTree: (state, payload: PayloadAction<boolean>) => {
+            state.hideComponentTree = !payload.payload;
+        },
         toggleTestMode: (state) => {
             state.useTestMode = !state.useTestMode;
         },
@@ -60,6 +65,9 @@ const adminSettingsSlice = createSlice({
         },
         toggleAutoScrollForSteps: (state) => {
             state.disableAutoScrollForSteps = !state.disableAutoScrollForSteps;
+        },
+        toggleElementContextMenu: (state) => {
+            state.disableElementContextMenu = !state.disableElementContextMenu;
         },
         setTreeElementSearch: (state, action: PayloadAction<string[] | undefined>) => {
             state.treeElementSearch = action.payload != null ? {
@@ -91,10 +99,12 @@ export const {
     toggleValidation,
     toggleIdsInComponentTree,
     toggleComponentTree,
+    setComponentTree,
     toggleTestMode,
     setDraggingTreeElement,
     toggleWarnDuplicateIds,
     toggleAutoScrollForSteps,
+    toggleElementContextMenu,
     resetAdminSettings,
     setTreeElementSearch,
     setElementTreeSearchLookupIndex,
@@ -109,6 +119,7 @@ export const selectIsDraggingTreeElement = (state: RootState) => state.adminSett
 export const selectDraggingTreeElement = (state: RootState) => state.adminSettings.draggingTreeElement;
 export const selectWarnDuplicateIds = (state: RootState) => state.adminSettings.warnDuplicateIds;
 export const selectDisableAutoScrollForSteps = (state: RootState) => state.adminSettings.disableAutoScrollForSteps;
+export const selectDisableElementContextMenu = (state: RootState) => state.adminSettings.disableElementContextMenu;
 export const selectTreeElementSearch = (state: RootState) => state.adminSettings.treeElementSearch;
 export const selectDevToolsTab = (state: RootState) => state.adminSettings.devToolsTab;
 

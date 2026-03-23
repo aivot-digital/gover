@@ -1,53 +1,54 @@
 package de.aivot.GoverBackend.preset.controllers;
 
-import de.aivot.GoverBackend.form.entities.Form;
-import de.aivot.GoverBackend.form.models.FormState;
-import de.aivot.GoverBackend.form.services.FormDerivationService;
-import de.aivot.GoverBackend.form.services.FormDerivationServiceFactory;
+import de.aivot.GoverBackend.elements.dtos.ElementDerivationResponse;
+import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
+import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
+import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
+import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.elements.models.RootElement;
-import de.aivot.GoverBackend.elements.models.steps.StepElement;
+import de.aivot.GoverBackend.preset.entities.PresetVersionEntityId;
 import de.aivot.GoverBackend.preset.repositories.PresetRepository;
 import de.aivot.GoverBackend.preset.repositories.PresetVersionRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
-// TODO: Move to dedicated preset module
 @RestController
+@Tag(
+        name = "Preset Derivation",
+        description = "Endpoints for deriving elements from presets"
+)
 public class PresetDerivationController {
     private final PresetRepository presetRepository;
     private final PresetVersionRepository presetVersionRepository;
-    private final FormDerivationServiceFactory formDerivationServiceFactory;
+    private final ElementDerivationService elementDerivationService;
 
     @Autowired
     public PresetDerivationController(
             PresetRepository presetRepository,
             PresetVersionRepository presetVersionRepository,
-            FormDerivationServiceFactory formDerivationServiceFactory
-    ) {
+            ElementDerivationService elementDerivationService) {
         this.presetRepository = presetRepository;
         this.presetVersionRepository = presetVersionRepository;
-        this.formDerivationServiceFactory = formDerivationServiceFactory;
+        this.elementDerivationService = elementDerivationService;
     }
 
-    /**
-     * Derive the state of a preset based on the given customer input.
-     *
-     * @param presetKey     The id of the preset to derive.
-     * @param presetVersion The version of the preset to derive.
-     * @param customerInput The customer input to derive the preset state from.
-     * @return The result of the derivation as the new state of the preset.
-     */
     @PostMapping("/api/presets/{presetKey}/{presetVersion}/derive")
-    public FormState derive(
-            @PathVariable String presetKey,
-            @PathVariable String presetVersion,
-            @Valid @RequestBody Map<String, Object> customerInput,
+    @Operation(
+            summary = "Derive Element from Preset",
+            description = "Derive an element based on the specified preset and version, applying the provided element data."
+    )
+    public ElementDerivationResponse derive(
+            @PathVariable UUID presetKey,
+            @PathVariable Integer presetVersion,
+            @Valid @RequestBody ElementData elementData,
             @RequestParam(value = "disableVisibilities") Optional<Boolean> disableVisibilities,
             @RequestParam(value = "disableValidation") Optional<Boolean> disableValidation
     ) throws ResponseException {
@@ -55,38 +56,28 @@ public class PresetDerivationController {
                 .findById(presetKey)
                 .orElseThrow(ResponseException::notFound);
 
+        var id = new PresetVersionEntityId(presetKey, presetVersion);
+
         var presetVersionObject = presetVersionRepository
-                .getByPresetAndVersion(preset.getKey(), presetVersion)
+                .findById(id)
                 .orElseThrow(ResponseException::notFound);
 
-        var dummyForm = new Form();
+        var request = new ElementDerivationRequest()
+                .setElement(presetVersionObject.getRootElement())
+                .setElementData(elementData)
+                .setOptions(
+                        new ElementDerivationOptions()
+                                .setSkipValuesForElementIds(List.of())
+                                .setSkipVisibilitiesForElementIds(disableVisibilities.orElse(false) ? List.of(ElementDerivationOptions.ALL_ELEMENTS) : List.of())
+                                .setSkipErrorsForElementIds(disableValidation.orElse(false) ? List.of(ElementDerivationOptions.ALL_ELEMENTS) : List.of())
+                                .setSkipOverridesForElementIds(List.of())
+                );
 
-        var root = new RootElement(Map.of());
-        dummyForm.setRoot(root);
+        var logger = new ElementDerivationLogger();
+        var derivedElementData = elementDerivationService
+                .derive(request, logger);
 
-        var step = new StepElement(Map.of());
-        root.setChildren(List.of(step));
-
-        step.setChildren(List.of(presetVersionObject.getRoot()));
-
-        var ctx = formDerivationServiceFactory
-                .create(
-                        dummyForm,
-                        List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER),
-                        List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER),
-                        List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER),
-                        List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER)
-                )
-                .derive(root, customerInput);
-
-        var formState = ctx.getFormState();
-
-        try {
-            ctx.close();
-        } catch (Exception e) {
-            throw ResponseException.internalServerError(e);
-        }
-
-        return formState;
+        return ElementDerivationResponse
+                .from(derivedElementData, logger, true);
     }
 }

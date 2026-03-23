@@ -9,8 +9,9 @@ import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "payment_transactions")
@@ -20,8 +21,7 @@ public class PaymentTransactionEntity {
     private String key;
 
     @NotNull
-    @Column(length = 36)
-    private String paymentProviderKey;
+    private UUID paymentProviderKey;
 
     @NotNull
     @JdbcTypeCode(SqlTypes.JSON)
@@ -71,11 +71,11 @@ public class PaymentTransactionEntity {
         return this;
     }
 
-    public String getPaymentProviderKey() {
+    public UUID getPaymentProviderKey() {
         return paymentProviderKey;
     }
 
-    public PaymentTransactionEntity setPaymentProviderKey(String paymentProviderKey) {
+    public PaymentTransactionEntity setPaymentProviderKey(UUID paymentProviderKey) {
         this.paymentProviderKey = paymentProviderKey;
         return this;
     }

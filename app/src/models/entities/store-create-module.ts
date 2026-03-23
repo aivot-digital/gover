@@ -1,4 +1,4 @@
-import {GroupLayout} from "../elements/form/layout/group-layout";
+import {GroupLayout} from '../elements/form/layout/group-layout';
 
 export interface StoreCreateModule {
     version: string;

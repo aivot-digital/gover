@@ -2,14 +2,15 @@ package de.aivot.GoverBackend.secrets.dtos;
 
 import de.aivot.GoverBackend.secrets.entities.SecretEntity;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
+import java.util.UUID;
 
 /**
  * This class represents the response data for a secret entity.
  * The value of the secret is not included in the response for security reasons.
  */
 public record SecretEntityResponseDTO(
-        @Nonnull String key,
+        @Nonnull UUID key,
         @Nonnull String name,
         @Nonnull String description
 ) {

@@ -2,11 +2,17 @@ package de.aivot.GoverBackend.config.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.utils.StringUtils;
-import jakarta.persistence.*;
+import jakarta.annotation.Nonnull;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.ColumnDefault;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -14,14 +20,20 @@ import java.util.Optional;
 @Table(name = "system_configs")
 public class SystemConfigEntity {
     @Id
+    @Nonnull
+    @NotNull(message = "Der Key darf nicht null sein.")
+    @NotBlank(message = "Der Key darf nicht leer sein.")
+    @Size(min = 1, max = 64, message = "Der Key muss zwischen 1 und 64 Zeichen lang sein.")
     @Column(length = 64)
     private String key;
 
-    @NotNull
+    @Nonnull
+    @NotNull(message = "Der Wert darf nicht null sein.")
     @Column(columnDefinition = "TEXT")
     private String value;
 
-    @NotNull
+    @Nonnull
+    @NotNull(message = "Das publicConfig Feld darf nicht null sein.")
     @ColumnDefault("FALSE")
     private Boolean publicConfig;
 
@@ -53,7 +65,12 @@ public class SystemConfigEntity {
             return Optional.empty();
         }
 
-        var bool = Boolean.parseBoolean(value);
+        Boolean bool = null;
+        try {
+            bool = Boolean.parseBoolean(value);
+        } catch (Exception e) {
+            return Optional.empty();
+        }
 
         return Optional.of(bool);
     }
@@ -64,7 +81,12 @@ public class SystemConfigEntity {
             return Optional.empty();
         }
 
-        var integer = Integer.parseInt(value);
+        Integer integer = null;
+        try {
+            integer = Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
 
         return Optional.of(integer);
     }

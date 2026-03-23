@@ -5,32 +5,75 @@ import {useAppSelector} from '../../../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {TextFieldComponent} from '../../../../../components/text-field/text-field-component';
 import {SystemConfigKeys} from '../../../../../data/system-config-keys';
-import {showErrorSnackbar, showSuccessSnackbar} from '../../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../../slices/snackbar-slice';
 import {SelectFieldComponent} from '../../../../../components/select-field/select-field-component';
 import {type SelectFieldComponentOption} from '../../../../../components/select-field/select-field-component-option';
 import {useApi} from '../../../../../hooks/use-api';
-import type {Department} from "../../../../../modules/departments/models/department";
-import {CheckboxFieldComponent} from "../../../../../components/checkbox-field/checkbox-field-component";
-import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
-import {DepartmentsApiService} from '../../../../../modules/departments/departments-api-service';
+import {CheckboxFieldComponent} from '../../../../../components/checkbox-field/checkbox-field-component';
+import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {ThemesApiService} from '../../../../../modules/themes/themes-api-service';
 import {SystemConfigsApiService} from '../../../../../modules/configs/system-configs-api-service';
+import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
+import {
+    addSnackbarMessage,
+    removeSnackbarMessage,
+    setSetup,
+    setStatus,
+    ShellStatus,
+    SnackbarSeverity,
+    SnackbarType,
+} from '../../../../../slices/shell-slice';
+import {isApiError} from '../../../../../models/api-error';
+import {SystemSetupDTO} from '../../../../../modules/system/dtos/system-setup-dto';
+import {SystemApiService} from '../../../../../modules/system/system-api-service';
+import {DepartmentApiService} from '../../../../../modules/departments/services/department-api-service';
+import {DepartmentEntity} from '../../../../../modules/departments/entities/department-entity';
+import {StorageProvidersApiService} from '../../../../../modules/storage/storage-providers-api-service';
+import {StorageProviderType} from '../../../../../modules/storage/enums/storage-provider-type';
 
-export function ApplicationSettings(): JSX.Element {
+async function fetchSetup(): Promise<SystemSetupDTO> {
+    return new SystemApiService()
+        .fetchSetup();
+}
+
+export function ApplicationSettings() {
     const dispatch = useAppDispatch();
     const api = useApi();
+
+    const hasAccess = useAccessGuard({
+        onlyGlobalAdmin: true,
+    });
+
+    useEffect(() => {
+        if (hasAccess) {
+            return;
+        }
+
+        dispatch(addSnackbarMessage({
+            key: 'application-settings-no-access',
+            message: 'Die Anwendungseinstellungen können nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
+            type: SnackbarType.Dismissable,
+            severity: SnackbarSeverity.Warning,
+        }));
+
+        return () => {
+            dispatch(removeSnackbarMessage('application-settings-no-access'));
+        };
+    }, [hasAccess]);
 
     const config = useAppSelector(selectSystemConfig);
     const [editedConfig, setEditedConfig] = useState<SystemConfigMap>({});
 
-    const [departments, setDepartments] = useState<Department[]>([]);
+    const [departments, setDepartments] = useState<DepartmentEntity[]>([]);
     const [themes, setThemes] = useState<SelectFieldComponentOption[]>([]);
 
-    const hasNotChanged = Object.keys(editedConfig).length === 0;//shallowEquals(config, editedConfig);
+    const [attStorageProviders, setAttStorageProviders] = useState<SelectFieldComponentOption[]>([]);
+
+    const hasNotChanged = Object.keys(editedConfig).length === 0;
 
     useEffect(() => {
         new ThemesApiService(api)
-            .list(0, 999, undefined, undefined, {})
+            .listAll()
             .then((themes) => {
                 setThemes(themes.content.map((theme) => ({
                     value: theme.id.toString(),
@@ -42,10 +85,19 @@ export function ApplicationSettings(): JSX.Element {
                 dispatch(showErrorSnackbar('Farbschemata konnten nicht geladen werden'));
             });
 
-        new SystemConfigsApiService(api)
-            .listDefinitions()
-            .then((definitions) => {
-                // TODO: do something with definitions
+        new StorageProvidersApiService()
+            .listAll({
+                type: StorageProviderType.Attachments,
+            })
+            .then(({content: providers}) => {
+                setAttStorageProviders(providers.map((prv) => ({
+                    value: prv.id.toString(),
+                    label: prv.name,
+                    subLabel: prv.description,
+                })));
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Die Liste der Speicheranbieter konnte nicht geladen werden'));
             });
     }, []);
 
@@ -63,14 +115,40 @@ export function ApplicationSettings(): JSX.Element {
 
             const updatePromises = updatedConfigs
                 .map(config => {
-                    return new SystemConfigsApiService(api).update(config.key, {value: config.value})
+                    return new SystemConfigsApiService(api).update(config.key, {value: config.value});
                 });
 
             Promise.all(updatePromises)
                 .then((configs) => {
                     dispatch(showSuccessSnackbar('Einstellungen erfolgreich gespeichert'));
+                    dispatch(setSystemConfigs(configs));
+
+                    const newThemeId =
+                        editedConfig[SystemConfigKeys.system.theme] ??
+                        config[SystemConfigKeys.system.theme];
+
+                    const oldThemeId = config[SystemConfigKeys.system.theme];
+
+                    console.log('theme', {newThemeId, oldThemeId});
+
+                    if (newThemeId != null && newThemeId !== oldThemeId) {
+                        // refetch system setup including theme information
+                        fetchSetup()
+                            .then((setup) => {
+                                dispatch(setSetup(setup));
+                            })
+                            .catch((err) => {
+                                if (isApiError(err) && err.status >= 500) {
+                                    dispatch(setStatus(ShellStatus.Offline));
+                                } else if ('status' in err && err.status >= 500) {
+                                    dispatch(setStatus(ShellStatus.Offline));
+                                } else {
+                                    console.error(err);
+                                }
+                            });
+                    }
+
                     setEditedConfig({});
-                    return dispatch(setSystemConfigs(configs));
                 })
                 .catch((err) => {
                     console.error(err);
@@ -80,8 +158,8 @@ export function ApplicationSettings(): JSX.Element {
     };
 
     useEffect(() => {
-        new DepartmentsApiService(api)
-            .list(0, 999, undefined, undefined, {})
+        new DepartmentApiService()
+            .listAll()
             .then(deps => setDepartments(deps.content))
             .catch((err) => {
                 console.error(err);
@@ -101,7 +179,6 @@ export function ApplicationSettings(): JSX.Element {
             >
                 Über den Betreiber
             </Typography>
-
             <Typography
                 sx={{
                     maxWidth: 900,
@@ -110,7 +187,6 @@ export function ApplicationSettings(): JSX.Element {
             >
                 Hinterlegen Sie grundsätzliche Informationen über den Betreiber dieses Systems. Diese Informationen werden in der Anwendung angezeigt und sind für die Nutzer:innen sichtbar.
             </Typography>
-
             <TextFieldComponent
                 label="Name des Betreibers"
                 placeholder="Bad Musterstadt"
@@ -122,8 +198,8 @@ export function ApplicationSettings(): JSX.Element {
                     });
                 }}
                 required
+                disabled={!hasAccess}
             />
-
             {
                 themes.length > 0 &&
                 <>
@@ -142,7 +218,8 @@ export function ApplicationSettings(): JSX.Element {
                             mb: 1.6,
                         }}
                     >
-                        Sie können ein eigenes Farbschema für die Benutzeroberfläche auswählen, um Gover an Ihr Corporate Design anzugleichen (wird z.B. verwendet für Administrationsoberfläche und die Index-Seite der veröffentlichten Formulare).
+                        Sie können ein eigenes Farbschema für die Benutzeroberfläche auswählen, um Gover an Ihr Corporate Design anzugleichen (wird z.B. verwendet für Administrationsoberfläche und die Index-Seite der veröffentlichten
+                        Formulare).
                     </Typography>
 
                     <SelectFieldComponent
@@ -155,6 +232,7 @@ export function ApplicationSettings(): JSX.Element {
                                 [SystemConfigKeys.system.theme]: val ?? '',
                             });
                         }}
+                        disabled={!hasAccess}
                     />
                 </>
             }
@@ -167,7 +245,6 @@ export function ApplicationSettings(): JSX.Element {
             >
                 Gover Store
             </Typography>
-
             <Typography
                 sx={{
                     maxWidth: 900,
@@ -176,7 +253,6 @@ export function ApplicationSettings(): JSX.Element {
             >
                 Im Gover Store finden Sie Bausteine und Formulare zur Nachnutzung. Wenn Sie eigene Formulare und/oder Bausteine im Gover Store zur Verfügung stellen möchten, benötigen Sie einen eigenen Schlüssel (API-Key).
             </Typography>
-
             <TextFieldComponent
                 label="Schlüssel für den Gover Store"
                 placeholder="b721fe43-5800-40a3-ae7f-d19274dd72f1"
@@ -188,7 +264,41 @@ export function ApplicationSettings(): JSX.Element {
                         [SystemConfigKeys.gover.storeKey]: val ?? '',
                     });
                 }}
+                disabled={!hasAccess}
             />
+
+            <Typography
+                variant="subtitle1"
+                sx={{
+                    mt: 4,
+                }}
+            >
+                Zentraler Speicheranbieter für Vorgangsanlagen
+            </Typography>
+            <Typography
+                sx={{
+                    maxWidth: 900,
+                    mb: 1.6,
+                }}
+            >
+                Dieser Speicheranbieter wird verwendet, um Vorgangsanlagen zu speichern, wenn kein spezifischer Speicheranbieter innerhalb eines Prozesselementes konfiguriert ist.
+                Bitte beachten Sie, dass die Änderung dieses Schlüssels Auswirkungen auf alle Vorgänge hat, die den zentralen Speicheranbieter verwenden.
+            </Typography>
+            <SelectFieldComponent
+                label="Zentraler Speicheranbieter für Vorgangsanlagen"
+                hint="Geben Sie den Speicheranbieter an, der standardmäßig für Vorgangsanlagen verwendet werden soll."
+                value={editedConfig[SystemConfigKeys.storage.attachments.default_storage_provider] ?? config[SystemConfigKeys.storage.attachments.default_storage_provider]}
+                onChange={(val) => {
+                    setEditedConfig({
+                        ...editedConfig,
+                        [SystemConfigKeys.storage.attachments.default_storage_provider]: val ?? '',
+                    });
+                }}
+                disabled={!hasAccess}
+                options={attStorageProviders}
+            />
+
+
 
             <Typography
                 variant="h6"
@@ -198,7 +308,6 @@ export function ApplicationSettings(): JSX.Element {
             >
                 Öffentliche Auflistung der veröffentlichten Formulare (Index-Seite)
             </Typography>
-
             <Typography
                 sx={{
                     maxWidth: 900,
@@ -208,15 +317,15 @@ export function ApplicationSettings(): JSX.Element {
                 Wenn die Domain des Systems direkt aufgerufen wird, wird eine öffentliche Index-Seite
                 angezeigt, die alle veröffentlichten Formulare auflistet. Hier können Sie diese Seite konfigurieren und ggf. deaktivieren.
             </Typography>
-
             <Grid
                 container
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={4}
+                    size={{
+                        xs: 12,
+                        lg: 4,
+                    }}
                 >
                     <SelectFieldComponent
                         label="Text für das Impressum"
@@ -228,13 +337,15 @@ export function ApplicationSettings(): JSX.Element {
                             });
                         }}
                         options={departmentOptions}
+                        disabled={!hasAccess}
                     />
 
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={4}
+                    size={{
+                        xs: 12,
+                        lg: 4,
+                    }}
                 >
                     <SelectFieldComponent
                         label="Text für die Datenschutzerklärung"
@@ -246,12 +357,14 @@ export function ApplicationSettings(): JSX.Element {
                             });
                         }}
                         options={departmentOptions}
+                        disabled={!hasAccess}
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={4}
+                    size={{
+                        xs: 12,
+                        lg: 4,
+                    }}
                 >
                     <SelectFieldComponent
                         label="Text für die Erklärung der Barrierefreiheit"
@@ -263,17 +376,16 @@ export function ApplicationSettings(): JSX.Element {
                             });
                         }}
                         options={departmentOptions}
+                        disabled={!hasAccess}
                     />
                 </Grid>
             </Grid>
-
             <Typography
                 variant="caption"
-                color={"text.secondary"}
+                color={'text.secondary'}
             >
                 Rechtstexte werden auf Fachbereichs-Ebene hinterlegt und verwaltet. Sie können hier die Fachbereiche auswählen, deren Texte Sie verwenden und anzeigen möchten.
             </Typography>
-
             <CheckboxFieldComponent
                 label="Öffentliche Auflistung der veröffentlichten Formulare (in Form einer Index-Seite) vollständig deaktivieren"
                 value={(editedConfig[SystemConfigKeys.provider.listingPage.disableGoverListingPage] ?? config[SystemConfigKeys.provider.listingPage.disableGoverListingPage]) == 'true'}
@@ -284,8 +396,8 @@ export function ApplicationSettings(): JSX.Element {
                     });
                 }}
                 hint="Bitte nehmen Sie zur Kenntnis, dass dies die Barrierefreiheit und Zugänglichkeit Ihrer Formulare beeinträchtigen kann."
+                disabled={!hasAccess}
             />
-
             <Typography
                 variant="subtitle1"
                 sx={{
@@ -294,7 +406,6 @@ export function ApplicationSettings(): JSX.Element {
             >
                 Verweis auf Formular-Index aus Formularen heraus
             </Typography>
-
             <Typography
                 sx={{
                     maxWidth: 900,
@@ -306,7 +417,6 @@ export function ApplicationSettings(): JSX.Element {
                 und der Zugänglichkeit Ihrer Formulare. Sie können diesen Link deaktivieren oder gegen einen eigenen Link ersetzen
                 (wenn Sie zum Beispiel alle Formulare auf Ihrer eigene Webseite auflisten).
             </Typography>
-
             {
                 (editedConfig[SystemConfigKeys.provider.listingPage.disableListingPageLink] ?? config[SystemConfigKeys.provider.listingPage.disableListingPageLink]) != 'true' &&
                 <Box>
@@ -322,10 +432,10 @@ export function ApplicationSettings(): JSX.Element {
                                 [SystemConfigKeys.provider.listingPage.customListingPageLink]: val ?? '',
                             });
                         }}
+                        disabled={!hasAccess}
                     />
                 </Box>
             }
-
             <CheckboxFieldComponent
                 label="Verlinkung von Formularen zur Formular-Index-Seite vollständig deaktivieren"
                 value={(editedConfig[SystemConfigKeys.provider.listingPage.disableListingPageLink] ?? config[SystemConfigKeys.provider.listingPage.disableListingPageLink]) == 'true'}
@@ -336,8 +446,8 @@ export function ApplicationSettings(): JSX.Element {
                     });
                 }}
                 hint="Bitte nehmen Sie zur Kenntnis, dass dies die Barrierefreiheit und Zugänglichkeit Ihrer Formulare beeinträchtigen kann."
+                disabled={!hasAccess}
             />
-
             <Box
                 sx={{
                     mt: 4,
@@ -345,7 +455,7 @@ export function ApplicationSettings(): JSX.Element {
             >
                 <Button
                     type="submit"
-                    disabled={hasNotChanged}
+                    disabled={hasNotChanged || !hasAccess}
                     color="primary"
                     variant="contained"
                     startIcon={<SaveOutlinedIcon
@@ -363,7 +473,7 @@ export function ApplicationSettings(): JSX.Element {
                     }}
                     type="button"
                     color="error"
-                    disabled={hasNotChanged}
+                    disabled={hasNotChanged || !hasAccess}
                     onClick={() => {
                         setEditedConfig({});
                     }}

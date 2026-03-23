@@ -3,34 +3,49 @@ package de.aivot.GoverBackend.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.GoverBackend.destination.entities.Destination;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.exceptions.ConflictException;
-import de.aivot.GoverBackend.destination.entities.Destination;
-import de.aivot.GoverBackend.form.entities.Form;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.javascript.models.JavascriptCode;
+import de.aivot.GoverBackend.javascript.models.JavascriptResult;
+import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.mail.services.SubmissionMailService;
+import de.aivot.GoverBackend.ozgCloud.models.OZGCloudControlData;
+import de.aivot.GoverBackend.ozgCloud.models.OZGCloudServiceKontoData;
+import de.aivot.GoverBackend.ozgCloud.services.OZGCloudDestinationService;
 import de.aivot.GoverBackend.payment.repositories.PaymentProviderRepository;
 import de.aivot.GoverBackend.payment.repositories.PaymentTransactionRepository;
-import de.aivot.GoverBackend.payment.services.PaymentProviderService;
-import de.aivot.GoverBackend.payment.services.PaymentTransactionService;
 import de.aivot.GoverBackend.pdf.enums.FormPdfScope;
+import de.aivot.GoverBackend.services.storages.SubmissionStorageService;
 import de.aivot.GoverBackend.submission.entities.Submission;
 import de.aivot.GoverBackend.submission.entities.SubmissionAttachment;
 import de.aivot.GoverBackend.submission.repositories.SubmissionAttachmentRepository;
-import de.aivot.GoverBackend.mail.services.SubmissionMailService;
-import de.aivot.GoverBackend.services.storages.SubmissionStorageService;
 import de.aivot.GoverBackend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
 import jakarta.mail.MessagingException;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 import org.springframework.mail.MailException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -42,6 +57,8 @@ public class DestinationSubmitService {
     private final SubmissionAttachmentRepository submissionAttachmentRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final PaymentProviderRepository paymentProviderRepository;
+    private final OZGCloudDestinationService oZGCloudDestinationService;
+    private final JavascriptEngineFactoryService javascriptEngineFactoryService;
 
     @Autowired
     public DestinationSubmitService(
@@ -50,7 +67,9 @@ public class DestinationSubmitService {
             PdfService pdfService,
             SubmissionAttachmentRepository submissionAttachmentRepository,
             PaymentTransactionRepository paymentTransactionRepository,
-            PaymentProviderRepository paymentProviderRepository
+            PaymentProviderRepository paymentProviderRepository,
+            JavascriptEngineFactoryService javascriptEngineFactoryService,
+            OZGCloudDestinationService oZGCloudDestinationService
     ) {
         this.mailService = mailService;
         this.submissionStorageService = submissionStorageService;
@@ -58,6 +77,8 @@ public class DestinationSubmitService {
         this.submissionAttachmentRepository = submissionAttachmentRepository;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.paymentProviderRepository = paymentProviderRepository;
+        this.javascriptEngineFactoryService = javascriptEngineFactoryService;
+        this.oZGCloudDestinationService = oZGCloudDestinationService;
     }
 
     public void testDestinationAttachmentSize(Destination destination, MultipartFile[] files) {
@@ -83,7 +104,7 @@ public class DestinationSubmitService {
         }
     }
 
-    public void handleSubmit(Destination destination, Form form, Submission submission, Collection<SubmissionAttachment> attachments) throws ResponseException {
+    public void handleSubmit(Destination destination, VFormVersionWithDetailsEntity form, Submission submission, Collection<SubmissionAttachment> attachments) throws ResponseException {
         // Send to destination
         DestinationResponse response;
         try {
@@ -97,6 +118,8 @@ public class DestinationSubmitService {
                     }
                 }
                 case HTTP -> sendHttp(destination, form, submission, attachments);
+                case OZGCloud -> sendOzg(destination, form, submission, attachments);
+                case Script -> performScript(destination, submission);
             };
         } catch (Exception e) {
             response = new DestinationResponse(false, "Die Übermittlung an das Ziel konnte nicht durchgeführt werden. Fehler: " + e.getMessage(), null, null);
@@ -138,7 +161,7 @@ public class DestinationSubmitService {
         }
     }
 
-    private DestinationResponse sendHttp(Destination destination, Form form, Submission submission, Collection<SubmissionAttachment> attachments) throws ResponseException {
+    private DestinationResponse sendHttp(Destination destination, VFormVersionWithDetailsEntity form, Submission submission, Collection<SubmissionAttachment> attachments) throws ResponseException {
         URL url;
         try {
             url = new URL(destination.getApiAddress());
@@ -150,6 +173,37 @@ public class DestinationSubmitService {
             con = (HttpURLConnection) url.openConnection();
         } catch (IOException e) {
             return new DestinationResponse(false, "Die Verbindung zum Ziel konnte nicht hergestellt werden", null, null);
+        }
+
+        if ("SSL_SKIP".equalsIgnoreCase(destination.getAuthorizationHeader()) && con instanceof HttpsURLConnection httpsCon) {
+            // 1. Define the Trust Manager (Trusts everything)
+            TrustManager[] trustAllCerts = new TrustManager[]{
+                    new X509TrustManager() {
+                        public X509Certificate[] getAcceptedIssuers() { return null; }
+                        public void checkClientTrusted(X509Certificate[] certs, String authType) {}
+                        public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+                    }
+            };
+
+            // 2. Initialize an SSLContext for this specific connection
+            SSLContext sc;
+            try {
+                sc = SSLContext.getInstance("TLS");
+            } catch (NoSuchAlgorithmException e) {
+                return new DestinationResponse(false, "Die SSL-Konfiguration des Ziels konnte nicht initialisiert werden", null, null);
+            }
+            try {
+                sc.init(null, trustAllCerts, new java.security.SecureRandom());
+            } catch (KeyManagementException e) {
+                return new DestinationResponse(false, "Die SSL-Konfiguration des Ziels konnte nicht initialisiert werden", null, null);
+            }
+
+            // 3. Set the SocketFactory ONLY for this connection instance
+            httpsCon.setSSLSocketFactory(sc.getSocketFactory());
+
+            // 4. Set the Hostname Verifier ONLY for this connection instance
+            // This bypasses the "no certificate subject alternative name matches" error
+            httpsCon.setHostnameVerifier((hostname, session) -> true);
         }
 
         try {
@@ -258,6 +312,179 @@ public class DestinationSubmitService {
         }
 
         return new DestinationResponse(true, responseDto.getMessage(), responseDto.getFileNumber(), responseDto.attachments);
+    }
+
+    private static final String INTERNAL_NAME_ZUSTAENDIGE_STELLE = "OZG_CLOUD_ZUSTAENDIGE_STELLE";
+
+    private DestinationResponse sendOzg(@Nonnull Destination destination,
+                                        @Nonnull VFormVersionWithDetailsEntity form,
+                                        @Nonnull Submission submission,
+                                        @Nonnull Collection<SubmissionAttachment> attachments) {
+        var zustaendigeStelle = form
+                .getRootElement()
+                .findChild((c) -> (
+                        INTERNAL_NAME_ZUSTAENDIGE_STELLE.equals(c.getName()) && c instanceof TextInputElement
+                ))
+                .map((c) -> {
+                    if (c instanceof TextInputElement textField) {
+                        return textField.getLabel();
+                    } else {
+                        return null;
+                    }
+                })
+                .orElse(null);
+
+        if (zustaendigeStelle == null) {
+            return new DestinationResponse(false,
+                    "Das Formular enthält kein Textfeld mit dem Namen '" + INTERNAL_NAME_ZUSTAENDIGE_STELLE + "'. Dieses wird jedoch benötigt, um die zuständige Stelle für die Übermittlung an OZG Cloud zu bestimmen.",
+                    null,
+                    null);
+        }
+
+        OZGCloudServiceKontoData serviceKontoData = null;
+        // TODO: Determine the serviceKontoData based on the element data of the submission.
+
+        var control = new OZGCloudControlData(
+                submission.getId(),
+                zustaendigeStelle,
+                List.of(),
+                form.getId().toString(),
+                form.getPublicTitle(),
+                serviceKontoData
+        );
+
+        byte[] pdfBytes;
+        try {
+            pdfBytes = pdfService.generateCustomerSummary(form, submission, FormPdfScope.Staff);
+        } catch (IOException | InterruptedException | URISyntaxException | ResponseException e) {
+            throw new RuntimeException(e);
+        }
+
+        var pdfRes = new ByteArrayResource(pdfBytes) {
+            @Override
+            public String getFilename() {
+                return form
+                        .getPublicTitle()
+                        .replaceAll("\\W+", "_") + ".pdf";
+            }
+        };
+
+        var paymentTransaction = submission.getPaymentTransactionKey() != null
+                ? paymentTransactionRepository.findById(submission.getPaymentTransactionKey()).orElse(null)
+                : null;
+        var paymentProvider = paymentTransaction != null
+                ? paymentProviderRepository.findById(paymentTransaction.getPaymentProviderKey()).orElse(null)
+                : null;
+
+        byte[] destinationDataBytes;
+        try {
+            var destinationData = DestinationDataFormatter
+                    .createDataWithoutFiles(form, submission, paymentTransaction, paymentProvider)
+                    .format();
+            destinationDataBytes = new ObjectMapper().writeValueAsBytes(destinationData);
+        } catch (JsonProcessingException e) {
+            return new DestinationResponse(
+                    false,
+                    "Die formatierten Antragsdaten konnten nicht als JSON für die Übermittlung an OZG Cloud erstellt werden. Fehler: " + e.getMessage(),
+                    null,
+                    null
+            );
+        }
+
+        var destinationDataRes = new ByteArrayResource(destinationDataBytes) {
+            @Override
+            public String getFilename() {
+                return "Antrag.json";
+            }
+        };
+
+        List<Resource> attRes = new LinkedList<>();
+        attRes.add(destinationDataRes);
+        for (var attachment : attachments) {
+            byte[] bytes;
+            try {
+                bytes = submissionStorageService
+                        .getAttachmentData(submission, attachment);
+            } catch (ResponseException e) {
+                return new DestinationResponse(
+                        false,
+                        "Die Anhangsdaten konnten nicht abgerufen werden. Fehler: " + e.getMessage(),
+                        null,
+                        null
+                );
+            }
+            var res = new ByteArrayResource(bytes) {
+                @Override
+                public String getFilename() {
+                    var name = attachment
+                            .getFilename()
+                            .split("\\.");
+
+                    var baseName = String.join(".", Arrays.copyOf(name, name.length - 1));
+                    var extension = name[name.length - 1];
+                    return baseName.replaceAll("\\W+", "_") + "." + extension;
+                }
+            };
+            attRes.add(res);
+        }
+
+        oZGCloudDestinationService
+                .send(
+                        destination.getApiAddress(),
+                        control,
+                        form.getRootElement(),
+                        submission.getCustomerInput(),
+                        pdfRes,
+                        attRes
+                );
+
+        return new DestinationResponse(true, null, null, List.of());
+    }
+
+    private DestinationResponse performScript(@Nonnull Destination destination,
+                                              @Nonnull Submission submission) {
+        var jsCode = new JavascriptCode()
+                .setCode(destination.getScript());
+
+        if (jsCode.isEmpty()) {
+            return new DestinationResponse(false, "Das Skript des Ziels ist leer", null, null);
+        }
+
+        Map<String, Object> resultMap;
+        try (var engine = javascriptEngineFactoryService.getEngine()) {
+
+            JavascriptResult result;
+            try {
+                result = engine
+                        .registerGlobalContextObject(submission.getCustomerInput())
+                        .evaluateCode(jsCode);
+            } catch (Exception e) {
+                return new DestinationResponse(false, "Das Skript konnte nicht ausgeführt werden. Fehler: " + e.getMessage(), null, null);
+            }
+
+            if (result == null || result.isNull()) {
+                return new DestinationResponse(false, "Das Skript hat kein Ergebnis zurückgegeben", null, null);
+            }
+
+            resultMap = result.asMap();
+        } catch (Exception e) {
+            return new DestinationResponse(false, "Das Skript konnte nicht ausgeführt werden. Fehler beim Schließen der Engine: " + e.getMessage(), null, null);
+        }
+
+        if (resultMap == null) {
+            return new DestinationResponse(false, "Das Skript hat kein gültiges Ergebnis zurückgegeben. Es muss ein Objekt zurückgeben.", null, null);
+        }
+
+        var ok = (Boolean) resultMap.getOrDefault("ok", false);
+        var message = (String) resultMap.getOrDefault("message", null);
+        var fileNumber = (String) resultMap.getOrDefault("fileNumber", null);
+
+        return new DestinationResponse(
+                ok,
+                message,
+                fileNumber,
+                null
+        );
     }
 
     public record DestinationResponse(

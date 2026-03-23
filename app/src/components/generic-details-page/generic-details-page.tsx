@@ -6,9 +6,11 @@ import {GenericPageHeader} from '../generic-page-header/generic-page-header';
 import {generatePath, Link, matchPath, Outlet, useLocation, useNavigate, useParams} from 'react-router-dom';
 import {GenericDetailsPageContext} from './generic-details-page-context';
 import {ApiError} from '../../models/api-error';
-import {ReactComponent as NotFoundIllustration} from './resource-not-found-illustration.svg';
-import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
-import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
+import NotFoundIllustration from './resource-not-found-illustration.svg?react';
+import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
+import FormatListBulletedOutlinedIcon from '@mui/icons-material/FormatListBulletedOutlined';
+import {useAppDispatch} from '../../hooks/use-app-dispatch';
+import {addEntityHistoryItem} from '../../slices/entity-history-slice';
 
 export const DEFAULT_ID_PARAM = 'id';
 export const NEW_ID_INDICATOR = 'new';
@@ -40,11 +42,17 @@ async function fetchData<ItemType, ID, AdditionalData>(api: Api, id: ID, props: 
 }
 
 export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericDetailsPageProps<ItemType, ID, AdditionalData>) {
+    const {
+        entityType,
+        isEditable,
+    } = props;
+
     const api = useApi();
     const params = useParams();
     const navigate = useNavigate();
     const location = useLocation();
     const [notFound, setNotFound] = useState(false);
+    const dispatch = useAppDispatch();
 
     const ID_PARAM = props.idParam ?? DEFAULT_ID_PARAM;
     const id = useMemo(() => {
@@ -72,6 +80,9 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
         if (id == null) {
             setItem(undefined);
             setAdditionalData(undefined);
+            if (props.itemRef != null) {
+                props.itemRef.current = null;
+            }
             return;
         }
 
@@ -81,6 +92,9 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
                 setItem(item);
                 setAdditionalData(additionalData);
                 setNotFound(false);
+                if (props.itemRef != null) {
+                    props.itemRef.current = item;
+                }
             })
             .catch((error: ApiError) => {
                 console.error(error);
@@ -95,6 +109,20 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
         }
         return props.header.title ?? 'Resource bearbeiten'; // use static title as fallback, if defined
     }, [item, id, notFound]);
+
+    useEffect(() => {
+        if (id === NEW_ID_INDICATOR) {
+            return;
+        }
+        if (entityType == null) {
+            return;
+        }
+        dispatch(addEntityHistoryItem({
+            link: location.pathname,
+            title: headerTitle,
+            type: entityType,
+        }));
+    }, [id, entityType, item, headerTitle]);
 
     return (
         <>
@@ -202,6 +230,7 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
                                         setAdditionalData: setAdditionalData,
                                         isBusy: isBusy,
                                         setIsBusy: setIsBusy,
+                                        isEditable: isEditable != null ? isEditable(item) : true,
                                     }}
                                 >
                                     <Outlet />

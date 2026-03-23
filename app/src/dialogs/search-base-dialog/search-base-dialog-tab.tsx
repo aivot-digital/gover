@@ -1,4 +1,4 @@
-import {Box, Button, Grid, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemSecondaryAction, ListItemText, Typography, useTheme} from '@mui/material';
+import {Box, Button, Grid, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
 import {useEffect, useMemo, useState} from 'react';
 import Fuse from 'fuse.js';
 import {SearchInput} from '../../components/search-input-2/search-input';
@@ -47,8 +47,6 @@ export function SearchBaseDialogTab<T>(props: SearchBaseDialogTabProps<T>) {
             }}
         >
             <Grid
-                item
-                xs={highlightedOption != null ? 6 : 12}
                 sx={{
                     paddingTop: 2,
                     paddingLeft: 2,
@@ -58,7 +56,7 @@ export function SearchBaseDialogTab<T>(props: SearchBaseDialogTabProps<T>) {
                     display: 'flex',
                     flexDirection: 'column',
                 }}
-            >
+                size={highlightedOption != null ? 6 : 12}>
                 <SearchInput
                     value={search}
                     onChange={setSearch}
@@ -159,19 +157,16 @@ export function SearchBaseDialogTab<T>(props: SearchBaseDialogTabProps<T>) {
                     </List>
                 </Box>
             </Grid>
-
             {
                 highlightedOption != null &&
                 props.detailsBuilder != null &&
                 <Grid
-                    item
-                    xs={6}
                     sx={{
                         height: '100%',
                         display: 'flex',
                         flexDirection: 'column',
                     }}
-                >
+                    size={6}>
                     <Box
                         sx={{
                             overflowY: 'auto',

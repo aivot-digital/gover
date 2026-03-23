@@ -1,7 +1,6 @@
 import {AuthDataDto} from '../models/dtos/auth-data-dto';
-import {ApiError} from '../models/api-error';
+import {createApiError} from '../models/api-error';
 import {AuthData} from '../models/dtos/auth-data';
-import {AppConfig} from '../app-config';
 
 type QueryParamsValue = string | number | boolean | undefined | null;
 
@@ -51,19 +50,6 @@ export class ApiService {
         return `${url}?${searchParams.toString()}`;
     }
 
-    public getAuthData(): AuthData | undefined {
-        return this.auth?.authData;
-    }
-
-    public isAuthenticated() {
-        return (
-            this.auth != null &&
-            this.auth.authData != null &&
-            this.auth.authData.refreshToken != null &&
-            this.auth.authData.refreshToken.expires > Date.now()
-        );
-    }
-
     protected async getAccessToken(abortController?: AbortController): Promise<string | undefined> {
         if (this.auth == null) {
             return undefined;
@@ -80,11 +66,11 @@ export class ApiService {
             return undefined;
         }
 
-        const response = await window.fetch(`${AppConfig.staff.host}/realms/${AppConfig.staff.realm}/protocol/openid-connect/token`, {
+        const response = await window.fetch(`${AppConfig.oidc.hostname}/realms/${AppConfig.oidc.realm}/protocol/openid-connect/token`, {
             method: 'POST',
             body: new URLSearchParams({
                 grant_type: 'refresh_token',
-                client_id: AppConfig.staff.client,
+                client_id: AppConfig.oidc.client,
                 refresh_token: authData.refreshToken.token,
             }),
             headers: {
@@ -121,7 +107,7 @@ export class ApiService {
         });
 
         if (response.status !== 200) {
-            throw await this.creatApiError(response);
+            throw await createApiError(response);
         }
 
         return await response.json();
@@ -144,7 +130,7 @@ export class ApiService {
             ...options?.requestOptions,
         });
         if (response.status !== 200) {
-            throw await this.creatApiError(response);
+            throw await createApiError(response);
         }
         return await response.blob();
     }
@@ -167,7 +153,7 @@ export class ApiService {
             ...options?.requestOptions,
         });
         if (response.status !== 200 && response.status !== 201) {
-            throw await this.creatApiError(response);
+            throw await createApiError(response);
         }
         return await response.json();
     }
@@ -189,7 +175,7 @@ export class ApiService {
             ...options?.requestOptions,
         });
         if (response.status !== 200 && response.status !== 201) {
-            throw await this.creatApiError(response);
+            throw await createApiError(response);
         }
         return await response.json();
     }
@@ -212,7 +198,30 @@ export class ApiService {
             ...options?.requestOptions,
         });
         if (response.status !== 200 && response.status !== 201) {
-            throw await this.creatApiError(response);
+            throw await createApiError(response);
+        }
+        return await response.json();
+    }
+
+    public async postXML<T>(url: string, data: string | ArrayBuffer, options?: ApiOptions): Promise<T> {
+        const accessToken = await this.getAccessToken();
+
+        const combinedHeaders = combineHeaders(
+            {'Content-Type': 'application/xml'},
+            accessToken != null ? {Authorization: `Bearer ${accessToken}`} : undefined,
+            options?.requestOptions?.headers,
+        );
+        delete options?.requestOptions?.headers;
+
+        const response = await window.fetch(ApiService.appendQueryParams(url, options), {
+            method: 'POST',
+            body: data,
+            headers: combinedHeaders,
+            signal: options?.abortController?.signal,
+            ...options?.requestOptions,
+        });
+        if (response.status !== 200 && response.status !== 201) {
+            throw await createApiError(response);
         }
         return await response.json();
     }
@@ -235,7 +244,7 @@ export class ApiService {
             ...options?.requestOptions,
         });
         if (response.status !== 200) {
-            throw await this.creatApiError(response);
+            throw await createApiError(response);
         }
         return await response.json();
     }
@@ -257,18 +266,8 @@ export class ApiService {
             ...options?.requestOptions,
         });
         if (response.status !== 200 && response.status !== 204) {
-            throw await this.creatApiError(response);
+            throw await createApiError(response);
         }
-    }
-
-    private async creatApiError(response: Response): Promise<ApiError> {
-        let details = await response.text();
-        try {
-            details = JSON.parse(details);
-        } catch (err) {
-            // Ignore parse error
-        }
-        return new ApiError(response.status, details);
     }
 }
 

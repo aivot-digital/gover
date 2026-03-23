@@ -1,7 +1,7 @@
 Hallo,
 
 ein Antrag wurde in Gover neu zugewiesen.
-Antrag auf: [(${form.title})] - Version [(${form.version})]
+Antrag auf: [(${form.internalTitle})] - Version [(${form.version})]
 Aktenzeichen: [(${submission.fileNumber})]
 Neue zuständige Mitarbeiter:in: [(${newAssignee.getFullName})]
 Bisher zuständige Mitarbeiter:in: [(${previousAssignee.getFullName})]

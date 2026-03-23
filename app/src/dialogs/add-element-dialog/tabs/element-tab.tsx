@@ -1,5 +1,14 @@
 import React from 'react';
-import {IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Tooltip} from '@mui/material';
+import {
+    IconButton,
+    List,
+    ListItem,
+    ListItemButton,
+    ListItemIcon,
+    ListItemText,
+    ListSubheader,
+    Tooltip
+} from '@mui/material';
 import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
 import {getElementNameForType} from '../../../data/element-type/element-names';
 import {type BaseTabProps} from './base-tab-props';
@@ -32,16 +41,16 @@ const elementTypeGroupsLabels: { [key in ElementTypeGroups]: string } = {
 const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
     [ElementType.Alert]: ElementTypeGroups.Information,
     [ElementType.Image]: ElementTypeGroups.Information,
-    [ElementType.Container]: ElementTypeGroups.Display,
+    [ElementType.GroupLayout]: ElementTypeGroups.Display,
     [ElementType.Step]: null,
-    [ElementType.Root]: null,
+    [ElementType.FormLayout]: null,
     [ElementType.Checkbox]: ElementTypeGroups.Select,
     [ElementType.Date]: ElementTypeGroups.DateTime,
     [ElementType.Headline]: ElementTypeGroups.Information,
     [ElementType.MultiCheckbox]: ElementTypeGroups.Select,
     [ElementType.Number]: ElementTypeGroups.Input,
     [ElementType.ReplicatingContainer]: ElementTypeGroups.Input,
-    [ElementType.Richtext]: ElementTypeGroups.Information,
+    [ElementType.RichText]: ElementTypeGroups.Information,
     [ElementType.Radio]: ElementTypeGroups.Select,
     [ElementType.Select]: ElementTypeGroups.Select,
     [ElementType.Spacer]: ElementTypeGroups.Display,
@@ -54,26 +63,44 @@ const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
     [ElementType.SummaryStep]: null,
     [ElementType.SubmitStep]: null,
     [ElementType.SubmittedStep]: null,
+
+    [ElementType.DialogLayout]: null,
+    [ElementType.StepperLayout]: null,
+    [ElementType.ConfigLayout]: null,
+    [ElementType.FunctionInput]: null,
+    [ElementType.CodeInput]: null,
+    [ElementType.RichTextInput]: null,
+    [ElementType.UiDefinitionInput]: null,
+    [ElementType.IdentityInput]: null,
+    [ElementType.TabLayout]: null,
 };
 
 export function ElementTab({
-    parentType,
-    onAddElement,
-    showElementInfo,
-    highlightedElement,
-}: BaseTabProps & {
+                               parentType,
+                               onAddElement,
+                               showElementInfo,
+                               highlightedElement,
+                               limitElementTypes,
+                           }: BaseTabProps & {
     showElementInfo: (type: ElementType) => void;
     highlightedElement?: ElementType;
-}): JSX.Element {
+    limitElementTypes?: ElementType[];
+}) {
     const childOptions = ElementChildOptions[parentType] ?? [];
 
-    const optionGroups = childOptions.reduce<{ [key in ElementTypeGroups]?: ElementType[] }>((groups, child) => {
-        const childGroup = elementGroupMap[child] ?? ElementTypeGroups.Other;
-        const groupChildren = groups[childGroup] ?? [];
-        groupChildren.push(child);
-        groups[childGroup] = groupChildren;
-        return groups;
-    }, {});
+    const optionGroups = childOptions
+        .filter(et => {
+            if (limitElementTypes == null || limitElementTypes.includes(et)) {
+                return true;
+            }
+        })
+        .reduce<{ [key in ElementTypeGroups]?: ElementType[] }>((groups, child) => {
+            const childGroup = elementGroupMap[child] ?? ElementTypeGroups.Other;
+            const groupChildren = groups[childGroup] ?? [];
+            groupChildren.push(child);
+            groups[childGroup] = groupChildren;
+            return groups;
+        }, {});
 
     return (
         <List
@@ -105,7 +132,11 @@ export function ElementTab({
                                         disablePadding
                                         secondaryAction={
                                             <Tooltip title="Mehr Informationen">
-                                                <IconButton onClick={() => {showElementInfo(type);}}>
+                                                <IconButton
+                                                    onClick={() => {
+                                                        showElementInfo(type);
+                                                    }}
+                                                >
                                                     <InfoOutlinedIcon/>
                                                 </IconButton>
                                             </Tooltip>

@@ -1,12 +1,12 @@
 package de.aivot.GoverBackend.asset.dtos;
 
 import de.aivot.GoverBackend.asset.entities.AssetEntity;
-import de.aivot.GoverBackend.lib.ReqeustDTO;
+import de.aivot.GoverBackend.lib.RequestDTO;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.Length;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 public record AssetRequestDTO(
         @Nonnull
@@ -17,7 +17,7 @@ public record AssetRequestDTO(
         @Nonnull
         @NotNull(message = "Is private is required")
         Boolean isPrivate
-) implements ReqeustDTO<AssetEntity> {
+) implements RequestDTO<AssetEntity> {
 
     @Override
     public AssetEntity toEntity() {

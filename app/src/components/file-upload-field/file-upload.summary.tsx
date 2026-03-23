@@ -1,7 +1,7 @@
 import {Grid, Typography, useTheme} from '@mui/material';
-import {FileUploadElement, FileUploadElementItem} from "../../models/elements/form/input/file-upload-element";
-import {humanizeFileSize} from "../../utils/huminization-utils";
-import {BaseSummaryProps} from "../../summaries/base-summary";
+import {FileUploadElement, FileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
+import {humanizeFileSize} from '../../utils/huminization-utils';
+import {BaseSummaryProps} from '../../summaries/base-summary';
 
 export function FileUploadSummary({
                                       model,
@@ -18,9 +18,6 @@ export function FileUploadSummary({
             }}
         >
             <Grid
-                item
-                xs={12}
-                md={4}
                 sx={{
                     textAlign: 'left',
                     pr: 5,
@@ -28,7 +25,10 @@ export function FileUploadSummary({
                         textAlign: 'right',
                     },
                 }}
-            >
+                size={{
+                    xs: 12,
+                    md: 4
+                }}>
                 <Typography
                     variant="body2"
                     sx={{
@@ -42,10 +42,10 @@ export function FileUploadSummary({
                 </Typography>
             </Grid>
             <Grid
-                item
-                xs={12}
-                md={8}
-            >
+                size={{
+                    xs: 12,
+                    md: 8
+                }}>
                 <Typography
                     variant="body2"
                 >

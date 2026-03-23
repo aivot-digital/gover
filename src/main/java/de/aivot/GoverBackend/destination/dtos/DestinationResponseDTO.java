@@ -4,7 +4,7 @@ package de.aivot.GoverBackend.destination.dtos;
 import de.aivot.GoverBackend.destination.entities.Destination;
 import de.aivot.GoverBackend.destination.enums.DestinationType;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 public record DestinationResponseDTO(
         @Nonnull
@@ -24,6 +24,8 @@ public record DestinationResponseDTO(
         @Nonnull
         String authorizationHeader,
         @Nonnull
+        String script,
+        @Nonnull
         Integer maxAttachmentMegaBytes
 ) {
     public static DestinationResponseDTO fromEntity(Destination destination) {
@@ -36,6 +38,7 @@ public record DestinationResponseDTO(
                 destination.getMailBCC(),
                 destination.getApiAddress(),
                 destination.getAuthorizationHeader(),
+                destination.getScript(),
                 destination.getMaxAttachmentMegaBytes()
         );
     }

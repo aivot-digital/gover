@@ -17,7 +17,7 @@ public class SystemConfigFilter implements Filter<SystemConfigEntity> {
     public Specification<SystemConfigEntity> build() {
         return SpecificationBuilder
                 .create(SystemConfigEntity.class)
-                .withContains("key", key)
+                .withEquals("key", key)
                 .withEquals("publicConfig", publicConfig)
                 .build();
     }

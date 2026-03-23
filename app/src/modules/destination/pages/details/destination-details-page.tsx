@@ -5,11 +5,9 @@ import {Destination} from '../../models/destination';
 import DataObjectOutlinedIcon from '@mui/icons-material/DataObjectOutlined';
 import {DestinationsApiService} from '../../destinations-api-service';
 import React from 'react';
-import {useAdminGuard} from '../../../../hooks/use-admin-guard';
+import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 
 export function DestinationDetailsPage() {
-    useAdminGuard();
-
     return (
         <PageWrapper
             title="Schnittstelle bearbeiten"
@@ -28,10 +26,23 @@ export function DestinationDetailsPage() {
                                 <Typography>
                                     Schnittstellen dienen in der Gover-Anwendung zur Übertragung von durch Bürger:innen gestellten Anträgen in Folgesysteme.
                                 </Typography>
-                                <Typography sx={{mt: 2}}>
-                                    Über eine E-Mail-Schnittstelle können Sie eingegangene Anträge an eine oder mehrere E-Mail-Adressen senden lassen.
-                                    Über eine HTTP-Schnittstelle können Sie eingegangene Anträge an eine HTTP-Adresse via POST-Anfrage übertragen lassen.
-                                </Typography>
+                                <ul>
+                                    <li>
+                                        <Typography variant="body1" paragraph>
+                                            Über eine E-Mail-Schnittstelle können Sie eingegangene Anträge an eine oder mehrere E-Mail-Adressen senden lassen.
+                                        </Typography>
+                                    </li>
+                                    <li>
+                                        <Typography variant="body1" paragraph>
+                                            Über eine HTTP-Schnittstelle können Sie eingegangene Anträge an eine HTTP-Adresse via POST-Anfrage übertragen lassen.
+                                        </Typography>
+                                    </li>
+                                    <li>
+                                        <Typography variant="body1" paragraph>
+                                            Über eine JavaScript-Schnittstelle können Sie eingegangene Anträge direkt mit eigenem JavaScript verarbeiten.
+                                        </Typography>
+                                    </li>
+                                </ul>
                                 <Typography sx={{mt: 2}}>
                                     Falls einen von ihnen benötigte Schnittstelle nicht vorhanden ist, bietet Aivot Ihnen die Möglichkeit, neue Schnittstellen zum System hinzufügen zu lassen.
                                     So können Sie beispielsweise Ihre eigenen Fachverfahren oder Folgesysteme anschließen. Bitte wenden Sie sich dazu an den Support.
@@ -69,6 +80,7 @@ export function DestinationDetailsPage() {
                     label: "Liste der Schnittstellen",
                     to: "/destinations",
                 }}
+                entityType={ServerEntityType.Destinations}
             />
         </PageWrapper>
     );

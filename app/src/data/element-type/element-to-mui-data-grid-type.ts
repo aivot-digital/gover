@@ -1,0 +1,38 @@
+import {ElementType} from './element-type';
+import {GridColType} from '@mui/x-data-grid/models/colDef/gridColType';
+
+
+export const ElementToMuiDataGridType: Record<ElementType, GridColType | null> = {
+    [ElementType.Alert]: null,
+    [ElementType.Checkbox]: 'boolean',
+    [ElementType.Image]: null,
+    [ElementType.GroupLayout]: null,
+    [ElementType.Date]: 'string',
+    [ElementType.Step]: null,
+    [ElementType.FormLayout]: null,
+    [ElementType.Headline]: null,
+    [ElementType.MultiCheckbox]: 'string',
+    [ElementType.Number]: 'number',
+    [ElementType.ReplicatingContainer]: null,
+    [ElementType.RichText]: null,
+    [ElementType.Radio]: 'string',
+    [ElementType.Select]: 'string',
+    [ElementType.Spacer]: null,
+    [ElementType.Table]: null,
+    [ElementType.Text]: 'string',
+    [ElementType.Time]: 'string',
+    [ElementType.IntroductionStep]: null,
+    [ElementType.SummaryStep]: null,
+    [ElementType.SubmitStep]: null,
+    [ElementType.SubmittedStep]: null,
+    [ElementType.FileUpload]: null,
+    [ElementType.DialogLayout]: null,
+    [ElementType.StepperLayout]: null,
+    [ElementType.ConfigLayout]: null,
+    [ElementType.FunctionInput]: null,
+    [ElementType.CodeInput]: null,
+    [ElementType.RichTextInput]: null,
+    [ElementType.UiDefinitionInput]: null,
+    [ElementType.IdentityInput]: null,
+    [ElementType.TabLayout]: null,
+};

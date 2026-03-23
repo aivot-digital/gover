@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.models.pdf;
 
-import de.aivot.GoverBackend.elements.models.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 
 import java.util.List;
 

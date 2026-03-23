@@ -1,4 +1,4 @@
-import { type AnyElement } from '../../models/elements/any-element';
+import {type AnyElement} from '../../models/elements/any-element';
 import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {type RootElement} from '../../models/elements/root-element';
 import {type StepElement} from '../../models/elements/steps/step-element';

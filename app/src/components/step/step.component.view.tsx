@@ -1,39 +1,55 @@
 import React from 'react';
 import {type StepElement} from '../../models/elements/steps/step-element';
 import {ViewDispatcherComponent} from '../view-dispatcher.component';
-import {ElementType} from '../../data/element-type/element-type';
 import {type BaseViewProps} from '../../views/base-view';
+import Grid from '@mui/material/Grid';
 
-export function StepComponentView({
-    allElements,
-    element,
-    isBusy,
-    isDeriving,
-    valueOverride,
-    errorsOverride,
-    visibilitiesOverride,
-    overridesOverride,
-    scrollContainerRef,
-    idPrefix,
-    mode,
-}: BaseViewProps<StepElement, void>): JSX.Element {
+export function StepComponentView(props: BaseViewProps<StepElement, void>) {
+    const {
+        rootElement,
+        allElements,
+        element,
+        isBusy,
+        isDeriving,
+        scrollContainerRef,
+        mode,
+        elementData,
+        onElementDataChange,
+        onElementBlur,
+        disableVisibility,
+        derivationTriggerIdQueue,
+    } = props;
+
+    const {
+        children,
+    } = element;
+
     return (
-        <ViewDispatcherComponent
-            allElements={allElements}
-            element={{
-                ...element,
-                type: ElementType.Container,
-                storeLink: null,
-            }}
-            isBusy={isBusy}
-            isDeriving={isDeriving}
-            valueOverride={valueOverride}
-            errorsOverride={errorsOverride}
-            visibilitiesOverride={visibilitiesOverride}
-            overridesOverride={overridesOverride}
-            idPrefix={idPrefix}
-            scrollContainerRef={scrollContainerRef}
-            mode={mode}
-        />
+        <Grid
+            container
+            spacing={2}
+            sx={{mt: 0}}
+        >
+            {
+                (children ?? []).map((child) => (
+                    <ViewDispatcherComponent
+                        rootElement={rootElement}
+                        key={child.id}
+                        allElements={allElements}
+                        element={child}
+                        isBusy={isBusy}
+                        isDeriving={isDeriving}
+                        scrollContainerRef={scrollContainerRef}
+                        mode={mode}
+                        elementData={elementData}
+                        onElementDataChange={onElementDataChange}
+                        onElementBlur={onElementBlur}
+                        derivationTriggerIdQueue={derivationTriggerIdQueue}
+                        disableVisibility={disableVisibility}
+                    />
+                ))
+            }
+        </Grid>
+
     );
 }

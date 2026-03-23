@@ -5,12 +5,12 @@ import {SelectFieldComponent} from '../components/select-field/select-field-comp
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
 
 
-export function SelectFieldView(props: BaseViewProps<SelectFieldElement, string>): JSX.Element {
+export function SelectFieldView(props: BaseViewProps<SelectFieldElement, string>) {
     const {
         element,
         setValue,
         value,
-        error,
+        errors,
         isBusy: isGloballyDisabled,
         isDeriving,
     } = props;
@@ -49,19 +49,19 @@ export function SelectFieldView(props: BaseViewProps<SelectFieldElement, string>
     return (
         <SelectFieldComponent
             label={element.label ?? ''}
-            autocomplete={element.autocomplete}
-            error={error}
-            hint={element.hint}
-            placeholder={element.placeholder}
+            autocomplete={element.autocomplete ?? undefined}
+            error={errors != null ? errors.join(' ') : undefined}
+            hint={element.hint ?? undefined}
+            placeholder={element.placeholder ?? undefined}
             value={value ?? undefined}
             onChange={setValue}
             disabled={isDisabled}
-            required={element.required}
+            required={element.required ?? undefined}
             options={options}
 
             sx={{
-                backgroundColor: isBusy ? "#F8F8F8" : undefined,
-                cursor: isBusy ? "not-allowed" : undefined,
+                backgroundColor: isBusy ? '#F8F8F8' : undefined,
+                cursor: isBusy ? 'not-allowed' : undefined,
             }}
             readOnly={isBusy}
         />

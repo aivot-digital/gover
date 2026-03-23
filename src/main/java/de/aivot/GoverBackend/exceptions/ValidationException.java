@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.exceptions;
 
-import de.aivot.GoverBackend.elements.models.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 
 public class ValidationException extends Exception {
     private final String message;

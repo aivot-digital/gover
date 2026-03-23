@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useMemo} from 'react';
 import {type AnyElement} from '../../models/elements/any-element';
 import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {DefaultTab} from '../element-editor-default-tab/default-tab';
@@ -9,7 +9,6 @@ import {StructureTab} from '../element-editor-structure-tab/structure-tab';
 import {TestTab} from '../element-editor-test-tab/test-tab';
 import {Box} from '@mui/material';
 import {isRootElement} from '../../models/elements/root-element';
-import {isForm} from '../../models/entities/form';
 import {ApplicationPublishTab} from '../element-editor-application-publish-tab/application-publish-tab';
 import {isGroupLayout} from '../../models/elements/form/layout/group-layout';
 import {PresetPublishTab} from '../element-editor-preset-publish-tab/preset-publish-tab';
@@ -19,13 +18,19 @@ import {VisibilityCodeTab} from '../element-editor-code-tab/visibility-code-tab'
 import {OverrideCodeTab} from '../element-editor-code-tab/override-code-tab';
 import {ValueCodeTab} from '../element-editor-code-tab/value-code-tab';
 import {ValidationCodeTab} from '../element-editor-code-tab/validation-code-tab';
+import {ReferencesTab} from '../element-editor-references-tab/references-tab';
+import {flattenElementsWithParents} from '../../utils/flatten-elements';
+import {isLoadedForm} from '../../slices/app-slice';
 
-
-export function ElementEditorContent<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorContentProps<T, E>): JSX.Element | null {
+export function ElementEditorContent<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorContentProps<T, E>): React.ReactNode | null {
     const {
         onChange,
         ...passProps
     } = props;
+
+    const allElements = useMemo(() => {
+        return flattenElementsWithParents(props.parents[0], [], true);
+    }, [props.parents]);
 
     switch (props.currentTab) {
         case DefaultTabs.properties:
@@ -49,6 +54,7 @@ export function ElementEditorContent<T extends AnyElement, E extends ElementTree
         case DefaultTabs.visibility:
             return (
                 <VisibilityCodeTab
+                    allElements={allElements}
                     editable={props.editable}
                     parents={props.parents}
                     element={props.element}
@@ -69,9 +75,10 @@ export function ElementEditorContent<T extends AnyElement, E extends ElementTree
         case DefaultTabs.validation:
             return (
                 <ValidationCodeTab
+                    allElements={allElements}
                     editable={props.editable}
                     parents={props.parents}
-                    element={props.element as BaseInputElement<any, any>}
+                    element={props.element as BaseInputElement<any>}
                     onChange={(updatedElement) => {
                         if (props.element.testProtocolSet?.technicalTest != null) {
                             if (props.element.testProtocolSet.professionalTest == null) {
@@ -89,9 +96,10 @@ export function ElementEditorContent<T extends AnyElement, E extends ElementTree
         case DefaultTabs.value:
             return (
                 <ValueCodeTab
+                    allElements={allElements}
                     editable={props.editable}
                     parents={props.parents}
-                    element={props.element as BaseInputElement<any, any>}
+                    element={props.element as BaseInputElement<any>}
                     onChange={(updatedElement) => {
                         if (props.element.testProtocolSet?.technicalTest != null) {
                             if (props.element.testProtocolSet.professionalTest == null) {
@@ -109,6 +117,7 @@ export function ElementEditorContent<T extends AnyElement, E extends ElementTree
         case DefaultTabs.patch:
             return (
                 <OverrideCodeTab
+                    allElements={allElements}
                     editable={props.editable}
                     parents={props.parents}
                     element={props.element}
@@ -136,6 +145,13 @@ export function ElementEditorContent<T extends AnyElement, E extends ElementTree
                     editable={props.editable}
                 />
             );
+        case DefaultTabs.references:
+            return (
+                <ReferencesTab
+                    rootElement={isLoadedForm(props.entity) ? props.entity.version.rootElement : props.entity.rootElement}
+                    element={props.element}
+                />
+            );
         case DefaultTabs.test:
             return (
                 <TestTab
@@ -156,7 +172,7 @@ export function ElementEditorContent<T extends AnyElement, E extends ElementTree
                     {
                         props.scope === 'application' &&
                         isRootElement(props.element) &&
-                        isForm(props.entity) &&
+                        isLoadedForm(props.entity) &&
                         /* @ts-expect-error */
                         <ApplicationPublishTab
                             {...props}
@@ -166,7 +182,7 @@ export function ElementEditorContent<T extends AnyElement, E extends ElementTree
                     {
                         props.scope === 'preset' &&
                         isGroupLayout(props.element) &&
-                        !isForm(props.entity) &&
+                        !isLoadedForm(props.entity) &&
                         /* @ts-expect-error */
                         <PresetPublishTab
                             {...props}
@@ -177,6 +193,7 @@ export function ElementEditorContent<T extends AnyElement, E extends ElementTree
         case DefaultTabs.metadata:
             return (
                 <ElementEditorMetadataTab
+                    allElements={allElements}
                     elementModel={props.element}
                     onChange={props.onChange}
                     editable={props.editable}
@@ -198,6 +215,7 @@ export function ElementEditorContent<T extends AnyElement, E extends ElementTree
                             entity={props.entity}
                             onPatchEntity={props.onChangeEntity}
                             editable={props.editable}
+                            scope={props.scope}
                         />
                     </Box>
                 );

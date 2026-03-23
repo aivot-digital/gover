@@ -2,8 +2,8 @@ package de.aivot.GoverBackend.destination.services;
 
 import de.aivot.GoverBackend.destination.entities.Destination;
 import de.aivot.GoverBackend.destination.repositories.DestinationRepository;
-import de.aivot.GoverBackend.form.filters.FormFilter;
-import de.aivot.GoverBackend.form.repositories.FormRepository;
+import de.aivot.GoverBackend.form.filters.VFormVersionWithDetailsFilter;
+import de.aivot.GoverBackend.form.repositories.VFormVersionWithDetailsRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
@@ -14,22 +14,20 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.Optional;
 
 @Service
 public class DestinationService implements EntityService<Destination, Integer> {
     private final DestinationRepository destinationRepository;
-    private final FormRepository formRepository;
+    private final VFormVersionWithDetailsRepository formVersionWithDetailsRepository;
 
     @Autowired
-    public DestinationService(
-            DestinationRepository destinationRepository,
-            FormRepository formRepository
-    ) {
+    public DestinationService(DestinationRepository destinationRepository,
+                              VFormVersionWithDetailsRepository formVersionWithDetailsRepository) {
         this.destinationRepository = destinationRepository;
-        this.formRepository = formRepository;
+        this.formVersionWithDetailsRepository = formVersionWithDetailsRepository;
     }
 
     @Nonnull
@@ -41,7 +39,9 @@ public class DestinationService implements EntityService<Destination, Integer> {
 
     @Nonnull
     @Override
-    public Page<Destination> performList(@Nonnull Pageable pageable, @Nullable Specification<Destination> specification, Filter<Destination> filter) {
+    public Page<Destination> performList(@Nonnull Pageable pageable,
+                                         @Nullable Specification<Destination> specification,
+                                         @Nullable Filter<Destination> filter) {
         return destinationRepository.findAll(specification, pageable);
     }
 
@@ -57,6 +57,8 @@ public class DestinationService implements EntityService<Destination, Integer> {
         existingEntity.setMailTo(entity.getMailTo());
         existingEntity.setMailCC(entity.getMailCC());
         existingEntity.setMailBCC(entity.getMailBCC());
+
+        existingEntity.setScript(entity.getScript());
 
         existingEntity.setMaxAttachmentMegaBytes(entity.getMaxAttachmentMegaBytes());
 
@@ -87,11 +89,11 @@ public class DestinationService implements EntityService<Destination, Integer> {
 
     @Override
     public void performDelete(@Nonnull Destination entity) throws ResponseException {
-        var spec = new FormFilter()
+        var spec = new VFormVersionWithDetailsFilter()
                 .setDestinationId(entity.getId())
                 .build();
 
-        if (formRepository.exists(spec)) {
+        if (formVersionWithDetailsRepository.exists(spec)) {
             throw new ResponseException(HttpStatus.CONFLICT, "Die Schnittstelle wird noch von einem oder mehreren Formularen verwendet.");
         }
 

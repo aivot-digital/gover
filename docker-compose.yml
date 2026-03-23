@@ -15,7 +15,7 @@ services:
 
 
   gover_database:
-    image: postgres:15.7
+    image: postgres:15.15
     restart: always
     environment:
       POSTGRES_PASSWORD: "{{ GOVER_DB_PASSWORD }}" # Setzen Sie das Passwort für die Gover-Datenbank. Passen Sie dieses Passwort unbedingt an.
@@ -29,7 +29,7 @@ services:
 
 
   keycloak_database:
-    image: postgres:15.7
+    image: postgres:15.15
     restart: always
     environment:
       POSTGRES_PASSWORD: "{{ KEYCLOAK_DB_PASSWORD }}" # Setzen Sie das Passwort für die Keycloak-Datenbank. Passen Sie dieses Passwort unbedingt an.
@@ -43,28 +43,30 @@ services:
 
 
   clamav:
-    image: clamav/clamav-debian:1.3.1
+    image: clamav/clamav-debian:1.5.1
     restart: always
     networks:
       - gover
 
 
   redis:
-    image: redis:7.2.5
+    image: redis:7.4.7
     restart: always
     networks:
       - gover
 
 
-  puppet:
-    image: ghcr.io/aivot-digital/puppet-pdf:2.0.0
+  gotenberg:
+    image: gotenberg/gotenberg:8
     restart: always
+    ports:
+      - "9191:3000"
     networks:
       - gover
 
 
   keycloak:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.2.4.1
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.5.3.0
     restart: always
     depends_on:
       - keycloak_database
@@ -106,6 +108,7 @@ services:
       QUARKUS_HTTP_LIMITS_MAX_FORM_ATTRIBUTE_SIZE: "10M"
     networks:
       - keycloak
+      - keycloak_config_network
       - common
     labels:
       - "traefik.http.routers.keycloak.rule=Host(`{{ HOSTNAME }}`) && PathPrefix(`/idp`)" # Setzen Sie die Regel für den Reverse-Proxy Traefik. Passen Sie den Hostnamen unbedingt an.
@@ -114,13 +117,36 @@ services:
       - "traefik.http.routers.keycloak.tls.certresolver=ssl_resolver" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
 
 
+  keycloak_sidecar:
+    image: "ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.6"
+    restart: on-failure
+    depends_on:
+      - keycloak
+    environment:
+      KEYCLOAK_URL: "http://keycloak:8080"
+      KEYCLOAK_USER: "{{ KEYCLOAK_ADMIN_USERNAME }}" # Setzen Sie den initialen Benutzernamen für den Keycloak-Admin. Passen Sie diesen Benutzernamen unbedingt an.
+      KEYCLOAK_PASSWORD: "{{ KEYCLOAK_ADMIN_PASSWORD }}" # Setzen Sie das initiale Passwort für den Keycloak-Admin. Passen Sie dieses Passwort unbedingt an.
+      KEYCLOAK_AVAILABILITYCHECK_ENABLED: true
+      KEYCLOAK_AVAILABILITYCHECK_TIMEOUT: "120s"
+      SMTP_HOST: "{{ SMTP_HOST }}" # Setzen Sie den Hostnamen des Mail-Servers. Passen Sie diesen Hostnamen unbedingt an.
+      SMTP_PORT: "{{ SMTP_PORT }}" # Setzen Sie den Port des Mail-Servers. Passen Sie diesen Port unbedingt an.
+      SMTP_USERNAME: "{{ SMTP_USERNAME }}" # Setzen Sie den Benutzernamen für den Mail-Server. Passen Sie diesen Benutzernamen unbedingt an.
+      SMTP_PASSWORD: "{{ SMTP_PASSWORD }}" # Setzen Sie das Passwort für den Mail-Server. Passen Sie dieses Passwort unbedingt an.
+      SMTP_FROM: "{{ MAIL_SENDER_ADDRESS }}@{{ HOSTNAME }}" # Setzen Sie die Absenderadresse für E-Mails. Passen Sie diese Absenderadresse unbedingt an.
+      SMTP_FROM_DISPLAY: "{{ MAIL_SENDER_NAME }}" # Setzen Sie den Anzeigenamen für die Absenderadresse. Passen Sie diesen Anzeigenamen unbedingt an.
+      HOSTNAME: "https://{{ HOSTNAME }}" # Setzen Sie den Hostnamen unter dem Gover erreichbar ist. Passen Sie diesen Hostnamen unbedingt an.
+      BACKEND_CLIENT_SECRET: "{{ KEYCLOAK_BACKEND_CLIENT_SECRET }}" # Setzen Sie das Geheimnis für den Backend-Client in Keycloak. Passen Sie dieses Geheimnis unbedingt an. Wählen Sie ein sicheres Geheimnis mit mindestens 16 Zeichen.
+    networks:
+      - keycloak_config_network
+
+
   gover:
-    image: ghcr.io/aivot-digital/gover:4.5.3
+    image: ghcr.io/aivot-digital/gover:4.6.0
     depends_on:
       - gover_database
       - clamav
       - redis
-      - puppet
+      - gotenberg
       - keycloak
       - gover_customer_app
       - gover_staff_app
@@ -136,8 +162,8 @@ services:
       GOVER_CLAM_HOST: clamav
       GOVER_CLAM_PORT: 3310
 
-      GOVER_PUPPET_PDF_HOST: puppet
-      GOVER_PUPPET_PDF_PORT: 3000
+      GOVER_GOTENBERG_HOST: gotenberg
+      GOVER_GOTENBERG_PORT: 3000
 
       GOVER_SMTP_HOST: "{{ SMTP_HOST }}" # Setzen Sie den Hostnamen des Mail-Servers. Passen Sie diesen Hostnamen unbedingt an.
       GOVER_SMTP_PORT: "{{ SMTP_PORT }}" # Setzen Sie den Port des Mail-Servers. Passen Sie diesen Port unbedingt an.
@@ -164,7 +190,7 @@ services:
 
       GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID: app
       GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_ID: backend
-      GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET: "{{ KEYCLOAK_BACKEND_CLIENT_SECRET }}" # Setzen Sie das Geheimnis für den Backend-Client in Keycloak. Passen Sie dieses Geheimnis unbedingt an. Das Geheimnis können Sie dem Backend-Client in Keycloak entnehmen.
+      GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET: "{{ KEYCLOAK_BACKEND_CLIENT_SECRET }}" # Setzen Sie das Geheimnis für den Backend-Client in Keycloak. Passen Sie dieses Geheimnis unbedingt an. Wählen Sie ein sicheres Geheimnis mit mindestens 16 Zeichen.
       GOVER_KEYCLOAK_OIDC_HOSTNAME: "https://{{ HOSTNAME }}/idp" # Setzen Sie den Hostnamen unter dem Keycloak erreichbar ist. Passen Sie diesen Hostnamen unbedingt an.
       GOVER_KEYCLOAK_OIDC_REALM: staff
 
@@ -188,7 +214,7 @@ services:
 
 
   gover_staff_app:
-    image: ghcr.io/aivot-digital/gover:4.5.3
+    image: ghcr.io/aivot-digital/gover:4.6.0
     restart: always
     command: staff
     networks:
@@ -201,7 +227,7 @@ services:
 
 
   gover_customer_app:
-    image: ghcr.io/aivot-digital/gover:4.5.3
+    image: ghcr.io/aivot-digital/gover:4.6.0
     restart: always
     command: customer
     networks:
@@ -214,7 +240,7 @@ services:
 
 
   traefik:
-    image: traefik:2.11.7
+    image: traefik:2.11.37
     restart: always
     command:
       - --providers.docker
@@ -251,5 +277,6 @@ volumes:
 # Definiert die Netzwerke für die Services.
 networks:
   keycloak:
+  keycloak_config_network:
   gover:
   common:

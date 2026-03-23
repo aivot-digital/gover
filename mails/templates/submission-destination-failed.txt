@@ -1,7 +1,7 @@
 Hallo,
 
 die Übertragung an die hinterlegte Schnittstelle ist fehlgeschlagen.
-Antrag auf: [(${form.title})] - Version [(${form.version})]
+Antrag auf: [(${form.internalTitle})] - Version [(${form.version})]
 Hinterlegte Schnittstelle: [(${destination.name})]
 Fehlermeldung: [(${submission.destinationResult})]
 Zeitpunkt des Übertragungsfehlers: [(${#temporals.format(submission.destinationTimestamp, 'dd.MM.yyyy HH:mm')})]

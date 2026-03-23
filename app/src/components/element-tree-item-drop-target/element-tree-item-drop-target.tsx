@@ -46,7 +46,7 @@ export function ElementTreeItemDropTarget<T extends AnyElementWithChildren>(prop
             {
                 isDraggingTreeElement &&
                 <Box
-                    ref={drop}
+                    ref={drop as any}
                     sx={{
                         position: 'absolute',
                         height: '100%',

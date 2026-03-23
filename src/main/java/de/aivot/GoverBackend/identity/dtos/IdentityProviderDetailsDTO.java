@@ -5,23 +5,25 @@ import de.aivot.GoverBackend.identity.enums.IdentityProviderType;
 import de.aivot.GoverBackend.identity.models.IdentityAdditionalParameter;
 import de.aivot.GoverBackend.identity.models.IdentityAttributeMapping;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.List;
+import java.util.UUID;
 
 public record IdentityProviderDetailsDTO(
-        @Nonnull String key,
+        @Nonnull UUID key,
         @Nonnull String metadataIdentifier,
         @Nonnull IdentityProviderType type,
+        @Nullable String pkceMethod,
         @Nonnull String name,
         @Nonnull String description,
-        @Nullable String iconAssetKey,
+        @Nullable UUID iconAssetKey,
         @Nonnull String authorizationEndpoint,
         @Nonnull String tokenEndpoint,
         @Nullable String userinfoEndpoint,
         @Nullable String endSessionEndpoint,
         @Nonnull String clientId,
-        @Nullable String clientSecretKey,
+        @Nullable UUID clientSecretKey,
         @Nonnull List<IdentityAttributeMapping> attributes,
         @Nonnull List<String> defaultScopes,
         @Nonnull List<IdentityAdditionalParameter> additionalParams,
@@ -33,6 +35,7 @@ public record IdentityProviderDetailsDTO(
                 entity.getKey(),
                 entity.getMetadataIdentifier(),
                 entity.getType(),
+                entity.getPkceMethod(),
                 entity.getName(),
                 entity.getDescription(),
                 entity.getIconAssetKey(),

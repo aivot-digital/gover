@@ -18,7 +18,7 @@
                         es wurde ein Formular in Gover zurückgezogen.
                         <br/>
                         <br/>
-                        Formular: <b th:text="${form.title}">Beispielformular</b>
+                        Formular: <b th:text="${form.internalTitle}">Beispielformular</b>
                         <br/>
                         Version: <b th:text="${form.version}">1.2.3</b>
                         <br/>
@@ -41,7 +41,7 @@
                     </p>
 
                     <p>
-                        Sie können das Formular über den nachfolgenden Link aufrufen: <a th:href="${base.config.createUrl('/staff/forms/' + form.id)}" th:text="${base.config.createUrl('/staff/forms/' + form.id)}">Beispiel-Link</a>
+                        Sie können das Formular über den nachfolgenden Link aufrufen: <a th:href="${base.config.createUrl('/staff/forms/' + form.id + '/' + form.version)}" th:text="${base.config.createUrl('/staff/forms/' + form.id + '/' + form.version)}">Beispiel-Link</a>
                     </p>
                 </mj-text>
             </mj-column>

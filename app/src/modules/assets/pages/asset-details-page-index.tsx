@@ -1,9 +1,6 @@
 import {Box, Button, Grid, Typography} from '@mui/material';
 import React, {type FormEvent, useContext, useEffect, useMemo, useState} from 'react';
-import {
-    GenericDetailsPageContext,
-    GenericDetailsPageContextType,
-} from '../../../components/generic-details-page/generic-details-page-context';
+import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {useApi} from '../../../hooks/use-api';
 import {useNavigate} from 'react-router-dom';
@@ -20,7 +17,7 @@ import {AssetsApiService} from '../assets-api-service';
 import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined';
 import {getFileTypeLabel} from '../../../utils/file-type-label';
 import {FileUploadComponent} from '../../../components/file-upload-field/file-upload-component';
-import {AppConfig} from '../../../app-config';
+import {AppInfo} from '../../../app-info';
 import {hideLoadingOverlayWithTimeout, showLoadingOverlay} from '../../../slices/loading-overlay-slice';
 import {CheckboxFieldComponent} from '../../../components/checkbox-field/checkbox-field-component';
 import {GenericDetailsSkeleton} from '../../../components/generic-details-page/generic-details-skeleton';
@@ -28,9 +25,9 @@ import {User} from '../../users/models/user';
 import {UsersApiService} from '../../users/users-api-service';
 import {resolveUserName} from '../../users/utils/resolve-user-name';
 import {format} from 'date-fns';
-import {StatusTable} from "../../../components/status-table/status-table";
-import {BadgeOutlined} from "@mui/icons-material";
-import {getFileTypeIcon} from "../../../utils/file-type-icon";
+import {StatusTable} from '../../../components/status-table/status-table';
+import {BadgeOutlined} from '@mui/icons-material';
+import {getFileTypeIcon} from '../../../utils/file-type-icon';
 
 export const AssetSchema = yup.object({
     filename: yup.string()
@@ -65,9 +62,22 @@ export function AssetDetailsPageIndex() {
 
     const apiService = useMemo(() => new AssetsApiService(api), [api]);
     const asset = currentItem;
-    const changeBlocker = useChangeBlocker(item, currentItem);
     const [file, setFile] = useState<File[]>();
     const [uploadError, setUploadError] = useState<string>();
+
+    const combinedEditedState = {
+        ...currentItem,
+        file,
+        hasFileSelected: !!file?.length,
+    };
+
+    const combinedOriginalState = {
+        ...item,
+        file: file ?? undefined,
+        hasFileSelected: false,
+    };
+
+    const changeBlocker = useChangeBlocker(combinedOriginalState, combinedEditedState);
 
     const [confirmDeleteAction, setConfirmDeleteAction] = useState<(() => void) | undefined>(undefined);
 
@@ -78,7 +88,7 @@ export function AssetDetailsPageIndex() {
         }
 
         if(asset?.uploaderId){
-            new UsersApiService(api)
+            new UsersApiService()
                 .retrieve(item.uploaderId)
                 .then(setUploader);
         }
@@ -130,7 +140,7 @@ export function AssetDetailsPageIndex() {
                 } else if (err.status === 409) {
                     setUploadError('Die von Ihnen hochgeladene Datei weist die Signatur eines Virus auf und wurde abgelehnt. Probieren Sie eine andere Datei.');
                 } else if (err.status === 413) {
-                    setUploadError(`Die von Ihnen hochgeladene Datei überschreitet das Limit von ${AppConfig.maxFileSizeMB}MB. Probieren Sie eine andere Datei.`);
+                    setUploadError(`Die von Ihnen hochgeladene Datei überschreitet das Limit von ${AppInfo.maxFileSizeMB}MB. Probieren Sie eine andere Datei.`);
                 } else {
                     console.error(err);
                     setUploadError('Die Datei konnte nicht hochgeladen werden. Probieren Sie eine andere Datei.');
@@ -220,7 +230,6 @@ export function AssetDetailsPageIndex() {
                     />
                 </>
             }
-
             {
                 asset?.contentType &&
                 <>
@@ -240,10 +249,10 @@ export function AssetDetailsPageIndex() {
                         columnSpacing={4}
                     >
                         <Grid
-                            item
-                            xs={12}
-                            lg={12}
-                        >
+                            size={{
+                                xs: 12,
+                                lg: 12
+                            }}>
                             <TextFieldComponent
                                 label="Dateiname"
                                 value={asset?.filename}
@@ -308,7 +317,6 @@ export function AssetDetailsPageIndex() {
                     )}
                 </>
             }
-
             <Box
                 sx={{
                     display: 'flex',
@@ -355,9 +363,7 @@ export function AssetDetailsPageIndex() {
                     </Button>
                 }
             </Box>
-
             {changeBlocker.dialog}
-
             <ConfirmDialog
                 title="Datei löschen"
                 onCancel={() => setConfirmDeleteAction(undefined)}
