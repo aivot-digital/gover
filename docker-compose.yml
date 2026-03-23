@@ -195,6 +195,8 @@ services:
     image: ghcr.io/aivot-digital/gover:4.6.0
     restart: always
     command: staff
+    environment:
+      GOVER_HOSTNAME: "https://{{ HOSTNAME }}" # Die Adresse wird vom Entrypoint-Skript für den Health-Check der API benötigt. Passen Sie den Hostnamen unbedingt an.
     networks:
       - common
     labels:
@@ -208,6 +210,8 @@ services:
     image: ghcr.io/aivot-digital/gover:4.6.0
     restart: always
     command: customer
+    environment:
+      GOVER_HOSTNAME: "https://{{ HOSTNAME }}" # Die Adresse wird vom Entrypoint-Skript für den Health-Check der API benötigt. Passen Sie den Hostnamen unbedingt an.
     networks:
       - common
     labels:
