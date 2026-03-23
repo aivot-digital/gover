@@ -7,6 +7,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import jakarta.annotation.Nonnull;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -21,6 +22,8 @@ public class ProcessNodeFilter implements Filter<ProcessNodeEntity> {
     private String processNodeDefinitionVersion;
 
     private Map<String, String> configEquals = new HashMap<>();
+
+    private List<Specification<ProcessNodeEntity>> additionalSpecifications = new LinkedList<>();
 
     public static ProcessNodeFilter create() {
         return new ProcessNodeFilter();
@@ -42,6 +45,10 @@ public class ProcessNodeFilter implements Filter<ProcessNodeEntity> {
         for (var entry : configEquals.entrySet()) {
             builder = builder
                     .withJsonEquals("configuration", List.of(entry.getKey().split("\\.")), entry.getValue());
+        }
+
+        for (var spec : additionalSpecifications) {
+            builder = builder.withSpecification(spec);
         }
 
         return builder.build();
@@ -110,8 +117,13 @@ public class ProcessNodeFilter implements Filter<ProcessNodeEntity> {
         return this;
     }
 
-    public ProcessNodeFilter addConfigEquals(String formId, String string) {
-        configEquals.put(formId, string);
+    public ProcessNodeFilter addConfigEquals(String field, String value) {
+        configEquals.put(field, value);
+        return this;
+    }
+
+    public ProcessNodeFilter addAdditionalSpecification(Specification<ProcessNodeEntity> specification) {
+        additionalSpecifications.add(specification);
         return this;
     }
 }
