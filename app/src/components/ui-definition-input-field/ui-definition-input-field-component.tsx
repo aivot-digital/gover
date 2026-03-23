@@ -42,6 +42,8 @@ function buildSummary(value?: UiDefinitionInputFieldElementItem | null): string 
 }
 
 export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldComponentProps) {
+    const theme = useTheme();
+
     const {
         label,
         hint,
@@ -223,6 +225,8 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                     value={draftValue ?? value ?? defaultValue}
                                     onChange={setDraftValue}
                                     editable={!disabled}
+                                    // The tree editor drawer needs to know the surrounding dialog layer.
+                                    parentModalZIndex={theme.zIndex.modal}
                                 />
                             </Allotment.Pane>
                         </Allotment>

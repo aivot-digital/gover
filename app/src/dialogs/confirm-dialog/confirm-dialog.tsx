@@ -16,7 +16,6 @@ interface ConfirmDialogProps {
     confirmButtonText?: string;
     hideCancelButton?: boolean;
     width?: 'sm' | 'md' | 'lg' | 'xl';
-    zIndex?: number;
 }
 
 export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>): ReactNode {
@@ -41,9 +40,6 @@ export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>): Rea
             onClose={props.onCancel}
             fullWidth={true}
             maxWidth={props.width || 'sm'}
-            sx={{
-                zIndex: props.zIndex,
-            }}
         >
             <DialogTitleWithClose onClose={props.onCancel}>
                 {props.title}

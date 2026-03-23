@@ -1,5 +1,6 @@
 import {Box, Breadcrumbs, Button, Drawer, Tab, Tabs, Typography} from '@mui/material';
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
+import {createTheme, ThemeProvider, useTheme} from '@mui/material/styles';
 import {AnyElement} from '../../../models/elements/any-element';
 import {useElementTreeContext} from '../element-tree-context';
 import {useConfirm} from '../../../providers/confirm-provider';
@@ -25,6 +26,7 @@ interface ElementTreeEditorProps<T extends AnyElement> {
 
 export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditorProps<T>): React.ReactNode | null {
     const showConfirm = useConfirm();
+    const theme = useTheme();
 
     const {
         currentEditorTab,
@@ -34,6 +36,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
     const {
         root,
         editable,
+        parentModalZIndex,
     } = useElementTreeContext();
 
     const {
@@ -61,6 +64,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
     const handleClose = async (): Promise<void> => {
         if (updatedElement != null) {
             const confirmed = await showConfirm({
+                theme: drawerTheme,
                 title: 'Änderungen verwerfen?',
                 confirmButtonText: 'Ja, verwerfen',
                 children: (
@@ -82,242 +86,263 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
 
     const isRoot = root === value;
 
-    if (!open) {
-        return null;
-    }
+    const drawerTheme = useMemo(() => {
+        if (parentModalZIndex == null) {
+            return theme;
+        }
+
+        // Move the whole drawer modal layer above the parent dialog and keep nested dialogs above the drawer.
+        const drawerZIndex = Math.max(theme.zIndex.drawer, parentModalZIndex + 10);
+        const modalZIndex = Math.max(theme.zIndex.modal, drawerZIndex + 10);
+
+        if (drawerZIndex === theme.zIndex.drawer && modalZIndex === theme.zIndex.modal) {
+            return theme;
+        }
+
+        return createTheme(theme, {
+            zIndex: {
+                ...theme.zIndex,
+                drawer: drawerZIndex,
+                modal: modalZIndex,
+            },
+        });
+    }, [parentModalZIndex, theme]);
+
 
     return (
-        <Drawer
-            variant="persistent"
-            anchor="right"
-            open={open}
-            slotProps={{
-                paper: {
-                    sx: {
-                        width: {
-                            xs: '100%',
-                            sm: '100%',
-                            md: '90%',
-                            lg: '85%',
-                            xl: '75%',
+        <ThemeProvider theme={drawerTheme}>
+            <Drawer
+                anchor="right"
+                open={open}
+                slotProps={{
+                    paper: {
+                        sx: {
+                            width: {
+                                xs: '100%',
+                                sm: '100%',
+                                md: '90%',
+                                lg: '85%',
+                                xl: '75%',
+                            },
+                            maxWidth: '1720px',
                         },
-                        maxWidth: '1720px',
                     },
-                },
-            }}
-            onClose={handleClose}
-        >
-            <Box
-                sx={{
-                    height: '100vh',
-                    display: 'flex',
-                    flexDirection: 'column',
                 }}
+                onClose={handleClose}
             >
                 <Box
                     sx={{
+                        height: '100vh',
                         display: 'flex',
-                        px: 2,
-                        py: 1,
+                        flexDirection: 'column',
                     }}
                 >
-                    <Typography
-                        variant="h6"
-                        component="div"
+                    <Box
                         sx={{
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            mr: 2,
+                            display: 'flex',
+                            px: 2,
+                            py: 1,
                         }}
                     >
-                        {generateComponentTitle(value)} ({getElementNameForType(value.type)})
-                    </Typography>
+                        <Typography
+                            variant="h6"
+                            component="div"
+                            sx={{
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                mr: 2,
+                            }}
+                        >
+                            {generateComponentTitle(value)} ({getElementNameForType(value.type)})
+                        </Typography>
 
-                    <Breadcrumbs
-                        sx={{
-                            ml: 'auto',
-                            color: 'text.secondary',
-                            '& a': {
+                        <Breadcrumbs
+                            sx={{
+                                ml: 'auto',
                                 color: 'text.secondary',
-                                textDecoration: 'none',
-                                '&:hover': {
-                                    textDecoration: 'underline',
+                                '& a': {
+                                    color: 'text.secondary',
+                                    textDecoration: 'none',
+                                    '&:hover': {
+                                        textDecoration: 'underline',
+                                    },
                                 },
-                            },
+                            }}
+                            maxItems={3}
+                        >
+                            {
+                                props
+                                    .parents
+                                    .map((element) => (
+                                        <a
+                                            href={createElementEditorNavigationLink(element.id)}
+                                        >
+                                            {generateComponentTitle(element)}
+                                        </a>
+                                    ))
+                            }
+                        </Breadcrumbs>
+                    </Box>
+
+                    <Tabs
+                        value={currentEditorTab}
+                        onChange={(_, newTab) => {
+                            handleSetCurrentTab(newTab);
                         }}
-                        maxItems={3}
+                        variant="scrollable"
+                        scrollButtons="auto"
                     >
+                        <Tab
+                            label="Eigenschaften"
+                            value={DefaultTabs.properties}
+                        />
+
+                        <Box
+                            sx={{
+                                height: 24,
+                                alignSelf: 'center',
+                                borderLeft: '1px solid',
+                                borderColor: 'divider',
+                                mx: 1,
+                            }}
+                        />
+
                         {
-                            props
-                                .parents
-                                .map((element) => (
-                                    <a
-                                        href={createElementEditorNavigationLink(element.id)}
-                                    >
-                                        {generateComponentTitle(element)}
-                                    </a>
-                                ))
+                            // The root of an element tree cannot have visibility.
+                            !isRoot &&
+                            <Tab
+                                label="Sichtbarkeit"
+                                value={DefaultTabs.visibility}
+                            />
                         }
-                    </Breadcrumbs>
-                </Box>
 
-                <Tabs
-                    value={currentEditorTab}
-                    onChange={(_, newTab) => {
-                        handleSetCurrentTab(newTab);
-                    }}
-                    variant="scrollable"
-                    scrollButtons="auto"
-                >
-                    <Tab
-                        label="Eigenschaften"
-                        value={DefaultTabs.properties}
-                    />
+                        {
+                            ElementIsInput[value.type] &&
+                            <Tab
+                                label="Validierung"
+                                value={DefaultTabs.validation}
+                            />
+                        }
+
+                        {
+                            ElementIsInput[value.type] &&
+                            <Tab
+                                label="Dynamischer Wert"
+                                value={DefaultTabs.value}
+                            />
+                        }
+
+                        {
+                            // The root of an element tree cannot have visibility.
+                            <Tab
+                                label="Dynamische Struktur"
+                                value={DefaultTabs.patch}
+                            />
+                        }
+
+                        <Box
+                            sx={{
+                                height: 24,
+                                alignSelf: 'center',
+                                borderLeft: '1px solid',
+                                borderColor: 'divider',
+                                mx: 1,
+                            }}
+                        />
+
+                        <Tab
+                            label="Elementstruktur"
+                            value={DefaultTabs.structure}
+                        />
+                    </Tabs>
 
                     <Box
                         sx={{
-                            height: 24,
-                            alignSelf: 'center',
-                            borderLeft: '1px solid',
-                            borderColor: 'divider',
-                            mx: 1,
-                        }}
-                    />
-
-                    {
-                        // The root of an element tree cannot have visibility.
-                        !isRoot &&
-                        <Tab
-                            label="Sichtbarkeit"
-                            value={DefaultTabs.visibility}
-                        />
-                    }
-
-                    {
-                        ElementIsInput[value.type] &&
-                        <Tab
-                            label="Validierung"
-                            value={DefaultTabs.validation}
-                        />
-                    }
-
-                    {
-                        ElementIsInput[value.type] &&
-                        <Tab
-                            label="Dynamischer Wert"
-                            value={DefaultTabs.value}
-                        />
-                    }
-
-                    {
-                        // The root of an element tree cannot have visibility.
-                        <Tab
-                            label="Dynamische Struktur"
-                            value={DefaultTabs.patch}
-                        />
-                    }
-
-                    <Box
-                        sx={{
-                            height: 24,
-                            alignSelf: 'center',
-                            borderLeft: '1px solid',
-                            borderColor: 'divider',
-                            mx: 1,
-                        }}
-                    />
-
-                    <Tab
-                        label="Elementstruktur"
-                        value={DefaultTabs.structure}
-                    />
-                </Tabs>
-
-                <Box
-                    sx={{
-                        flex: '1',
-                        overflowY: 'scroll',
-                        borderTop: '1px solid #E0E0E0',
-                        p: 4,
-                    }}
-                >
-                    <ElementTreeEditorContextProvider
-                        value={{
-                            currentElement: updatedElement ?? value,
-                            onChangeCurrentElement: (updated) => {
-                                setUpdatedElement(updated);
-                            },
-                            parents: parents,
+                            flex: '1',
+                            overflowY: 'scroll',
+                            borderTop: '1px solid #E0E0E0',
+                            p: 4,
                         }}
                     >
-                        <ElementTreeEditorContentDispatcher
-                            element={updatedElement ?? value}
-                            currentTab={currentEditorTab}
-                            onChange={(changedElement) => {
-                                setUpdatedElement({
-                                    ...(updatedElement ?? value),
-                                    ...changedElement,
+                        <ElementTreeEditorContextProvider
+                            value={{
+                                currentElement: updatedElement ?? value,
+                                onChangeCurrentElement: (updated) => {
+                                    setUpdatedElement(updated);
+                                },
+                                parents: parents,
+                            }}
+                        >
+                            <ElementTreeEditorContentDispatcher
+                                element={updatedElement ?? value}
+                                currentTab={currentEditorTab}
+                                onChange={(changedElement) => {
+                                    setUpdatedElement({
+                                        ...(updatedElement ?? value),
+                                        ...changedElement,
+                                    });
+                                }}
+                                editable={editable}
+                            />
+                        </ElementTreeEditorContextProvider>
+                    </Box>
+
+                    <Box
+                        sx={{
+                            p: 4,
+                            display: 'flex',
+                            gap: 2,
+                        }}
+                    >
+                        <Button
+                            variant="contained"
+                            onClick={() => {
+                                if (updatedElement != null) {
+                                    onChange(updatedElement);
+                                } else {
+                                    handleClose();
+                                }
+                            }}
+                        >
+                            Speichern
+                        </Button>
+
+                        <Button
+                            onClick={() => {
+                                handleClose();
+                            }}
+                        >
+                            Abbrechen
+                        </Button>
+
+                        <Button
+                            color="error"
+                            sx={{
+                                ml: 'auto',
+                            }}
+                            onClick={() => {
+                                showConfirm({
+                                    theme: drawerTheme,
+                                    title: 'Element löschen',
+                                    confirmButtonText: 'Löschen',
+                                    children: (
+                                        <Typography>
+                                            Soll das Element wirklich gelöscht werden?
+                                        </Typography>
+                                    ),
+                                }).then((confirmed) => {
+                                    if (confirmed) {
+                                        onDelete();
+                                    }
                                 });
                             }}
-                            editable={editable}
-                        />
-                    </ElementTreeEditorContextProvider>
+                        >
+                            Löschen
+                        </Button>
+                    </Box>
                 </Box>
-
-                <Box
-                    sx={{
-                        p: 4,
-                        display: 'flex',
-                        gap: 2,
-                    }}
-                >
-                    <Button
-                        variant="contained"
-                        onClick={() => {
-                            if (updatedElement != null) {
-                                onChange(updatedElement);
-                            } else {
-                                handleClose();
-                            }
-                        }}
-                    >
-                        Speichern
-                    </Button>
-
-                    <Button
-                        onClick={() => {
-                            handleClose();
-                        }}
-                    >
-                        Abbrechen
-                    </Button>
-
-                    <Button
-                        color="error"
-                        sx={{
-                            ml: 'auto',
-                        }}
-                        onClick={() => {
-                            showConfirm({
-                                title: 'Element löschen',
-                                confirmButtonText: 'Löschen',
-                                children: (
-                                    <Typography>
-                                        Soll das Element wirklich gelöscht werden?
-                                    </Typography>
-                                ),
-                            }).then((confirmed) => {
-                                if (confirmed) {
-                                    onDelete();
-                                }
-                            });
-                        }}
-                    >
-                        Löschen
-                    </Button>
-                </Box>
-            </Box>
-        </Drawer>
+            </Drawer>
+        </ThemeProvider>
     );
 }

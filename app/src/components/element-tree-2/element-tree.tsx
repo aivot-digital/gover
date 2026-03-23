@@ -26,6 +26,7 @@ export interface ElementTreeProps<T extends AnyElement> {
     value: T;
     onChange: (patch: T) => void;
     editable: boolean;
+    parentModalZIndex?: number;
 }
 
 interface ElementTreeSearchResult {
@@ -39,6 +40,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
         value,
         onChange,
         editable,
+        parentModalZIndex,
     } = props;
 
     const {
@@ -409,6 +411,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                             value={{
                                 root: value,
                                 editable: editable,
+                                parentModalZIndex: parentModalZIndex,
                                 scrollToElement: handleScrollToElement,
                                 canDropElement: canDropElement,
                                 moveElement: moveElement,

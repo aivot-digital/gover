@@ -21,6 +21,7 @@ export const ELEMENT_TREE_DND_ITEM_TYPE = 'element-tree-item';
 export interface ElementTreeContextType {
     root: AnyElement;
     editable: boolean;
+    parentModalZIndex?: number;
     scrollToElement: (elementPath: string) => void;
     canDropElement: (dragItem: ElementTreeDragItem, targetParentPath: string[], targetIndex: number) => boolean;
     moveElement: (dragItem: ElementTreeDragItem, targetParentPath: string[], targetIndex: number) => void;
