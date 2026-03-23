@@ -14,6 +14,7 @@ interface VDepartmentMembershipWithDetailsFilter {
     verified: boolean;
     globalAdmin: boolean;
     deletedInIdp: boolean;
+    domainRoleId: number;
 }
 
 export interface ListDepartmentMembershipsWithRolesFilter {

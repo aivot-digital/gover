@@ -91,7 +91,7 @@ export function UserRolesDetailsPageDepartmentMemberships() {
                     fetch={(options) => {
                         return new VDepartmentMembershipWithDetailsService()
                             .list(options.page, options.size, options.sort, options.order, {
-                                //userRoleId: userRole.id,
+                                domainRoleId: userRole.id,
                                 userFullName: options.search,
                             });
                     }}
