@@ -72,8 +72,7 @@ services:
     environment:
       KC_HTTP_ENABLED: true
       KC_PROXY_HEADERS: xforwarded
-      KC_HOSTNAME: "{{ HOSTNAME }}" # Setzen Sie den Hostnamen unter dem Keycloak erreichbar ist. Passen Sie diesen Hostnamen unbedingt an.
-      KC_HOSTNAME_PATH: /idp
+      KC_HOSTNAME: "https://{{ HOSTNAME }}/idp" # Setzen Sie die vollständige URL unter der Keycloak erreichbar ist (inkl. Protokoll und Pfad). Passen Sie diese URL unbedingt an.
       KC_HTTP_RELATIVE_PATH: /idp
 
       KC_HEALTH_ENABLED: true
