@@ -15,10 +15,14 @@ export const OriginTableLabels: Record<ServerEntityType, string> = {
     [ServerEntityType.ProviderLinks]: 'Link',
     [ServerEntityType.Secrets]: 'Geheimnis',
     [ServerEntityType.Submissions]: 'Vorgang',
+    [ServerEntityType.Teams]: 'Team',
     [ServerEntityType.Themes]: 'Farbschema',
     [ServerEntityType.UserRoles]: 'Domänenrolle',
+    [ServerEntityType.DomainRoles]: 'Domänenrolle',
     [ServerEntityType.SystemRoles]: 'Systemrolle',
     [ServerEntityType.StorageProviders]: 'Speicheranbieter',
+    [ServerEntityType.Processes]: 'Prozess',
+    [ServerEntityType.ProcessInstances]: 'Vorgang',
 };
 
 export const OriginTableIcons: Record<ServerEntityType, ReactNode> = {
@@ -34,9 +38,12 @@ export const OriginTableIcons: Record<ServerEntityType, ReactNode> = {
     [ServerEntityType.ProviderLinks]: ModuleIcons.providerLinks,
     [ServerEntityType.Secrets]: ModuleIcons.secrets,
     [ServerEntityType.Submissions]: ModuleIcons.submissions,
+    [ServerEntityType.Teams]: ModuleIcons.teams,
     [ServerEntityType.Themes]: ModuleIcons.themes,
     [ServerEntityType.UserRoles]: ModuleIcons.roles,
+    [ServerEntityType.DomainRoles]: ModuleIcons.roles,
     [ServerEntityType.SystemRoles]: ModuleIcons.roles,
     [ServerEntityType.StorageProviders]: ModuleIcons.storage,
-
+    [ServerEntityType.Processes]: ModuleIcons.processes,
+    [ServerEntityType.ProcessInstances]: ModuleIcons.submissions,
 };
