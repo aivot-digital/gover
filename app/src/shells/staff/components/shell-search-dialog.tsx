@@ -132,7 +132,10 @@ export function ShellSearchDialog() {
                     <InputBase
                         placeholder="Suche…"
                         value={search}
-                        onChange={(e) => setSearch(e.target.value)}
+                        onChange={(e) => {
+                            setSearch(e.target.value);
+                            setPage(0);
+                        }}
                         fullWidth
                         autoFocus
                         sx={{
