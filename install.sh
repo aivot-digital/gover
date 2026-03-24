@@ -15,7 +15,7 @@ if [ ! -f .env ]; then
 # --------------------------------- Manuelle Werte - bitte ausfüllen ---------------------------------
 
 # Der Hostname, unter dem die Gover-Anwendung erreichbar sein soll (z.B. https://example.com)
-HOSTNAME=example.com
+HOSTNAME=https://example.com
 
 # Smtp Server Details
 SMTP_HOST=smtp.example.com
