@@ -9,8 +9,10 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -175,6 +177,9 @@ public class AuditLogPayload {
     @SuppressWarnings("unchecked")
     private static Object createValueDiff(@Nullable Object oldValue,
                                           @Nullable Object newValue) {
+        oldValue = normalizeNestedValue(oldValue);
+        newValue = normalizeNestedValue(newValue);
+
         if (Objects.equals(oldValue, newValue)) {
             return null;
         }
@@ -187,11 +192,91 @@ public class AuditLogPayload {
             return null;
         }
 
+        if (oldValue instanceof List<?> && newValue instanceof List<?>) {
+            var nestedDiff = createListDiff((List<Object>) oldValue, (List<Object>) newValue);
+            if (nestedDiff != null && !nestedDiff.isEmpty()) {
+                return nestedDiff;
+            }
+            return null;
+        }
+
         var map = new HashMap<String, Object>();
         map.put("old", oldValue);
         map.put("new", newValue);
 
         return map;
+    }
+
+    @Nullable
+    private static Map<String, Object> createListDiff(@Nonnull List<Object> oldValue,
+                                                      @Nonnull List<Object> newValue) {
+        var diff = new HashMap<String, Object>();
+        var maxSize = Math.max(oldValue.size(), newValue.size());
+
+        for (var i = 0; i < maxSize; i++) {
+            var oldItem = i < oldValue.size() ? oldValue.get(i) : null;
+            var newItem = i < newValue.size() ? newValue.get(i) : null;
+
+            var valueDiff = createValueDiff(oldItem, newItem);
+            if (valueDiff != null) {
+                diff.put(String.valueOf(i), valueDiff);
+            }
+        }
+
+        return diff.isEmpty() ? null : diff;
+    }
+
+    @Nullable
+    @SuppressWarnings("unchecked")
+    private static Object normalizeNestedValue(@Nullable Object value) {
+        if (value == null || isSimpleValue(value)) {
+            return value;
+        }
+
+        if (value instanceof Map<?, ?> rawMap) {
+            var normalized = new HashMap<String, Object>();
+            for (var entry : rawMap.entrySet()) {
+                normalized.put(String.valueOf(entry.getKey()), normalizeNestedValue(entry.getValue()));
+            }
+            return normalized;
+        }
+
+        if (value instanceof List<?> list) {
+            var normalized = new ArrayList<>();
+            for (var item : list) {
+                normalized.add(normalizeNestedValue(item));
+            }
+            return normalized;
+        }
+
+        if (value instanceof Iterable<?> iterable) {
+            var normalized = new ArrayList<>();
+            for (var item : iterable) {
+                normalized.add(normalizeNestedValue(item));
+            }
+            return normalized;
+        }
+
+        if (value.getClass().isArray()) {
+            var array = OBJECT_MAPPER.convertValue(value, List.class);
+            return normalizeNestedValue(array);
+        }
+
+        var converted = OBJECT_MAPPER.convertValue(value, Object.class);
+        if (converted == value) {
+            return value;
+        }
+
+        return normalizeNestedValue(converted);
+    }
+
+    private static boolean isSimpleValue(@Nonnull Object value) {
+        return value instanceof String
+                || value instanceof Number
+                || value instanceof Boolean
+                || value instanceof Character
+                || value instanceof Enum<?>
+                || value instanceof LocalDateTime;
     }
 
     @Nullable
