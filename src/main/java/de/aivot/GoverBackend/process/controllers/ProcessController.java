@@ -159,13 +159,11 @@ public class ProcessController {
     )
     public ProcessEntity importProc(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @RequestBody @Valid ProcessExportService.ProcessExport processExport
+            @Nonnull @RequestBody @Valid ProcessExportService.ProcessExport exportData
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
-
-        var exportData = processExport.data();
 
         var department = departmentService
                 .retrieve(exportData.process().getDepartmentId())

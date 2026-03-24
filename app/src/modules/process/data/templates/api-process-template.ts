@@ -1,10 +1,10 @@
-import {ProcessExportData} from '../../entities/process-export';
+import {ProcessExport} from '../../entities/process-export';
 import {ProcessDefinitionApiService} from '../../services/process-definition-api-service';
 import {ProcessDefinitionVersionApiService} from '../../services/process-definition-version-api-service';
 import {ProcessStatus} from '../../enums/process-status';
 import {AppInfo} from '../../../../app-info';
 
-export const ApiProcessTemplate: ProcessExportData = {
+export const ApiProcessTemplate: ProcessExport = {
     appVersion: AppInfo.version,
     exportTimestamp: new Date().toISOString(),
     createdByVendor: 'Aivot',
@@ -164,7 +164,7 @@ export const ApiProcessTemplate: ProcessExportData = {
             'id': 79,
             'processId': 8,
             'processVersion': 1,
-            'name': 'Vollständikeitsprüfung',
+            'name': 'Vollständigkeitsprüfung',
             'description': 'Prüfung der Daten auf Vollständigkeit.',
             'dataKey': 'aw5H8',
             'processNodeDefinitionKey': 'de.aivot.core.data_type_validation',
@@ -243,8 +243,7 @@ export const ApiProcessTemplate: ProcessExportData = {
             'processVersion': 1,
             'fromNodeId': 85,
             'toNodeId': 84,
-            'viaPort':
-                'output',
+            'viaPort': 'output',
         },
     ],
 };
