@@ -1056,7 +1056,7 @@ export function ProcessDetailsPage(): ReactNode {
         new ProcessDefinitionApiService()
             .export(processId, processVersion)
             .then((exp) => {
-                downloadObjectFile(`${exp.data.process.internalTitle} - ${exp.data.version.processVersion}.json`, exp);
+                downloadObjectFile(`${exp.process.internalTitle} - ${exp.version.processVersion}.json`, exp);
             })
             .catch((error) => {
                 dispatch(showApiErrorSnackbar(error, 'Der Prozess konnte nicht exportiert werden.'));
