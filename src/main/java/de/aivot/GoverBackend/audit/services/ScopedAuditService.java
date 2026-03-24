@@ -36,8 +36,8 @@ public class ScopedAuditService {
         var request = getCurrentRequest();
 
         var timestamp = payload.getTimestamp() != null ? payload.getTimestamp() : LocalDateTime.now();
-        var actorType = firstNonBlank(payload.getActorType(), request != null ? AuditLogPayload.ACTOR_TYPE_USER : AuditLogPayload.ACTOR_TYPE_SYSTEM);
-        var actorId = payload.getActorId();
+        var actorId = trimToNull(payload.getActorId());
+        var actorType = firstNonBlank(payload.getActorType(), actorId != null ? AuditLogPayload.ACTOR_TYPE_USER : AuditLogPayload.ACTOR_TYPE_SYSTEM);
 
         var triggerType = firstNonBlank(payload.getTriggerType(), "Message");
 
@@ -125,5 +125,19 @@ public class ScopedAuditService {
         }
 
         return first;
+    }
+
+    @Nullable
+    private String trimToNull(@Nullable String value) {
+        if (value == null) {
+            return null;
+        }
+
+        var trimmedValue = value.trim();
+        if (trimmedValue.isEmpty()) {
+            return null;
+        }
+
+        return trimmedValue;
     }
 }
