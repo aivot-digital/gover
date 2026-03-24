@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
 @Component
 public class AVService {
@@ -121,17 +122,7 @@ public class AVService {
 
             var response = readScannerResponse(responseStream);
             var resolvedFilename = resolveFilename(filename);
-            if ("stream: OK".equalsIgnoreCase(response)) {
-                return;
-            }
-
-            if (response.toUpperCase().contains("ERROR")) {
-                throw new AVCheckFailedException(
-                        String.format("Der Virenscanner konnte die Datei \"%s\" nicht prüfen: %s", resolvedFilename, response)
-                );
-            }
-
-            throw new AVVirusFoundException(resolvedFilename, response);
+            validateScannerResponse(response, resolvedFilename);
         } catch (IOException ex) {
             throw new AVCheckFailedException(
                     String.format("Die Verbindung zum Virenscanner ist fehlgeschlagen: %s", ex.getMessage()),
@@ -173,6 +164,26 @@ public class AVService {
         }
 
         return rawTimeout;
+    }
+
+    static void validateScannerResponse(String response, String filename) throws AVCheckFailedException, AVVirusFoundException {
+        if ("stream: OK".equalsIgnoreCase(response)) {
+            return;
+        }
+
+        if (response == null || response.isBlank()) {
+            throw new AVCheckFailedException(
+                    String.format("Der Virenscanner hat für die Datei \"%s\" keine verwertbare Antwort geliefert.", filename)
+            );
+        }
+
+        if (response.toUpperCase(Locale.ROOT).contains("ERROR")) {
+            throw new AVCheckFailedException(
+                    String.format("Der Virenscanner konnte die Datei \"%s\" nicht prüfen: %s", filename, response)
+            );
+        }
+
+        throw new AVVirusFoundException(filename, response);
     }
 
     private static String readScannerResponse(InputStream responseStream) throws IOException {
