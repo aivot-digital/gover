@@ -73,6 +73,8 @@ public class SubmitStepElement extends BaseStepElement implements InputElement<M
                 throw new ValidationException(this, "Captcha-Verifizierung fehlgeschlagen. Bitte erneut bestätigen.");
             }
 
+        } catch (ValidationException e) {
+            throw e;
         } catch (Exception e) {
             throw new ValidationException(this, "Verifizierung des Captcha fehlgeschlagen.");
         }
