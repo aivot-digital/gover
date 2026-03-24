@@ -13,8 +13,6 @@ import {useConfirm} from '../../../../providers/confirm-provider';
 import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
 import {getTriggerTypeColor, getTriggerTypeIcon, getTriggerTypeLabel} from '../../data/trigger-type';
 import {getActorTypeColor, getActorTypeIcon, getActorTypeLabel} from '../../data/actor-type';
-import {UsersApiService} from '../../../users/users-api-service';
-import {User} from '../../../users/models/user';
 import {AuditLogDetailsDialogContent} from './audit-log-details-dialog-content';
 import {ChipInputFieldComponent} from '../../../../components/chip-input-field/chip-input-field-component';
 
@@ -94,7 +92,6 @@ export function AuditLogsListPage(): ReactNode {
             ?.some((entry) => entry.permissions.includes(AUDIT_LOG_READ_PERMISSION)) ?? false;
     }, [permissions]);
 
-    const [usersById, setUsersById] = useState<Record<string, User | undefined>>({});
     const [filterOptions, setFilterOptions] = useState<AuditLogFilterOptions>({
         modules: [],
         triggerTypes: [],
@@ -105,19 +102,35 @@ export function AuditLogsListPage(): ReactNode {
     const [selectedActors, setSelectedActors] = useState<string[] | undefined>(undefined);
 
     useEffect(() => {
+        if (!hasReadAccess) {
+            return;
+        }
+
+        let cancelled = false;
         new AuditLogsApiService()
             .getFilterOptions()
             .then((result) => {
-                setFilterOptions(result);
+                if (!cancelled) {
+                    setFilterOptions(result);
+                }
             })
             .catch((error) => {
                 console.error(error);
             });
-    }, []);
+        return () => {
+            cancelled = true;
+        };
+    }, [hasReadAccess]);
 
     const actorLabelToValue = useMemo(() => {
         return Object.fromEntries(
             filterOptions.actors.map((entry) => [entry.label, entry.value]),
+        );
+    }, [filterOptions.actors]);
+
+    const actorValueToLabel = useMemo(() => {
+        return Object.fromEntries(
+            filterOptions.actors.map((entry) => [entry.value, entry.label]),
         );
     }, [filterOptions.actors]);
 
@@ -211,34 +224,7 @@ export function AuditLogsListPage(): ReactNode {
                         sortField,
                         sortOrder,
                         filter,
-                    ).then(async (result) => {
-                        const userIds = result.content
-                            .filter((entry) => entry.actorType === 'User' && entry.actorId != null && entry.actorId.trim().length > 0)
-                            .map((entry) => entry.actorId!.trim())
-                            .filter((value, index, array) => array.indexOf(value) === index);
-
-                        const unresolvedIds = userIds
-                            .filter((id) => usersById[id] == null);
-
-                        if (unresolvedIds.length > 0) {
-                            const loadedUsers = await Promise.all(unresolvedIds.map(async (id) => {
-                                try {
-                                    const user = await new UsersApiService().retrieve(id);
-                                    return [id, user] as const;
-                                } catch (e) {
-                                    console.error(e);
-                                    return [id, undefined] as const;
-                                }
-                            }));
-
-                            setUsersById((previous) => ({
-                                ...previous,
-                                ...Object.fromEntries(loadedUsers),
-                            }));
-                        }
-
-                        return result;
-                    });
+                    );
                 }}
                 columnIcon={ModuleIcons.audit}
                 columnDefinitions={[
@@ -303,9 +289,8 @@ export function AuditLogsListPage(): ReactNode {
                             const actorType = params.row.actorType;
                             const actorId = params.row.actorId?.trim() || undefined;
                             const isUser = actorType === 'User';
-                            const actorUser = actorId != null ? usersById[actorId] : undefined;
                             const actorLabel = isUser
-                                ? (actorUser?.fullName?.trim() || actorId || getActorTypeLabel(actorType))
+                                ? ((actorId != null ? actorValueToLabel[actorId] : undefined) || actorId || getActorTypeLabel(actorType))
                                 : getActorTypeLabel(actorType);
                             const Icon = getActorTypeIcon(actorType);
 
@@ -355,7 +340,7 @@ export function AuditLogsListPage(): ReactNode {
                                 children: (
                                     <AuditLogDetailsDialogContent
                                         row={row}
-                                        usersById={usersById}
+                                        actorLabelsById={actorValueToLabel}
                                     />
                                 ),
                             });

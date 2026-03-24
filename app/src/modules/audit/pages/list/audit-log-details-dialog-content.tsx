@@ -1,13 +1,12 @@
 import React, {type ReactNode} from 'react';
 import {Box, Button, Chip, Typography} from '@mui/material';
 import {AuditLogEntity} from '../../models/audit-log-entity';
-import {User} from '../../../users/models/user';
 import {getActorTypeColor, getActorTypeIcon, getActorTypeLabel} from '../../data/actor-type';
 import {getTriggerTypeColor, getTriggerTypeIcon, getTriggerTypeLabel} from '../../data/trigger-type';
 
 interface AuditLogDetailsDialogContentProps {
     row: AuditLogEntity;
-    usersById: Record<string, User | undefined>;
+    actorLabelsById: Record<string, string | undefined>;
 }
 
 function parseDate(value: string): Date | undefined {
@@ -52,9 +51,8 @@ async function copyToClipboard(value: string): Promise<void> {
 export function AuditLogDetailsDialogContent(props: AuditLogDetailsDialogContentProps): ReactNode {
     const actorId = props.row.actorId?.trim() || undefined;
     const actorIsUser = props.row.actorType === 'User';
-    const actorUser = actorId != null ? props.usersById[actorId] : undefined;
     const actorLabel = actorIsUser
-        ? (actorUser?.fullName?.trim() || actorId || getActorTypeLabel(props.row.actorType))
+        ? ((actorId != null ? props.actorLabelsById[actorId] : undefined) || actorId || getActorTypeLabel(props.row.actorType))
         : getActorTypeLabel(props.row.actorType);
     const ActorIcon = getActorTypeIcon(props.row.actorType);
     const TriggerIcon = getTriggerTypeIcon(props.row.triggerType);
