@@ -33,11 +33,11 @@ export function isAuthoredElementValues(obj: any): obj is AuthoredElementValues 
     return obj != null && typeof obj === 'object' && !Array.isArray(obj);
 }
 
-export function isEffectiveValues(obj: any): obj is AuthoredElementValues {
+export function isEffectiveValues(obj: any): obj is EffectiveElementValues {
     return obj != null && typeof obj === 'object' && !Array.isArray(obj);
 }
 
-export function isElementStates(obj: any): obj is AuthoredElementValues {
+export function isElementStates(obj: any): obj is ComputedElementStates {
     return obj != null && typeof obj === 'object' && !Array.isArray(obj);
 }
 
