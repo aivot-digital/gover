@@ -118,11 +118,13 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
 
         if (existingEntity.getSystemProvider()) {
             if (entity.getStatus() == StorageProviderStatus.SyncPending) {
-                storageProviderRepository.save(
+                var res = storageProviderRepository.save(
                         existingEntity
                                 .setStatus(StorageProviderStatus.SyncPending)
                 );
-                rabbitTemplate.convertAndSend(StorageSyncWorker.DO_WORK_ON_STORAGE_SYNC_QUEUE, existingEntity.getId());
+                rabbitTemplate.convertAndSend(StorageSyncWorker.DO_WORK_ON_STORAGE_SYNC_QUEUE, res.getId());
+
+                return res;
             } else {
                 throw ResponseException.badRequest("Dieser Speicheranbieter kann nicht bearbeitet werden");
             }
