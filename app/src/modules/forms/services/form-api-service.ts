@@ -110,6 +110,18 @@ export class FormApiService extends BaseCrudApiService<FormEntity, FormEntity, F
         });
     }
 
+    public move(formId: number, targetDepartmentId: number): Promise<void> {
+        return this.putWithoutResponse(
+            `${this.path}${formId}/move/`,
+            {},
+            {
+                query: {
+                    targetDepartmentId,
+                },
+            },
+        );
+    }
+
     public listEditorsForForms(formIds: number[]): Promise<FormEditor[]> {
         return this.get<FormEditor[]>('/api/form-editors/', {
             query: {

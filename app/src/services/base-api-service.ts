@@ -91,6 +91,10 @@ export class BaseApiService {
         return await response.json() as R;
     }
 
+    public async putWithoutResponse<T>(path: string, body: T, options?: RequestOptions): Promise<void> {
+        await this.fetch('PUT', path, JSON.stringify(body), options);
+    }
+
     public async delete(path: string, options?: RequestOptions): Promise<void> {
         await this.fetch('DELETE', path, undefined, options);
     }
