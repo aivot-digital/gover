@@ -27,9 +27,9 @@ export const OriginTableLabels: Record<ServerEntityType, string> = {
 
 export const OriginTableIcons: Record<ServerEntityType, ReactNode> = {
     [ServerEntityType.Assets]: ModuleIcons.assets,
-    [ServerEntityType.Departments]: ModuleIcons.dataObjects,
+    [ServerEntityType.Departments]: ModuleIcons.departments,
     [ServerEntityType.DataObjectItems]: ModuleIcons.dataObjects,
-    [ServerEntityType.DataObjectSchemas]: ModuleIcons.departments,
+    [ServerEntityType.DataObjectSchemas]: ModuleIcons.dataObjects,
     [ServerEntityType.Destinations]: ModuleIcons.destinations,
     [ServerEntityType.Forms]: ModuleIcons.forms,
     [ServerEntityType.IdentityProviders]: ModuleIcons.identity,
