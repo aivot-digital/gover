@@ -65,18 +65,20 @@ public class CaptchaController {
     @SecurityRequirement(name = OpenApiConfiguration.Security)
     public ResponseEntity<CaptchaVerificationResponseDTO> verify(
             @RequestBody CaptchaVerificationRequestDTO request
-    ) throws Exception {
-        if (replayGuard.isUsed(request.payload())) {
-            return ResponseEntity.status(400)
+    ) {
+        try {
+            boolean ok = altchaService.verify(request.payload());
+
+            if (!ok || replayGuard.isUsed(request.payload())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new CaptchaVerificationResponseDTO(false));
+            }
+
+            return ResponseEntity.ok(new CaptchaVerificationResponseDTO(true));
+        } catch (Exception ignored) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new CaptchaVerificationResponseDTO(false));
         }
-
-        boolean ok = altchaService.verify(request.payload());
-
-        return ok
-                ? ResponseEntity.ok(new CaptchaVerificationResponseDTO(true))
-                : ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new CaptchaVerificationResponseDTO(false));
     }
 
     @Bean
