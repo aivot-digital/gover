@@ -240,7 +240,7 @@ public class CitizenProcessInstanceTaskViewController {
         if (res.isEmpty()) {
             return new TaskViewResponse(
                     layout,
-                    null, // TODO: fill correctly from node function
+                    inputs,
                     events
             );
         }
