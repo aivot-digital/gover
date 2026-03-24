@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Objects;
 
 public class AuditLogPayload {
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().findAndRegisterModules();
 
     public static final String ACTOR_TYPE_USER = "User";
     public static final String ACTOR_TYPE_SYSTEM = "System";

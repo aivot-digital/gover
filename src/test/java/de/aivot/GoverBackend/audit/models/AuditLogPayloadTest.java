@@ -225,9 +225,21 @@ class AuditLogPayloadTest {
         ), payload.getDiff());
     }
 
+    @Test
+    void toMapShouldSupportJavaTimeFields() {
+        var timestamp = LocalDateTime.of(2026, 3, 24, 10, 15);
+
+        var result = AuditLogPayload.toMap(new EntityWithTimestamp(timestamp));
+
+        assertEquals(Map.of("timestamp", List.of(2026, 3, 24, 10, 15)), result);
+    }
+
     private record NestedSettings(String mode, List<Object> items) {
     }
 
     private record ArrayAndIterableSettings(String[] channels, Iterable<Map<String, Object>> entries) {
+    }
+
+    private record EntityWithTimestamp(LocalDateTime timestamp) {
     }
 }
