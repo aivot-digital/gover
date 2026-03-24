@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.process.repositories;
 
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
@@ -12,7 +13,11 @@ public interface ProcessInstanceRepository extends JpaRepository<ProcessInstance
     List<ProcessInstanceEntity> findAllByStatus(ProcessInstanceStatus status);
 
     List<ProcessInstanceEntity> findAllByStatusAndKeepUntilLessThanEqual(ProcessInstanceStatus status,
-                                                                         LocalDateTime keepUntil);
+                                                                         LocalDateTime keepUntil,
+                                                                         Pageable pageable);
+
+    long countByStatusAndKeepUntilLessThanEqual(ProcessInstanceStatus status,
+                                                LocalDateTime keepUntil);
 
     List<ProcessInstanceEntity> findAllByCreatedForTestClaimId(Integer createdForTestClaimId);
 }

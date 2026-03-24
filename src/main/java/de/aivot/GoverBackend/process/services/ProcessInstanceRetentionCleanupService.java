@@ -3,6 +3,9 @@ package de.aivot.GoverBackend.process.services;
 import de.aivot.GoverBackend.mail.services.ExceptionMailService;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -18,18 +21,24 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @EnableScheduling
 public class ProcessInstanceRetentionCleanupService {
     private static final Logger logger = LoggerFactory.getLogger(ProcessInstanceRetentionCleanupService.class);
+    private static final int DEFAULT_CLEANUP_BATCH_SIZE = 500;
 
     private final ProcessInstanceRepository processInstanceRepository;
     private final ProcessInstanceService processInstanceService;
     private final ExceptionMailService exceptionMailService;
+    private final int cleanupBatchSize;
     private final AtomicBoolean cleanupRunning = new AtomicBoolean(false);
 
     public ProcessInstanceRetentionCleanupService(ProcessInstanceRepository processInstanceRepository,
                                                   ProcessInstanceService processInstanceService,
-                                                  ExceptionMailService exceptionMailService) {
+                                                  ExceptionMailService exceptionMailService,
+                                                  @Value("${gover.process-instance-retention-cleanup.batch-size:500}") Integer cleanupBatchSize) {
         this.processInstanceRepository = processInstanceRepository;
         this.processInstanceService = processInstanceService;
         this.exceptionMailService = exceptionMailService;
+        this.cleanupBatchSize = cleanupBatchSize != null && cleanupBatchSize > 0
+                ? cleanupBatchSize
+                : DEFAULT_CLEANUP_BATCH_SIZE;
     }
 
     @EventListener(ApplicationReadyEvent.class)
@@ -49,26 +58,50 @@ public class ProcessInstanceRetentionCleanupService {
         }
 
         try {
-            var dueProcessInstances = processInstanceRepository
-                    .findAllByStatusAndKeepUntilLessThanEqual(
+            var now = LocalDateTime.now();
+            var dueProcessInstanceCount = processInstanceRepository
+                    .countByStatusAndKeepUntilLessThanEqual(
                             ProcessInstanceStatus.Completed,
-                            LocalDateTime.now()
+                            now
                     );
 
-            if (dueProcessInstances.isEmpty()) {
+            if (dueProcessInstanceCount == 0) {
                 logger.debug("No due process instances found for retention cleanup (trigger={}).", trigger);
                 return;
             }
 
+            var dueProcessInstances = processInstanceRepository
+                    .findAllByStatusAndKeepUntilLessThanEqual(
+                            ProcessInstanceStatus.Completed,
+                            now,
+                            PageRequest.of(
+                                    0,
+                                    cleanupBatchSize,
+                                    Sort.by(Sort.Order.asc("keepUntil"), Sort.Order.asc("id"))
+                            )
+                    );
+
+            if (dueProcessInstances.isEmpty()) {
+                logger.info(
+                        "Skipping process instance retention cleanup because no due instances were loaded after counting {} candidate(s) (trigger={}).",
+                        dueProcessInstanceCount,
+                        trigger
+                );
+                return;
+            }
+
             logger.info(
-                    "Starting process instance retention cleanup for {} due instance(s) (trigger={}).",
+                    "Starting process instance retention cleanup for {} due instance(s); deleting up to {} in this run (trigger={}).",
+                    dueProcessInstanceCount,
                     dueProcessInstances.size(),
                     trigger
             );
 
+            var deletedProcessInstanceCount = 0;
             for (var processInstance : dueProcessInstances) {
                 try {
                     processInstanceService.deleteEntity(processInstance);
+                    deletedProcessInstanceCount++;
 
                     logger.info(
                             "Deleted retained process instance {} with keep-until timestamp {}.",
@@ -84,6 +117,15 @@ public class ProcessInstanceRetentionCleanupService {
                     exceptionMailService.send(e);
                 }
             }
+
+            var remainingDueProcessInstanceCount = Math.max(dueProcessInstanceCount - deletedProcessInstanceCount, 0);
+            logger.info(
+                    "Finished process instance retention cleanup: deleted {} due instance(s), {} due instance(s) remain for future runs (trigger={}, batchSize={}).",
+                    deletedProcessInstanceCount,
+                    remainingDueProcessInstanceCount,
+                    trigger,
+                    cleanupBatchSize
+            );
         } finally {
             cleanupRunning.set(false);
         }
