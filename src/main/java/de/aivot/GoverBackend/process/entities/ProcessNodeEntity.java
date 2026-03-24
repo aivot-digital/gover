@@ -47,7 +47,7 @@ public class ProcessNodeEntity {
     @Nonnull
     @NotBlank(message = "Der Schlüssel der Prozessknoten-Definition darf nicht leer sein.")
     @NotNull(message = "Der Schlüssel der Prozessknoten-Definition darf nicht null sein.")
-    @Size(min = 1, max = 128, message = "Der Schlüssel der Prozessknoten-Definition muss zwischen 1 und 32 Zeichen lang sein.")
+    @Size(min = 1, max = 128, message = "Der Schlüssel der Prozessknoten-Definition muss zwischen 1 und 128 Zeichen lang sein.")
     private String processNodeDefinitionKey;
 
     @Nonnull
