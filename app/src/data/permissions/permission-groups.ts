@@ -3,9 +3,7 @@ import {Permission} from "./permission";
 export const PermissionGroups: {
     label: string;
     permissions: Permission[];
-}[] = [];
-
-[
+}[] = [
     {
         label: "Assets",
         permissions: [

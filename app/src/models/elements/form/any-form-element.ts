@@ -9,6 +9,10 @@ export type AnyFormElement =
     AnyInputElement |
     AnyLayoutElement;
 
+function isAnyLayoutElement(obj: any): obj is AnyLayoutElement {
+    return isGroupLayout(obj) || isReplicatingContainerLayout(obj);
+}
+
 export function isAnyFormElement(obj: any): obj is AnyFormElement {
-    return isAnyContentElement(obj) || isAnyInputElement(obj) || isGroupLayout(obj) || isReplicatingContainerLayout(obj);
+    return isAnyContentElement(obj) || isAnyInputElement(obj) || isAnyLayoutElement(obj);
 }

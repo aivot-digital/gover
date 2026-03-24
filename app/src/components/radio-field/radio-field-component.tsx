@@ -63,7 +63,6 @@ export function RadioFieldComponent(props: RadioFieldComponentProps) {
                         exclusive={true}
                         value={value ?? null}
                         onChange={(_, newValue: string | null) => {
-                            console.log('RadioFieldComponent -> onChange -> newValue', newValue);
                             onChange(isStringNullOrEmpty(newValue) ? undefined : (newValue ?? undefined));
                         }}
                         fullWidth={!displayInline}

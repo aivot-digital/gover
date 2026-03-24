@@ -66,11 +66,15 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
             onEditorMount(editor);
         }
 
-        editor.onDidBlurEditorText(() => {
+        const blurDisposable = editor.onDidBlurEditorText(() => {
             onBlurRef.current?.(editor.getValue());
         });
 
         monacoApplyTypeHints(monaco, typeHints);
+
+        return () => {
+            blurDisposable.dispose();
+        };
     }, [onEditorMount, typeHints]);
 
     useEffect(() => {

@@ -57,7 +57,7 @@ export function useElementEditorNavigationState() {
         return getCurrentEditedElementId(hashValue ?? '');
     }, [hashValue]);
 
-    const currentEditorTab: string = useMemo(() => {
+    const currentEditorTab: string | null = useMemo(() => {
         const tabInHash = locationHash.split('/')[1];
         return tabInHash ?? null;
     }, [locationHash]);

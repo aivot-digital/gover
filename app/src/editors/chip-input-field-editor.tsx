@@ -124,7 +124,7 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
                     addLabel="Vorschlag hinzufügen"
                     hint="Die Liste unterstützt bei der Eingabe und kann weiterhin frei ergänzt werden."
                     noItemsHint="Derzeit sind keine Vorschläge hinterlegt."
-                    value={suggestions as any}
+                    value={suggestions}
                     onChange={(items) => {
                         const originalSuggestions = element.suggestions ?? [];
                         const normalizedSuggestions = (items ?? [])

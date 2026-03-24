@@ -27,9 +27,6 @@ export function RadioFieldComponentView(props: BaseViewProps<RadioFieldElement, 
         return isDeriving && hasDerivableAspects(element);
     }, [isDeriving, element]);
 
-    console.log('RadioFieldComponentView -> element.id', element.id);
-    console.log('RadioFieldComponentView -> value', value);
-
     return (
         <RadioFieldComponent
             label={element.label ?? ''}
@@ -37,7 +34,6 @@ export function RadioFieldComponentView(props: BaseViewProps<RadioFieldElement, 
             value={value}
             onChange={(newValue) => {
                 if (!isBusy) {
-                    console.log('RadioFieldComponentView -> onChange -> newValue', newValue);
                     setValue(isStringNullOrEmpty(newValue) ? undefined : newValue ?? undefined);
                 }
             }}
