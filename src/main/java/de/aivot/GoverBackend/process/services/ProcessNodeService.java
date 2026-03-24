@@ -16,6 +16,7 @@ import de.aivot.GoverBackend.process.repositories.ProcessRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessVersionRepository;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,19 +58,24 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     @Nonnull
     @Override
     public ProcessNodeEntity create(@Nonnull ProcessNodeEntity entity) throws ResponseException {
+        // No element derivation and configuration check needs to be done here.
+        // The initial create of a process node can be done without configuration checking.
+        // This allows us to create nodes without needing to provide a default, fully valid configuration.
+        // The validity of the configuration will be checked at least before the publishing of the process version.
+
+        // Set the ID to null, to force the database to assign a new, valid ID.
         entity.setId(null);
 
-        // var derivedObjectItemData = deriveDataObjectItemData(entity, true);
-        // entity.setConfiguration(derivedObjectItemData);
+        // Check if the referenced process node provider exists.
+        processNodeProviderService
+                .getProcessNodeDefinition(entity.getProcessNodeDefinitionKey(), entity.getProcessNodeDefinitionVersion())
+                .orElseThrow(() -> ResponseException.badRequest(
+                        "Der Prozesselement-Funktionsanbieter %s (Version %s) existiert nicht.",
+                        StringUtils.quote(entity.getProcessNodeDefinitionKey()),
+                        entity.getProcessNodeDefinitionVersion()
+                ));
 
-        /*
-        var provider = processNodeProviderService
-                .getProcessNodeProvider(entity.getCodeKey())
-                .orElseThrow(ResponseException::badRequest);
-
-        provider.validateConfiguration(entity);
-         */
-
+        // Save the process node.
         return processDefinitionNodeRepository.save(entity);
     }
 
