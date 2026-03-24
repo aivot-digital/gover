@@ -2,10 +2,16 @@ package de.aivot.GoverBackend.av.services;
 
 import de.aivot.GoverBackend.av.exceptions.AVCheckFailedException;
 import de.aivot.GoverBackend.av.exceptions.AVVirusFoundException;
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.models.config.ClamConfig;
+import de.aivot.GoverBackend.models.config.GoverConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -36,5 +42,26 @@ class AVServiceTest {
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+    }
+
+    @Test
+    void testMultipartFilesShouldPreserveValidationReason() {
+        var goverConfig = new GoverConfig();
+        goverConfig.setFileExtensions(List.of("pdf"));
+        goverConfig.setContentTypes(List.of("application/pdf"));
+
+        var service = new AVService(goverConfig, new ClamConfig()) {
+            @Override
+            public void testFile(MultipartFile file) {
+                throw new AssertionError("Virenscan darf bei ungueltigem Dateityp nicht starten.");
+            }
+        };
+
+        var file = new MockMultipartFile("file", "report.exe", "application/pdf", "content".getBytes());
+
+        var exception = assertThrows(ResponseException.class, () -> service.testMultipartFiles(new MultipartFile[]{file}));
+
+        assertEquals(HttpStatus.NOT_ACCEPTABLE, exception.getStatus());
+        assertEquals("Die Dateiendung des Anhangs \"report.exe\" ist nicht erlaubt.", exception.getTitle());
     }
 }

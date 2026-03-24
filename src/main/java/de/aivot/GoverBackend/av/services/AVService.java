@@ -5,6 +5,7 @@ import de.aivot.GoverBackend.av.exceptions.AVVirusFoundException;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.ClamConfig;
 import de.aivot.GoverBackend.models.config.GoverConfig;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -48,10 +49,9 @@ public class AVService {
         if (files != null) {
             for (var file : files) {
                 if (!file.isEmpty()) {
-                    boolean fileExtensionAndContentTypeClean = testContentTypeAndExtension(file);
-
-                    if (!fileExtensionAndContentTypeClean) {
-                        throw ResponseException.notAcceptable("Extension or ContentType not allowed for attachment %s", file.getOriginalFilename());
+                    var validationError = getContentTypeAndExtensionValidationError(file);
+                    if (validationError != null) {
+                        throw new ResponseException(HttpStatus.NOT_ACCEPTABLE, validationError);
                     }
 
                     testFile(file);
@@ -61,31 +61,35 @@ public class AVService {
     }
 
     public boolean testContentTypeAndExtension(MultipartFile file) {
+        return getContentTypeAndExtensionValidationError(file) == null;
+    }
+
+    private String getContentTypeAndExtensionValidationError(MultipartFile file) {
         var filename = file.getOriginalFilename();
         if (filename == null) {
-            return false;
+            return "Der Name des Anhangs fehlt.";
         }
 
         var splitFilename = filename.split("\\.");
         if (splitFilename.length < 2) {
-            return false;
+            return String.format("Der Anhang \"%s\" hat keine Dateiendung.", filename);
         }
 
         var extension = splitFilename[splitFilename.length - 1];
         if (goverConfig.getFileExtensions().stream().noneMatch(ext -> ext.equalsIgnoreCase(extension))) {
-            return false;
+            return String.format("Die Dateiendung des Anhangs \"%s\" ist nicht erlaubt.", filename);
         }
 
         var contentType = file.getContentType();
         if (contentType == null) {
-            return false;
+            return String.format("Der Inhaltstyp des Anhangs \"%s\" fehlt.", filename);
         }
 
         if (goverConfig.getContentTypes().stream().noneMatch(ct -> ct.equalsIgnoreCase(contentType))) {
-            return false;
+            return String.format("Der Inhaltstyp des Anhangs \"%s\" ist nicht erlaubt.", filename);
         }
 
-        return true;
+        return null;
     }
 
     public void testFile(MultipartFile file) throws AVCheckFailedException, AVVirusFoundException {
