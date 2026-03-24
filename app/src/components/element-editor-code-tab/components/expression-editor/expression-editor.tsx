@@ -7,7 +7,7 @@ import {OperatorInfoDialog} from '../../../../dialogs/operator-info-dialog/opera
 import {SelectOperatorDialog} from '../../../../dialogs/select-operator-dialog/select-operator-dialog';
 import {NoCodeDataType} from '../../../../data/no-code-data-type';
 import {OperandEditor} from './operand-editor';
-import {NoCodeOperatorDetailsDTO} from '../../../../models/dtos/no-code-operator-details-dto';
+import {NoCodeOperatorDetailsDTO, resolveNoCodeSignature} from '../../../../models/dtos/no-code-operator-details-dto';
 
 export interface ExpressionEditorProps {
     allElements: ElementWithParents[];
@@ -40,6 +40,17 @@ export function ExpressionEditor(props: ExpressionEditorProps) {
     const operator = useMemo(() => {
         return allOperators.find(o => o.identifier === operatorIdentifier);
     }, [allOperators, operatorIdentifier]);
+
+    const signature = useMemo(() => {
+        if (operator == null) {
+            return undefined;
+        }
+
+        return resolveNoCodeSignature(operator, {
+            operandCount: (props.expression.operands ?? []).length > 0 ? (props.expression.operands ?? []).length : undefined,
+            desiredReturnType: props.desiredReturnType,
+        });
+    }, [operator, props.desiredReturnType, props.expression.operands]);
 
     return (
         <>
@@ -97,7 +108,7 @@ export function ExpressionEditor(props: ExpressionEditorProps) {
                                 }}
                             >
                                 {
-                                    operator.signatures[0].parameters.map((parameter, index, all) => {
+                                    (signature?.parameters ?? []).map((parameter, index, all) => {
                                         const operand: NoCodeOperand | undefined | null = (props.expression.operands ?? [])[index];
                                         return (
                                             <OperandEditor
@@ -182,4 +193,3 @@ export function ExpressionEditor(props: ExpressionEditorProps) {
         </>
     );
 }
-

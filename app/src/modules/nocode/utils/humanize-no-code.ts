@@ -8,7 +8,7 @@ import {
     NoCodeOperand,
 } from '../../../models/functions/no-code-expression';
 import {ElementWithParents} from '../../../utils/flatten-elements';
-import {NoCodeOperatorDetailsDTO} from '../../../models/dtos/no-code-operator-details-dto';
+import {NoCodeOperatorDetailsDTO, resolveNoCodeSignature} from '../../../models/dtos/no-code-operator-details-dto';
 import {generateComponentTitle} from '../../../utils/generate-component-title';
 
 export function humanizeNoCode(operand: NoCodeOperand, allElements: ElementWithParents[], allOperators: NoCodeOperatorDetailsDTO[]): string {
@@ -56,11 +56,14 @@ export function humanizeNoCode(operand: NoCodeOperand, allElements: ElementWithP
 
         const parameterHumanized: (string | null)[] = (operand.operands ?? [])
             .map(op => op != null ? humanizeNoCode(op, allElements, allOperators) : null);
+        const signature = resolveNoCodeSignature(operator, {
+            operandCount: (operand.operands ?? []).length > 0 ? (operand.operands ?? []).length : undefined,
+        });
 
         if (operator.humanReadableTemplate != null) {
             let template = operator.humanReadableTemplate;
 
-            operator.signatures[0].parameters.forEach((param, index) => {
+            signature.parameters.forEach((param, index) => {
                 const placeholder = `#${index}`;
                 const insert = parameterHumanized[index] ?? `„${param.label}“`;
                 template = template.replaceAll(placeholder, insert);

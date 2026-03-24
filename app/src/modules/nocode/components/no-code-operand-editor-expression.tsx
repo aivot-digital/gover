@@ -17,7 +17,12 @@ import {
 import {NoCodeDataType} from '../../../data/no-code-data-type';
 import {ElementWithParents} from '../../../utils/flatten-elements';
 import {useMemo, useState} from 'react';
-import {NoCodeOperatorDetailsDTO, NoCodeParameter, NoCodeParameterOption} from '../../../models/dtos/no-code-operator-details-dto';
+import {
+    NoCodeOperatorDetailsDTO,
+    NoCodeParameter,
+    NoCodeParameterOption,
+    resolveNoCodeSignature,
+} from '../../../models/dtos/no-code-operator-details-dto';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import {NoCodeOperandEditor} from './no-code-operand-editor';
@@ -149,8 +154,11 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
         if (operator == null) {
             return [];
         }
-        return operator.signatures[0].parameters;
-    }, [operator])
+
+        return resolveNoCodeSignature(operator, {
+            operandCount: operands.length > 0 ? operands.length : undefined,
+        }).parameters;
+    }, [operator, operands.length]);
 
     const parameterOptionOverrides: NoCodeParameterOption[] = useMemo(() => {
         const options: NoCodeParameterOption[] = [];
