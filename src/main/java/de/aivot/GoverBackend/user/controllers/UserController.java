@@ -14,6 +14,8 @@ import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -23,8 +25,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import java.util.Map;
 
 @RestController
@@ -88,15 +88,25 @@ public class UserController {
             throw ResponseException.badRequest("Fehler beim Anlegen der Mitarbeiter:in", e);
         }
 
-        auditService.create().withUser(execUser).withAuditAction(AuditAction.Create, UserEntity.class, result.getId(), "id", Map.of(
-                "id", result.getId(),
-                "email", result.getEmail()
-        )).withMessage(
-                "Die Mitarbeiter:in mit der ID %s und der E-Mail-Adresse %s wurde von der Mitarbeiter:in %s erstellt.",
-                StringUtils.quote(result.getId()),
-                StringUtils.quote(result.getEmail()),
-                StringUtils.quote(execUser.getFullName())
-        ).log();
+        auditService
+                .create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Create,
+                        UserEntity.class,
+                        result.getId(),
+                        "id",
+                        Map.of(
+                                "id", result.getId(),
+                                "email", result.getEmail()
+                        ))
+                .withMessage(
+                        "Die Mitarbeiter:in mit der ID %s und der E-Mail-Adresse %s wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(result.getId()),
+                        StringUtils.quote(result.getEmail()),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
 
         return result;
     }
@@ -155,15 +165,25 @@ public class UserController {
             throw ResponseException.badRequest("Fehler beim Speichern der Mitarbeiter:in", e);
         }
 
-        auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, UserEntity.class, result.getId(), "id", Map.of(
-                "id", result.getId(),
-                "email", result.getEmail()
-        )).withMessage(
-                "Die Mitarbeiter:in mit der ID %s und der E-Mail-Adresse %s wurde von der Mitarbeiter:in %s aktualisiert.",
-                StringUtils.quote(result.getId()),
-                StringUtils.quote(result.getEmail()),
-                StringUtils.quote(execUser.getFullName())
-        ).log();
+        auditService
+                .create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Update,
+                        UserEntity.class,
+                        result.getId(),
+                        "id",
+                        Map.of(
+                                "id", result.getId(),
+                                "email", result.getEmail()
+                        ))
+                .withMessage(
+                        "Die Mitarbeiter:in mit der ID %s und der E-Mail-Adresse %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(result.getId()),
+                        StringUtils.quote(result.getEmail()),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
 
         return result;
     }
@@ -184,17 +204,27 @@ public class UserController {
                 .delete(id);
 
         // Log the action
-        auditService.create().withUser(user).withAuditAction(AuditAction.Delete, UserEntity.class, deletedUser.getId(), "id", Map.of(
+        auditService
+                .create()
+                .withUser(user)
+                .withAuditAction(
+                        AuditAction.Delete,
+                        UserEntity.class,
+                        deletedUser.getId(),
+                        "id",
+                        Map.of(
                                 "id", deletedUser.getId(),
                                 "email", deletedUser.getEmail(),
                                 "firstName", deletedUser.getFirstName(),
                                 "lastName", deletedUser.getLastName()
-                        )).withMessage(
-                "Die Mitarbeiter:in mit der ID %s und der E-Mail-Adresse %s wurde von der Mitarbeiter:in %s gelöscht.",
-                StringUtils.quote(deletedUser.getId()),
-                StringUtils.quote(deletedUser.getEmail()),
-                StringUtils.quote(user.getFullName())
-        ).log();
+                        ))
+                .withMessage(
+                        "Die Mitarbeiter:in mit der ID %s und der E-Mail-Adresse %s wurde von der Mitarbeiter:in %s gelöscht.",
+                        StringUtils.quote(deletedUser.getId()),
+                        StringUtils.quote(deletedUser.getEmail()),
+                        StringUtils.quote(user.getFullName())
+                )
+                .log();
     }
 
     @PutMapping("{id}/reset-password/")
@@ -222,16 +252,26 @@ public class UserController {
         keyCloakApiService
                 .triggerPasswordReset(id);
 
-        auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, UserEntity.class, user.getId(), "id", Map.of(
-                "id", user.getId(),
-                "email", user.getEmail(),
-                "passwordReset", true
-        )).withMessage(
-                "Für die Mitarbeiter:in mit der ID %s und der E-Mail-Adresse %s wurde von der Mitarbeiter:in %s ein Passwort-Reset ausgelöst.",
-                StringUtils.quote(user.getId()),
-                StringUtils.quote(user.getEmail()),
-                StringUtils.quote(execUser.getFullName())
-        ).log();
+        auditService
+                .create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Update,
+                        UserEntity.class,
+                        user.getId(),
+                        "id",
+                        Map.of(
+                                "id", user.getId(),
+                                "email", user.getEmail(),
+                                "passwordReset", true
+                        ))
+                .withMessage(
+                        "Für die Mitarbeiter:in mit der ID %s und der E-Mail-Adresse %s wurde von der Mitarbeiter:in %s ein Passwort-Reset ausgelöst.",
+                        StringUtils.quote(user.getId()),
+                        StringUtils.quote(user.getEmail()),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
 
         return Map.of(
                 "message", "Password reset triggered for user with ID: " + id
@@ -260,16 +300,26 @@ public class UserController {
         var result = userService
                 .updatePassword(id, passwordRequestDTO.password());
 
-        auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, UserEntity.class, result.getId(), "id", Map.of(
-                "id", result.getId(),
-                "email", result.getEmail(),
-                "passwordChanged", true
-        )).withMessage(
-                "Das Passwort der Mitarbeiter:in mit der ID %s und der E-Mail-Adresse %s wurde von der Mitarbeiter:in %s geändert.",
-                StringUtils.quote(result.getId()),
-                StringUtils.quote(result.getEmail()),
-                StringUtils.quote(execUser.getFullName())
-        ).log();
+        auditService
+                .create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Update,
+                        UserEntity.class,
+                        result.getId(),
+                        "id",
+                        Map.of(
+                                "id", result.getId(),
+                                "email", result.getEmail(),
+                                "passwordChanged", true
+                        ))
+                .withMessage(
+                        "Das Passwort der Mitarbeiter:in mit der ID %s und der E-Mail-Adresse %s wurde von der Mitarbeiter:in %s geändert.",
+                        StringUtils.quote(result.getId()),
+                        StringUtils.quote(result.getEmail()),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
 
         return result;
     }
