@@ -2,13 +2,17 @@ package de.aivot.GoverBackend.submission.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.GoverBackend.av.services.AVService;
+import de.aivot.GoverBackend.captcha.services.RedisCaptchaReplayGuard;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
+import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntityId;
 import de.aivot.GoverBackend.form.repositories.VFormVersionWithDetailsRepository;
@@ -50,6 +54,7 @@ public class SubmitController {
     private final ProcessVersionService processVersionService;
     private final ProcessTestClaimService processTestClaimService;
     private final ElementDataTransformService elementDataTransformService;
+    private final RedisCaptchaReplayGuard captchaReplayGuard;
 
     @Autowired
     public SubmitController(AVService avService,
@@ -60,7 +65,8 @@ public class SubmitController {
                             ProcessInstanceAttachmentService processInstanceAttachmentService,
                             ProcessVersionService processVersionService,
                             ProcessTestClaimService processTestClaimService,
-                            ElementDataTransformService elementDataTransformService) {
+                            ElementDataTransformService elementDataTransformService,
+                            RedisCaptchaReplayGuard captchaReplayGuard) {
         this.avService = avService;
         this.elementDerivationService = elementDerivationService;
         this.formVersionWithDetailsRepository = formVersionWithDetailsRepository;
@@ -70,6 +76,7 @@ public class SubmitController {
         this.processVersionService = processVersionService;
         this.processTestClaimService = processTestClaimService;
         this.elementDataTransformService = elementDataTransformService;
+        this.captchaReplayGuard = captchaReplayGuard;
     }
 
     @PostMapping("/api/public/submit/{formId}/{formVersion}/")
@@ -147,7 +154,7 @@ public class SubmitController {
         var nodes = processNodeService
                 .list(filter);
 
-        var startedProcesses = new LinkedList<String>();
+        var startCandidates = new LinkedList<ProcessStartCandidate>();
         for (var node : nodes) {
             var processVersion = processVersionService
                     .retrieve(ProcessVersionEntityId.of(node.getProcessId(), node.getProcessVersion()))
@@ -162,22 +169,57 @@ public class SubmitController {
                     .orElse(null);
 
             if (processVersion.getStatus() == ProcessVersionStatus.Published || testClaim != null) {
-                var processInstance = startProcess(
-                        testClaim,
-                        form,
-                        node,
-                        effectiveValues,
-                        files
-                );
-                startedProcesses.add(processInstance.getAccessKey().toString());
+                startCandidates.add(new ProcessStartCandidate(node, testClaim));
             }
         }
 
-        if (startedProcesses.isEmpty()) {
+        if (startCandidates.isEmpty()) {
             throw ResponseException.forbidden();
         }
 
+        testCaptchaReplayProtection(form, effectiveValues);
+
+        var startedProcesses = new LinkedList<String>();
+        for (var candidate : startCandidates) {
+            var processInstance = startProcess(
+                    candidate.testClaim(),
+                    form,
+                    candidate.node(),
+                    effectiveValues,
+                    files
+            );
+            startedProcesses.add(processInstance.getAccessKey().toString());
+        }
+
         return new SubmissionStatusResponseDTO(startedProcesses);
+    }
+
+    void testCaptchaReplayProtection(@Nonnull VFormVersionWithDetailsEntity form,
+                                     @Nonnull EffectiveElementValues effectiveValues) throws ResponseException {
+        var captchaPayload = extractCaptchaPayload(form.getRootElement(), effectiveValues);
+        if (captchaPayload != null && captchaReplayGuard.isUsed(captchaPayload)) {
+            throw ResponseException.badRequest("Die Captcha-Bestätigung wurde bereits verwendet. Bitte erneut bestätigen.");
+        }
+    }
+
+    @Nullable
+    static String extractCaptchaPayload(@Nonnull BaseElement rootElement,
+                                        @Nonnull EffectiveElementValues effectiveValues) {
+        return ElementFlattenUtils
+                .flattenElements(rootElement)
+                .stream()
+                .filter(SubmitStepElement.class::isInstance)
+                .map(SubmitStepElement.class::cast)
+                .map(SubmitStepElement::getId)
+                .map(effectiveValues::get)
+                .filter(Map.class::isInstance)
+                .map(Map.class::cast)
+                .map(map -> map.get("payload"))
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .filter(payload -> !payload.isBlank())
+                .findFirst()
+                .orElse(null);
     }
 
     private ProcessInstanceEntity startProcess(@Nullable ProcessTestClaimEntity testClaimEntity,
@@ -257,5 +299,11 @@ public class SubmitController {
         }
 
         return instance;
+    }
+
+    private record ProcessStartCandidate(
+            @Nonnull ProcessNodeEntity node,
+            @Nullable ProcessTestClaimEntity testClaim
+    ) {
     }
 }
