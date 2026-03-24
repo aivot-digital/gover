@@ -367,8 +367,8 @@ public class FormController {
             vFormWithPermissionsService.checkUserPermission(
                     formId,
                     user.getId(),
-                    VFormWithPermissionsEntity::getFormPermissionEdit,
-                    PermissionLabels.FormPermissionEdit);
+                    VFormWithPermissionsEntity::getFormPermissionDelete,
+                    PermissionLabels.FormPermissionDelete);
         }
 
         // Retrieve the form by its id
