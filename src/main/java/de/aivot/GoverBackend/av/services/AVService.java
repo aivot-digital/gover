@@ -8,10 +8,11 @@ import de.aivot.GoverBackend.models.config.GoverConfig;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.ByteArrayOutputStream;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
@@ -32,11 +33,9 @@ public class AVService {
     }
 
     public boolean testServiceStatus() throws IOException {
-        try (var clamAvSocket = new Socket(clamConfig.getHost(), Integer.parseInt(clamConfig.getPort()));
+        try (var clamAvSocket = openScannerSocket();
              var uploadStream = new BufferedOutputStream(clamAvSocket.getOutputStream());
              var responseStream = clamAvSocket.getInputStream()) {
-            clamAvSocket.setSoTimeout(clamConfig.getTimeout());
-
             uploadStream.write(PING_COMMAND);
             uploadStream.flush();
 
@@ -105,11 +104,9 @@ public class AVService {
     }
 
     public void testFile(InputStream fileInputStream, String filename) throws AVCheckFailedException, AVVirusFoundException {
-        try (var clamAvSocket = new Socket(clamConfig.getHost(), Integer.parseInt(clamConfig.getPort()));
+        try (var clamAvSocket = openScannerSocket();
              var uploadStream = new BufferedOutputStream(clamAvSocket.getOutputStream());
              var responseStream = clamAvSocket.getInputStream()) {
-            clamAvSocket.setSoTimeout(clamConfig.getTimeout());
-
             uploadStream.write(INSTREAM_COMMAND);
 
             var buffer = new byte[CHUNK_SIZE];
@@ -123,11 +120,11 @@ public class AVService {
             uploadStream.flush();
 
             var response = readScannerResponse(responseStream);
+            var resolvedFilename = resolveFilename(filename);
             if ("stream: OK".equalsIgnoreCase(response)) {
                 return;
             }
 
-            var resolvedFilename = resolveFilename(filename);
             if (response.toUpperCase().contains("ERROR")) {
                 throw new AVCheckFailedException(
                         String.format("Der Virenscanner konnte die Datei \"%s\" nicht prüfen: %s", resolvedFilename, response)
@@ -148,6 +145,34 @@ public class AVService {
         uploadStream.write((length >>> 16) & 0xFF);
         uploadStream.write((length >>> 8) & 0xFF);
         uploadStream.write(length & 0xFF);
+    }
+
+    static int parseScannerPort(String rawPort) throws IOException {
+        if (rawPort == null || rawPort.isBlank()) {
+            throw new IOException("Der ClamAV-Port ist nicht konfiguriert.");
+        }
+
+        try {
+            var port = Integer.parseInt(rawPort);
+            if (port < 1 || port > 65535) {
+                throw new IOException("Ungültiger ClamAV-Port: " + rawPort);
+            }
+            return port;
+        } catch (NumberFormatException ex) {
+            throw new IOException("Ungültiger ClamAV-Port: " + rawPort, ex);
+        }
+    }
+
+    static int resolveScannerTimeout(Integer rawTimeout) throws IOException {
+        if (rawTimeout == null) {
+            return 0;
+        }
+
+        if (rawTimeout < 0) {
+            throw new IOException("Ungültiges ClamAV-Timeout: " + rawTimeout);
+        }
+
+        return rawTimeout;
     }
 
     private static String readScannerResponse(InputStream responseStream) throws IOException {
@@ -171,5 +196,26 @@ public class AVService {
 
     private static String resolveFilename(String filename) {
         return filename == null || filename.isBlank() ? "unbekannt" : filename;
+    }
+
+    private Socket openScannerSocket() throws IOException {
+        var host = clamConfig.getHost();
+        if (host == null || host.isBlank()) {
+            throw new IOException("Der ClamAV-Host ist nicht konfiguriert.");
+        }
+
+        var timeout = resolveScannerTimeout(clamConfig.getTimeout());
+        var socket = new Socket();
+        try {
+            socket.connect(new InetSocketAddress(host, parseScannerPort(clamConfig.getPort())), timeout);
+            socket.setSoTimeout(timeout);
+            return socket;
+        } catch (IOException ex) {
+            try {
+                socket.close();
+            } catch (IOException ignored) {
+            }
+            throw ex;
+        }
     }
 }
