@@ -147,7 +147,7 @@ const elementConstructors: {
     [ElementType.Alert]: (id) => ({
         ...makeFormBase(ElementType.Alert, id),
         title: 'Hinweis',
-        text: '<p class="MuiTypography-root MuiTypography-body2">Nutzen Sie diesen Hinweis, um Antragsstellenden zusätzliche Informationen hervorgehoben bereitzustellen.</p>',
+        text: 'Nutzen Sie diesen Hinweis, um Antragsstellenden zusätzliche Informationen hervorgehoben bereitzustellen.',
         alertType: 'info',
     }),
     [ElementType.GroupLayout]: (id) => ({
@@ -211,7 +211,7 @@ const elementConstructors: {
     }),
     [ElementType.RichText]: (id) => ({
         ...makeFormBase(ElementType.RichText, id),
-        content: '<p class="MuiTypography-root MuiTypography-body2">Fließtext</p>',
+        content: 'Fließtext',
     }),
     [ElementType.Radio]: (id) => ({
         ...makeInputBase(ElementType.Radio, id),

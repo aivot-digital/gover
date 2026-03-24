@@ -78,8 +78,8 @@ const mdxEditorGermanTranslation: Translation = (key, defaultValue, interpolatio
     return template.replace(/\{\{\s*([^{}\s]+)\s*}}/g, (_, token: string) => String(interpolations?.[token] ?? ''));
 };
 
-interface RichTextInputComponentProps {
-    label: string;
+export interface RichTextInputComponentProps {
+    label?: string | null | undefined;
     hint?: string | null | undefined;
     error?: string | null | undefined;
     required?: boolean | null | undefined;
@@ -136,14 +136,18 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                 ...sxArray,
             ]}
         >
-            <Typography
-                sx={{
-                    marginBottom: 1,
-                    fontWeight: 'medium',
-                }}
-            >
-                {label}{required ? ' *' : ''}
-            </Typography>
+            {
+                label != null &&
+                label !== '' &&
+                <Typography
+                    sx={{
+                        marginBottom: 1,
+                        fontWeight: 'medium',
+                    }}
+                >
+                    {label}{required ? ' *' : ''}
+                </Typography>
+            }
 
             <Box
                 ref={handleOverlayContainerRef}

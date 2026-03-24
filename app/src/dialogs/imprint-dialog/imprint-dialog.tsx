@@ -9,6 +9,7 @@ import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
 import {VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
 import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
+import {MarkdownContent} from '../../components/markdown-content/markdown-content';
 
 export const ImprintDialogId = 'imprint';
 
@@ -54,9 +55,9 @@ export function ImprintDialog(props: ImprintDialogProps) {
             </DialogTitleWithClose>
             {
                 department?.imprint ?
-                    <DialogContent
-                        dangerouslySetInnerHTML={{__html: department?.imprint}}
-                    />
+                    <DialogContent>
+                        <MarkdownContent markdown={department.imprint}/>
+                    </DialogContent>
                     :
                     <DialogContent tabIndex={0}>
                         <Alert severity="info">

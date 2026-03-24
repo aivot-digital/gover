@@ -11,7 +11,7 @@ import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined';
 import {useApi} from '../../hooks/use-api';
 import {Link} from 'react-router-dom';
 import {Hint} from '../hint/hint';
-import {RichTextEditorComponentView} from '../richt-text-editor/rich-text-editor.component.view';
+import {RichTextInputComponent} from '../rich-text-input-component/rich-text-input-component';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 import {AssetsApiService} from '../../modules/assets/assets-api-service';
 import {ThemesApiService} from '../../modules/themes/themes-api-service';
@@ -687,12 +687,12 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
                         lg: 6,
                     }}
                 >
-                    <RichTextEditorComponentView
+                    <RichTextInputComponent
                         hint="Wenn Sie dieses Formular als Vordruck z.B. zum Ausfüllen auf Papier, bereitstellen möchten, sollten Sie hier die Adresse und/oder E-Mail etc. nennen, an welche das Formular einzureichen ist."
                         value={props.element.offlineSubmissionText ?? ''}
                         onChange={val => {
                             props.onPatch({
-                                offlineSubmissionText: val,
+                                offlineSubmissionText: val ?? undefined,
                             });
                         }}
                         disabled={!props.editable}

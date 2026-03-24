@@ -3,30 +3,30 @@ import {type SubmitStepElement} from '../../models/elements/steps/submit-step-el
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {StringListInput} from '../string-list-input/string-list-input';
-import {RichTextEditorComponentView} from '../richt-text-editor/rich-text-editor.component.view';
+import {RichTextInputComponent} from '../rich-text-input-component/rich-text-input-component';
 import {LoadedForm} from '../../slices/app-slice';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 
 export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement, LoadedForm>) {
     return (
         <>
-            <RichTextEditorComponentView
+            <RichTextInputComponent
                 value={props.element.textPreSubmit ?? ''}
                 label="Text vor dem Absenden des Antrages"
                 onChange={(val) => {
                     props.onPatch({
-                        textPreSubmit: val,
+                        textPreSubmit: val ?? undefined,
                     });
                 }}
                 disabled={!props.editable}
             />
 
-            <RichTextEditorComponentView
+            <RichTextInputComponent
                 value={props.element.textPostSubmit ?? ''}
                 label="Text nach dem Absenden des Antrages"
                 onChange={(val) => {
                     props.onPatch({
-                        textPostSubmit: val,
+                        textPostSubmit: val ?? undefined,
                     });
                 }}
                 disabled={!props.editable}

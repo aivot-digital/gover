@@ -1,6 +1,6 @@
 import {Box, Dialog, DialogContent, Grid, ListItemIcon, ListItemText, Menu, MenuItem, Typography} from '@mui/material';
 import React, {PropsWithChildren, useState} from 'react';
-import {RichTextEditorComponentView} from '../richt-text-editor/rich-text-editor.component.view';
+import {RichTextInputComponent} from '../rich-text-input-component/rich-text-input-component';
 import {FunctionSelector} from './components/function-selector/function-selector';
 import {BaseCodeTabProps} from './base-code-tab-props';
 import {Actions} from '../actions/actions';
@@ -45,10 +45,10 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
                             xs: 12,
                             lg: 6
                         }}>
-                        <RichTextEditorComponentView
+                        <RichTextInputComponent
                             value={props.requirements ?? ''}
                             onChange={(req) => {
-                                props.onRequirementsChange(req);
+                                props.onRequirementsChange(req ?? undefined);
                             }}
                             disabled={notEditable}
                         />

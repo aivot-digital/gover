@@ -22,6 +22,7 @@ import {DateTimeRangeFieldComponent} from '../../../components/date-time-range-f
 import {TimeFieldComponent} from '../../../components/time-field/time-field-component';
 import {MapPointFieldComponent} from '../../../components/map-point-field/map-point-field-component';
 import {RichTextInputComponent} from '../../../components/rich-text-input-component/rich-text-input-component';
+import {RichtextComponent} from '../../../components/richtext/richtext.component';
 import {CodeInputFieldComponent} from '../../../components/code-input-field/code-input-field-component';
 import {DomainUserSelectFieldComponent} from '../../../components/domain-user-select-field/domain-user-select-field-component';
 import {AssignmentContextFieldComponent} from '../../../components/assignment-context-field/assignment-context-field-component';
@@ -445,29 +446,11 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 Beispiele
             </Divider>
 
-            <Typography
-                component={'div'}
-                variant="body2"
+            <RichtextComponent
+                content={'### Wichtiger Hinweis\n\nBitte halten Sie **Nachweise** bereit und prüfen Sie Ihre Angaben vor dem Absenden.'}
                 sx={{
                     mt: 2,
-                    maxWidth: '660px',
-                    wordBreak: 'break-word',
-                    '& .inline-code': {
-                        fontFamily: 'Monaco, monospace',
-                        backgroundColor: '#f5f5f5',
-                        padding: '0.2em 0.4em',
-                        borderRadius: '4px',
-                    },
-                    '& .code-block': {
-                        fontFamily: 'Monaco, monospace',
-                        backgroundColor: '#f5f5f5',
-                        padding: '1em',
-                        borderRadius: '4px',
-                        overflowX: 'auto',
-                    },
-                }}
-                dangerouslySetInnerHTML={{
-                    __html: '<h3>Wichtiger Hinweis</h3><p>Bitte halten Sie <strong>Nachweise</strong> bereit und prüfen Sie Ihre Angaben vor dem Absenden.</p>',
+                    typography: 'body2',
                 }}
             />
         </Box>

@@ -1,6 +1,7 @@
 import React, {type PropsWithChildren} from 'react';
 import {Alert, AlertTitle, Box} from '@mui/material';
 import {type AlertComponentProps} from './alert-component-props';
+import {MarkdownContent} from '../markdown-content/markdown-content';
 
 export function AlertComponent(props: PropsWithChildren<AlertComponentProps>) {
     const renderTextWithParagraphs = (text: string) => {
@@ -32,9 +33,12 @@ export function AlertComponent(props: PropsWithChildren<AlertComponentProps>) {
                 {
                     props.richtext ?
                         (
-                            <div
-                                dangerouslySetInnerHTML={{__html: props.text ?? ''}}
+                            <MarkdownContent
+                                markdown={typeof props.text === 'string' ? props.text : ''}
                                 className={"content-without-margin-on-childs"}
+                                sx={{
+                                    typography: 'body2',
+                                }}
                             />
                         ) :
                         (

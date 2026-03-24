@@ -7,7 +7,7 @@ import {useNavigate, useSearchParams} from 'react-router-dom';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
-import {RichTextEditorComponentView, RichTextEditorComponentViewProps} from '../../../../components/richt-text-editor/rich-text-editor.component.view';
+import {RichTextInputComponent, RichTextInputComponentProps} from '../../../../components/rich-text-input-component/rich-text-input-component';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
@@ -707,9 +707,9 @@ export function DepartmentsDetailsPageIndex() {
                 Die folgenden rechtlichen Angaben und Texte können in Formularen referenziert werden.
             </Typography>
             <Box sx={{mb: 3}}>
-                <ShadowedInput<RichTextEditorComponentViewProps, typeof RichTextEditorComponentView>
+                <ShadowedInput<RichTextInputComponentProps, typeof RichTextInputComponent>
                     doNotShadow={doNotShadow}
-                    Component={RichTextEditorComponentView}
+                    Component={RichTextInputComponent}
                     override={department.imprint != null}
                     onSetOverride={(override) => {
                         if (override) {
@@ -731,9 +731,9 @@ export function DepartmentsDetailsPageIndex() {
                 />
             </Box>
             <Box sx={{mb: 3}}>
-                <ShadowedInput<RichTextEditorComponentViewProps, typeof RichTextEditorComponentView>
+                <ShadowedInput<RichTextInputComponentProps, typeof RichTextInputComponent>
                     doNotShadow={doNotShadow}
-                    Component={RichTextEditorComponentView}
+                    Component={RichTextInputComponent}
                     override={department.commonPrivacy != null}
                     onSetOverride={(override) => {
                         if (override) {
@@ -755,9 +755,9 @@ export function DepartmentsDetailsPageIndex() {
                 />
             </Box>
             <Box sx={{mb: 3}}>
-                <ShadowedInput<RichTextEditorComponentViewProps, typeof RichTextEditorComponentView>
+                <ShadowedInput<RichTextInputComponentProps, typeof RichTextInputComponent>
                     doNotShadow={doNotShadow}
-                    Component={RichTextEditorComponentView}
+                    Component={RichTextInputComponent}
                     override={department.commonAccessibility != null}
                     onSetOverride={(override) => {
                         if (override) {
