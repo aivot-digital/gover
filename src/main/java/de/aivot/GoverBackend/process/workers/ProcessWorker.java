@@ -205,12 +205,21 @@ public class ProcessWorker {
         try {
             initResult = currentNodeProvider
                     .init(context);
+        } catch (ProcessNodeExecutionException e) {
+            taskEntity.setStatus(ProcessTaskStatus.Failed);
+            taskEntity.setFinished(LocalDateTime.now());
+            processInstanceTaskRepository.save(taskEntity);
+            throw e;
         } catch (Exception e) {
             taskEntity.setStatus(ProcessTaskStatus.Failed);
             taskEntity.setFinished(LocalDateTime.now());
             processInstanceTaskRepository.save(taskEntity);
-            logger.logException(e);
-            return; // Leave early because of error
+            throw new ProcessNodeExecutionExceptionUnknown(
+                    e,
+                    "Der Prozessknoten-Funktionsanbieter „%s“ für das Prozesselement „%s“ konnte die Aufgabe nicht initialisieren.",
+                    currentNodeProvider.getName(),
+                    currentNode.resolveName(currentNodeProvider)
+            );
         }
 
         if (initResult == null) {
