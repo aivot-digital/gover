@@ -1,6 +1,6 @@
 import React, {ReactNode, useEffect, useMemo, useState} from 'react';
 import {Badge, Box, Button, Chip, createTheme, Divider, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Menu, MenuItem, Paper, Snackbar, ThemeProvider, Typography, useTheme} from '@mui/material';
-import {Link, useLocation, useNavigate} from 'react-router-dom';
+import {Link, useLocation} from 'react-router-dom';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {selectMinimizeDrawer, selectShowAboutGoverDialog, setMinimizeDrawer, setShowAboutGoverDialog, setShowSearchDialog} from '../../../slices/shell-slice';
@@ -733,7 +733,6 @@ function DrawerGroup({group, minimizeDrawer}: DrawerGroupProps) {
  * DrawerListItem (recursive)
  * ----------------------------- */
 function DrawerListItem({item, level = 0}: { item: DrawerItem; level?: number }) {
-    const navigate = useNavigate();
     const location = useLocation();
     const pathname = location.pathname;
 
@@ -749,7 +748,6 @@ function DrawerListItem({item, level = 0}: { item: DrawerItem; level?: number })
 
     const handleClick = () => {
         if (item.children) setExpanded((e) => !e);
-        else if (item.to) navigate(item.to);
     };
 
     const labelSizeScale =
