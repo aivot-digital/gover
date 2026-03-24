@@ -9,8 +9,8 @@ export interface AuditLogFilter {
     actors: string[];
     triggerType: string;
     triggerTypes: string[];
-    triggerRef: string;
-    triggerRefType: string;
+    entityRef: string;
+    entityRefType: string;
     module: string;
     modules: string[];
     ipAddress: string;

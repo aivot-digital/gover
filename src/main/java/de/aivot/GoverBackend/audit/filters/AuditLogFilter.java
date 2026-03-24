@@ -21,8 +21,8 @@ public class AuditLogFilter implements Filter<AuditLogEntity> {
     private List<String> actors;
     private String triggerType;
     private List<String> triggerTypes;
-    private String triggerRef;
-    private String triggerRefType;
+    private String entityRef;
+    private String entityRefType;
     private String module;
     private List<String> modules;
     private String ipAddress;
@@ -42,8 +42,8 @@ public class AuditLogFilter implements Filter<AuditLogEntity> {
                 .withContains("actorType", actorType)
                 .withContains("actorId", actorId)
                 .withContains("triggerType", triggerType)
-                .withContains("triggerRef", triggerRef)
-                .withContains("triggerRefType", triggerRefType)
+                .withContains("entityRef", entityRef)
+                .withContains("entityRefType", entityRefType)
                 .withContains("module", module)
                 .withInList("triggerType", normalizeValues(triggerTypes))
                 .withInList("module", normalizeValues(modules))
@@ -135,22 +135,42 @@ public class AuditLogFilter implements Filter<AuditLogEntity> {
     }
 
     @Nullable
+    public String getEntityRef() {
+        return entityRef;
+    }
+
+    public AuditLogFilter setEntityRef(@Nullable String entityRef) {
+        this.entityRef = entityRef;
+        return this;
+    }
+
+    @Nullable
+    public String getEntityRefType() {
+        return entityRefType;
+    }
+
+    public AuditLogFilter setEntityRefType(@Nullable String entityRefType) {
+        this.entityRefType = entityRefType;
+        return this;
+    }
+
+    @Nullable
     public String getTriggerRef() {
-        return triggerRef;
+        return entityRef;
     }
 
     public AuditLogFilter setTriggerRef(@Nullable String triggerRef) {
-        this.triggerRef = triggerRef;
+        this.entityRef = triggerRef;
         return this;
     }
 
     @Nullable
     public String getTriggerRefType() {
-        return triggerRefType;
+        return entityRefType;
     }
 
     public AuditLogFilter setTriggerRefType(@Nullable String triggerRefType) {
-        this.triggerRefType = triggerRefType;
+        this.entityRefType = triggerRefType;
         return this;
     }
 
