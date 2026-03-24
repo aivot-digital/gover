@@ -325,10 +325,6 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         var targetPrefix = normalizedTargetPath.substring(1);
         var client = getClient(config);
 
-        if (!normalizedSourcePath.equals(normalizedTargetPath)) {
-            deleteFolder(config, normalizedTargetPath);
-        }
-
         var listArgs = ListObjectsArgs
                 .builder()
                 .bucket(config.bucket)
@@ -336,44 +332,20 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 .recursive(true)
                 .build();
 
-        boolean foundAtLeastOneObject = false;
-        var objects = client.listObjects(listArgs);
-        for (var objectResult : objects) {
-            Item object;
-            try {
-                object = objectResult.get();
-            } catch (ErrorResponseException | InsufficientDataException | XmlParserException | ServerException |
-                     NoSuchAlgorithmException | IOException | InvalidResponseException | InvalidKeyException |
-                     InternalException e) {
-                throw new StorageException(e, "Fehler beim Auflisten der Objekte im S3-kompatiblen Speicher.");
-            }
-
-            foundAtLeastOneObject = true;
-            var sourceObjectName = object.objectName();
-            var relativeObjectName = sourceObjectName.substring(sourcePrefix.length());
-            var targetObjectName = targetPrefix + relativeObjectName;
-
-            var copyArgs = CopyObjectArgs
-                    .builder()
-                    .bucket(config.bucket)
-                    .object(targetObjectName)
-                    .source(CopySource.builder()
-                            .bucket(config.bucket)
-                            .object(sourceObjectName)
-                            .build())
-                    .build();
-
-            try {
-                client.copyObject(copyArgs);
-            } catch (ErrorResponseException | InsufficientDataException | XmlParserException | ServerException |
-                     NoSuchAlgorithmException | IOException | InvalidResponseException | InvalidKeyException |
-                     InternalException e) {
-                throw new StorageException(e, "Der Ordner konnte nicht im S3-kompatiblen Speicher kopiert werden.");
-            }
+        var objects = client.listObjects(listArgs).iterator();
+        if (!objects.hasNext()) {
+            throw new StorageException("Der Quellordner %s konnte nicht gefunden werden.", StringUtils.quote(normalizedSourcePath));
         }
 
-        if (!foundAtLeastOneObject) {
-            throw new StorageException("Der Quellordner %s konnte nicht gefunden werden.", StringUtils.quote(normalizedSourcePath));
+        var firstObject = getListedObject(objects.next());
+        if (!normalizedSourcePath.equals(normalizedTargetPath)) {
+            deleteFolder(config, normalizedTargetPath);
+        }
+
+        copyFolderObject(config, client, sourcePrefix, targetPrefix, firstObject);
+
+        while (objects.hasNext()) {
+            copyFolderObject(config, client, sourcePrefix, targetPrefix, getListedObject(objects.next()));
         }
 
         return retrieveFolder(config, normalizedTargetPath, true).orElseGet(() -> new StorageFolder(
@@ -630,7 +602,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         }
     }
 
-    private MinioClient getClient(@Nonnull Config config) throws StorageException {
+    MinioClient getClient(@Nonnull Config config) throws StorageException {
         UUID secretUUID;
         try {
             secretUUID = UUID
@@ -656,6 +628,45 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 .endpoint(config.endpoint)
                 .credentials(config.accessKey, storageSecretKey)
                 .build();
+    }
+
+    @Nonnull
+    private Item getListedObject(@Nonnull Result<Item> objectResult) throws StorageException {
+        try {
+            return objectResult.get();
+        } catch (ErrorResponseException | InsufficientDataException | XmlParserException | ServerException |
+                 NoSuchAlgorithmException | IOException | InvalidResponseException | InvalidKeyException |
+                 InternalException e) {
+            throw new StorageException(e, "Fehler beim Auflisten der Objekte im S3-kompatiblen Speicher.");
+        }
+    }
+
+    private void copyFolderObject(@Nonnull Config config,
+                                  @Nonnull MinioClient client,
+                                  @Nonnull String sourcePrefix,
+                                  @Nonnull String targetPrefix,
+                                  @Nonnull Item object) throws StorageException {
+        var sourceObjectName = object.objectName();
+        var relativeObjectName = sourceObjectName.substring(sourcePrefix.length());
+        var targetObjectName = targetPrefix + relativeObjectName;
+
+        var copyArgs = CopyObjectArgs
+                .builder()
+                .bucket(config.bucket)
+                .object(targetObjectName)
+                .source(CopySource.builder()
+                        .bucket(config.bucket)
+                        .object(sourceObjectName)
+                        .build())
+                .build();
+
+        try {
+            client.copyObject(copyArgs);
+        } catch (ErrorResponseException | InsufficientDataException | XmlParserException | ServerException |
+                 NoSuchAlgorithmException | IOException | InvalidResponseException | InvalidKeyException |
+                 InternalException e) {
+            throw new StorageException(e, "Der Ordner konnte nicht im S3-kompatiblen Speicher kopiert werden.");
+        }
     }
 
     /**
