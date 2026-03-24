@@ -45,6 +45,7 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
     @Override
     public DepartmentEntity create(@Nonnull DepartmentEntity entity) throws ResponseException {
         entity.setId(null);
+        validateParentHierarchy(null, entity.getParentDepartmentId());
 
         // Check theme existence and set to null if not exists
         var themeId = entity.getThemeId();
@@ -130,14 +131,14 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
     }
 
     private void validateParentHierarchy(
-            @Nonnull Integer departmentId,
+            @Nullable Integer departmentId,
             @Nullable Integer requestedParentDepartmentId
     ) throws ResponseException {
         if (requestedParentDepartmentId == null) {
             return;
         }
 
-        if (requestedParentDepartmentId.equals(departmentId)) {
+        if (departmentId != null && requestedParentDepartmentId.equals(departmentId)) {
             throw ResponseException.badRequest("Eine Organisationseinheit kann nicht sich selbst als übergeordnete Organisationseinheit haben.");
         }
 
@@ -149,7 +150,7 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
                 throw ResponseException.badRequest("Die Hierarchie der Organisationseinheiten enthält einen Zyklus.");
             }
 
-            if (currentParentId.equals(departmentId)) {
+            if (departmentId != null && currentParentId.equals(departmentId)) {
                 throw ResponseException.badRequest("Die ausgewählte übergeordnete Organisationseinheit befindet sich in der Hierarchie unterhalb der zu verschiebenden Organisationseinheit.");
             }
 
