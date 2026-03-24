@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class ProcessNodeService implements EntityService<ProcessNodeEntity, Integer> {
@@ -216,5 +217,9 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         var derivedData = elementDerivationService.derive(edr, dummyLogger);
 
         return derivedData;
+    }
+
+    public Set<String> getAllUsedDataKeys(@Nonnull Integer processId, @Nonnull Integer processVersion) {
+        return processDefinitionNodeRepository.findAllDataKeysByProcessIdAndVersion(processId, processVersion);
     }
 }

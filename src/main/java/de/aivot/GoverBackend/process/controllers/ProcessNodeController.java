@@ -2,7 +2,6 @@ package de.aivot.GoverBackend.process.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
-import de.aivot.GoverBackend.audit.models.AuditLogPayload;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
@@ -10,6 +9,7 @@ import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
+import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
 import de.aivot.GoverBackend.process.filters.ProcessNodeFilter;
@@ -17,12 +17,7 @@ import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextConfig;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextTesting;
 import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.repositories.ProcessTestClaimRepository;
-import de.aivot.GoverBackend.process.services.ProcessNodeExportService;
-import de.aivot.GoverBackend.process.services.ProcessNodeDefinitionService;
-import de.aivot.GoverBackend.process.services.ProcessNodeService;
-import de.aivot.GoverBackend.process.services.ProcessService;
-import de.aivot.GoverBackend.process.services.ProcessVersionService;
-import de.aivot.GoverBackend.permissions.services.PermissionService;
+import de.aivot.GoverBackend.process.services.*;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,8 +35,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/process-nodes/")
@@ -51,8 +47,6 @@ import java.util.Map;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ProcessNodeController {
-    private static final String MODULE_NAME = "Prozesse";
-
     private final ScopedAuditService auditService;
     private final UserService userService;
     private final ProcessNodeService processDefinitionNodeService;
@@ -66,7 +60,7 @@ public class ProcessNodeController {
 
     @Nonnull
     private static String createAvailableDataKey(@Nonnull String requestedDataKey,
-                                                 @Nonnull HashSet<String> occupiedDataKeys) {
+                                                 @Nonnull Set<String> occupiedDataKeys) {
         if (!occupiedDataKeys.contains(requestedDataKey)) {
             return requestedDataKey;
         }
@@ -324,15 +318,8 @@ public class ProcessNodeController {
 
         var exportData = processNodeExport.data();
         var sourceNode = exportData.node();
-        var occupiedDataKeys = new HashSet<>(processDefinitionNodeService
-                .list(ProcessNodeFilter
-                        .create()
-                        .setProcessId(processId)
-                        .setProcessVersion(processVersion)
-                )
-                .stream()
-                .map(ProcessNodeEntity::getDataKey)
-                .toList());
+        var occupiedDataKeys = processDefinitionNodeService
+                .getAllUsedDataKeys(processId, processVersion);
 
         var provider = processNodeProviderService
                 .getProcessNodeDefinition(
