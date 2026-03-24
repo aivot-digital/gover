@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 db_version="16.12-alpine3.23"
 antivirus_version="1.5.1"
 cache_version="8.2.4-alpine3.22"
@@ -10,12 +12,48 @@ keycloak_setup_version="0.0.17"
 reverse_proxy_version="2.10.2-alpine"
 gover_version="5.0.0"
 
-if [ ! -f .env ]; then
-  cat > .env <<EOF
+require_cmd() {
+  command -v "$1" >/dev/null 2>&1 || {
+    echo "Fehlender Befehl: $1" >&2
+    exit 1
+  }
+}
+
+rand_hex() {
+  openssl rand -hex "$1"
+}
+
+create_env_file() {
+  local gover_postgres_username gover_postgres_password
+  local keycloak_postgres_username keycloak_postgres_password
+  local keycloak_bootstrap_admin_username keycloak_bootstrap_admin_password
+  local keycloak_deployment_client_name keycloak_deployment_client_secret
+  local keycloak_admin_password keycloak_backend_client_secret
+  local rabbitmq_username rabbitmq_password
+  local gover_secrets_key gover_captcha_key
+
+  gover_postgres_username="gover_$(rand_hex 4)"
+  gover_postgres_password="$(rand_hex 18)"
+  keycloak_postgres_username="keycloak_$(rand_hex 4)"
+  keycloak_postgres_password="$(rand_hex 18)"
+  keycloak_bootstrap_admin_username="bootstrap_admin_$(rand_hex 2)"
+  keycloak_bootstrap_admin_password="$(rand_hex 18)"
+  keycloak_deployment_client_name="deployment_$(rand_hex 2)"
+  keycloak_deployment_client_secret="$(rand_hex 18)"
+  keycloak_admin_password="$(rand_hex 18)"
+  keycloak_backend_client_secret="$(rand_hex 32)"
+  rabbitmq_username="gover_$(rand_hex 4)"
+  rabbitmq_password="$(rand_hex 18)"
+  gover_secrets_key="$(rand_hex 48)"
+  gover_captcha_key="$(rand_hex 48)"
+
+  (
+    umask 077
+    cat > .env <<EOF
 # --------------------------------- Manuelle Werte - bitte ausfüllen ---------------------------------
 
-# Der Hostname, unter dem die Gover-Anwendung erreichbar sein soll (z.B. https://example.com)
-HOSTNAME=example.com
+# Die vollständige Basis-URL, unter der die Gover-Anwendung erreichbar sein soll (z.B. https://example.com)
+HOSTNAME=https://example.com
 
 # Smtp Server Details
 SMTP_HOST=smtp.example.com
@@ -31,48 +69,51 @@ REPORT_MAIL=change-me
 # ----------------------------------- Automatisch generierte Werte -----------------------------------
 
 # Der Benutzer für die Gover-Postgresql-Datenbank.
-GOVER_POSTGRES_USERNAME=gover_$(openssl rand -hex 4)
-GOVER_POSTGRES_PASSWORD=$(openssl rand -hex 18)
+GOVER_POSTGRES_USERNAME=${gover_postgres_username}
+GOVER_POSTGRES_PASSWORD=${gover_postgres_password}
 
 # Der Benutzer für die Keycloak-Postgresql-Datenbank.
-KEYCLOAK_POSTGRES_USERNAME=keycloak_$(openssl rand -hex 4)
-KEYCLOAK_POSTGRES_PASSWORD=$(openssl rand -hex 18)
+KEYCLOAK_POSTGRES_USERNAME=${keycloak_postgres_username}
+KEYCLOAK_POSTGRES_PASSWORD=${keycloak_postgres_password}
 
 # Der Bootstrap-Admin für Keycloak.
 # Dieser wird nur für die Ersteinrichtung von Keycloak benötigt und kann danach gelöscht werden.
-KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME=bootstrap_admin_$(openssl rand -hex 2)
-KEYCLOAK_BOOTSTRAP_ADMIN_PASSWORD=$(openssl rand -hex 18)
+KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME=${keycloak_bootstrap_admin_username}
+KEYCLOAK_BOOTSTRAP_ADMIN_PASSWORD=${keycloak_bootstrap_admin_password}
 
 # Der Client, der für die Einrichtung von Keycloak genutzt wird.
 # Dieser wird für die Ersteinrichtung, sowie für Aktualisierungen der Konfiguration von Keycloak benötigt.
-KEYCLOAK_DEPLOYMENT_CLIENT_NAME=deployment_$(openssl rand -hex 2)
-KEYCLOAK_DEPLOYMENT_CLIENT_SECRET=$(openssl rand -hex 18)
+KEYCLOAK_DEPLOYMENT_CLIENT_NAME=${keycloak_deployment_client_name}
+KEYCLOAK_DEPLOYMENT_CLIENT_SECRET=${keycloak_deployment_client_secret}
 
 # Der Admin-User für Keycloak, der nach der Ersteinrichtung angelegt wird.
 KEYCLOAK_ADMIN_EMAIL=mail@example.com
-KEYCLOAK_ADMIN_PASSWORD=$(openssl rand -hex 18)
+KEYCLOAK_ADMIN_PASSWORD=${keycloak_admin_password}
 
 # Das Secret, mit dem der Backend-Client auf Keycloak zugreift.
 # Dieser wird für die Kommunikation zwischen Gover und Keycloak benötigt.
-KEYCLOAK_BACKEND_CLIENT_SECRET=$(openssl rand -hex 32)
+KEYCLOAK_BACKEND_CLIENT_SECRET=${keycloak_backend_client_secret}
 
 # Der Benutzer für RabbitMQ.
-RABBITMQ_USERNAME=gover_$(openssl rand -hex 4)
-RABBITMQ_PASSWORD=$(openssl rand -hex 18)
+RABBITMQ_USERNAME=${rabbitmq_username}
+RABBITMQ_PASSWORD=${rabbitmq_password}
 
 # Die geheimen Schlüssel für die Gover-Anwendung.
 # Diese sollten zufällig generiert werden und mindestens 32 Zeichen lang sein.
-GOVER_SECRETS_KEY=$(openssl rand -hex 48)
-GOVER_CAPTCHA_KEY=$(openssl rand -hex 48)
+GOVER_SECRETS_KEY=${gover_secrets_key}
+GOVER_CAPTCHA_KEY=${gover_captcha_key}
 
 # Weitere Smtp-Einstellungen
 SMTP_AUTH=true
 SMTP_TLS=true
 EOF
-fi
+  )
 
-if [ ! -f Caddyfile ]; then
-  cat > Caddyfile <<EOF
+  chmod 600 .env
+}
+
+create_caddyfile() {
+  cat > Caddyfile <<'EOF'
 https://example.com {
     @app {
         path /
@@ -107,10 +148,10 @@ https://example.com {
     }
 }
 EOF
+}
 
-fi
-
-cat > docker-compose.yml <<EOF
+create_compose_file() {
+  cat > docker-compose.yml <<EOF
 services:
 
   gover-database:
@@ -174,7 +215,7 @@ services:
     volumes:
       - keycloak_pg_data:/var/lib/postgresql/data
     networks:
-        - keycloak-network
+      - keycloak-network
 
   keycloak:
     image: ghcr.io/aivot-digital/keycloak-egov-plugins:${keycloak_version}
@@ -195,8 +236,8 @@ services:
       KC_DB_PASSWORD: \${KEYCLOAK_POSTGRES_PASSWORD}
       KC_FEATURES: transient-users,update-email,hostname:v2
     networks:
-        - keycloak-network
-        - proxy-network
+      - keycloak-network
+      - proxy-network
 
   keycloak-setup:
     image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:${keycloak_setup_version}
@@ -320,13 +361,64 @@ networks:
   keycloak-network:
   proxy-network:
 EOF
+}
 
-echo "Die folgenden Dateien wurden erstellt:"
-echo "- .env: Enthält die Umgebungsvariablen für die Anwendung. Bitte überprüfen und ggf. anpassen."
-echo "- Caddyfile: Konfiguration für den Reverse-Proxy Caddy. Bitte überprüfen und ggf. anpassen."
-echo "- docker-compose.yml: Docker-Compose-Datei, die die Container für die Anwendung definiert. Bitte überprüfen und ggf. anpassen."
+require_cmd openssl
+
+force_overwrite="${FORCE:-0}"
+compose_existed=0
+created_files=()
+updated_files=()
+existing_files=()
+
+if [ -f docker-compose.yml ]; then
+  compose_existed=1
+fi
+
+if [ "$compose_existed" -eq 1 ] && [ "$force_overwrite" != "1" ]; then
+  echo "docker-compose.yml existiert bereits. Zum Überschreiben setzen Sie FORCE=1." >&2
+  exit 1
+fi
+
+if [ ! -f .env ]; then
+  create_env_file
+  created_files+=(".env")
+else
+  existing_files+=(".env")
+fi
+
+if [ ! -f Caddyfile ]; then
+  create_caddyfile
+  created_files+=("Caddyfile")
+else
+  existing_files+=("Caddyfile")
+fi
+
+create_compose_file
+
+if [ "$compose_existed" -eq 1 ]; then
+  updated_files+=("docker-compose.yml")
+else
+  created_files+=("docker-compose.yml")
+fi
+
+echo "Die folgenden Dateien wurden erstellt bzw. aktualisiert:"
+
+for file in "${created_files[@]}"; do
+  echo "- ${file}: erstellt."
+done
+
+for file in "${updated_files[@]}"; do
+  echo "- ${file}: überschrieben, weil FORCE=1 gesetzt war."
+done
+
+for file in "${existing_files[@]}"; do
+  echo "- ${file}: bereits vorhanden und unverändert."
+done
+
 echo ""
-echo "Bitte überprüfen Sie die .env-Datei und passen Sie die manuellen Konfigurationen an."
+echo "Bitte überprüfen Sie die .env-Datei sowie die Caddyfile-Datei und passen Sie die manuellen Konfigurationen an."
+echo "Achten Sie dabei insbesondere darauf, dass HOSTNAME eine vollständige URL inklusive Protokoll ist."
 echo ""
-echo "Nachdem Sie die .env-Datei überprüft und ggf. angepasst haben, können Sie die Anwendung mit dem folgenden Befehl starten:"
-echo "docker-compose up -d"
+echo "Nachdem Sie die .env-Datei sowie die Caddyfile-Datei überprüft und ggf. angepasst haben, können Sie die Anwendung mit dem folgenden Befehl starten:"
+echo "docker compose up -d"

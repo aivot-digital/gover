@@ -28,3 +28,6 @@
 
 ### Dependencies ###
 /pg_data/
+
+### Local install ###
+/.env

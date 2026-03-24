@@ -103,15 +103,25 @@ public class SystemRoleController {
         var createdEntity = systemRoleService
                 .create(newEntity);
 
-        auditService.create().withUser(execUser).withAuditAction(AuditAction.Create, SystemRoleEntity.class, createdEntity.getId(), "id", Map.of(
-                        "id", createdEntity.getId(),
-                        "name", createdEntity.getName()
-                )).withMessage(
-                "Die Systemrolle %s mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
-                StringUtils.quote(createdEntity.getName()),
-                StringUtils.quote(String.valueOf(createdEntity.getId())),
-                StringUtils.quote(execUser.getFullName())
-        ).log();
+        auditService
+                .create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Create,
+                        SystemRoleEntity.class,
+                        createdEntity.getId(),
+                        "id",
+                        Map.of(
+                                "id", createdEntity.getId(),
+                                "name", createdEntity.getName()
+                        ))
+                .withMessage(
+                        "Die Systemrolle %s mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(createdEntity.getName()),
+                        StringUtils.quote(String.valueOf(createdEntity.getId())),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
 
         return createdEntity;
     }
@@ -161,15 +171,25 @@ public class SystemRoleController {
         var updatedEntity = systemRoleService
                 .update(id, patchedEntity);
 
-        auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, SystemRoleEntity.class, updatedEntity.getId(), "id", Map.of(
-                        "id", updatedEntity.getId(),
-                        "name", updatedEntity.getName()
-                )).withMessage(
-                "Die Systemrolle %s mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
-                StringUtils.quote(updatedEntity.getName()),
-                StringUtils.quote(String.valueOf(updatedEntity.getId())),
-                StringUtils.quote(execUser.getFullName())
-        ).log();
+        auditService
+                .create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Update,
+                        SystemRoleEntity.class,
+                        updatedEntity.getId(),
+                        "id",
+                        Map.of(
+                                "id", updatedEntity.getId(),
+                                "name", updatedEntity.getName()
+                        ))
+                .withMessage(
+                        "Die Systemrolle %s mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(updatedEntity.getName()),
+                        StringUtils.quote(String.valueOf(updatedEntity.getId())),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
 
         return updatedEntity;
     }
@@ -200,14 +220,24 @@ public class SystemRoleController {
         userRoleService
                 .deleteEntity(entity);
 
-        auditService.create().withUser(execUser).withAuditAction(AuditAction.Delete, UserRoleEntity.class, entity.getId(), "id", Map.of(
-                        "id", entity.getId(),
-                        "name", entity.getName()
-                )).withMessage(
-                "Die Systemrolle %s mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
-                StringUtils.quote(entity.getName()),
-                StringUtils.quote(String.valueOf(entity.getId())),
-                StringUtils.quote(execUser.getFullName())
-        ).log();
+        auditService
+                .create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Delete,
+                        UserRoleEntity.class,
+                        entity.getId(),
+                        "id",
+                        Map.of(
+                                "id", entity.getId(),
+                                "name", entity.getName()
+                        ))
+                .withMessage(
+                        "Die Systemrolle %s mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
+                        StringUtils.quote(entity.getName()),
+                        StringUtils.quote(String.valueOf(entity.getId())),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
     }
 }

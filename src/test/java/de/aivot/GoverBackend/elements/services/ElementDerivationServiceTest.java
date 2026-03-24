@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class ElementDerivationServiceV2Test {
+class ElementDerivationServiceTest {
     @Test
     void shouldProjectAuthoredValuesIntoRuntimeData() {
         var field = new TextInputElement();

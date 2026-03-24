@@ -41,6 +41,14 @@ public class PermissionService {
         return hasSystemPermission(UserService.getIdFromJWT(jwt), permission);
     }
 
+    public boolean hasSystemPermission(@Nullable UserEntity user,
+                                       @Nonnull String permission) {
+        if (user == null) {
+            return false;
+        }
+        return hasSystemPermission(user.getId(), permission);
+    }
+
     public void testSystemPermission(@Nullable String userId,
                                      @Nonnull String permission) throws ResponseException {
         if (userId == null || !hasSystemPermission(userId, permission)) {

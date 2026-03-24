@@ -1,10 +1,8 @@
 package de.aivot.GoverBackend;
 
-import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
-import de.aivot.GoverBackend.elements.models.ComputedElementState;
-import de.aivot.GoverBackend.elements.models.ComputedElementStates;
-import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
-import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
+import de.aivot.GoverBackend.elements.models.*;
+
+import java.util.Map;
 
 public final class TestData {
     private TestData() {
@@ -47,7 +45,7 @@ public final class TestData {
         return new ComputedElementState().setVisible(visible);
     }
 
-    private static void putAll(java.util.Map<String, Object> target, Object... keyValuePairs) {
+    private static void putAll(Map<String, Object> target, Object... keyValuePairs) {
         if (keyValuePairs.length % 2 != 0) {
             throw new IllegalArgumentException("Expected an even number of key/value arguments");
         }

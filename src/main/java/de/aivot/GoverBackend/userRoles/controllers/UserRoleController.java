@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+
 import java.util.Map;
 
 @RestController
@@ -79,15 +80,25 @@ public class UserRoleController {
         var created = userRoleService
                 .create(requestDTO.toEntity());
 
-        auditService.create().withUser(execUser).withAuditAction(AuditAction.Create, UserRoleEntity.class, created.getId(), "id", Map.of(
-                        "id", created.getId(),
-                        "name", created.getName()
-                )).withMessage(
-                "Die Fachrolle %s mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
-                StringUtils.quote(created.getName()),
-                StringUtils.quote(String.valueOf(created.getId())),
-                StringUtils.quote(execUser.getFullName())
-        ).log();
+        auditService
+                .create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Create,
+                        UserRoleEntity.class,
+                        created.getId(),
+                        "id",
+                        Map.of(
+                                "id", created.getId(),
+                                "name", created.getName()
+                        ))
+                .withMessage(
+                        "Die Fachrolle %s mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(created.getName()),
+                        StringUtils.quote(String.valueOf(created.getId())),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
 
         return UserRoleResponseDTO
                 .fromEntity(created);
@@ -126,15 +137,25 @@ public class UserRoleController {
         var result = userRoleService
                 .update(id, requestDTO.toEntity());
 
-        auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, UserRoleEntity.class, result.getId(), "id", Map.of(
-                        "id", result.getId(),
-                        "name", result.getName()
-                )).withMessage(
-                "Die Fachrolle %s mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
-                StringUtils.quote(result.getName()),
-                StringUtils.quote(String.valueOf(result.getId())),
-                StringUtils.quote(execUser.getFullName())
-        ).log();
+        auditService
+                .create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Update,
+                        UserRoleEntity.class,
+                        result.getId(),
+                        "id",
+                        Map.of(
+                                "id", result.getId(),
+                                "name", result.getName()
+                        ))
+                .withMessage(
+                        "Die Fachrolle %s mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(result.getName()),
+                        StringUtils.quote(String.valueOf(result.getId())),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
 
         return UserRoleResponseDTO
                 .fromEntity(result);
@@ -162,14 +183,24 @@ public class UserRoleController {
         userRoleService
                 .deleteEntity(entity);
 
-        auditService.create().withUser(execUser).withAuditAction(AuditAction.Delete, UserRoleEntity.class, entity.getId(), "id", Map.of(
-                        "id", entity.getId(),
-                        "name", entity.getName()
-                )).withMessage(
-                "Die Fachrolle %s mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
-                StringUtils.quote(entity.getName()),
-                StringUtils.quote(String.valueOf(entity.getId())),
-                StringUtils.quote(execUser.getFullName())
-        ).log();
+        auditService
+                .create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Delete,
+                        UserRoleEntity.class,
+                        entity.getId(),
+                        "id",
+                        Map.of(
+                                "id", entity.getId(),
+                                "name", entity.getName()
+                        ))
+                .withMessage(
+                        "Die Fachrolle %s mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
+                        StringUtils.quote(entity.getName()),
+                        StringUtils.quote(String.valueOf(entity.getId())),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
     }
 }
