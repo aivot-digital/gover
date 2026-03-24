@@ -10,31 +10,12 @@ keycloak_setup_version="0.0.17"
 reverse_proxy_version="2.10.2-alpine"
 gover_version="5.0.0"
 
-prompt_hostname() {
-  local prompt="Bitte geben Sie den Hostnamen ein, unter dem die Gover-Anwendung erreichbar sein soll (z.B. https://example.com): "
-
-  if [ -t 0 ]; then
-    read -r -p "${prompt}" hostname
-    return
-  fi
-
-  if [ -r /dev/tty ]; then
-    read -r -p "${prompt}" hostname < /dev/tty
-    return
-  fi
-
-  echo "Es konnte kein interaktives Terminal fuer die Hostname-Eingabe gefunden werden." >&2
-  exit 1
-}
-
-prompt_hostname
-
 if [ ! -f .env ]; then
   cat > .env <<EOF
 # --------------------------------- Manuelle Werte - bitte ausfüllen ---------------------------------
 
 # Der Hostname, unter dem die Gover-Anwendung erreichbar sein soll (z.B. https://example.com)
-HOSTNAME=${hostname}
+HOSTNAME=example.com
 
 # Smtp Server Details
 SMTP_HOST=smtp.example.com
@@ -92,7 +73,7 @@ fi
 
 if [ ! -f Caddyfile ]; then
   cat > Caddyfile <<EOF
-${hostname} {
+https://example.com {
     @app {
         path /
         path /*
@@ -274,8 +255,6 @@ services:
       GOVER_LOG_LEVEL: WARN
       GOVER_FROM_MAIL: '"\${SMTP_FROM_DISPLAY}" <\${SMTP_FROM}>'
       GOVER_REPORT_MAIL: \${REPORT_MAIL}
-      GOVER_SENTRY_SERVER: "https://4e653c46f8496447bd033f3c477e2ee2@app-monitoring.aivot.cloud/3"
-      GOVER_SENTRY_WEB_APP: "https://da7fe01c989214420911c676813a5349@app-monitoring.aivot.cloud/2"
       GOVER_ENVIRONMENT: \${HOSTNAME}
       GOVER_HOSTNAME: \${HOSTNAME}
       GOVER_SECRETS_KEY: \${GOVER_SECRETS_KEY}
@@ -314,7 +293,6 @@ services:
       GOVER_KEYCLOAK_OIDC_REALM: staff
       GOVER_KEYCLOAK_OIDC_HOSTNAME: \${HOSTNAME}/idp
       GOVER_HOSTNAME: \${HOSTNAME}
-      GOVER_SENTRY_WEB_APP: "https://1677139e6e374703aaed37a824e3fb4a@sentry.aivot.cloud/3"
     networks:
       - proxy-network
 
