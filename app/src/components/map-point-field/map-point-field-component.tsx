@@ -18,7 +18,6 @@ import {MapPointValue} from '../../models/elements/form/input/map-point-field-el
 import {AttributionControl, MapContainer, Marker, TileLayer, useMapEvents} from 'react-leaflet';
 import type {LeafletEventHandlerFnMap} from 'leaflet';
 import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 
 interface MapPointFieldComponentProps {
     label: string;
