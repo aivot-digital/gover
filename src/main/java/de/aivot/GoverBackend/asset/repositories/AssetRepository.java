@@ -9,6 +9,4 @@ import java.util.UUID;
 
 public interface AssetRepository extends JpaRepository<AssetEntity, UUID>, JpaSpecificationExecutor<AssetEntity> {
     Optional<AssetEntity> findByStorageProviderIdAndStoragePathFromRoot(Integer storageProviderId, String storagePathFromRoot);
-
-    void deleteAllByStoragePathFromRootStartingWith(String path);
 }

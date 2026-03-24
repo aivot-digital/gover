@@ -210,8 +210,6 @@ public class AssetController {
 
         storageService.deleteFolder(storageProvider.getId(), folderPath);
 
-        assetRepository.deleteAllByStoragePathFromRootStartingWith(folderPath);
-
         auditService
                 .create()
                 .withUser(execUser)
