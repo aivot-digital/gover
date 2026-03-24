@@ -25,7 +25,6 @@ import org.springframework.web.bind.annotation.*;
  * before sending the solution back to the server.
  */
 @RestController
-@RequestMapping("/api/public/captcha/")
 @Tag(
         name = OpenApiConstants.Tags.CaptchaName,
         description = OpenApiConstants.Tags.CaptchaDescription
@@ -40,7 +39,7 @@ public class CaptchaController {
         this.replayGuard = replayGuard;
     }
 
-    @GetMapping("challenge/")
+    @GetMapping("/api/public/captcha/challenge/")
     @Operation(
             summary = "Create Captcha Challenge",
             description = "Creates a new captcha challenge that clients must solve. " +
@@ -57,7 +56,7 @@ public class CaptchaController {
     }
 
     /* verification for forms is handled in the Submit endpoint, this authenticated verification endpoint is only used for debugging */
-    @PostMapping("verify/")
+    @PostMapping("/api/captcha/verify/")
     @Operation(
             summary = "Verify Captcha Solution",
             description = "Verifies the captcha solution provided by the client. " +
