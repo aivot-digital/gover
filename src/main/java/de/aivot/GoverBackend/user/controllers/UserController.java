@@ -5,9 +5,11 @@ import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
+import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.user.dtos.SetPasswordRequestDTO;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.filters.UserFilter;
+import de.aivot.GoverBackend.user.permissions.UserPermissionProvider;
 import de.aivot.GoverBackend.user.services.KeyCloakApiService;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.utils.StringUtils;
@@ -36,17 +38,19 @@ public class UserController {
 
     private final UserService userService;
     private final KeyCloakApiService keyCloakApiService;
+    private final PermissionService permissionService;
 
     @Autowired
     public UserController(
             AuditService auditService,
             UserService userService,
-            KeyCloakApiService keyCloakApiService) {
+            KeyCloakApiService keyCloakApiService, PermissionService permissionService) {
         this.auditService = auditService
                 .createScopedAuditService(UserController.class, "Benutzer");
 
         this.userService = userService;
         this.keyCloakApiService = keyCloakApiService;
+        this.permissionService = permissionService;
     }
 
     @GetMapping("")
@@ -55,9 +59,12 @@ public class UserController {
             description = "Retrieve a paginated list of users with optional filtering."
     )
     public Page<UserEntity> list(
+            @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PageableDefault Pageable pageable,
             @Nonnull @Valid UserFilter filter
     ) throws ResponseException {
+        permissionService.testSystemPermission(jwt, UserPermissionProvider.USER_READ);
+
         return userService
                 .list(pageable, filter);
     }
@@ -65,7 +72,7 @@ public class UserController {
     @PostMapping("")
     @Operation(
             summary = "Create User",
-            description = "Create a new user in the system. Requires super admin permissions."
+            description = "Create a new user in the system. Requires the user.create permission."
     )
     public UserEntity create(
             @AuthenticationPrincipal Jwt jwt,
@@ -73,9 +80,9 @@ public class UserController {
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::noSuperAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService.testSystemPermission(execUser.getId(), UserPermissionProvider.USER_CREATE);
 
         UserEntity result;
         try {
@@ -131,8 +138,15 @@ public class UserController {
             description = "Retrieve the details of a user by their ID."
     )
     public UserEntity retrieve(
+            @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable String id
     ) throws ResponseException {
+        var execUser = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        testUserPermissionOrSelf(execUser, id, UserPermissionProvider.USER_READ);
+
         return userService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
@@ -142,7 +156,7 @@ public class UserController {
     @Operation(
             summary = "Update User",
             description = "Update the details of an existing user. " +
-                    "Requires super admin permissions or the user can update their own information."
+                    "Requires the user.update permission or the user can update their own information."
     )
     public UserEntity update(
             @AuthenticationPrincipal Jwt jwt,
@@ -153,9 +167,7 @@ public class UserController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!execUser.getIsSuperAdmin() && !execUser.getId().equals(id)) {
-            throw ResponseException.noSuperAdminPermission();
-        }
+        testUserPermissionOrSelf(execUser, id, UserPermissionProvider.USER_UPDATE);
 
         UserEntity result;
         try {
@@ -193,11 +205,11 @@ public class UserController {
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable String id
     ) throws ResponseException {
-        var user = userService
+        var execUser = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::noSuperAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
+
+        testUserPermissionOrSelf(execUser, id, UserPermissionProvider.USER_DELETE);
 
         // Delete the user
         var deletedUser = userService
@@ -206,7 +218,7 @@ public class UserController {
         // Log the action
         auditService
                 .create()
-                .withUser(user)
+                .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Delete,
                         UserEntity.class,
@@ -222,7 +234,7 @@ public class UserController {
                         "Die Mitarbeiter:in mit der ID %s und der E-Mail-Adresse %s wurde von der Mitarbeiter:in %s gelöscht.",
                         StringUtils.quote(deletedUser.getId()),
                         StringUtils.quote(deletedUser.getEmail()),
-                        StringUtils.quote(user.getFullName())
+                        StringUtils.quote(execUser.getFullName())
                 )
                 .log();
     }
@@ -231,7 +243,7 @@ public class UserController {
     @Operation(
             summary = "Reset Password",
             description = "Reset the password of a user. " +
-                    "Requires super admin permissions or the user can reset their own password."
+                    "Requires the user.update permission or the user can reset their own password."
     )
     public Map<String, String> resetPassword(
             @AuthenticationPrincipal Jwt jwt,
@@ -241,9 +253,7 @@ public class UserController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!execUser.getIsSuperAdmin() && !execUser.getId().equals(id)) {
-            throw ResponseException.noSuperAdminPermission();
-        }
+        testUserPermissionOrSelf(execUser, id, UserPermissionProvider.USER_UPDATE);
 
         var user = userService
                 .retrieve(id)
@@ -282,7 +292,7 @@ public class UserController {
     @Operation(
             summary = "Update Password",
             description = "Update the password of a user. " +
-                    "Requires super admin permissions or the user can update their own password."
+                    "Requires the user.update permission or the user can update their own password."
     )
     public UserEntity updatePassword(
             @AuthenticationPrincipal Jwt jwt,
@@ -293,9 +303,7 @@ public class UserController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!execUser.getIsSuperAdmin() && !execUser.getId().equals(id)) {
-            throw ResponseException.noSuperAdminPermission();
-        }
+        testUserPermissionOrSelf(execUser, id, UserPermissionProvider.USER_UPDATE);
 
         var result = userService
                 .updatePassword(id, passwordRequestDTO.password());
@@ -322,5 +330,15 @@ public class UserController {
                 .log();
 
         return result;
+    }
+
+    private void testUserPermissionOrSelf(@Nonnull UserEntity execUser,
+                                          @Nonnull String targetUserId,
+                                          @Nonnull String permission) throws ResponseException {
+        if (execUser.getId().equals(targetUserId)) {
+            return;
+        }
+
+        permissionService.testSystemPermission(execUser.getId(), permission);
     }
 }
