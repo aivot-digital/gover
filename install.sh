@@ -114,7 +114,7 @@ EOF
 
 create_caddyfile() {
   cat > Caddyfile <<'EOF'
-https://example.com {
+{$HOSTNAME} {
     @app {
         path /
         path /*
@@ -340,6 +340,8 @@ services:
   reverse-proxy:
     image: docker.io/caddy:${reverse_proxy_version}
     restart: unless-stopped
+    environment
+      HOSTNAME: \${HOSTNAME}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -417,8 +419,8 @@ for file in "${existing_files[@]}"; do
 done
 
 echo ""
-echo "Bitte überprüfen Sie die .env-Datei sowie die Caddyfile-Datei und passen Sie die manuellen Konfigurationen an."
+echo "Bitte überprüfen Sie die .env-Datei und passen Sie die manuellen Konfigurationen an."
 echo "Achten Sie dabei insbesondere darauf, dass HOSTNAME eine vollständige URL inklusive Protokoll ist."
 echo ""
-echo "Nachdem Sie die .env-Datei sowie die Caddyfile-Datei überprüft und ggf. angepasst haben, können Sie die Anwendung mit dem folgenden Befehl starten:"
+echo "Nachdem Sie die .env-Datei überprüft und ggf. angepasst haben, können Sie die Anwendung mit dem folgenden Befehl starten:"
 echo "docker compose up -d"
