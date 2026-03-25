@@ -192,13 +192,11 @@ export function UserDetailsPageDeputies() {
                     variant="h5"
                     sx={{mb: 1}}
                 >
-                    Mitgliedschaften in Organisationseinheiten
+                    Stellvertreter:innen
                 </Typography>
 
                 <Typography sx={{mb: 3, maxWidth: 900}}>
-                    Eine Übersicht der Organisationseinheiten, in denen diese Mitarbeiter:in Mitglied ist, und die
-                    dazugehörigen
-                    Rollen.
+                    Eine Übersicht der Stellvertreter:innen, die für diese Nutzer:in eingerichtet sind.
                 </Typography>
 
                 <GenericList<VUserDeputyWithDetailsEntity>
@@ -215,13 +213,13 @@ export function UserDetailsPageDeputies() {
                             deputyUserFullName: options.search,
                         })}
                     getRowIdentifier={(item) => item.id.toString()}
-                    searchLabel="Organisationseinheit suchen"
-                    searchPlaceholder="Titel der Organisationseinheit eingeben…"
+                    searchLabel="Stellvertreter:in suchen"
+                    searchPlaceholder="Name der Stellvertreter:in eingeben…"
                     defaultSortField="untilTimestamp"
                     rowMenuItems={[]}
-                    noDataPlaceholder="Keine Organisationseinheiten vorhanden"
-                    loadingPlaceholder="Lade Organisationseinheiten…"
-                    noSearchResultsPlaceholder="Keine Organisationseinheiten gefunden"
+                    noDataPlaceholder="Keine Stellvertreter:innen vorhanden"
+                    loadingPlaceholder="Lade Stellvertreter:innen…"
+                    noSearchResultsPlaceholder="Keine Stellvertreter:innen gefunden"
                     rowActions={(item) => [
                         {
                             tooltip: 'Stellvertreter:in löschen',
