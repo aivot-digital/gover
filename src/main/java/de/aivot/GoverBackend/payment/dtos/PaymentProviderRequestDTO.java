@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.payment.dtos;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.Length;
 
@@ -27,6 +28,11 @@ public record PaymentProviderRequestDTO(
         String providerKey,
 
         @Nonnull
+        @NotNull(message = "Provider version is required")
+        @Min(value = 1, message = "Provider version must be at least 1")
+        Integer providerVersion,
+
+        @Nonnull
         @NotNull(message = "Is test provider is required")
         Boolean isTestProvider,
 
@@ -43,6 +49,7 @@ public record PaymentProviderRequestDTO(
         entity.setName(name);
         entity.setDescription(description);
         entity.setPaymentProviderDefinitionKey(providerKey);
+        entity.setPaymentProviderDefinitionVersion(providerVersion);
         entity.setTestProvider(isTestProvider);
         entity.setIsEnabled(isEnabled);
         entity.setConfig(config);

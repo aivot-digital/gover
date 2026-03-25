@@ -16,6 +16,8 @@ public record PaymentProviderResponseDTO(
         @Nonnull
         String providerKey,
         @Nonnull
+        Integer providerVersion,
+        @Nonnull
         Boolean isTestProvider,
         @Nonnull
         Boolean isEnabled,
@@ -32,6 +34,7 @@ public record PaymentProviderResponseDTO(
                 entity.getName(),
                 entity.getDescription(),
                 entity.getPaymentProviderDefinitionKey(),
+                entity.getPaymentProviderDefinitionVersion(),
                 entity.getTestProvider(),
                 entity.getIsEnabled(),
                 entity.getConfig()

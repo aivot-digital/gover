@@ -201,7 +201,10 @@ public class PublicFormController {
         }
 
         var paymentProviderDefinition = paymentProviderService
-                .getProviderDefinition(paymentProvider.get().getPaymentProviderDefinitionKey());
+                .getProviderDefinition(
+                        paymentProvider.get().getPaymentProviderDefinitionKey(),
+                        paymentProvider.get().getPaymentProviderDefinitionVersion()
+                );
 
         if (paymentProviderDefinition.isEmpty()) {
             return new FormCostCalculationResponseDTO(null, null, null);

@@ -89,8 +89,15 @@ public class PaymentTransactionService implements
     ) throws PaymentException {
         // Fetch corresponding payment provider definition
         var paymentProviderDefinition = paymentProviderDefinitionsService
-                .getProviderDefinition(paymentProviderEntity.getPaymentProviderDefinitionKey())
-                .orElseThrow(() -> new PaymentException("Für den Zahlungsdienstleister " + paymentProviderEntity.getPaymentProviderDefinitionKey() + " wurde keine Definition gefunden."));
+                .getProviderDefinition(
+                        paymentProviderEntity.getPaymentProviderDefinitionKey(),
+                        paymentProviderEntity.getPaymentProviderDefinitionVersion()
+                )
+                .orElseThrow(() -> new PaymentException(
+                        "Für den Zahlungsdienstleister %s in Version %d wurde keine Definition gefunden.",
+                        paymentProviderEntity.getPaymentProviderDefinitionKey(),
+                        paymentProviderEntity.getPaymentProviderDefinitionVersion()
+                ));
 
         // Prepare transaction entity
         var transactionEntity = new PaymentTransactionEntity();
@@ -226,10 +233,18 @@ public class PaymentTransactionService implements
 
         // Fetch corresponding payment provider definition. If not found, set error and throw exception
         var providerDefinition = paymentProviderDefinitionsService
-                .getProviderDefinition(provider.getPaymentProviderDefinitionKey())
+                .getProviderDefinition(
+                        provider.getPaymentProviderDefinitionKey(),
+                        provider.getPaymentProviderDefinitionVersion()
+                )
                 .orElse(null);
         if (providerDefinition == null) {
-            var error = new PaymentException("Die Definition \"%s\"des referenzierten Zahlungsdienstleisters \"%s\" konnte nicht gefunden werden.", provider.getPaymentProviderDefinitionKey(), provider.getKey());
+            var error = new PaymentException(
+                    "Die Definition \"%s\" in Version %d des referenzierten Zahlungsdienstleisters \"%s\" konnte nicht gefunden werden.",
+                    provider.getPaymentProviderDefinitionKey(),
+                    provider.getPaymentProviderDefinitionVersion(),
+                    provider.getKey()
+            );
             transaction.setPaymentError(error.getMessage());
             paymentTransactionRepository.save(transaction);
             throw error;

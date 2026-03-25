@@ -48,7 +48,10 @@ public class PaymentProviderTestService {
                 .orElseThrow(() -> new BadRequestException("Invalid provider key"));
 
         var paymentProviderDefinition = paymentProviderService
-                .getProviderDefinition(paymentProviderEntity.getPaymentProviderDefinitionKey())
+                .getProviderDefinition(
+                        paymentProviderEntity.getPaymentProviderDefinitionKey(),
+                        paymentProviderEntity.getPaymentProviderDefinitionVersion()
+                )
                 .orElseThrow(() -> new BadRequestException("Invalid provider key"));
 
         DerivedRuntimeElementData derivedConfiguration;

@@ -1,4 +1,4 @@
-import {Box, Button, Typography} from '@mui/material';
+import {Box, Button, Grid, Typography} from '@mui/material';
 import React, {useContext, useEffect, useMemo, useState} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
@@ -45,6 +45,9 @@ export const _PaymentProviderSchema = {
     providerKey: yup.string()
         .trim()
         .required('Der Anbieter des Zahlungsdienstleisters ist ein Pflichtfeld.'),
+    providerVersion: yup.number()
+        .min(1, 'Die Version des Zahlungsdienstleisters muss mindestens 1 sein.')
+        .required('Die Version des Zahlungsdienstleisters ist ein Pflichtfeld.'),
     isEnabled: yup.boolean()
         .default(false),
     isTestProvider: yup.boolean()
@@ -104,8 +107,11 @@ export function PaymentProviderDetailsPageIndex() {
     }, [additionalData]);
 
     const definition: PaymentProviderDefinitionResponseDTO | undefined = useMemo(() => {
-        return definitions.find(def => def.key === paymentProvider?.providerKey);
-    }, [definitions, paymentProvider?.providerKey]);
+        return definitions.find(def => (
+            def.key === paymentProvider?.providerKey &&
+            def.version === paymentProvider?.providerVersion
+        ));
+    }, [definitions, paymentProvider?.providerKey, paymentProvider?.providerVersion]);
 
     useEffect(() => {
         if (definition != null && definition.configLayout != null) {
@@ -301,27 +307,78 @@ export function PaymentProviderDetailsPageIndex() {
 
     return (
         <Box>
-            {
-                isNewItem ?
-                    <SelectFieldComponent
-                        label="Zahlungsdienstleister"
-                        required
-                        value={paymentProvider.providerKey}
-                        onChange={handleInputChange('providerKey')}
-                        options={definitions.map(def => ({
-                            value: def.key,
-                            label: def.name,
-                        }))}
-                        error={errors.providerKey}
-                        hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsdienstleisters eingeblendet wird. Der Name des Anbieters ist gegenüber antragstellenden Personen sichtbar."
-                    /> :
-                    <TextFieldComponent
-                        label="Zahlungsdienstleister"
-                        value={paymentProvider.providerKey}
-                        onChange={handleInputChange('providerKey')}
-                        disabled={true}
-                    />
-            }
+            <Grid
+                container={true}
+                spacing={2}
+            >
+                <Grid
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
+                >
+                    {
+                        isNewItem ?
+                            <SelectFieldComponent
+                                label="Zahlungsdienstleister"
+                                required
+                                value={paymentProvider.providerKey}
+                                onChange={handleInputChange('providerKey')}
+                                options={definitions.map(def => ({
+                                    value: def.key,
+                                    label: def.name,
+                                    subLabel: def.description,
+                                }))}
+                                disabled={isBusy || !isEditable}
+                                error={errors.providerKey}
+                                hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsdienstleisters eingeblendet wird. Der Name des Anbieters ist gegenüber antragstellenden Personen sichtbar."
+                            /> :
+                            <TextFieldComponent
+                                label="Zahlungsdienstleister"
+                                value={paymentProvider.providerKey}
+                                onChange={handleInputChange('providerKey')}
+                                disabled={true}
+                            />
+                    }
+                </Grid>
+                <Grid
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
+                >
+                    {
+                        isNewItem ?
+                            <SelectFieldComponent
+                                label="Version"
+                                required
+                                value={paymentProvider.providerVersion.toString()}
+                                onChange={(val) => {
+                                    if (val == null) {
+                                        handleInputChange('providerVersion')(0);
+                                    } else {
+                                        handleInputChange('providerVersion')(parseInt(val));
+                                    }
+                                }}
+                                options={definitions.filter(def => {
+                                    return def.key === paymentProvider.providerKey;
+                                }).map(def => ({
+                                    value: def.version.toString(),
+                                    label: `Version ${def.version.toString()}`,
+                                }))}
+                                disabled={isBusy || !isEditable || isStringNullOrEmpty(paymentProvider.providerKey)}
+                                error={errors.providerVersion}
+                                hint="Bestimmt, welche Version der Konfigurationsoberfläche und Einstellungsmöglichkeiten angezeigt werden."
+                            /> :
+                            <TextFieldComponent
+                                label="Version"
+                                value={paymentProvider.providerVersion > 0 ? `Version ${paymentProvider.providerVersion}` : ''}
+                                onChange={() => undefined}
+                                disabled={true}
+                            />
+                    }
+                </Grid>
+            </Grid>
 
             <TextFieldComponent
                 label="Name"
