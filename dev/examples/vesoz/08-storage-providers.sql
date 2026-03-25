@@ -74,3 +74,7 @@ on conflict (id) do update
         last_sync                           = excluded.last_sync,
         created                             = excluded.created,
         updated                             = excluded.updated;
+
+-- fix id sequence for the storage providers
+select setval('storage_providers_id_seq',
+              (select max(id) from storage_providers));
