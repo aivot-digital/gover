@@ -18,7 +18,13 @@ import {RootComponentFooter} from './root-component-footer';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectLoadedForm} from '../../slices/app-slice';
-import {nextStep, previousStep, selectCurrentStep, selectUpcomingStepDirection, setCurrentStep} from '../../slices/stepper-slice';
+import {
+    nextStep,
+    previousStep,
+    selectCurrentStep,
+    selectUpcomingStepDirection,
+    setCurrentStep,
+} from '../../slices/stepper-slice';
 import {ElementType} from '../../data/element-type/element-type';
 import {removeLoadingSnackbar, showErrorSnackbar, showLoadingSnackbar} from '../../slices/snackbar-slice';
 import {type FileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
@@ -30,7 +36,6 @@ import {Api, useApi} from '../../hooks/use-api';
 import {useSearchParams} from 'react-router-dom';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {SubmissionListResponseDTO} from '../../modules/submissions/dtos/submission-list-response-dto';
-import {SubmissionStatus} from '../../modules/submissions/enums/submission-status';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {useSingleUpdateEffect} from '../../hooks/use-single-update-effect';
 import {ApiError, isApiError} from '../../models/api-error';
@@ -60,7 +65,12 @@ import {FormEntity} from '../../modules/forms/entities/form-entity';
 import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
 import {FormApiService} from '../../modules/forms/services/form-api-service';
 
-type AnyStepElement = StepElement | IntroductionStepElement | SummaryStepElement | SubmitStepElement | SubmittedStepElement;
+type AnyStepElement =
+    StepElement
+    | IntroductionStepElement
+    | SummaryStepElement
+    | SubmitStepElement
+    | SubmittedStepElement;
 
 const SubmissionIdSearchParam = 'submissionId';
 
@@ -668,6 +678,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                                             stepIndex={index}
                                             isFirstStep={index === 0}
                                             isLastStep={index === allVisibleSteps.length - 1}
+                                            isSubmitStep={step.type === ElementType.SubmitStep}
                                             onNext={handleNextStep}
                                             onPrevious={handlePreviousStep}
                                             active={currentStep === index}
@@ -724,6 +735,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                                 stepIndex={-1}
                                 isFirstStep={false}
                                 isLastStep={false}
+                                isSubmitStep={false}
                                 step={generateElementWithDefaultValues(ElementType.SubmittedStep) as SubmittedStepElement}
                                 title="Ihr Antrag wurde erfolgreich eingereicht"
                                 active
@@ -776,7 +788,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                                         color: (theme) => theme.palette.primary.main,
                                         transform: 'translateY(2px)',
                                     }}
-                                ><GppGoodOutlinedIcon fontSize="small" /></Box>}
+                                ><GppGoodOutlinedIcon fontSize="small"/></Box>}
                                 label="Lokal auf Ihrem Gerät zwischengespeichert"
                                 variant="outlined"
                             />
