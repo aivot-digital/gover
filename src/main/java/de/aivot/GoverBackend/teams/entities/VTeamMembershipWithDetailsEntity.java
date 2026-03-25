@@ -29,6 +29,9 @@ public class VTeamMembershipWithDetailsEntity {
     @Column(columnDefinition = "jsonb")
     @Convert(converter = JsonArrayConverter.class)
     private List<Map<String, Object>> domainRoles;
+    @Column(columnDefinition = "jsonb")
+    @Convert(converter = JsonArrayConverter.class)
+    private List<Map<String, Object>> domainRoleAssignments;
     private List<String> domainRolePermissions;
 
     public Integer getMembershipId() {
@@ -172,6 +175,15 @@ public class VTeamMembershipWithDetailsEntity {
 
     public VTeamMembershipWithDetailsEntity setDomainRolePermissions(List<String> domainRolePermissions) {
         this.domainRolePermissions = domainRolePermissions;
+        return this;
+    }
+
+    public List<Map<String, Object>> getDomainRoleAssignments() {
+        return domainRoleAssignments;
+    }
+
+    public VTeamMembershipWithDetailsEntity setDomainRoleAssignments(List<Map<String, Object>> domainRoleAssignments) {
+        this.domainRoleAssignments = domainRoleAssignments;
         return this;
     }
 }

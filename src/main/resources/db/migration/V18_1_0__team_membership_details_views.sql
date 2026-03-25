@@ -3,6 +3,7 @@
 create view v_team_memberships_with_details as
 with aggregated_roles as (select dra.team_membership_id                 as team_membership_id,
                                  jsonb_agg(dr)                          as domain_roles,
+                                 jsonb_agg(dra)                         as domain_role_assignments,
                                  array_unique_union_agg(dr.permissions) as domain_role_permissions
                           from domain_role_assignments dra
                                    join domain_roles dr on dr.id = dra.domain_role_id
@@ -30,6 +31,7 @@ select mem.id                                              as membership_id,
        team.name                                           as team_name,
 
        coalesce(ar.domain_roles, '[]')                     as domain_roles,
+       coalesce(ar.domain_role_assignments, '[]')          as domain_role_assignments,
        coalesce(ar.domain_role_permissions, '{}')          as domain_role_permissions
 from team_memberships mem
          left join teams team on team.id = mem.team_id

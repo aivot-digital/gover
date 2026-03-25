@@ -18,6 +18,7 @@ export interface VTeamMembershipWithDetailsEntity {
     userSystemRoleId: number;
     teamId: number;
     teamName: string;
-    domainRoles: UserRoleResponseDTO[];
+    domainRoles: KeysToSnakeCase<UserRoleResponseDTO>[];
+    domainRoleAssignments: Record<string, any>[];
     domainRolePermissions: Permission[];
 }

@@ -49,6 +49,7 @@ export class VTeamMembershipWithDetailsService extends BaseCrudApiService<
             userId: '',
             userSystemRoleId: 0,
             userVerified: false,
+            domainRoleAssignments: [],
         };
     }
 }

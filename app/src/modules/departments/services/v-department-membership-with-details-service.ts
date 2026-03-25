@@ -65,6 +65,7 @@ export class VDepartmentMembershipWithDetailsService extends BaseCrudApiService<
             departmentId: 0,
             departmentName: "",
             domainRolePermissions: [],
+            domainRoleAssignments: [],
             domainRoles: [],
             membershipId: 0,
             membershipHasDeputies: false,

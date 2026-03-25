@@ -3,6 +3,7 @@
 create view v_department_memberships_with_details as
 with aggregated_domain_roles as (select dra.department_membership_id           as department_membership_id,
                                         jsonb_agg(dr)                          as domain_roles,
+                                        jsonb_agg(dra)                         as domain_role_assignments,
                                         array_unique_union_agg(dr.permissions) as domain_role_permissions
                                  from domain_role_assignments dra
                                           join domain_roles dr on dr.id = dra.domain_role_id
@@ -47,6 +48,7 @@ select mem.id                                              as membership_id,
        dep.parent_ids                                      as department_parent_ids,
 
        coalesce(adr.domain_roles, '[]')                    as domain_roles,
+       coalesce(adr.domain_role_assignments, '[]')         as domain_role_assignments,
        coalesce(adr.domain_role_permissions, '{}')         as domain_role_permissions
 from department_memberships mem
          left join v_departments_shadowed dep on dep.id = mem.department_id
