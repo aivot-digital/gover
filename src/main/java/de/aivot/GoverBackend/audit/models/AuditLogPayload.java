@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -17,8 +18,6 @@ import java.util.Map;
 import java.util.Objects;
 
 public class AuditLogPayload {
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().findAndRegisterModules();
-
     public static final String ACTOR_TYPE_USER = "User";
     public static final String ACTOR_TYPE_SYSTEM = "System";
     public static final String ACTOR_TYPE_PROCESS = "Process";
@@ -258,11 +257,14 @@ public class AuditLogPayload {
         }
 
         if (value.getClass().isArray()) {
-            var array = OBJECT_MAPPER.convertValue(value, List.class);
+            var array = ObjectMapperFactory
+                    .getInstance()
+                    .convertValue(value, List.class);
             return normalizeNestedValue(array);
         }
 
-        var converted = OBJECT_MAPPER.convertValue(value, Object.class);
+        var converted = ObjectMapperFactory
+                .getInstance().convertValue(value, Object.class);
         if (converted == value) {
             return value;
         }
@@ -285,8 +287,10 @@ public class AuditLogPayload {
             return null;
         }
 
-        return OBJECT_MAPPER.convertValue(value, new TypeReference<>() {
-        });
+        return ObjectMapperFactory
+                .getInstance()
+                .convertValue(value, new TypeReference<>() {
+                });
     }
 
     // endregion
