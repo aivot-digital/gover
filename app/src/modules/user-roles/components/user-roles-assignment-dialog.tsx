@@ -278,7 +278,13 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                 } else if (!isActive && isCurrentlyAssigned) {
                     const membership = memberships.find((m) => m.domainRoles.some((r) => r.id === role.id));
                     if (membership != null) {
-                        userRoleAssignmentIdsToRemove.push(membership.membershipId!);
+                        const domainRoleAssignment = membership
+                            .domainRoleAssignments
+                            .find((dra) => dra.domain_role_id === role.id);
+
+                        if (domainRoleAssignment != null) {
+                            userRoleAssignmentIdsToRemove.push(domainRoleAssignment.id);
+                        }
                     }
                 }
             });
@@ -451,7 +457,7 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                                 variant="outlined"
                                 onClick={handleSelectAll}
                                 disabled={isLoading || totalRolesCount === 0}
-                                startIcon={<SelectAll fontSize="small" />}
+                                startIcon={<SelectAll fontSize="small"/>}
                             >
                                 Alle auswählen
                             </Button>
@@ -460,7 +466,7 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                                 variant="outlined"
                                 onClick={handleDeselectAll}
                                 disabled={isLoading || selectedCount === 0}
-                                startIcon={<Deselect fontSize="small" />}
+                                startIcon={<Deselect fontSize="small"/>}
                             >
                                 Alle abwählen
                             </Button>
@@ -511,7 +517,7 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                                         />
                                     </ListItemButton>
 
-                                    {index < sortedRoles.length - 1 && <Divider />}
+                                    {index < sortedRoles.length - 1 && <Divider/>}
                                 </Box>
                             );
                         })}
@@ -524,7 +530,7 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                     variant="contained"
                     onClick={handleSave}
                     disabled={isLoading || !changes.hasChanges || selectedCount === 0}
-                    startIcon={<SaveOutlinedIcon />}
+                    startIcon={<SaveOutlinedIcon/>}
                 >
                     Speichern
                 </Button>
