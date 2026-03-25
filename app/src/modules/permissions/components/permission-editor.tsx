@@ -5,7 +5,6 @@ import {
     Dialog,
     DialogActions,
     DialogContent,
-    IconButton,
     ListItemIcon,
     ListItemText,
     Menu,
@@ -22,9 +21,6 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import {CompareArrows} from '@mui/icons-material';
 import Deselect from '@aivot/mui-material-symbols-400-outlined/dist/deselect/Deselect';
 import SelectAll from '@aivot/mui-material-symbols-400-outlined/dist/select-all/SelectAll';
-
-import {PermissionGroups} from '../../../data/permissions/permission-groups';
-import {PermissionLabelsDe} from '../../../data/permissions/permission-labels';
 import {PermissionApiService} from '../permission-api-service';
 
 import {AlertComponent} from '../../../components/alert/alert-component';
@@ -105,21 +101,9 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
             ? Array.isArray(scope) ? scope : [scope]
             : null;
 
-        const scopedApiPermissions = allowedScopes
+        return allowedScopes
             ? apiPermissions.filter((g) => allowedScopes.includes(g.scope))
             : apiPermissions;
-
-        return [
-            ...PermissionGroups.map((group) => ({
-                contextLabel: group.label,
-                permissions: group.permissions.map((per) => ({
-                    label: PermissionLabelsDe[per],
-                    permission: per,
-                    description: '',
-                })),
-            })),
-            ...scopedApiPermissions,
-        ] as PermissionGroup[];
     }, [apiPermissions, scope]);
 
     const selectedPermissions = value ?? [];
