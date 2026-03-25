@@ -68,8 +68,13 @@ export function PermissionGroupAccordion(props: PermissionGroupAccordionProps): 
                 borderColor: 'divider',
                 boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
             }}
+            slotProps={{
+                transition: {
+                    unmountOnExit: true,
+                },
+            }}
         >
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon/>}>
                 <Stack
                     direction="row"
                     alignItems="center"
@@ -251,7 +256,7 @@ export function PermissionGroupAccordion(props: PermissionGroupAccordionProps): 
                                         ariaLabel="Permission-Key kopieren"
                                         size="small"
                                         disabled={isBusy}
-                                        icon={<ContentCopy fontSize="inherit" />}
+                                        icon={<ContentCopy fontSize="inherit"/>}
                                         successMessage="Permission-Key kopiert."
                                         errorMessage="Kopieren nicht möglich."
                                     />
