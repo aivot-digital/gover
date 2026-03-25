@@ -51,6 +51,9 @@ import {humanizeFileSize} from '../../../utils/humanization-utils';
 interface StorageExplorerProps {
     providerId: number;
     filterMimeTypes?: string[];
+    filterItem?: (item: StorageIndexItem) => boolean;
+    loadFolderItems?: (providerId: number, path: string) => Promise<StorageIndexItem[]>;
+    onFileSelect?: (item: StorageIndexItem) => void;
     allowFileDownload?: boolean;
     showContainerBorder?: boolean;
     showTopNavigationBar?: boolean;
@@ -120,6 +123,32 @@ function getFolderPath(pathFromRoot: string): string {
 
     const folder = normalized.slice(0, slashIndex + 1);
     return folder.length > 0 ? folder : ROOT_PATH;
+}
+
+function matchesMimeTypeFilter(itemMimeType: string, filterMimeType: string): boolean {
+    const normalizedFilter = filterMimeType.trim().toLowerCase();
+    if (normalizedFilter.length === 0) {
+        return true;
+    }
+
+    const normalizedItemMimeType = itemMimeType.trim().toLowerCase();
+    if (normalizedItemMimeType.length === 0) {
+        return true;
+    }
+
+    if (normalizedItemMimeType === normalizedFilter) {
+        return true;
+    }
+
+    if (normalizedFilter.endsWith('/')) {
+        return normalizedItemMimeType.startsWith(normalizedFilter);
+    }
+
+    if (!normalizedFilter.includes('/')) {
+        return normalizedItemMimeType.startsWith(`${normalizedFilter}/`);
+    }
+
+    return false;
 }
 
 function useSyncedColumnHeight(
@@ -193,6 +222,9 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
     const {
         providerId,
         filterMimeTypes,
+        filterItem,
+        loadFolderItems,
+        onFileSelect,
         allowFileDownload = false,
         showContainerBorder = false,
         showTopNavigationBar = false,
@@ -226,6 +258,13 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
     // Keep the tree column constrained on first paint, before ResizeObserver reports.
     const structureHeightFallback = minGridHeight + 60;
     const structureColumnHeight = useSyncedColumnHeight(rightColumnContentRef, structureHeightFallback);
+    const fetchFolderItems = useCallback((path: string) => {
+        const normalizedPath = normalizeDirectoryPath(path);
+        if (loadFolderItems != null) {
+            return loadFolderItems(providerId, normalizedPath);
+        }
+        return api.getFolder(providerId, normalizedPath);
+    }, [api, loadFolderItems, providerId]);
 
     // Tree is loaded on demand per expanded folder and cached to avoid repeat requests.
     const loadTreeChildren = useCallback((path: string): void => {
@@ -244,8 +283,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
             [normalizedPath]: true,
         }));
 
-        void api
-            .getFolder(providerId, normalizedPath)
+        void fetchFolderItems(normalizedPath)
             .then((items) => {
                 setFolderCache((prev) => ({
                     ...prev,
@@ -261,7 +299,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                     [normalizedPath]: false,
                 }));
             });
-    }, [api, dispatch, folderCache, providerId, treeLoadingPaths]);
+    }, [dispatch, fetchFolderItems, folderCache, treeLoadingPaths]);
 
     useEffect(() => {
         setCurrentPath(ROOT_PATH);
@@ -285,8 +323,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
         setIsLoading(true);
         const normalizedPath = normalizeDirectoryPath(currentPath);
 
-        api
-            .getFolder(providerId, normalizedPath)
+        fetchFolderItems(normalizedPath)
             .then((items) => {
                 setCurrentFolder(items);
                 setFolderCache((prev) => ({
@@ -300,9 +337,9 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
             .finally(() => {
                 setIsLoading(false);
             });
-    }, [api, currentPath, dispatch, providerId]);
+    }, [currentPath, dispatch, fetchFolderItems]);
 
-    const filteredByMime = useMemo(() => {
+    const filteredItems = useMemo(() => {
         const normalizedFilter = filterMimeTypes?.map((mimeType) => mimeType.toLowerCase()) ?? [];
 
         return currentFolder.filter((item) => {
@@ -310,26 +347,29 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                 return true;
             }
 
-            if (normalizedFilter.length === 0) {
-                return true;
+            if (normalizedFilter.length > 0) {
+                const mimeType = item.mimeType?.toLowerCase() ?? '';
+                const matchesMimeType = normalizedFilter.some((filterMimeType) => matchesMimeTypeFilter(mimeType, filterMimeType));
+                if (!matchesMimeType) {
+                    return false;
+                }
             }
 
-            const mimeType = item.mimeType?.toLowerCase() ?? '';
-            if (mimeType.length === 0) {
-                return true;
+            if (filterItem != null && !filterItem(item)) {
+                return false;
             }
 
-            return normalizedFilter.includes(mimeType);
+            return true;
         });
-    }, [currentFolder, filterMimeTypes]);
+    }, [currentFolder, filterItem, filterMimeTypes]);
 
-    // Visible rows pipeline: MIME filtering -> fuzzy search -> directory-first alphabetic ordering.
+    // Visible rows pipeline: consumer filters -> fuzzy search -> directory-first alphabetic ordering.
     const rows = useMemo(() => {
         const trimmedSearch = search.trim();
 
-        let searchableItems = filteredByMime;
+        let searchableItems = filteredItems;
         if (trimmedSearch.length > 0) {
-            const fuse = new Fuse(filteredByMime, {
+            const fuse = new Fuse(filteredItems, {
                 includeScore: true,
                 threshold: 0.38,
                 ignoreLocation: true,
@@ -357,7 +397,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
 
                 return a.filename.localeCompare(b.filename, 'de');
             });
-    }, [filteredByMime, search]);
+    }, [filteredItems, search]);
 
     const folderCount = rows.filter((item) => isDirectory(item)).length;
     const fileCount = rows.length - folderCount;
@@ -1014,6 +1054,11 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                     const pathFromRoot = normalizeDirectoryPath(item.pathFromRoot);
                                     setExpandedPaths((prev) => (prev.includes(pathFromRoot) ? prev : [...prev, pathFromRoot]));
                                     loadTreeChildren(item.pathFromRoot);
+                                    return;
+                                }
+
+                                if (onFileSelect != null) {
+                                    onFileSelect(item);
                                     return;
                                 }
 
