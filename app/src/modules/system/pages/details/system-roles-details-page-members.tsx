@@ -67,7 +67,7 @@ export function SystemRolesDetailsPageMembers() {
                     fetch={(options) => {
                         return new UsersApiService()
                             .list(options.page, options.size, options.sort, options.order, {
-                                fullName: options.search,
+                                name: options.search,
                                 systemRoleId: systemRole.id,
                             });
                     }}
