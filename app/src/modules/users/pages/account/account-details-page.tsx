@@ -36,7 +36,7 @@ export function AccountDetailsPage() {
                     },
                     {
                         path: '/account/memberships-and-roles',
-                        label: 'Fachbereiche und Rollen',
+                        label: 'Organisationseinheiten und Rollen',
                     },
                     {
                         path: '/account/notifications',
