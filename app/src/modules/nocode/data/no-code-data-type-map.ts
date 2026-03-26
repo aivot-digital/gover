@@ -46,3 +46,23 @@ export const NoCodeDataTypeMap: Record<ElementType, NoCodeDataType> = {
     [ElementType.DataObjectSelect]: NoCodeDataType.String,
     [ElementType.NoCodeInput]: NoCodeDataType.Runtime,
 }
+
+export function matchesDesiredNoCodeDataType(
+    actualType: NoCodeDataType,
+    desiredType: NoCodeDataType,
+): boolean {
+    return desiredType === NoCodeDataType.Runtime ||
+        actualType === desiredType ||
+        actualType === NoCodeDataType.Runtime;
+}
+
+export function elementMatchesDesiredNoCodeDataType(
+    elementType: ElementType,
+    desiredType: NoCodeDataType | undefined,
+): boolean {
+    if (desiredType == null) {
+        return true;
+    }
+
+    return matchesDesiredNoCodeDataType(NoCodeDataTypeMap[elementType], desiredType);
+}

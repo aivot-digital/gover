@@ -94,6 +94,31 @@ class NoCodeListOperatorsTest {
     }
 
     @Test
+    void listIntersectionShouldReturnSharedValuesOnceInLeftOrder() throws NoCodeException {
+        var operator = new NoCodeListIntersectionOperator();
+        var data = runtime();
+        var left = Arrays.asList(1, 2, 2, 3, null, "4");
+        var right = Arrays.asList("2", 4, null, 1, 5);
+
+        var result = operator.evaluate(data, left, right).getValue();
+
+        assertEquals(Arrays.asList(1, 2, null, "4"), result);
+        assertEquals(Arrays.asList(1, 2, 2, 3, null, "4"), left);
+        assertEquals(Arrays.asList("2", 4, null, 1, 5), right);
+    }
+
+    @Test
+    void listOverlapsShouldDetectSharedValuesWithCastingAndNulls() throws NoCodeException {
+        var operator = new NoCodeListOverlapsOperator();
+        var data = runtime();
+
+        assertTrue(operator.evaluate(data, Arrays.asList(1, 2, null), List.of("2", 5)).getValueAsBoolean());
+        assertTrue(operator.evaluate(data, Arrays.asList("a", null), Arrays.asList(1, null)).getValueAsBoolean());
+        assertFalse(operator.evaluate(data, List.of("aa", "bbb"), List.of(1, 4)).getValueAsBoolean());
+        assertFalse(operator.evaluate(data, List.of(), List.of("x")).getValueAsBoolean());
+    }
+
+    @Test
     void listLengthShouldReturnListSize() throws NoCodeException {
         var operator = new NoCodeListLengthOperator();
         var data = runtime();

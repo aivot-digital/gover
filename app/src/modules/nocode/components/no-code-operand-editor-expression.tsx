@@ -279,7 +279,8 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                             paddingLeft: '0.25rem',
                         }}
                     >
-                        <TreeConnector up={false} down={true} />
+                        <TreeConnector up={false}
+                                       down={true}/>
 
                         <Box
                             sx={{
@@ -398,35 +399,35 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                             color="inherit"
                             actions={[
                                 {
-                                    icon: <Delete />,
+                                    icon: <Delete/>,
                                     tooltip: 'Diesen Ausdruck löschen',
                                     onClick: () => {
                                         onChange(operands[0] ?? undefined);
                                     },
                                 },
                                 {
-                                    icon: <SwapHoriz />,
+                                    icon: <SwapHoriz/>,
                                     tooltip: 'Ausdrucksoperator austauschen',
                                     onClick: () => {
                                         setShowOperatorSwitcher(true);
                                     },
                                 },
                                 {
-                                    icon: <SwapVert />,
+                                    icon: <SwapVert/>,
                                     tooltip: 'Parameterreihenfolge ändern',
                                     onClick: () => {
                                         setShowReorderParameters(true);
                                     },
                                 },
                                 {
-                                    icon: <Help />,
+                                    icon: <Help/>,
                                     tooltip: 'Hilfe zum Ausdruckstyp',
                                     onClick: () => {
                                         setShowOperatorInfo(true);
                                     },
                                 },
                                 {
-                                    icon: <Functions />,
+                                    icon: <Functions/>,
                                     tooltip: 'Diesen Ausdruck mit einem anderen Ausdruck verknüpfen',
                                     onClick: () => {
                                         onChange({
@@ -453,7 +454,8 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                                 paddingLeft: '0.25rem',
                             }}
                         >
-                            <TreeConnector up={true} down={index < all.length - 1} />
+                            <TreeConnector up={true}
+                                           down={index < all.length - 1}/>
 
                             <Box
                                 sx={{
