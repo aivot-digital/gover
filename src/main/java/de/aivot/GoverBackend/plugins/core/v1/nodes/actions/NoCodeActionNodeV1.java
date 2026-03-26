@@ -6,10 +6,7 @@ import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.enums.ValueFunctionType;
 import de.aivot.GoverBackend.elements.models.*;
 import de.aivot.GoverBackend.elements.models.elements.ElementValueFunctions;
-import de.aivot.GoverBackend.elements.models.elements.form.input.NoCodeInputElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
-import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.*;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -279,8 +276,16 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition {
                     var targetType = StringUtils
                             .toNullableTrimmedString(row.getOrDefault(VARIABLE_TARGET_TYPE_FIELD_ID, TARGET_TYPE_ANY));
 
-                    NoCodeOperand expressionOperand = om
-                            .convertValue(row.get(VARIABLE_EXPRESSION_FIELD_ID), NoCodeOperand.class);
+                    NoCodeInputElementItem noCodeInputElementItem = om
+                            .convertValue(row.get(VARIABLE_EXPRESSION_FIELD_ID), NoCodeInputElementItem.class);
+
+                    NoCodeOperand expressionOperand = noCodeInputElementItem != null
+                            ? noCodeInputElementItem.getNoCode()
+                            : null;
+
+                    if (expressionOperand == null) {
+                        throw new RuntimeException("In der Zeile ist kein gültiger No-Code-Ausdruck angegeben.");
+                    }
 
                     return new VariableDefinition(
                             variableName,
@@ -290,7 +295,6 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition {
                 })
                 .toList();
     }
-
 
     private static void validateTargetType(@Nonnull String targetType,
                                            int rowIndex) throws ProcessNodeExecutionExceptionInvalidConfiguration {
