@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.payment.controllers.staff;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.filters.VFormVersionWithDetailsFilter;
 import de.aivot.GoverBackend.form.repositories.FormVersionRepository;
@@ -176,7 +177,7 @@ public class PaymentProviderController {
                     formVersionRepository.save(form.toFormVersionEntity());
 
                     formRevisionService
-                            .create(execUser, form, formClone);
+                            .create(execUser, ObjectMapperFactory.Utils.convertToMap(form), ObjectMapperFactory.Utils.convertToMap(formClone));
                 }
             }
         }

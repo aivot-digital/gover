@@ -1,9 +1,9 @@
 package de.aivot.GoverBackend.form.controllers;
 
 import de.aivot.GoverBackend.audit.enums.AuditAction;
-import de.aivot.GoverBackend.audit.models.AuditLogPayload;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.department.filters.VDepartmentMembershipWithPermissionsFilter;
 import de.aivot.GoverBackend.department.services.VDepartmentMembershipWithPermissionsService;
 import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
@@ -29,6 +29,8 @@ import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
@@ -39,9 +41,6 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
-
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -267,10 +266,10 @@ public class FormController {
 
         // Log the form update
         auditService.create().withUser(user).withAuditAction(AuditAction.Update, FormEntity.class, updatedForm.getId(), "formId", Map.of(
-                "formId", updatedForm.getId(),
-                "formSlug", updatedForm.getSlug(),
-                "developingDepartmentId", updatedForm.getDevelopingDepartmentId()
-        ))
+                        "formId", updatedForm.getId(),
+                        "formSlug", updatedForm.getSlug(),
+                        "developingDepartmentId", updatedForm.getDevelopingDepartmentId()
+                ))
                 .withMessage(
                         "Das Formular %s (Slug %s, ID %s) wurde von der Mitarbeiter:in %s aktualisiert.",
                         StringUtils.quote(updatedForm.getInternalTitle()),
@@ -341,7 +340,11 @@ public class FormController {
                     .setDevelopingDepartmentId(previousDepartmentId);
 
             formRevisionService
-                    .create(user, version, original);
+                    .create(
+                            user,
+                            ObjectMapperFactory.Utils.convertToMap(version),
+                            ObjectMapperFactory.Utils.convertToMap(original)
+                    );
         }
     }
 
