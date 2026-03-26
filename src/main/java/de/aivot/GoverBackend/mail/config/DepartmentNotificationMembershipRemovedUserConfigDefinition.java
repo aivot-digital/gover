@@ -36,19 +36,19 @@ public class DepartmentNotificationMembershipRemovedUserConfigDefinition impleme
     @Nullable
     @Override
     public String getSubCategory() {
-        return "Fachbereichs-Mitgliedschaften";
+        return "Mitgliedschaften in Organisationseinheiten";
     }
 
     @Nonnull
     @Override
     public String getLabel() {
-        return "Aus Fachbereich entfernt";
+        return "Aus Organisationseinheit entfernt";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Sie werden informiert, wenn Sie aus einem Fachbereich entfernt wurden.";
+        return "Sie werden informiert, wenn Sie aus einer Organisationseinheit entfernt wurden.";
     }
 
     @Nonnull

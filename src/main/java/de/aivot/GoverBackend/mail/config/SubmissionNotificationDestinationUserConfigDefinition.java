@@ -48,7 +48,7 @@ public class SubmissionNotificationDestinationUserConfigDefinition implements Us
     @Nonnull
     @Override
     public String getDescription() {
-        return "Sie werden benachrichtigt, wenn in einem entwickelnden Fachbereich, dem Sie angehören, bei der Übertragung eines Antrags an eine Schnittstelle ein Fehler auftritt.";
+        return "Sie werden benachrichtigt, wenn bei der Übertragung eines Antrags an eine Schnittstelle in einer Ihrer entwickelnden Organisationseinheiten ein Fehler auftritt.";
     }
 
     @Override
