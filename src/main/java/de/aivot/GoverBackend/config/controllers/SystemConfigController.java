@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.config.dtos.SystemConfigRequestDto;
 import de.aivot.GoverBackend.config.dtos.SystemConfigResponseDto;
 import de.aivot.GoverBackend.config.entities.SystemConfigEntity;
 import de.aivot.GoverBackend.config.filters.SystemConfigFilter;
+import de.aivot.GoverBackend.config.models.SystemConfigDefinition;
 import de.aivot.GoverBackend.config.services.SystemConfigService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
@@ -27,6 +28,8 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * This controller provides functionality to list, retrieve and update system configurations.
@@ -74,6 +77,16 @@ public class SystemConfigController {
                         throw new RuntimeException(e); // This should never happen
                     }
                 });
+    }
+
+    @GetMapping("definitions/")
+    @Operation(
+            summary = "List System Configuration Definitions",
+            description = "Retrieve a list of all system configuration definitions. This endpoint can be used to get metadata about the available system configurations, such as their types, categories and descriptions. This is especially useful for clients to dynamically adapt to available configurations."
+    )
+    public List<SystemConfigDefinition> list() throws ResponseException {
+        return systemConfigService
+                .getSystemConfigDefinitions();
     }
 
     @PutMapping("{key}/")

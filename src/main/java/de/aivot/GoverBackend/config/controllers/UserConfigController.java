@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.config.controllers;
 
 import de.aivot.GoverBackend.audit.enums.AuditAction;
-import de.aivot.GoverBackend.audit.models.AuditLogPayload;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.config.dtos.UserConfigRequestDto;
@@ -18,6 +17,8 @@ import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,9 +29,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
-
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -40,7 +38,7 @@ import java.util.stream.Collectors;
  * This controller provides functionality to list, retrieve and update user configurations.
  */
 @RestController
-@RequestMapping("/api/user-configs/{userId}/")
+@RequestMapping("/api/user-configs/")
 @Tag(
         name = OpenApiConstants.Tags.UserConfigsName,
         description = OpenApiConstants.Tags.UserConfigDescription
@@ -68,7 +66,17 @@ public class UserConfigController {
         this.userService = userService;
     }
 
-    @GetMapping("")
+    @GetMapping("definitions/")
+    @Operation(
+            summary = "List User Configuration Definitions",
+            description = "Retrieve a list of all user configuration definitions. This endpoint can be used to get metadata about the available user configurations, such as their types, categories and descriptions. This is especially useful for clients to dynamically adapt to available configurations."
+    )
+    public List<UserConfigDefinition> list() throws ResponseException {
+        return userConfigService
+                .getUserConfigDefinitions();
+    }
+
+    @GetMapping("{userId}/")
     @Operation(
             summary = "List User Configurations",
             description = "Retrieve a paginated list of user configurations for a specific user with optional filtering. " +
@@ -107,7 +115,7 @@ public class UserConfigController {
                 });
     }
 
-    @PutMapping("{key}/")
+    @PutMapping("{userId}/{key}/")
     @Operation(
             summary = "Update User Configuration",
             description = "Update the value of a specific user configuration identified by its key for a specific user. " +

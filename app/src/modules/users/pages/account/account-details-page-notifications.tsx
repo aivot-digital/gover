@@ -20,11 +20,11 @@ export function AccountDetailsPageNotifications() {
         setIsBusy(true);
 
         Promise.all([
-            userConfigsApiService.listDefinitions(0, 999),
+            userConfigsApiService.listDefinitions(),
             userConfigsApiService.list(user?.id ?? 'self', 0, 999)
         ])
             .then(([definitionsRes, userConfigsRes]) => {
-                const filteredDefinitions = definitionsRes.content.filter(def => def.category === "Benachrichtigungen");
+                const filteredDefinitions = definitionsRes.filter(def => def.category === "Benachrichtigungen");
                 setDefinitions(filteredDefinitions);
 
                 const configMap: Record<string, string[]> = {};
