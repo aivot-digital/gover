@@ -191,7 +191,7 @@ export class FormApiService extends BaseCrudApiService<FormEntity, FormEntity, F
     }
 
     public async getMaxFileSize(slug: string, version?: number | undefined) {
-        return await this.get<{ maxFileSize: number }>(`/api/forms/${slug}/max-file-size/`, {
+        return await this.get<{ maxFileSize: number }>(`/api/public/forms/${slug}/max-file-size/`, {
             query: {
                 version: version,
             },
