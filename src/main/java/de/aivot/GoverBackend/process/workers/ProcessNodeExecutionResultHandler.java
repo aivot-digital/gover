@@ -300,6 +300,11 @@ public class ProcessNodeExecutionResultHandler {
 
         processInstanceTaskRepository.save(processInstanceTask);
 
+        if (processInstance.getStatus() != ProcessInstanceStatus.Running) {
+            processInstance.setStatus(ProcessInstanceStatus.Running);
+            processInstanceRepository.save(processInstance);
+        }
+
         var nextPayload = new ProcessWorker.WorkerPayload(
                 processInstance.getId(),
                 currentNode.getId(),
