@@ -10,6 +10,7 @@ import {showApiErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {ProcessSettingsDialogProcessAccessTab} from './process-settings-dialog-process-access-tab';
 import {TeamEntity} from '../../../teams/entities/team-entity';
 import {TeamsApiService} from '../../../teams/services/teams-api-service';
+import {ProcessSettingsDialogProcessInstanceAccessPresetTab} from './process-settings-dialog-process-instance-access-preset-tab';
 
 interface ProcessSettingsDialogProps {
     open: boolean;
@@ -26,6 +27,13 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
         onClose,
         process,
     } = props;
+
+    const [currentTab, setCurrentTab] = useState(1);
+    useEffect(() => {
+        if (open) {
+            setCurrentTab(1);
+        }
+    }, [open]);
 
     const [departments, setDepartments] = useState<VDepartmentShadowedEntity[]>([]);
     useEffect(() => {
@@ -71,7 +79,10 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                     sx={{
                         borderBottom: '1px solid rgba(0, 0, 0, 0.12)',
                     }}
-                    value={1}
+                    value={currentTab}
+                    onChange={(_, newValue) => {
+                        setCurrentTab(newValue);
+                    }}
                 >
                     <Tab
                         value={0}
@@ -85,7 +96,6 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                     <Tab
                         value={2}
                         label="Berechtigungen für neue Vorgänge"
-                        disabled={true}
                     />
                     <Tab
                         value={3}
@@ -99,14 +109,24 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                         p: 2,
                     }}
                 >
-                    <ProcessSettingsDialogProcessAccessTab
-                        process={process}
-                        departments={departments}
-                        teams={teams}
-                    />
+                    {
+                        currentTab === 1 &&
+                        <ProcessSettingsDialogProcessAccessTab
+                            process={process}
+                            departments={departments}
+                            teams={teams}
+                        />
+                    }
+                    {
+                        currentTab === 2 &&
+                        <ProcessSettingsDialogProcessInstanceAccessPresetTab
+                            process={process}
+                            departments={departments}
+                            teams={teams}
+                        />
+                    }
                 </Box>
             </DialogContent>
         </Dialog>
     );
 }
-
