@@ -110,16 +110,43 @@ public class XdfTransformService {
                 .setChildren(steps);
         root.setId("root");
 
-        return new VFormVersionWithDetailsEntity()
-                .setSlug(slug)
-                .setInternalTitle(internalTitle)
-                .setPublicTitle(publicTitle)
-                .setVersion(1)
-                .setDraftedVersion(1)
-                .setVersionCount(1)
-                .setStatus(FormStatus.Drafted)
-                .setType(FormType.Public)
-                .setRootElement(root);
+        return new VFormVersionWithDetailsEntity(
+                null,
+                slug,
+                internalTitle,
+                null,
+                null,
+                1,
+                1,
+                null,
+                1,
+                FormStatus.Drafted,
+                FormType.Public,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                List.of(),
+                List.of(),
+                false,
+                4,
+                4,
+                root,
+                null,
+                null,
+                null,
+                null,
+                publicTitle,
+                null,
+                null
+        );
     }
 
     @Nonnull
