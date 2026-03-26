@@ -34,8 +34,9 @@ export function NoCodeOperandEditorReference(props: NoCodeOperandEditorReference
     } = props;
 
     const selectableElements = useMemo(() => {
-        return allElements
-            .filter((e) => elementMatchesDesiredNoCodeDataType(e.element.type, desiredType));
+        return allElements;
+            // Remove this for now, because we have no current concept of how to limit this compatability.
+            //.filter((e) => elementMatchesDesiredNoCodeDataType(e.element.type, desiredType));
     }, [allElements, desiredType]);
 
     const allElementOptions: SelectFieldComponentOption[] = useMemo(() => {
