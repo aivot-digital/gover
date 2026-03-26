@@ -240,7 +240,8 @@ public class ProcessWorker {
                     .findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(
                             processInstance.getId(),
                             previousNodeId
-                    );
+                    )
+                    .orElse(null);
         } else {
             previousTask = null;
         }

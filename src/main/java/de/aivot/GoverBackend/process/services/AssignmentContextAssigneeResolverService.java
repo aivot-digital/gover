@@ -208,7 +208,8 @@ public class AssignmentContextAssigneeResolverService {
         }
 
         var previousTask = processInstanceTaskRepository
-                .findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(processInstanceId, previousProcessNodeId);
+                .findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(processInstanceId, previousProcessNodeId)
+                .orElse(null);
 
         return previousTask != null ? previousTask.getAssignedUserId() : null;
     }
