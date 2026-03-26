@@ -6,9 +6,12 @@ import {isAnyInputElement} from '../../models/elements/form/input/any-input-elem
 import {SearchBaseDialog} from '../search-base-dialog/search-base-dialog';
 import {ViewDispatcherComponent} from '../../components/view-dispatcher.component';
 import {getElementIcon} from '../../data/element-type/element-icons';
+import {NoCodeDataType, NoCodeDataTypeLabels} from '../../data/no-code-data-type';
+import {elementMatchesDesiredNoCodeDataType} from '../../modules/nocode/data/no-code-data-type-map';
 
 interface SelectElementDialogProps {
     allElements: ElementWithParents[];
+    desiredType?: NoCodeDataType;
     open: boolean;
     onSelect: (element: AnyElement) => void;
     onClose: () => void;
@@ -17,6 +20,7 @@ interface SelectElementDialogProps {
 export function SelectElementDialog(props: SelectElementDialogProps) {
     const {
         allElements,
+        desiredType,
         open,
         onSelect,
         onClose,
@@ -30,7 +34,10 @@ export function SelectElementDialog(props: SelectElementDialogProps) {
         pathIds: string[];
     }[] = useMemo(() => {
         return allElements
-            .filter(({element}) => isAnyInputElement(element))
+            .filter(({element}) => (
+                isAnyInputElement(element) &&
+                elementMatchesDesiredNoCodeDataType(element.type, desiredType)
+            ))
             .map(({element, parents}) => ({
                 $: element,
                 title: generateComponentTitle(element),
@@ -38,7 +45,7 @@ export function SelectElementDialog(props: SelectElementDialogProps) {
                 pathTitles: generateComponentPath(parents),
                 pathIds: parents.map(e => e.id),
             }));
-    }, [allElements]);
+    }, [allElements, desiredType]);
 
     return (
         <SearchBaseDialog
@@ -54,6 +61,9 @@ export function SelectElementDialog(props: SelectElementDialogProps) {
                 primaryTextKey: 'title',
                 secondaryTextKey: 'pathTitles',
                 getId: o => `${o.pathIds} > ${o.id}`,
+                noOptionsMessage: desiredType == null ?
+                    undefined :
+                    `Keine Elemente für den Datentyp "${NoCodeDataTypeLabels[desiredType]}" verfügbar.`,
                 getIcon: (option) => {
                     const Icon = getElementIcon(option.$);
                     return <Icon />;

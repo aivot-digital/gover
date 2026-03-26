@@ -179,19 +179,19 @@ export class FormApiService extends BaseCrudApiService<FormEntity, FormEntity, F
     }
 
     public checkPublish({formId, version}: FormVersionEntityId): Promise<FormPublishChecklistItem[]> {
-        return this.get<FormPublishChecklistItem[]>(`/api/forms/${formId}/${version}/check-publish/`);
+        return this.get<FormPublishChecklistItem[]>(`/api/form-versions/${formId}/${version}/publish-checklist-items/`);
     }
 
     public publish({formId, version}: FormVersionEntityId): Promise<FormVersionEntity> {
-        return this.put<any, FormVersionEntity>(`/api/forms/${formId}/${version}/publish/`, {});
+        return this.put<any, FormVersionEntity>(`/api/form-versions/${formId}/${version}/publish-status/`, {});
     }
 
     public revoke({formId, version}: FormVersionEntityId): Promise<FormVersionEntity> {
-        return this.put<any, FormVersionEntity>(`/api/forms/${formId}/${version}/revoke/`, {});
+        return this.put<any, FormVersionEntity>(`/api/form-versions/${formId}/${version}/revoke-status/`, {});
     }
 
     public async getMaxFileSize(slug: string, version?: number | undefined) {
-        return await this.get<{ maxFileSize: number }>(`/api/forms/${slug}/max-file-size/`, {
+        return await this.get<{ maxFileSize: number }>(`/api/public/forms/${slug}/max-file-size/`, {
             query: {
                 version: version,
             },

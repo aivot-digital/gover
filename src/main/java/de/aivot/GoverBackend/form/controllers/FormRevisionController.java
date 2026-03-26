@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.form.controllers;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.form.cache.entities.FormLockCacheEntity;
 import de.aivot.GoverBackend.form.entities.*;
 import de.aivot.GoverBackend.form.services.FormLockService;
@@ -31,8 +32,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import java.math.BigInteger;
 import java.util.Map;
 
@@ -41,7 +40,7 @@ import java.util.Map;
 @Tag(
         name = "Form Version Revisions",
         description = "Form revisions track the changes made to form versions over time. " +
-                      "They allow administrators to view the history of modifications and revert to previous states if necessary."
+                "They allow administrators to view the history of modifications and revert to previous states if necessary."
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class FormRevisionController {
@@ -73,7 +72,7 @@ public class FormRevisionController {
     @Operation(
             summary = "List form revisions",
             description = "Retrieve a paginated list of revisions for a specific form version." +
-                          "Requires \"" + PermissionLabels.FormPermissionRead + "\" permission unless the user is a global admin."
+                    "Requires \"" + PermissionLabels.FormPermissionRead + "\" permission unless the user is a global admin."
     )
     public Page<FormRevisionEntity> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -105,7 +104,7 @@ public class FormRevisionController {
     @Operation(
             summary = "Rollback form to revision",
             description = "Rollback a specific form version to a previous revision." +
-                          "Requires \"" + PermissionLabels.FormPermissionEdit + "\" permission unless the user is a global admin."
+                    "Requires \"" + PermissionLabels.FormPermissionEdit + "\" permission unless the user is a global admin."
     )
     public VFormVersionWithDetailsEntity rollback(
             @AuthenticationPrincipal Jwt jwt,
@@ -143,10 +142,10 @@ public class FormRevisionController {
                 .rollback(formVersionEntity, revisionId);
 
         auditService.create().withUser(user).withAuditAction(AuditAction.Update, FormEntity.class, rolledBackForm.getId(), "formId", Map.of(
-                "formId", rolledBackForm.getId(),
-                "formSlug", rolledBackForm.getSlug(),
-                "developingDepartmentId", rolledBackForm.getDevelopingDepartmentId()
-        ))
+                        "formId", rolledBackForm.getId(),
+                        "formSlug", rolledBackForm.getSlug(),
+                        "developingDepartmentId", rolledBackForm.getDevelopingDepartmentId()
+                ))
                 .withMessage(
                         "Das Formular %s (Slug %s, ID %s) wurde von der Mitarbeiter:in %s auf den Stand der Revision %s zurückgesetzt.",
                         StringUtils.quote(rolledBackForm.getInternalTitle()),
@@ -158,9 +157,9 @@ public class FormRevisionController {
                 .log();
 
         auditService.create().withUser(user).withAuditAction(AuditAction.Update, FormEntity.class, rolledBackForm.getFormId(), "formId", Map.of(
-                "formId", rolledBackForm.getFormId(),
-                "formVersion", rolledBackForm.getVersion()
-        ))
+                        "formId", rolledBackForm.getFormId(),
+                        "formVersion", rolledBackForm.getVersion()
+                ))
                 .withMessage(
                         "Die Formularversion %s des Formulars mit der ID %s wurde von der Mitarbeiter:in %s durch ein Rollback auf Revision %s aktualisiert.",
                         StringUtils.quote(String.valueOf(rolledBackForm.getVersion())),
@@ -172,7 +171,11 @@ public class FormRevisionController {
 
         // Create a revision for the form
         formRevisionService
-                .create(user, rolledBackForm, formVersionEntity);
+                .create(
+                        user,
+                        ObjectMapperFactory.Utils.convertToMap(rolledBackForm),
+                        ObjectMapperFactory.Utils.convertToMap(formVersionEntity)
+                );
 
         return rolledBackForm;
     }

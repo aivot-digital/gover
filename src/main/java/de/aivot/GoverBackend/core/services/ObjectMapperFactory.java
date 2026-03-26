@@ -9,6 +9,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 public class ObjectMapperFactory {
     private static ObjectMapper mapper;
@@ -37,6 +38,11 @@ public class ObjectMapperFactory {
             }
 
             return res;
+        }
+
+        public static Map<String, Object> convertToMap(Object value) {
+            ObjectMapper om = getInstance();
+            return om.convertValue(value, Map.class);
         }
     }
 }

@@ -231,7 +231,7 @@ class AuditLogPayloadTest {
 
         var result = AuditLogPayload.toMap(new EntityWithTimestamp(timestamp));
 
-        assertEquals(Map.of("timestamp", List.of(2026, 3, 24, 10, 15)), result);
+        assertEquals(Map.of("timestamp", "2026-03-24T10:15:00"), result);
     }
 
     private record NestedSettings(String mode, List<Object> items) {

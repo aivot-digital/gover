@@ -36,7 +36,7 @@ public class DepartmentNotificationMembershipChangedUserConfigDefinition impleme
     @Nullable
     @Override
     public String getSubCategory() {
-        return "Fachbereichs-Mitgliedschaften";
+        return "Mitgliedschaften in Organisationseinheiten";
     }
 
     @Nonnull
@@ -48,7 +48,7 @@ public class DepartmentNotificationMembershipChangedUserConfigDefinition impleme
     @Nonnull
     @Override
     public String getDescription() {
-        return "Erhalten Sie eine Benachrichtigung, wenn Ihnen in einem Fachbereich eine neue Rolle zugewiesen wird.";
+        return "Erhalten Sie eine Benachrichtigung, wenn Ihnen in einer Organisationseinheit eine neue Rolle zugewiesen wird.";
     }
 
     @Nonnull

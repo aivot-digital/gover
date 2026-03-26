@@ -81,7 +81,10 @@
         Bereich für Elemente des Formulars.
         *********************************************************************** */-->
         <!--/* Iteriere über jeden Abschnitt des Formulars, dass gerendert werden soll */-->
-        <th:block th:each="step : ${ elements }">
+        <th:block
+                th:each="step : ${ elements }"
+                th:if="${ step.element.type.name == 'Step' }"
+        >
             <section th:class="'step ' + ${ base.isBlankPrint ? 'page-break-before' : '' }">
                 <!--/* Überschriften von Abschnitten haben immer die größe H2 */-->
                 <h2

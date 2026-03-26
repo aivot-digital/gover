@@ -24,13 +24,13 @@ export function AccountDetailsPageDepartmentMemberships() {
                 variant="h5"
                 sx={{mb: 1}}
             >
-                Mitgliedschaften in Fachbereichen
+                Mitgliedschaften in Organisationseinheiten
             </Typography>
 
             <Typography sx={{mb: 3, maxWidth: 900}}>
-                Eine Übersicht der Fachbereiche, in denen Sie Mitglied sind, und den dazugehörigen Rollen.
-                Wenn Sie noch keinem Fachbereich zugeordnet sind, bitten Sie eine Administrator:in, Sie zu einem
-                Fachbereich hinzuzufügen.
+                Eine Übersicht der Organisationseinheiten, in denen Sie Mitglied sind, und den dazugehörigen Rollen.
+                Wenn Sie noch keiner Organisationseinheit zugeordnet sind, bitten Sie eine Administrator:in, Sie zu
+                einer Organisationseinheit hinzuzufügen.
             </Typography>
 
             <GenericList<VDepartmentMembershipWithDetailsEntity>
@@ -42,13 +42,13 @@ export function AccountDetailsPageDepartmentMemberships() {
                 columnDefinitions={[
                     {
                         field: 'orgUnitName',
-                        headerName: 'Fachbereich',
+                        headerName: 'Organisationseinheit',
                         flex: 1,
                         renderCell: (params) => {
                             return (
                                 <CellLink
                                     to={`/departments/${params.row.departmentId}`}
-                                    title={`Fachbereich bearbeiten`}
+                                    title={`Organisationseinheit bearbeiten`}
                                 >
                                     {String(params.row.departmentName)}
                                 </CellLink>
@@ -76,17 +76,17 @@ export function AccountDetailsPageDepartmentMemberships() {
                         });
                 }}
                 getRowIdentifier={(item) => item.membershipId.toString()}
-                searchLabel="Fachbereich suchen"
-                searchPlaceholder="Titel des Fachbereichs eingeben…"
+                searchLabel="Organisationseinheit suchen"
+                searchPlaceholder="Name der Organisationseinheit eingeben…"
                 defaultSortField="departmentName"
                 rowMenuItems={[]}
-                noDataPlaceholder="Keine Fachbereiche vorhanden"
-                loadingPlaceholder="Lade Fachbereiche…"
-                noSearchResultsPlaceholder="Keine Fachbereiche gefunden"
+                noDataPlaceholder="Keine Organisationseinheiten vorhanden"
+                loadingPlaceholder="Lade Organisationseinheiten…"
+                noSearchResultsPlaceholder="Keine Organisationseinheiten gefunden"
                 rowActions={(item) => [{
                     icon: <EditOutlined/>,
                     to: `/departments/${item.departmentId}`,
-                    tooltip: 'Fachbereich bearbeiten',
+                    tooltip: 'Organisationseinheit bearbeiten',
                 }]}
                 preSearchElements={[]}
             />

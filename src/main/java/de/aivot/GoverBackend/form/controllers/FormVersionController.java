@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.form.controllers;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
 import de.aivot.GoverBackend.form.cache.entities.FormLockCacheEntity;
@@ -40,8 +41,8 @@ import java.util.Map;
 @Tag(
         name = "Form Versions",
         description = "Form versions represent different iterations of a form. " +
-                      "They allow for version control of a form over time. " +
-                      "Versions can be published and revoken but only one version can be published at a time."
+                "They allow for version control of a form over time. " +
+                "Versions can be published and revoken but only one version can be published at a time."
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class FormVersionController {
@@ -81,7 +82,7 @@ public class FormVersionController {
     @Operation(
             summary = "List Form Versions",
             description = "List all form versions with pagination and filtering. " +
-                          "Super admins can see all form versions, while regular users only see versions they have read access to."
+                    "Super admins can see all form versions, while regular users only see versions they have read access to."
     )
     public Page<FormVersionEntity> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -114,7 +115,7 @@ public class FormVersionController {
     @Operation(
             summary = "Create Form Version",
             description = "Create a new version for a form. " +
-                          "Requires the system role super admin or edit permissions on the parent form."
+                    "Requires the system role super admin or edit permissions on the parent form."
     )
     public FormVersionEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -144,22 +145,39 @@ public class FormVersionController {
 
         // Create the first revision for the form version
         var id = new VFormVersionWithDetailsEntityId(formId, createdFormVersion.getVersion());
-        var createdFormVersionDetails = vFormVersionWithDetailsService
-                .retrieve(id)
-                .orElseThrow(ResponseException::internalServerError);
         formRevisionService
-                .create(user, createdFormVersionDetails);
+                .create(
+                        user,
+                        vFormVersionWithDetailsService
+                                .retrieve(id)
+                                .map(ObjectMapperFactory.Utils::convertToMap)
+                                .orElseThrow(ResponseException::internalServerError)
+                );
 
         // Log the form version creation
-        auditService.create().withUser(user).withAuditAction(AuditAction.Create, FormVersionEntity.class, createdFormVersion.getFormId(), "formId", Map.of(
-                "formId", createdFormVersion.getFormId(),
-                "formVersion", createdFormVersion.getVersion()
-        ))
+        auditService
+                .create()
+                .withUser(user)
+                .withAuditAction(
+                        AuditAction.Create,
+                        FormVersionEntity.class,
+                        createdFormVersion.getFormId(),
+                        "formId",
+                        Map.of(
+                                "formId", createdFormVersion.getFormId(),
+                                "formVersion", createdFormVersion.getVersion()
+                        ))
                 .withMessage(
                         "Die Formularversion %s des Formulars mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
                         StringUtils.quote(String.valueOf(createdFormVersion.getVersion())),
                         StringUtils.quote(String.valueOf(createdFormVersion.getFormId())),
                         StringUtils.quote(user.getFullName())
+                )
+                .withDiff(
+                        null,
+                        ObjectMapperFactory
+                                .Utils
+                                .convertToMap(createdFormVersion)
                 )
                 .log();
 
@@ -170,7 +188,7 @@ public class FormVersionController {
     @Operation(
             summary = "Retrieve Latest Form Version",
             description = "Retrieve the latest version of a form. " +
-                          "Requires read permissions on the parent form unless the user is a super admin."
+                    "Requires read permissions on the parent form unless the user is a super admin."
     )
     public FormVersionEntity retrieveLatest(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -189,7 +207,7 @@ public class FormVersionController {
     @Operation(
             summary = "Retrieve Specific Form Version",
             description = "Retrieve a specific version of a form. " +
-                          "Requires read permissions on the parent form unless the user is a super admin."
+                    "Requires read permissions on the parent form unless the user is a super admin."
     )
     public FormVersionEntity retrieveVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -222,7 +240,7 @@ public class FormVersionController {
     @Operation(
             summary = "Update Form Version",
             description = "Update a specific version of a form. " +
-                          "Requires the system role super admin or edit permissions on the parent form."
+                    "Requires the system role super admin or edit permissions on the parent form."
     )
     public FormVersionEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -252,6 +270,7 @@ public class FormVersionController {
         var formVersionEntityId = new VFormVersionWithDetailsEntityId(formId, version);
         var existingFormVersionWithDetails = vFormVersionWithDetailsService
                 .retrieve(formVersionEntityId)
+                .map(ObjectMapperFactory.Utils::convertToMap)
                 .orElseThrow(ResponseException::notFound);
 
         // Create a lock for the form
@@ -269,10 +288,18 @@ public class FormVersionController {
                 .update(FormVersionEntityId.of(formId, version), patchedFormVersion);
 
         // Log the form version update
-        auditService.create().withUser(user).withAuditAction(AuditAction.Update, FormEntity.class, updatedFormVersion.getFormId(), "formId", Map.of(
-                "formId", updatedFormVersion.getFormId(),
-                "formVersion", updatedFormVersion.getVersion()
-        ))
+        auditService
+                .create()
+                .withUser(user)
+                .withAuditAction(
+                        AuditAction.Update,
+                        FormEntity.class,
+                        updatedFormVersion.getFormId(),
+                        "formId",
+                        Map.of(
+                                "formId", updatedFormVersion.getFormId(),
+                                "formVersion", updatedFormVersion.getVersion()
+                        ))
                 .withMessage(
                         "Die Formularversion %s des Formulars mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
                         StringUtils.quote(String.valueOf(updatedFormVersion.getVersion())),
@@ -283,7 +310,8 @@ public class FormVersionController {
 
         // Create a revision for the form
         var updatedFormVersionWithDetails = vFormVersionWithDetailsService
-                .retrieve(formVersionEntityId)
+                .retrieveFresh(formVersionEntityId)
+                .map(ObjectMapperFactory.Utils::convertToMap)
                 .orElseThrow(ResponseException::notFound);
         formRevisionService
                 .create(user, updatedFormVersionWithDetails, existingFormVersionWithDetails);
@@ -296,8 +324,8 @@ public class FormVersionController {
     @Operation(
             summary = "Delete Form Version",
             description = "Delete a specific version of a form. " +
-                          "Requires the system role super admin or edit permissions on the parent form. " +
-                          "Only draft versions can be deleted, and the last remaining version cannot be deleted."
+                    "Requires the system role super admin or edit permissions on the parent form. " +
+                    "Only draft versions can be deleted, and the last remaining version cannot be deleted."
     )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -349,7 +377,7 @@ public class FormVersionController {
     @Operation(
             summary = "Get Form Publish Checklist",
             description = "Get the checklist items for publishing a form version. " +
-                          "Requires read permissions on the parent form unless the user is a super admin."
+                    "Requires read permissions on the parent form unless the user is a super admin."
     )
     public List<FormPublishChecklistItem> checkPublish(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -384,8 +412,8 @@ public class FormVersionController {
     @Operation(
             summary = "Publish Form Version",
             description = "Publish a specific version of a form. " +
-                          "Requires the system role super admin or publish permissions on the parent form. " +
-                          "If the form is locked by another user, an exception is thrown."
+                    "Requires the system role super admin or publish permissions on the parent form. " +
+                    "If the form is locked by another user, an exception is thrown."
     )
     public FormVersionEntity publish(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -416,6 +444,7 @@ public class FormVersionController {
         var formVersionEntityId = new VFormVersionWithDetailsEntityId(formId, version);
         var existingFormVersionWithDetails = vFormVersionWithDetailsService
                 .retrieve(formVersionEntityId)
+                .map(ObjectMapperFactory.Utils::convertToMap)
                 .orElseThrow(ResponseException::notFound);
 
         // Publish the form
@@ -458,7 +487,8 @@ public class FormVersionController {
 
         // Create a revision for the form
         var updatedFormVersionWithDetails = vFormVersionWithDetailsService
-                .retrieve(formVersionEntityId)
+                .retrieveFresh(formVersionEntityId)
+                .map(ObjectMapperFactory.Utils::convertToMap)
                 .orElseThrow(ResponseException::notFound);
         formRevisionService
                 .create(user, updatedFormVersionWithDetails, existingFormVersionWithDetails);
@@ -468,9 +498,8 @@ public class FormVersionController {
     }
 
     /**
-     * Revoke a form by its id.
-     * Forms can only be revoked by users who are members of the department the form resides in.
-     * If the form is locked by another user, an exception is thrown.
+     * Revoke a form by its id. Forms can only be revoked by users who are members of the department the form resides in. If the form is locked by another user, an exception is
+     * thrown.
      *
      * @param jwt    The authentication object.
      * @param formId The id of the form.
@@ -480,8 +509,8 @@ public class FormVersionController {
     @Operation(
             summary = "Revoke Form Version",
             description = "Revoke a specific version of a form. " +
-                          "Requires the system role super admin or publish permissions on the parent form. " +
-                          "If the form is locked by another user, an exception is thrown."
+                    "Requires the system role super admin or publish permissions on the parent form. " +
+                    "If the form is locked by another user, an exception is thrown."
     )
     public FormVersionEntity revoke(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -512,6 +541,7 @@ public class FormVersionController {
         var formVersionEntityId = new VFormVersionWithDetailsEntityId(formId, version);
         var existingFormVersionWithDetails = vFormVersionWithDetailsService
                 .retrieve(formVersionEntityId)
+                .map(ObjectMapperFactory.Utils::convertToMap)
                 .orElseThrow(ResponseException::notFound);
 
         // Publish the form
@@ -554,7 +584,8 @@ public class FormVersionController {
 
         // Create a revision for the form
         var updatedFormVersionWithDetails = vFormVersionWithDetailsService
-                .retrieve(formVersionEntityId)
+                .retrieveFresh(formVersionEntityId)
+                .map(ObjectMapperFactory.Utils::convertToMap)
                 .orElseThrow(ResponseException::notFound);
         formRevisionService
                 .create(user, updatedFormVersionWithDetails, existingFormVersionWithDetails);

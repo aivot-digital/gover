@@ -1,6 +1,16 @@
 import {Box, Paper, ThemeProvider, useTheme} from '@mui/material';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {clearLoadedForm, LoadedForm, redoLoadedForm, selectFutureLoadedForm, selectLoadedForm, selectPastLoadedForm, showDialog, undoLoadedForm, updateLoadedForm} from '../../../../slices/app-slice';
+import {
+    clearLoadedForm,
+    LoadedForm,
+    redoLoadedForm,
+    selectFutureLoadedForm,
+    selectLoadedForm,
+    selectPastLoadedForm,
+    showDialog,
+    undoLoadedForm,
+    updateLoadedForm,
+} from '../../../../slices/app-slice';
 import {LoadingPlaceholder} from '../../../../components/loading-placeholder/loading-placeholder';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {ViewDispatcherComponent} from '../../../../components/view-dispatcher.component';
@@ -23,18 +33,14 @@ import {flattenElements} from '../../../../utils/flatten-elements';
 import {HelpDialog, HelpDialogId} from '../../../../dialogs/help-dialog/help.dialog';
 import {PrivacyDialog, PrivacyDialogId} from '../../../../dialogs/privacy-dialog/privacy-dialog';
 import {ImprintDialog, ImprintDialogId} from '../../../../dialogs/imprint-dialog/imprint-dialog';
-import {AccessibilityDialog, AccessibilityDialogId} from '../../../../dialogs/accessibility-dialog/accessibility-dialog';
+import {
+    AccessibilityDialog,
+    AccessibilityDialogId,
+} from '../../../../dialogs/accessibility-dialog/accessibility-dialog';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import RemoveDoneOutlinedIcon from '@mui/icons-material/RemoveDoneOutlined';
 import DoneAllOutlinedIcon from '@mui/icons-material/DoneAllOutlined';
-import DesktopWindowsOutlinedIcon from '@mui/icons-material/DesktopWindowsOutlined';
-import ImportExportOutlinedIcon from '@mui/icons-material/ImportExportOutlined';
-import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
-import DrawIcon from '@mui/icons-material/Draw';
-import BugReportIcon from '@mui/icons-material/BugReport';
-import SwapVertOutlinedIcon from '@mui/icons-material/SwapVertOutlined';
-import TouchAppOutlinedIcon from '@mui/icons-material/TouchAppOutlined';
 import {type Theme} from '../../../themes/models/theme';
 import {selectUser} from '../../../../slices/user-slice';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
@@ -44,14 +50,17 @@ import {EntityLockState} from '../../../../data/entity-lock-state';
 import {useUsersApi} from '../../../../hooks/use-users-api';
 import {getFullName, User} from '../../../../models/entities/user';
 import {CustomerInputService} from '../../../../services/customer-input-service';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import {isAdmin} from '../../../../utils/is-admin';
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
 import {DeveloperTools} from '../../../../components/developer-tools/developer-tools';
 import {enqueueSnackbar} from 'notistack';
 import {FormRevisionsDialog} from '../../dialogs/form-revisions-dialog';
-import {hideLoadingOverlay, hideLoadingOverlayWithTimeout, showLoadingOverlay} from '../../../../slices/loading-overlay-slice';
+import {
+    hideLoadingOverlay,
+    hideLoadingOverlayWithTimeout,
+    showLoadingOverlay,
+} from '../../../../slices/loading-overlay-slice';
 import {withAsyncWrapper} from '../../../../utils/with-async-wrapper';
 import {useDidUpdateEffect} from '../../../../hooks/use-did-update-effect';
 import {IdentityProviderInfo} from '../../../identity/models/identity-provider-info';
@@ -89,7 +98,6 @@ import {downloadQrCode} from '../../../../utils/download-qrcode';
 import {copyToClipboardText} from '../../../../utils/copy-to-clipboard';
 import {createCustomerPath} from '../../../../utils/url-path-utils';
 import OpenInNew from '@aivot/mui-material-symbols-400-outlined/dist/open-in-new/OpenInNew';
-import ContentPaste from '@aivot/mui-material-symbols-400-outlined/dist/content-paste/ContentPaste';
 import QrCode from '@aivot/mui-material-symbols-400-outlined/dist/qr-code/QrCode';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
@@ -353,7 +361,7 @@ export function FormDetailsPage() {
                         },
                     );
             },
-            })
+        })
             .then((newState) => {
                 setDerivedData(newState.elementData);
                 dispatch(addDerivationLogItems(newState.logItems));
@@ -523,7 +531,7 @@ export function FormDetailsPage() {
     }, [loadedForm, lockState, user]);
 
     if (loadedForm == null) {
-        return <LoadingPlaceholder />;
+        return <LoadingPlaceholder/>;
     } else {
         const allElements = flattenElements(loadedForm.version.rootElement);
         const publicFormLink = createCustomerPath(loadedForm.form.slug);
@@ -646,16 +654,13 @@ export function FormDetailsPage() {
 
 
             try {
-                const [updatedForm, updatedVersion] = await withDelay(Promise.all([
+                await withDelay(Promise.all([
                     formService.update(loadedForm.form.id, formToUpdate),
-                    versionService.update({formId: loadedForm.form.id, version: loadedForm.version.version}, versionToUpdate),
+                    versionService.update({
+                        formId: loadedForm.form.id,
+                        version: loadedForm.version.version,
+                    }, versionToUpdate),
                 ]), 600);
-
-                dispatch(updateLoadedForm({
-                    ...loadedForm,
-                    form: updatedForm,
-                    version: updatedVersion,
-                }));
             } catch (err: any) {
                 if (err.status === 403) {
                     dispatch(showErrorSnackbar('Sie verfügen nicht über die notwendigen Rechte zum Bearbeiten.'));
@@ -709,13 +714,13 @@ export function FormDetailsPage() {
         const moreMenuItems: FormDetailsPageMoreMenuItem[] = [
             {
                 label: 'Vorschau in neuem Tab öffnen',
-                icon: <Preview />,
-                endIcon: <OpenInNew fontSize="small" />,
+                icon: <Preview/>,
+                endIcon: <OpenInNew fontSize="small"/>,
                 onClick: handleOpenPreview,
             },
             {
                 label: 'Änderungsverlauf ansehen',
-                icon: <History />,
+                icon: <History/>,
                 onClick: () => {
                     setShowRevisions(true);
                 },
@@ -724,14 +729,14 @@ export function FormDetailsPage() {
             'separator',
             {
                 label: 'Öffentl. Link in Zwischenablage kopieren',
-                icon: <Link />,
+                icon: <Link/>,
                 onClick: () => {
                     void handleCopyPublicFormLink();
                 },
             },
             {
                 label: 'QR-Code mit öffentl. Link herunterladen',
-                icon: <QrCode />,
+                icon: <QrCode/>,
                 onClick: () => {
                     void handleDownloadPublicQrCode();
                 },
@@ -739,19 +744,19 @@ export function FormDetailsPage() {
             'separator',
             {
                 label: 'Formular exportieren (.gov)',
-                icon: <FileExport />,
+                icon: <FileExport/>,
                 onClick: () => {
                     setShowExportFormDialog(true);
                 },
             },
             {
                 label: 'Vordruck exportieren (.pdf)',
-                icon: <Contract />,
+                icon: <Contract/>,
                 onClick: handleDownloadPdfFile,
             },
             {
                 label: 'Formular vorbefüllen',
-                icon: <Draw />,
+                icon: <Draw/>,
                 onClick: () => {
                     setShowPrefillDialog(true);
                 },
@@ -760,7 +765,7 @@ export function FormDetailsPage() {
             {
                 type: 'toggle',
                 label: 'Formularstruktur anzeigen',
-                icon: <AccountTree />,
+                icon: <AccountTree/>,
                 checked: !hideComponentTree,
                 onToggle: () => {
                     dispatch(toggleComponentTree());
@@ -769,7 +774,7 @@ export function FormDetailsPage() {
             {
                 type: 'toggle',
                 label: 'Autom. Scrollen aktivieren',
-                icon: <SwipeVertical />,
+                icon: <SwipeVertical/>,
                 checked: !disableAutoScrollForSteps,
                 onToggle: () => {
                     dispatch(toggleAutoScrollForSteps());
@@ -778,7 +783,7 @@ export function FormDetailsPage() {
             {
                 type: 'toggle',
                 label: 'Element-Kontextmenü aktivieren',
-                icon: <TouchApp />,
+                icon: <TouchApp/>,
                 checked: !disableElementContextMenu,
                 onToggle: () => {
                     dispatch(toggleElementContextMenu());
@@ -786,7 +791,7 @@ export function FormDetailsPage() {
             },
             {
                 label: 'Entwicklerwerkzeuge öffnen',
-                icon: <BugReport />,
+                icon: <BugReport/>,
                 onClick: () => {
                     dispatch(setDevToolsTab(showDeveloperTools ?? 0));
                 },
@@ -794,7 +799,7 @@ export function FormDetailsPage() {
             'separator',
             {
                 label: 'Formular löschen',
-                icon: <Delete />,
+                icon: <Delete/>,
                 onClick: () => {
                     setFormToDelete(loadedForm.form);
                 },
@@ -806,14 +811,14 @@ export function FormDetailsPage() {
         const headerActions: Action[] = [
             {
                 tooltip: 'Änderung rückgängig machen',
-                icon: <UndoIcon />,
+                icon: <UndoIcon/>,
                 onClick: handleUndo,
                 disabled: !hasPastLoadedForm,
                 visible: loadedForm.version.status === FormStatus.Drafted,
             },
             {
                 tooltip: 'Änderung wiederherstellen',
-                icon: <RedoIcon />,
+                icon: <RedoIcon/>,
                 onClick: handleRedo,
                 disabled: !hasFutureLoadedForm,
                 visible: loadedForm.version.status === FormStatus.Drafted,
@@ -821,14 +826,14 @@ export function FormDetailsPage() {
             'separator' as const,
             {
                 tooltip: disableValidation ? 'Validierungen aktivieren' : 'Validierungen deaktivieren',
-                icon: disableValidation ? <DoneAllOutlinedIcon /> : <RemoveDoneOutlinedIcon />,
+                icon: disableValidation ? <DoneAllOutlinedIcon/> : <RemoveDoneOutlinedIcon/>,
                 onClick: () => {
                     dispatch(toggleValidation());
                 },
             },
             {
                 tooltip: disableVisibility ? 'Sichtbarkeiten aktivieren' : 'Sichtbarkeiten deaktivieren',
-                icon: disableVisibility ? <VisibilityOutlinedIcon /> : <VisibilityOffOutlinedIcon />,
+                icon: disableVisibility ? <VisibilityOutlinedIcon/> : <VisibilityOffOutlinedIcon/>,
                 onClick: () => {
                     dispatch(toggleVisibility());
                 },
@@ -836,14 +841,14 @@ export function FormDetailsPage() {
             'separator' as const,
             {
                 tooltip: 'Formular-Einstellungen öffnen',
-                icon: <Settings />,
+                icon: <Settings/>,
                 onClick: () => {
                     navigateToElementEditor(loadedForm.version.rootElement.id);
                 },
             },
             {
                 tooltip: 'Weitere Optionen',
-                icon: <MoreVert />,
+                icon: <MoreVert/>,
                 onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
                     setShowMoreMenuAtEl(event.currentTarget);
                 },
@@ -971,13 +976,12 @@ export function FormDetailsPage() {
                                             <ElementTree
                                                 value={loadedForm.version.rootElement}
                                                 onChange={(changed) => {
-                                                    console.log('Changed', changed);
                                                     handlePatch({
                                                         ...loadedForm,
                                                         version: {
                                                             ...loadedForm.version,
                                                             rootElement: changed as RootElement,
-                                                        }
+                                                        },
                                                     });
                                                 }}
                                                 editable={isEditable}
