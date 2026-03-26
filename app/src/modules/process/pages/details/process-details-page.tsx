@@ -68,6 +68,7 @@ import {getNodeName} from './components/process-flow-editor/utils/node-utils';
 import SwapHoriz from '@mui/icons-material/SwapHoriz';
 import UploadFile from '@aivot/mui-material-symbols-400-outlined/dist/upload-file/UploadFile';
 import {type ProcessNodeExport} from '../../entities/process-node-export';
+import {ProcessSettingsDialog} from '../../dialogs/process-settings-dialog/process-settings-dialog';
 
 const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 150;
 
@@ -255,6 +256,7 @@ export function ProcessDetailsPage(): ReactNode {
     const [isLoadingFlowNodeProviders, setIsLoadingFlowNodeProviders] = useState(false);
     const [hasFlowNodeProviderLoadError, setHasFlowNodeProviderLoadError] = useState(false);
     const [readyFlowEditorKey, setReadyFlowEditorKey] = useState<string | null>(null);
+    const [showSettingsDialog, setShowSettingsDialog] = useState(false);
 
     const [showAddTriggerDialog, setShowAddTriggerDialog] = useState(false);
     const [newNodeFor, setNewNodeFor] = useState<{
@@ -1512,7 +1514,9 @@ export function ProcessDetailsPage(): ReactNode {
                 tooltip: 'Einstellungen',
                 ariaLabel: 'Einstellungen',
                 icon: <Settings/>,
-                onClick: showNotImplementedHeaderActionMessage,
+                onClick: () => {
+                    setShowSettingsDialog(true);
+                },
             },
             {
                 tooltip: 'Weitere Optionen',
@@ -1531,7 +1535,7 @@ export function ProcessDetailsPage(): ReactNode {
                 onClick: showNotImplementedHeaderActionMessage,
                 variant: 'contained',
                 disabled: isInTestMode,
-                activeStyle: {ml: 1}
+                activeStyle: {ml: 1},
             },
         ];
     }, [
@@ -2010,6 +2014,15 @@ export function ProcessDetailsPage(): ReactNode {
                     taskId={null}
                 />
             }
+
+            <ProcessSettingsDialog
+                open={showSettingsDialog}
+                onClose={() => {
+                    setShowSettingsDialog(false);
+                }}
+                process={processFlow.definition}
+                version={processFlow.version}
+            />
         </PageWrapper>
     );
 }
