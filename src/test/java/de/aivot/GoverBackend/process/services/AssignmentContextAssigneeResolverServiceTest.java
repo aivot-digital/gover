@@ -199,7 +199,7 @@ class AssignmentContextAssigneeResolverServiceTest {
 
     private ProcessInstanceTaskRepository createProcessInstanceTaskRepository() {
         return proxy(ProcessInstanceTaskRepository.class, (methodName, args) -> switch (methodName) {
-            case "findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc" -> previousTask;
+            case "findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc" -> Optional.ofNullable(previousTask);
             case "findAllByProcessInstanceId" -> processInstanceTasks;
             case "findAllByAssignedUserIdInAndStatusIn" -> activeTasks;
             default -> unsupported(methodName);
