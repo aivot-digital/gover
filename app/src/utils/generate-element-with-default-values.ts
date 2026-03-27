@@ -77,6 +77,7 @@ function makeInputBase<T extends ElementType>(t: T, id: string): Omit<BaseInputE
         technical: undefined,
         validation: undefined,
         value: undefined,
+        display: undefined,
     };
 }
 

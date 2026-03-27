@@ -209,7 +209,8 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                         <Grid
                             size={{
                                 xs: 12,
-                                lg: 4,
+                                lg: 6,
+                                xl: 3,
                             }}
                         >
                             <CheckboxFieldComponent
@@ -221,16 +222,41 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                         required: checked,
                                         disabled: false,
                                         technical: false,
+                                        display: false,
                                     });
                                 }}
                                 hint="Pflichtangaben müssen von den antragstellenden Personen ausgefüllt werden."
-                                disabled={!editable || Boolean(currentElement.disabled) || Boolean(currentElement.technical)}
+                                disabled={!editable || Boolean(currentElement.disabled) || Boolean(currentElement.technical) || Boolean(currentElement.display)}
                             />
                         </Grid>
                         <Grid
                             size={{
                                 xs: 12,
-                                lg: 4,
+                                lg: 6,
+                                xl: 3,
+                            }}
+                        >
+                            <CheckboxFieldComponent
+                                label="Anzeigefeld"
+                                value={currentElement.display ?? undefined}
+                                onChange={(checked) => {
+                                    onChangeCurrentElement({
+                                        ...currentElement,
+                                        required: false,
+                                        disabled: false,
+                                        technical: false,
+                                        display: checked,
+                                    });
+                                }}
+                                hint="Pflichtangaben müssen von den antragstellenden Personen ausgefüllt werden."
+                                disabled={!editable || Boolean(currentElement.required) || Boolean(currentElement.disabled) || Boolean(currentElement.technical)}
+                            />
+                        </Grid>
+                        <Grid
+                            size={{
+                                xs: 12,
+                                lg: 6,
+                                xl: 3,
                             }}
                         >
                             <CheckboxFieldComponent
@@ -242,16 +268,18 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                         required: false,
                                         disabled: checked,
                                         technical: false,
+                                        display: false,
                                     });
                                 }}
                                 hint="Deaktivierte Eingaben können nicht bearbeitet werden."
-                                disabled={!editable || Boolean(currentElement.required) || Boolean(currentElement.technical)}
+                                disabled={!editable || Boolean(currentElement.required) || Boolean(currentElement.technical) || Boolean(currentElement.display)}
                             />
                         </Grid>
                         <Grid
                             size={{
                                 xs: 12,
-                                lg: 4,
+                                lg: 6,
+                                xl: 3,
                             }}
                         >
                             <CheckboxFieldComponent
@@ -263,10 +291,11 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                         required: false,
                                         disabled: false,
                                         technical: checked,
+                                        display: false,
                                     });
                                 }}
                                 hint="Technische Felder sind für Antragstellende unsichtbar und nicht bearbeitbar."
-                                disabled={!editable || Boolean(currentElement.required) || Boolean(currentElement.disabled)}
+                                disabled={!editable || Boolean(currentElement.required) || Boolean(currentElement.disabled) || Boolean(currentElement.display)}
                             />
                         </Grid>
                     </Grid>
