@@ -15,6 +15,7 @@ import {Box, Paper, Typography} from '@mui/material';
 import {AddElementDialog} from '../../dialogs/add-element-dialog/add-element-dialog';
 import {Actions} from '../actions/actions';
 import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
+import {ElementDisplayContext} from '../../data/element-type/element-child-options';
 
 interface ElementTreeTreeProps<T extends AnyElementWithChildren> {
     label: string;
@@ -112,6 +113,7 @@ export function ElementTreeTree<T extends AnyElementWithChildren>(props: Element
                 hidePresets={true}
                 hideGoverStore={true}
                 limitElementTypes={limitElementTypes}
+                displayContext={ElementDisplayContext.CitizenFacing}
             />
 
             <DndProvider

@@ -13,12 +13,11 @@ import CollapseAll from '@aivot/mui-material-symbols-400-outlined/dist/collapse-
 import AccountTree from '@aivot/mui-material-symbols-400-outlined/dist/account-tree/AccountTree';
 import {ElementTreeChildList} from './components/element-tree-child-list';
 import {ElementTreeContextProvider, ElementTreeDragItem, ElementTreeExpandCommand} from './element-tree-context';
-import {ElementChildOptions} from '../../data/element-type/element-child-options';
+import {ElementChildOptions, ElementDisplayContext} from '../../data/element-type/element-child-options';
 import {generateComponentTitle} from '../../utils/generate-component-title';
 import {SearchInput} from '../search-input/search-input';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
-import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
 import {flattenElementsWithParents} from '../../utils/flatten-elements';
 import SearchOff from '@aivot/mui-material-symbols-400-outlined/dist/search-off/SearchOff';
 
@@ -27,6 +26,7 @@ export interface ElementTreeProps<T extends AnyElement> {
     onChange: (patch: T) => void;
     editable: boolean;
     parentModalZIndex?: number;
+    displayContext: ElementDisplayContext;
 }
 
 interface ElementTreeSearchResult {
@@ -41,6 +41,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
         onChange,
         editable,
         parentModalZIndex,
+        displayContext,
     } = props;
 
     const {
@@ -91,11 +92,11 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
     };
 
     const canDropElement = useCallback((dragItem: ElementTreeDragItem, targetParentPath: string[], targetIndex: number) => {
-        return canDropElementInTree(value, dragItem, targetParentPath, targetIndex);
+        return canDropElementInTree(value, dragItem, targetParentPath, targetIndex, displayContext);
     }, [value]);
 
     const moveElement = useCallback((dragItem: ElementTreeDragItem, targetParentPath: string[], targetIndex: number) => {
-        const updatedValue = moveElementInTree(value, dragItem, targetParentPath, targetIndex);
+        const updatedValue = moveElementInTree(value, dragItem, targetParentPath, targetIndex, displayContext);
         if (updatedValue !== value) {
             onChange(updatedValue as T);
         }
@@ -418,6 +419,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                                 expandCommand: expandCommand,
                                 activeSearchResultPath: activeSearchResult?.path,
                                 allElements: allElements,
+                                displayContext: displayContext,
                             }}
                         >
                             <ElementTreeChildList
@@ -444,6 +446,7 @@ function canDropElementInTree(
     dragItem: ElementTreeDragItem,
     targetParentPath: string[],
     targetIndex: number,
+    displayContext: ElementDisplayContext,
 ): boolean {
     const sourceInfo = findSourceInTree(tree, dragItem);
     if (sourceInfo == null) {
@@ -459,7 +462,7 @@ function canDropElementInTree(
         return false;
     }
 
-    const acceptedChildren = ElementChildOptions[targetParent.type] ?? [];
+    const acceptedChildren = ElementChildOptions[displayContext][targetParent.type] ?? [];
     if (!acceptedChildren.includes(sourceInfo.element.type)) {
         return false;
     }
@@ -479,8 +482,9 @@ function moveElementInTree<T extends AnyElement>(
     dragItem: ElementTreeDragItem,
     targetParentPath: string[],
     targetIndex: number,
+    displayContext: ElementDisplayContext,
 ): T {
-    if (!canDropElementInTree(tree, dragItem, targetParentPath, targetIndex)) {
+    if (!canDropElementInTree(tree, dragItem, targetParentPath, targetIndex, displayContext)) {
         return tree;
     }
 

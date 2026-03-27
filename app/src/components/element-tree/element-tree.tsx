@@ -17,6 +17,7 @@ import {generateElementWithDefaultValues} from '../../utils/generate-element-wit
 import {isLoadedForm, LoadedForm} from '../../slices/app-slice';
 import {AnyFormElement} from '../../models/elements/form/any-form-element';
 import {PresetVersion} from '../../models/entities/preset-version';
+import {ElementDisplayContext} from '../../data/element-type/element-child-options';
 
 export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps<T>) {
     const [showAddDialog, setShowAddDialog] = useState(false);
@@ -207,6 +208,7 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
                 onClose={() => {
                     setShowAddDialog(false);
                 }}
+                displayContext={ElementDisplayContext.CitizenFacing}
             />
         </>
     );

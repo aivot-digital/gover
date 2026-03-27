@@ -162,6 +162,7 @@ export function AddElementDialog(props: AddElementDialogProps) {
                         highlightedElement={showElementInfo}
                         limitElementTypes={props.limitElementTypes}
                         recentElementTypes={recentElementTypes}
+                        displayContext={props.displayContext}
                     />
                 }
                 {

@@ -6,6 +6,7 @@ import {
 } from '../models/elements/form/input/ui-definition-input-field-element';
 import {UiDefinitionInputFieldComponent} from '../components/ui-definition-input-field/ui-definition-input-field-component';
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
+import {ElementDisplayContext} from '../data/element-type/element-child-options';
 
 export function UiDefinitionInputFieldView(
     props: BaseViewProps<UiDefinitionInputFieldElement, UiDefinitionInputFieldElementItem>
@@ -37,6 +38,7 @@ export function UiDefinitionInputFieldView(
             value={value ?? undefined}
             expectedRootType={element.elementType}
             onChange={setValue}
+            displayContext={element.displayContext ?? ElementDisplayContext.CitizenFacing}
         />
     );
 }

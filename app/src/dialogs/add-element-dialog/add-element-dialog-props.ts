@@ -1,6 +1,7 @@
 import {type ElementType} from '../../data/element-type/element-type';
 import {type AnyElement} from '../../models/elements/any-element';
 import {type ReactNode} from 'react';
+import {ElementDisplayContext} from '../../data/element-type/element-child-options';
 
 export interface AddElementDialogProps {
     show: boolean;
@@ -13,4 +14,5 @@ export interface AddElementDialogProps {
     limitElementTypes?: ElementType[];
     hidePresets?: boolean;
     hideGoverStore?: boolean;
+    displayContext: ElementDisplayContext;
 }

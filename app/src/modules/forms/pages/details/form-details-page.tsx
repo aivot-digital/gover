@@ -116,6 +116,7 @@ import SwipeVertical from '@aivot/mui-material-symbols-400-outlined/dist/swipe-v
 import TouchApp from '@aivot/mui-material-symbols-400-outlined/dist/touch-app/TouchApp';
 import BugReport from '@aivot/mui-material-symbols-400-outlined/dist/bug-report/BugReport';
 import {ElementEditor} from '../../../../components/element-editor/element-editor';
+import {ElementDisplayContext} from '../../../../data/element-type/element-child-options';
 
 export const DialogSearchParam = 'dialog';
 
@@ -985,6 +986,7 @@ export function FormDetailsPage() {
                                                     });
                                                 }}
                                                 editable={isEditable}
+                                                displayContext={ElementDisplayContext.CitizenFacing}
                                             />
                                         </Paper>
                                     </Allotment.Pane>

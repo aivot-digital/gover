@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.elements.models.elements.form.input;
 
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
+import de.aivot.GoverBackend.elements.enums.ElementDisplayContext;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
@@ -16,6 +17,9 @@ import java.util.Objects;
 public class UiDefinitionInputElement extends BaseInputElement<BaseElement> implements PrintableElement<BaseElement> {
     @Nullable
     private ElementType elementType;
+
+    @Nullable
+    private ElementDisplayContext displayContext;
 
     public UiDefinitionInputElement() {
         super(ElementType.UiDefinitionInput);
@@ -94,13 +98,14 @@ public class UiDefinitionInputElement extends BaseInputElement<BaseElement> impl
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         UiDefinitionInputElement that = (UiDefinitionInputElement) o;
-        return elementType == that.elementType;
+        return elementType == that.elementType && displayContext == that.displayContext;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), elementType);
+        return Objects.hash(super.hashCode(), elementType, displayContext);
     }
+
 
     // endregion
 
@@ -113,6 +118,16 @@ public class UiDefinitionInputElement extends BaseInputElement<BaseElement> impl
 
     public UiDefinitionInputElement setElementType(@Nullable ElementType elementType) {
         this.elementType = elementType;
+        return this;
+    }
+
+    @Nullable
+    public ElementDisplayContext getDisplayContext() {
+        return displayContext;
+    }
+
+    public UiDefinitionInputElement setDisplayContext(@Nullable ElementDisplayContext displayContext) {
+        this.displayContext = displayContext;
         return this;
     }
 

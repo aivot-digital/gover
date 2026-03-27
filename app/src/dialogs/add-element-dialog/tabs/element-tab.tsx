@@ -16,7 +16,7 @@ import {generateElementWithDefaultValues} from '../../../utils/generate-element-
 import {getElementNameForType} from '../../../data/element-type/element-names';
 import {type BaseTabProps} from './base-tab-props';
 import {ElementType} from '../../../data/element-type/element-type';
-import {ElementChildOptions} from '../../../data/element-type/element-child-options';
+import {ElementChildOptions, ElementDisplayContext} from '../../../data/element-type/element-child-options';
 import {getElementIconForType} from '../../../data/element-type/element-icons';
 import {
     elementTypeGroupLabels,
@@ -52,17 +52,19 @@ export function ElementTab({
     highlightedElement,
     limitElementTypes,
     recentElementTypes = [],
+    displayContext,
 }: BaseTabProps & {
     showElementInfo: (type: ElementType) => void;
     highlightedElement?: ElementType;
     limitElementTypes?: ElementType[];
     recentElementTypes?: ElementType[];
+    displayContext: ElementDisplayContext;
 }) {
     const [search, setSearch] = useState('');
     const [expandedGroups, setExpandedGroups] = useState<Record<ElementTypeGroups, boolean>>(defaultExpandedGroups);
 
     const options = useMemo<ElementOption[]>(() => {
-        const childOptions = ElementChildOptions[parentType] ?? [];
+        const childOptions = ElementChildOptions[displayContext][parentType] ?? [];
 
         return childOptions
             .filter((type) => limitElementTypes == null || limitElementTypes.includes(type))

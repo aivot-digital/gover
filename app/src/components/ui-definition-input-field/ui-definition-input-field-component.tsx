@@ -12,6 +12,7 @@ import {generateElementWithDefaultValues} from '../../utils/generate-element-wit
 import {ElementDerivationContext} from '../../modules/elements/components/element-derivation-context';
 import {Allotment} from 'allotment';
 import {AuthoredElementValues} from '../../models/element-data';
+import {ElementDisplayContext} from '../../data/element-type/element-child-options';
 
 interface UiDefinitionInputFieldComponentProps {
     label: string;
@@ -22,6 +23,7 @@ interface UiDefinitionInputFieldComponentProps {
     value?: UiDefinitionInputFieldElementItem | null;
     expectedRootType?: ElementType | null;
     onChange: (value: UiDefinitionInputFieldElementItem | undefined) => void;
+    displayContext: ElementDisplayContext;
 }
 
 function buildSummary(value?: UiDefinitionInputFieldElementItem | null): string {
@@ -53,6 +55,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
         value,
         expectedRootType,
         onChange,
+        displayContext,
     } = props;
 
     const displayLabel = `${label}${required ? ' *' : ''}`;
@@ -227,6 +230,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                     editable={!disabled}
                                     // The tree editor drawer needs to know the surrounding dialog layer.
                                     parentModalZIndex={theme.zIndex.modal}
+                                    displayContext={displayContext}
                                 />
                             </Allotment.Pane>
                         </Allotment>

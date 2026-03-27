@@ -2,6 +2,7 @@ import {createContext, useContext} from 'react';
 import {ElementType} from '../../data/element-type/element-type';
 import {ElementWithParents} from '../../utils/flatten-elements';
 import {AnyElement} from '../../models/elements/any-element';
+import {ElementDisplayContext} from '../../data/element-type/element-child-options';
 
 export interface ElementTreeDragItem {
     id: string;
@@ -28,6 +29,7 @@ export interface ElementTreeContextType {
     expandCommand: ElementTreeExpandCommand;
     activeSearchResultPath?: string[];
     allElements: ElementWithParents[];
+    displayContext: ElementDisplayContext;
 }
 
 export const ElementTreeContext = createContext<ElementTreeContextType | null>(null);

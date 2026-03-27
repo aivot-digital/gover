@@ -81,6 +81,7 @@ export function ElementTreeChildList<T extends AnyElement>(props: ElementTreeChi
 
     const {
         editable,
+        displayContext,
     } = useElementTreeContext();
 
     const parentPath = useMemo(() => {
@@ -287,6 +288,7 @@ export function ElementTreeChildList<T extends AnyElement>(props: ElementTreeChi
                 onClose={() => {
                     setShowAddElementDialog(false);
                 }}
+                displayContext={displayContext}
             />
         </Box>
     );

@@ -363,6 +363,7 @@ const elementConstructors: {
         ...makeInputBase(ElementType.UiDefinitionInput, id),
         label: 'UI-Definition',
         elementType: undefined,
+        displayContext: undefined,
     }),
     [ElementType.IdentityInput]: (id) => ({}),
     [ElementType.TabLayout]: (id) => ({}),
