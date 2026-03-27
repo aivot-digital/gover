@@ -70,8 +70,8 @@ spring:
   # Set the default upload size limits
   servlet:
     multipart:
-      max-file-size: "${GOVER_MAX_UPLOAD_FILE:50MB}"
-      max-request-size: "${GOVER_MAX_UPLOAD_TOTAL:200MB}"
+      max-file-size: "${GOVER_MAX_UPLOAD_FILE:100MB}"
+      max-request-size: "${GOVER_MAX_UPLOAD_TOTAL:500MB}"
 
   flyway:
     # Enable flyway for database migrations
