@@ -1,6 +1,6 @@
 import {GenericDetailsPageProps} from './generic-details-page-props';
 import {Box, Button, Container, Paper, Stack, Tab, Tabs, Typography} from '@mui/material';
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Api, useApi} from '../../hooks/use-api';
 import {GenericPageHeader} from '../generic-page-header/generic-page-header';
 import {generatePath, Link, matchPath, Outlet, useLocation, useNavigate, useParams} from 'react-router-dom';
@@ -63,6 +63,26 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
     const [isBusy, setIsBusy] = useState(false);
     const [item, setItem] = useState<ItemType>();
     const [additionalData, setAdditionalData] = useState<AdditionalData>();
+    const [refreshCounter, setRefreshCounter] = useState(0);
+    const propsRef = useRef(props);
+
+    useEffect(() => {
+        propsRef.current = props;
+    }, [props]);
+
+    const refresh = useCallback(() => {
+        setRefreshCounter(currentCounter => currentCounter + 1);
+    }, []);
+
+    useEffect(() => {
+        if (props.controlRef == null) {
+            return;
+        }
+
+        props.controlRef.current = {
+            refresh: refresh,
+        };
+    }, [props.controlRef, refresh]);
 
     const resolvedPathParams = useMemo(() => ({
         ...params,
@@ -90,31 +110,49 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
     }, [props.header, item, isNewItem, notFound]);
 
     useEffect(() => {
+        const currentProps = propsRef.current;
+
         if (id == null) {
             setItem(undefined);
             setAdditionalData(undefined);
-            if (props.itemRef != null) {
-                props.itemRef.current = null;
+            if (currentProps.itemRef != null) {
+                currentProps.itemRef.current = null;
             }
             return;
         }
 
+        let isActive = true;
         setIsBusy(true);
-        fetchData<ItemType, ID, AdditionalData>(api, id, props)
+        fetchData<ItemType, ID, AdditionalData>(api, id, currentProps)
             .then(({item, additionalData}) => {
+                if (!isActive) {
+                    return;
+                }
                 setItem(item);
                 setAdditionalData(additionalData);
                 setNotFound(false);
-                if (props.itemRef != null) {
-                    props.itemRef.current = item;
+                if (currentProps.itemRef != null) {
+                    currentProps.itemRef.current = item;
                 }
             })
             .catch((error: ApiError) => {
+                if (!isActive) {
+                    return;
+                }
                 console.error(error);
                 setNotFound(true);
             })
-            .finally(() => setIsBusy(false));
-    }, [api, id]);
+            .finally(() => {
+                if (!isActive) {
+                    return;
+                }
+                setIsBusy(false);
+            });
+
+        return () => {
+            isActive = false;
+        };
+    }, [api, id, refreshCounter]);
 
     const headerTitle = useMemo(() => {
         if (props.getHeaderTitle) {
@@ -243,6 +281,7 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
                                         setAdditionalData: setAdditionalData,
                                         isBusy: isBusy,
                                         setIsBusy: setIsBusy,
+                                        refresh: refresh,
                                         isEditable: isEditable != null ? isEditable(item) : true,
                                     }}
                                 >

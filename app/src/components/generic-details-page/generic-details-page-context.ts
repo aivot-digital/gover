@@ -9,6 +9,7 @@ export interface GenericDetailsPageContextType<ItemType, AdditionalData> {
     setAdditionalData: (additionalData: AdditionalData) => void;
     isBusy: boolean;
     setIsBusy: (isBusy: boolean) => void;
+    refresh: () => void;
     isEditable: boolean;
 }
 
@@ -17,6 +18,7 @@ export const GenericDetailsPageContext = createContext<GenericDetailsPageContext
     setAdditionalData: () => {},
     isBusy: false,
     setIsBusy: () => {},
+    refresh: () => {},
     isEditable: false,
 });
 

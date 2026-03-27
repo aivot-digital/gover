@@ -15,6 +15,10 @@ export type GenericDetailsPageHeaderConfig<ItemType> =
     Omit<GenericPageHeaderProps, 'isBusy'>
     | ((item: ItemType | undefined, isNewItem: boolean, notFound: boolean) => Omit<GenericPageHeaderProps, 'isBusy'>);
 
+export type GenericDetailsPageControlRef = {
+    refresh: () => void;
+};
+
 export interface GenericDetailsPageProps<ItemType, ID, AdditionalData> {
     getTabTitle: (item: ItemType) => string;
     header: GenericDetailsPageHeaderConfig<ItemType>;
@@ -30,6 +34,7 @@ export interface GenericDetailsPageProps<ItemType, ID, AdditionalData> {
     },
     getHeaderTitle?: (item?: ItemType, isNewItem?: boolean, notFound?: boolean) => string;
     itemRef?: RefObject<ItemType | null>;
+    controlRef?: RefObject<GenericDetailsPageControlRef | null>;
     entityType?: ServerEntityType;
     isEditable?: (item: ItemType | undefined) => boolean;
 }
