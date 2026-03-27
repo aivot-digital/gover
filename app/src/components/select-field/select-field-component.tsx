@@ -53,8 +53,9 @@ export function SelectFieldComponent(props: SelectFieldComponentProps) {
         <TextField
             {...muiPassTroughProps}
             select
-            label={label + ((required ?? false) ? ' *' : '')}
+            label={label}
             autoComplete={autocomplete}
+            required={required}
             error={error != null}
             helperText={error != null ? error : hint}
             placeholder={placeholder}
