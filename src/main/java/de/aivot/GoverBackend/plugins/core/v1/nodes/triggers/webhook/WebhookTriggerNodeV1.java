@@ -295,7 +295,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
                 context.testClaim().getAccessKey()
         );
 
-        if (config.authRequired && WebhookTriggerConfig.AUTH_METHOD_OPTION_QUERY_PARAM.equals(config.authConfig.authMethod)) {
+        if (Boolean.TRUE.equals(config.authRequired) && WebhookTriggerConfig.AUTH_METHOD_OPTION_QUERY_PARAM.equals(config.authConfig.authMethod)) {
             triggerUrl += String.format("&%s=%s", WebhookTriggerController.AUTH_TOKEN_QUERY_PARAM, config.authConfig.authToken);
         }
 
