@@ -293,11 +293,11 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition {
                 context.getThisProcessInstance().getId(),
                 context.getThisNode().getId(),
                 context.getThisTask().getId()
-        )
+        ).orElse(null)
                 : processInstanceTaskRepository.findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(
                 context.getThisProcessInstance().getId(),
                 context.getThisNode().getId()
-        );
+        ).orElse(null);
 
         var previousIterationValue = previousIterationTask == null
                 ? null

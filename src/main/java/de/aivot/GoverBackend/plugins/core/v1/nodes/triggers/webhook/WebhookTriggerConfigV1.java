@@ -4,10 +4,11 @@ import de.aivot.GoverBackend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.GoverBackend.enums.ElementType;
+import jakarta.annotation.Nullable;
 
 
 @LayoutElementPOJOBinding(id = WebhookTriggerNodeV1.NODE_KEY, type = ElementType.ConfigLayout)
-public class WebhookTriggerConfig {
+public class WebhookTriggerConfigV1 {
     // The basic slug for this webhook node
     public static final String SLUG_CONFIG_KEY = "slug";
 
@@ -54,42 +55,47 @@ public class WebhookTriggerConfig {
     // Flag to copy data to process data
     public static final String COPY_TO_PROCESS_DATA_CONFIG_KEY = "copy_to_process_data";
 
+    @Nullable
     @InputElementPOJOBinding(id = SLUG_CONFIG_KEY, type = ElementType.Text, properties = {
             @ElementPOJOBindingProperty(key = "label", strValue = "Webhook-URL"),
             @ElementPOJOBindingProperty(key = "hint", strValue = "Die URL, über die der Webhook angesprochen werden kann."),
             @ElementPOJOBindingProperty(key = "required", boolValue = true),
     })
-    public String slug;
+    public String slug = "";
 
+    @Nullable
     @InputElementPOJOBinding(id = REQUEST_METHOD_CONFIG_KEY, type = ElementType.Select, properties = {
             @ElementPOJOBindingProperty(key = "label", strValue = "HTTP-Methode"),
             @ElementPOJOBindingProperty(key = "hint", strValue = "Die HTTP-Methode, die für den Webhook verwendet werden soll."),
             @ElementPOJOBindingProperty(key = "required", boolValue = true),
-            // TODO: Add options
     })
-    public String requestMethod;
+    public String requestMethod = REQUEST_METHOD_OPTION_POST;
 
+    @Nullable
     public WebhookRequestBodyConfig requestBodyConfig;
 
+    @Nullable
     @InputElementPOJOBinding(id = AUTH_REQUIRED_CONFIG_KEY, type = ElementType.Checkbox, properties = {
             @ElementPOJOBindingProperty(key = "label", strValue = "Authentifizierung erforderlich"),
             @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie an, ob für den Zugriff auf den Webhook eine Authentifizierung erforderlich ist."),
             @ElementPOJOBindingProperty(key = "variant", strValue = "switch"),
     })
-    public Boolean authRequired;
+    public Boolean authRequired = false;
 
+    @Nullable
     public WebhookConfigAuth authConfig;
 
     @LayoutElementPOJOBinding(id = AUTH_CONFIG_GROUP_ID, type = ElementType.Group)
     public static class WebhookConfigAuth {
+        @Nullable
         @InputElementPOJOBinding(id = AUTH_METHOD_CONFIG_KEY, type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Authentifizierungsmethode"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Die Methode der Authentifizierung, die für den Webhook verwendet werden soll."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
-                // TODO: Add options
         })
         public String authMethod;
 
+        @Nullable
         @InputElementPOJOBinding(id = AUTH_USERNAME_CONFIG_KEY, type = ElementType.Text, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Benutzername"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Der Benutzername für die Basic-Authentifizierung."),
@@ -97,6 +103,7 @@ public class WebhookTriggerConfig {
         })
         public String authUsername;
 
+        @Nullable
         @InputElementPOJOBinding(id = AUTH_PASSWORD_CONFIG_KEY, type = ElementType.Text, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Passwort"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Das Passwort für die Basic-Authentifizierung."),
@@ -104,6 +111,7 @@ public class WebhookTriggerConfig {
         })
         public String authPassword;
 
+        @Nullable
         @InputElementPOJOBinding(id = AUTH_TOKEN_CONFIG_KEY, type = ElementType.Text, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Token"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Das Token für die Bearer-Authentifizierung oder als Query-Parameter."),
@@ -114,6 +122,7 @@ public class WebhookTriggerConfig {
 
     @LayoutElementPOJOBinding(id = REQUEST_BODY_CONFIG_GROUP_ID, type = ElementType.Group)
     public static class WebhookRequestBodyConfig {
+        @Nullable
         @InputElementPOJOBinding(id = REQUEST_BODY_TYPE_CONFIG_KEY, type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Request Body Typ"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Der Typ des Request Bodys, der für den Webhook verwendet werden soll."),
@@ -121,20 +130,22 @@ public class WebhookTriggerConfig {
         })
         public String requestBodyType;
 
+        @Nullable
         @InputElementPOJOBinding(id = PROCESSING_TYPE_CONFIG_KEY, type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Verarbeitungsart"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Die Art der Verarbeitung der empfangenen Webhook-Daten."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
-                // TODO: Add options
         })
         public String processingType;
 
+        @Nullable
         @InputElementPOJOBinding(id = PROCESSING_CODE_CONFIG_KEY, type = ElementType.CodeInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Verarbeitungscode"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Der JavaScript-Code, der zur Verarbeitung der empfangenen Webhook-Daten verwendet werden soll."),
         })
         public String processingCode;
 
+        @Nullable
         @InputElementPOJOBinding(id = COPY_TO_PROCESS_DATA_CONFIG_KEY, type = ElementType.Checkbox, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Daten in Vorgangsdaten kopieren"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie an, ob die empfangenen Webhook-Daten in die Vorgangsdaten kopiert werden sollen."),

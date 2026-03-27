@@ -114,7 +114,6 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 new ProcessNodeDefinitionService(List.of(provider)),
                 new TestProcessNodeService(node),
                 new FailingProcessNodeExecutionResultHandler(),
-                null,
                 new TestProcessNodeExecutionLoggerFactory(),
                 new TestElementDerivationService(normalizedInputs),
                 new TestTaskViewMultipartInputService(normalizedInputs)

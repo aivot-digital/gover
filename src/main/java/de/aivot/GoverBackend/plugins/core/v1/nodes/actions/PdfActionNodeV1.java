@@ -30,8 +30,8 @@ import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInv
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.GoverBackend.process.models.*;
-import de.aivot.GoverBackend.process.services.ProcessDataService;
 import de.aivot.GoverBackend.process.services.ProcessInstanceAttachmentService;
+import de.aivot.GoverBackend.process.services.TemplateRenderService;
 import de.aivot.GoverBackend.services.PdfService;
 import de.aivot.GoverBackend.storage.services.StorageService;
 import de.aivot.GoverBackend.utils.StringUtils;
@@ -59,25 +59,22 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
     private static final String OUTPUT_NAME_STORAGE_PATH_FROM_ROOT = "storagePathFromRoot";
 
     private final PdfService pdfService;
-    private final ProcessDataService processDataService;
+    private final TemplateRenderService templateRenderService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
     private final AssetService assetService;
-    private final VStorageIndexItemWithAssetService vStorageIndexItemWithAssetService;
     private final VStorageIndexItemWithAssetRepository vStorageIndexItemWithAssetRepository;
     private final StorageService storageService;
 
     public PdfActionNodeV1(PdfService pdfService,
-                           ProcessDataService processDataService,
+                           TemplateRenderService templateRenderService,
                            ProcessInstanceAttachmentService processInstanceAttachmentService,
                            AssetService assetService,
-                           VStorageIndexItemWithAssetService vStorageIndexItemWithAssetService,
                            VStorageIndexItemWithAssetRepository vStorageIndexItemWithAssetRepository,
                            StorageService storageService) {
         this.pdfService = pdfService;
-        this.processDataService = processDataService;
+        this.templateRenderService = templateRenderService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.assetService = assetService;
-        this.vStorageIndexItemWithAssetService = vStorageIndexItemWithAssetService;
         this.vStorageIndexItemWithAssetRepository = vStorageIndexItemWithAssetRepository;
         this.storageService = storageService;
     }
@@ -241,7 +238,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
             );
         }
 
-        var fileName = processDataService
+        var fileName = templateRenderService
                 .interpolate(context.getProcessData(), configuration.fileName);
         if (StringUtils.isNullOrEmpty(fileName)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
@@ -259,7 +256,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
             );
         }
 
-        var interpolatedContentHtml = processDataService
+        var interpolatedContentHtml = templateRenderService
                 .interpolate(context.getProcessData(), contentHtml);
 
         if (StringUtils.isNullOrEmpty(interpolatedContentHtml)) {
@@ -331,12 +328,12 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
         }
 
         if (PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_CODE.equals(contentSource)) {
-            return processDataService
+            return templateRenderService
                     .interpolate(context.getProcessData(), configuration.contentHtml);
         }
 
         if (PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_ASSET_KEY.equals(contentSource)) {
-            var assetKeyStr = processDataService
+            var assetKeyStr = templateRenderService
                     .interpolate(context.getProcessData(), configuration.contentHtmlAssetKey);
             if (StringUtils.isNullOrEmpty(assetKeyStr)) {
                 throw new ProcessNodeExecutionExceptionMissingValue(

@@ -105,4 +105,9 @@ public class ProcessInstanceTaskService implements EntityService<ProcessInstance
                                    @Nonnull Collection<ProcessTaskStatus> statuses) {
         return processInstanceTaskRepository.countByAssignedUserIdAndStatusIn(assignedUserId, statuses);
     }
+
+    public Optional<ProcessInstanceTaskEntity> retrieveLatestForInstanceIdAndNodeId(Long id, Integer previousProcessNodeId) {
+        return processInstanceTaskRepository
+                .findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(id, previousProcessNodeId);
+    }
 }

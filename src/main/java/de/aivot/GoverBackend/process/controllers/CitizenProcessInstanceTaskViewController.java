@@ -48,7 +48,6 @@ public class CitizenProcessInstanceTaskViewController {
     private final ProcessNodeDefinitionService processNodeProviderService;
     private final ProcessNodeService processDefinitionNodeService;
     private final ProcessNodeExecutionResultHandler processNodeExecutionResultHandler;
-    private final ProcessDataService processDataService;
     private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
     private final ElementDerivationService elementDerivationService;
     private final TaskViewMultipartInputService taskViewMultipartInputService;
@@ -58,7 +57,6 @@ public class CitizenProcessInstanceTaskViewController {
                                                     ProcessNodeDefinitionService processNodeProviderService,
                                                     ProcessNodeService processDefinitionNodeService,
                                                     ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
-                                                    ProcessDataService processDataService,
                                                     ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
                                                     ElementDerivationService elementDerivationService,
                                                     TaskViewMultipartInputService taskViewMultipartInputService) {
@@ -67,7 +65,6 @@ public class CitizenProcessInstanceTaskViewController {
         this.processNodeProviderService = processNodeProviderService;
         this.processDefinitionNodeService = processDefinitionNodeService;
         this.processNodeExecutionResultHandler = processNodeExecutionResultHandler;
-        this.processDataService = processDataService;
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
         this.elementDerivationService = elementDerivationService;
         this.taskViewMultipartInputService = taskViewMultipartInputService;

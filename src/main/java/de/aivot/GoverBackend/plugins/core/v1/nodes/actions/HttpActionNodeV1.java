@@ -21,7 +21,7 @@ import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.GoverBackend.process.models.*;
-import de.aivot.GoverBackend.process.services.ProcessDataService;
+import de.aivot.GoverBackend.process.services.TemplateRenderService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
@@ -46,11 +46,11 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition {
     private static final String OUTPUT_NAME_BODY = "body";
 
     private final HttpService httpService;
-    private final ProcessDataService processDataService;
+    private final TemplateRenderService templateRenderService;
 
-    public HttpActionNodeV1(HttpService httpService, ProcessDataService processDataService) {
+    public HttpActionNodeV1(HttpService httpService, TemplateRenderService templateRenderService) {
         this.httpService = httpService;
-        this.processDataService = processDataService;
+        this.templateRenderService = templateRenderService;
     }
 
     @Nonnull
@@ -184,7 +184,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition {
 
         var method = String.valueOf(configuration.getOrDefault(METHOD_FIELD_ID, "GET"));
 
-        var url = processDataService
+        var url = templateRenderService
                 .interpolate(
                         context.getProcessData(),
                         String.valueOf(configuration.getOrDefault(URL_FIELD_ID, ""))
@@ -208,7 +208,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition {
                 );
             }
         } else {
-            var payload = processDataService
+            var payload = templateRenderService
                     .interpolate(
                             context.getProcessData(),
                             String.valueOf(configuration.getOrDefault(PAYLOAD_FIELD_ID, "{}"))

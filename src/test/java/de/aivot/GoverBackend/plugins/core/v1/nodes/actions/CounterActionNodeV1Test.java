@@ -26,6 +26,7 @@ import java.lang.reflect.Proxy;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static de.aivot.GoverBackend.TestData.runtime;
@@ -52,7 +53,7 @@ class CounterActionNodeV1Test {
         previousIterationTask = null;
         processInstanceTaskRepository = proxy(ProcessInstanceTaskRepository.class, (methodName, args) -> switch (methodName) {
             case "findFirstByProcessInstanceIdAndProcessNodeIdAndIdNotOrderByStartedDesc",
-                 "findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc" -> previousIterationTask;
+                 "findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc" -> Optional.ofNullable(previousIterationTask);
             default -> unsupported(methodName);
         });
         node = new CounterActionNodeV1(processInstanceTaskRepository);

@@ -18,7 +18,6 @@ import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
-import de.aivot.GoverBackend.process.filters.ProcessInstanceTaskFilter;
 import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.services.*;
 import de.aivot.GoverBackend.process.workers.ProcessNodeExecutionResultHandler;
@@ -174,12 +173,9 @@ public class StaffProcessInstanceTaskViewController {
         ProcessInstanceTaskEntity previousTask;
         if (taskViewData.task.getPreviousProcessNodeId() != null) {
             previousTask = processInstanceTaskService
-                    .retrieve(
-                            ProcessInstanceTaskFilter
-                                    .create()
-                                    .setProcessInstanceId(taskViewData.instance.getId())
-                                    .setProcessNodeId(taskViewData.task.getPreviousProcessNodeId())
-                                    .build()
+                    .retrieveLatestForInstanceIdAndNodeId(
+                            taskViewData.instance.getId(),
+                            taskViewData.task.getPreviousProcessNodeId()
                     )
                     .orElse(null);
         } else {

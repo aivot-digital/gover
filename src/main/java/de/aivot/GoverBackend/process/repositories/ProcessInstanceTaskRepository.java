@@ -9,13 +9,14 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInstanceTaskEntity, Long>, JpaSpecificationExecutor<ProcessInstanceTaskEntity> {
-    ProcessInstanceTaskEntity findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(Long processInstanceId, Integer processDefinitionNodeId);
+    Optional<ProcessInstanceTaskEntity> findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(Long processInstanceId, Integer processDefinitionNodeId);
 
-    ProcessInstanceTaskEntity findFirstByProcessInstanceIdAndProcessNodeIdAndIdNotOrderByStartedDesc(Long processInstanceId,
-                                                                                                      Integer processDefinitionNodeId,
-                                                                                                      Long excludedTaskId);
+    Optional<ProcessInstanceTaskEntity> findFirstByProcessInstanceIdAndProcessNodeIdAndIdNotOrderByStartedDesc(Long processInstanceId,
+                                                                                                               Integer processDefinitionNodeId,
+                                                                                                               Long excludedTaskId);
 
     List<ProcessInstanceTaskEntity> findAllByProcessInstanceId(Long processInstanceId);
 
