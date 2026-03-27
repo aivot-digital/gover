@@ -30,6 +30,7 @@ import {DepartmentApiService} from '../../../../../modules/departments/services/
 import {DepartmentEntity} from '../../../../../modules/departments/entities/department-entity';
 import {StorageProvidersApiService} from '../../../../../modules/storage/storage-providers-api-service';
 import {StorageProviderType} from '../../../../../modules/storage/enums/storage-provider-type';
+import {isStringNullOrEmpty} from '../../../../../utils/string-utils';
 
 async function fetchSetup(): Promise<SystemSetupDTO> {
     return new SystemApiService()
@@ -69,8 +70,30 @@ export function ApplicationSettings() {
 
     const [assetStorageProviders, setAssetStorageProviders] = useState<SelectFieldComponentOption[]>([]);
     const [attStorageProviders, setAttStorageProviders] = useState<SelectFieldComponentOption[]>([]);
+    const [isLoadingAssetStorageProviders, setIsLoadingAssetStorageProviders] = useState(true);
+    const [isLoadingAttStorageProviders, setIsLoadingAttStorageProviders] = useState(true);
 
     const hasNotChanged = Object.keys(editedConfig).length === 0;
+    const configuredAssetStorageProvider = config[SystemConfigKeys.storage.assets.default_storage_provider];
+    const configuredAttachmentStorageProvider = config[SystemConfigKeys.storage.attachments.default_storage_provider];
+    const assetStorageProviderValue = editedConfig[SystemConfigKeys.storage.assets.default_storage_provider] ?? configuredAssetStorageProvider;
+    const attachmentStorageProviderValue = editedConfig[SystemConfigKeys.storage.attachments.default_storage_provider] ?? configuredAttachmentStorageProvider;
+    const assetStorageProviderError =
+        !isLoadingAssetStorageProviders
+            ? assetStorageProviders.length === 0
+                ? 'Es ist kein Speicheranbieter für Assets vorhanden. Legen Sie zuerst einen Speicheranbieter an.'
+                : isStringNullOrEmpty(assetStorageProviderValue)
+                    ? 'Bitte wählen Sie einen Speicheranbieter für Assets aus.'
+                    : undefined
+            : undefined;
+    const attachmentStorageProviderError =
+        !isLoadingAttStorageProviders
+            ? attStorageProviders.length === 0
+                ? 'Es ist kein Speicheranbieter für Vorgangsanlagen vorhanden. Legen Sie zuerst einen Speicheranbieter an.'
+                : isStringNullOrEmpty(attachmentStorageProviderValue)
+                    ? 'Bitte wählen Sie einen Speicheranbieter für Vorgangsanlagen aus.'
+                    : undefined
+            : undefined;
 
     useEffect(() => {
         new ThemesApiService(api)
@@ -99,6 +122,9 @@ export function ApplicationSettings() {
             })
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Die Liste der Speicheranbieter für Assets konnte nicht geladen werden'));
+            })
+            .finally(() => {
+                setIsLoadingAssetStorageProviders(false);
             });
 
         new StorageProvidersApiService()
@@ -114,19 +140,108 @@ export function ApplicationSettings() {
             })
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Die Liste der Speicheranbieter konnte nicht geladen werden'));
+            })
+            .finally(() => {
+                setIsLoadingAttStorageProviders(false);
             });
     }, []);
+
+    useEffect(() => {
+        if (attStorageProviders.length === 0) {
+            return;
+        }
+
+        setEditedConfig((prev) => {
+            const currentValue =
+                prev[SystemConfigKeys.storage.attachments.default_storage_provider] ??
+                configuredAttachmentStorageProvider;
+
+            if (!isStringNullOrEmpty(currentValue)) {
+                return prev;
+            }
+
+            return {
+                ...prev,
+                [SystemConfigKeys.storage.attachments.default_storage_provider]: attStorageProviders[0].value,
+            };
+        });
+    }, [attStorageProviders, configuredAttachmentStorageProvider]);
+
+    useEffect(() => {
+        if (assetStorageProviders.length === 0) {
+            return;
+        }
+
+        setEditedConfig((prev) => {
+            const currentValue =
+                prev[SystemConfigKeys.storage.assets.default_storage_provider] ??
+                configuredAssetStorageProvider;
+
+            if (!isStringNullOrEmpty(currentValue)) {
+                return prev;
+            }
+
+            return {
+                ...prev,
+                [SystemConfigKeys.storage.assets.default_storage_provider]: assetStorageProviders[0].value,
+            };
+        });
+    }, [assetStorageProviders, configuredAssetStorageProvider]);
 
     const handleSubmit = (event: FormEvent): void => {
         event.preventDefault();
 
         if (editedConfig != null) {
+            const normalizedEditedConfig = {
+                ...editedConfig,
+            };
+
+            const appliedStorageProviderDefaults: SystemConfigMap = {};
+            const requiredStorageProviderConfigs = [
+                {
+                    key: SystemConfigKeys.storage.attachments.default_storage_provider,
+                    options: attStorageProviders,
+                    errorMessage: 'Für Vorgangsanlagen muss ein zentraler Speicheranbieter vorhanden sein. Legen Sie zuerst einen Speicheranbieter an.',
+                },
+                {
+                    key: SystemConfigKeys.storage.assets.default_storage_provider,
+                    options: assetStorageProviders,
+                    errorMessage: 'Für Assets muss ein zentraler Speicheranbieter vorhanden sein. Legen Sie zuerst einen Speicheranbieter an.',
+                },
+            ];
+
+            for (const requiredStorageProviderConfig of requiredStorageProviderConfigs) {
+                const currentValue =
+                    normalizedEditedConfig[requiredStorageProviderConfig.key] ??
+                    config[requiredStorageProviderConfig.key];
+
+                if (!isStringNullOrEmpty(currentValue)) {
+                    continue;
+                }
+
+                if (requiredStorageProviderConfig.options.length === 0) {
+                    dispatch(showErrorSnackbar(requiredStorageProviderConfig.errorMessage));
+                    return;
+                }
+
+                const fallbackProviderValue = requiredStorageProviderConfig.options[0].value;
+                normalizedEditedConfig[requiredStorageProviderConfig.key] = fallbackProviderValue;
+                appliedStorageProviderDefaults[requiredStorageProviderConfig.key] = fallbackProviderValue;
+            }
+
+            if (Object.keys(appliedStorageProviderDefaults).length > 0) {
+                setEditedConfig((prev) => ({
+                    ...prev,
+                    ...appliedStorageProviderDefaults,
+                }));
+            }
+
             const updatedConfigs = Object
-                .keys(editedConfig)
-                .filter((key) => editedConfig[key] !== config[key])
+                .keys(normalizedEditedConfig)
+                .filter((key) => normalizedEditedConfig[key] !== config[key])
                 .map((key) => ({
                     key,
-                    value: editedConfig[key],
+                    value: normalizedEditedConfig[key],
                 }));
 
             const updatePromises = updatedConfigs
@@ -201,7 +316,9 @@ export function ApplicationSettings() {
                     mb: 1.6,
                 }}
             >
-                Hinterlegen Sie grundsätzliche Informationen über den Betreiber dieses Systems. Diese Informationen werden in der Anwendung angezeigt und sind für die Nutzer:innen sichtbar.
+                Hinterlegen Sie grundsätzliche Informationen über den Betreiber dieses Systems.
+                Diese Informationen werden in der Anwendung angezeigt und sind für die Nutzer:innen sichtbar.
+                Änderungen am Betreiber-Namen werden erst nach dem nächsten Neu-Laden der Anwendung in allen Bereichen sichtbar.
             </Typography>
             <TextFieldComponent
                 label="Name des Betreibers"
@@ -303,15 +420,18 @@ export function ApplicationSettings() {
             <SelectFieldComponent
                 label="Zentraler Speicheranbieter für Vorgangsanlagen"
                 hint="Geben Sie den Speicheranbieter an, der standardmäßig für Vorgangsanlagen verwendet werden soll."
-                value={editedConfig[SystemConfigKeys.storage.attachments.default_storage_provider] ?? config[SystemConfigKeys.storage.attachments.default_storage_provider]}
+                value={attachmentStorageProviderValue}
                 onChange={(val) => {
                     setEditedConfig({
                         ...editedConfig,
                         [SystemConfigKeys.storage.attachments.default_storage_provider]: val ?? '',
                     });
                 }}
+                required
+                error={attachmentStorageProviderError}
                 disabled={!hasAccess}
                 options={attStorageProviders}
+                emptyStatePlaceholder="Keine Speicheranbieter für Vorgangsanlagen vorhanden"
             />
 
             <Typography
@@ -334,15 +454,18 @@ export function ApplicationSettings() {
             <SelectFieldComponent
                 label="Zentraler Speicheranbieter für Assets"
                 hint="Geben Sie den Speicheranbieter an, der standardmäßig für Assets verwendet werden soll."
-                value={editedConfig[SystemConfigKeys.storage.assets.default_storage_provider] ?? config[SystemConfigKeys.storage.assets.default_storage_provider]}
+                value={assetStorageProviderValue}
                 onChange={(val) => {
                     setEditedConfig({
                         ...editedConfig,
                         [SystemConfigKeys.storage.assets.default_storage_provider]: val ?? '',
                     });
                 }}
+                required
+                error={assetStorageProviderError}
                 disabled={!hasAccess}
                 options={assetStorageProviders}
+                emptyStatePlaceholder="Keine Speicheranbieter für Assets vorhanden"
             />
 
 
