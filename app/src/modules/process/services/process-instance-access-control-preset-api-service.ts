@@ -5,6 +5,7 @@ interface ProcessInstanceAccessControlPresetFilter {
     sourceTeamId: number;
     sourceDepartmentId: number;
     targetProcessId: number;
+    targetProcessVersion: number;
 }
 
 export class ProcessInstanceAccessControlPresetApiService extends BaseCrudApiService<ProcessInstanceAccessControlPresetEntity, ProcessInstanceAccessControlPresetEntity, ProcessInstanceAccessControlPresetEntity, ProcessInstanceAccessControlPresetEntity, number, ProcessInstanceAccessControlPresetFilter> {
@@ -22,6 +23,7 @@ export class ProcessInstanceAccessControlPresetApiService extends BaseCrudApiSer
             sourceTeamId: null,
             sourceDepartmentId: null,
             targetProcessId: 0,
+            targetProcessVersion: 0,
             permissions: [],
             created: '',
             updated: '',

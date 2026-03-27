@@ -3,6 +3,7 @@ export interface ProcessInstanceAccessControlPresetEntity {
     sourceTeamId: number | null;
     sourceDepartmentId: number | null;
     targetProcessId: number;
+    targetProcessVersion: number;
     permissions: string[];
     created: string; // ISO date string
     updated: string; // ISO date string

@@ -28,9 +28,11 @@ import Add from '@aivot/mui-material-symbols-400-outlined/dist/add/Add';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {ProcessInstanceAccessControlPresetEntity} from '../../entities/process-instance-access-control-preset-entity';
 import {ProcessInstanceAccessControlPresetApiService} from '../../services/process-instance-access-control-preset-api-service';
+import {ProcessVersionEntity} from '../../entities/process-version-entity';
 
 interface ProcessSettingsDialogTabProps {
     process: ProcessEntity;
+    version: ProcessVersionEntity;
     departments: VDepartmentShadowedEntity[];
     teams: TeamEntity[];
 }
@@ -69,6 +71,7 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
 
     const {
         process,
+        version,
         departments,
         teams,
     } = props;
@@ -76,6 +79,11 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
     const {
         id: processesId,
     } = process;
+
+
+    const {
+        processVersion: processVersion,
+    } = version;
 
     const [permissions, setPermissions] = useState<PermissionEntry[]>([]);
     const [accessPresets, setAccessPresets] = useState<ProcessInstanceAccessControlPresetEntity[]>([]);
@@ -102,6 +110,7 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
         new ProcessInstanceAccessControlPresetApiService()
             .listAll({
                 targetProcessId: processesId,
+                targetProcessVersion: processVersion,
             })
             .then(({content}) => {
                 setAccessPresets(content);
@@ -109,7 +118,7 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Fehler beim Laden der Berechtigungen für neue Vorgänge'));
             });
-    }, [processesId]);
+    }, [processesId, processVersion]);
 
     const resolvedAccessControl: ProcessInstanceAccessControlPresetEntityWithDepartmentOrTeam[] = useMemo(() => {
         return accessPresets
@@ -155,6 +164,7 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
                 sourceDepartmentId: targetDomainOption.type === 'department' ? targetDomainOption.value : null,
                 sourceTeamId: targetDomainOption.type === 'team' ? targetDomainOption.value : null,
                 targetProcessId: processesId,
+                targetProcessVersion: processVersion,
                 permissions: [],
             })
             .then((created) => {

@@ -28,6 +28,9 @@ public class ProcessInstanceAccessControlPresetEntity {
     private Integer targetProcessId;
 
     @Nonnull
+    private Integer targetProcessVersion;
+
+    @Nonnull
     private List<String> permissions;
 
     @Nonnull
@@ -120,6 +123,16 @@ public class ProcessInstanceAccessControlPresetEntity {
 
     public ProcessInstanceAccessControlPresetEntity setTargetProcessId(@Nonnull Integer targetProcessId) {
         this.targetProcessId = targetProcessId;
+        return this;
+    }
+
+    @Nonnull
+    public Integer getTargetProcessVersion() {
+        return targetProcessVersion;
+    }
+
+    public ProcessInstanceAccessControlPresetEntity setTargetProcessVersion(@Nonnull Integer targetProcessVersion) {
+        this.targetProcessVersion = targetProcessVersion;
         return this;
     }
 

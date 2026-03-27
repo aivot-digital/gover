@@ -26,6 +26,7 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
         open,
         onClose,
         process,
+        version,
     } = props;
 
     const [currentTab, setCurrentTab] = useState(1);
@@ -121,6 +122,7 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                         currentTab === 2 &&
                         <ProcessSettingsDialogProcessInstanceAccessPresetTab
                             process={process}
+                            version={version}
                             departments={departments}
                             teams={teams}
                         />
