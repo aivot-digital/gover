@@ -30,7 +30,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
-public class WebhookTriggerController {
+public class WebhookTriggerControllerV1 {
     public static final String TEST_CLAIM_QUERY_PARAM = "test-claim";
     public static final String AUTH_TOKEN_QUERY_PARAM = "token";
     public static final String AUTH_HEADER_NAME = "Authorization";
@@ -41,17 +41,17 @@ public class WebhookTriggerController {
     private final ProcessNodeService processNodeService;
 
     @Autowired
-    public WebhookTriggerController(ProcessInstanceService processInstanceService,
-                                    ProcessTestClaimRepository processTestClaimRepository,
-                                    ProcessInstanceAttachmentService processInstanceAttachmentService,
-                                    ProcessNodeService processNodeService) {
+    public WebhookTriggerControllerV1(ProcessInstanceService processInstanceService,
+                                      ProcessTestClaimRepository processTestClaimRepository,
+                                      ProcessInstanceAttachmentService processInstanceAttachmentService,
+                                      ProcessNodeService processNodeService) {
         this.processInstanceService = processInstanceService;
         this.processTestClaimRepository = processTestClaimRepository;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.processNodeService = processNodeService;
     }
 
-    @RequestMapping(value = "/api/public/webhooks/{slug}/", method = {
+    @RequestMapping(value = "/api/public/webhooks/v1/{slug}/", method = {
             RequestMethod.GET,
             RequestMethod.POST,
             RequestMethod.PUT,
@@ -69,7 +69,7 @@ public class WebhookTriggerController {
         return handleRequest(request, slug, new HashMap<>(), Map.of(), testClaimAccessKey, authToken, authorizationHeader);
     }
 
-    @RequestMapping(value = "/api/public/webhooks/{slug}/", method = {
+    @RequestMapping(value = "/api/public/webhooks/v1/{slug}/", method = {
             RequestMethod.POST,
             RequestMethod.PUT,
             RequestMethod.PATCH,
@@ -90,7 +90,7 @@ public class WebhookTriggerController {
         return handleRequest(request, slug, payload, Map.of(), testClaimAccessKey, authToken, authorizationHeader);
     }
 
-    @RequestMapping(value = "/api/public/webhooks/{slug}/", method = {
+    @RequestMapping(value = "/api/public/webhooks/v1/{slug}/", method = {
             RequestMethod.POST,
             RequestMethod.PUT,
             RequestMethod.PATCH,
@@ -133,7 +133,7 @@ public class WebhookTriggerController {
 
         var specBuilder = SpecificationBuilder
                 .create(ProcessNodeEntity.class)
-                .withJsonEquals("configuration", List.of("slug", "inputValue"), slug);
+                .withJsonEquals("configuration", List.of("slug"), slug);
 
         if (testClaim != null) {
             specBuilder = specBuilder
@@ -160,36 +160,6 @@ public class WebhookTriggerController {
         var nodeEntity = processNodeService
                 .retrieve(specBuilder.build())
                 .orElseThrow(() -> ResponseException.notFound("Kein Webhook-Knoten mit dem angegebenen Slug gefunden."));
-
-/*
-        ProcessNodeEntity nodeEntity;
-        Query query = entityManager
-                .createNativeQuery("""
-                        SELECT nod.* FROM process_nodes nod
-                            INNER JOIN process_versions ver ON nod.process_id = ver.process_id AND
-                                                               nod.process_version = ver.process_version
-                            LEFT JOIN process_test_claims clm ON ver.process_id = clm.process_id AND
-                                                                 ver.process_version = clm.process_version AND
-                                                                 clm.access_key = :testClaimAccessKey
-                        WHERE process_node_definition_key = :processNodeDefinitionKey AND
-                              configuration->'slug'->>'inputValue' = :slug AND
-                              (clm.access_key IS NOT NULL OR ver.status = :statusPublished)
-                        """, ProcessNodeEntity.class)
-                .setParameter("processNodeDefinitionKey", WebhookTriggerNode.NODE_KEY)
-                .setParameter("slug", slug)
-                .setParameter("testClaimAccessKey", testClaim != null ? testClaim.getAccessKey() : null)
-                .setParameter("statusPublished", ProcessVersionStatus.Published);
-        try {
-            nodeEntity = (ProcessNodeEntity) query.getSingleResult();
-        } catch (ClassCastException e) {
-            throw ResponseException.internalServerError(e, "Der Webhook-Trigger-Knoten konnte nicht geladen werden.");
-        } catch (jakarta.persistence.NoResultException e) {
-            throw ResponseException.notFound("Kein Webhook-Knoten mit dem angegebenen Slug gefunden.");
-        } finally {
-            entityManager.close();
-        }
-
- */
 
         startProcess(testClaim, nodeEntity, request, payload, files, authToken, authorizationHeader);
 
@@ -298,27 +268,35 @@ public class WebhookTriggerController {
     }
 
     @Nonnull
-    private WebhookTriggerConfig getWebhookConfig(@Nonnull ProcessNodeEntity nodeEntity) throws ResponseException {
+    private WebhookTriggerConfigV1 getWebhookConfig(@Nonnull ProcessNodeEntity nodeEntity) throws ResponseException {
         var derivedConfiguration = processNodeService
                 .deriveConfiguration(nodeEntity, true);
 
         try {
             return ElementPOJOMapper
-                    .mapToPOJO(derivedConfiguration.getEffectiveValues(), WebhookTriggerConfig.class);
+                    .mapToPOJO(derivedConfiguration.getEffectiveValues(), WebhookTriggerConfigV1.class);
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(e, "Die Konfiguration des Webhook-Trigger-Knotens ist ungültig.");
         }
     }
 
-    private static void checkAuthentication(@Nonnull WebhookTriggerConfig config,
+    private static void checkAuthentication(@Nonnull WebhookTriggerConfigV1 config,
                                             @Nullable String tokenQueryParam,
                                             @Nullable String authHeader) throws ResponseException {
         if (Boolean.FALSE.equals(config.authRequired)) {
             return;
         }
 
+        if (config.authConfig == null) {
+            return;
+        }
+
+        if (config.authConfig.authMethod == null) {
+            return;
+        }
+
         switch (config.authConfig.authMethod) {
-            case WebhookTriggerConfig.AUTH_METHOD_OPTION_BASIC:
+            case WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BASIC:
                 if (authHeader == null || !authHeader.startsWith("Basic ")) {
                     throw ResponseException.unauthorized("Fehlender oder ungültiger Autorisierungs-Header für den Webhook-Trigger-Knoten.");
                 }
@@ -330,7 +308,7 @@ public class WebhookTriggerController {
                     throw ResponseException.unauthorized("Ungültiger Benutzername oder Passwort für den Webhook-Trigger-Knoten.");
                 }
                 break;
-            case WebhookTriggerConfig.AUTH_METHOD_OPTION_BEARER:
+            case WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BEARER:
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                     throw ResponseException.unauthorized("Fehlender oder ungültiger Autorisierungs-Header für den Webhook-Trigger-Knoten.");
                 }
@@ -339,7 +317,7 @@ public class WebhookTriggerController {
                     throw ResponseException.unauthorized("Ungültiger Token für den Webhook-Trigger-Knoten.");
                 }
                 break;
-            case WebhookTriggerConfig.AUTH_METHOD_OPTION_QUERY_PARAM:
+            case WebhookTriggerConfigV1.AUTH_METHOD_OPTION_QUERY_PARAM:
                 if (tokenQueryParam == null || !tokenQueryParam.equals(config.authConfig.authToken)) {
                     throw ResponseException.unauthorized("Ungültiger Token für den Webhook-Trigger-Knoten.");
                 }
