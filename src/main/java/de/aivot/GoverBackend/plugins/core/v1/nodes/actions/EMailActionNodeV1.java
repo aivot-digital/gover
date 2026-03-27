@@ -26,7 +26,7 @@ import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionMis
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.services.ProcessInstanceAttachmentService;
-import de.aivot.GoverBackend.process.services.ProcessDataService;
+import de.aivot.GoverBackend.process.services.TemplateRenderService;
 import de.aivot.GoverBackend.storage.services.StorageService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -58,18 +58,18 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
     private static final String OUTPUT_NAME_ATTACHMENT_FILE_NAMES = "attachmentFileNames";
 
     private final GoverConfig goverConfig;
-    private final ProcessDataService processDataService;
+    private final TemplateRenderService templateRenderService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
     private final StorageService storageService;
     private final JavaMailSenderImpl mailSender;
 
     public EMailActionNodeV1(GoverConfig goverConfig,
-                             ProcessDataService processDataService,
+                             TemplateRenderService templateRenderService,
                              ProcessInstanceAttachmentService processInstanceAttachmentService,
                              StorageService storageService,
                              JavaMailSenderImpl mailSender) {
         this.goverConfig = goverConfig;
-        this.processDataService = processDataService;
+        this.templateRenderService = templateRenderService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.storageService = storageService;
         this.mailSender = mailSender;
@@ -242,7 +242,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
 
     private ProcessNodeExecutionResult initAutomatic(@Nonnull ProcessNodeExecutionContextInit context,
                                                      @Nonnull EMailActionNodeConfig config) throws ProcessNodeExecutionException {
-        var recipientsStr = processDataService
+        var recipientsStr = templateRenderService
                 .interpolate(context.getProcessData(), config.to);
 
         if (StringUtils.isNullOrEmpty(recipientsStr)) {
@@ -252,15 +252,15 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
         }
         var recipients = recipientsStr.split(",");
 
-        var recipientsBccStr = processDataService
+        var recipientsBccStr = templateRenderService
                 .interpolate(context.getProcessData(), config.bcc);
         var recipientsBCC = StringUtils.isNullOrEmpty(recipientsBccStr) ? null : recipientsBccStr.split(",");
 
-        var attachmentFileNamesStr = processDataService
+        var attachmentFileNamesStr = templateRenderService
                 .interpolate(context.getProcessData(), config.attachmentFileNames);
         var attachmentFileNames = parseAttachmentFileNames(attachmentFileNamesStr);
 
-        var subject = processDataService
+        var subject = templateRenderService
                 .interpolate(
                         context.getProcessData(),
                         config.automaticContent.subject
@@ -280,19 +280,19 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
             );
         }
 
+        var interpolatedContentMarkdown =
+                templateRenderService
+                        .interpolate(
+                                context.getProcessData(),
+                                contentMarkdown
+                        );
+
         Parser parser = Parser.builder().build();
-        Node document = parser.parse(contentMarkdown);
+        Node document = parser.parse(interpolatedContentMarkdown);
         HtmlRenderer renderer = HtmlRenderer.builder().build();
         var contentHtml = renderer.render(document);
 
-        var content =
-                processDataService
-                        .interpolate(
-                                context.getProcessData(),
-                                contentHtml
-                        );
-
-        if (StringUtils.isNullOrEmpty(content)) {
+        if (StringUtils.isNullOrEmpty(contentHtml)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
                     "Der Inhalt für die E-Mail wurde nicht angegeben."
             );
@@ -308,7 +308,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
                 helper.setBcc(recipientsBCC);
             }
             helper.setSubject(subject);
-            helper.setText(content, true);
+            helper.setText(contentHtml, true);
 
             for (var attachmentFileName : attachmentFileNames) {
                 var attachments = processInstanceAttachmentService
@@ -375,7 +375,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
         metadata.put(OUTPUT_NAME_TO, recipients);
         metadata.put(OUTPUT_NAME_BCC, recipientsBCC);
         metadata.put(OUTPUT_NAME_SUBJECT, subject);
-        metadata.put(OUTPUT_NAME_CONTENT, content);
+        metadata.put(OUTPUT_NAME_CONTENT, contentHtml);
         metadata.put(OUTPUT_NAME_ATTACHMENT_FILE_NAMES, attachmentFileNames);
 
         return new ProcessNodeExecutionResultTaskCompleted()

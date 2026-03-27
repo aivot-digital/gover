@@ -110,7 +110,7 @@ class ProcessWorkerTest {
                 new ProcessNodeDefinitionService(List.of(processNodeDefinition)),
                 processInstanceTaskRepository,
                 resultHandler,
-                new ProcessDataService(processInstanceTaskRepository, processNodeRepository, null),
+                new ProcessDataService(processInstanceTaskRepository, processNodeRepository),
                 new TestProcessNodeExecutionLoggerFactory(),
                 new TestProcessNodeService()
         );
