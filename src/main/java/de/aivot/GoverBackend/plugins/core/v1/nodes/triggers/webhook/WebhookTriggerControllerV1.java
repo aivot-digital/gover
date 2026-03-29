@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.identity.controllers.IdentityController;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.models.dtos.HttpOptionsResponseDto;
 import de.aivot.GoverBackend.process.entities.*;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessVersionStatus;
@@ -19,7 +20,9 @@ import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.support.StandardMultipartHttpServletRequest;
@@ -49,6 +52,33 @@ public class WebhookTriggerControllerV1 {
         this.processTestClaimRepository = processTestClaimRepository;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.processNodeService = processNodeService;
+    }
+
+    @RequestMapping(value = "/api/public/webhooks/v1/{slug}/", method = {
+            RequestMethod.OPTIONS,
+    }, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<HttpOptionsResponseDto> handleOptions(
+            @Nonnull @PathVariable String slug,
+            @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey
+    ) throws ResponseException {
+        var testClaim = getTestClaim(testClaimAccessKey);
+        var nodeEntity = retrieveWebhookNode(slug, testClaim);
+        var config = getWebhookConfig(nodeEntity);
+
+        var allow = getAllow(config);
+        var response = new HttpOptionsResponseDto(
+                RequestMethod.OPTIONS.name(),
+                allow,
+                config.requestMethod,
+                getAcceptedContentType(config),
+                MediaType.APPLICATION_JSON_VALUE
+        );
+
+        return ResponseEntity
+                .ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.ALLOW, String.join(", ", allow))
+                .body(response);
     }
 
     @RequestMapping(value = "/api/public/webhooks/v1/{slug}/", method = {
@@ -127,13 +157,27 @@ public class WebhookTriggerControllerV1 {
                                    @Nullable String testClaimAccessKey,
                                    @Nullable String authToken,
                                    @Nullable String authorizationHeader) throws ResponseException {
-        var testClaim = testClaimAccessKey != null ? processTestClaimRepository
+        var testClaim = getTestClaim(testClaimAccessKey);
+        var nodeEntity = retrieveWebhookNode(slug, testClaim);
+
+        startProcess(testClaim, nodeEntity, request, payload, files, authToken, authorizationHeader);
+
+        return new Response("Webhook empfangen und verarbeitet.");
+    }
+
+    @Nullable
+    private ProcessTestClaimEntity getTestClaim(@Nullable String testClaimAccessKey) {
+        return testClaimAccessKey != null ? processTestClaimRepository
                 .findByAccessKey(testClaimAccessKey)
                 .orElse(null) : null;
+    }
 
+    @Nonnull
+    private ProcessNodeEntity retrieveWebhookNode(@Nonnull String slug,
+                                                  @Nullable ProcessTestClaimEntity testClaim) throws ResponseException {
         var specBuilder = SpecificationBuilder
                 .create(ProcessNodeEntity.class)
-                .withJsonEquals("configuration", List.of("slug"), slug);
+                .withJsonEquals("configuration", List.of(WebhookTriggerConfigV1.SLUG_CONFIG_KEY), slug);
 
         if (testClaim != null) {
             specBuilder = specBuilder
@@ -157,13 +201,9 @@ public class WebhookTriggerControllerV1 {
             });
         }
 
-        var nodeEntity = processNodeService
+        return processNodeService
                 .retrieve(specBuilder.build())
                 .orElseThrow(() -> ResponseException.notFound("Kein Webhook-Knoten mit dem angegebenen Slug gefunden."));
-
-        startProcess(testClaim, nodeEntity, request, payload, files, authToken, authorizationHeader);
-
-        return new Response("Webhook empfangen und verarbeitet.");
     }
 
     private void startProcess(@Nullable ProcessTestClaimEntity testClaimEntity,
@@ -265,6 +305,43 @@ public class WebhookTriggerControllerV1 {
             processInstanceService.update(createdInstance.getId(), createdInstance);
             throw e;
         }
+    }
+
+    @Nonnull
+    private static List<String> getAllow(@Nonnull WebhookTriggerConfigV1 config) {
+        var allow = new LinkedHashSet<String>();
+        allow.add(RequestMethod.OPTIONS.name());
+
+        if (!StringUtils.isNullOrEmpty(config.requestMethod)) {
+            allow.add(config.requestMethod);
+        }
+
+        return List.copyOf(allow);
+    }
+
+    @Nullable
+    private static String getAcceptedContentType(@Nonnull WebhookTriggerConfigV1 config) {
+        if (!requestAllowsBody(config)) {
+            return null;
+        }
+
+        if (config.requestBodyConfig != null &&
+                WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_JSON.equals(config.requestBodyConfig.requestBodyType)) {
+            return MediaType.APPLICATION_JSON_VALUE;
+        }
+
+        if (config.requestBodyConfig != null &&
+                WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_FORM.equals(config.requestBodyConfig.requestBodyType)) {
+            return MediaType.MULTIPART_FORM_DATA_VALUE;
+        }
+
+        return MediaType.APPLICATION_XML_VALUE;
+    }
+
+    private static boolean requestAllowsBody(@Nonnull WebhookTriggerConfigV1 config) {
+        return WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST.equals(config.requestMethod) ||
+                WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_PATCH.equals(config.requestMethod) ||
+                WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_PUT.equals(config.requestMethod);
     }
 
     @Nonnull
