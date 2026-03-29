@@ -224,6 +224,7 @@ public class MailService {
                     var userId = membership.getUserId();
 
                     if ((userIdsToIgnore != null && userIdsToIgnore.contains(userId)) || alreadyNotifiedUserIds.contains(userId)) {
+                        hasSentAtLeastOnce = true;
                         continue;
                     }
 
