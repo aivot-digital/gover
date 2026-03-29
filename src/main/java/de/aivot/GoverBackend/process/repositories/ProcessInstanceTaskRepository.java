@@ -33,4 +33,6 @@ public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInst
             nativeQuery = true
     )
     List<ProcessInstanceTaskEntity> getLatestTasksByProcessInstanceId(@Param("processInstanceId") Long processInstanceId);
+
+    long countAllByStatusIs(ProcessTaskStatus status);
 }

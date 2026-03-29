@@ -20,4 +20,6 @@ public interface ProcessInstanceRepository extends JpaRepository<ProcessInstance
                                                 LocalDateTime keepUntil);
 
     List<ProcessInstanceEntity> findAllByCreatedForTestClaimId(Integer createdForTestClaimId);
+
+    long countAllByStatusIs(ProcessInstanceStatus status);
 }
