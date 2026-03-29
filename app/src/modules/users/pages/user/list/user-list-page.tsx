@@ -150,7 +150,7 @@ export function UserListPage() {
                 searchPlaceholder="Name der Mitarbeiter:in eingeben…"
                 fetch={(options) => {
                     const filters: Partial<UserFilter> = {
-                        fullName: options.search,
+                        name: options.search,
                     };
 
                     switch (options.filter) {

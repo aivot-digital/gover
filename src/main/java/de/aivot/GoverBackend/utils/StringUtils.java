@@ -155,4 +155,12 @@ public class StringUtils {
         String[] segments = normalizedPath.split("/");
         return List.of(segments);
     }
+
+    public static String toNullableTrimmedString(Object value) {
+        if (value == null) {
+            return null;
+        }
+        var str = value.toString().trim();
+        return str.isEmpty() ? null : str;
+    }
 }

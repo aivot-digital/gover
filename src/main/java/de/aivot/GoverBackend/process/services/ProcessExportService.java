@@ -1,14 +1,13 @@
 package de.aivot.GoverBackend.process.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.GoverBackend.config.services.SystemConfigService;
 import de.aivot.GoverBackend.core.configs.ProviderNameSystemConfigDefinition;
-import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.process.entities.*;
+import de.aivot.GoverBackend.process.filters.ProcessDefinitionEdgeFilter;
+import de.aivot.GoverBackend.process.filters.ProcessNodeFilter;
 import de.aivot.GoverBackend.system.properties.BuildProperties;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.stereotype.Service;
 
@@ -50,7 +49,12 @@ public class ProcessExportService {
                 .orElseThrow(ResponseException::notFound);
 
         var nodes = processDefinitionNodeService
-                .list()
+                .list(
+                        ProcessNodeFilter
+                                .create()
+                                .setProcessId(processId)
+                                .setProcessVersion(version)
+                )
                 .stream()
                 .peek((node) -> {
                     var nodeProvider = processNodeProviderService
@@ -66,7 +70,12 @@ public class ProcessExportService {
                 .toList();
 
         var edges = processDefinitionEdgeService
-                .list()
+                .list(
+                        ProcessDefinitionEdgeFilter
+                                .create()
+                                .setProcessDefinitionId(processId)
+                                .setProcessDefinitionVersion(version)
+                )
                 .stream()
                 .toList();
 
@@ -77,7 +86,7 @@ public class ProcessExportService {
             vendorName = "Unbekannt";
         }
 
-        var exportData = new ProcessExportData(
+        return new ProcessExport(
                 buildProperties.getBuildVersion(),
                 LocalDateTime.now(),
                 vendorName,
@@ -86,53 +95,9 @@ public class ProcessExportService {
                 nodes,
                 edges
         );
-
-        String exportDataString;
-        try {
-            exportDataString = exportData.toJSONString();
-        } catch (JsonProcessingException e) {
-            throw ResponseException.internalServerError("Failed to serialize process export data", e);
-        }
-
-        /*
-        KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
-        kpg.initialize(1024);
-        return kpg.genKeyPair();
-
-        KeyPair keyPair = getKeyPair();
-
-        byte[] data = "test".getBytes("UTF8");
-
-        Signature sig = Signature.getInstance("SHA1WithRSA");
-        sig.initSign(keyPair.getPrivate());
-        sig.update(data);
-        byte[] signatureBytes = sig.sign();
-
-        var sig = new BASE64Encoder().encode(signatureBytes);
-
-        sig.initVerify(keyPair.getPublic());
-        sig.update(data);
-
-        System.out.println(sig.verify(signatureBytes));
-         */
-
-
-        return new ProcessExport(
-                exportData,
-                "TODO"
-        );
     }
 
     public record ProcessExport(
-            @Nonnull
-            @NotNull
-            ProcessExportData data,
-            @Nullable
-            String signature
-    ) {
-    }
-
-    public record ProcessExportData(
             @Nonnull
             String appVersion,
             @Nonnull
@@ -152,10 +117,5 @@ public class ProcessExportService {
             @Nonnull
             List<ProcessEdgeEntity> edges
     ) {
-        public String toJSONString() throws JsonProcessingException {
-            return ObjectMapperFactory
-                    .getInstance()
-                    .writeValueAsString(this);
-        }
     }
 }

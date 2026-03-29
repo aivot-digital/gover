@@ -4,7 +4,13 @@ export interface StorageIndexItem {
     storageProviderId: number;
     storageProviderType: StorageProviderType;
     pathFromRoot: string;
-    isDirectory: boolean;
+    directory: boolean;
+    isDirectory?: boolean;
     filename: string;
     mimeType: string;
+    sizeInBytes: number;
+    missing: boolean;
+    metadata: Record<string, unknown>;
+    created: string;
+    updated: string;
 }

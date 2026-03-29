@@ -13,11 +13,17 @@ export function ProcessNodeEditorMoreTab() {
     } = useProcessNodeEditorContext();
 
     return (
-        <Box>
-            <Typography variant="h6">
+        <Box
+            sx={{
+                pt: 1,
+                pb: 2,
+            }}
+        >
+            <Typography variant="h4">
                 Weitere Eigenschaften des Elements
             </Typography>
-            <Typography variant="body1" mb={2}>
+            <Typography variant="body1"
+                        mt={1} mb={2} maxWidth={400}>
                 Konfigurieren Sie zusätzliche Eigenschaften dieses Prozesselementes.
             </Typography>
 
@@ -31,19 +37,20 @@ export function ProcessNodeEditorMoreTab() {
                     setNode({
                         ...node,
                         timeLimitDays: val ?? null,
-                    });
+                    }, false);
                 }}
             />
 
             <RichTextInputComponent
                 label="Fachliche Anforderungen"
                 hint="Beschreiben Sie die fachlichen Anforderungen oder Voraussetzungen für die Ausführung dieses Elemente."
+                reducedMode={true}
                 value={node.requirements}
                 onChange={(val) => {
                     setNode({
                         ...node,
                         requirements: val,
-                    });
+                    }, false);
                 }}
                 sx={{
                     mt: 2,
@@ -55,12 +62,13 @@ export function ProcessNodeEditorMoreTab() {
             <RichTextInputComponent
                 label="Notizen"
                 hint="Fügen Sie zusätzliche Notizen oder Kommentare zu diesem Elemente hinzu."
+                reducedMode={true}
                 value={node.notes}
                 onChange={(val) => {
                     setNode({
                         ...node,
                         notes: val,
-                    });
+                    }, false);
                 }}
                 sx={{
                     mt: 2,

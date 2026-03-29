@@ -18,7 +18,8 @@ export function StepComponentSummary(props: BaseSummaryProps<StepElement, any>) 
         model,
         showTechnical,
         allowStepNavigation,
-        elementData,
+        authoredElementValues,
+        derivedData,
     } = props;
 
     const {
@@ -92,7 +93,8 @@ export function StepComponentSummary(props: BaseSummaryProps<StepElement, any>) 
                             element={model}
                             showTechnical={showTechnical}
                             allowStepNavigation={allowStepNavigation}
-                            elementData={elementData}
+                            authoredElementValues={authoredElementValues}
+                            derivedData={derivedData}
                         />
                     ))
             }

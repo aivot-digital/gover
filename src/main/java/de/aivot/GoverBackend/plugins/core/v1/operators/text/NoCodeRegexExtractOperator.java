@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.plugins.core.v1.operators.text;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException;
@@ -8,6 +8,7 @@ import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
+import jakarta.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,7 +65,7 @@ public class NoCodeRegexExtractOperator extends NoCodeOperator {
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
-                        NoCodeDataType.String,
+                        NoCodeDataType.List,
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 "Text",
@@ -79,8 +80,14 @@ public class NoCodeRegexExtractOperator extends NoCodeOperator {
         );
     }
 
+    @Nullable
     @Override
-    public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
+    public String getHumanReadableTemplate() {
+        return "extrahiere aus „#0“ alle Treffer für „#1“";
+    }
+
+    @Override
+    public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
         if (args.length != 2) {
             throw new NoCodeWrongArgumentCountException(2, args.length);
         }
@@ -88,7 +95,12 @@ public class NoCodeRegexExtractOperator extends NoCodeOperator {
         String input = castToString(args[0]);
         String regex = castToString(args[1]);
 
-        Pattern pattern = Pattern.compile(regex);
+        Pattern pattern;
+        try {
+            pattern = Pattern.compile(regex);
+        } catch (Exception e) {
+            throw new NoCodeException("Ungültiger regulärer Ausdruck: " + regex);
+        }
         Matcher matcher = pattern.matcher(input);
 
         List<String> matches = new ArrayList<>();

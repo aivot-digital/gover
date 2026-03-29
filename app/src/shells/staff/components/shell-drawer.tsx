@@ -1,9 +1,10 @@
 import React, {ReactNode, useEffect, useMemo, useState} from 'react';
 import {Badge, Box, Button, Chip, createTheme, Divider, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Menu, MenuItem, Paper, Snackbar, ThemeProvider, Typography, useTheme} from '@mui/material';
-import {Link, useLocation, useNavigate} from 'react-router-dom';
+import {Link, useLocation} from 'react-router-dom';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {selectMinimizeDrawer, selectShowAboutGoverDialog, setMinimizeDrawer, setShowAboutGoverDialog, setShowSearchDialog} from '../../../slices/shell-slice';
+import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
 import {ShellUserMenu} from './shell-user-menu';
 import {ModuleIcons} from '../data/module-icons';
 import {Actions} from '../../../components/actions/actions';
@@ -28,6 +29,13 @@ import {ShellNotificationsMenu} from './shell-notifications-menu';
 import Api from '@aivot/mui-material-symbols-400-outlined/dist/api/Api';
 import ReadinessScore from '@aivot/mui-material-symbols-400-outlined/dist/readiness-score/ReadinessScore';
 import FamilyHistory from '@aivot/mui-material-symbols-400-outlined/dist/family-history/FamilyHistory';
+import SupervisedUserCircle from '@aivot/mui-material-symbols-400-outlined/dist/supervised-user-circle/SupervisedUserCircle';
+import {StorageProvidersApiService} from '../../../modules/storage/storage-providers-api-service';
+import {StorageProviderType} from '../../../modules/storage/enums/storage-provider-type';
+import {selectPermissions, selectUser} from '../../../slices/user-slice';
+import {AUDIT_LOG_READ_PERMISSION} from '../../../modules/audit/constants/audit-permissions';
+import {ProcessInstanceTaskApiService} from '../../../modules/process/services/process-instance-task-api-service';
+import {subscribeProcessAssignedTaskCountRefreshEvent} from '../../../modules/process/utils/process-assigned-task-count-events';
 
 /* -----------------------------
  * Types & Navigation Structure
@@ -44,9 +52,10 @@ export interface DrawerItem {
     children?: DrawerItem[];
     chipContent?: ReactNode;
     disabled?: boolean;
+    requiredSystemPermission?: string;
 }
 
-const DrawerGroups: DrawerGroup[] = [
+const BaseDrawerGroups: DrawerGroup[] = [
     {
         title: null,
         items: [
@@ -63,7 +72,6 @@ const DrawerGroups: DrawerGroup[] = [
             {
                 icon: ModuleIcons.tasks,
                 label: 'Aufgaben',
-                chipContent: 26,
                 to: '/tasks',
             },
             {
@@ -113,12 +121,17 @@ const DrawerGroups: DrawerGroup[] = [
                 icon: ModuleIcons.organization,
                 label: 'Organisation',
                 children: [
-                    {icon: ModuleIcons.departments, label: 'Fachbereiche', to: '/departments'},
-                    {icon: ModuleIcons.departments, label: 'Fachbereiche (Baum)', to: '/departments-tree'},
-                    {icon: ModuleIcons.users, label: 'Mitarbeiter:innen', to: '/users'},
+                    {icon: ModuleIcons.departments, label: 'Organisationseinheiten', to: '/departments'},
                     {icon: ModuleIcons.teams, label: 'Teams', to: '/teams'},
-                    {icon: ModuleIcons.roles, label: 'Domänenrollen', to: '/user-roles'},
-                    {icon: ModuleIcons.roles, label: 'Systemrollen', to: '/system-roles'},
+                    {icon: ModuleIcons.users, label: 'Mitarbeiter:innen', to: '/users'},
+                    {
+                        icon: <SupervisedUserCircle />,
+                        label: 'Rollenverwaltung',
+                        children: [
+                            {icon: ModuleIcons.roles, label: 'Domänenrollen', to: '/user-roles'},
+                            {icon: ModuleIcons.roles, label: 'Systemrollen', to: '/system-roles'},
+                        ],
+                    },
                     {icon: <FamilyHistory/>, label: 'Organigramm', to: '/organigram'},
                 ],
             },
@@ -134,6 +147,12 @@ const DrawerGroups: DrawerGroup[] = [
                 children: [
                     {icon: ModuleIcons.settings, label: 'Allgemeine Einstellungen', to: '/settings/app'},
                     {icon: <ReadinessScore />, label: 'Systeminformationen', to: '/settings/status'},
+                    {
+                        icon: ModuleIcons.audit,
+                        label: 'Audit-Log',
+                        to: '/audit-log',
+                        requiredSystemPermission: AUDIT_LOG_READ_PERMISSION,
+                    },
                     {icon: ModuleIcons.themes, label: 'Erscheinungsbild', to: '/themes'},
                     {icon: ModuleIcons.secrets, label: 'Systemvariablen', to: '/secrets'},
                     {
@@ -143,13 +162,12 @@ const DrawerGroups: DrawerGroup[] = [
                             {icon: ModuleIcons.identity, label: 'Identitätsanbieter', to: '/identity-providers'},
                             {icon: ModuleIcons.payment, label: 'Zahlungsanbieter', to: '/payment-providers'},
                             {icon: ModuleIcons.storage, label: 'Speicheranbieter', to: '/storage-providers'},
+                            {icon: ModuleIcons.destinations, label: 'Schnittstellen', to: '/destinations'},
                         ],
                     },
                     {icon: ModuleIcons.extensions, label: 'Erweiterungen', to: '/settings/extensions'},
                     {icon: <ForwardToInbox />, label: 'SMTP-Test (legacy)', to: '/settings/smtp'},
                     {icon: ModuleIcons.providerLinks, label: 'Links (legacy)', to: '/provider-links'},
-                    {icon: ModuleIcons.destinations, label: 'Schnittstellen (legacy)', to: '/destinations'},
-
                 ],
             },
         ],
@@ -162,11 +180,148 @@ const DrawerGroups: DrawerGroup[] = [
 export function ShellDrawer() {
     const baseTheme = useTheme();
     const dispatch = useAppDispatch();
+    const permissions = useAppSelector(selectPermissions);
+    const user = useAppSelector(selectUser);
     const minimizeDrawer = useAppSelector(selectMinimizeDrawer) ?? false;
     const [userMenuAnchorEl, setUserMenuAnchorEl] = useState<null | HTMLElement>(null);
     const [notificationsAnchorEl, setNotificationsAnchorEl] = useState<null | HTMLElement>(null);
     const [showBlockedMsg, setShowBlockedMsg] = useState(false);
     const showAboutGoverDialog = useAppSelector(selectShowAboutGoverDialog) ?? false;
+    const [assetStorageProviderItems, setAssetStorageProviderItems] = useState<DrawerItem[]>([]);
+    const [isLoadingAssetStorageProviders, setIsLoadingAssetStorageProviders] = useState(true);
+    const [assignedTaskCount, setAssignedTaskCount] = useState<number | null>(null);
+
+    useEffect(() => {
+        setIsLoadingAssetStorageProviders(true);
+
+        new StorageProvidersApiService()
+            .listAll({
+                type: StorageProviderType.Assets,
+            })
+            .then(({content: providers}) => {
+                const providerItems = providers
+                    .slice()
+                    .sort((a, b) => a.name.localeCompare(b.name, 'de'))
+                    .map((provider) => ({
+                        icon: ModuleIcons.storage,
+                        label: provider.name,
+                        to: `/assets/providers/${provider.id}`,
+                    }));
+
+                setAssetStorageProviderItems(providerItems);
+            })
+            .catch((err) => {
+                setAssetStorageProviderItems([]);
+                dispatch(showApiErrorSnackbar(err, 'Die Liste der Asset-Speicheranbieter konnte nicht geladen werden.'));
+            })
+            .finally(() => {
+                setIsLoadingAssetStorageProviders(false);
+            });
+    }, [dispatch]);
+
+    useEffect(() => {
+        if (user?.id == null) {
+            setAssignedTaskCount(null);
+            return;
+        }
+
+        let isMounted = true;
+
+        const refreshAssignedTaskCount = () => {
+            if (document.visibilityState === 'hidden') {
+                return;
+            }
+
+            new ProcessInstanceTaskApiService()
+                .getAssignedTaskCount()
+                .then((count) => {
+                    if (isMounted) {
+                        setAssignedTaskCount(count);
+                    }
+                })
+                .catch(() => {
+                    // Keep the last known value to avoid noisy UI errors for a purely decorative counter.
+                });
+        };
+
+        refreshAssignedTaskCount();
+        const unsubscribeRefreshListener = subscribeProcessAssignedTaskCountRefreshEvent(refreshAssignedTaskCount);
+
+        return () => {
+            isMounted = false;
+            unsubscribeRefreshListener();
+        };
+    }, [user?.id]);
+
+    const drawerGroups = useMemo(() => {
+        const hasSystemPermission = (permission: string): boolean => {
+            return permissions?.systemPermissions
+                ?.some((entry) => entry.permissions.includes(permission)) ?? false;
+        };
+
+        const filterByPermission = (items: DrawerItem[]): DrawerItem[] => {
+            return items
+                .filter((item) => {
+                    if (item.requiredSystemPermission == null) {
+                        return true;
+                    }
+
+                    return hasSystemPermission(item.requiredSystemPermission);
+                })
+                .map((item) => {
+                    if (item.children == null) {
+                        return item;
+                    }
+
+                    return {
+                        ...item,
+                        children: filterByPermission(item.children),
+                    };
+                })
+                .filter((item) => item.children == null || item.children.length > 0);
+        };
+
+        return BaseDrawerGroups.map((group) => ({
+            ...group,
+            items: group.items.map((item) => {
+                if (item.label === 'Aufgaben') {
+                    return {
+                        ...item,
+                        chipContent: assignedTaskCount ?? undefined,
+                    };
+                }
+
+                if (item.label !== 'Dateien & Medien') {
+                    return item;
+                }
+
+                const providerChildren: DrawerItem[] = isLoadingAssetStorageProviders
+                    ? [{
+                        icon: ModuleIcons.storage,
+                        label: 'Speicheranbieter laden...',
+                        disabled: true,
+                    }]
+                    : assetStorageProviderItems.length > 0
+                        ? assetStorageProviderItems
+                        : [{
+                            icon: ModuleIcons.storage,
+                            label: 'Keine Asset-Speicheranbieter',
+                            disabled: true,
+                        }];
+
+                return {
+                    ...item,
+                    to: undefined,
+                    children: providerChildren,
+                };
+            }),
+        }))
+            .map((group) => ({
+                ...group,
+                items: filterByPermission(group.items),
+            }))
+            .filter((group) => group.items.length > 0);
+    }, [assetStorageProviderItems, assignedTaskCount, isLoadingAssetStorageProviders, permissions]);
 
     // responsive auto-minimize
     useEffect(() => {
@@ -368,7 +523,7 @@ export function ShellDrawer() {
                             }}
                         >
                             {/* Navigation */}
-                            {DrawerGroups.map((group, index) => (
+                            {drawerGroups.map((group, index) => (
                                 <DrawerGroup
                                     key={group.title || index}
                                     group={group}
@@ -578,7 +733,6 @@ function DrawerGroup({group, minimizeDrawer}: DrawerGroupProps) {
  * DrawerListItem (recursive)
  * ----------------------------- */
 function DrawerListItem({item, level = 0}: { item: DrawerItem; level?: number }) {
-    const navigate = useNavigate();
     const location = useLocation();
     const pathname = location.pathname;
 
@@ -594,7 +748,6 @@ function DrawerListItem({item, level = 0}: { item: DrawerItem; level?: number })
 
     const handleClick = () => {
         if (item.children) setExpanded((e) => !e);
-        else if (item.to) navigate(item.to);
     };
 
     const labelSizeScale =
@@ -802,49 +955,41 @@ function NestedMenuItem({
     item: DrawerItem;
     onAnyClose: () => void;
 }) {
-    const navigate = useNavigate();
     const [submenuAnchor, setSubmenuAnchor] = useState<HTMLElement | null>(null);
     const hasChildren = !!item.children?.length;
 
-    const handleItemClick = (e: React.MouseEvent<HTMLElement>) => {
+    const handleToggleSubmenu = (e: React.MouseEvent<HTMLElement>) => {
         e.stopPropagation();
-
-        if (item.disabled) {
-            return;
-        }
-
-        if (hasChildren) {
-            // toggle submenu open/close on click
-            if (submenuAnchor) {
-                setSubmenuAnchor(null);
-            } else {
-                setSubmenuAnchor(e.currentTarget);
-            }
-        } else if (item.to) {
-            navigate(item.to);
-            onAnyClose(); // close all menus after navigation
-        }
+        if (item.disabled) return;
+        setSubmenuAnchor((prev) => (prev ? null : e.currentTarget));
     };
 
-    const handleCloseSubmenu: NonNullable<React.ComponentProps<typeof Menu>['onClose']> = () => {
-        setSubmenuAnchor(null);
-    };
-
-    return (
-        <>
+    // Regular menu item
+    if (!hasChildren && item.to) {
+        return (
             <MenuItem
-                onClick={handleItemClick}
-                sx={{
-                    minWidth: 220,
-                    gap: 1,
-                    cursor: 'pointer',
-                    '&:hover': {backgroundColor: 'rgba(255,255,255,0.08)'},
-                }}
+                component={Link}
+                to={item.to}
+                onClick={onAnyClose}
+                disabled={item.disabled}
+                sx={{ minWidth: 220, gap: 1 }}
             >
-                <Box sx={{width: 24, display: 'inline-flex', justifyContent: 'center'}}>
+                <Box sx={{ width: 24, display: 'inline-flex', justifyContent: 'center' }}>
                     {item.icon ?? <PageInfo />}
                 </Box>
-                <Box sx={{flex: 1}}>{item.label}</Box>
+                <Box sx={{ flex: 1 }}>{item.label}</Box>
+            </MenuItem>
+        );
+    }
+
+    // Submenu item
+    return (
+        <>
+            <MenuItem onClick={handleToggleSubmenu} disabled={item.disabled} sx={{ minWidth: 220, gap: 1 }}>
+                <Box sx={{ width: 24, display: 'inline-flex', justifyContent: 'center' }}>
+                    {item.icon ?? <PageInfo />}
+                </Box>
+                <Box sx={{ flex: 1 }}>{item.label}</Box>
                 {hasChildren && <ChevronForward />}
             </MenuItem>
 
@@ -852,18 +997,14 @@ function NestedMenuItem({
                 <Menu
                     anchorEl={submenuAnchor}
                     open={Boolean(submenuAnchor)}
-                    onClose={handleCloseSubmenu}
-                    anchorOrigin={{vertical: 'top', horizontal: 'right'}}
-                    transformOrigin={{vertical: 'top', horizontal: 'left'}}
-                    MenuListProps={{dense: true}}
+                    onClose={() => setSubmenuAnchor(null)}
+                    anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                    transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                    MenuListProps={{ dense: true }}
                     disableAutoFocusItem
                 >
                     {item.children!.map((child) => (
-                        <NestedMenuItem
-                            key={child.label}
-                            item={child}
-                            onAnyClose={onAnyClose}
-                        />
+                        <NestedMenuItem key={child.label} item={child} onAnyClose={onAnyClose} />
                     ))}
                 </Menu>
             )}

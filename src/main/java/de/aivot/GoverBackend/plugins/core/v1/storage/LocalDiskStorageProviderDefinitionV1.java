@@ -12,6 +12,7 @@ import de.aivot.GoverBackend.plugins.core.Core;
 import de.aivot.GoverBackend.storage.exceptions.StorageException;
 import de.aivot.GoverBackend.storage.models.StorageDocument;
 import de.aivot.GoverBackend.storage.models.StorageFolder;
+import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
 import de.aivot.GoverBackend.storage.models.StorageProviderDefinition;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -21,7 +22,9 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.LinkedList;
 import java.util.Optional;
 
@@ -55,6 +58,12 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
     @Override
     public String getComponentVersion() {
         return "1.0.0";
+    }
+
+    @Nonnull
+    @Override
+    public Boolean getSupportsMetadataAttributes() {
+        return false;
     }
 
     @Nullable
@@ -94,7 +103,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
     }
 
     @Override
-    public void testConnection(@Nonnull Config config) throws StorageException {
+    public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWritable) throws StorageException {
         var rootPathReal = config.getRealRootPath();
         if (!Files.exists(rootPathReal) || !Files.isDirectory(rootPathReal) || !Files.isWritable(rootPathReal)) {
             throw new StorageException(
@@ -132,7 +141,6 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
             return new StorageFolder(
                     toSuffixWithSlash(toPrefixWithSlash(pathFromRoot)),
                     folderToCreatePathReal.getFileName().toString(),
-                    null,
                     new LinkedList<>(),
                     new LinkedList<>(),
                     false
@@ -147,7 +155,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
 
     @Nonnull
     @Override
-    public Optional<StorageFolder> retrieveFolder(@Nonnull Config config, @Nonnull String pathFromRoot, boolean recursive) {
+    public Optional<StorageFolder> retrieveFolder(@Nonnull Config config, @Nonnull String pathFromRoot, boolean recursive) throws StorageException {
         // Get the path to the real root directory on the filesystem
         var rootPathReal = config.getRealRootPath();
 
@@ -171,7 +179,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
 
     private StorageFolder retrieveFolderRecursive(@Nonnull Path rootPathReal,
                                                   @Nonnull Path folderToRetrievePathReal,
-                                                  @Nonnull String pathFromRoot) {
+                                                  @Nonnull String pathFromRoot) throws StorageException {
         // Extract the name of this folder based on the real path
         var folderToRetrieveName = folderToRetrievePathReal
                 .getFileName()
@@ -181,14 +189,14 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
         var folderObject = new StorageFolder(
                 toSuffixWithSlash(toPrefixWithSlash(pathFromRoot)),
                 folderToRetrieveName,
-                null,
                 new LinkedList<>(),
                 new LinkedList<>(),
                 false
         );
 
         try (var files = Files.list(folderToRetrievePathReal)) {
-            files.forEach(childPathReal -> {
+            var children = files.toList();
+            for (var childPathReal : children) {
                 var pathFromRootToChild = rootPathReal.relativize(childPathReal).toString();
                 pathFromRootToChild = toPrefixWithSlash(pathFromRootToChild);
                 var filename = childPathReal.getFileName().toString();
@@ -197,10 +205,21 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
                     var subfolder = retrieveFolderRecursive(rootPathReal, childPathReal, pathFromRootToChild);
                     folderObject.addSubfolder(subfolder);
                 } else if (Files.isRegularFile(childPathReal)) {
-                    var document = new StorageDocument(pathFromRootToChild, filename);
+                    long size;
+                    try {
+                        size = Files.size(childPathReal);
+                    } catch (IOException e) {
+                        throw new StorageException(
+                                e,
+                                "Fehler beim Lesen der Dateigröße für %s: %s.",
+                                StringUtils.quote(childPathReal.toString()),
+                                e.getMessage()
+                        );
+                    }
+                    var document = new StorageDocument(pathFromRootToChild, filename, size, StorageItemMetadata.empty());
                     folderObject.addDocument(document);
                 }
-            });
+            }
         } catch (IOException e) {
             throw new StorageException(e,
                     "Fehler beim Lesen des Verzeichnisses %s: %s.",
@@ -221,7 +240,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
      */
     private StorageFolder retrieveFolderFlat(@Nonnull Path rootPathReal,
                                              @Nonnull Path folderToRetrievePathReal,
-                                             @Nonnull String pathFromRoot) {
+                                             @Nonnull String pathFromRoot) throws StorageException {
         // Extract the name of this folder based on the real path
         var folderToRetrieveName = folderToRetrievePathReal
                 .getFileName()
@@ -231,7 +250,6 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
         var folderObject = new StorageFolder(
                 toSuffixWithSlash(toPrefixWithSlash(pathFromRoot)),
                 folderToRetrieveName,
-                null,
                 new LinkedList<>(),
                 new LinkedList<>(),
                 false
@@ -242,43 +260,50 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
         folderObject.setName(folderName);
 
         // List all files and directories in the folder
-        var dirFiles = folderToRetrievePathReal
-                .toFile()
-                .listFiles();
+        try (var dirEntries = Files.list(folderToRetrievePathReal)) {
+            for (var childPathReal : dirEntries.toList()) {
+                var pathFromTheRootToThisFile = rootPathReal
+                        .relativize(childPathReal)
+                        .toString();
+                pathFromTheRootToThisFile = toPrefixWithSlash(pathFromTheRootToThisFile);
+                var filename = childPathReal.getFileName().toString();
 
-        // If there are no files, return the empty folder object
-        if (dirFiles == null) {
-            return folderObject;
-        }
+                if (Files.isDirectory(childPathReal)) {
+                    var subfolder = new StorageFolder(
+                            toSuffixWithSlash(pathFromTheRootToThisFile),
+                            filename,
+                            new LinkedList<>(),
+                            new LinkedList<>(),
+                            false
+                    );
+                    folderObject.addSubfolder(subfolder);
+                } else if (Files.isRegularFile(childPathReal)) {
+                    long size;
+                    try {
+                        size = Files.size(childPathReal);
+                    } catch (IOException e) {
+                        throw new StorageException(
+                                e,
+                                "Fehler beim Lesen der Dateigröße für %s: %s.",
+                                StringUtils.quote(childPathReal.toString()),
+                                e.getMessage()
+                        );
+                    }
 
-        // Iterate over all files and directories
-        for (var file : dirFiles) {
-            // Build the absolute pathFromRoot of this file, relative to the root pathFromRoot
-            var pathFromTheRootToThisFile = rootPathReal
-                    .relativize(file.toPath())
-                    .toString();
-            pathFromTheRootToThisFile = toPrefixWithSlash(pathFromTheRootToThisFile);
-            // Extract the filename
-            var filename =
-                    file.getName();
-
-            if (file.isDirectory()) {
-                var subfolder = new StorageFolder(
-                        toSuffixWithSlash(pathFromTheRootToThisFile),
-                        filename,
-                        null,
-                        new LinkedList<>(),
-                        new LinkedList<>(),
-                        false
-                );
-                folderObject.addSubfolder(subfolder);
-            } else if (file.isFile()) {
-                var document = new StorageDocument(
-                        pathFromTheRootToThisFile,
-                        filename
-                );
-                folderObject.addDocument(document);
+                    var document = new StorageDocument(
+                            pathFromTheRootToThisFile,
+                            filename,
+                            size,
+                            StorageItemMetadata.empty()
+                    );
+                    folderObject.addDocument(document);
+                }
             }
+        } catch (IOException e) {
+            throw new StorageException(e,
+                    "Fehler beim Lesen des Verzeichnisses %s: %s.",
+                    StringUtils.quote(folderToRetrievePathReal.toString()),
+                    e.getMessage());
         }
 
         return folderObject;
@@ -290,22 +315,144 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
         return Files.exists(folderToCheckPathReal) && Files.isDirectory(folderToCheckPathReal);
     }
 
+    @Nonnull
+    @Override
+    public StorageFolder moveFolder(@Nonnull Config config,
+                                    @Nonnull String sourcePathFromRoot,
+                                    @Nonnull String targetPathFromRoot) throws StorageException {
+        var sourcePathReal = getSecurePath(config.getRealRootPath(), sourcePathFromRoot);
+        var targetPathReal = getSecurePath(config.getRealRootPath(), targetPathFromRoot);
+
+        if (!Files.exists(sourcePathReal) || !Files.isDirectory(sourcePathReal)) {
+            throw new StorageException("Der Quellordner %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot));
+        }
+
+        if (sourcePathReal.equals(targetPathReal)) {
+            return retrieveFolder(config, toSuffixWithSlash(toPrefixWithSlash(targetPathFromRoot)), true)
+                    .orElseThrow(() -> new StorageException("Der Ordner %s konnte nicht abgerufen werden.", StringUtils.quote(targetPathFromRoot)));
+        }
+
+        if (targetPathReal.startsWith(sourcePathReal)) {
+            throw new StorageException("Der Zielordner %s darf nicht innerhalb des Quellordners %s liegen.", StringUtils.quote(targetPathFromRoot), StringUtils.quote(sourcePathFromRoot));
+        }
+
+        var targetParentDirectoryReal = targetPathReal.getParent();
+        if (targetParentDirectoryReal == null || !Files.exists(targetParentDirectoryReal) || !Files.isDirectory(targetParentDirectoryReal)) {
+            throw new StorageException("Das Zielverzeichnis für den Ordner %s existiert nicht.", StringUtils.quote(targetPathFromRoot));
+        }
+
+        if (Files.exists(targetPathReal)) {
+            deleteFolder(config, targetPathFromRoot);
+        }
+
+        try {
+            Files.move(sourcePathReal, targetPathReal, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new StorageException(e,
+                    "Fehler beim Verschieben des Ordners von %s nach %s: %s.",
+                    StringUtils.quote(sourcePathFromRoot),
+                    StringUtils.quote(targetPathFromRoot),
+                    e.getMessage());
+        }
+
+        return retrieveFolder(config, toSuffixWithSlash(toPrefixWithSlash(targetPathFromRoot)), true)
+                .orElseGet(() -> new StorageFolder(
+                        toSuffixWithSlash(toPrefixWithSlash(targetPathFromRoot)),
+                        StringUtils.getLastPathSegment(targetPathFromRoot),
+                        new LinkedList<>(),
+                        new LinkedList<>(),
+                        true
+                ));
+    }
+
+    @Nonnull
+    @Override
+    public StorageFolder copyFolder(@Nonnull Config config,
+                                    @Nonnull String sourcePathFromRoot,
+                                    @Nonnull String targetPathFromRoot) throws StorageException {
+        var sourcePathReal = getSecurePath(config.getRealRootPath(), sourcePathFromRoot);
+        var targetPathReal = getSecurePath(config.getRealRootPath(), targetPathFromRoot);
+
+        if (!Files.exists(sourcePathReal) || !Files.isDirectory(sourcePathReal)) {
+            throw new StorageException("Der Quellordner %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot));
+        }
+
+        if (sourcePathReal.equals(targetPathReal)) {
+            return retrieveFolder(config, toSuffixWithSlash(toPrefixWithSlash(targetPathFromRoot)), true)
+                    .orElseThrow(() -> new StorageException("Der Ordner %s konnte nicht abgerufen werden.", StringUtils.quote(targetPathFromRoot)));
+        }
+
+        if (targetPathReal.startsWith(sourcePathReal)) {
+            throw new StorageException("Der Zielordner %s darf nicht innerhalb des Quellordners %s liegen.", StringUtils.quote(targetPathFromRoot), StringUtils.quote(sourcePathFromRoot));
+        }
+
+        var targetParentDirectoryReal = targetPathReal.getParent();
+        if (targetParentDirectoryReal == null || !Files.exists(targetParentDirectoryReal) || !Files.isDirectory(targetParentDirectoryReal)) {
+            throw new StorageException("Das Zielverzeichnis für den Ordner %s existiert nicht.", StringUtils.quote(targetPathFromRoot));
+        }
+
+        if (Files.exists(targetPathReal)) {
+            deleteFolder(config, targetPathFromRoot);
+        }
+
+        try (var sourceEntries = Files.walk(sourcePathReal)) {
+            for (var sourceEntry : sourceEntries.toList()) {
+                try {
+                    var relative = sourcePathReal.relativize(sourceEntry);
+                    var targetEntry = targetPathReal.resolve(relative);
+
+                    if (Files.isDirectory(sourceEntry)) {
+                        Files.createDirectories(targetEntry);
+                    } else {
+                        Files.copy(sourceEntry, targetEntry, StandardCopyOption.REPLACE_EXISTING);
+                    }
+                } catch (IOException e) {
+                    throw new StorageException(e,
+                            "Fehler beim Kopieren des Ordners von %s nach %s: %s.",
+                            StringUtils.quote(sourcePathFromRoot),
+                            StringUtils.quote(targetPathFromRoot),
+                            e.getMessage());
+                }
+            }
+        } catch (IOException e) {
+            throw new StorageException(e,
+                    "Fehler beim Kopieren des Ordners von %s nach %s: %s.",
+                    StringUtils.quote(sourcePathFromRoot),
+                    StringUtils.quote(targetPathFromRoot),
+                    e.getMessage());
+        }
+
+        return retrieveFolder(config, toSuffixWithSlash(toPrefixWithSlash(targetPathFromRoot)), true)
+                .orElseGet(() -> new StorageFolder(
+                        toSuffixWithSlash(toPrefixWithSlash(targetPathFromRoot)),
+                        StringUtils.getLastPathSegment(targetPathFromRoot),
+                        new LinkedList<>(),
+                        new LinkedList<>(),
+                        true
+                ));
+    }
+
     @Override
     public void deleteFolder(@Nonnull Config config, @Nonnull String path) throws StorageException {
         var folderToDeletePathReal = getSecurePath(config.getRealRootPath(), path);
 
         try {
-            Files.walk(folderToDeletePathReal)
+            var filesToDelete = Files.walk(folderToDeletePathReal)
                     .map(Path::toFile)
                     .sorted((a, b) -> -a.compareTo(b)) // Delete files before directories
-                    .forEach(file -> {
-                        if (!file.delete()) {
-                            throw new StorageException(
-                                    "Fehler beim Löschen der Datei/Verzeichnis %s.",
-                                    StringUtils.quote(file.getAbsolutePath())
-                            );
-                        }
-                    });
+                    .toList();
+
+            for (var file : filesToDelete) {
+                if (!file.delete()) {
+                    throw new StorageException(
+                            "Fehler beim Löschen der Datei/Verzeichnis %s.",
+                            StringUtils.quote(file.getAbsolutePath())
+                    );
+                }
+            }
+        } catch (NoSuchFileException e) {
+            // If the folder does not exist, we can consider it as already deleted, so we ignore this exception
+            return;
         } catch (IOException e) {
             throw new StorageException(e,
                     "Fehler beim Löschen des Verzeichnisses %s: %s.",
@@ -316,7 +463,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
 
     @Nonnull
     @Override
-    public StorageDocument storeDocument(@Nonnull Config config, @Nonnull String path, @Nonnull byte[] data) {
+    public StorageDocument storeDocument(@Nonnull Config config, @Nonnull String path, @Nonnull InputStream data, @Nonnull StorageItemMetadata metadata) throws StorageException {
         // Check if the parent directory exists
         var documentPathReal = getSecurePath(config.getRealRootPath(), path);
         var parentDirectoryReal = documentPathReal.getParent();
@@ -330,10 +477,11 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
 
         // Write the data to the file
         try {
-            Files.write(sanitizedDocumentPathReal, data);
+            Files.copy(data, sanitizedDocumentPathReal, StandardCopyOption.REPLACE_EXISTING);
             var relativePathFromRoot = config.getRealRootPath().relativize(sanitizedDocumentPathReal).toString();
             relativePathFromRoot = toPrefixWithSlash(relativePathFromRoot);
-            return new StorageDocument(relativePathFromRoot, sanitizedFilename);
+            var fileSize = Files.size(sanitizedDocumentPathReal);
+            return new StorageDocument(relativePathFromRoot, sanitizedFilename, fileSize, StorageItemMetadata.empty());
         } catch (IOException e) {
             throw new StorageException(e,
                     "Fehler beim Speichern des Dokuments %s: %s.",
@@ -344,14 +492,25 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
 
     @Nonnull
     @Override
-    public Optional<StorageDocument> retrieveDocument(@Nonnull Config config, @Nonnull String path) {
-        var documentPathReal = getSecurePath(config.getRealRootPath(), path);
+    public Optional<StorageDocument> retrieveDocument(@Nonnull Config config, @Nonnull String pathFromRoot) throws StorageException {
+        var documentPathReal = getSecurePath(config.getRealRootPath(), pathFromRoot);
         if (!Files.exists(documentPathReal) || !Files.isRegularFile(documentPathReal)) {
             return Optional.empty();
         }
         var relativePathFromRoot = config.getRealRootPath().relativize(documentPathReal).toString();
         relativePathFromRoot = toPrefixWithSlash(relativePathFromRoot);
-        var document = new StorageDocument(relativePathFromRoot, documentPathReal.getFileName().toString());
+
+        long size;
+        try {
+            size =  Files.size(documentPathReal);
+        } catch (IOException e) {
+            throw new StorageException(e,
+                    "Fehler beim Lesen des Dokuments %s: %s.",
+                    StringUtils.quote(pathFromRoot),
+                    e.getMessage());
+        }
+
+        var document = new StorageDocument(relativePathFromRoot, documentPathReal.getFileName().toString(), size, StorageItemMetadata.empty());
         return Optional.of(document);
     }
 
@@ -375,8 +534,78 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
         return Files.exists(documentPathReal) && Files.isRegularFile(documentPathReal);
     }
 
+    @Nonnull
     @Override
-    public void deleteDocument(@Nonnull Config config, @Nonnull String path) {
+    public StorageDocument moveDocument(@Nonnull Config config,
+                                        @Nonnull String sourcePathFromRoot,
+                                        @Nonnull String targetPathFromRoot) throws StorageException {
+        var sourcePathReal = getSecurePath(config.getRealRootPath(), sourcePathFromRoot);
+        var targetPathReal = getSecurePath(config.getRealRootPath(), targetPathFromRoot);
+
+        if (!Files.exists(sourcePathReal) || !Files.isRegularFile(sourcePathReal)) {
+            throw new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot));
+        }
+
+        var targetParentDirectoryReal = targetPathReal.getParent();
+        if (targetParentDirectoryReal == null || !Files.exists(targetParentDirectoryReal) || !Files.isDirectory(targetParentDirectoryReal)) {
+            throw new StorageException("Das Zielverzeichnis für das Dokument %s existiert nicht.", StringUtils.quote(targetPathFromRoot));
+        }
+
+        var sanitizedTargetFilename = sanitizeFilename(targetPathReal.getFileName().toString());
+        var sanitizedTargetPathReal = targetParentDirectoryReal.resolve(sanitizedTargetFilename);
+
+        try {
+            Files.move(sourcePathReal, sanitizedTargetPathReal, StandardCopyOption.REPLACE_EXISTING);
+            var relativeTargetPathFromRoot = config.getRealRootPath().relativize(sanitizedTargetPathReal).toString();
+            relativeTargetPathFromRoot = toPrefixWithSlash(relativeTargetPathFromRoot);
+            var sizeInBytes = Files.size(sanitizedTargetPathReal);
+            return new StorageDocument(relativeTargetPathFromRoot, sanitizedTargetFilename, sizeInBytes, StorageItemMetadata.empty());
+        } catch (IOException e) {
+            throw new StorageException(e,
+                    "Fehler beim Verschieben des Dokuments von %s nach %s: %s.",
+                    StringUtils.quote(sourcePathFromRoot),
+                    StringUtils.quote(targetPathFromRoot),
+                    e.getMessage());
+        }
+    }
+
+    @Nonnull
+    @Override
+    public StorageDocument copyDocument(@Nonnull Config config,
+                                        @Nonnull String sourcePathFromRoot,
+                                        @Nonnull String targetPathFromRoot) throws StorageException {
+        var sourcePathReal = getSecurePath(config.getRealRootPath(), sourcePathFromRoot);
+        var targetPathReal = getSecurePath(config.getRealRootPath(), targetPathFromRoot);
+
+        if (!Files.exists(sourcePathReal) || !Files.isRegularFile(sourcePathReal)) {
+            throw new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot));
+        }
+
+        var targetParentDirectoryReal = targetPathReal.getParent();
+        if (targetParentDirectoryReal == null || !Files.exists(targetParentDirectoryReal) || !Files.isDirectory(targetParentDirectoryReal)) {
+            throw new StorageException("Das Zielverzeichnis für das Dokument %s existiert nicht.", StringUtils.quote(targetPathFromRoot));
+        }
+
+        var sanitizedTargetFilename = sanitizeFilename(targetPathReal.getFileName().toString());
+        var sanitizedTargetPathReal = targetParentDirectoryReal.resolve(sanitizedTargetFilename);
+
+        try {
+            Files.copy(sourcePathReal, sanitizedTargetPathReal, StandardCopyOption.REPLACE_EXISTING);
+            var relativeTargetPathFromRoot = config.getRealRootPath().relativize(sanitizedTargetPathReal).toString();
+            relativeTargetPathFromRoot = toPrefixWithSlash(relativeTargetPathFromRoot);
+            var sizeInBytes = Files.size(sanitizedTargetPathReal);
+            return new StorageDocument(relativeTargetPathFromRoot, sanitizedTargetFilename, sizeInBytes, StorageItemMetadata.empty());
+        } catch (IOException e) {
+            throw new StorageException(e,
+                    "Fehler beim Kopieren des Dokuments von %s nach %s: %s.",
+                    StringUtils.quote(sourcePathFromRoot),
+                    StringUtils.quote(targetPathFromRoot),
+                    e.getMessage());
+        }
+    }
+
+    @Override
+    public void deleteDocument(@Nonnull Config config, @Nonnull String path) throws StorageException {
         var documentPathReal = getSecurePath(config.getRealRootPath(), path);
         try {
             Files.delete(documentPathReal);
@@ -394,11 +623,10 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
     }
 
     /**
-     * Get a pathFromRoot resolved against a base directory with basic sanitization to prevent pathFromRoot traversal attacks.
-     * Given the base directory /home/user/storage and the input pathFromRoot /test.txt will return /home/user/storage/test.txt.
-     * Given the base directory /home/user/storage and the input pathFromRoot / will return /home/user/storage/.
-     * Given the base directory /home/user/storage and the input pathFromRoot ./subdir/file.txt will return /home/user/storage/subdir/file.txt.
-     * Given the base directory /home/user/storage and the input pathFromRoot /../etc/passwd will throw a SecurityException.
+     * Get a pathFromRoot resolved against a base directory with basic sanitization to prevent pathFromRoot traversal attacks. Given the base directory /home/user/storage and the
+     * input pathFromRoot /test.txt will return /home/user/storage/test.txt. Given the base directory /home/user/storage and the input pathFromRoot / will return
+     * /home/user/storage/. Given the base directory /home/user/storage and the input pathFromRoot ./subdir/file.txt will return /home/user/storage/subdir/file.txt. Given the base
+     * directory /home/user/storage and the input pathFromRoot /../etc/passwd will throw a SecurityException.
      *
      * @param baseDirectory The base directory to resolve against.
      * @param path          The input pathFromRoot to sanitize and resolve.
@@ -426,8 +654,8 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
     }
 
     /**
-     * Sanitize a filename by removing potentially dangerous characters and patterns.
-     * This method ensures the filename does not contain pathFromRoot segments, special characters, or hidden file indicators.
+     * Sanitize a filename by removing potentially dangerous characters and patterns. This method ensures the filename does not contain pathFromRoot segments, special characters,
+     * or hidden file indicators.
      *
      * @param filename The input filename to sanitize.
      * @return The sanitized filename.

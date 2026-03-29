@@ -1,6 +1,4 @@
-import {ListItemAvatar, ListItemText, Menu, MenuItem} from '@mui/material';
 import React, {type ReactNode, useMemo} from 'react';
-import Divider from '@mui/material/Divider';
 import History from '@aivot/mui-material-symbols-400-outlined/dist/history/History';
 import Comment from '@aivot/mui-material-symbols-400-outlined/dist/comment/Comment';
 import FileExport from '@aivot/mui-material-symbols-400-outlined/dist/file-export/FileExport';
@@ -10,8 +8,9 @@ import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete'
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {addSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../../slices/shell-slice';
 import {ModuleIcons} from '../../../../../shells/staff/data/module-icons';
+import {ProcessActionMenu, type ProcessActionMenuItem} from './process-action-menu';
 
-export type ProcessDetailsPageMoreMenuEvent = 'export' | 'test' | 'instances';
+export type ProcessDetailsPageMoreMenuEvent = 'export' | 'test' | 'instances' | 'delete';
 
 interface ProcessDetailsPageMoreMenuProps {
     anchorEl: null | HTMLElement;
@@ -30,11 +29,6 @@ export function ProcessDetailsPageMoreMenu(props: ProcessDetailsPageMoreMenuProp
 
     const dispatch = useAppDispatch();
 
-    const isOpen = useMemo(() => {
-        return anchorEl != null;
-    }, [anchorEl]);
-
-
     const dispatchEvent = (event: ProcessDetailsPageMoreMenuEvent | undefined): void => {
         if (event != null) {
             onMenuEvent(event);
@@ -49,40 +43,23 @@ export function ProcessDetailsPageMoreMenu(props: ProcessDetailsPageMoreMenuProp
         onClose();
     };
 
+    const items = useMemo<ProcessActionMenuItem[]>(() => {
+        return entries.map((entry) => entry === 'separator' ? entry : ({
+            label: entry.label,
+            icon: entry.icon,
+            isDangerous: entry.isDangerous,
+            onClick: () => {
+                dispatchEvent(entry.event);
+            },
+        }));
+    }, [dispatchEvent]);
+
     return (
-        <Menu
-            open={isOpen}
+        <ProcessActionMenu
             anchorEl={anchorEl}
             onClose={onClose}
-            anchorOrigin={{
-                horizontal: 'right',
-                vertical: 'top',
-            }}
-        >
-            {
-                entries
-                    .map((e, index) => e === 'separator' ?
-                        (
-                            <Divider key={index.toString()}/>
-                        ) :
-                        (
-                            <MenuItem
-                                key={e.label}
-                                dense={true}
-                                onClick={() => {
-                                    dispatchEvent(e.event);
-                                }}
-                            >
-                                <ListItemAvatar>
-                                    {e.icon}
-                                </ListItemAvatar>
-                                <ListItemText
-                                    primary={e.label}
-                                />
-                            </MenuItem>
-                        ))
-            }
-        </Menu>
+            items={items}
+        />
     );
 }
 
@@ -91,6 +68,7 @@ const entries: Array<{
     icon: ReactNode;
     label: string;
     event?: ProcessDetailsPageMoreMenuEvent;
+    isDangerous?: boolean;
 } | 'separator'> = [
     {
         icon: <History/>,
@@ -125,5 +103,7 @@ const entries: Array<{
     {
         icon: <Delete/>,
         label: 'Prozess löschen',
+        event: 'delete',
+        isDangerous: true,
     },
 ];

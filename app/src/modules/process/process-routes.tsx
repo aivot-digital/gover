@@ -5,6 +5,9 @@ import {ProcessDetailsPage} from './pages/details/process-details-page';
 import {ProcessInstanceListPage} from './pages/list/process-instance-page';
 import {ProcessInstanceTaskListPage} from './pages/list/process-instance-task-page';
 import {ProcessTaskViewPage} from './pages/details/process-task-view-page';
+import {ProcessTaskViewPageIndex} from './pages/details/process-task-view-page-index';
+import {ProcessTaskViewPageEdit} from './pages/details/process-task-view-page-edit';
+import {ProcessTaskViewPageCommunication} from './pages/details/process-task-view-page-communication';
 import {ProcessAssignedTaskListPage} from './pages/list/process-assigned-task-page';
 import {ProcessNodeEditor} from './pages/details/components/process-node-editor/process-node-editor';
 import {
@@ -19,6 +22,9 @@ import {
 import {
     ProcessNodeEditorTestingTab,
 } from './pages/details/components/process-node-editor/tabs/process-node-editor-testing-tab';
+import {
+    ProcessNodeEditorPlaceholder
+} from './pages/details/components/process-node-editor/process-node-editor-placeholder';
 
 export const processRoutes: RouteObject[] = [
     {
@@ -31,10 +37,10 @@ export const processRoutes: RouteObject[] = [
         children: [
             {
                 index: true,
-                element: <div>Placeholder</div>,
+                element: <ProcessNodeEditorPlaceholder/>,
             },
             {
-                path: '/processes/:processId/versions/:processVersion/nodes/:nodeId',
+                path: 'nodes/:nodeId',
                 element: <ProcessNodeEditor/>,
                 children: [
                     {
@@ -42,19 +48,19 @@ export const processRoutes: RouteObject[] = [
                         element: <ProcessNodeEditorConfigurationTab/>,
                     },
                     {
-                        path: '/processes/:processId/versions/:processVersion/nodes/:nodeId/tabs/configuration',
+                        path: 'tabs/configuration',
                         element: <ProcessNodeEditorConfigurationTab/>,
                     },
                     {
-                        path: '/processes/:processId/versions/:processVersion/nodes/:nodeId/tabs/outputs',
+                        path: 'tabs/outputs',
                         element: <ProcessNodeEditorOutputsTab/>,
                     },
                     {
-                        path: '/processes/:processId/versions/:processVersion/nodes/:nodeId/tabs/more',
+                        path: 'tabs/more',
                         element: <ProcessNodeEditorMoreTab/>,
                     },
                     {
-                        path: '/processes/:processId/versions/:processVersion/nodes/:nodeId/tabs/testing',
+                        path: 'tabs/testing',
                         element: <ProcessNodeEditorTestingTab/>,
                     },
                 ],
@@ -76,5 +82,19 @@ export const processRoutes: RouteObject[] = [
     {
         path: '/tasks/:instanceId/:taskId',
         element: <ProcessTaskViewPage/>,
+        children: [
+            {
+                index: true,
+                element: <ProcessTaskViewPageIndex/>,
+            },
+            {
+                path: 'edit',
+                element: <ProcessTaskViewPageEdit/>,
+            },
+            {
+                path: 'communication',
+                element: <ProcessTaskViewPageCommunication/>,
+            },
+        ],
     },
 ];

@@ -1,36 +1,19 @@
 package de.aivot.GoverBackend.elements.models;
 
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import jakarta.annotation.Nonnull;
+import jakarta.validation.constraints.NotNull;
 
-public class ElementDerivationRequest {
-    private BaseElement element;
-    private ElementData elementData;
-    private ElementDerivationOptions options;
+public record ElementDerivationRequest(
+        @Nonnull
+        @NotNull(message = "Das Wurzelelement der Ableitung darf nicht leer sein.")
+        BaseElement element,
+        @Nonnull
+        @NotNull(message = "Die Eingabedaten der Formularelemente dürfen nicht leer sein.")
+        AuthoredElementValues authoredElementValues,
+        @Nonnull
+        @NotNull(message = "Die Einstellungen zur Ableitung der Formulardaten dürfen nicht leer sein.")
+        ElementDerivationOptions derivationOptions
+) {
 
-    public BaseElement getElement() {
-        return element;
-    }
-
-    public ElementDerivationRequest setElement(BaseElement element) {
-        this.element = element;
-        return this;
-    }
-
-    public ElementData getElementData() {
-        return elementData;
-    }
-
-    public ElementDerivationRequest setElementData(ElementData elementData) {
-        this.elementData = elementData;
-        return this;
-    }
-
-    public ElementDerivationOptions getOptions() {
-        return options;
-    }
-
-    public ElementDerivationRequest setOptions(ElementDerivationOptions options) {
-        this.options = options;
-        return this;
-    }
 }

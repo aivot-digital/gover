@@ -4,7 +4,7 @@ import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
-import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
 
 import java.util.function.Consumer;
 
@@ -14,15 +14,11 @@ public class ElementStreamUtils {
 
         switch (element) {
             case FormLayoutElement rootElement:
-                action.accept(rootElement.getIntroductionStep());
-                action.accept(rootElement.getSummaryStep());
-                action.accept(rootElement.getSubmitStep());
-
                 for (BaseElement child : rootElement.getChildren()) {
                     applyAction(child, action);
                 }
                 break;
-            case StepElement stepElement:
+            case GenericStepElement stepElement:
                 for (BaseElement child : stepElement.getChildren()) {
                     applyAction(child, action);
                 }

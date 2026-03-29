@@ -3,11 +3,10 @@ import React, {type FormEvent, useContext, useEffect, useMemo, useState} from 'r
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {useApi} from '../../../hooks/use-api';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
+import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import {useChangeBlocker} from '../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../hooks/use-form-manager';
 import {ConfirmDialog} from '../../../dialogs/confirm-dialog/confirm-dialog';
@@ -28,6 +27,12 @@ import {format} from 'date-fns';
 import {StatusTable} from '../../../components/status-table/status-table';
 import {BadgeOutlined} from '@mui/icons-material';
 import {getFileTypeIcon} from '../../../utils/file-type-icon';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {copyToClipboardText} from '../../../utils/copy-to-clipboard';
+import {AssetDetailsPageAdditionalData} from './asset-details-page-additional-data';
+import {StorageMetadataAttributesEditor} from '../../storage/components/storage-metadata-attributes-editor';
+import DownloadOutlined from '@mui/icons-material/DownloadOutlined';
+import {downloadBlobFile} from '../../../utils/download-utils';
 
 export const AssetSchema = yup.object({
     filename: yup.string()
@@ -41,14 +46,17 @@ export const AssetSchema = yup.object({
 export function AssetDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const {storageProviderId} = useParams<{ storageProviderId?: string; key?: string }>();
 
     const api = useApi();
     const {
         item,
         setItem,
+        additionalData,
         isBusy,
         setIsBusy,
-    } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<Asset, undefined>;
+    } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<Asset, AssetDetailsPageAdditionalData>;
 
     const {
         currentItem,
@@ -64,6 +72,23 @@ export function AssetDetailsPageIndex() {
     const asset = currentItem;
     const [file, setFile] = useState<File[]>();
     const [uploadError, setUploadError] = useState<string>();
+    const parsedStorageProviderId = useMemo(() => {
+        if (storageProviderId == null) {
+            return undefined;
+        }
+
+        const parsed = Number.parseInt(storageProviderId, 10);
+        if (Number.isNaN(parsed) || parsed <= 0) {
+            return undefined;
+        }
+
+        return parsed;
+    }, [storageProviderId]);
+    const parentRoute = parsedStorageProviderId != null
+        ? `/assets/providers/${parsedStorageProviderId}?path=${encodeURIComponent(AssetsApiService.normalizeFolderPath(searchParams.get('path') ?? '/'))}`
+        : '/assets';
+    const isStorageReadOnly = additionalData?.storageProvider.readOnlyStorage ?? false;
+    const readOnlyHint = 'Der ausgewählte Speicheranbieter ist schreibgeschützt.';
 
     const combinedEditedState = {
         ...currentItem,
@@ -101,6 +126,15 @@ export function AssetDetailsPageIndex() {
         }
         return new Date(item.created);
     }, [item]);
+    const storageProvider = additionalData?.storageProvider;
+    const assetMetadata = (asset?.metadata ?? {}) as Record<string, unknown>;
+    const hasSelectedFile = file != null && file.length > 0;
+    const hasPendingChanges = !hasNotChanged || hasSelectedFile;
+    const isNewAsset = asset?.filename === '';
+    const canCreateAsset = !isStorageReadOnly;
+    const canReplaceFile = !isStorageReadOnly;
+    const canDeleteAsset = !isStorageReadOnly;
+    const canEditPrivacy = !isNewAsset;
 
     if (asset == null) {
         return (
@@ -111,15 +145,24 @@ export function AssetDetailsPageIndex() {
     const handleSubmit = (event: FormEvent): void => {
         event.preventDefault();
 
-        if (file == null || file.length === 0) {
+        if (!canCreateAsset) {
+            dispatch(showErrorSnackbar(`${readOnlyHint} Neue Dateien können nicht hochgeladen werden.`));
             return;
         }
+
+        if (file == null || file.length === 0 || parsedStorageProviderId == null) {
+            return;
+        }
+
+        const filename = file[0].name;
+        const targetFolderPath = AssetsApiService.normalizeFolderPath(searchParams.get('path') ?? '/');
+        const storagePathFromRoot = `${targetFolderPath}${filename}`;
 
         setIsBusy(true);
         dispatch(showLoadingOverlay('Datei wird hochgeladen…'));
 
         new AssetsApiService(api)
-            .upload(file[0])
+            .upload(file[0], parsedStorageProviderId, storagePathFromRoot, asset)
             .then((newAsset) => {
                 setItem(newAsset);
                 reset();
@@ -129,22 +172,15 @@ export function AssetDetailsPageIndex() {
 
                 // use setTimeout instead of useEffect to prevent unnecessary rerender
                 setTimeout(() => {
-                    navigate(`/assets/${newAsset.key}`, {replace: true});
+                    const detailsRoute = parsedStorageProviderId != null
+                        ? `/assets/providers/${parsedStorageProviderId}/files/${AssetsApiService.encodeStoragePathForRoute(newAsset.storagePathFromRoot)}?path=${encodeURIComponent(targetFolderPath)}`
+                        : '/assets';
+                    navigate(detailsRoute, {replace: true});
                 }, 0);
 
             })
             .catch((err) => {
-                dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
-                if (err.status === 406) {
-                    setUploadError('Die von Ihnen hochgeladene Datei hat einen ungültigen Dateinamen. Bitte benennen Sie die Datei um und versuchen Sie es erneut. Es sind nur Groß- und Kleinbuchstaben, Zahlen, Bindestriche, Unterstriche und Punkte erlaubt.');
-                } else if (err.status === 409) {
-                    setUploadError('Die von Ihnen hochgeladene Datei weist die Signatur eines Virus auf und wurde abgelehnt. Probieren Sie eine andere Datei.');
-                } else if (err.status === 413) {
-                    setUploadError(`Die von Ihnen hochgeladene Datei überschreitet das Limit von ${AppInfo.maxFileSizeMB}MB. Probieren Sie eine andere Datei.`);
-                } else {
-                    console.error(err);
-                    setUploadError('Die Datei konnte nicht hochgeladen werden. Probieren Sie eine andere Datei.');
-                }
+                dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.', true));
             })
             .finally(() => {
                 setIsBusy(false);
@@ -154,7 +190,6 @@ export function AssetDetailsPageIndex() {
 
     const handleSave = () => {
         if (asset != null) {
-
             const validationResult = validate();
 
             if (!validationResult) {
@@ -164,17 +199,28 @@ export function AssetDetailsPageIndex() {
 
             setIsBusy(true);
 
+            if (parsedStorageProviderId == null) {
+                dispatch(showErrorSnackbar('Es wurde kein Speicheranbieter ausgewählt.'));
+                setIsBusy(false);
+                return;
+            }
+
             apiService
-                .update(asset.key, asset)
+                .updateInStorageProvider(
+                    asset.storagePathFromRoot,
+                    asset,
+                    parsedStorageProviderId,
+                    file != null && file.length > 0 ? file[0] : undefined,
+                )
                 .then((updatedAsset) => {
                     setItem(updatedAsset);
                     reset();
+                    setFile([]);
 
                     dispatch(showSuccessSnackbar('Änderungen an Datei erfolgreich gespeichert.'));
                 })
                 .catch(err => {
-                    console.error(err);
-                    dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                    dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.', true));
                 })
                 .finally(() => {
                     setIsBusy(false);
@@ -183,19 +229,47 @@ export function AssetDetailsPageIndex() {
     };
 
     const confirmDelete = () => {
+        if (!canDeleteAsset) {
+            dispatch(showErrorSnackbar(`${readOnlyHint} Dateien können nicht gelöscht werden.`));
+            return;
+        }
+
         if (asset.key === '') return;
 
         setIsBusy(true);
-        apiService.destroy(asset.key)
+        if (parsedStorageProviderId == null) {
+            dispatch(showErrorSnackbar('Es wurde kein Speicheranbieter ausgewählt.'));
+            setIsBusy(false);
+            return;
+        }
+
+        apiService
+            .destroyInStorageProvider(asset.storagePathFromRoot, parsedStorageProviderId)
             .then(() => {
                 reset(); // prevent change blocker by resetting unsaved changes
-                navigate('/assets', {
+                navigate(parentRoute, {
                     replace: true,
                 });
                 dispatch(showSuccessSnackbar('Die Datei wurde erfolgreich gelöscht.'));
             })
-            .catch(() => dispatch(showErrorSnackbar('Beim Löschen ist ein Fehler aufgetreten.')))
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Beim Löschen ist ein Fehler aufgetreten.'))
+            })
             .finally(() => setIsBusy(false));
+    };
+
+    const handleDownload = async () => {
+        if (asset.key === '' || parsedStorageProviderId == null) {
+            dispatch(showErrorSnackbar('Es wurde kein Speicheranbieter ausgewählt.'));
+            return;
+        }
+
+        try {
+            const blob = await apiService.downloadContentInStorageProvider(asset.storagePathFromRoot, parsedStorageProviderId, true);
+            downloadBlobFile(asset.filename, blob);
+        } catch (err) {
+            dispatch(showApiErrorSnackbar(err, 'Beim Herunterladen ist ein Fehler aufgetreten.'));
+        }
     };
 
     return (
@@ -211,13 +285,18 @@ export function AssetDetailsPageIndex() {
                     </Typography>
 
                     <Typography sx={{mb: 2, maxWidth: 900}}>
-                        Wählen Sie eine einzelne Datei zum Hochladen aus oder ziehen Sie die Datei in das Feld.
+                        {!canCreateAsset
+                            ? `${readOnlyHint} Neue Dateien können nicht hochgeladen werden.`
+                            : 'Wählen Sie eine einzelne Datei zum Hochladen aus oder ziehen Sie die Datei in das Feld.'}
                     </Typography>
 
                     <FileUploadComponent
                         id="asset-upload"
                         value={file}
                         onChange={file => {
+                            if (!canCreateAsset) {
+                                return;
+                            }
                             setFile(file);
                             setUploadError(undefined);
                         }}
@@ -227,7 +306,34 @@ export function AssetDetailsPageIndex() {
                         maxFiles={1}
                         required={true}
                         error={uploadError}
+                        disabled={!canCreateAsset}
+                        hint={!canCreateAsset ? `${readOnlyHint} Neue Dateien können nicht hochgeladen werden.` : undefined}
                     />
+
+                    {
+                        storageProvider != null && storageProvider.metadataAttributes.length > 0 && (
+                            <Box sx={{mt: 3, maxWidth: 900}}>
+                                <Typography variant="h6" sx={{mb: 1}}>
+                                    Metadaten
+                                </Typography>
+                                <Typography sx={{mb: 2}}>
+                                    Hinterlegen Sie optional zusätzliche Metadaten für die Datei entsprechend den
+                                    konfigurierten Attributen des Speicheranbieters.
+                                </Typography>
+                                <StorageMetadataAttributesEditor
+                                    storageProvider={storageProvider}
+                                    metadata={assetMetadata}
+                                    disabled={!canCreateAsset || !hasSelectedFile}
+                                    onChange={(metadata) => handleInputChange('metadata')(metadata as any)}
+                                />
+                                {canCreateAsset && !hasSelectedFile && (
+                                    <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
+                                        Metadaten sind bearbeitbar, sobald eine Datei ausgewählt wurde.
+                                    </Typography>
+                                )}
+                            </Box>
+                        )
+                    }
                 </>
             }
             {
@@ -241,8 +347,32 @@ export function AssetDetailsPageIndex() {
                     </Typography>
 
                     <Typography sx={{mb: 2, maxWidth: 900}}>
-                        Bearbeiten Sie den Dateinamen und sehen Sie ergänzende Informationen ein, wie z. B. den öffentlichen Link zur Datei.
+                        {isStorageReadOnly
+                            ? 'Der Speicheranbieter ist schreibgeschützt. Sie können den Dateiinhalt nicht ersetzen, aber den öffentlichen Zugriff (Privatsphäre) weiterhin anpassen.'
+                            : 'Ersetzen Sie optional die Datei und bearbeiten Sie Datenschutzangaben. Metadaten können nur zusammen mit einem Datei-Upload geändert werden.'}
                     </Typography>
+
+                    <FileUploadComponent
+                        id="asset-upload-replace"
+                        value={file}
+                        onChange={nextFile => {
+                            if (!canReplaceFile) {
+                                return;
+                            }
+                            setFile(nextFile);
+                            setUploadError(undefined);
+                        }}
+                        label="Datei ersetzen"
+                        isMultifile={false}
+                        minFiles={1}
+                        maxFiles={1}
+                        required={false}
+                        error={uploadError}
+                        disabled={!canReplaceFile}
+                        hint={!canReplaceFile
+                            ? `${readOnlyHint} Der Dateiinhalt kann nicht ersetzt werden.`
+                            : 'Wählen Sie die neue Datei aus, die den aktuellen Inhalt ersetzen soll.'}
+                    />
 
                     <Grid
                         container
@@ -258,11 +388,12 @@ export function AssetDetailsPageIndex() {
                                 value={asset?.filename}
                                 onChange={handleInputChange('filename')}
                                 onBlur={handleInputBlur('filename')}
+                                disabled
                                 required
                                 maxCharacters={255}
                                 minCharacters={1}
                                 error={errors.filename}
-                                hint="Der Dateiname wird als Titel des Dokuments / Medieninhalts verwendet."
+                                hint="Der Dateiname wird aus dem Speicherindex abgeleitet und kann in diesem Schritt nicht direkt geändert werden."
                             />
                         </Grid>
                     </Grid>
@@ -289,12 +420,43 @@ export function AssetDetailsPageIndex() {
                             label="Öffentlichen (nicht authentifizierten) Zugriff zulassen"
                             value={!asset.isPrivate}
                             onChange={(val) => handleInputChange('isPrivate')(!val)}
+                            disabled={!canEditPrivacy}
                             variant="switch"
                             hint="Wenn diese Option aktiviert ist, kann die Datei über einen öffentlichen Link ohne Authentifizierung abgerufen werden.
                                     Nutzen Sie diese Option nur für Dateien, die öffentlich sein müssen und niemals für sicherheitsrelevante
                                     Dateien wie Zertifikate. Änderungen werden erst nach dem Speichern wirksam."
                         />
                     </Box>
+
+                    {
+                        storageProvider != null && storageProvider.metadataAttributes.length > 0 && (
+                            <Box sx={{mt: 3, maxWidth: 900}}>
+                                <Typography variant="h6" sx={{mb: 1}}>
+                                    Metadaten
+                                </Typography>
+                                <Typography sx={{mb: 2}}>
+                                    Hinterlegen Sie optional zusätzliche Metadaten für die Datei entsprechend den
+                                    konfigurierten Attributen des Speicheranbieters.
+                                </Typography>
+                                <StorageMetadataAttributesEditor
+                                    storageProvider={storageProvider}
+                                    metadata={assetMetadata}
+                                    disabled={!canReplaceFile || !hasSelectedFile}
+                                    onChange={(metadata) => handleInputChange('metadata')(metadata as any)}
+                                />
+                                {canReplaceFile && !hasSelectedFile && (
+                                    <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
+                                        Metadaten sind nur bearbeitbar, wenn eine neue Datei zum Ersetzen ausgewählt wurde.
+                                    </Typography>
+                                )}
+                                {!canReplaceFile && (
+                                    <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
+                                        Metadaten können bei schreibgeschützten Speicheranbietern nicht geändert werden.
+                                    </Typography>
+                                )}
+                            </Box>
+                        )
+                    }
 
                     {(!asset.isPrivate && item?.isPrivate === false) && (
                         <Box sx={{mt: 1}}>
@@ -306,9 +468,13 @@ export function AssetDetailsPageIndex() {
                                 }}
                                 endAction={{
                                     icon: <ContentPasteOutlinedIcon />,
-                                    onClick: () => {
-                                        navigator.clipboard.writeText(AssetsApiService.useAssetLinkOfAsset(asset));
-                                        dispatch(showSuccessSnackbar('Link in die Zwischenablage kopiert.'));
+                                    onClick: async () => {
+                                        const success = await copyToClipboardText(AssetsApiService.useAssetLinkOfAsset(asset));
+                                        if (success) {
+                                            dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
+                                        } else {
+                                            dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
+                                        }
                                     },
                                 }}
                                 hint="Kopieren Sie diesen Link um das Dokument / den Medieninhalt in Ihren Formularen zu referenzieren."
@@ -326,7 +492,7 @@ export function AssetDetailsPageIndex() {
             >
                 <Button
                     onClick={asset?.filename !== '' ? handleSave : handleSubmit}
-                    disabled={isBusy || (file == null && hasNotChanged)}
+                    disabled={isBusy || (isNewAsset ? (!canCreateAsset || !hasSelectedFile) : !hasPendingChanges)}
                     variant="contained"
                     color="primary"
                     startIcon={<SaveOutlinedIcon />}
@@ -337,10 +503,24 @@ export function AssetDetailsPageIndex() {
                 {
                     asset.key !== '' &&
                     <Button
+                        variant="outlined"
+                        onClick={handleDownload}
+                        disabled={isBusy || asset.key.length === 0}
+                        startIcon={<DownloadOutlined />}
+                    >
+                        Herunterladen
+                    </Button>
+                }
+
+                {
+                    asset.key !== '' &&
+                    <Button
                         onClick={() => {
                             reset();
+                            setFile([]);
+                            setUploadError(undefined);
                         }}
-                        disabled={isBusy || hasNotChanged}
+                        disabled={isBusy || !hasPendingChanges}
                         color="error"
                     >
                         Zurücksetzen
@@ -352,12 +532,12 @@ export function AssetDetailsPageIndex() {
                     <Button
                         variant={'outlined'}
                         onClick={() => setConfirmDeleteAction(() => confirmDelete)}
-                        disabled={isBusy}
+                        disabled={isBusy || !canDeleteAsset}
                         color="error"
                         sx={{
                             marginLeft: 'auto',
                         }}
-                        startIcon={<DeleteOutlinedIcon />}
+                        startIcon={<Delete />}
                     >
                         Löschen
                     </Button>

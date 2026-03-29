@@ -1,4 +1,4 @@
-import {Box, Button, Typography} from '@mui/material';
+import {Box, Button, Grid, Typography} from '@mui/material';
 import React, {useContext, useEffect, useMemo, useState} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
@@ -7,7 +7,6 @@ import {useNavigate} from 'react-router-dom';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../../../utils/string-utils';
 import {PaymentProvidersApiService} from '../../payment-providers-api-service';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
-import {ViewDispatcherComponent} from '../../../../components/view-dispatcher.component';
 import {flattenElements} from '../../../../utils/flatten-elements';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
@@ -15,7 +14,6 @@ import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackba
 import {PaymentProviderAdditionalData} from './payment-provider-details-page-additional-data';
 import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
 import {PaymentProviderResponseDTO} from '../../dtos/payment-provider-response-dto';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {ConstraintDialog} from '../../../../dialogs/constraint-dialog/constraint-dialog';
@@ -24,12 +22,14 @@ import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constra
 import HelpIconOutlined from '@mui/icons-material/HelpOutline';
 import Tooltip from '@mui/material/Tooltip';
 import * as yup from 'yup';
-import {goverSchemaToYup} from '../../../../utils/gover-schema-to-yup';
+import {goverSchemaToYup2 as goverSchemaToYup} from '../../../../utils/gover-schema-to-yup';
 import {PaymentProviderDefinitionResponseDTO} from '../../dtos/payment-provider-definition-response-dto';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import {VFormVersionWithDetailsService} from '../../../forms/services/v-form-version-with-details-api-service';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
 
 export const _PaymentProviderSchema = {
     name: yup.string()
@@ -45,6 +45,9 @@ export const _PaymentProviderSchema = {
     providerKey: yup.string()
         .trim()
         .required('Der Anbieter des Zahlungsdienstleisters ist ein Pflichtfeld.'),
+    providerVersion: yup.number()
+        .min(1, 'Die Version des Zahlungsdienstleisters muss mindestens 1 sein.')
+        .required('Die Version des Zahlungsdienstleisters ist ein Pflichtfeld.'),
     isEnabled: yup.boolean()
         .default(false),
     isTestProvider: yup.boolean()
@@ -104,8 +107,11 @@ export function PaymentProviderDetailsPageIndex() {
     }, [additionalData]);
 
     const definition: PaymentProviderDefinitionResponseDTO | undefined = useMemo(() => {
-        return definitions.find(def => def.key === paymentProvider?.providerKey);
-    }, [definitions, paymentProvider?.providerKey]);
+        return definitions.find(def => (
+            def.key === paymentProvider?.providerKey &&
+            def.version === paymentProvider?.providerVersion
+        ));
+    }, [definitions, paymentProvider?.providerKey, paymentProvider?.providerVersion]);
 
     useEffect(() => {
         if (definition != null && definition.configLayout != null) {
@@ -301,27 +307,78 @@ export function PaymentProviderDetailsPageIndex() {
 
     return (
         <Box>
-            {
-                isNewItem ?
-                    <SelectFieldComponent
-                        label="Zahlungsdienstleister"
-                        required
-                        value={paymentProvider.providerKey}
-                        onChange={handleInputChange('providerKey')}
-                        options={definitions.map(def => ({
-                            value: def.key,
-                            label: def.name,
-                        }))}
-                        error={errors.providerKey}
-                        hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsdienstleisters eingeblendet wird. Der Name des Anbieters ist gegenüber antragstellenden Personen sichtbar."
-                    /> :
-                    <TextFieldComponent
-                        label="Zahlungsdienstleister"
-                        value={paymentProvider.providerKey}
-                        onChange={handleInputChange('providerKey')}
-                        disabled={true}
-                    />
-            }
+            <Grid
+                container={true}
+                spacing={2}
+            >
+                <Grid
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
+                >
+                    {
+                        isNewItem ?
+                            <SelectFieldComponent
+                                label="Zahlungsdienstleister"
+                                required
+                                value={paymentProvider.providerKey}
+                                onChange={handleInputChange('providerKey')}
+                                options={definitions.map(def => ({
+                                    value: def.key,
+                                    label: def.name,
+                                    subLabel: def.description,
+                                }))}
+                                disabled={isBusy || !isEditable}
+                                error={errors.providerKey}
+                                hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsdienstleisters eingeblendet wird. Der Name des Anbieters ist gegenüber antragstellenden Personen sichtbar."
+                            /> :
+                            <TextFieldComponent
+                                label="Zahlungsdienstleister"
+                                value={paymentProvider.providerKey}
+                                onChange={handleInputChange('providerKey')}
+                                disabled={true}
+                            />
+                    }
+                </Grid>
+                <Grid
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
+                >
+                    {
+                        isNewItem ?
+                            <SelectFieldComponent
+                                label="Version"
+                                required
+                                value={paymentProvider.providerVersion.toString()}
+                                onChange={(val) => {
+                                    if (val == null) {
+                                        handleInputChange('providerVersion')(0);
+                                    } else {
+                                        handleInputChange('providerVersion')(parseInt(val));
+                                    }
+                                }}
+                                options={definitions.filter(def => {
+                                    return def.key === paymentProvider.providerKey;
+                                }).map(def => ({
+                                    value: def.version.toString(),
+                                    label: `Version ${def.version.toString()}`,
+                                }))}
+                                disabled={isBusy || !isEditable || isStringNullOrEmpty(paymentProvider.providerKey)}
+                                error={errors.providerVersion}
+                                hint="Bestimmt, welche Version der Konfigurationsoberfläche und Einstellungsmöglichkeiten angezeigt werden."
+                            /> :
+                            <TextFieldComponent
+                                label="Version"
+                                value={paymentProvider.providerVersion > 0 ? `Version ${paymentProvider.providerVersion}` : ''}
+                                onChange={() => undefined}
+                                disabled={true}
+                            />
+                    }
+                </Grid>
+            </Grid>
 
             <TextFieldComponent
                 label="Name"
@@ -349,19 +406,11 @@ export function PaymentProviderDetailsPageIndex() {
             {
                 definition != null &&
                 definition.configLayout != null &&
-                <ViewDispatcherComponent
-                    rootElement={definition.configLayout}
-                    allElements={flattenElements(definition.configLayout)}
+                <ElementDerivationContext
                     element={definition.configLayout}
-                    isBusy={isBusy || !isEditable}
-                    isDeriving={false}
-                    elementData={paymentProvider.config}
-                    onElementDataChange={handleInputChange('config')}
-                    onElementBlur={undefined}
-                    mode="viewer"
-                    derivationTriggerIdQueue={[]}
-                    disableVisibility={true}
-                    scrollContainerRef={undefined}
+                    authoredElementValues={paymentProvider.config}
+                    onAuthoredElementValuesChange={handleInputChange('config')}
+                    disabled={isBusy || !isEditable}
                 />
             }
 
@@ -426,7 +475,7 @@ export function PaymentProviderDetailsPageIndex() {
                         sx={{
                             marginLeft: 'auto',
                         }}
-                        startIcon={<DeleteOutlinedIcon />}
+                        startIcon={<Delete />}
                     >
                         Löschen
                     </Button>
@@ -442,7 +491,7 @@ export function PaymentProviderDetailsPageIndex() {
                                 variant="outlined"
                                 disabled={true}
                                 color="error"
-                                startIcon={<DeleteOutlinedIcon />}
+                                startIcon={<Delete />}
                             >
                                 Löschen
                             </Button>

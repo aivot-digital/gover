@@ -24,10 +24,11 @@ import {ProcessEntity} from "../../entities/process-entity";
 import {ProcessDefinitionApiService} from "../../services/process-definition-api-service";
 import {NewProcessDialog} from "../../dialogs/new-process-dialog";
 import {ProcessDefinitionVersionApiService} from "../../services/process-definition-version-api-service";
+import Route from '@aivot/mui-material-symbols-400-outlined/dist/route/Route';
 
 const availableFilter = [
     {
-        label: 'Alle Formulare',
+        label: 'Alle Prozesse',
         value: 'all',
     },
     {
@@ -54,14 +55,14 @@ const columns: GridColDef<ProcessListEntry>[] = [
         field: 'icon',
         headerName: '',
         renderCell: () => <CellContentWrapper
-            sx={{alignItems: 'start', py: 2}}><DescriptionOutlinedIcon/></CellContentWrapper>,
+            sx={{alignItems: 'start', py: 2}}><Route/></CellContentWrapper>,
         disableColumnMenu: true,
         width: 24,
         sortable: false,
     },
     {
         field: 'internalTitle',
-        headerName: 'Formular',
+        headerName: 'Prozesse',
         flex: 2,
         renderCell: (params) => {
             const {
@@ -93,7 +94,7 @@ const columns: GridColDef<ProcessListEntry>[] = [
                                 textDecoration: 'none',
                             }}
                             to={`/processes/${params.row.id}/versions/${params.row.draftedVersion ?? params.row.publishedVersion ?? ''}`}
-                            title="Formular bearbeiten"
+                            title="Prozess bearbeiten"
                         >
                             {params.row.internalTitle}
                         </Link>
@@ -189,7 +190,7 @@ export function ProcessListPage() {
     return (
         <>
             <PageWrapper
-                title="Formulare"
+                title="Prozesse"
                 fullWidth
                 background
             >
@@ -199,11 +200,11 @@ export function ProcessListPage() {
                     filters={availableFilter}
                     defaultFilter="all"
                     header={{
-                        icon: <DescriptionOutlinedIcon/>,
-                        title: 'Verfahren',
+                        icon: <Route/>,
+                        title: 'Prozesse',
                         actions: [
                             {
-                                label: 'Neues Verfahren',
+                                label: 'Neuer Prozess',
                                 icon: <AddOutlinedIcon/>,
                                 onClick: () => {
                                     setShowAddDialog(true);
@@ -212,13 +213,13 @@ export function ProcessListPage() {
                             },
                         ],
                         helpDialog: {
-                            title: 'Hilfe zu Formularen',
+                            title: 'Hilfe zu Prozessen',
                             tooltip: 'Hilfe anzeigen',
                             content: <Box> TODO </Box>,
                         },
                     }}
-                    searchLabel="Formular suchen"
-                    searchPlaceholder="Titel des Formulars eingeben…"
+                    searchLabel="Prozess suchen"
+                    searchPlaceholder="Titel des Prozesses eingeben…"
                     fetch={async (options) => {
                         const deps = (await new DepartmentApiService().listAll()).content;
 
@@ -272,7 +273,7 @@ export function ProcessListPage() {
                                         Eine Administrator:in muss Sie noch einem Fachbereich zuordnen und Ihnen eine
                                         Rolle
                                         zuweisen.
-                                        Erst dann können Sie mit der Entwicklung von Formularen loslegen.
+                                        Erst dann können Sie mit der Entwicklung von Prozessen loslegen.
                                     </Typography>
                                 </>
                             }
@@ -280,24 +281,24 @@ export function ProcessListPage() {
                                 memberships != null &&
                                 memberships.length > 0 &&
                                 <Typography>
-                                    Sie haben aktuell keine Formulare. Starten Sie jetzt mit Ihrem ersten Formular!
+                                    Sie haben aktuell keine Prozesse. Starten Sie jetzt mit Ihrem ersten Prozess!
                                 </Typography>
                             }
                         </Box>
                     }
-                    noSearchResultsPlaceholder="Keine Formulare gefunden"
+                    noSearchResultsPlaceholder="Keine Prozesse gefunden"
                     rowActionsCount={4}
                     rowActions={(item) => [
                         {
                             icon: <Edit/>,
                             to: `/processes/${item.id}/versions/${item.draftedVersion}`,
-                            tooltip: 'Formular bearbeiten',
+                            tooltip: 'Prozess bearbeiten',
                             visible: item.draftedVersion != null,
                         },
                         {
                             icon: <Visibility/>,
                             to: `/processes/${item.id}`,
-                            tooltip: 'Formular ansehen',
+                            tooltip: 'Prozess ansehen',
                             visible: item.draftedVersion === null,
                         },
                         {

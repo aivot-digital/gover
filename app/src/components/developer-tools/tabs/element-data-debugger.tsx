@@ -1,5 +1,5 @@
 import {AnyElement} from '../../../models/elements/any-element';
-import {ElementData, ElementDataObject} from '../../../models/element-data';
+import {AuthoredElementValues} from '../../../models/element-data';
 import {Box} from '@mui/material';
 import React, {useMemo, useState} from 'react';
 import {Actions} from '../../actions/actions';
@@ -10,26 +10,15 @@ import {downloadObjectFile, uploadObjectFile} from '../../../utils/download-util
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {ExpandableCodeBlock} from '../../expandable-code-block/expandable-code-block';
-import {SearchInput} from '../../search-input-2/search-input';
-import {filterElementData, mapElementData, walkElementData} from '../../../utils/element-data-utils';
+import {SearchInput} from '../../search-input/search-input';
+import {filterAuthoredElementValues, walkAuthoredElementValues} from '../../../utils/element-data-utils';
+import {cleanAuthoredElementValues} from '../../../utils/element-data-utils';
 
 interface ElementDataDebuggerProps {
     dataLabel: string;
     rootElement: AnyElement;
-    elementData: ElementData;
-    onLoadElementData: (elementData: ElementData) => void;
-}
-
-function cleanElementDataObject(elem: AnyElement, value: ElementDataObject | null | undefined, path: (number | AnyElement)[]): ElementDataObject | null | undefined {
-    if (value == null) {
-        return null;
-    }
-    return {
-        ...value,
-        computedErrors: null,
-        computedValue: null,
-        computedOverride: null,
-    };
+    elementData: AuthoredElementValues;
+    onLoadElementData: (elementData: AuthoredElementValues) => void;
 }
 
 export function ElementDataDebugger(props: ElementDataDebuggerProps) {
@@ -44,25 +33,21 @@ export function ElementDataDebugger(props: ElementDataDebuggerProps) {
     const [elementIdSearch, setElementIdSearch] = useState<string>('');
 
     const handleExport = (): void => {
-        const cleanedElementData = mapElementData(
-            rootElement,
-            elementData,
-            cleanElementDataObject,
-        );
+        const cleanedElementData = cleanAuthoredElementValues(rootElement, elementData);
 
         const filename = `${dataLabel} ${format(new Date(), 'dd-MM-yyyy')}.json`;
         downloadObjectFile(filename, cleanedElementData);
     };
 
     const handleUpload = (): void => {
-        uploadObjectFile<ElementData>('.json')
+        uploadObjectFile<AuthoredElementValues>('.json')
             .then((res) => {
                 if (res == null) {
                     onLoadElementData({});
                 } else {
                     let isValid = false;
-                    walkElementData(rootElement, res, (element, value, d) => {
-                        if (d != null) {
+                    walkAuthoredElementValues(rootElement, res, (_, value) => {
+                        if (value != null) {
                             isValid = true;
                         }
                     });
@@ -72,13 +57,7 @@ export function ElementDataDebugger(props: ElementDataDebuggerProps) {
                         return;
                     }
 
-                    const cleanedElementData = mapElementData(
-                        rootElement,
-                        res,
-                        cleanElementDataObject,
-                    );
-
-                    onLoadElementData(cleanedElementData);
+                    onLoadElementData(cleanAuthoredElementValues(rootElement, res));
                 }
             })
             .catch((err) => {
@@ -96,7 +75,7 @@ export function ElementDataDebugger(props: ElementDataDebuggerProps) {
             return elementData;
         }
 
-        return filterElementData(rootElement, elementData, (e) => e.id.toLowerCase().includes(search));
+        return filterAuthoredElementValues(rootElement, elementData, (e) => e.id.toLowerCase().includes(search));
     }, [rootElement, elementData, elementIdSearch]);
 
     const jsonString = useMemo(() => {
@@ -112,7 +91,8 @@ export function ElementDataDebugger(props: ElementDataDebuggerProps) {
                 }}
             >
                 <SearchInput
-                    placeholder="Element ID suchen…"
+                    label="Element-ID suchen"
+                    placeholder="Element-ID eingeben"
                     value={elementIdSearch}
                     onChange={setElementIdSearch}
                 />

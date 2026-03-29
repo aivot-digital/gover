@@ -5,7 +5,7 @@ import {type BaseEditor} from './base-editor';
 import {TextFieldComponent} from '../components/text-field/text-field-component';
 import {SelectFieldComponent} from '../components/select-field/select-field-component';
 import {ElementTreeEntity} from '../components/element-tree/element-tree-entity';
-import {RichTextEditorComponentView} from '../components/richt-text-editor/rich-text-editor.component.view';
+import {RichTextInputComponent} from '../components/rich-text-input-component/rich-text-input-component';
 
 const colors = [
     ['success', 'Erfolg'],
@@ -66,10 +66,11 @@ export const AlertEditor: BaseEditor<AlertElement, ElementTreeEntity> = ({
                         xs: 12,
                         lg: 6
                     }}>
-                    <RichTextEditorComponentView
+                    <RichTextInputComponent
                         value={element.text ?? ''}
+                        label="Text"
                         onChange={(value) => {
-                            onPatch({text: value});
+                            onPatch({text: value ?? undefined});
                         }}
                         disabled={!editable}
                     />

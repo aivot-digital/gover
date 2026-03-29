@@ -24,6 +24,7 @@ export class PaymentProvidersApiService extends CrudApiService<PaymentProviderRe
         return {
             key: '',
             providerKey: '',
+            providerVersion: 0,
             name: '',
             description: '',
             isTestProvider: false,

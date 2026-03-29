@@ -11,7 +11,7 @@ import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined';
 import {useApi} from '../../hooks/use-api';
 import {Link} from 'react-router-dom';
 import {Hint} from '../hint/hint';
-import {RichTextEditorComponentView} from '../richt-text-editor/rich-text-editor.component.view';
+import {RichTextInputComponent} from '../rich-text-input-component/rich-text-input-component';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 import {AssetsApiService} from '../../modules/assets/assets-api-service';
 import {ThemesApiService} from '../../modules/themes/themes-api-service';
@@ -23,10 +23,15 @@ import {createCustomerPath} from '../../utils/url-path-utils';
 import {withDelay} from '../../utils/with-delay';
 import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
 import {LoadedForm} from '../../slices/app-slice';
+import {copyToClipboardText} from '../../utils/copy-to-clipboard';
+import {useAppSelector} from '../../hooks/use-app-selector';
+import {selectSystemConfigValue} from '../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../data/system-config-keys';
 
 export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedForm>) {
     const dispatch = useAppDispatch();
     const api = useApi();
+    const defaultAssetStorageProviderId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.storage.assets.default_storage_provider));
 
     const [departments, setDepartments] = useState<SelectFieldComponentOption[] | null>(null);
     const [themes, setThemes] = useState<SelectFieldComponentOption[] | null>(null);
@@ -67,19 +72,75 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
                 console.error(err);
                 dispatch(showErrorSnackbar('Fehler beim Laden der Farbschemata!'));
             });
+    }, [api, dispatch]);
 
-        withDelay(new AssetsApiService(api)
-            .listAll({contentType: 'text/html'}), 600)
-            .then((assets) => assets.content.map((asset) => ({
-                value: asset.key,
-                label: asset.filename,
-            })))
+    useEffect(() => {
+        const providerIdRaw = defaultAssetStorageProviderId?.trim() ?? '';
+        if (providerIdRaw.length === 0) {
+            setTemplateOptions([]);
+            return;
+        }
+
+        const providerId = Number.parseInt(providerIdRaw, 10);
+        if (Number.isNaN(providerId)) {
+            setTemplateOptions([]);
+            return;
+        }
+
+        const loadTemplateAssets = async () => {
+            const assetsApiService = new AssetsApiService(api);
+            const visitedFolders = new Set<string>();
+            const foldersToVisit: string[] = ['/'];
+            const assets: Array<{ key: string; filename: string; contentType: string }> = [];
+
+            while (foldersToVisit.length > 0) {
+                const folder = foldersToVisit.shift();
+                if (folder == null) {
+                    continue;
+                }
+
+                const normalizedFolder = AssetsApiService.normalizeFolderPath(folder);
+                if (visitedFolders.has(normalizedFolder)) {
+                    continue;
+                }
+                visitedFolders.add(normalizedFolder);
+
+                const items = await assetsApiService.listFolderContent(providerId, normalizedFolder);
+                for (const item of items) {
+                    if (item.directory === true) {
+                        foldersToVisit.push(AssetsApiService.normalizeFolderPath(item.storagePathFromRoot));
+                        continue;
+                    }
+
+                    assets.push({
+                        key: item.key,
+                        filename: item.filename,
+                        contentType: item.contentType ?? '',
+                    });
+                }
+            }
+
+            return assets;
+        };
+
+        withDelay(loadTemplateAssets(), 600)
+            .then((assets) => assets
+                .filter((asset) =>
+                    asset.key.length > 0 &&
+                    asset.contentType.toLowerCase().startsWith('text/html'),
+                )
+                .sort((a, b) => a.filename.localeCompare(b.filename, 'de', {sensitivity: 'base'}))
+                .map((asset) => ({
+                    value: asset.key,
+                    label: asset.filename,
+                })),
+            )
             .then(setTemplateOptions)
             .catch((err) => {
                 console.error(err);
                 dispatch(showErrorSnackbar('Fehler beim Laden der PDF-Vorlagen!'));
             });
-    }, []);
+    }, [api, defaultAssetStorageProviderId, dispatch]);
 
     const generalLink = createCustomerPath(`${props.entity?.form.slug ?? ''}`);
     const versionedLink = createCustomerPath(`${props.entity?.form.slug ?? ''}/${props.entity?.version ?? ''}`);
@@ -188,17 +249,13 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
                                 {
                                     icon: <ContentPasteOutlinedIcon />,
                                     tooltip: 'Link in Zwischenablage kopieren',
-                                    onClick: () => {
-                                        navigator
-                                            .clipboard
-                                            .writeText(generalLink)
-                                            .then(() => {
-                                                dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
-                                            })
-                                            .catch((err) => {
-                                                console.error(err);
-                                                dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
-                                            });
+                                    onClick: async () => {
+                                        const success = await copyToClipboardText(generalLink);
+                                        if (success) {
+                                            dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
+                                        } else {
+                                            dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
+                                        }
                                     },
                                 },
                                 {
@@ -231,17 +288,13 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
                                 {
                                     icon: <ContentPasteOutlinedIcon />,
                                     tooltip: 'Link in Zwischenablage kopieren',
-                                    onClick: () => {
-                                        navigator
-                                            .clipboard
-                                            .writeText(versionedLink)
-                                            .then(() => {
-                                                dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
-                                            })
-                                            .catch((err) => {
-                                                console.error(err);
-                                                dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
-                                            });
+                                    onClick: async () => {
+                                        const success = await copyToClipboardText(versionedLink);
+                                        if (success) {
+                                            dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
+                                        } else {
+                                            dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
+                                        }
                                     },
                                 },
                                 {
@@ -634,12 +687,12 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
                         lg: 6,
                     }}
                 >
-                    <RichTextEditorComponentView
+                    <RichTextInputComponent
                         hint="Wenn Sie dieses Formular als Vordruck z.B. zum Ausfüllen auf Papier, bereitstellen möchten, sollten Sie hier die Adresse und/oder E-Mail etc. nennen, an welche das Formular einzureichen ist."
                         value={props.element.offlineSubmissionText ?? ''}
                         onChange={val => {
                             props.onPatch({
-                                offlineSubmissionText: val,
+                                offlineSubmissionText: val ?? undefined,
                             });
                         }}
                         disabled={!props.editable}

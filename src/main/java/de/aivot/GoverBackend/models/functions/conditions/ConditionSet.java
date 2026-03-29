@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.models.functions.conditions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.enums.ConditionSetOperator;
@@ -29,7 +29,7 @@ public class ConditionSet implements Serializable {
         this.conditionSetUnmetMessage = conditionSetUnmetMessage;
     }
 
-    public String evaluate(LayoutElement<?> rootElement, ElementData elementData, BaseElement element) {
+    public String evaluate(LayoutElement<?> rootElement, DerivedRuntimeElementData elementData, BaseElement element) {
         return switch (operator) {
             case All -> evaluateAll(rootElement, elementData, element);
             case Any -> evaluateAny(rootElement, elementData, element);
@@ -40,7 +40,7 @@ public class ConditionSet implements Serializable {
      * Evaluates if all conditions and condition sets return no error message.
      * Returns NULL if no error message was returned, otherwise returns the occurred error message.
      */
-    private String evaluateAll(LayoutElement<?> rootElement, ElementData elementData, BaseElement element) {
+    private String evaluateAll(LayoutElement<?> rootElement, DerivedRuntimeElementData elementData, BaseElement element) {
         if (conditions != null) {
             for (var condition : conditions) {
                 var conditionResult = condition.evaluate(rootElement, elementData, element);
@@ -66,7 +66,7 @@ public class ConditionSet implements Serializable {
      * Evaluates if at least one condition or condition set returns no error message.
      * Returns NULL at least one condition or condition set returns no error message, otherwise returns the condition set unmet message.
      */
-    private String evaluateAny(LayoutElement<?> rootElement, ElementData elementData, BaseElement element) {
+    private String evaluateAny(LayoutElement<?> rootElement, DerivedRuntimeElementData elementData, BaseElement element) {
         if (conditions != null) {
             for (var condition : conditions) {
                 var conditionResult = condition.evaluate(rootElement, elementData, element);

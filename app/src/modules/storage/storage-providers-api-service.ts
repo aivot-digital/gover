@@ -10,6 +10,9 @@ import {type StorageIndexItem} from './entities/storage-index-item-entity';
 export interface StorageProviderFilter {
     name: string;
     type: StorageProviderType;
+    readOnlyStorage: boolean;
+    systemProvider: boolean;
+    storageProviderDefinitionKey: string;
 }
 
 export class StorageProvidersApiService extends BaseCrudApiService<StorageProviderEntity, StorageProviderEntity, StorageProviderEntity, StorageProviderEntity, number, StorageProviderFilter> {
@@ -33,6 +36,12 @@ export class StorageProvidersApiService extends BaseCrudApiService<StorageProvid
             storageProviderDefinitionVersion: 0,
             type: StorageProviderType.Assets,
             updated: '',
+            lastSync: null,
+            metadataAttributes: [],
+            systemProvider: false,
+            testProvider: false,
+            readOnlyStorage: false,
+            maxFileSizeInBytes: 0,
         };
     }
 
@@ -41,10 +50,29 @@ export class StorageProvidersApiService extends BaseCrudApiService<StorageProvid
     }
 
     public async getFolder(id: number, path: string): Promise<StorageIndexItem[]> {
-        return await this.get<StorageIndexItem[]>(`${this.buildPath(id)}folders${path}`, {});
+        const items = await this.get<any[]>(`${this.buildPath(id)}folders${path}`, {});
+
+        return items.map((item) => {
+            const isDirectory = item.directory ?? item.isDirectory ?? String(item.pathFromRoot ?? '').endsWith('/');
+
+            return {
+                storageProviderId: item.storageProviderId,
+                storageProviderType: item.storageProviderType,
+                pathFromRoot: item.pathFromRoot,
+                directory: isDirectory,
+                isDirectory: isDirectory,
+                filename: item.filename,
+                mimeType: item.mimeType ?? '',
+                sizeInBytes: Number(item.sizeInBytes ?? 0),
+                missing: item.missing === true,
+                metadata: (typeof item.metadata === 'object' && item.metadata != null) ? item.metadata : {},
+                created: item.created ?? '',
+                updated: item.updated ?? '',
+            } as StorageIndexItem;
+        });
     }
 
-    public async downloadFile(id: number, path: string): Promise<Blob> {
-        return await this.getBlob(`${this.buildPath(id)}files${path}`, {});
+    public async testStorageProvider(id: number, writable: boolean = false): Promise<{ success: boolean; error?: string }> {
+        return await this.post<any, { success: boolean; error?: string }>(`${this.buildPath(id)}test/?writable=${writable}`, {});
     }
 }

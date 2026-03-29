@@ -9,27 +9,41 @@ import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {type StorageProviderAdditionalData} from './storage-provider-details-page-additional-data';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useFormManager} from '../../../../hooks/use-form-manager';
-import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
+import {useChangeBlocker} from '../../../../hooks/use-change-blocker-2';
 import * as yup from 'yup';
 import {goverSchemaToYup2 as goverSchemaToYup} from '../../../../utils/gover-schema-to-yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
-import {useConfirm} from '../../../../providers/confirm-provider';
-import {
-    addSnackbarMessage,
-    removeSnackbarMessage,
-    SnackbarSeverity,
-    SnackbarType,
-} from '../../../../slices/shell-slice';
+import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import {type StorageProviderDefinition} from '../../entities/storage-provider-definition';
-import {type StorageProviderEntity} from '../../entities/storage-provider-entity';
+import {type StorageProviderEntity, StorageProviderMetadataAttribute} from '../../entities/storage-provider-entity';
 import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
 import {StorageProviderType, StorageProviderTypeLabels, StorageProviderTypes} from '../../enums/storage-provider-type';
 import Tooltip from '@mui/material/Tooltip';
 import HelpIconOutlined from '@mui/icons-material/HelpOutline';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import {ExpandableCodeBlock} from '../../../../components/expandable-code-block/expandable-code-block';
+import {NumberFieldComponent} from '../../../../components/number-field/number-field-component';
+import {TableFieldComponent2} from '../../../../components/table-field/table-field-component-2';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {bytesToMegabytes, megabytesToBytes} from '../../../../utils/bytes-megabytes-conversion';
+import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
+import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
+import {format} from 'date-fns';
+import {StatusTable} from '../../../../components/status-table/status-table';
+import Sync from '@aivot/mui-material-symbols-400-outlined/dist/sync/Sync';
+
+function getIndexedFieldError(
+    errors: Record<string, any> | undefined,
+    fieldName: string,
+    message: string,
+): string | undefined {
+    if (!errors) return undefined;
+
+    return Object.keys(errors).some(k => k.startsWith(`${fieldName}[`))
+        ? message
+        : undefined;
+}
 
 export const _StorageProviderSchema = {
     name: yup.string()
@@ -46,22 +60,54 @@ export const _StorageProviderSchema = {
         .trim()
         .required('Der Anbieter des Speicheranbieters ist ein Pflichtfeld.'),
     storageProviderDefinitionVersion: yup.number()
+        .min(1, 'Die Version des Speicheranbieters muss mindestens 1 sein.')
         .required('Die Version des Speicheranbieters ist ein Pflichtfeld.'),
     type: yup.string()
         .trim()
         .required('Der Typ des Speicheranbieters ist ein Pflichtfeld.'),
+    maxFileSizeInBytes: yup.number()
+        .min(0, 'Die maximale Dateigröße muss mindestens 0 Bytes betragen.')
+        .required('Die maximale Dateigröße ist ein Pflichtfeld.'),
+    readOnlyStorage: yup.boolean()
+        .optional(),
+    testProvider: yup.boolean()
+        .default(false),
+    metadataAttributes: yup.array()
+        .of(
+            yup.object({
+                label: yup.string().trim(),
+                description: yup.string().trim(),
+                key: yup.string().trim(),
+            }).test('row-completeness', 'Bitte geben Sie mind. Titel und Feldname an oder löschen Sie die Zeile.', function (row) {
+                if (!row) return true;
+
+                const {label, description, key} = row;
+
+                const isAnyFilled = !!label?.trim() || !!key?.trim();
+                const areAllFilled = !!label?.trim() && !!key?.trim();
+
+                if (!isAnyFilled) {
+                    return this.createError({message: 'Bitte füllen Sie die Felder aus oder löschen Sie die Zeile.'});
+                }
+
+                if (!areAllFilled) {
+                    return this.createError({message: 'Bitte geben Sie mind. Titel und Feldname an oder löschen Sie die Zeile.'});
+                }
+
+                return true;
+            }),
+        ),
 };
 
 export function StorageProviderDetailsPageIndex(): ReactNode {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const confirm = useConfirm();
 
     const [storageProviderSchema, setStorageProviderSchema] = useState<any>(_StorageProviderSchema);
 
     const {
-        item,
-        setItem,
+        item: originalStorageProvider,
+        setItem: setOriginalStorageProvider,
         additionalData,
         setAdditionalData,
         isBusy,
@@ -70,6 +116,21 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         isExistingItem,
     } = useGenericDetailsPageContext<StorageProviderEntity, StorageProviderAdditionalData>();
 
+    // Extract the id of the storage provider for later usage.
+    const {
+        id: storageProviderId
+    } = originalStorageProvider ?? {
+        id: null,
+    };
+
+    // Store the state of the initial derivation to prevent the change blocker from firing after the first derivation.
+    const [initialDerivationDone, setInitialDerivationDone] = useState(false);
+
+    // Reset the initial derivation done, when the id of the storage provider is changed.
+    useEffect(() => {
+        setInitialDerivationDone(false);
+    }, [storageProviderId]);
+
     useEffect(() => {
         if (isEditable) {
             return;
@@ -77,30 +138,30 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
 
         dispatch(addSnackbarMessage({
             key: 'storage-provider-no-access',
-            message: 'Dieser Zahlungsdienstleister kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
+            message: 'Dieser Speicheranbieter kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
             severity: SnackbarSeverity.Warning,
             type: SnackbarType.Dismissable,
         }));
 
         return () => {
-            dispatch(removeSnackbarMessage('payment-provider-no-access'));
+            dispatch(removeSnackbarMessage('storage-provider-no-access'));
         };
     }, [isEditable]);
 
     const {
-        currentItem: storageProvider,
+        currentItem: editedStorageProvider,
         errors,
         hasNotChanged,
         handleInputBlur,
         handleInputChange,
         validate,
         reset,
-    } = useFormManager<StorageProviderEntity>(item, yup.object(storageProviderSchema) as any, true);
+    } = useFormManager<StorageProviderEntity>(originalStorageProvider, yup.object(storageProviderSchema) as any, true);
 
     const {
         storageProviderDefinitionKey,
         storageProviderDefinitionVersion,
-    } = storageProvider ?? {
+    } = editedStorageProvider ?? {
         storageProviderDefinitionKey: '',
         storageProviderDefinitionVersion: 0,
     };
@@ -129,17 +190,24 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         }
     }, [definition]);
 
-    const changeBlocker = useChangeBlocker(item, storageProvider, undefined, undefined, true);
+    const {
+        dialog: changeBlockerDialog
+    } = useChangeBlocker({
+        original: originalStorageProvider,
+        edited: editedStorageProvider,
+        useDeepEquals: true,
+    });
 
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-    if (storageProvider == null) {
+    if (editedStorageProvider == null) {
         return (
-            <GenericDetailsSkeleton/>
+            <GenericDetailsSkeleton />
         );
     }
 
     const handleSave = async (): Promise<void> => {
-        if (storageProvider != null) {
+        if (editedStorageProvider != null) {
             const validationResult = validate();
 
             if (!validationResult) {
@@ -153,10 +221,10 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
             const apiService = new StorageProvidersApiService();
 
             try {
-                if (storageProvider.id === 0) {
-                    const newProvider = await apiService.create(storageProvider);
+                if (editedStorageProvider.id === 0) {
+                    const newProvider = await apiService.create(editedStorageProvider);
 
-                    setItem(newProvider);
+                    setOriginalStorageProvider(newProvider);
                     reset();
 
                     dispatch(showSuccessSnackbar('Neuer Speicheranbieter erfolgreich angelegt.'));
@@ -165,9 +233,9 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         navigate(`/storage-providers/${newProvider.id}`, {replace: true});
                     }, 0);
                 } else {
-                    const updatedProvider = await apiService.update(storageProvider.id, storageProvider);
+                    const updatedProvider = await apiService.update(editedStorageProvider.id, editedStorageProvider);
 
-                    setItem(updatedProvider);
+                    setOriginalStorageProvider(updatedProvider);
                     reset();
 
                     dispatch(showSuccessSnackbar('Änderungen am Speicheranbieter erfolgreich gespeichert.'));
@@ -181,28 +249,14 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     };
 
     const handleDelete = async (): Promise<void> => {
-        if (storageProvider.id === 0) {
-            return;
-        }
-
-        const confirmed = await confirm({
-            title: 'Speicheranbieter löschen',
-            children: (
-                <Typography>
-                    Möchten Sie diesen Speicheranbieter wirklich löschen? Diese Aktion kann nicht rückgängig gemacht
-                    werden.
-                </Typography>
-            ),
-        });
-
-        if (!confirmed) {
+        if (editedStorageProvider.id === 0) {
             return;
         }
 
         setIsBusy(true);
 
         try {
-            await new StorageProvidersApiService().destroy(storageProvider.id);
+            await new StorageProvidersApiService().destroy(editedStorageProvider.id);
         } catch (error) {
             dispatch(showApiErrorSnackbar(error, 'Beim Löschen des Speicheranbieters ist ein Fehler aufgetreten.'));
         }
@@ -230,11 +284,34 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
             setIsBusy(false);
         }
     };
+    const inputsDisabled = editedStorageProvider.systemProvider || isBusy || !isEditable;
+    const attributesError = getIndexedFieldError(
+        errors,
+        'metadataAttributes',
+        'Bitte füllen Sie alle Metadaten-Attribute mit mindestens dem Titel und Feldnamen aus.',
+    );
+
+    // Build StatusTable items array in a type-safe way
+    const statusTableItems = [];
+    if (editedStorageProvider.systemProvider) {
+        statusTableItems.push({
+            label: 'Systemanbieter',
+            icon: <HelpIconOutlined color="primary" />,
+            children: 'Dieser Speicheranbieter ist ein Systemanbieter und kann nicht verändert werden.',
+        });
+    }
+    statusTableItems.push({
+        label: 'Zuletzt synchronisiert',
+        icon: <Sync />,
+        children: editedStorageProvider.lastSync
+            ? format(new Date(editedStorageProvider.lastSync), 'dd.MM.yyyy – HH:mm:ss') + ' Uhr'
+            : 'Noch nicht synchronisiert',
+    });
 
     return (
         <Box>
             {
-                storageProvider.statusMessage != null &&
+                editedStorageProvider.statusMessage != null &&
                 <AlertComponent
                     color="error"
                     title="Fehler bei der Synchronisation des Speicheranbieters"
@@ -247,12 +324,32 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     Die folgende Fehlermeldung wurde protokolliert:
 
                     <ExpandableCodeBlock
-                        value={storageProvider.statusMessage}
+                        value={editedStorageProvider.statusMessage}
                         sx={{
-                            mt: 2,
+                            my: 2,
                         }}
                     />
+
+                    Bitte beheben Sie das Problem mit dem Speicheranbieter, damit eine ordnungsgemäße Funktion gewährleistet ist. Bitte starten Sie nach der Behebung des Problems manuell die Synchronisation, damit die Verbindung geprüft und der Fehlerstatus entfernt wird.
                 </AlertComponent>
+            }
+
+            <Typography
+                variant="h5"
+                sx={{mt: 1.5, mb: 1}}
+            >
+                Speicheranbieter konfigurieren
+            </Typography>
+            <Typography sx={{mb: 3, maxWidth: 900}}>
+                Konfigurieren Sie den Speicheranbieter, um ihn für die Ablage von Dateien zum angegebenen Verwendungszweck (Typ) nutzen zu können. Sie können die meisten Einstellungen jederzeit anpassen – bitte beachten Sie jedoch, dass bestehende Dateien bei einer Änderung des Speicherortes nicht automatisch migriert werden.
+            </Typography>
+
+            {isExistingItem &&
+                <StatusTable
+                    sx={{ mt: 4, mb: 3 }}
+                    cardVariant="outlined"
+                    items={statusTableItems}
+                />
             }
 
             <Grid
@@ -262,13 +359,13 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 <Grid
                     size={{
                         xs: 12,
-                        md: 8,
+                        md: 6,
                     }}
                 >
                     <SelectFieldComponent
-                        label="Speicher"
+                        label="Speichertyp"
                         required={true}
-                        value={storageProvider.storageProviderDefinitionKey}
+                        value={editedStorageProvider.storageProviderDefinitionKey}
                         onChange={handleInputChange('storageProviderDefinitionKey')}
                         options={definitions.map((def) => ({
                             value: def.key,
@@ -277,19 +374,19 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         }))}
                         disabled={isExistingItem}
                         error={errors.storageProviderDefinitionKey}
-                        hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsdienstleisters eingeblendet wird. Der Name des Anbieters ist gegenüber antragstellenden Personen sichtbar."
+                        hint="Diese Einstellung kann nach der Erstellung nicht mehr geändert werden."
                     />
                 </Grid>
                 <Grid
                     size={{
                         xs: 12,
-                        md: 4,
+                        md: 6,
                     }}
                 >
                     <SelectFieldComponent
                         label="Version"
                         required={true}
-                        value={storageProvider.storageProviderDefinitionVersion.toString()}
+                        value={editedStorageProvider.storageProviderDefinitionVersion.toString()}
                         onChange={(val) => {
                             if (val == null) {
                                 handleInputChange('storageProviderDefinitionVersion')(0);
@@ -298,67 +395,212 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                             }
                         }}
                         options={definitions.filter((def) => {
-                            return def.key === storageProvider.storageProviderDefinitionKey;
+                            return def.key === editedStorageProvider.storageProviderDefinitionKey;
                         }).map((def) => ({
                             value: def.version.toString(),
-                            label: def.version.toString(),
+                            label: `Version ${def.version.toString()}`,
                         }))}
+                        disabled={inputsDisabled}
                         error={errors.storageProviderDefinitionVersion}
-                        hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsdienstleisters eingeblendet wird. Der Name des Anbieters ist gegenüber antragstellenden Personen sichtbar."
+                        hint="Bestimmt, welche Version der Konfigurationsoberfläche und Einstellungsmöglichkeiten angezeigt werden."
                     />
                 </Grid>
             </Grid>
 
-            <SelectFieldComponent
-                label="Typ"
-                required={true}
-                value={storageProvider.type}
-                onChange={(val) => {
-                    if (val == null) {
-                        handleInputChange('type')(StorageProviderType.Assets);
-                    } else {
-                        handleInputChange('type')(val as StorageProviderType);
-                    }
-                }}
-                options={StorageProviderTypes.map((type) => ({
-                    value: type,
-                    label: StorageProviderTypeLabels[type],
-                }))}
-                disabled={isExistingItem}
-                error={errors.storageProviderDefinitionVersion}
-                hint="Bestimmt die Art der gespeicherten Daten. Dies kann nach der Erstellung nicht mehr geändert werden."
-            />
+            <Grid
+                container={true}
+                spacing={2}
+            >
+                <Grid
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
+                >
+                    <TextFieldComponent
+                        label="Name des Speicheranbieters"
+                        required
+                        value={editedStorageProvider.name}
+                        onChange={handleInputChange('name')}
+                        onBlur={handleInputBlur('name')}
+                        disabled={inputsDisabled}
+                        error={errors.name}
+                        hint="Dient der Identifizierung des Speicheranbieters."
+                    />
+                </Grid>
+                <Grid
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
+                >
+                    <SelectFieldComponent
+                        label="Verwendungszweck"
+                        required={true}
+                        value={editedStorageProvider.type}
+                        onChange={(val) => {
+                            if (val == null) {
+                                handleInputChange('type')(StorageProviderType.Assets);
+                            } else {
+                                handleInputChange('type')(val as StorageProviderType);
+                            }
+                        }}
+                        options={StorageProviderTypes.map((type) => ({
+                            value: type,
+                            label: StorageProviderTypeLabels[type],
+                        }))}
+                        disabled={isExistingItem}
+                        error={errors.type}
+                        hint="Bestimmt die Art der gespeicherten Daten bzw. wo im System dieser Anbieter verwendet werden kann. Diese Einstellung kann nach der Erstellung nicht mehr geändert werden."
+                    />
+                </Grid>
+                <Grid
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
+                >
+                    <TextFieldComponent
+                        label="Interne Beschreibung"
+                        required
+                        value={editedStorageProvider.description}
+                        onChange={handleInputChange('description')}
+                        onBlur={handleInputBlur('description')}
+                        multiline={true}
+                        disabled={inputsDisabled}
+                        error={errors.description}
+                        hint="Interne Beschreibung des Speicheranbieters zur besseren Identifizierbarkeit."
+                        rows={6}
+                    />
+                </Grid>
 
-            <TextFieldComponent
-                label="Name"
-                required
-                value={storageProvider.name}
-                onChange={handleInputChange('name')}
-                onBlur={handleInputBlur('name')}
-                disabled={isBusy || !isEditable}
-                error={errors.name}
-                hint="Dient der internen Identifizierung des Zahlungsdienstleisters."
-            />
+                <Grid
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
+                >
+                    <CheckboxFieldComponent
+                        label="Es handelt sich um einen read-only Speicher, von welchem Dateien nur gelesen, aber nicht geschrieben werden können."
+                        value={editedStorageProvider.readOnlyStorage}
+                        onChange={handleInputChange('readOnlyStorage')}
+                        variant="switch"
+                        error={errors.readOnlyStorage}
+                        disabled={inputsDisabled}
+                    />
 
-            <TextFieldComponent
-                label="Interne Beschreibung"
-                required
-                value={storageProvider.description}
-                onChange={handleInputChange('description')}
-                onBlur={handleInputBlur('description')}
-                multiline={true}
-                disabled={isBusy || !isEditable}
-                error={errors.description}
-                hint="Interne Beschreibung des Zahlungsdienstleisters zur besseren Identifizierbarkeit. Sichtbar nur für Mitarbeiter:innen."
-            />
+                    <CheckboxFieldComponent
+                        label="Es handelt sich um eine vorproduktive Konfiguration"
+                        value={editedStorageProvider.testProvider}
+                        onChange={handleInputChange('testProvider')}
+                        variant="switch"
+                        error={errors.testProvider}
+                        disabled={inputsDisabled}
+                        hint="Gibt an, ob diese Konfiguration für eine Testinstanz bestimmt ist. Das System verhindert den Einsatz von Testkonfigurationen in der Live-Umgebung, um Fehlkonfigurationen zu vermeiden."
+                    />
+                </Grid>
+                <Grid
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
+                >
+                    <NumberFieldComponent
+                        label="Maximale Dateigröße (in MB)"
+                        value={bytesToMegabytes(editedStorageProvider.maxFileSizeInBytes)}
+                        onChange={(mb) => handleInputChange('maxFileSizeInBytes')(megabytesToBytes(mb) as any)}
+                        onBlur={(mb) => handleInputBlur('maxFileSizeInBytes')(megabytesToBytes(mb) as any)}
+                        disabled={inputsDisabled}
+                        error={errors.maxFileSizeInBytes}
+                        decimalPlaces={2}
+                        suffix="MB"
+                        hint='1 Megabyte entspricht 1.000 Kilobytes oder 1.000.000 Bytes.'
+                    />
+                </Grid>
+            </Grid>
 
             {
                 definition != null &&
                 definition.providerConfigLayout != null &&
                 <ElementDerivationContext
                     element={definition.providerConfigLayout}
-                    elementData={storageProvider.configuration}
-                    onElementDataChange={handleInputChange('configuration')}
+                    authoredElementValues={editedStorageProvider.configuration}
+                    onAuthoredElementValuesChange={handleInputChange('configuration')}
+                    disabled={inputsDisabled}
+                    onDerivationFinished={() => {
+                        setInitialDerivationDone(true);
+                    }}
+                />
+            }
+
+            {
+                definition != null &&
+                definition.supportsMetadataAttributes &&
+                <TableFieldComponent2<StorageProviderMetadataAttribute>
+                    label="Metadaten-Attribute"
+                    fields={[
+                        {
+                            key: 'label',
+                            label: 'Titel',
+                            type: 'string',
+                            disabled: inputsDisabled,
+                        },
+                        {
+                            key: 'description',
+                            label: 'Beschreibung (optional)',
+                            type: 'string',
+                            disabled: inputsDisabled,
+                        },
+                        {
+                            key: 'key',
+                            label: 'Feldname',
+                            type: 'string',
+                            disabled: inputsDisabled,
+                        },
+                    ]}
+                    hint="Geben Sie hier die optionale Metadaten-Attribute ein, die für Dateien mitgegeben werden können."
+                    createDefaultRow={() => ({
+                        label: '',
+                        key: '',
+                        description: '',
+                    })}
+                    value={editedStorageProvider.metadataAttributes}
+                    onChange={(value) => {
+                        handleInputChange('metadataAttributes')(value ?? []);
+                    }}
+                    disabled={inputsDisabled}
+                    addTooltip="Metadaten-Attribut hinzufügen"
+                    deleteTooltip="Metadaten-Attribut löschen"
+                    noRowsPlaceholder="Keine Metadaten-Attribute vorhanden"
+                    helpDialog={{
+                        title: 'Metadaten-Attribute',
+                        content: (
+                            <Box>
+                                <Typography>
+                                    Hier können Sie optionale Metadaten-Attribute definieren, die für Dateien mitgegeben werden können.
+                                    Diese Attribute können beispielsweise in der Dateiansicht oder bei der Suche nach Dateien verwendet werden.
+                                    Bitte beachten Sie, dass diese Einstellungen nur für den ausgewählten Anbieter gelten.
+                                </Typography>
+                                <ul style={{marginTop: '1rem', paddingLeft: '1.1rem'}}>
+                                    <li>
+                                        <strong>Titel</strong>
+                                        – Anzeigename, der später in der Gover-Oberfläche
+                                        erscheint (z.&nbsp;B. „E-Mail“ oder „Ersteller:in“).
+                                    </li>
+
+                                    <li>
+                                        <strong>Feldname</strong>
+                                        – Schlüssel in den Daten
+                                        (z.&nbsp;B.{' '}
+                                        <code>email</code>
+                                        , <code>creator</code>, …)
+                                    </li>
+                                </ul>
+                            </Box>
+                        ),
+                    }}
+                    error={attributesError}
+                    sx={{my: 4}}
                 />
             }
 
@@ -371,10 +613,10 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
             >
                 <Button
                     onClick={handleSave}
-                    disabled={isBusy || hasNotChanged || !isEditable}
+                    disabled={inputsDisabled || hasNotChanged}
                     variant="contained"
                     color="primary"
-                    startIcon={<SaveOutlinedIcon/>}
+                    startIcon={<SaveOutlinedIcon />}
                 >
                     Speichern
                 </Button>
@@ -382,7 +624,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 <Tooltip title={'Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'}>
                     <Button
                         onClick={handleRefreshDefinitions}
-                        disabled={isBusy || !isEditable}
+                        disabled={inputsDisabled}
                     >
                         Auswahllisten neu laden <HelpIconOutlined
                         fontSize="small"
@@ -392,24 +634,41 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 </Tooltip>
 
                 {
-                    storageProvider.id !== 0 &&
-                    item != null &&
+                    editedStorageProvider.id !== 0 &&
+                    originalStorageProvider != null &&
                     <Button
                         variant={'outlined'}
-                        onClick={handleDelete}
-                        disabled={isBusy || !isEditable}
+                        onClick={() => setShowConfirmDialog(true)}
+                        disabled={inputsDisabled}
                         color="error"
                         sx={{
                             marginLeft: 'auto',
                         }}
-                        startIcon={<DeleteOutlinedIcon/>}
+                        startIcon={<Delete />}
                     >
                         Löschen
                     </Button>
                 }
             </Box>
 
-            {changeBlocker.dialog}
+            {changeBlockerDialog}
+
+            <ConfirmDialog
+                title="Speicheranbieter löschen"
+                onCancel={() => setShowConfirmDialog(false)}
+                onConfirm={showConfirmDialog ? handleDelete : undefined}
+                confirmationText={editedStorageProvider.name ?? ''}
+                isDestructive
+                confirmButtonText="Ja, endgültig löschen"
+            >
+                <Typography>
+                    Möchten Sie diesen Speicheranbieter wirklich löschen? Diese Aktion kann nicht rückgängig gemacht
+                    werden.
+                </Typography>
+                <AlertComponent color={'warning'}>
+                    Wenn der Speicheranbieter bereits für die Ablage von Dateien genutzt wurde, können diese Dateien nach dem Löschen des Speicheranbieters nicht mehr erreicht werden. Bitte stellen Sie sicher, dass Sie alle Dateien migriert oder gelöscht haben, bevor Sie fortfahren.
+                </AlertComponent>
+            </ConfirmDialog>
         </Box>
     );
 }

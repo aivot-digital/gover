@@ -109,11 +109,14 @@ export function PaymentProvidersListPage() {
                             headerName: 'Anbieter',
                             flex: 1,
                             renderCell: (params) => {
-                                const providerName = definitions.find(def => def.key === params.row.providerKey)?.name ?? '';
+                                const providerName = definitions.find(def => (
+                                    def.key === params.row.providerKey &&
+                                    def.version === params.row.providerVersion
+                                ))?.name ?? params.row.providerKey;
 
                                 return (
                                     <>
-                                        {providerName}
+                                        {`${providerName} (Version ${params.row.providerVersion})`}
                                         {params.row.isTestProvider && <Chip label="Test" color="warning" variant="outlined" size={"small"} sx={{ml:1}}/>}
                                     </>
                                 );

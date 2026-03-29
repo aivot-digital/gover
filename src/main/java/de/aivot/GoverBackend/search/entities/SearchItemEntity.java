@@ -5,7 +5,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "search_items")
+@Table(name = "v_search_items")
 public class SearchItemEntity {
     @Id
     private String id;

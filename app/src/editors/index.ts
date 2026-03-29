@@ -27,6 +27,21 @@ import {SubmitComponentEditor} from '../components/submit/submit.component.edito
 import {FileUploadEditor} from '../components/file-upload-field/file-upload.editor';
 import {ContainerEditor} from './container-editor';
 import {RootComponentEditorTabPayment} from '../components/root/root.component.editor-tab.payment';
+import {ChipInputFieldEditor} from './chip-input-field-editor';
+import {DateTimeFieldEditor} from './date-time-field-editor';
+import {DateRangeFieldEditor} from './date-range-field-editor';
+import {TimeRangeFieldEditor} from './time-range-field-editor';
+import {DateTimeRangeFieldEditor} from './date-time-range-field-editor';
+import {TimeFieldEditor} from './time-field-editor';
+import {MapPointFieldEditor} from './map-point-field-editor';
+import {DomainUserSelectFieldEditor} from './domain-user-select-field-editor';
+import {AssignmentContextFieldEditor} from './assignment-context-field-editor';
+import {DataModelSelectFieldEditor} from './data-model-select-field-editor';
+import {DataObjectSelectFieldEditor} from './data-object-select-field-editor';
+import {RichTextInputFieldEditor} from './rich-text-input-field-editor';
+import {CodeInputFieldEditor} from './code-input-field-editor';
+import {NoCodeInputFieldEditor} from './no-code-input-field-editor';
+import {UiDefinitionInputFieldEditor} from './ui-definition-input-field-editor';
 
 export interface EditorTab {
     label: string;
@@ -102,7 +117,9 @@ export const editors: ElementTypesMap<EditorSet | null> = {
     [ElementType.Text]: {
         default: TextFieldEditor,
     },
-    [ElementType.Time]: null,
+    [ElementType.Time]: {
+        default: TimeFieldEditor,
+    },
     [ElementType.IntroductionStep]: {
         default: GeneralInformationComponentEditor,
     },
@@ -120,9 +137,48 @@ export const editors: ElementTypesMap<EditorSet | null> = {
     [ElementType.StepperLayout]: null,
     [ElementType.ConfigLayout]: null,
     [ElementType.FunctionInput]: null,
-    [ElementType.CodeInput]: null,
-    [ElementType.RichTextInput]: null,
-    [ElementType.UiDefinitionInput]: null,
+    [ElementType.CodeInput]: {
+        default: CodeInputFieldEditor,
+    },
+    [ElementType.RichTextInput]: {
+        default: RichTextInputFieldEditor,
+    },
+    [ElementType.UiDefinitionInput]: {
+        default: UiDefinitionInputFieldEditor,
+    },
     [ElementType.IdentityInput]: null,
     [ElementType.TabLayout]: null,
+    [ElementType.ChipInput]: {
+        default: ChipInputFieldEditor,
+    },
+    [ElementType.DateTime]: {
+        default: DateTimeFieldEditor,
+    },
+    [ElementType.DateRange]: {
+        default: DateRangeFieldEditor,
+    },
+    [ElementType.TimeRange]: {
+        default: TimeRangeFieldEditor,
+    },
+    [ElementType.DateTimeRange]: {
+        default: DateTimeRangeFieldEditor,
+    },
+    [ElementType.MapPoint]: {
+        default: MapPointFieldEditor,
+    },
+    [ElementType.DomainAndUserSelect]: {
+        default: DomainUserSelectFieldEditor,
+    },
+    [ElementType.AssignmentContext]: {
+        default: AssignmentContextFieldEditor,
+    },
+    [ElementType.DataModelSelect]: {
+        default: DataModelSelectFieldEditor,
+    },
+    [ElementType.DataObjectSelect]: {
+        default: DataObjectSelectFieldEditor,
+    },
+    [ElementType.NoCodeInput]: {
+        default: NoCodeInputFieldEditor,
+    },
 };

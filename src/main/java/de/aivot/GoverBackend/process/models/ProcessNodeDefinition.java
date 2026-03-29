@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.process.models;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
@@ -14,7 +15,6 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 public interface ProcessNodeDefinition extends PluginComponent {
@@ -87,7 +87,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * @return The cleaned configuration data.
      */
     @Nonnull
-    default ElementData cleanConfigurationForExport(@Nonnull ElementData configuration) {
+    default AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
         return configuration;
     }
 
@@ -98,18 +98,20 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * @return The prefilled configuration data.
      */
     @Nonnull
-    default ElementData prefillConfigurationOnImport(@Nonnull ElementData configuration) {
+    default AuthoredElementValues prefillConfigurationOnImport(@Nonnull AuthoredElementValues configuration) {
         return configuration;
     }
 
     /**
      * Validates the configuration of a process definition node entity.
      *
-     * @param processNodeEntity The process definition node entity to be validated.
+     * @param processNodeEntity         The process definition node entity to be validated.
+     * @param derivedRuntimeElementData Derived Runtime Element data.
      * @throws ResponseException If the configuration is invalid.
      */
     default void validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                       @Nonnull ElementData configuration) throws ResponseException {
+                                       @Nonnull AuthoredElementValues configuration,
+                                       @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
     }
 
     /**
@@ -169,8 +171,8 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * @return The task view data.
      * @throws ResponseException If an error occurs while generating the data.
      */
-    default ElementData getStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
-        return new ElementData();
+    default AuthoredElementValues getStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+        return new AuthoredElementValues();
     }
 
     /**
@@ -185,7 +187,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * @throws ProcessNodeExecutionException If an error occurs during execution.
      */
     default Optional<ProcessNodeExecutionResult> onUpdateFromStaff(@Nonnull ProcessNodeExecutionContextUIStaff context,
-                                                                   @Nonnull Map<String, Object> update,
+                                                                   @Nonnull AuthoredElementValues update,
                                                                    @Nonnull String event) throws ResponseException, ProcessNodeExecutionException {
         return Optional.empty();
     }
@@ -224,8 +226,8 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * @return The task view data.
      * @throws ResponseException If an error occurs while generating the data.
      */
-    default ElementData getCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer context) throws ResponseException {
-        return new ElementData();
+    default AuthoredElementValues getCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer context) throws ResponseException {
+        return new AuthoredElementValues();
     }
 
     /**
@@ -240,7 +242,8 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * @throws ProcessNodeExecutionException If an error occurs during execution.
      */
     default Optional<ProcessNodeExecutionResult> onUpdateFromCustomer(@Nonnull ProcessNodeExecutionContextUICustomer context,
-                                                                      @Nonnull Map<String, Object> update,
+                                                                      @Nonnull AuthoredElementValues update,
+                                                                      @Nonnull DerivedRuntimeElementData derived,
                                                                       @Nonnull String event) throws ResponseException, ProcessNodeExecutionException {
         return Optional.empty();
     }

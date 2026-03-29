@@ -6,7 +6,6 @@ import {useApi} from '../../../../hooks/use-api';
 import {useLocation, useNavigate} from 'react-router-dom';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import * as yup from 'yup';
@@ -29,6 +28,7 @@ import {generateElementWithDefaultValues} from '../../../../utils/generate-eleme
 import {TextFieldElement} from '../../../../models/elements/form/input/text-field-element';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 import {useAccessGuard} from '../../../../hooks/use-admin-guard';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 const ID_FIELD_ID = '$id';
 
@@ -439,7 +439,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                         sx={{
                             marginLeft: 'auto',
                         }}
-                        startIcon={<DeleteOutlinedIcon />}
+                        startIcon={<Delete />}
                     >
                         Löschen
                     </Button>

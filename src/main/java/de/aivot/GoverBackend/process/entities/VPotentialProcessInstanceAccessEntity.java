@@ -34,10 +34,25 @@ public class VPotentialProcessInstanceAccessEntity {
     private String userId;
 
     @Nullable
+    private Boolean userIsEnabled;
+
+    @Nullable
     private Integer userViaDepartmentId;
 
     @Nullable
     private Integer userViaTeamId;
+
+    @Nullable
+    private Boolean userIsDirectMember;
+
+    @Nullable
+    private Boolean userIsIndirectMember;
+
+    @Nullable
+    private List<String> userDirectPermissions;
+
+    @Nullable
+    private List<String> userIndirectPermissions;
 
     @Nullable
     private Integer viaProcessInstanceAccessPresetId;
@@ -53,8 +68,13 @@ public class VPotentialProcessInstanceAccessEntity {
                                                  @Nullable Integer departmentId,
                                                  @Nullable Integer teamId,
                                                  @Nullable String userId,
+                                                 @Nullable Boolean userIsEnabled,
                                                  @Nullable Integer userViaDepartmentId,
                                                  @Nullable Integer userViaTeamId,
+                                                 @Nullable Boolean userIsDirectMember,
+                                                 @Nullable Boolean userIsIndirectMember,
+                                                 @Nullable List<String> userDirectPermissions,
+                                                 @Nullable List<String> userIndirectPermissions,
                                                  @Nullable Integer viaProcessInstanceAccessPresetId,
                                                  @Nonnull List<String> permissions) {
         this.processId = processId;
@@ -62,8 +82,13 @@ public class VPotentialProcessInstanceAccessEntity {
         this.departmentId = departmentId;
         this.teamId = teamId;
         this.userId = userId;
+        this.userIsEnabled = userIsEnabled;
         this.userViaDepartmentId = userViaDepartmentId;
         this.userViaTeamId = userViaTeamId;
+        this.userIsDirectMember = userIsDirectMember;
+        this.userIsIndirectMember = userIsIndirectMember;
+        this.userDirectPermissions = userDirectPermissions;
+        this.userIndirectPermissions = userIndirectPermissions;
         this.viaProcessInstanceAccessPresetId = viaProcessInstanceAccessPresetId;
         this.permissions = permissions;
     }
@@ -119,6 +144,16 @@ public class VPotentialProcessInstanceAccessEntity {
     }
 
     @Nullable
+    public Boolean getUserIsEnabled() {
+        return userIsEnabled;
+    }
+
+    public VPotentialProcessInstanceAccessEntity setUserIsEnabled(@Nullable Boolean userIsEnabled) {
+        this.userIsEnabled = userIsEnabled;
+        return this;
+    }
+
+    @Nullable
     public Integer getUserViaDepartmentId() {
         return userViaDepartmentId;
     }
@@ -135,6 +170,46 @@ public class VPotentialProcessInstanceAccessEntity {
 
     public VPotentialProcessInstanceAccessEntity setUserViaTeamId(@Nullable Integer userViaTeamId) {
         this.userViaTeamId = userViaTeamId;
+        return this;
+    }
+
+    @Nullable
+    public Boolean getUserIsDirectMember() {
+        return userIsDirectMember;
+    }
+
+    public VPotentialProcessInstanceAccessEntity setUserIsDirectMember(@Nullable Boolean userIsDirectMember) {
+        this.userIsDirectMember = userIsDirectMember;
+        return this;
+    }
+
+    @Nullable
+    public Boolean getUserIsIndirectMember() {
+        return userIsIndirectMember;
+    }
+
+    public VPotentialProcessInstanceAccessEntity setUserIsIndirectMember(@Nullable Boolean userIsIndirectMember) {
+        this.userIsIndirectMember = userIsIndirectMember;
+        return this;
+    }
+
+    @Nullable
+    public List<String> getUserDirectPermissions() {
+        return userDirectPermissions;
+    }
+
+    public VPotentialProcessInstanceAccessEntity setUserDirectPermissions(@Nullable List<String> userDirectPermissions) {
+        this.userDirectPermissions = userDirectPermissions;
+        return this;
+    }
+
+    @Nullable
+    public List<String> getUserIndirectPermissions() {
+        return userIndirectPermissions;
+    }
+
+    public VPotentialProcessInstanceAccessEntity setUserIndirectPermissions(@Nullable List<String> userIndirectPermissions) {
+        this.userIndirectPermissions = userIndirectPermissions;
         return this;
     }
 

@@ -5,6 +5,7 @@ import de.aivot.GoverBackend.department.filters.VDepartmentMembershipWithDetails
 import de.aivot.GoverBackend.department.services.VDepartmentMembershipWithDetailsService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,10 +24,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/department-memberships-with-details/")
 @Tag(
-        name = "Department Memberships",
-        description = "Department Memberships link users to organisational units (departments) within the system. " +
-                "They define which users belong to which departments and what roles or permissions they have within those departments. " +
-                "Managing department memberships is crucial for controlling access to resources and functionalities based on organisational structure."
+        name = OpenApiConstants.Tags.DepartmentMembershipsName,
+        description = OpenApiConstants.Tags.DepartmentMembershipsDescription
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class VDepartmentMembershipWithDetailsController {

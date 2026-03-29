@@ -48,7 +48,7 @@ public class SubmissionNotificationArchivedUserConfigDefinition implements UserC
     @Nonnull
     @Override
     public String getDescription() {
-        return "Sie werden bei der Archivierung eines Antrages informiert, wenn es sich um einen Ihnen zugewiesenen Antrag handelt oder dieser nicht zugewiesen ist und Sie dem ranghöchsten im Formular hinterlegten Fachbereich angehören.*¹";
+        return "Sie werden bei der Archivierung eines Antrags informiert, wenn es sich um einen Ihnen zugewiesenen Antrag handelt oder dieser nicht zugewiesen ist und Sie zu der für das Formular benachrichtigten Organisationseinheit gehören (bewirtschaftend, sonst zuständig, sonst entwickelnd).";
     }
 
     @Override

@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.payment.entities;
 
-import de.aivot.GoverBackend.core.converters.ElementDataConverter;
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.core.converters.AuthoredElementValuesConverter;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -50,8 +50,8 @@ public class PaymentProviderEntity {
     @Nonnull
     @NotNull
     @Column(columnDefinition = "jsonb")
-    @Convert(converter = ElementDataConverter.class)
-    private ElementData config;
+    @Convert(converter = AuthoredElementValuesConverter.class)
+    private AuthoredElementValues config;
 
     // region Constructors
 
@@ -68,7 +68,7 @@ public class PaymentProviderEntity {
                                  @Nonnull String description,
                                  @Nonnull Boolean isTestProvider,
                                  @Nonnull Boolean isEnabled,
-                                 @Nonnull ElementData config) {
+                                 @Nonnull AuthoredElementValues config) {
         this.key = key;
         this.paymentProviderDefinitionKey = paymentProviderDefinitionKey;
         this.paymentProviderDefinitionVersion = paymentProviderDefinitionVersion;
@@ -170,11 +170,11 @@ public class PaymentProviderEntity {
     }
 
     @Nonnull
-    public ElementData getConfig() {
+    public AuthoredElementValues getConfig() {
         return config;
     }
 
-    public PaymentProviderEntity setConfig(@Nonnull ElementData config) {
+    public PaymentProviderEntity setConfig(@Nonnull AuthoredElementValues config) {
         this.config = config;
         return this;
     }

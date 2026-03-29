@@ -14,7 +14,7 @@ export function IconButton(props: PropsWithChildren<IconButtonProps>) {
     }
 
     return (
-        <Tooltip {...props.tooltipProps}>
+        <Tooltip arrow {...props.tooltipProps}>
             <Badge {...props.badgeProps}>
                 <MuiIconButton {...props.buttonProps}>
                     {props.children}

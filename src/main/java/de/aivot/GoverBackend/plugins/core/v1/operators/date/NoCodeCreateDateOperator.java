@@ -1,9 +1,10 @@
 package de.aivot.GoverBackend.plugins.core.v1.operators.date;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.*;
+import jakarta.annotation.Nullable;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -86,17 +87,28 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
         );
     }
 
+    @Nullable
     @Override
-    public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
+    public String getHumanReadableTemplate() {
+        return "erstelle ein Datum aus Tag „#0“, Monat „#1“ und Jahr „#2“";
+    }
+
+    @Override
+    public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
         int day = castToNumber(args[0]).intValue();
         int month = castToNumber(args[1]).intValue();
         int year = castToNumber(args[2]).intValue();
 
-        var date = ZonedDateTime.of(
-                year, month, day,
-                0, 0, 0, 0,
-                ZoneId.systemDefault()
-        );
+        final ZonedDateTime date;
+        try {
+            date = ZonedDateTime.of(
+                    year, month, day,
+                    0, 0, 0, 0,
+                    ZoneId.systemDefault()
+            );
+        } catch (Exception e) {
+            throw new NoCodeException("Ungültiges Datum: " + day + "." + month + "." + year);
+        }
 
         return new NoCodeResult(date);
     }

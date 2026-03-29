@@ -41,6 +41,7 @@ const userSlice = createSlice({
 export const {
     setUser,
     setMemberships,
+    setPermissions,
 } = userSlice.actions;
 
 export const selectUser = (state: RootState): User | undefined => state.user.user;

@@ -11,6 +11,9 @@ interface VDepartmentUserRoleAssignmentWithDetailsFilter {
     userRoleId: number;
 }
 
+/**
+ * @deprecated use VDepartmentMembershipWithDetailsService
+ */
 export class VDepartmentUserRoleAssignmentWithDetailsService extends BaseCrudApiService<
     UserRoleAssignmentEntity,
     VDepartmentUserRoleAssignmentWithDetailsEntity,

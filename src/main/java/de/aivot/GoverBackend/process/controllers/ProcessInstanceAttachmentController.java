@@ -10,6 +10,7 @@ import de.aivot.GoverBackend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.GoverBackend.process.filters.ProcessInstanceAttachmentFilter;
 import de.aivot.GoverBackend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,15 +19,21 @@ import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
@@ -42,14 +49,17 @@ public class ProcessInstanceAttachmentController {
     private final ScopedAuditService auditService;
     private final UserService userService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
+    private final de.aivot.GoverBackend.storage.services.StorageService storageService;
 
     @Autowired
     public ProcessInstanceAttachmentController(AuditService auditService,
                                                UserService userService,
-                                               ProcessInstanceAttachmentService processInstanceAttachmentService) {
-        this.auditService = auditService.createScopedAuditService(ProcessInstanceAttachmentController.class);
+                                               ProcessInstanceAttachmentService processInstanceAttachmentService,
+                                               de.aivot.GoverBackend.storage.services.StorageService storageService) {
+        this.auditService = auditService.createScopedAuditService(ProcessInstanceAttachmentController.class, "Prozesse");
         this.userService = userService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
+        this.storageService = storageService;
     }
 
     @GetMapping("")
@@ -103,11 +113,16 @@ public class ProcessInstanceAttachmentController {
 
         processInstanceAttachmentService.create(attachment);
 
-        auditService.logAction(execUser, AuditAction.Create, ProcessInstanceAttachmentEntity.class, Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Create, ProcessInstanceAttachmentEntity.class, attachment.getKey(), "key", Map.of(
                 "key", attachment.getKey(),
                 "processInstanceId", attachment.getProcessInstanceId(),
                 "processInstanceTaskId", attachment.getProcessInstanceTaskId()
-        ));
+        )).withMessage(
+                "Der Anhang mit dem Schlüssel %s für die Prozessinstanz %s wurde von der Mitarbeiter:in %s erstellt.",
+                StringUtils.quote(String.valueOf(attachment.getKey())),
+                StringUtils.quote(String.valueOf(attachment.getProcessInstanceId())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return attachment;
     }
@@ -123,6 +138,41 @@ public class ProcessInstanceAttachmentController {
         return processInstanceAttachmentService
                 .retrieve(key)
                 .orElseThrow(ResponseException::notFound);
+    }
+
+    @GetMapping("{key}/file/")
+    @Operation(
+            summary = "Download Process Instance Attachment",
+            description = "Streams the file of a process instance attachment by its key."
+    )
+    public ResponseEntity<InputStreamResource> download(
+            @Nonnull @PathVariable UUID key,
+            @RequestParam(defaultValue = "true") boolean download
+    ) throws ResponseException {
+        var attachment = processInstanceAttachmentService
+                .retrieve(key)
+                .orElseThrow(ResponseException::notFound);
+
+        var inputStream = storageService
+                .getDocumentContent(attachment.getStorageProviderId(), attachment.getStoragePathFromRoot());
+
+        MediaType mediaType;
+        try {
+            var mimeType = URLConnection.guessContentTypeFromName(attachment.getFileName());
+            mediaType = mimeType != null ? MediaType.parseMediaType(mimeType) : MediaType.APPLICATION_OCTET_STREAM;
+        } catch (InvalidMediaTypeException e) {
+            mediaType = MediaType.APPLICATION_OCTET_STREAM;
+        }
+
+        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok().contentType(mediaType);
+        var contentDispositionType = download ? "attachment" : "inline";
+        var contentDisposition = ContentDisposition
+                .builder(contentDispositionType)
+                .filename(attachment.getFileName(), StandardCharsets.UTF_8)
+                .build();
+        responseBuilder.header("Content-Disposition", contentDisposition.toString());
+
+        return responseBuilder.body(new InputStreamResource(inputStream));
     }
 
     @PutMapping("{key}/")
@@ -150,11 +200,16 @@ public class ProcessInstanceAttachmentController {
         var result = processInstanceAttachmentService
                 .update(key, updateDTO);
 
-        auditService.logAction(execUser, AuditAction.Update, ProcessInstanceAttachmentEntity.class, Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, ProcessInstanceAttachmentEntity.class, result.getKey(), "key", Map.of(
                 "key", result.getKey(),
                 "processInstanceId", result.getProcessInstanceId(),
                 "processInstanceTaskId", result.getProcessInstanceTaskId()
-        ));
+        )).withMessage(
+                "Der Anhang mit dem Schlüssel %s für die Prozessinstanz %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                StringUtils.quote(String.valueOf(result.getKey())),
+                StringUtils.quote(String.valueOf(result.getProcessInstanceId())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return result;
     }
@@ -177,11 +232,15 @@ public class ProcessInstanceAttachmentController {
         var deleted = processInstanceAttachmentService
                 .delete(key);
 
-        auditService.logAction(user, AuditAction.Delete, ProcessInstanceAttachmentEntity.class, Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Delete, ProcessInstanceAttachmentEntity.class, deleted.getKey(), "key", Map.of(
                 "key", deleted.getKey(),
                 "processInstanceId", deleted.getProcessInstanceId(),
                 "processInstanceTaskId", deleted.getProcessInstanceTaskId()
-        ));
+        )).withMessage(
+                "Der Anhang mit dem Schlüssel %s für die Prozessinstanz %s wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(String.valueOf(deleted.getKey())),
+                StringUtils.quote(String.valueOf(deleted.getProcessInstanceId())),
+                StringUtils.quote(user.getFullName())
+        ).log();
     }
 }
-

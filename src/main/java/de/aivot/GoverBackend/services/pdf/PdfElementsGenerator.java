@@ -1,19 +1,20 @@
 package de.aivot.GoverBackend.services.pdf;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
-import de.aivot.GoverBackend.elements.models.ElementDataObject;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
+import de.aivot.GoverBackend.elements.models.ComputedElementState;
+import de.aivot.GoverBackend.elements.models.ComputedElementStates;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
+import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TableInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
-import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import java.util.*;
 
 public class PdfElementsGenerator {
@@ -21,7 +22,7 @@ public class PdfElementsGenerator {
     // TODO: Maybe remove customer input optional and decide based on the form state
     public static List<PdfElement> generatePdfElements(
             @Nonnull FormLayoutElement rootElement,
-            @Nullable ElementData elementData,
+            @Nullable DerivedRuntimeElementData elementData,
             @Nonnull Boolean skipTechnical
     ) {
         var rootPdfElement = generatePdfElement(
@@ -42,7 +43,7 @@ public class PdfElementsGenerator {
             @Nullable
             BaseElement currentElement,
             @Nullable
-            ElementData customerInput,
+            DerivedRuntimeElementData customerInput,
             @Nonnull
             Boolean skipTechnical
     ) {
@@ -51,13 +52,13 @@ public class PdfElementsGenerator {
             return null;
         }
 
-        var dataObject = customerInput != null ? customerInput
-                .getOrDefault(currentElement.getId(), new ElementDataObject(currentElement)) : null;
+        var elementState = customerInput != null
+                ? customerInput.getElementStates().getOrDefault(currentElement.getId(), ComputedElementState.create())
+                : null;
 
         // Check if the element was overridden. Check this only if customer input is present
-        if (dataObject != null) {
-            var override = dataObject
-                    .getComputedOverride();
+        if (elementState != null) {
+            var override = elementState.getOverride();
             if (override != null) {
                 currentElement = override;
             }
@@ -71,16 +72,16 @@ public class PdfElementsGenerator {
         }
 
         // Check if the element is visible
-        if (dataObject != null) {
-            var isVisible = dataObject.getIsVisible();
+        if (elementState != null) {
+            var isVisible = elementState.getVisible();
             if (!isVisible) {
                 return null;
             }
         }
 
         Object value = null;
-        if (dataObject != null && currentElement instanceof BaseInputElement<?> inputElement) {
-            Object rawValue = dataObject.getValue();
+        if (customerInput != null && currentElement instanceof BaseInputElement<?> inputElement) {
+            Object rawValue = customerInput.getEffectiveValues().getOrDefault(currentElement.getId(), null);
             value = inputElement.formatValue(rawValue);
         }
 
@@ -92,7 +93,7 @@ public class PdfElementsGenerator {
                     .filter(Objects::nonNull)
                     .toList();
             return new PdfElement(currentElement, null, children);
-        } else if (currentElement instanceof StepElement stepElement) {
+        } else if (currentElement instanceof GenericStepElement stepElement) {
             var children = stepElement
                     .getChildren()
                     .stream()
@@ -110,13 +111,13 @@ public class PdfElementsGenerator {
             return new PdfElement(currentElement, null, children);
         } else if (currentElement instanceof ReplicatingContainerLayoutElement replicatingContainerLayout) {
             if (customerInput == null) {
-                value = new LinkedList<String>();
+                value = new LinkedList<DerivedRuntimeElementData>();
                 var amountOfPlaceholderDatasets = replicatingContainerLayout.getMaximumSets() != null ? replicatingContainerLayout.getMaximumSets() : 4;
                 if (replicatingContainerLayout.getMinimumRequiredSets() != null && replicatingContainerLayout.getMinimumRequiredSets() > amountOfPlaceholderDatasets) {
                     amountOfPlaceholderDatasets = replicatingContainerLayout.getMinimumRequiredSets();
                 }
                 for (int i = 0; i < amountOfPlaceholderDatasets; i++) {
-                    ((LinkedList<ElementData>) value).add(new ElementData());
+                    ((LinkedList<DerivedRuntimeElementData>) value).add(new DerivedRuntimeElementData());
                 }
             }
 
@@ -124,19 +125,35 @@ public class PdfElementsGenerator {
                 var childGroups = new LinkedList<PdfElement>();
                 var index = 0;
                 for (Object val : cValue) {
-                    if (val instanceof ElementData childElementData) {
-                        var children = replicatingContainerLayout
-                                .getChildren()
-                                .stream()
-                                .map(child -> generatePdfElement(child, childElementData, skipTechnical))
-                                .filter(Objects::nonNull)
-                                .toList();
-
-                        var gl = new GroupLayoutElement();
-
-                        childGroups.add(new PdfElement(gl, index, children));
+                    final DerivedRuntimeElementData childElementData;
+                    if (val instanceof DerivedRuntimeElementData derivedRuntimeElementData) {
+                        childElementData = derivedRuntimeElementData;
+                    } else if (val instanceof Map<?, ?> childValueMap) {
+                        var childEffectiveValues = ObjectMapperFactory
+                                .getInstance()
+                                .convertValue(childValueMap, EffectiveElementValues.class);
+                        var childStates = elementState != null &&
+                                elementState.getSubStates() != null &&
+                                index < elementState.getSubStates().size()
+                                ? elementState.getSubStates().get(index)
+                                : new ComputedElementStates();
+                        childElementData = new DerivedRuntimeElementData(childEffectiveValues, childStates);
+                    } else {
                         index++;
+                        continue;
                     }
+
+                    var children = replicatingContainerLayout
+                            .getChildren()
+                            .stream()
+                            .map(child -> generatePdfElement(child, childElementData, skipTechnical))
+                            .filter(Objects::nonNull)
+                            .toList();
+
+                    var gl = new GroupLayoutElement();
+
+                    childGroups.add(new PdfElement(gl, index, children));
+                    index++;
                 }
                 return new PdfElement(currentElement, cValue, childGroups);
             } else {

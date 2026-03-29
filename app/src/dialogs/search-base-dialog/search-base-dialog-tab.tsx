@@ -1,7 +1,7 @@
 import {Box, Button, Grid, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
 import {useEffect, useMemo, useState} from 'react';
 import Fuse from 'fuse.js';
-import {SearchInput} from '../../components/search-input-2/search-input';
+import {SearchInput} from '../../components/search-input/search-input';
 import {SearchBaseDialogTabProps} from './search-base-dialog-tab-props';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
@@ -60,8 +60,10 @@ export function SearchBaseDialogTab<T>(props: SearchBaseDialogTabProps<T>) {
                 <SearchInput
                     value={search}
                     onChange={setSearch}
-                    placeholder={props.searchPlaceholder}
+                    label={props.searchPlaceholder}
+                    placeholder="Suchen…"
                     autoFocus
+                    size={"small"}
                     sx={{
                         marginRight: highlightedOption != null ? 2 : 0,
                     }}

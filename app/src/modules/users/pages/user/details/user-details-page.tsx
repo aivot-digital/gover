@@ -43,7 +43,7 @@ export function UserDetailsPage() {
                     },
                     {
                         path: '/users/:id/departments-and-roles',
-                        label: 'Fachbereiche und Rollen',
+                        label: 'Organisationseinheiten und Rollen',
                         isDisabled: (item) => !item?.id,
                     },
                     {

@@ -1,14 +1,12 @@
 package de.aivot.GoverBackend.process.services;
 
-import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
-import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
-import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.models.ProcessExecutionData;
-import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
+import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
@@ -16,66 +14,33 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.MatchResult;
-import java.util.regex.Pattern;
 
+/**
+ * Builds the effective process data snapshot used while executing process nodes.
+ *
+ * <p>This service intentionally stays focused on one responsibility: collecting the different process data sources
+ * into the compact map structure used throughout the process engine. Template rendering lives in
+ * {@link TemplateRenderService} now, but the shared JavaScript data contract still belongs here because process nodes
+ * outside the template renderer also depend on the same globals.
+ */
 @Service
 public class ProcessDataService {
-    private static final Pattern jsPattern = Pattern
-            .compile("\\{\\{([^{}]+)\\}\\}");
-
     private final ProcessInstanceTaskRepository processInstanceTaskRepository;
     private final ProcessNodeRepository processDefinitionNodeRepository;
-    private final JavascriptEngineFactoryService javascriptEngineFactoryService;
 
     public ProcessDataService(ProcessInstanceTaskRepository processInstanceTaskRepository,
-                              ProcessNodeRepository processDefinitionNodeRepository,
-                              JavascriptEngineFactoryService javascriptEngineFactoryService) {
+                              ProcessNodeRepository processDefinitionNodeRepository) {
         this.processInstanceTaskRepository = processInstanceTaskRepository;
         this.processDefinitionNodeRepository = processDefinitionNodeRepository;
-        this.javascriptEngineFactoryService = javascriptEngineFactoryService;
     }
 
-    @Nullable
-    public String interpolate(@Nonnull Map<String, Object> processData,
-                              @Nullable String string) {
-        if (string == null) {
-            return null;
-        }
-
-        var result = string;
-                //.replace("\\_", "_"); // Remove escaping for underscores because we think if markdown
-
-        List<String> matches = jsPattern
-                .matcher(result)
-                .results()
-                .map(MatchResult::group)
-                .toList();
-
-        for (String jsSnippet : matches) {
-            String interpolated;
-            try (var engine = javascriptEngineFactoryService.getEngine()) {
-                fillJsEngineWithData(processData, engine);
-
-                var code = JavascriptCode
-                        .of(jsSnippet);
-
-                interpolated = engine
-                        .evaluateCode(code)
-                        .toString();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-
-            if (interpolated != null) {
-                result = result
-                        .replace(jsSnippet, interpolated);
-            }
-        }
-
-        return result;
-    }
-
+    /**
+     * Registers the canonical process data roots on a JavaScript engine.
+     *
+     * <p>This method stays public and static because other process-related services already rely on the same process
+     * data contract. Only the reserved roots and node snapshots are exported so callers get the expected process scope
+     * without accidentally leaking every arbitrary map entry as a global variable.
+     */
     public static void fillJsEngineWithData(@Nonnull Map<String, Object> processData, JavascriptEngine engine) {
         engine
                 .registerGlobalObject("$", processData.get("$"))
@@ -88,6 +53,13 @@ public class ProcessDataService {
         }
     }
 
+    /**
+     * Builds the effective process data snapshot that downstream nodes consume.
+     *
+     * <p>The result intentionally flattens previous payload, instance metadata, and latest node data into a compact
+     * map because that structure can be handed directly to JavaScript evaluation without extra transformation at each
+     * call site.
+     */
     @Nonnull
     public ProcessExecutionData foldProcessInstanceData(@Nonnull ProcessInstanceEntity instance,
                                                         @Nullable Integer previousNodeId) {
@@ -111,6 +83,8 @@ public class ProcessDataService {
         allData.put("$", previousTask != null ? previousTask.getProcessData() : instance.getInitialPayload());
 
         Map<String, Object> instanceData = new HashMap<>();
+        // instanceData.put("instance", instance);
+        // TODO: add attachments
         // TODO: Specify Instance Data
         allData.put("$$", instanceData);
 

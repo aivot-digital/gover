@@ -20,6 +20,7 @@ public class VDepartmentMembershipWithDetailsFilter implements Filter<VDepartmen
     private Boolean enabled;
     private Boolean verified;
     private Boolean deletedInIdp;
+    private Integer domainRoleId;
 
     public static VDepartmentMembershipWithDetailsFilter create() {
         return new VDepartmentMembershipWithDetailsFilter();
@@ -35,7 +36,8 @@ public class VDepartmentMembershipWithDetailsFilter implements Filter<VDepartmen
                 .withEquals("userId", userId)
                 .withInList("userId", userIds)
                 .withContains("userFullName", fullName)
-                .withContains("userEmail", email);
+                .withContains("userEmail", email)
+                .withJsonArrayElementFieldEquals("domainRoles", "id", domainRoleId != null ? domainRoleId.toString() : null);
 
         if (enabled != null) {
             builder = builder
@@ -143,6 +145,11 @@ public class VDepartmentMembershipWithDetailsFilter implements Filter<VDepartmen
 
     public VDepartmentMembershipWithDetailsFilter setDeletedInIdp(Boolean deletedInIdp) {
         this.deletedInIdp = deletedInIdp;
+        return this;
+    }
+
+    public VDepartmentMembershipWithDetailsFilter setDomainRoleId(Integer domainRoleId) {
+        this.domainRoleId = domainRoleId;
         return this;
     }
 }

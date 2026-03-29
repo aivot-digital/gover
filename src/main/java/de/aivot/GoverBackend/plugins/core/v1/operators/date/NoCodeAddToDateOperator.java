@@ -1,9 +1,12 @@
 package de.aivot.GoverBackend.plugins.core.v1.operators.date;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.*;
+import jakarta.annotation.Nullable;
+
+import java.util.Locale;
 
 public class NoCodeAddToDateOperator extends NoCodeOperator {
     public static final String DAYS_UNIT = "tage";
@@ -85,13 +88,19 @@ public class NoCodeAddToDateOperator extends NoCodeOperator {
         );
     }
 
+    @Nullable
     @Override
-    public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
+    public String getHumanReadableTemplate() {
+        return "füge „#1“ „#2“ zu „#0“ hinzu";
+    }
+
+    @Override
+    public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
         var date = castToDateTime(args[0]);
         var amount = castToNumber(args[1]).intValue();
-        var unit = castToString(args[2]);
+        var unit = castToString(args[2]).trim().toLowerCase(Locale.ROOT);
 
-        date = switch (unit.toLowerCase()) {
+        date = switch (unit) {
             case DAYS_UNIT -> date.plusDays(amount);
             case WEEKS_UNIT -> date.plusWeeks(amount);
             case MONTHS_UNIT -> date.plusMonths(amount);

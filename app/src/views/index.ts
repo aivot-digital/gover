@@ -25,6 +25,18 @@ import {FileUploadView} from '../components/file-upload-field/file-upload.view';
 import {CodeInputView} from './code-input-view';
 import {FunctionInputView} from './function-input-view';
 import {RichTextView} from './rich-text-input-view';
+import {ChipInputFieldView} from './chip-input-field-view';
+import {DateTimeFieldView} from './date-time-field-view';
+import {DateRangeFieldView} from './date-range-field-view';
+import {TimeRangeFieldView} from './time-range-field-view';
+import {DateTimeRangeFieldView} from './date-time-range-field-view';
+import {MapPointFieldView} from './map-point-field-view';
+import {DomainUserSelectFieldView} from './domain-user-select-field-view';
+import {AssignmentContextFieldView} from './assignment-context-field-view';
+import {DataModelSelectFieldView} from './data-model-select-field-view';
+import {DataObjectSelectFieldView} from './data-object-select-field-view';
+import {NoCodeInputFieldView} from './no-code-input-field-view';
+import {UiDefinitionInputFieldView} from './ui-definition-input-field-view';
 
 export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.FormLayout]: RootComponentView,
@@ -56,7 +68,18 @@ export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.FunctionInput]: FunctionInputView,
     [ElementType.CodeInput]: CodeInputView,
     [ElementType.RichTextInput]: RichTextView,
-    [ElementType.UiDefinitionInput]: null,
+    [ElementType.UiDefinitionInput]: UiDefinitionInputFieldView,
     [ElementType.IdentityInput]: null,
     [ElementType.TabLayout]: null,
+    [ElementType.ChipInput]: ChipInputFieldView,
+    [ElementType.DateTime]: DateTimeFieldView,
+    [ElementType.DateRange]: DateRangeFieldView,
+    [ElementType.TimeRange]: TimeRangeFieldView,
+    [ElementType.DateTimeRange]: DateTimeRangeFieldView,
+    [ElementType.MapPoint]: MapPointFieldView,
+    [ElementType.DomainAndUserSelect]: DomainUserSelectFieldView,
+    [ElementType.AssignmentContext]: AssignmentContextFieldView,
+    [ElementType.DataModelSelect]: DataModelSelectFieldView,
+    [ElementType.DataObjectSelect]: DataObjectSelectFieldView,
+    [ElementType.NoCodeInput]: NoCodeInputFieldView,
 };

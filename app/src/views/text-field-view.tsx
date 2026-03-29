@@ -5,8 +5,7 @@ import {useMemo} from 'react';
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
 import {TextFieldComponentProps} from '../components/text-field/text-field-component-props';
 import Autocomplete from '@mui/material/Autocomplete';
-import {CodeEditor} from "../components/code-editor/code-editor";
-import {RichTextEditorComponentView} from "../components/richt-text-editor/rich-text-editor.component.view";
+import {isStringNullOrEmpty} from '../utils/string-utils';
 
 export function TextFieldView(props: BaseViewProps<TextFieldElement, string>) {
     const {
@@ -30,6 +29,7 @@ export function TextFieldView(props: BaseViewProps<TextFieldElement, string>) {
         maxCharacters,
         minCharacters,
         suggestions,
+        prefix,
     } = element;
 
     const isDisabled = useMemo(() => {
@@ -62,6 +62,7 @@ export function TextFieldView(props: BaseViewProps<TextFieldElement, string>) {
         onChange: val => setValue(val),
         onBlur: onBlur != null ? handleBlur : undefined,
         debounce: 1000,
+        startIcon: isStringNullOrEmpty(prefix) ? undefined : prefix,
     }), [label, autocomplete, placeholder, errors, hint, isMultiline, required, isDisabled, isBusy, maxCharacters, minCharacters, value, setValue, onBlur]);
 
     if (suggestions != null) {

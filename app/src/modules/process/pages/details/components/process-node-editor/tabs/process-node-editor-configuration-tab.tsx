@@ -1,9 +1,9 @@
-import {Box} from "@mui/material";
-import {TextFieldComponent} from "../../../../../../../components/text-field/text-field-component";
-import {useProcessNodeEditorContext} from "../process-node-editor-context";
-import {ElementDerivationContext} from "../../../../../../elements/components/element-derivation-context";
-import Typography from "@mui/material/Typography";
-import {useEffect, useState} from "react";
+import {Box} from '@mui/material';
+import {TextFieldComponent} from '../../../../../../../components/text-field/text-field-component';
+import {useProcessNodeEditorContext} from '../process-node-editor-context';
+import {ElementDerivationContext} from '../../../../../../elements/components/element-derivation-context';
+import Typography from '@mui/material/Typography';
+import {useRef} from 'react';
 
 export function ProcessNodeEditorConfigurationTab() {
     const {
@@ -12,35 +12,33 @@ export function ProcessNodeEditorConfigurationTab() {
         setNode: setLocalNode,
     } = useProcessNodeEditorContext();
 
-    const [firstDerivationDone, setFirstDerivationDone] = useState(false);
-
-    useEffect(() => {
-        setFirstDerivationDone(false);
-    }, [layout]);
+    const initialDerivationNodeIdRef = useRef<number | null>(null);
 
     return (
         <Box
             sx={{
                 position: 'relative',
+                pt: 1,
+                pb: 2,
             }}
         >
-            <Typography variant="h6">
-                Allgemeine Eigenschaften des Elements
+            <Typography variant="h4">
+                Eigenschaften des Elements
             </Typography>
             <Typography variant="body1"
-                        mb={2}>
-                Konfigurieren Sie dieses Prozesselement gemäß Ihrer fachlichen Anforderungen.
+                        mt={1} mb={2} maxWidth={400}>
+                Konfigurieren Sie dieses Prozesselement gemäß ihrer fachlichen Anforderungen.
             </Typography>
 
             <TextFieldComponent
                 label="Datenschlüssel"
-                hint="Eindeutiger Schlüssel zur Identifikation der Ausgangsdaten dieses Elementes im Vorgang"
+                hint="Eindeutiger Schlüssel zur Identifikation dieses Elementes im Vorgang."
                 value={localNode.dataKey}
                 onChange={(val) => {
                     setLocalNode({
                         ...localNode,
                         dataKey: val ?? '',
-                    });
+                    }, false);
                 }}
                 required={true}
                 maxCharacters={32}
@@ -48,50 +46,45 @@ export function ProcessNodeEditorConfigurationTab() {
 
             <TextFieldComponent
                 label="Name des Elementes"
-                hint="Wird im Vorgang und Prozess als Titel angezeigt"
+                hint="Wird im Vorgang und Prozess als Titel dieses Schrittes angezeigt."
                 value={localNode.name}
                 onChange={(val) => {
                     setLocalNode({
                         ...localNode,
                         name: val ?? null,
-                    });
+                    }, false);
                 }}
                 maxCharacters={96}
             />
 
             <TextFieldComponent
                 label="Kurzbeschreibung des Elements"
-                hint="Wird im Vorgang und Prozess als Beschreibung angezeigt"
+                hint="Wird im Vorgang und Prozess als Beschreibung dieses Schrittes angezeigt."
                 value={localNode.description}
                 onChange={(val) => {
                     setLocalNode({
                         ...localNode,
                         description: val ?? null,
-                    });
+                    }, false);
                 }}
                 multiline={true}
                 maxCharacters={512}
             />
 
-            <Typography variant="h6"
-                        mt={4}>
-                Spezifische Eigenschaften des Elements
-            </Typography>
-
             <ElementDerivationContext
+                key={localNode.id}
                 element={layout}
-                elementData={localNode.configuration}
-                onElementDataChange={(elementData) => {
+                authoredElementValues={localNode.configuration}
+                onAuthoredElementValuesChange={(authoredElementValues) => {
                     setLocalNode({
                         ...localNode,
-                        configuration: elementData,
-                    });
+                        configuration: authoredElementValues,
+                    }, false);
                 }}
                 onDerivationFinished={() => {
-                    if (!firstDerivationDone) {
-                        setTimeout(() => {
-                            setFirstDerivationDone(true);
-                        }, 5000);
+                    if (initialDerivationNodeIdRef.current !== localNode.id) {
+                        initialDerivationNodeIdRef.current = localNode.id;
+                        setLocalNode(localNode, true);
                     }
                 }}
             />

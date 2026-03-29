@@ -11,7 +11,7 @@ import {isAnyInputElement} from '../../../../models/elements/form/input/any-inpu
 import {isNoCodeExpression, isNoCodeReference, NoCodeExpression, NoCodeOperand} from '../../../../models/functions/no-code-expression';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import {Collapse} from '../../../collapse/collapse';
-import {ElementData} from '../../../../models/element-data';
+import {AuthoredElementValues, createDerivedRuntimeElementData} from '../../../../models/element-data';
 import {ElementDerivationContext} from '../../../../modules/elements/components/element-derivation-context';
 import {OperandEditor} from '../expression-editor/operand-editor';
 import {RootElement} from '../../../../models/elements/root-element';
@@ -19,10 +19,14 @@ import {StepElement} from '../../../../models/elements/steps/step-element';
 import {GroupLayout} from '../../../../models/elements/form/layout/group-layout';
 import {ReplicatingContainerLayout} from '../../../../models/elements/form/layout/replicating-container-layout';
 import {NoCodeDataType} from '../../../../data/no-code-data-type';
-import {NoCodeOperandEditor} from '../../../../modules/nocode/components/no-code-operand-editor';
+import {
+    NoCodeOperandEditor,
+    NoCodeOperandEditorContextType,
+} from '../../../../modules/nocode/components/no-code-operand-editor';
+import {AnyElement} from '../../../../models/elements/any-element';
 
 interface NoCodeEditorWrapperProps {
-    parents: Array<RootElement | StepElement | GroupLayout | ReplicatingContainerLayout>;
+    parents: Array<RootElement | StepElement | GroupLayout | ReplicatingContainerLayout | AnyElement>;
     noCode: NoCodeOperand | null | undefined;
     onChange: (expression: NoCodeOperand | null | undefined) => void;
     editable: boolean;
@@ -30,6 +34,7 @@ interface NoCodeEditorWrapperProps {
     hint?: string;
     error?: string;
     label?: string;
+    contextType?: NoCodeOperandEditorContextType;
 }
 
 const new_editor = localStorage.getItem('new_editor') != null;
@@ -43,13 +48,15 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
         hint,
         label,
         desiredReturnType,
+        contextType = 'FORM',
     } = props;
+    const useNewEditor = new_editor || contextType === 'PROCESS';
 
     const api = useApi();
     const dispatch = useAppDispatch();
 
     const [operators, setOperators] = useState<NoCodeOperatorDetailsDTO[]>([]);
-    const [testPayload, setTestPayload] = useState<ElementData>({});
+    const [testPayload, setTestPayload] = useState<AuthoredElementValues>({});
     const [testResult, setTestResult] = useState<{
         expression: NoCodeExpression;
         result: string;
@@ -112,7 +119,10 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
 
         const service = new NoCodeApiService(api);
         try {
-            const result = await service.evaluateNoCode(expression, testPayload);
+            const result = await service.evaluateNoCode(expression, createDerivedRuntimeElementData({
+                effectiveValues: testPayload,
+                elementStates: {},
+            }));
             setTestResult({
                 expression,
                 result: JSON.stringify(result.result, null, 2),
@@ -154,7 +164,7 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
             ) : (
                 <>
                     {
-                        !new_editor &&
+                        !useNewEditor &&
                         <OperandEditor
                             allElements={allElements}
                             allOperators={operators}
@@ -175,19 +185,27 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
                     }
 
                     {
-                        new_editor &&
-                        <NoCodeOperandEditor
-                            parameter={{
-                                label: label ?? '',
-                                description: hint ?? '',
-                                type: desiredReturnType,
-                                options: [],
+                        useNewEditor &&
+                        <Box
+                            sx={{
+                                pointerEvents: editable ? 'auto' : 'none',
+                                opacity: editable ? 1 : 0.65,
                             }}
-                            operand={noCode}
-                            onChange={onChange}
-                            allOperators={operators}
-                            allElements={allElements}
-                        />
+                        >
+                            <NoCodeOperandEditor
+                                parameter={{
+                                    label: label ?? '',
+                                    description: hint ?? '',
+                                    type: desiredReturnType,
+                                    options: [],
+                                }}
+                                operand={noCode}
+                                onChange={onChange}
+                                allOperators={operators}
+                                allElements={allElements}
+                                contextType={contextType}
+                            />
+                        </Box>
                     }
 
                     {
@@ -222,8 +240,8 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
                                     <ElementDerivationContext
                                         key={element?.element.id}
                                         element={element?.element}
-                                        elementData={testPayload}
-                                        onElementDataChange={(change) => {
+                                        authoredElementValues={testPayload}
+                                        onAuthoredElementValuesChange={(change) => {
                                             setTestPayload({
                                                 ...testPayload,
                                                 ...change,

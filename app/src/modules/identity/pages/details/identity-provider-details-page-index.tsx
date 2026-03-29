@@ -9,7 +9,6 @@ import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {ConstraintDialog} from '../../../../dialogs/constraint-dialog/constraint-dialog';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
@@ -38,6 +37,7 @@ import {hideLoadingOverlay, showLoadingOverlay} from '../../../../slices/loading
 import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import {VFormVersionWithDetailsService} from '../../../forms/services/v-form-version-with-details-api-service';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 // allows absolute and relative URLs
 const urlRegex = /^(https?:\/\/[^\s]+|\/[^\s]*)$/;
@@ -641,7 +641,7 @@ export function IdentityProviderDetailsPageIndex() {
                             color="info"
                             sx={{mt: 2}}
                         >
-                            <strong>Hinweis:</strong>
+                            <strong>Hinweis:</strong>{" "}
                             Die Konfigurationen für die offiziellen Nutzerkonten von Bund und Ländern werden von Gover bereitgestellt und sind nicht veränderbar.
                         </AlertComponent>
                     }
@@ -1040,7 +1040,7 @@ export function IdentityProviderDetailsPageIndex() {
                                 disabled={isBusy}
                                 color="error"
 
-                                startIcon={<DeleteOutlinedIcon />}
+                                startIcon={<Delete />}
                             >
                                 Löschen
                             </Button>
@@ -1054,7 +1054,7 @@ export function IdentityProviderDetailsPageIndex() {
                                         variant="outlined"
                                         disabled={true}
                                         color="error"
-                                        startIcon={<DeleteOutlinedIcon />}
+                                        startIcon={<Delete />}
                                     >
                                         Löschen
                                     </Button>

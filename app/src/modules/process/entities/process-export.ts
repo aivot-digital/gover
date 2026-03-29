@@ -4,11 +4,6 @@ import {ProcessNodeEntity} from "./process-node-entity";
 import {ProcessDefinitionEdgeEntity} from "./process-definition-edge-entity";
 
 export interface ProcessExport {
-    data: ProcessExportData;
-    signature?: string | null;
-}
-
-export interface ProcessExportData {
     appVersion: string;
     exportTimestamp: string; // ISO date string
     createdByVendor: string;

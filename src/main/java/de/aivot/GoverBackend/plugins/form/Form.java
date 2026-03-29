@@ -6,7 +6,7 @@ import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
 @Component
-public class Form { /*implements Plugin {
+public class Form implements Plugin {
     public static final String PLUGIN_KEY = "form";
     private final BuildProperties buildProperties;
 
@@ -57,5 +57,4 @@ public class Form { /*implements Plugin {
     public String getChangelog() {
         return "";
     }
-    */
 }

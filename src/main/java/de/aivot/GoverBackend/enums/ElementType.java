@@ -7,7 +7,7 @@ import de.aivot.GoverBackend.elements.models.elements.form.content.*;
 import de.aivot.GoverBackend.elements.models.elements.form.input.*;
 import de.aivot.GoverBackend.elements.models.elements.layout.*;
 import de.aivot.GoverBackend.elements.models.elements.steps.IntroductionStepElement;
-import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SummaryStepElement;
 import de.aivot.GoverBackend.lib.models.Identifiable;
@@ -48,7 +48,18 @@ public enum ElementType implements Identifiable<Integer> {
     RichTextInput(28),
     UiDefinitionInput(29),
     IdentityInput(30),
-    TabLayout(30),
+    TabLayout(31),
+    ChipInput(32),
+    DateTime(33),
+    DateRange(34),
+    TimeRange(35),
+    DateTimeRange(36),
+    MapPoint(37),
+    DomainAndUserSelect(38),
+    AssignmentContext(39),
+    DataModelSelect(40),
+    DataObjectSelect(41),
+    NoCodeInput(42),
     ;
 
     public static final String ID_FormLayout = "0";
@@ -83,6 +94,17 @@ public enum ElementType implements Identifiable<Integer> {
     public static final String ID_UiDefinitionInput = "29";
     public static final String ID_IdentityInput = "30";
     public static final String ID_TabLayout = "31";
+    public static final String ID_ChipInput = "32";
+    public static final String ID_DateTime = "33";
+    public static final String ID_DateRange = "34";
+    public static final String ID_TimeRange = "35";
+    public static final String ID_DateTimeRange = "36";
+    public static final String ID_MapPoint = "37";
+    public static final String ID_DomainAndUserSelect = "38";
+    public static final String ID_AssignmentContext = "39";
+    public static final String ID_DataModelSelect = "40";
+    public static final String ID_DataObjectSelect = "41";
+    public static final String ID_NoCodeInput = "42";
 
     private final Integer key;
 
@@ -112,7 +134,7 @@ public enum ElementType implements Identifiable<Integer> {
     public static BaseElement getElementClass(ElementType type) throws ElementDataConversionException {
         return switch (type) {
             case FormLayout -> new FormLayoutElement();
-            case Step -> new StepElement();
+            case Step -> new GenericStepElement();
             case Alert -> new AlertContentElement();
             case Group -> new GroupLayoutElement();
             case Checkbox -> new CheckboxInputElement();
@@ -144,6 +166,17 @@ public enum ElementType implements Identifiable<Integer> {
             case UiDefinitionInput -> new UiDefinitionInputElement();
             case IdentityInput -> new IdentityInputElement();
             case TabLayout -> new TabLayoutElement();
+            case ChipInput -> new ChipInputElement();
+            case DateTime -> new DateTimeInputElement();
+            case DateRange -> new DateRangeInputElement();
+            case TimeRange -> new TimeRangeInputElement();
+            case DateTimeRange -> new DateTimeRangeInputElement();
+            case MapPoint -> new MapPointInputElement();
+            case DomainAndUserSelect -> new DomainAndUserSelectInputElement();
+            case AssignmentContext -> new AssignmentContextInputElement();
+            case DataModelSelect -> new DataModelSelectInputElement();
+            case DataObjectSelect -> new DataObjectSelectInputElement();
+            case NoCodeInput -> new NoCodeInputElement();
             default -> throw new ElementDataConversionException("Unsupported element type: %s", type.name());
         };
     }

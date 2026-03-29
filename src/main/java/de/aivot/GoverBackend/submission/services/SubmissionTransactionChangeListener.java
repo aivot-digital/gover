@@ -23,6 +23,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+@Deprecated
 @Component
 public class SubmissionTransactionChangeListener implements PaymentTransactionChangeListener {
     private final SubmissionRepository submissionRepository;

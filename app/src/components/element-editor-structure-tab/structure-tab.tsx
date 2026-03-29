@@ -93,7 +93,7 @@ export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>) 
     };
 
     return (
-        <Box sx={{p: 4}}>
+        <Box>
             <ElementEditorSectionHeader
                 title="Elementstruktur"
                 disableMarginTop

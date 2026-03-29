@@ -1,8 +1,8 @@
 package de.aivot.GoverBackend.process.entities;
 
-import de.aivot.GoverBackend.core.converters.ElementDataConverter;
+import de.aivot.GoverBackend.core.converters.AuthoredElementValuesConverter;
 import de.aivot.GoverBackend.core.converters.JsonObjectConverter;
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -47,7 +47,7 @@ public class ProcessNodeEntity {
     @Nonnull
     @NotBlank(message = "Der Schlüssel der Prozessknoten-Definition darf nicht leer sein.")
     @NotNull(message = "Der Schlüssel der Prozessknoten-Definition darf nicht null sein.")
-    @Size(min = 1, max = 32, message = "Der Schlüssel der Prozessknoten-Definition muss zwischen 1 und 32 Zeichen lang sein.")
+    @Size(min = 1, max = 128, message = "Der Schlüssel der Prozessknoten-Definition muss zwischen 1 und 128 Zeichen lang sein.")
     private String processNodeDefinitionKey;
 
     @Nonnull
@@ -56,9 +56,9 @@ public class ProcessNodeEntity {
 
     @Nonnull
     @NotNull(message = "Die Konfiguration darf nicht null sein.")
-    @Convert(converter = ElementDataConverter.class)
+    @Convert(converter = AuthoredElementValuesConverter.class)
     @Column(columnDefinition = "jsonb")
-    private ElementData configuration;
+    private AuthoredElementValues configuration;
 
     @Nonnull
     @NotNull(message = "Die Input-Mappings dürfen nicht null sein.")
@@ -173,11 +173,11 @@ public class ProcessNodeEntity {
     }
 
     @Nonnull
-    public ElementData getConfiguration() {
+    public AuthoredElementValues getConfiguration() {
         return configuration;
     }
 
-    public ProcessNodeEntity setConfiguration(@Nonnull ElementData configuration) {
+    public ProcessNodeEntity setConfiguration(@Nonnull AuthoredElementValues configuration) {
         this.configuration = configuration;
         return this;
     }

@@ -11,7 +11,7 @@ import {Action} from '../actions/actions-props';
 import CloseIcon from '@mui/icons-material/Close';
 import {LogLevel, selectLogLevel, setLogLevel} from '../../slices/logging-slice';
 import {LogLevelIcon} from '../log-level-icon/log-level-icon';
-import {ElementData} from '../../models/element-data';
+import {AuthoredElementValues} from '../../models/element-data';
 import {AnyElement} from '../../models/elements/any-element';
 import {ElementDataDebugger} from './tabs/element-data-debugger';
 import {selectLoadedForm} from '../../slices/app-slice';
@@ -51,8 +51,8 @@ function TabContent(props: PropsWithChildren<TabContentProps>) {
 interface DeveloperToolsProps {
     dataLabel: string;
     rootElement: AnyElement;
-    elementData: ElementData;
-    onElementDataChange: (data: ElementData) => void;
+    elementData: AuthoredElementValues;
+    onElementDataChange: (data: AuthoredElementValues) => void;
 }
 
 export function DeveloperTools(props: DeveloperToolsProps) {

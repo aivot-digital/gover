@@ -15,7 +15,6 @@ import {DataObjectSchema} from '../../models/data-object-schema';
 import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service';
 import {DataObjectItemsApiService} from '../../data-object-items-api-service';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {DataObjectItem} from '../../models/data-object-item';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {ConfirmDialogV2} from '../../../../dialogs/confirm-dialog/confirm-dialog-v2';
@@ -26,6 +25,8 @@ import {format as formatDateTime} from 'date-fns/format';
 import {isApiError} from '../../../../models/api-error';
 import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
 import {useAccessGuard} from '../../../../hooks/use-admin-guard';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {createDerivedRuntimeElementData, isDerivedRuntimeElementData} from '../../../../models/element-data';
 
 export function DataObjectItemDetailsPageIndex() {
     const dispatch = useAppDispatch();
@@ -40,6 +41,7 @@ export function DataObjectItemDetailsPageIndex() {
     const api = useApi();
 
     const [dataObjectSchema, setDataObjectSchema] = useState<DataObjectSchema>();
+    const [derivedData, setDerivedData] = useState(createDerivedRuntimeElementData());
 
     useEffect(() => {
         if (dataObjectKey == null) {
@@ -106,14 +108,13 @@ export function DataObjectItemDetailsPageIndex() {
             return;
         }
 
-        const updatedElementData = applyYupErrorsToElementData(
+        setDerivedData((currentDerivedData) => applyYupErrorsToElementData(
             dataObjectSchema.schema,
             currentDataObjectItem.data,
             errors,
-        );
-
-        handleInputChange('data')(updatedElementData);
-    }, [errors]);
+            currentDerivedData,
+        ));
+    }, [errors, currentDataObjectItem, dataObjectSchema]);
 
     const schema = useMemo(() => {
         if (dataObjectSchema == null) {
@@ -159,6 +160,7 @@ export function DataObjectItemDetailsPageIndex() {
                 .create(currentDataObjectItem)
                 .then(newDataObjectItem => {
                     setItem(newDataObjectItem);
+                    setDerivedData(createDerivedRuntimeElementData());
                     reset();
 
                     dispatch(showSuccessSnackbar('Neues Datenobjekt erfolgreich angelegt.'));
@@ -169,8 +171,8 @@ export function DataObjectItemDetailsPageIndex() {
                     }, 0);
                 })
                 .catch(err => {
-                    if (isApiError(err) && err.status === 400 && typeof err.details === 'object') {
-                        handleInputChange('data')(err.details);
+                    if (isApiError(err) && err.status === 400 && typeof err.details === 'object' && isDerivedRuntimeElementData(err.details)) {
+                        setDerivedData(err.details);
                     } else {
                         console.error(err);
                     }
@@ -185,13 +187,14 @@ export function DataObjectItemDetailsPageIndex() {
                 .update(currentDataObjectItem.id, currentDataObjectItem)
                 .then(updatedDataObjectItem => {
                     setItem(updatedDataObjectItem);
+                    setDerivedData(createDerivedRuntimeElementData());
                     reset();
 
                     dispatch(showSuccessSnackbar('Änderungen am Datenobjekt erfolgreich gespeichert.'));
                 })
                 .catch(err => {
-                    if (err.status === 400 && 'details' in err && 'details' in err.details) {
-                        handleInputChange('data')(err.details.details);
+                    if (err.status === 400 && 'details' in err && isDerivedRuntimeElementData(err.details)) {
+                        setDerivedData(err.details);
                     } else {
                         console.error(err);
                     }
@@ -304,8 +307,9 @@ export function DataObjectItemDetailsPageIndex() {
 
             <ElementDerivationContext
                 element={schema}
-                elementData={currentDataObjectItem.data}
-                onElementDataChange={(changedElementData) => {
+                authoredElementValues={currentDataObjectItem.data}
+                derivedData={derivedData}
+                onAuthoredElementValuesChange={(changedElementData) => {
                     if (Object.keys(currentDataObjectItem.data).length === 0) {
                         setItem({
                             ...currentDataObjectItem,
@@ -316,6 +320,7 @@ export function DataObjectItemDetailsPageIndex() {
                         handleInputChange('data')(changedElementData);
                     }
                 }}
+                onDerivedDataChange={setDerivedData}
                 disabled={!hasAccess}
             />
 
@@ -346,7 +351,7 @@ export function DataObjectItemDetailsPageIndex() {
                         sx={{
                             marginLeft: 'auto',
                         }}
-                        startIcon={<DeleteOutlinedIcon />}
+                        startIcon={<Delete />}
                     >
                         Löschen
                     </Button>

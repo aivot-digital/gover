@@ -74,8 +74,7 @@ services:
     environment:
       KC_HTTP_ENABLED: true
       KC_PROXY_HEADERS: xforwarded
-      KC_HOSTNAME: "{{ HOSTNAME }}" # Setzen Sie den Hostnamen unter dem Keycloak erreichbar ist. Passen Sie diesen Hostnamen unbedingt an.
-      KC_HOSTNAME_PATH: /idp
+      KC_HOSTNAME: "https://{{ HOSTNAME }}/idp" # Setzen Sie die vollständige URL unter der Keycloak erreichbar ist (inkl. Protokoll und Pfad). Passen Sie diese URL unbedingt an.
       KC_HTTP_RELATIVE_PATH: /idp
 
       KC_HEALTH_ENABLED: true
@@ -106,6 +105,11 @@ services:
       KC_SPI_EGOV_BAYERNID_DISPLAY_DESCRIPTION: "{{ ORG_DESCRIPTION }}" # Setzen Sie die Beschreibung Ihrer Organisation. Diese Beschreibung wird an den BayernID-Service übermittelt. Die Beschreibung sollte nicht mehr als 50 Zeichen enthalten. Die Beschreibung wird auf der Login-Seite des BayernID-Service angezeigt.
 
       QUARKUS_HTTP_LIMITS_MAX_FORM_ATTRIBUTE_SIZE: "10M"
+    # Wenn Keycloak eine Verbindung zu einem LDAP-Server oder einem anderen Dienst mit einem selbstsignierten oder internen CA-Zertifikat herstellen soll,
+    # muss das Root-CA-Zertifikat in den Keycloak-Truststore eingebunden werden.
+    # Entfernen Sie die Kommentarzeichen und passen Sie den Pfad zum Zertifikat an.
+    # volumes:
+    #   - /pfad/zum/custom-ca.pem:/opt/keycloak/conf/truststores/custom-ca.pem:ro
     networks:
       - keycloak
       - keycloak_config_network
@@ -217,6 +221,8 @@ services:
     image: ghcr.io/aivot-digital/gover:4.6.0
     restart: always
     command: staff
+    environment:
+      GOVER_HOSTNAME: "https://{{ HOSTNAME }}" # Die Adresse wird vom Entrypoint-Skript für den Health-Check der API benötigt. Passen Sie den Hostnamen unbedingt an.
     networks:
       - common
     labels:
@@ -230,6 +236,8 @@ services:
     image: ghcr.io/aivot-digital/gover:4.6.0
     restart: always
     command: customer
+    environment:
+      GOVER_HOSTNAME: "https://{{ HOSTNAME }}" # Die Adresse wird vom Entrypoint-Skript für den Health-Check der API benötigt. Passen Sie den Hostnamen unbedingt an.
     networks:
       - common
     labels:

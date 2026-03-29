@@ -1,15 +1,15 @@
 import {Box, Dialog, DialogContent, Grid, ListItemIcon, ListItemText, Menu, MenuItem, Typography} from '@mui/material';
 import React, {PropsWithChildren, useState} from 'react';
-import {RichTextEditorComponentView} from '../richt-text-editor/rich-text-editor.component.view';
+import {RichTextInputComponent} from '../rich-text-input-component/rich-text-input-component';
 import {FunctionSelector} from './components/function-selector/function-selector';
 import {BaseCodeTabProps} from './base-code-tab-props';
 import {Actions} from '../actions/actions';
 import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
 import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
     const [anchorEl, setAnchorEl] = useState<Element>();
@@ -21,11 +21,7 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
 
     return (
         <>
-            <Box
-                sx={{
-                    m: 4,
-                }}
-            >
+            <Box>
                 <ElementEditorSectionHeader
                     title={props.label}
                     disableMarginTop
@@ -49,10 +45,10 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
                             xs: 12,
                             lg: 6
                         }}>
-                        <RichTextEditorComponentView
+                        <RichTextInputComponent
                             value={props.requirements ?? ''}
                             onChange={(req) => {
-                                props.onRequirementsChange(req);
+                                props.onRequirementsChange(req ?? undefined);
                             }}
                             disabled={notEditable}
                         />
@@ -149,7 +145,7 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
                     }}
                 >
                     <ListItemIcon>
-                        <DeleteForeverOutlinedIcon />
+                        <Delete />
                     </ListItemIcon>
                     <ListItemText>
                         Funktion löschen

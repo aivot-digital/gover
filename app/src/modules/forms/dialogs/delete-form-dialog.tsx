@@ -5,12 +5,12 @@ import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {useApi} from '../../../hooks/use-api';
 import {SubmissionsApiService} from '../../submissions/submissions-api-service';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {SubmissionWithMembershipResponseDTO} from '../../submissions/dtos/submission-with-membership-response-dto';
 import Description from '@aivot/mui-material-symbols-400-outlined/dist/description/Description';
 import FolderShared from '@aivot/mui-material-symbols-400-outlined/dist/folder-shared/FolderShared';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {FormEntity} from '../entities/form-entity';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 interface DeleteFormDialogProps {
     form?: FormEntity;
@@ -83,7 +83,7 @@ export function DeleteFormDialog(props: DeleteFormDialogProps) {
                     disabled={isBusy || formTitle !== props.form?.internalTitle}
                     color="error"
                     variant="contained"
-                    startIcon={<DeleteOutlinedIcon />}
+                    startIcon={<Delete />}
                 >
                     Formular endgültig löschen
                 </Button>

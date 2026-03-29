@@ -5,10 +5,10 @@ import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
@@ -136,7 +136,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
         var clientSecretInputOptions = secretService
                 .list()
                 .stream()
-                .map(secret -> new RadioInputElementOption()
+                .map(secret -> new SelectInputElementOption()
                         .setValue(secret.getKey().toString())
                         .setLabel(secret.getName())
                 )
@@ -178,22 +178,23 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
     @Override
     public XBezahldienstePaymentTransaction initiatePayment(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config,
+            @Nonnull DerivedRuntimeElementData config,
             @Nonnull XBezahldienstePaymentRequest paymentRequest
     ) throws PaymentException {
+        var effectiveValues = config.getEffectiveValues();
         var accessToken = getAccessToken(config, paymentProviderEntity);
 
-        var originatorID = (String) config.get(ORIGINATOR_ID_FIELD).getValue();
+        var originatorID = (String) effectiveValues.get(ORIGINATOR_ID_FIELD);
         if (StringUtils.isNullOrEmpty(originatorID)) {
             throw new PaymentException("Originator ID for payment provider %s is missing", getProviderName());
         }
 
-        var endpointID = (String) config.get(ENDPOINT_ID_FIELD).getValue();
+        var endpointID = (String) effectiveValues.get(ENDPOINT_ID_FIELD);
         if (StringUtils.isNullOrEmpty(endpointID)) {
             throw new PaymentException("Endpoint ID for payment provider %s is missing", getProviderName());
         }
 
-        var paymentTransactionUrl = (String) config.get(PAYMENT_TRANSACTION_URL_FIELD).getValue();
+        var paymentTransactionUrl = (String) effectiveValues.get(PAYMENT_TRANSACTION_URL_FIELD);
         var normalizedPaymentTransactionUrl = StringUtils.normalizeUrl(paymentTransactionUrl);
 
         var objectMapper = ObjectMapperFactory
@@ -246,7 +247,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
     @Override
     public XBezahldienstePaymentTransaction onPaymentResultPull(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config,
+            @Nonnull DerivedRuntimeElementData config,
             @Nonnull XBezahldienstePaymentTransaction transaction
     ) throws PaymentException {
         var accessToken = getAccessToken(config, paymentProviderEntity);
@@ -299,15 +300,17 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
     @Override
     public XBezahldienstePaymentTransaction onPaymentResultPush(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config,
+            @Nonnull DerivedRuntimeElementData config,
             @Nonnull XBezahldienstePaymentTransaction paymentTransaction,
             @Nonnull Map<String, Object> callbackData
     ) throws PaymentException {
         return onPaymentResultPull(paymentProviderEntity, config, paymentTransaction);
     }
 
-    private String getAccessToken(ElementData config, PaymentProviderEntity paymentProviderEntity) throws PaymentException {
-        var paymentProviderOAuthUrl = (String) config.get(OAUTH_URL_FIELD).getValue();
+    private String getAccessToken(DerivedRuntimeElementData config, PaymentProviderEntity paymentProviderEntity) throws PaymentException {
+        var effectiveValues = config.getEffectiveValues();
+
+        var paymentProviderOAuthUrl = (String) effectiveValues.get(OAUTH_URL_FIELD);
         if (StringUtils.isNullOrEmpty(paymentProviderOAuthUrl)) {
             throw new PaymentMissingDataException("OAuth URL", paymentProviderEntity);
         }
@@ -315,12 +318,12 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
                 .normalizeUrl(paymentProviderOAuthUrl)
                 .replaceAll("/$", "");
 
-        var paymentProviderClientId = (String) config.get(CLIENT_ID_FIELD).getValue();
+        var paymentProviderClientId = (String) effectiveValues.get(CLIENT_ID_FIELD);
         if (StringUtils.isNullOrEmpty(paymentProviderClientId)) {
             throw new PaymentException("Client ID for payment provider %s is missing", getProviderName());
         }
 
-        var paymentProviderClientSecretKey = (String) config.get(CLIENT_SECRET_FIELD).getValue();
+        var paymentProviderClientSecretKey = (String) effectiveValues.get(CLIENT_SECRET_FIELD);
         var paymentProviderClientSecret = getDecryptedClientSecret(paymentProviderClientSecretKey);
         if (StringUtils.isNullOrEmpty(paymentProviderClientSecret)) {
             throw new PaymentException("Client secret %s is empty", paymentProviderClientSecretKey);
@@ -366,9 +369,9 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
     @Nonnull
     private String getOriginatorID(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config
+            @Nonnull DerivedRuntimeElementData config
     ) throws PaymentException {
-        var originatorID = (String) config.get(ORIGINATOR_ID_FIELD).getValue();
+        var originatorID = (String) config.getEffectiveValues().get(ORIGINATOR_ID_FIELD);
         if (StringUtils.isNullOrEmpty(originatorID)) {
             throw new PaymentException("Originator ID for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
@@ -378,9 +381,9 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
     @Nonnull
     private String getEndpointID(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config
+            @Nonnull DerivedRuntimeElementData config
     ) throws PaymentException {
-        var endpointID = (String) config.get(ENDPOINT_ID_FIELD).getValue();
+        var endpointID = (String) config.getEffectiveValues().get(ENDPOINT_ID_FIELD);
         if (StringUtils.isNullOrEmpty(endpointID)) {
             throw new PaymentException("Endpoint ID for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
@@ -410,8 +413,9 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
     }
 
     @Nonnull
-    private static String getNormalizedPaymentTransactionUrl(@Nonnull PaymentProviderEntity paymentProviderEntity, @Nonnull ElementData config) throws PaymentException {
-        var paymentTransactionUrl = (String) config.get(PAYMENT_TRANSACTION_URL_FIELD).getValue();
+    private static String getNormalizedPaymentTransactionUrl(@Nonnull PaymentProviderEntity paymentProviderEntity,
+                                                             @Nonnull DerivedRuntimeElementData config) throws PaymentException {
+        var paymentTransactionUrl = (String) config.getEffectiveValues().get(PAYMENT_TRANSACTION_URL_FIELD);
         if (StringUtils.isNullOrEmpty(paymentTransactionUrl)) {
             throw new PaymentException("Payment transaction URL for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }

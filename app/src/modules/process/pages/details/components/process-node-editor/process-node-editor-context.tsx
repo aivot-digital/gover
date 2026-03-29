@@ -10,7 +10,7 @@ interface ProcessNodeEditorContextType {
     testClaim: ProcessTestClaimEntity | null;
 
     node: ProcessNodeEntity;
-    setNode: (node: ProcessNodeEntity) => void;
+    setNode: (node: ProcessNodeEntity, updateOriginal: boolean) => void;
 
     isEditable: boolean;
 }

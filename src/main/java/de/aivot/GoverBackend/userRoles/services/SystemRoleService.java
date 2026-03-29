@@ -27,6 +27,8 @@ public class SystemRoleService implements EntityService<SystemRoleEntity, Intege
     @Nonnull
     @Override
     public SystemRoleEntity create(@Nonnull SystemRoleEntity entity) throws ResponseException {
+        // Force the generation of a new id
+        entity.setId(null);
         // Directly save the entity
         return repository.save(entity);
     }

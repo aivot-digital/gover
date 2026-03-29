@@ -1,16 +1,20 @@
 package de.aivot.GoverBackend.elements.models.elements.steps;
 
-import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
-import de.aivot.GoverBackend.elements.models.elements.PrintableElement;
+import de.aivot.GoverBackend.elements.models.elements.*;
 import de.aivot.GoverBackend.elements.models.elements.form.input.CheckboxInputElement;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.exceptions.ValidationException;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
-public class SummaryStepElement extends BaseInputElement<Boolean> implements PrintableElement<Boolean> {
+public class SummaryStepElement extends BaseStepElement implements InputElement<Boolean>, PrintableElement<Boolean> {
     public SummaryStepElement() {
         super(ElementType.SummaryStep);
+    }
+
+    @Override
+    public Boolean getRequired() {
+        return true;
     }
 
     @Override
@@ -23,6 +27,24 @@ public class SummaryStepElement extends BaseInputElement<Boolean> implements Pri
     @Override
     public Boolean formatValue(Object value) {
         return CheckboxInputElement._formatValue(value);
+    }
+
+    @Nullable
+    @Override
+    public ElementValueFunctions getValue() {
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public ElementValidationFunctions getValidation() {
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public Boolean getDisabled() {
+        return false;
     }
 
     @Nonnull

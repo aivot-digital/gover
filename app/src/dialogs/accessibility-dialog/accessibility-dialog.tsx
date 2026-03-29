@@ -9,6 +9,7 @@ import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
 import {VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
 import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
+import {MarkdownContent} from '../../components/markdown-content/markdown-content';
 
 export const AccessibilityDialogId = 'accessibility';
 
@@ -55,9 +56,9 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
             </DialogTitleWithClose>
             {
                 department?.commonAccessibility ?
-                    <DialogContent
-                        dangerouslySetInnerHTML={{__html: department?.commonAccessibility}}
-                    />
+                    <DialogContent>
+                        <MarkdownContent markdown={department.commonAccessibility}/>
+                    </DialogContent>
                     :
                     <DialogContent tabIndex={0}>
                         <Alert severity="info">

@@ -1,172 +1,353 @@
-import React from 'react';
+import React, {useMemo, useState} from 'react';
+import Fuse from 'fuse.js';
 import {
-    IconButton,
-    List,
-    ListItem,
-    ListItemButton,
-    ListItemIcon,
-    ListItemText,
-    ListSubheader,
-    Tooltip
+    Accordion,
+    AccordionDetails,
+    AccordionSummary,
+    Alert,
+    Box,
+    Chip,
+    Divider,
+    Typography,
 } from '@mui/material';
+import ExpandMore from '@mui/icons-material/ExpandMore';
+import {SearchInput} from '../../../components/search-input/search-input';
 import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
 import {getElementNameForType} from '../../../data/element-type/element-names';
 import {type BaseTabProps} from './base-tab-props';
-import {type ElementTypesMap} from '../../../data/element-type/element-types-map';
 import {ElementType} from '../../../data/element-type/element-type';
-import {ElementChildOptions} from '../../../data/element-type/element-child-options';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import {ElementChildOptions, ElementDisplayContext} from '../../../data/element-type/element-child-options';
 import {getElementIconForType} from '../../../data/element-type/element-icons';
+import {
+    elementTypeGroupLabels,
+    ElementTypeGroups,
+    getElementDescriptionForType,
+    getElementGroupForType,
+} from '../element-dialog-metadata';
+import {SelectionListRow} from '../../../components/selection-dialog/selection-list-row';
 
-enum ElementTypeGroups {
-    Display,
-    Information,
-    Input,
-    DateTime,
-    Select,
-    Group,
-    Other
+const defaultExpandedGroups: Record<ElementTypeGroups, boolean> = {
+    [ElementTypeGroups.Display]: true,
+    [ElementTypeGroups.Information]: true,
+    [ElementTypeGroups.Input]: true,
+    [ElementTypeGroups.DateTime]: true,
+    [ElementTypeGroups.Select]: true,
+    [ElementTypeGroups.Group]: true,
+    [ElementTypeGroups.Other]: true,
+};
+
+interface ElementOption {
+    type: ElementType;
+    group: ElementTypeGroups;
+    name: string;
+    description: string;
 }
 
-const elementTypeGroupsLabels: { [key in ElementTypeGroups]: string } = {
-    [ElementTypeGroups.Display]: 'Darstellung',
-    [ElementTypeGroups.Information]: 'Information',
-    [ElementTypeGroups.Select]: 'Auswahl',
-    [ElementTypeGroups.Input]: 'Eingabe',
-    [ElementTypeGroups.DateTime]: 'Datum und Zeit',
-    [ElementTypeGroups.Group]: 'Gruppierung',
-    [ElementTypeGroups.Other]: 'Sonstige',
-};
-
-const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
-    [ElementType.Alert]: ElementTypeGroups.Information,
-    [ElementType.Image]: ElementTypeGroups.Information,
-    [ElementType.GroupLayout]: ElementTypeGroups.Display,
-    [ElementType.Step]: null,
-    [ElementType.FormLayout]: null,
-    [ElementType.Checkbox]: ElementTypeGroups.Select,
-    [ElementType.Date]: ElementTypeGroups.DateTime,
-    [ElementType.Headline]: ElementTypeGroups.Information,
-    [ElementType.MultiCheckbox]: ElementTypeGroups.Select,
-    [ElementType.Number]: ElementTypeGroups.Input,
-    [ElementType.ReplicatingContainer]: ElementTypeGroups.Input,
-    [ElementType.RichText]: ElementTypeGroups.Information,
-    [ElementType.Radio]: ElementTypeGroups.Select,
-    [ElementType.Select]: ElementTypeGroups.Select,
-    [ElementType.Spacer]: ElementTypeGroups.Display,
-    [ElementType.Table]: ElementTypeGroups.Input,
-    [ElementType.Text]: ElementTypeGroups.Input,
-    [ElementType.Time]: ElementTypeGroups.DateTime,
-    [ElementType.FileUpload]: ElementTypeGroups.Input,
-
-    [ElementType.IntroductionStep]: null,
-    [ElementType.SummaryStep]: null,
-    [ElementType.SubmitStep]: null,
-    [ElementType.SubmittedStep]: null,
-
-    [ElementType.DialogLayout]: null,
-    [ElementType.StepperLayout]: null,
-    [ElementType.ConfigLayout]: null,
-    [ElementType.FunctionInput]: null,
-    [ElementType.CodeInput]: null,
-    [ElementType.RichTextInput]: null,
-    [ElementType.UiDefinitionInput]: null,
-    [ElementType.IdentityInput]: null,
-    [ElementType.TabLayout]: null,
-};
-
 export function ElementTab({
-                               parentType,
-                               onAddElement,
-                               showElementInfo,
-                               highlightedElement,
-                               limitElementTypes,
-                           }: BaseTabProps & {
+    parentType,
+    onAddElement,
+    primaryActionLabel,
+    primaryActionIcon,
+    showElementInfo,
+    highlightedElement,
+    limitElementTypes,
+    recentElementTypes = [],
+    displayContext,
+}: BaseTabProps & {
     showElementInfo: (type: ElementType) => void;
     highlightedElement?: ElementType;
     limitElementTypes?: ElementType[];
+    recentElementTypes?: ElementType[];
+    displayContext: ElementDisplayContext;
 }) {
-    const childOptions = ElementChildOptions[parentType] ?? [];
+    const [search, setSearch] = useState('');
+    const [expandedGroups, setExpandedGroups] = useState<Record<ElementTypeGroups, boolean>>(defaultExpandedGroups);
 
-    const optionGroups = childOptions
-        .filter(et => {
-            if (limitElementTypes == null || limitElementTypes.includes(et)) {
-                return true;
-            }
-        })
-        .reduce<{ [key in ElementTypeGroups]?: ElementType[] }>((groups, child) => {
-            const childGroup = elementGroupMap[child] ?? ElementTypeGroups.Other;
-            const groupChildren = groups[childGroup] ?? [];
-            groupChildren.push(child);
-            groups[childGroup] = groupChildren;
-            return groups;
-        }, {});
+    const options = useMemo<ElementOption[]>(() => {
+        const childOptions = ElementChildOptions[displayContext][parentType] ?? [];
+
+        return childOptions
+            .filter((type) => limitElementTypes == null || limitElementTypes.includes(type))
+            .flatMap((type) => {
+                const group = getElementGroupForType(type);
+                if (group == null) {
+                    return [];
+                }
+
+                return [{
+                    type,
+                    group,
+                    name: getElementNameForType(type),
+                    description: getElementDescriptionForType(type),
+                }];
+            });
+    }, [limitElementTypes, parentType]);
+
+    const filteredOptions = useMemo(() => {
+        const trimmedSearch = search.trim();
+        if (trimmedSearch.length === 0) {
+            return [...options].sort((left, right) => left.name.localeCompare(right.name, 'de'));
+        }
+
+        const fuse = new Fuse(options, {
+            threshold: 0.32,
+            ignoreLocation: true,
+            keys: [
+                {name: 'name', weight: 0.6},
+                {name: 'description', weight: 0.4},
+            ],
+        });
+
+        return fuse.search(trimmedSearch).map((entry) => entry.item);
+    }, [options, search]);
+
+    const recentOptions = useMemo(() => {
+        const optionsMap = new Map(options.map((option) => [option.type, option]));
+
+        return recentElementTypes.flatMap((type) => {
+            const option = optionsMap.get(type);
+            return option == null ? [] : [option];
+        });
+    }, [options, recentElementTypes]);
+
+    const groupedOptions = useMemo(() => {
+        const groups = new Map<ElementTypeGroups, ElementOption[]>();
+
+        for (const option of filteredOptions) {
+            const groupOptions = groups.get(option.group) ?? [];
+            groupOptions.push(option);
+            groups.set(option.group, groupOptions);
+        }
+
+        return groups;
+    }, [filteredOptions]);
+
+    const visibleGroupTypes = useMemo(() => (
+        Object.values(ElementTypeGroups)
+            .filter((group): group is ElementTypeGroups => typeof group === 'number')
+            .filter((group) => (groupedOptions.get(group)?.length ?? 0) > 0)
+    ), [groupedOptions]);
+
+    const handleAddElement = (type: ElementType): void => {
+        const newElement = generateElementWithDefaultValues(type);
+        if (newElement != null) {
+            onAddElement(newElement);
+        }
+    };
+
+    const renderOptionRows = (elementOptions: ElementOption[], showGroupLabel: boolean = false) => (
+        elementOptions.map((option, index) => (
+            <React.Fragment key={`${showGroupLabel ? 'recent' : 'group'}-${option.type}`}>
+                <ElementRow
+                    option={option}
+                    isSelected={highlightedElement === option.type}
+                    primaryActionLabel={primaryActionLabel}
+                    primaryActionIcon={primaryActionIcon}
+                    titleAdornment={
+                        showGroupLabel ?
+                            <Chip size="small" label={elementTypeGroupLabels[option.group]}/> :
+                            undefined
+                    }
+                    onAdd={() => {
+                        handleAddElement(option.type);
+                    }}
+                    onShowDetails={() => {
+                        showElementInfo(option.type);
+                    }}
+                />
+                {
+                    index < elementOptions.length - 1 &&
+                    <Divider/>
+                }
+            </React.Fragment>
+        ))
+    );
 
     return (
-        <List
-            dense
+        <Box
+            sx={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+            }}
         >
-            {
-                Object.keys(ElementTypeGroups).map((groupString, index) => (
-                    (optionGroups[parseInt(groupString) as ElementTypeGroups] ?? []).length > 0 &&
-                    <React.Fragment key={index}>
-                        <ListSubheader
-                            component="div"
-                            id={`element-list-subheader-${index}`}
+            <Box
+                sx={{
+                    p: 2,
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                }}
+            >
+                <SearchInput
+                    label="Element suchen"
+                    placeholder="Name oder Beschreibung durchsuchen"
+                    value={search}
+                    onChange={setSearch}
+                    debounce={120}
+                />
+            </Box>
+
+            <Box
+                sx={{
+                    flex: 1,
+                    overflowY: 'auto',
+                    pb: 1.5,
+                }}
+            >
+                {
+                    options.length === 0 &&
+                    <Box sx={{mt: 2, px: 2}}>
+                        <Alert severity="info">
+                            Für diesen Bereich stehen keine passenden Formularelemente zur Verfügung.
+                        </Alert>
+                    </Box>
+                }
+
+                {
+                    options.length > 0 && filteredOptions.length === 0 &&
+                    <Box sx={{mt: 2, px: 2}}>
+                        <Alert severity="info">
+                            Es wurden keine Formularelemente gefunden, die zu Ihrer Suche passen.
+                        </Alert>
+                    </Box>
+                }
+
+                {
+                    search.trim().length === 0 && recentOptions.length > 0 &&
+                    <Box
+                        sx={{
+                            borderBottom: '1px solid',
+                            borderColor: 'divider',
+                        }}
+                    >
+                        <Box
                             sx={{
-                                pl: '26px',
-                                lineHeight: '30px',
-                                mt: 1,
-                                textTransform: 'uppercase',
+                                px: 2,
+                                py: 1.5,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1,
+                                bgcolor: 'rgba(15, 23, 42, 0.035)',
+                                borderBottom: '1px solid',
+                                borderColor: 'divider',
                             }}
                         >
-                            {elementTypeGroupsLabels[parseInt(groupString) as ElementTypeGroups]}
-                        </ListSubheader>
+                            <Typography fontWeight={700}>
+                                Zuletzt verwendet
+                            </Typography>
+                            <Chip
+                                size="small"
+                                label={`${recentOptions.length} ${recentOptions.length === 1 ? 'Element' : 'Elemente'}`}
+                            />
+                        </Box>
+                        {renderOptionRows(recentOptions, true)}
+                    </Box>
+                }
 
-                        {
-                            (optionGroups[parseInt(groupString) as ElementTypeGroups] ?? []).map((type) => {
-                                const Icon = getElementIconForType(type);
-                                return (
-                                    <ListItem
-                                        key={type}
-                                        disablePadding
-                                        secondaryAction={
-                                            <Tooltip title="Mehr Informationen">
-                                                <IconButton
-                                                    onClick={() => {
-                                                        showElementInfo(type);
-                                                    }}
-                                                >
-                                                    <InfoOutlinedIcon/>
-                                                </IconButton>
-                                            </Tooltip>
-                                        }
+                {
+                    visibleGroupTypes.map((group, groupIndex) => (
+                        <Accordion
+                            key={group}
+                            disableGutters
+                            expanded={search.trim().length > 0 ? true : expandedGroups[group]}
+                            onChange={(_, expanded) => {
+                                if (search.trim().length > 0) {
+                                    return;
+                                }
 
-                                    >
-                                        <ListItemButton
-                                            onClick={() => {
-                                                const newElement = generateElementWithDefaultValues(type);
-                                                if (newElement != null) {
-                                                    onAddElement(newElement);
-                                                }
-                                            }}
-                                            selected={highlightedElement === type}
-                                        >
-                                            <ListItemIcon sx={{pl: 1.5}}>
-                                                <Icon/>
-                                            </ListItemIcon>
-                                            <ListItemText
-                                                disableTypography
-                                                primary={getElementNameForType(type)}
-                                            />
-                                        </ListItemButton>
-                                    </ListItem>
-                                );
-                            })
-                        }
-                    </React.Fragment>
-                ))
-            }
-        </List>
+                                setExpandedGroups((previous) => ({
+                                    ...previous,
+                                    [group]: expanded,
+                                }));
+                            }}
+                            sx={{
+                                boxShadow: 'none',
+                                bgcolor: 'transparent',
+                                '&::before': {
+                                    display: 'none',
+                                },
+                                '&.Mui-expanded': {
+                                    mt: 0,
+                                    mb: 0,
+                                },
+                            }}
+                        >
+                            <AccordionSummary
+                                expandIcon={search.trim().length === 0 ? <ExpandMore/> : undefined}
+                                sx={{
+                                    px: 2,
+                                    minHeight: 56,
+                                    bgcolor: 'rgba(15, 23, 42, 0.035)',
+                                    borderTop: groupIndex === 0 ? 'none' : '1px solid',
+                                    borderBottom: '1px solid',
+                                    borderColor: 'divider',
+                                    '& .MuiAccordionSummary-content': {
+                                        my: 1.5,
+                                    },
+                                }}
+                            >
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1,
+                                        minWidth: 0,
+                                        pl: 1,
+                                    }}
+                                >
+                                    <Typography fontWeight={700}>
+                                        {elementTypeGroupLabels[group]}
+                                    </Typography>
+                                    <Chip
+                                        size="small"
+                                        label={`${groupedOptions.get(group)?.length ?? 0} ${(groupedOptions.get(group)?.length ?? 0) === 1 ? 'Element' : 'Elemente'}`}
+                                    />
+                                </Box>
+                            </AccordionSummary>
+
+                            <AccordionDetails sx={{p: 0}}>
+                                {renderOptionRows(groupedOptions.get(group) ?? [])}
+                            </AccordionDetails>
+                        </Accordion>
+                    ))
+                }
+            </Box>
+        </Box>
+    );
+}
+
+function ElementRow(props: {
+    option: ElementOption;
+    isSelected: boolean;
+    primaryActionLabel: string;
+    primaryActionIcon: React.ReactNode;
+    titleAdornment?: React.ReactNode;
+    onAdd: () => void;
+    onShowDetails: () => void;
+}) {
+    const {
+        option,
+        isSelected,
+        primaryActionLabel,
+        primaryActionIcon,
+        titleAdornment,
+        onAdd,
+        onShowDetails,
+    } = props;
+
+    const Icon = getElementIconForType(option.type);
+
+    return (
+        <SelectionListRow
+            icon={<Icon sx={{fontSize: 20, color: 'text.secondary'}}/>}
+            title={option.name}
+            titleAdornment={titleAdornment}
+            description={option.description}
+            selected={isSelected}
+            primaryActionLabel={primaryActionLabel}
+            primaryActionIcon={primaryActionIcon}
+            onShowDetails={onShowDetails}
+            onPrimaryAction={onAdd}
+        />
     );
 }

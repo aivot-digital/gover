@@ -5,6 +5,7 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.xrepository.models.XRepositoryCodeList;
 import jakarta.annotation.Nonnull;
@@ -73,6 +74,31 @@ public class XRepositoryCodeListService {
             for (var col : row.getValue()) {
                 if (col.getColumnRef().equals(labelColumnRef)) {
                     options.add(RadioInputElementOption.of(
+                            col.getSimpleValue(),
+                            col.getSimpleValue()
+                    ));
+                }
+            }
+        }
+
+        return options;
+    }
+
+    public List<SelectInputElementOption> getSelectFieldOptionCodeList(@Nonnull String codeListUrn) throws ResponseException {
+        var codeList = getCodeList(codeListUrn);
+
+        var labelColumnRef = codeList
+                .getColumnSet()
+                .getKey()
+                .getColumnRef()
+                .getRef();
+
+        var options = new LinkedList<SelectInputElementOption>();
+
+        for (var row : codeList.getCodeList().getRow()) {
+            for (var col : row.getValue()) {
+                if (col.getColumnRef().equals(labelColumnRef)) {
+                    options.add(SelectInputElementOption.of(
                             col.getSimpleValue(),
                             col.getSimpleValue()
                     ));

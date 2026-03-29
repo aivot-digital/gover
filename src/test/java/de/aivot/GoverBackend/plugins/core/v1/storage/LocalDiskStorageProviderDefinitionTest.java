@@ -1,9 +1,12 @@
 package de.aivot.GoverBackend.plugins.core.v1.storage;
 
+import de.aivot.GoverBackend.storage.exceptions.StorageException;
+import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,7 +43,7 @@ class LocalDiskStorageProviderDefinitionTest {
     }
 
     @Test
-    void rootFolder() {
+    void rootFolder() throws StorageException {
         var root = new LocalDiskStorageProviderDefinitionV1()
                 .rootFolder(config, true);
         assertNotNull(root);
@@ -51,7 +54,7 @@ class LocalDiskStorageProviderDefinitionTest {
     }
 
     @Test
-    void createFolder() {
+    void createFolder() throws StorageException {
         var target = new LocalDiskStorageProviderDefinitionV1()
                 .createFolder(config, "/new-folder");
 
@@ -65,7 +68,7 @@ class LocalDiskStorageProviderDefinitionTest {
     }
 
     @Test
-    void retrieveFolder() {
+    void retrieveFolder() throws StorageException {
         var target = new LocalDiskStorageProviderDefinitionV1()
                 .retrieveFolder(config, "/" + documentsFolder, true)
                 .orElse(null);
@@ -93,7 +96,7 @@ class LocalDiskStorageProviderDefinitionTest {
     }
 
     @Test
-    void deleteFolder() {
+    void deleteFolder() throws StorageException {
         var provider = new LocalDiskStorageProviderDefinitionV1();
         var folderPath = "/folder-to-delete";
 
@@ -107,11 +110,52 @@ class LocalDiskStorageProviderDefinitionTest {
     }
 
     @Test
-    void storeDocument() {
+    void moveFolder() throws StorageException {
+        var provider = new LocalDiskStorageProviderDefinitionV1();
+        var sourceFolderPath = "/documents/source-folder/";
+        var targetFolderPath = "/documents/moved-folder/";
+        var sourceDocumentPath = "/documents/source-folder/file.txt";
+        var sourceDocumentData = "Moved folder content.".getBytes();
+
+        provider.createFolder(config, sourceFolderPath);
+        provider.storeDocument(config, sourceDocumentPath, new ByteArrayInputStream(sourceDocumentData), new StorageItemMetadata());
+
+        var movedFolder = provider.moveFolder(config, sourceFolderPath, targetFolderPath);
+
+        assertNotNull(movedFolder);
+        assertEquals("/documents/moved-folder/", movedFolder.getPathFromRoot());
+        assertFalse(provider.folderExists(config, sourceFolderPath));
+        assertTrue(provider.folderExists(config, targetFolderPath));
+        assertTrue(provider.documentExists(config, "/documents/moved-folder/file.txt"));
+    }
+
+    @Test
+    void copyFolder() throws StorageException {
+        var provider = new LocalDiskStorageProviderDefinitionV1();
+        var sourceFolderPath = "/documents/source-copy-folder/";
+        var targetFolderPath = "/documents/copied-folder/";
+        var sourceDocumentPath = "/documents/source-copy-folder/file.txt";
+        var sourceDocumentData = "Copied folder content.".getBytes();
+
+        provider.createFolder(config, sourceFolderPath);
+        provider.storeDocument(config, sourceDocumentPath, new ByteArrayInputStream(sourceDocumentData), new StorageItemMetadata());
+
+        var copiedFolder = provider.copyFolder(config, sourceFolderPath, targetFolderPath);
+
+        assertNotNull(copiedFolder);
+        assertEquals("/documents/copied-folder/", copiedFolder.getPathFromRoot());
+        assertTrue(provider.folderExists(config, sourceFolderPath));
+        assertTrue(provider.folderExists(config, targetFolderPath));
+        assertTrue(provider.documentExists(config, "/documents/source-copy-folder/file.txt"));
+        assertTrue(provider.documentExists(config, "/documents/copied-folder/file.txt"));
+    }
+
+    @Test
+    void storeDocument() throws StorageException {
         var provider = new LocalDiskStorageProviderDefinitionV1();
         var documentPath = "/documents/test-document.txt";
         var documentData = "This is a test document.".getBytes();
-        var document = provider.storeDocument(config, documentPath, documentData);
+        var document = provider.storeDocument(config, documentPath, new ByteArrayInputStream(documentData), new StorageItemMetadata());
         assertNotNull(document);
         assertEquals("test-document.txt", document.getName());
         assertEquals("/documents/test-document.txt", document.getPathFromRoot());
@@ -119,13 +163,13 @@ class LocalDiskStorageProviderDefinitionTest {
     }
 
     @Test
-    void retrieveDocument() {
+    void retrieveDocument() throws StorageException {
         var provider = new LocalDiskStorageProviderDefinitionV1();
         var documentPath = "/documents/test-document.txt";
         var documentData = "This is a test document.".getBytes();
 
         // Store document first
-        provider.storeDocument(config, documentPath, documentData);
+        provider.storeDocument(config, documentPath, new ByteArrayInputStream(documentData), new StorageItemMetadata());
 
         // Retrieve document
         var retrievedDocumentOpt = provider.retrieveDocument(config, documentPath);
@@ -137,13 +181,13 @@ class LocalDiskStorageProviderDefinitionTest {
     }
 
      @Test
-    void retrieveDocumentContent() {
+    void retrieveDocumentContent() throws StorageException {
         var provider = new LocalDiskStorageProviderDefinitionV1();
         var documentPath = "/documents/test-document.txt";
         var documentData = "This is a test document.".getBytes();
 
         // Store document first
-        provider.storeDocument(config, documentPath, documentData);
+        provider.storeDocument(config, documentPath, new ByteArrayInputStream(documentData), new StorageItemMetadata());
 
         // Retrieve document content
         try (var inputStream = provider.retrieveDocumentContent(config, documentPath)) {
@@ -155,13 +199,13 @@ class LocalDiskStorageProviderDefinitionTest {
      }
 
     @Test
-    void documentExists() {
+    void documentExists() throws StorageException {
         var provider = new LocalDiskStorageProviderDefinitionV1();
         var documentPath = "/documents/test-document.txt";
         var documentData = "This is a test document.".getBytes();
 
         // Store document first
-        provider.storeDocument(config, documentPath, documentData);
+        provider.storeDocument(config, documentPath, new ByteArrayInputStream(documentData), new StorageItemMetadata());
 
         // Check existence
         var exists = provider.documentExists(config, documentPath);
@@ -172,18 +216,54 @@ class LocalDiskStorageProviderDefinitionTest {
     }
 
     @Test
-    void deleteDocument() {
+    void deleteDocument() throws StorageException {
         var provider = new LocalDiskStorageProviderDefinitionV1();
         var documentPath = "/documents/document-to-delete.txt";
         var documentData = "This document will be deleted.".getBytes();
 
         // Store document first
-        provider.storeDocument(config, documentPath, documentData);
+        provider.storeDocument(config, documentPath, new ByteArrayInputStream(documentData), new StorageItemMetadata());
         assertTrue(provider.documentExists(config, documentPath));
 
         // Delete document
         provider.deleteDocument(config, documentPath);
         assertFalse(provider.documentExists(config, documentPath));
+    }
+
+    @Test
+    void moveDocument() throws StorageException {
+        var provider = new LocalDiskStorageProviderDefinitionV1();
+        var sourcePath = "/documents/source.txt";
+        var targetPath = "/documents/moved.txt";
+        var documentData = "This document will be moved.".getBytes();
+
+        provider.storeDocument(config, sourcePath, new ByteArrayInputStream(documentData), new StorageItemMetadata());
+        assertTrue(provider.documentExists(config, sourcePath));
+
+        var movedDocument = provider.moveDocument(config, sourcePath, targetPath);
+
+        assertNotNull(movedDocument);
+        assertEquals(targetPath, movedDocument.getPathFromRoot());
+        assertTrue(provider.documentExists(config, targetPath));
+        assertFalse(provider.documentExists(config, sourcePath));
+    }
+
+    @Test
+    void copyDocument() throws StorageException {
+        var provider = new LocalDiskStorageProviderDefinitionV1();
+        var sourcePath = "/documents/source-copy.txt";
+        var targetPath = "/documents/copied.txt";
+        var documentData = "This document will be copied.".getBytes();
+
+        provider.storeDocument(config, sourcePath, new ByteArrayInputStream(documentData), new StorageItemMetadata());
+        assertTrue(provider.documentExists(config, sourcePath));
+
+        var copiedDocument = provider.copyDocument(config, sourcePath, targetPath);
+
+        assertNotNull(copiedDocument);
+        assertEquals(targetPath, copiedDocument.getPathFromRoot());
+        assertTrue(provider.documentExists(config, sourcePath));
+        assertTrue(provider.documentExists(config, targetPath));
     }
 
     @Test

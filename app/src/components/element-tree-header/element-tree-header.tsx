@@ -28,7 +28,7 @@ import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import GradingOutlinedIcon from '@mui/icons-material/GradingOutlined';
 import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
-import {SearchInput} from '../search-input-2/search-input';
+import {SearchInput} from '../search-input/search-input';
 import {isLoadedForm, selectAllElements} from '../../slices/app-slice';
 import Fuse from 'fuse.js';
 import {generateComponentTitle} from '../../utils/generate-component-title';
@@ -322,7 +322,8 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                             <SearchInput
                                 value={search}
                                 onChange={setSearch}
-                                placeholder="Element Suchen"
+                                label="Element suchen"
+                                placeholder="Name oder ID eingeben"
                                 sx={{
                                     flex: 1,
                                 }}

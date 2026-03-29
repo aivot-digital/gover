@@ -7,7 +7,6 @@ import {Link, useNavigate, useParams} from 'react-router-dom';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
@@ -30,6 +29,7 @@ import {ImageSelector} from '../../../assets/components/image-selector';
 import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import {VFormVersionWithDetailsService} from '../../../forms/services/v-form-version-with-details-api-service';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export const ThemeSchema = yup.object({
     name: yup.string()
@@ -424,7 +424,7 @@ export function ThemeDetailsPageIndex() {
                         sx={{
                             marginLeft: 'auto',
                         }}
-                        startIcon={<DeleteOutlinedIcon />}
+                        startIcon={<Delete />}
                     >
                         Löschen
                     </Button>

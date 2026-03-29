@@ -22,6 +22,10 @@ public class NoCodeReference extends NoCodeOperand {
         this.elementId = elementId;
     }
 
+    public static NoCodeReference of(@Nullable String elementId) {
+        return new NoCodeReference(elementId);
+    }
+
     // region Hash & Equals
 
     @Override

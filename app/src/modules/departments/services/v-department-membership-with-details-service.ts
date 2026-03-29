@@ -14,6 +14,7 @@ interface VDepartmentMembershipWithDetailsFilter {
     verified: boolean;
     globalAdmin: boolean;
     deletedInIdp: boolean;
+    domainRoleId: number;
 }
 
 export interface ListDepartmentMembershipsWithRolesFilter {
@@ -64,6 +65,7 @@ export class VDepartmentMembershipWithDetailsService extends BaseCrudApiService<
             departmentId: 0,
             departmentName: "",
             domainRolePermissions: [],
+            domainRoleAssignments: [],
             domainRoles: [],
             membershipId: 0,
             membershipHasDeputies: false,

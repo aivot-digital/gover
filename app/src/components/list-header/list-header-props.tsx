@@ -5,7 +5,8 @@ type ListHeaderAction = {icon: React.ReactNode, badge?: BadgeProps} & ({label: s
 export interface ListHeaderProps {
     title: string;
     search: string | undefined;
-    searchPlaceholder: string;
+    searchLabel: string;
+    searchPlaceholder?: string;
     onSearchChange: (search: string) => void;
     actions?: ListHeaderAction[];
     hint?: {

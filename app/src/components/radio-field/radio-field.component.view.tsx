@@ -1,10 +1,9 @@
 import React, {useMemo} from 'react';
-import {FormControl, FormControlLabel, FormHelperText, FormLabel, Radio, RadioGroup} from '@mui/material';
 import {type RadioFieldElement} from '../../models/elements/form/input/radio-field-element';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {type BaseViewProps} from '../../views/base-view';
-import {type SelectFieldElementOption} from '../../models/elements/form/input/select-field-element';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
+import {RadioFieldComponent} from './radio-field-component';
 
 export function RadioFieldComponentView(props: BaseViewProps<RadioFieldElement, string>) {
     const {
@@ -17,123 +16,33 @@ export function RadioFieldComponentView(props: BaseViewProps<RadioFieldElement, 
     } = props;
 
     const {
-        disabled,
-        options: baseOptions,
-        displayInline,
+        disabled: elementDisabled,
     } = element;
 
-    const options = useMemo(() => {
-        if (baseOptions == null) {
-            return [];
-        }
-
-        return baseOptions
-            .map((option: string | SelectFieldElementOption) => {
-                if (typeof option === 'string') {
-                    return {
-                        value: option,
-                        label: option,
-                    };
-                } else {
-                    return option;
-                }
-            });
-    }, [baseOptions]);
-
     const isDisabled = useMemo(() => {
-        return disabled || isGloballyDisabled;
-    }, [disabled, isGloballyDisabled]);
+        return elementDisabled || isGloballyDisabled;
+    }, [elementDisabled, isGloballyDisabled]);
 
     const isBusy = useMemo(() => {
         return isDeriving && hasDerivableAspects(element);
     }, [isDeriving, element]);
 
-    const optionElements = useMemo(() => {
-        return options.map((option) => (
-            <FormControlLabel
-                key={option.value}
-                value={option.value}
-                control={<Radio
-                    sx={{color: isBusy ? "rgba(0, 0, 0, 0.26)!important" : undefined}}
-                />}
-                label={option.label}
-                disabled={isDisabled}
-                sx={{
-                    ...(displayInline ? { mr: 3 } : {}),
-                    ...(isBusy ? {
-                        color: "rgba(0, 0, 0, 0.38)!important",
-                        cursor: "not-allowed",
-                    } : {}),
-                    '& .MuiFormControlLabel-label': {
-                        wordBreak: 'break-word',
-                        whiteSpace: 'normal',
-                    },
-                }}
-            />
-        ));
-    }, [options, displayInline, isDisabled, isBusy]);
-
     return (
-        <FormControl
-            error={errors != null}
-            disabled={isDisabled}
-        >
-            <FormLabel
-                id={'label-' + element.id}
-            >
-                {element.label} {element.required && ' *'}
-            </FormLabel>
-            <RadioGroup
-                aria-labelledby={'label-' + element.id}
-                name={'radio-group-' + element.id}
-                value={value ?? ''}
-                onChange={(event) => {
-                    if (!isBusy) {
-                        if (isStringNullOrEmpty(event.target.value)) {
-                            setValue(undefined);
-                        } else {
-                            setValue(event.target.value ?? '');
-                        }
-                    }
-                }}
-                row={element.displayInline ?? false}
-            >
-                {
-                    !element.required &&
-                    <FormControlLabel
-                        value={''}
-                        control={<Radio
-                            sx={{color: isBusy ? "rgba(0, 0, 0, 0.26)!important" : undefined}}
-                        />}
-                        label="Keine Auswahl"
-                        disabled={isDisabled}
-                        sx={{
-                            ...(isBusy ? {
-                                color: "rgba(0, 0, 0, 0.38)!important",
-                                cursor: "not-allowed",
-                            } : {}),
-                            fontStyle: 'italic',
-                            mr: element.displayInline ? 3 : undefined
-                        }}
-                    />
+        <RadioFieldComponent
+            label={element.label ?? ''}
+            options={element.options}
+            value={value}
+            onChange={(newValue) => {
+                if (!isBusy) {
+                    setValue(isStringNullOrEmpty(newValue) ? undefined : newValue ?? undefined);
                 }
-                {optionElements}
-            </RadioGroup>
-            {
-                (element.hint != null || errors != null) &&
-                <FormHelperText sx={{ml: 0}}>
-                    {
-                        element.hint != null &&
-                        errors == null &&
-                        element.hint
-                    }
-                    {
-                        errors != null &&
-                        <span>{errors.join(' ')}</span>
-                    }
-                </FormHelperText>
-            }
-
-        </FormControl>
+            }}
+            required={element.required}
+            error={errors != null ? errors.join(' ') : undefined}
+            hint={element.hint}
+            disabled={isDisabled}
+            displayInline={element.displayInline}
+            toggleButtons={element.toggleButtons}
+        />
     );
 }

@@ -43,7 +43,7 @@ const columns: Array<GridColDef<VTeamMembershipWithDetailsEntity>> = [
         renderCell: (params) => (
             <CellLink
                 to={`/teams/${params.row.teamId}`}
-                title="Fachbereich bearbeiten"
+                title="Team bearbeiten"
             >
                 {String(params.row.teamName)}
             </CellLink>
@@ -115,7 +115,7 @@ export function UserDetailsPageTeamMemberships() {
 
     const handleAddMembership = (user: User, team: TeamEntity, roleIdsToAdd: number[]) => {
         dispatch(setLoadingMessage({
-            message: `Füge die Mitarbeiter:in zur Organisationseinheit ${team.name} hinzu`,
+            message: `Füge die Mitarbeiter:in zum Team ${team.name} hinzu`,
             blocking: true,
             estimatedTime: 5000,
         }));
@@ -147,7 +147,7 @@ export function UserDetailsPageTeamMemberships() {
                     dispatch(showErrorSnackbar(error.message));
                 } else {
                     console.error(error);
-                    dispatch(showErrorSnackbar('Fehler beim Hinzufügen der Mitarbeiter:in zum Fachbereich'));
+                    dispatch(showErrorSnackbar('Fehler beim Hinzufügen der Mitarbeiter:in zum Team'));
                 }
             })
             .finally(() => {
@@ -205,11 +205,11 @@ export function UserDetailsPageTeamMemberships() {
                     variant="h5"
                     sx={{mb: 1}}
                 >
-                    Mitgliedschaften in Organisationseinheiten
+                    Mitgliedschaften in Teams
                 </Typography>
 
                 <Typography sx={{mb: 3, maxWidth: 900}}>
-                    Eine Übersicht der Organisationseinheiten, in denen diese Mitarbeiter:in Mitglied ist, und die
+                    Eine Übersicht der Teams, in denen diese Mitarbeiter:in Mitglied ist, und die
                     dazugehörigen
                     Rollen.
                 </Typography>
@@ -230,13 +230,13 @@ export function UserDetailsPageTeamMemberships() {
                             });
                     }}
                     getRowIdentifier={(item) => item.membershipId.toString()}
-                    searchLabel="Organisationseinheit suchen"
-                    searchPlaceholder="Titel der Organisationseinheit eingeben…"
+                    searchLabel="Team suchen"
+                    searchPlaceholder="Name des Teams eingeben…"
                     defaultSortField="teamName"
                     rowMenuItems={[]}
-                    noDataPlaceholder="Keine Organisationseinheiten vorhanden"
-                    loadingPlaceholder="Lade Organisationseinheiten…"
-                    noSearchResultsPlaceholder="Keine Organisationseinheiten gefunden"
+                    noDataPlaceholder="Keine Teams vorhanden"
+                    loadingPlaceholder="Lade Teams…"
+                    noSearchResultsPlaceholder="Keine Teams gefunden"
                     rowActions={(item) => [
                         {
                             icon: hasAccess ? <EditOutlined/> : <Visibility/>,
@@ -247,7 +247,7 @@ export function UserDetailsPageTeamMemberships() {
                         }, {
                             icon: hasAccess ? <EditOutlined/> : <Visibility/>,
                             to: `/teams/${item.teamId}`,
-                            tooltip: hasAccess ? 'Organisationseinheit bearbeiten' : 'Organisationseinheit anzeigen',
+                            tooltip: hasAccess ? 'Team bearbeiten' : 'Team anzeigen',
                         }
                     ]}
                     preSearchElements={preSearchElements}
@@ -259,7 +259,7 @@ export function UserDetailsPageTeamMemberships() {
                 onClose={() => {
                     setShowSelectNewTeamDialog(false);
                 }}
-                title="Organisationseinheit auswählen"
+                title="Team auswählen"
                 tabs={[{
                     title: 'Alle',
                     options: availableTeams ?? [],
@@ -267,7 +267,7 @@ export function UserDetailsPageTeamMemberships() {
                         setShowSelectRolesDialogForTeam(dep);
                         setShowSelectNewTeamDialog(false);
                     },
-                    searchPlaceholder: 'Organisationseinheit suchen',
+                    searchPlaceholder: 'Teams suchen',
                     searchKeys: ['name'],
                     primaryTextKey: 'name',
                     getId: o => String(o.id),

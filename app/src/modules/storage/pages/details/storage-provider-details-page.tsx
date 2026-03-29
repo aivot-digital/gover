@@ -5,19 +5,19 @@ import {StorageProvidersApiService} from '../../storage-providers-api-service';
 import {type StorageProviderAdditionalData} from './storage-provider-details-page-additional-data';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
-import React, {type ReactNode, useState} from 'react';
+import React, {type ReactNode, useRef, useState} from 'react';
 import {type StorageProviderEntity} from '../../entities/storage-provider-entity';
 import {StorageStatusChip} from '../../components/storage-status-chip';
 import Sync from '@aivot/mui-material-symbols-400-outlined/dist/sync/Sync';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
-import {useNavigate} from 'react-router-dom';
+import {GenericDetailsPageControlRef} from '../../../../components/generic-details-page/generic-details-page-props';
 
 export function StorageProviderDetailsPage(): ReactNode {
     const dispatch = useAppDispatch();
-    const navigate = useNavigate();
 
     const [provider, setProvider] = useState<StorageProviderEntity>();
+    const detailsPageControlRef = useRef<GenericDetailsPageControlRef | null>(null);
 
     const handleSync = (): void => {
         if (provider == null) {
@@ -27,9 +27,7 @@ export function StorageProviderDetailsPage(): ReactNode {
             .resync(provider.id)
             .then(() => {
                 dispatch(showSuccessSnackbar('Die Synchronisierung wurde gestartet'));
-                setTimeout(() => {
-                    navigate(0);
-                }, 0);
+                detailsPageControlRef.current?.refresh();
             })
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Beim Starten der Synchronisierung ist ein Fehler aufgetreten.'));
@@ -47,14 +45,15 @@ export function StorageProviderDetailsPage(): ReactNode {
                     header={{
                         icon: ModuleIcons.storage,
                         title: 'Speicheranbieter bearbeiten',
-                        badge: provider != null ? <StorageStatusChip status={provider.status}/> : undefined,
+                        badge: provider != null && provider?.id !== 0 ? <StorageStatusChip status={provider.status} lastSync={provider.lastSync}/> : undefined,
                         actions: [{
                             tooltip: 'Speicher synchronisieren',
                             icon: <Sync/>,
                             onClick: handleSync,
+                            disabled: provider?.id === 0,
                         }],
                         helpDialog: {
-                            title: 'Hilfe zu Speicheranbieter',
+                            title: 'Hilfe zu Speicheranbietern',
                             tooltip: 'Hilfe anzeigen',
                             content: (
                                 <>
@@ -85,7 +84,13 @@ export function StorageProviderDetailsPage(): ReactNode {
                         },
                         {
                             path: '/storage-providers/:id/explore',
-                            label: 'Dateien',
+                            label: 'Dateiexplorer',
+                            isDisabled: (item) => item?.id === 0,
+                        },
+                        {
+                            path: '/storage-providers/:id/test',
+                            label: 'Testen',
+                            isDisabled: (item) => item?.id === 0,
                         },
                     ]}
                     initializeItem={() => {
@@ -119,9 +124,10 @@ export function StorageProviderDetailsPage(): ReactNode {
                     }}
                     parentLink={{
                         label: 'Liste der Speicheranbieter',
-                        to: '/payment-providers',
+                        to: '/storage-providers',
                     }}
-                    entityType={ServerEntityType.PaymentProviders}
+                    entityType={ServerEntityType.StorageProviders}
+                    controlRef={detailsPageControlRef}
                 />
             </PageWrapper>
         </>

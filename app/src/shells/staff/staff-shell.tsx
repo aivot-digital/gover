@@ -1,7 +1,7 @@
 import React, {type ReactNode, useEffect, useMemo} from 'react';
 import {type User} from '../../modules/users/models/user';
 import {type Page} from '../../models/dtos/page';
-import {setMemberships, setUser} from '../../slices/user-slice';
+import {setMemberships, setPermissions, setUser} from '../../slices/user-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {type SystemConfigResponseDto} from '../../modules/configs/dtos/system-config-response-dto';
 import {useAppSelector} from '../../hooks/use-app-selector';
@@ -98,6 +98,7 @@ export function StaffShell(): ReactNode {
 
             dispatch(setUser(undefined));
             dispatch(setMemberships([]));
+            dispatch(setPermissions(undefined));
             dispatch(setStatus(ShellStatus.Login));
 
             return;
@@ -108,6 +109,7 @@ export function StaffShell(): ReactNode {
                 if (res != null) {
                     dispatch(setUser(res.user));
                     dispatch(setMemberships(res.memberships));
+                    dispatch(setPermissions(res.permissionSet));
                     dispatch(setSystemConfigs(res.configs));
                     dispatch(setStatus(ShellStatus.Ready));
                 } else {
@@ -182,6 +184,7 @@ export function StaffShell(): ReactNode {
                         <ShellDrawer/>
 
                         <Box
+                            data-confetti-container="staff-shell-content"
                             sx={{
                                 flex: 1,
                                 position: 'relative',
@@ -251,10 +254,12 @@ async function authenticateWithOidcCode(searchParams: URLSearchParams): Promise<
     const permissionSet = await new PermissionApiService()
         .getPermissionSetForUser(user.id);
 
-    console.log(permissionSet);
-
     const configsPage = await apiService
-        .get<Page<SystemConfigResponseDto>>('/api/system-configs/');
+        .get<Page<SystemConfigResponseDto>>('/api/system-configs/', {
+            query: {
+                size: 1000, // fetch all configs
+            }
+        });
 
     const configs = configsPage.content;
 

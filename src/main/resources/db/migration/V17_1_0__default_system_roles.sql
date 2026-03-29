@@ -123,7 +123,14 @@ values (1,
             'process_instance.reassign',
             'process_instance.communication.internal',
             'process_instance.communication.external',
-            'process_instance.edit_task'
+            'process_instance.edit_task',
+
+            'storage_provider.read',
+            'storage_provider.update',
+            'storage_provider.create',
+            'storage_provider.delete',
+
+            'audit_log.read'
             ]),
        (2,
         'Systemadministrator:in',
@@ -226,7 +233,12 @@ values (1,
             'team_membership.update',
             'team_membership.delete',
 
-            'domain_resource_permission.read'
+            'domain_resource_permission.read',
+
+            'storage_provider.read',
+            'storage_provider.update',
+            'storage_provider.create',
+            'storage_provider.delete'
             ]),
        (3,
         'Standard-Mitarbeiter:in',
@@ -275,7 +287,9 @@ values (1,
 
             'team_membership.read',
 
-            'domain_resource_permission.read'
+            'domain_resource_permission.read',
+
+            'storage_provider.read'
             ])
 on conflict (id) do update
     set name        = excluded.name,

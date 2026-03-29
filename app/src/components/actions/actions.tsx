@@ -81,12 +81,15 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps): ReactNode
     }
 
     // Determine the component to render, either a button or a link
-    const component = 'onClick' in action ? 'button' : ('to' in action ? Link : 'a');
+    const isHashLink = 'to' in action && action.to.startsWith('#');
+    const component = 'onClick' in action ? 'button' : ('to' in action ? (isHashLink ? 'a' : Link) : 'a');
 
     // Determine shared properties
     const href = 'href' in action ? action.href : undefined;
     const to = 'to' in action ? action.to : undefined;
+    const resolvedHref = isHashLink ? to : href;
     const target = 'href' in action ? '_blank' : undefined;
+    const rel = 'href' in action ? 'noopener noreferrer' : undefined;
     const onClick = 'onClick' in action ? action.onClick : undefined;
     const shouldDisable = action.ignoreBusy ? action.disabled : (action.disabled || isBusy);
     const activeStyle = 'activeStyle' in action ? action.activeStyle : undefined;
@@ -105,9 +108,11 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps): ReactNode
                 variant={action.variant}
                 onClick={onClick}
                 component={component}
-                href={href}
-                to={to}
+                href={resolvedHref}
+                to={isHashLink ? undefined : to}
                 target={target}
+                rel={rel}
+                aria-label={action.ariaLabel}
                 endIcon={action.icon}
                 disabled={shouldDisable}
             >
@@ -125,9 +130,11 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps): ReactNode
                 }}
                 onClick={onClick}
                 component={component}
-                href={href}
-                to={to}
+                href={resolvedHref}
+                to={isHashLink ? undefined : to}
                 target={target}
+                rel={rel}
+                aria-label={action.ariaLabel}
                 disabled={shouldDisable}
                 edge={isFirst ? 'start' : isLast ? 'end' : false}
             >

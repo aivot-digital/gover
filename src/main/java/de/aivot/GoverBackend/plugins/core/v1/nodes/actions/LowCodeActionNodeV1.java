@@ -96,14 +96,10 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition {
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
         var configuration = context
-                .getThisNode()
-                .getConfiguration();
+                .getConfiguration()
+                .getEffectiveValues();
 
-        var code = configuration
-                .get(CODE_FIELD_KEY)
-                .getOptionalValue()
-                .orElse("")
-                .toString();
+        var code = String.valueOf(configuration.getOrDefault(CODE_FIELD_KEY, ""));
 
         var jsCode = new JavascriptCode()
                 .setCode(code);

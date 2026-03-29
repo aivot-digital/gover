@@ -5,7 +5,6 @@ import {
 } from '../../../../components/generic-details-page/generic-details-page-context';
 import {GenericList} from '../../../../components/generic-list/generic-list';
 import {Box, Button, Typography} from '@mui/material';
-import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
@@ -31,6 +30,7 @@ import {Page} from "../../../../models/dtos/page";
 import {
     VTeamUserRoleAssignmentWithDetailsApiService
 } from "../../services/v-team-user-role-assignment-with-details-api-service";
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export function TeamsDetailsPageMembers() {
     const dispatch = useAppDispatch();
@@ -98,7 +98,7 @@ export function TeamsDetailsPageMembers() {
                 disabled: membershipItem.userDeletedInIdp ?? undefined,
             },
             {
-                icon: <DeleteOutlineOutlinedIcon />,
+                icon: <Delete />,
                 onClick: () => {
                     showConfirm({
                         title: 'Mitarbeiter:in entfernen',
@@ -366,12 +366,12 @@ const Filters = [
 
 const Columns: Array<GridColDef<VTeamMembershipWithDetailsEntity>> = [
     {
-        field: 'fullName',
+        field: 'userFullName',
         headerName: 'Mitarbeiter:in',
         flex: 1,
     },
     {
-        field: 'email',
+        field: 'userEmail',
         headerName: 'E-Mail',
         flex: 1,
     },

@@ -1,15 +1,14 @@
-import {ProcessExportData} from "../../entities/process-export";
-import {AppInfo} from "../../../../app-info";
-import {ProcessStatus} from "../../enums/process-status";
-import {RetentionTimeUnit} from "../../enums/retention-time-unit";
+import {ProcessExport} from '../../entities/process-export';
+import {AppInfo} from '../../../../app-info';
+import {ProcessStatus} from '../../enums/process-status';
 
-export const EmptyProcessTemplate: ProcessExportData = {
+export const EmptyProcessTemplate: ProcessExport = {
     appVersion: AppInfo.version,
     createdByVendor: '',
     exportTimestamp: new Date().toISOString(),
     process: {
         id: 0,
-        internalTitle: "Neues Verfahren",
+        internalTitle: 'Neues Verfahren',
         departmentId: 0,
         versionCount: 0,
         draftedVersion: null,
@@ -21,7 +20,7 @@ export const EmptyProcessTemplate: ProcessExportData = {
         processId: 0,
         processVersion: 0,
         status: ProcessStatus.Drafted,
-        publicTitle: "Neues Verfahren",
+        publicTitle: 'Neues Verfahren',
         crated: new Date().toISOString(),
         updated: new Date().toISOString(),
         published: null,
@@ -29,4 +28,4 @@ export const EmptyProcessTemplate: ProcessExportData = {
     },
     nodes: [],
     edges: [],
-}
+};

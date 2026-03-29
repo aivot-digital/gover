@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.department.controllers;
 
 import de.aivot.GoverBackend.audit.enums.AuditAction;
+import de.aivot.GoverBackend.audit.models.AuditLogPayload;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.department.entities.DepartmentEntity;
@@ -11,11 +12,15 @@ import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.department.services.VDepartmentMembershipWithPermissionsService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,21 +31,18 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/departments/")
 @Tag(
-        name = "Departments",
-        description = "Departments are organisational units within the system. " +
-                      "They can represent different sub-organizations, departments, or divisions within an organisation. " +
-                      "Departments help in structuring users and managing permissions effectively. " +
-                      "They also own certain resources and can have specific settings that apply to all users within the department."
+        name = OpenApiConstants.Tags.DepartmentsName,
+        description = OpenApiConstants.Tags.DepartmentsDescription
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class DepartmentController {
+    private static final String MODULE_NAME = "Organisationseinheiten";
+
     private final ScopedAuditService auditService;
 
     private final DepartmentService departmentService;
@@ -54,7 +56,7 @@ public class DepartmentController {
                                 DepartmentRepository departmentRepository,
                                 VDepartmentMembershipWithPermissionsService vDepartmentMembershipWithPermissionsService,
                                 UserService userService) {
-        this.auditService = auditService.createScopedAuditService(DepartmentController.class);
+        this.auditService = auditService.createScopedAuditService(DepartmentController.class, MODULE_NAME);
 
         this.departmentService = departmentService;
         this.departmentRepository = departmentRepository;
@@ -93,10 +95,21 @@ public class DepartmentController {
         var createdDepartment = departmentService
                 .create(newDepartment);
 
-        auditService.logAction(execUser, AuditAction.Create, DepartmentEntity.class, Map.of(
-                "id", createdDepartment.getId(),
-                "name", createdDepartment.getName()
-        ));
+        auditService.create()
+                .withUser(execUser)
+                .withAuditAction(AuditAction.Create, DepartmentEntity.class,
+                        createdDepartment.getId(),
+                        "id",
+                        Map.of(
+                                "name", createdDepartment.getName()
+                        ))
+                .withMessage(
+                        "Die Organisationseinheit %s mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(createdDepartment.getName()),
+                        StringUtils.quote(String.valueOf(createdDepartment.getId())),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
 
         return createdDepartment;
     }
@@ -144,13 +157,33 @@ public class DepartmentController {
             }
         }
 
+        var existingDepartment = departmentService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        var existingMap = AuditLogPayload.toMap(existingDepartment);
+
         var savedDepartment = departmentService
                 .update(id, updatedDepartment);
 
-        auditService.logAction(user, AuditAction.Update, DepartmentEntity.class, Map.of(
-                "id", savedDepartment.getId(),
-                "name", savedDepartment.getName()
-        ));
+        var savedMap = AuditLogPayload.toMap(savedDepartment);
+
+        auditService.create()
+                .withUser(user)
+                .withAuditAction(AuditAction.Update, DepartmentEntity.class,
+                        savedDepartment.getId(),
+                        "id",
+                        Map.of(
+                                "name", savedDepartment.getName()
+                        ))
+                .withDiff(existingMap, savedMap)
+                .withMessage(
+                        "Die Organisationseinheit %s mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(savedDepartment.getName()),
+                        StringUtils.quote(String.valueOf(savedDepartment.getId())),
+                        StringUtils.quote(user.getFullName())
+                )
+                .log();
 
         return savedDepartment;
     }
@@ -174,11 +207,23 @@ public class DepartmentController {
                 .findById(id)
                 .orElseThrow(ResponseException::notFound);
 
-        auditService.logAction(user, AuditAction.Delete, DepartmentEntity.class, Map.of(
-                "id", dep.getId(),
-                "name", dep.getName()
-        ));
-
         departmentService.delete(id);
+
+        auditService.create()
+                .withUser(user)
+                .withAuditAction(AuditAction.Delete, DepartmentEntity.class,
+                        dep.getId(),
+                        "id",
+                        Map.of(
+                                "name", dep.getName()
+                        ))
+                .withMessage(
+                        "Die Organisationseinheit %s mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
+                        StringUtils.quote(dep.getName()),
+                        StringUtils.quote(String.valueOf(dep.getId())),
+                        StringUtils.quote(user.getFullName())
+                )
+                .log();
+
     }
 }

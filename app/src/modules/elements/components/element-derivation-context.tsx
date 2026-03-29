@@ -1,4 +1,8 @@
-import {ElementData} from '../../../models/element-data';
+import {
+    AuthoredElementValues,
+    createDerivedRuntimeElementData,
+    DerivedRuntimeElementData,
+} from '../../../models/element-data';
 import {AnyElement} from '../../../models/elements/any-element';
 import {ViewDispatcherComponent} from '../../../components/view-dispatcher.component';
 import {useEffect, useMemo, useState} from 'react';
@@ -12,18 +16,22 @@ import {isApiError} from '../../../models/api-error';
 
 interface ElementDerivationContextProps {
     element: AnyElement;
-    elementData: ElementData;
-    onElementDataChange: (newData: ElementData) => void;
+    authoredElementValues: AuthoredElementValues;
+    onAuthoredElementValuesChange: (newData: AuthoredElementValues) => void;
+    derivedData?: DerivedRuntimeElementData;
+    onDerivedDataChange?: (newData: DerivedRuntimeElementData) => void;
     disabled?: boolean;
-    onDerivationStarted?: () => void;
-    onDerivationFinished?: () => void;
+    onDerivationStarted?: (triggeringElementData: AuthoredElementValues) => void;
+    onDerivationFinished?: (derivedElementData: DerivedRuntimeElementData) => void;
 }
 
 export function ElementDerivationContext(props: ElementDerivationContextProps) {
     const {
         element,
-        elementData,
-        onElementDataChange,
+        authoredElementValues,
+        onAuthoredElementValuesChange,
+        derivedData: controlledDerivedData,
+        onDerivedDataChange,
         disabled,
         onDerivationStarted,
         onDerivationFinished,
@@ -34,20 +42,31 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
 
     const [mode, setMode] = useState<'deriving' | 'busy' | 'idle'>('idle');
     const [derivationTriggerIdQueue, setDerivationTriggerIdQueue] = useState<string[]>([]);
+    const [internalDerivedData, setInternalDerivedData] = useState<DerivedRuntimeElementData>(
+        controlledDerivedData ?? createDerivedRuntimeElementData(),
+    );
 
     const allElements = useMemo(() => {
         return flattenElements(element, false);
     }, [element]);
 
+    const derivedData = controlledDerivedData ?? internalDerivedData;
+
+    useEffect(() => {
+        if (controlledDerivedData != null) {
+            setInternalDerivedData(controlledDerivedData);
+        }
+    }, [controlledDerivedData]);
+
     useEffect(() => {
         setMode('busy');
-        derive(elementData)
+        derive(authoredElementValues)
             .finally(() => {
                 setMode('idle');
             });
     }, [element]);
 
-    const handleElementDataChange = async (newData: ElementData, triggeringElementIds: string[]) => {
+    const handleAuthoredElementValuesChange = async (newData: AuthoredElementValues, triggeringElementIds: string[]) => {
         const relevantIds: string[] = [];
         for (const id of triggeringElementIds) {
             for (const element of allElements) {
@@ -60,7 +79,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         }
 
         if (relevantIds.length === 0) {
-            onElementDataChange(newData);
+            onAuthoredElementValuesChange(newData);
             return;
         }
 
@@ -83,17 +102,17 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         });
     };
 
-    const derive = async (elementData: ElementData) => {
+    const derive = async (authoredElementValues: AuthoredElementValues) => {
         try {
             if (onDerivationStarted != null) {
-                onDerivationStarted();
+                onDerivationStarted(authoredElementValues);
             }
 
-            const res = await new ElementsApiService(api)
+            const derivedRuntimeElementData = await new ElementsApiService(api)
                 .derive({
                     element: element,
-                    elementData: elementData,
-                    options: {
+                    authoredElementValues: authoredElementValues,
+                    derivationOptions: {
                         skipErrorsForElementIds: ['ALL'],
                         skipVisibilitiesForElementIds: [],
                         skipOverridesForElementIds: [],
@@ -101,10 +120,12 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
                     },
                 });
 
-            onElementDataChange(res.elementData);
+            setInternalDerivedData(derivedRuntimeElementData);
+            onDerivedDataChange?.(derivedRuntimeElementData);
+            onAuthoredElementValuesChange(authoredElementValues);
 
             if (onDerivationFinished != null) {
-                onDerivationFinished();
+                onDerivationFinished(derivedRuntimeElementData);
             }
         } catch (error) {
             if (isApiError(error) && error.displayableToUser) {
@@ -124,8 +145,9 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             isBusy={mode === 'busy' || (disabled ?? false)}
             isDeriving={mode === 'deriving'}
             mode="viewer"
-            elementData={elementData}
-            onElementDataChange={handleElementDataChange}
+            authoredElementValues={authoredElementValues}
+            derivedData={derivedData}
+            onAuthoredElementValuesChange={handleAuthoredElementValuesChange}
             derivationTriggerIdQueue={derivationTriggerIdQueue}
         />
     );

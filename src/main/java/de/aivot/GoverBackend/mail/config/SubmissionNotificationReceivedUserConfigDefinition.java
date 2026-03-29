@@ -48,7 +48,7 @@ public class SubmissionNotificationReceivedUserConfigDefinition implements UserC
     @Nonnull
     @Override
     public String getDescription() {
-        return "Erhalten Sie eine Benachrichtigung, sobald ein neuer Antrag eingeht, wenn Sie dem ranghöchsten im Formular hinterlegten Fachbereich angehören.*¹.";
+        return "Erhalten Sie eine Benachrichtigung, sobald ein neuer Antrag eingeht, wenn Sie zu der für das Formular benachrichtigten Organisationseinheit gehören (bewirtschaftend, sonst zuständig, sonst entwickelnd).";
     }
 
     @Override

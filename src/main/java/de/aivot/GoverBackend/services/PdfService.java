@@ -8,7 +8,10 @@ import de.aivot.GoverBackend.core.configs.ProviderNameSystemConfigDefinition;
 import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
-import de.aivot.GoverBackend.elements.models.ElementDataObject;
+import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
+import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
+import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
+import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
@@ -29,6 +32,8 @@ import de.aivot.GoverBackend.submission.entities.Submission;
 import de.aivot.GoverBackend.theme.entities.ThemeEntity;
 import de.aivot.GoverBackend.utils.MultipartUtils;
 import de.aivot.GoverBackend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +46,7 @@ import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Component
 public class PdfService {
@@ -57,6 +63,7 @@ public class PdfService {
     private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
     private final FormVersionService formVersionService;
     private final HttpService httpService;
+    private final ElementDerivationService elementDerivationService;
 
     @Autowired
     public PdfService(GotenbergConfig gotenbergConfig,
@@ -69,7 +76,8 @@ public class PdfService {
                       PaymentProviderRepository paymentProviderRepository,
                       PaymentProviderDefinitionsService paymentProviderDefinitionsService,
                       FormVersionService formVersionService,
-                      HttpService httpService) {
+                      HttpService httpService,
+                      ElementDerivationService elementDerivationService) {
         this.gotenbergConfig = gotenbergConfig;
         this.systemConfigService = systemConfigService;
         this.departmentRepository = departmentRepository;
@@ -81,6 +89,7 @@ public class PdfService {
         this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
         this.formVersionService = formVersionService;
         this.httpService = httpService;
+        this.elementDerivationService = elementDerivationService;
     }
 
     public void testGotenbergConnection() throws IOException {
@@ -115,23 +124,33 @@ public class PdfService {
 
     public byte[] generateCustomerSummary(VFormVersionWithDetailsEntity form, Submission submission, FormPdfScope scope) throws IOException, InterruptedException, URISyntaxException, ResponseException {
         var dto = new HashMap<String, Object>();
+        var derivedRuntimeElementData = elementDerivationService
+                .derive(
+                        new ElementDerivationRequest(
+                                form.getRootElement(),
+                                submission.getCustomerInput(),
+                                new ElementDerivationOptions()
+                                        .setSkipErrorsForElementIds(java.util.List.of(ElementDerivationOptions.ALL_ELEMENTS))
+                        ),
+                        new ElementDerivationLogger()
+                );
 
         dto.put("elements", PdfElementsGenerator.generatePdfElements(
                 form.getRootElement(),
-                submission.getCustomerInput(),
+                derivedRuntimeElementData,
                 scope != FormPdfScope.Staff
         ));
         dto.put("form", form);
         dto.put("submission", submission);
 
-        ElementDataObject authData = submission
+        var authData = submission
                 .getCustomerInput()
                 .get(IdentityValueKey.IdCustomerInputKey);
-        if (authData != null && authData.getInputValue() != null) {
+        if (authData != null) {
             IdentityData identityData = null;
             try {
                 identityData = new ObjectMapper()
-                        .convertValue(authData.getInputValue(), IdentityData.class);
+                        .convertValue(authData, IdentityData.class);
             } catch (IllegalArgumentException e) {
                 logger.error("Failed to convert identity data to IdentityData", e);
             }
@@ -161,7 +180,10 @@ public class PdfService {
             dto.put("paymentProvider", paymentProvider);
 
             var paymentProviderDefinition = paymentProviderDefinitionsService
-                    .getProviderDefinition(paymentProvider.getPaymentProviderDefinitionKey())
+                    .getProviderDefinition(
+                            paymentProvider.getPaymentProviderDefinitionKey(),
+                            paymentProvider.getPaymentProviderDefinitionVersion()
+                    )
                     .orElseThrow(() -> new RuntimeException("Payment provider definition not found"));
 
             dto.put("paymentProviderDefinition", paymentProviderDefinition);
@@ -191,15 +213,42 @@ public class PdfService {
         String headerTemplate = loadTemplate("pp_form_header.html", dto);
         String footerTemplate = loadTemplate("pp_form_footer.html", dto);
 
+        return generatePdfFromHtml(
+                template,
+                headerTemplate,
+                footerTemplate,
+                "210mm",
+                "297mm"
+        );
+    }
+
+    public byte[] generatePdfFromHtml(@Nonnull String contentHtml,
+                                      @Nullable String headerHtml,
+                                      @Nullable String footerHtml,
+                                      @Nullable String paperWidth,
+                                      @Nullable String paperHeight) throws IOException, InterruptedException, URISyntaxException {
+        var resolvedHeader = StringUtils.isNotNullOrEmpty(headerHtml)
+                ? headerHtml
+                : "<html><body></body></html>";
+        var resolvedFooter = StringUtils.isNotNullOrEmpty(footerHtml)
+                ? footerHtml
+                : "<html><body></body></html>";
+        var resolvedPaperWidth = StringUtils.isNotNullOrEmpty(paperWidth)
+                ? paperWidth
+                : "210mm";
+        var resolvedPaperHeight = StringUtils.isNotNullOrEmpty(paperHeight)
+                ? paperHeight
+                : "297mm";
+
         var multipart = new MultipartUtils.MultipartBodyPublisher()
-                .addPart("files", "index.html", template)
-                .addPart("files", "header.html", headerTemplate)
-                .addPart("files", "footer.html", footerTemplate)
+                .addPart("files", "index.html", contentHtml)
+                .addPart("files", "header.html", resolvedHeader)
+                .addPart("files", "footer.html", resolvedFooter)
                 .addPart("index", "index.html")
                 .addPart("header", "header.html")
                 .addPart("footer", "footer.html")
-                .addPart("paperHeight", "297mm")
-                .addPart("paperWidth", "210mm");
+                .addPart("paperHeight", resolvedPaperHeight)
+                .addPart("paperWidth", resolvedPaperWidth);
 
         var convertUri = new URI("http://" + gotenbergConfig.getHost() + ":" + gotenbergConfig.getPort() + "/forms/chromium/convert/html");
 
@@ -256,7 +305,8 @@ public class PdfService {
             if (logoAssetKey != null) {
                 logoAssetName = assetRepository
                         .findById(logoAssetKey)
-                        .map(AssetEntity::getFilename)
+                        .map(AssetEntity::getKey)
+                        .map(UUID::toString)
                         .orElse("");
             }
         } catch (Exception e) {

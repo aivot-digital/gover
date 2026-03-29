@@ -9,7 +9,7 @@ import de.aivot.GoverBackend.elements.models.elements.form.content.*;
 import de.aivot.GoverBackend.elements.models.elements.form.input.*;
 import de.aivot.GoverBackend.elements.models.elements.layout.*;
 import de.aivot.GoverBackend.elements.models.elements.steps.IntroductionStepElement;
-import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SummaryStepElement;
 import de.aivot.GoverBackend.enums.ElementType;
@@ -31,7 +31,7 @@ import java.util.UUID;
 )
 @JsonSubTypes({
         @JsonSubTypes.Type(value = FormLayoutElement.class, name = ElementType.ID_FormLayout),
-        @JsonSubTypes.Type(value = StepElement.class, name = ElementType.ID_Step),
+        @JsonSubTypes.Type(value = GenericStepElement.class, name = ElementType.ID_Step),
         @JsonSubTypes.Type(value = AlertContentElement.class, name = ElementType.ID_Alert),
         @JsonSubTypes.Type(value = GroupLayoutElement.class, name = ElementType.ID_Group),
         @JsonSubTypes.Type(value = CheckboxInputElement.class, name = ElementType.ID_Checkbox),
@@ -61,6 +61,17 @@ import java.util.UUID;
         @JsonSubTypes.Type(value = UiDefinitionInputElement.class, name = ElementType.ID_UiDefinitionInput),
         @JsonSubTypes.Type(value = IdentityInputElement.class, name = ElementType.ID_IdentityInput),
         @JsonSubTypes.Type(value = TabLayoutElement.class, name = ElementType.ID_TabLayout),
+        @JsonSubTypes.Type(value = ChipInputElement.class, name = ElementType.ID_ChipInput),
+        @JsonSubTypes.Type(value = DateTimeInputElement.class, name = ElementType.ID_DateTime),
+        @JsonSubTypes.Type(value = DateRangeInputElement.class, name = ElementType.ID_DateRange),
+        @JsonSubTypes.Type(value = TimeRangeInputElement.class, name = ElementType.ID_TimeRange),
+        @JsonSubTypes.Type(value = DateTimeRangeInputElement.class, name = ElementType.ID_DateTimeRange),
+        @JsonSubTypes.Type(value = MapPointInputElement.class, name = ElementType.ID_MapPoint),
+        @JsonSubTypes.Type(value = DomainAndUserSelectInputElement.class, name = ElementType.ID_DomainAndUserSelect),
+        @JsonSubTypes.Type(value = AssignmentContextInputElement.class, name = ElementType.ID_AssignmentContext),
+        @JsonSubTypes.Type(value = DataModelSelectInputElement.class, name = ElementType.ID_DataModelSelect),
+        @JsonSubTypes.Type(value = DataObjectSelectInputElement.class, name = ElementType.ID_DataObjectSelect),
+        @JsonSubTypes.Type(value = NoCodeInputElement.class, name = ElementType.ID_NoCodeInput),
 })
 public abstract class BaseElement implements Serializable {
     @Nonnull

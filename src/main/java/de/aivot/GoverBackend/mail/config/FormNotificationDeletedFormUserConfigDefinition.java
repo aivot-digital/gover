@@ -48,7 +48,7 @@ public class FormNotificationDeletedFormUserConfigDefinition implements UserConf
     @Nonnull
     @Override
     public String getDescription() {
-        return "Sie werden informiert, wenn in einem entwickelnden Fachbereich, dem Sie angehören, ein Formular gelöscht wird.";
+        return "Sie werden informiert, wenn in einer Ihrer entwickelnden Organisationseinheiten ein Formular gelöscht wird.";
     }
 
     @Override

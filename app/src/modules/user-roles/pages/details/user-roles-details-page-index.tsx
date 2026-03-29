@@ -1,10 +1,9 @@
-import {Box, Button, Table, TableBody, TableCell, TableContainer, TableRow, Typography} from '@mui/material';
+import {Box, Button, Typography} from '@mui/material';
+import Grid from '@mui/material/Grid';
 import React, {useContext, useEffect, useMemo, useState} from 'react';
 import {GenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
-import {useApi} from '../../../../hooks/use-api';
 import {useNavigate} from 'react-router-dom';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {useFormManager} from '../../../../hooks/use-form-manager';
@@ -17,11 +16,11 @@ import {GenericDetailsSkeleton} from '../../../../components/generic-details-pag
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import {UserRoleResponseDTO} from '../../dtos/user-role-response-dto';
 import {UserRolesApiService} from '../../user-roles-api-service';
-import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
-import {PermissionGroups} from "../../../../data/permissions/permission-groups";
-import {PermissionLabelsDe} from "../../../../data/permissions/permission-labels";
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {PermissionEditor} from '../../../permissions/components/permission-editor';
+import {PermissionScope} from '../../../permissions/enums/permission-scope';
 
-export const SecretSchema = yup.object({
+export const UserRoleSchema = yup.object({
     name: yup.string()
         .trim()
         .min(3, 'Der Name muss mindestens 3 Zeichen lang sein.')
@@ -52,14 +51,14 @@ export function UserRolesDetailsPageIndex() {
         }
 
         dispatch(addSnackbarMessage({
-            key: 'access-denied-secrets-details',
-            message: 'Dieses Geheimnis kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff',
+            key: 'access-denied-user-roles-details',
+            message: 'Diese Domänenrolle kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff',
             severity: SnackbarSeverity.Warning,
             type: SnackbarType.Dismissable,
         }));
 
         return () => {
-            dispatch(removeSnackbarMessage('access-denied-secrets-details'));
+            dispatch(removeSnackbarMessage('access-denied-user-roles-details'));
         };
     }, [isEditable]);
 
@@ -72,7 +71,7 @@ export function UserRolesDetailsPageIndex() {
         handleInputPatch,
         validate,
         reset,
-    } = useFormManager<UserRoleResponseDTO>(item, SecretSchema as any);
+    } = useFormManager<UserRoleResponseDTO>(item, UserRoleSchema as any);
 
     const apiService = useMemo(() => new UserRolesApiService(), []);
 
@@ -102,15 +101,15 @@ export function UserRolesDetailsPageIndex() {
             if (entity.id === 0) {
                 apiService
                     .create(entity as any)
-                    .then((newSecret) => {
-                        setItem(newSecret);
+                    .then((newRole) => {
+                        setItem(newRole);
                         reset();
 
-                        dispatch(showSuccessSnackbar('Neues Geheimnis erfolgreich angelegt.'));
+                        dispatch(showSuccessSnackbar('Neue Domänenrolle erfolgreich angelegt.'));
 
                         // use setTimeout instead of useEffect to prevent unnecessary rerender
                         setTimeout(() => {
-                            navigate(`/user-roles/${newSecret.id}`, {replace: true});
+                            navigate(`/user-roles/${newRole.id}`, {replace: true});
                         }, 0);
                     })
                     .catch(err => {
@@ -123,11 +122,11 @@ export function UserRolesDetailsPageIndex() {
             } else {
                 apiService
                     .update(entity.id, entity as any)
-                    .then((updatedSecret) => {
-                        setItem(updatedSecret);
+                    .then((updatedRole) => {
+                        setItem(updatedRole);
                         reset();
 
-                        dispatch(showSuccessSnackbar('Änderungen an Geheimnis erfolgreich gespeichert.'));
+                        dispatch(showSuccessSnackbar('Änderungen an der Domänenrolle erfolgreich gespeichert.'));
                     })
                     .catch(err => {
                         console.error(err);
@@ -148,14 +147,14 @@ export function UserRolesDetailsPageIndex() {
                 .destroy(entity.id)
                 .then(() => {
                     reset(); // prevent change blocker by resetting unsaved changes
-                    navigate('/secrets', {
+                    navigate('/user-roles', {
                         replace: true,
                     });
-                    dispatch(showSuccessSnackbar('Das Geheimnis wurde erfolgreich gelöscht.'));
+                    dispatch(showSuccessSnackbar('Die Domänenrolle wurde erfolgreich gelöscht.'));
                 })
                 .catch(err => {
                     console.error(err);
-                    dispatch(showErrorSnackbar('Beim Löschen des Geheimnisses ist ein Fehler aufgetreten.'));
+                    dispatch(showErrorSnackbar('Beim Löschen der Domänenrolle ist ein Fehler aufgetreten.'));
                     setIsBusy(false);
                 });
         }
@@ -163,84 +162,67 @@ export function UserRolesDetailsPageIndex() {
 
     return (
         <Box>
-            <TextFieldComponent
-                label="Name"
-                required
-                value={entity.name}
-                onChange={handleInputChange('name')}
-                onBlur={handleInputBlur('name')}
-                disabled={isBusy || !isEditable}
-                error={errors.name}
-                minCharacters={3}
-                maxCharacters={64}
+            <Typography
+                variant="h5"
+                sx={{mt: 1.5, mb: 1}}
+            >
+                Domänenrolle konfigurieren
+            </Typography>
+            <Typography sx={{mb: 3, maxWidth: 900}}>
+                Domänenrollen definieren Berechtigungen für Benutzer:innen auf Ebene einer Domäne (z. B. einer Organisationseinheit oder eines Teams).
+                Seien Sie vorsichtig bei der Vergabe von Berechtigungen, insbesondere bei solchen, die Zugriff auf sensible Daten oder kritische Funktionen ermöglichen.
+            </Typography>
+
+            <Grid
+                container
+                spacing={2}
+            >
+                <Grid
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
+                >
+                    <TextFieldComponent
+                        label="Name"
+                        required
+                        value={entity.name}
+                        onChange={handleInputChange('name')}
+                        onBlur={handleInputBlur('name')}
+                        disabled={isBusy || !isEditable}
+                        error={errors.name}
+                        minCharacters={3}
+                        maxCharacters={64}
+                    />
+
+                    <TextFieldComponent
+                        label="Beschreibung"
+                        required
+                        value={entity.description}
+                        onChange={handleInputChange('description')}
+                        onBlur={handleInputBlur('description')}
+                        multiline={true}
+                        disabled={isBusy || !isEditable}
+                        error={errors.description}
+                        minCharacters={3}
+                        maxCharacters={255}
+                    />
+                </Grid>
+            </Grid>
+
+            <PermissionEditor
+                originalPermissions={item?.permissions ?? []}
+                value={entity.permissions ?? []}
+                onChange={(next: string[]) => handleInputPatch({permissions: next} as Partial<UserRoleResponseDTO>)}
+                isBusy={isBusy}
+                isEditable={isEditable}
+                scope={PermissionScope.Domain}
             />
-
-            <TextFieldComponent
-                label="Beschreibung"
-                required
-                value={entity.description}
-                onChange={handleInputChange('description')}
-                onBlur={handleInputBlur('description')}
-                multiline={true}
-                disabled={isBusy || !isEditable}
-                error={errors.description}
-                minCharacters={3}
-                maxCharacters={255}
-            />
-
-            <TableContainer>
-                <Table size="small">
-                    <TableBody>
-                        {
-                            PermissionGroups.map((group) => (
-                                <TableRow key={group.label}>
-                                    <TableCell>
-                                        {group.label}
-                                    </TableCell>
-
-                                    <TableCell>
-                                        {
-                                            group.permissions.map((permission) => (
-                                                <CheckboxFieldComponent
-                                                    key={permission}
-                                                    label={PermissionLabelsDe[permission]}
-                                                    value={entity.permissions.includes(permission)}
-                                                    onChange={(val) => {
-                                                        const patch: Partial<UserRoleResponseDTO> = {};
-
-                                                        let newPermissions = [...entity.permissions];
-
-                                                        if (val) {
-                                                            // Add permission
-                                                            if (!newPermissions.includes(permission)) {
-                                                                newPermissions.push(permission);
-                                                            }
-                                                        } else {
-                                                            // Remove permission
-                                                            newPermissions = newPermissions.filter((perm) => perm !== permission);
-                                                        }
-
-                                                        handleInputPatch(patch);
-                                                    }}
-                                                    sx={{
-                                                        m: 0,
-                                                        p: 0,
-                                                    }}
-                                                />
-                                            ))
-                                        }
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        }
-                    </TableBody>
-                </Table>
-            </TableContainer>
 
             <Box
                 sx={{
                     display: 'flex',
-                    marginTop: 2,
+                    marginTop: 3,
                     gap: 2,
                 }}
             >
@@ -277,7 +259,7 @@ export function UserRolesDetailsPageIndex() {
                         sx={{
                             marginLeft: 'auto',
                         }}
-                        startIcon={<DeleteOutlinedIcon />}
+                        startIcon={<Delete />}
                     >
                         Löschen
                     </Button>
@@ -287,7 +269,7 @@ export function UserRolesDetailsPageIndex() {
             {changeBlocker.dialog}
 
             <ConfirmDialog
-                title="Geheimnis löschen"
+                title="Domänenrolle löschen"
                 onCancel={() => setShowConfirmDialog(false)}
                 onConfirm={showConfirmDialog ? handleDelete : undefined}
                 confirmationText={entity.name ?? ''}
@@ -295,11 +277,10 @@ export function UserRolesDetailsPageIndex() {
                 confirmButtonText="Ja, endgültig löschen"
             >
                 <Typography>
-                    Möchten Sie dieses Geheimnis wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+                    Möchten Sie diese Domänenrolle wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
                 </Typography>
                 <AlertComponent color={'warning'}>
-                    Vergewissern Sie sich, dass dieses Geheimnis nicht mehr benötigt wird, bevor Sie fortfahren. Wir können nicht prüfen, ob es noch an Stellen wie Low-Code-Funktionen oder Konfigurationen von Zahlungsdienstleistern
-                    verwendet wird.
+                    Vergewissern Sie sich, dass die Domänenrolle nicht mehr benötigt wird, bevor Sie fortfahren.
                 </AlertComponent>
             </ConfirmDialog>
         </Box>
