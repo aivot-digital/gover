@@ -5,10 +5,7 @@ import Counter2 from '@aivot/mui-material-symbols-400-outlined/dist/counter-2/Co
 import Counter3 from '@aivot/mui-material-symbols-400-outlined/dist/counter-3/Counter3';
 import {type ReactNode} from 'react';
 import MenuBook from '@aivot/mui-material-symbols-400-outlined/dist/menu-book/MenuBook';
-import {addSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../../../slices/shell-slice';
-import {useAppDispatch} from '../../../../../../hooks/use-app-dispatch';
-import {useAppSelector} from '../../../../../../hooks/use-app-selector';
-import {useNotImplemented} from '../../../../../../hooks/useNotImplemented';
+import {useNotImplemented} from '../../../../../../hooks/use-not-implemented';
 
 const placeholderList: {
     icon: ReactNode;
