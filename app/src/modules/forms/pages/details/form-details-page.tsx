@@ -987,6 +987,7 @@ export function FormDetailsPage() {
                                                 }}
                                                 editable={isEditable}
                                                 displayContext={ElementDisplayContext.CitizenFacing}
+                                                allowElementIdEditing={false}
                                             />
                                         </Paper>
                                     </Allotment.Pane>

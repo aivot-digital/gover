@@ -30,6 +30,7 @@ export interface ElementTreeContextType {
     activeSearchResultPath?: string[];
     allElements: ElementWithParents[];
     displayContext: ElementDisplayContext;
+    allowElementIdEditing: boolean;
 }
 
 export const ElementTreeContext = createContext<ElementTreeContextType | null>(null);

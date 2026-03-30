@@ -31,6 +31,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
     const {
         editable,
         allElements,
+        allowElementIdEditing,
     } = useElementTreeContext();
 
     const {
@@ -380,6 +381,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                 id: id ?? '',
                             });
                         }}
+                        disabled={!allowElementIdEditing}
                         endAction={{
                             icon: <ContentPasteIcon/>,
                             onClick: async () => {

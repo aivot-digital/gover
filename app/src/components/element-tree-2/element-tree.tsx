@@ -27,6 +27,7 @@ export interface ElementTreeProps<T extends AnyElement> {
     editable: boolean;
     parentModalZIndex?: number;
     displayContext: ElementDisplayContext;
+    allowElementIdEditing: boolean;
 }
 
 interface ElementTreeSearchResult {
@@ -42,6 +43,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
         editable,
         parentModalZIndex,
         displayContext,
+        allowElementIdEditing,
     } = props;
 
     const {
@@ -420,6 +422,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                                 activeSearchResultPath: activeSearchResult?.path,
                                 allElements: allElements,
                                 displayContext: displayContext,
+                                allowElementIdEditing: allowElementIdEditing,
                             }}
                         >
                             <ElementTreeChildList
