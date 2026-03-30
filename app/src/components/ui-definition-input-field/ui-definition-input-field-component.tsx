@@ -204,6 +204,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                     sx={{
                         height: 'calc(100vh - 200px)',
                         overflowY: 'auto',
+                        p: 0,
                     }}
                 >
                     <Allotment vertical>
@@ -232,6 +233,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                     // The tree editor drawer needs to know the surrounding dialog layer.
                                     parentModalZIndex={theme.zIndex.modal}
                                     displayContext={displayContext}
+                                    allowElementIdEditing={false}
                                 />
                             </Allotment.Pane>
                         </Allotment>
