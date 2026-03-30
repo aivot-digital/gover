@@ -103,6 +103,7 @@ const BaseDrawerGroups: DrawerGroup[] = [
                 icon: ModuleIcons.presets,
                 label: 'Vorlagen',
                 to: '/presets',
+                disabled: true,
             },
             {
                 icon: ModuleIcons.marketplace,
