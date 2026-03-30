@@ -36,8 +36,7 @@ import {
     ProcessDetailsPageMoreMenu,
     type ProcessDetailsPageMoreMenuEvent,
 } from './components/process-details-page-more-menu';
-import {downloadObjectFile} from '../../../../utils/download-utils';
-import {uploadObjectFile} from '../../../../utils/download-utils';
+import {downloadObjectFile, uploadObjectFile} from '../../../../utils/download-utils';
 import {ProcessTestClaimApiService} from '../../services/process-test-claim-api-service';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import {type ProcessTestClaimEntity} from '../../entities/process-test-claim-entity';
@@ -69,7 +68,7 @@ import SwapHoriz from '@mui/icons-material/SwapHoriz';
 import UploadFile from '@aivot/mui-material-symbols-400-outlined/dist/upload-file/UploadFile';
 import {type ProcessNodeExport} from '../../entities/process-node-export';
 import {ProcessSettingsDialog} from '../../dialogs/process-settings-dialog/process-settings-dialog';
-import {useNotImplemented} from '../../../../hooks/useNotImplemented';
+import {useNotImplemented} from '../../../../hooks/use-not-implemented';
 
 const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 150;
 
