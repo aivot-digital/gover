@@ -8,7 +8,10 @@ import {ElementDerivationContext} from '../../../elements/components/element-der
 import {
     ProcessInstanceTaskApiService,
     type TaskView,
+    type TaskViewEventAlignment,
+    type TaskViewEventColor,
     type TaskViewEvent,
+    type TaskViewEventVariant,
 } from '../../services/process-instance-task-api-service';
 import {AuthoredElementValues} from '../../../../models/element-data';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
@@ -99,6 +102,14 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             },
         ];
     }, [item]);
+
+    const leftAlignedTaskViewEvents = useMemo(() => {
+        return (taskView?.events ?? []).filter((evt) => getTaskViewEventAlignment(evt) === 'left');
+    }, [taskView?.events]);
+
+    const rightAlignedTaskViewEvents = useMemo(() => {
+        return (taskView?.events ?? []).filter((evt) => getTaskViewEventAlignment(evt) === 'right');
+    }, [taskView?.events]);
 
     const handleEventClick = (evt: TaskViewEvent) => {
         if (item == null || taskView == null) {
@@ -192,33 +203,127 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
                         {
                             taskView.events.length > 0 &&
-                            <Stack
-                                direction={{
-                                    xs: 'column',
-                                    sm: 'row',
-                                }}
-                                spacing={2}
+                            <Box
                                 sx={{
                                     mt: 4,
+                                    display: 'flex',
+                                    flexDirection: {
+                                        xs: 'column',
+                                        sm: 'row',
+                                    },
+                                    gap: 2,
+                                    justifyContent: 'space-between',
+                                    alignItems: {
+                                        sm: 'center',
+                                    },
                                 }}
                             >
                                 {
-                                    taskView.events.map((evt) => (
-                                        <Button
-                                            key={evt.event}
-                                            variant="contained"
-                                            onClick={() => {
-                                                handleEventClick(evt);
-                                            }}
-                                        >
-                                            {evt.label}
-                                        </Button>
-                                    ))
+                                    leftAlignedTaskViewEvents.length > 0 &&
+                                    <Stack
+                                        direction={{
+                                            xs: 'column',
+                                            sm: 'row',
+                                        }}
+                                        spacing={2}
+                                        sx={{
+                                            width: {
+                                                xs: '100%',
+                                                sm: 'auto',
+                                            },
+                                        }}
+                                    >
+                                        {
+                                            leftAlignedTaskViewEvents.map((evt) => (
+                                                <Button
+                                                    key={evt.event}
+                                                    variant={getTaskViewEventVariant(evt)}
+                                                    color={getTaskViewEventColor(evt)}
+                                                    onClick={() => {
+                                                        handleEventClick(evt);
+                                                    }}
+                                                    sx={{
+                                                        width: {
+                                                            xs: '100%',
+                                                            sm: 'auto',
+                                                        },
+                                                    }}
+                                                >
+                                                    {evt.label}
+                                                </Button>
+                                            ))
+                                        }
+                                    </Stack>
                                 }
-                            </Stack>
+
+                                {
+                                    rightAlignedTaskViewEvents.length > 0 &&
+                                    <Stack
+                                        direction={{
+                                            xs: 'column',
+                                            sm: 'row',
+                                        }}
+                                        spacing={2}
+                                        sx={{
+                                            width: {
+                                                xs: '100%',
+                                                sm: 'auto',
+                                            },
+                                            marginLeft: {
+                                                sm: 'auto',
+                                            },
+                                        }}
+                                    >
+                                        {
+                                            rightAlignedTaskViewEvents.map((evt) => (
+                                                <Button
+                                                    key={evt.event}
+                                                    variant={getTaskViewEventVariant(evt)}
+                                                    color={getTaskViewEventColor(evt)}
+                                                    onClick={() => {
+                                                        handleEventClick(evt);
+                                                    }}
+                                                    sx={{
+                                                        width: {
+                                                            xs: '100%',
+                                                            sm: 'auto',
+                                                        },
+                                                    }}
+                                                >
+                                                    {evt.label}
+                                                </Button>
+                                            ))
+                                        }
+                                    </Stack>
+                                }
+                            </Box>
                         }
                     </>
             }
         </Box>
     );
+}
+
+function getTaskViewEventVariant(evt: TaskViewEvent): TaskViewEventVariant {
+    if (evt.variant === 'outlined' || evt.variant === 'text') {
+        return evt.variant;
+    }
+
+    return 'contained';
+}
+
+function getTaskViewEventColor(evt: TaskViewEvent): TaskViewEventColor {
+    if (evt.color === 'secondary' || evt.color === 'error' || evt.color === 'success') {
+        return evt.color;
+    }
+
+    return 'primary';
+}
+
+function getTaskViewEventAlignment(evt: TaskViewEvent): TaskViewEventAlignment {
+    if (evt.alignment === 'right') {
+        return evt.alignment;
+    }
+
+    return 'left';
 }

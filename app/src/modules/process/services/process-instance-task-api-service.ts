@@ -22,9 +22,18 @@ export interface TaskView {
     events: TaskViewEvent[];
 }
 
+export type TaskViewEventVariant = 'contained' | 'outlined' | 'text';
+
+export type TaskViewEventColor = 'primary' | 'secondary' | 'error' | 'success';
+
+export type TaskViewEventAlignment = 'left' | 'right';
+
 export interface TaskViewEvent {
     label: string;
     event: string;
+    variant?: TaskViewEventVariant | null;
+    color?: TaskViewEventColor | null;
+    alignment?: TaskViewEventAlignment | null;
 }
 
 function shouldUploadTaskViewFile(file: FileUploadElementItem): boolean {
