@@ -43,7 +43,7 @@ public class Form implements Plugin {
 
     @Override
     public @Nonnull String getVendorName() {
-        return "Aivot";
+        return "Aivot UG (haftungsbeschränkt)";
     }
 
     @Nonnull
