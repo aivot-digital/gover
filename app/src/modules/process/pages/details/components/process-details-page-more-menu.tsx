@@ -9,6 +9,7 @@ import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {addSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../../slices/shell-slice';
 import {ModuleIcons} from '../../../../../shells/staff/data/module-icons';
 import {ProcessActionMenu, type ProcessActionMenuItem} from './process-action-menu';
+import {useNotImplemented} from '../../../../../hooks/useNotImplemented';
 
 export type ProcessDetailsPageMoreMenuEvent = 'export' | 'test' | 'instances' | 'delete';
 
@@ -28,17 +29,13 @@ export function ProcessDetailsPageMoreMenu(props: ProcessDetailsPageMoreMenuProp
     } = props;
 
     const dispatch = useAppDispatch();
+    const notImplemented = useNotImplemented();
 
     const dispatchEvent = (event: ProcessDetailsPageMoreMenuEvent | undefined): void => {
         if (event != null) {
             onMenuEvent(event);
         } else {
-            dispatch(addSnackbarMessage({
-                type: SnackbarType.AutoHiding,
-                severity: SnackbarSeverity.Info,
-                key: 'not-implemented',
-                message: 'Diese Funktion ist noch nicht implementiert.',
-            }));
+            notImplemented();
         }
         onClose();
     };

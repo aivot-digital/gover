@@ -69,6 +69,7 @@ import SwapHoriz from '@mui/icons-material/SwapHoriz';
 import UploadFile from '@aivot/mui-material-symbols-400-outlined/dist/upload-file/UploadFile';
 import {type ProcessNodeExport} from '../../entities/process-node-export';
 import {ProcessSettingsDialog} from '../../dialogs/process-settings-dialog/process-settings-dialog';
+import {useNotImplemented} from '../../../../hooks/useNotImplemented';
 
 const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 150;
 
@@ -243,6 +244,7 @@ export function ProcessDetailsPage(): ReactNode {
     const navigate = useNavigate();
     const confirm = useConfirm();
     const user = useUser();
+    const notImplemented = useNotImplemented();
 
     const [processFlow, setProcessFlow] = useState<ProcessFlow | null>(null);
     const [runtimeData, setRuntimeData] = useState<{
@@ -257,6 +259,7 @@ export function ProcessDetailsPage(): ReactNode {
     const [hasFlowNodeProviderLoadError, setHasFlowNodeProviderLoadError] = useState(false);
     const [readyFlowEditorKey, setReadyFlowEditorKey] = useState<string | null>(null);
     const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+
 
     const [showAddTriggerDialog, setShowAddTriggerDialog] = useState(false);
     const [newNodeFor, setNewNodeFor] = useState<{
@@ -1213,18 +1216,11 @@ export function ProcessDetailsPage(): ReactNode {
                 handleDeleteProcess();
                 break;
             default:
-                showNotImplementedHeaderActionMessage();
+                notImplemented();
                 break;
         }
     };
-    const showNotImplementedHeaderActionMessage = useCallback(() => {
-        dispatch(addSnackbarMessage({
-            key: 'unknown-process-details-event',
-            type: SnackbarType.AutoHiding,
-            severity: SnackbarSeverity.Info,
-            message: 'Diese Funktion ist noch nicht implementiert.',
-        }));
-    }, [dispatch]);
+
     const handleOpenAddTriggerDialog = useCallback(() => {
         setShowAddTriggerDialog(true);
     }, []);
@@ -1493,13 +1489,13 @@ export function ProcessDetailsPage(): ReactNode {
                     tooltip: 'Rückgängig',
                     ariaLabel: 'Rückgängig',
                     icon: <Undo/>,
-                    onClick: showNotImplementedHeaderActionMessage,
+                    onClick: notImplemented,
                 },
                 {
                     tooltip: 'Wiederholen',
                     ariaLabel: 'Wiederholen',
                     icon: <Redo/>,
-                    onClick: showNotImplementedHeaderActionMessage,
+                    onClick: notImplemented,
                     disabled: true,
                 },
                 'separator' as const,
@@ -1508,7 +1504,7 @@ export function ProcessDetailsPage(): ReactNode {
                 tooltip: 'Versionen',
                 ariaLabel: 'Versionen',
                 icon: <HomeStorage/>,
-                onClick: showNotImplementedHeaderActionMessage,
+                onClick: notImplemented,
             },
             {
                 tooltip: 'Einstellungen',
@@ -1532,7 +1528,7 @@ export function ProcessDetailsPage(): ReactNode {
                 tooltip: 'Prozessversion veröffentlichen',
                 disabledTooltip: 'Während des Tests kann der Prozess nicht veröffentlicht werden.',
                 icon: null,
-                onClick: showNotImplementedHeaderActionMessage,
+                onClick: notImplemented,
                 variant: 'contained',
                 disabled: isInTestMode,
                 activeStyle: {ml: 1},
@@ -1544,7 +1540,7 @@ export function ProcessDetailsPage(): ReactNode {
         isRefreshingRuntimeData,
         loadRuntimeData,
         runtimeData,
-        showNotImplementedHeaderActionMessage,
+        notImplemented,
         handleDeleteProcess,
     ]);
     const connectExistingNodeSource = useMemo(() => {

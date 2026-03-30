@@ -7,6 +7,8 @@ import {type ReactNode} from 'react';
 import MenuBook from '@aivot/mui-material-symbols-400-outlined/dist/menu-book/MenuBook';
 import {addSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../../../slices/shell-slice';
 import {useAppDispatch} from '../../../../../../hooks/use-app-dispatch';
+import {useAppSelector} from '../../../../../../hooks/use-app-selector';
+import {useNotImplemented} from '../../../../../../hooks/useNotImplemented';
 
 const placeholderList: {
     icon: ReactNode;
@@ -42,7 +44,7 @@ const placeholderList: {
 ];
 
 export function ProcessNodeEditorPlaceholder() {
-    const dispatch = useAppDispatch();
+    const notImplemented = useNotImplemented();
 
     return (
         <Box
@@ -113,12 +115,7 @@ export function ProcessNodeEditorPlaceholder() {
                     mt: 3,
                 }}
                 onClick={() => {
-                    dispatch(addSnackbarMessage({
-                        type: SnackbarType.AutoHiding,
-                        severity: SnackbarSeverity.Info,
-                        key: 'not-implemented',
-                        message: 'Diese Funktion ist noch nicht implementiert.',
-                    }));
+                    notImplemented();
                 }}
             >
                 Handbuch aufrufen
