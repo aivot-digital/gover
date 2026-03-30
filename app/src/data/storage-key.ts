@@ -2,6 +2,7 @@ export enum StorageKey {
     AuthDataAccessToken = 'access_token',
     AuthDataRefreshToken = 'refresh_token',
 
+    AlphaVersionNoticeDismissed = 'alpha_version_notice_dismissed',
     IntroDismissed = 'intro_dismissed',
 
     SubmissionsIncludePaymentPending = 'submissions_include_payment_pending',
