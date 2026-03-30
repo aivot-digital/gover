@@ -6,6 +6,7 @@ import {ApiError} from '../models/api-error';
 const TOKEN_URL = `${AppConfig.oidc.hostname}/realms/${AppConfig.oidc.realm}/protocol/openid-connect/token`;
 const AUTH_URL = `${AppConfig.oidc.hostname}/realms/${AppConfig.oidc.realm}/protocol/openid-connect/auth`;
 const STORAGE_KEY_JWT = 'api-jwt';
+const STORAGE_KEY_POST_LOGIN_REDIRECT = 'oidc-post-login-redirect';
 const EXPIRATION_PADDING_SECONDS = 30; // 30 seconds
 
 interface JWT_TOKEN {
@@ -49,6 +50,9 @@ export class AuthService {
      * Get the login URL for redirecting the user to the OIDC provider.
      */
     public async getLoginUrl(): Promise<string> {
+        // Keep the post-login target per tab so multiple expired tabs do not overwrite each other.
+        sessionStorage.setItem(STORAGE_KEY_POST_LOGIN_REDIRECT, getNormalizedCurrentRelativeUrl());
+
         let oidcCodeVerifier = localStorage.getItem(OidcCodeVerifierLocalStorageKey);
         if (oidcCodeVerifier == null || isStringNullOrEmpty(oidcCodeVerifier)) {
             oidcCodeVerifier = createRandomString(OidcCodeVerifierLength);
@@ -71,6 +75,18 @@ export class AuthService {
         }
 
         return `${AUTH_URL}?${query.toString()}`;
+    }
+
+    public consumePostLoginRedirect(): string | null {
+        const redirectTarget = sessionStorage.getItem(STORAGE_KEY_POST_LOGIN_REDIRECT);
+        sessionStorage.removeItem(STORAGE_KEY_POST_LOGIN_REDIRECT);
+
+        // Only accept in-app relative targets to avoid redirecting to arbitrary locations.
+        if (redirectTarget == null || !redirectTarget.startsWith('/')) {
+            return null;
+        }
+
+        return redirectTarget;
     }
 
     /**
@@ -414,4 +430,21 @@ async function getSHA256BinaryValue(input: string) {
         .replace(/=/g, '')
 
     return encodedHash;
+}
+
+function getNormalizedCurrentRelativeUrl(): string {
+    const url = new URL(window.location.href);
+
+    // Remove temporary auth/logout query params before restoring the route after login.
+    [
+        'code',
+        'iss',
+        'session_state',
+        'logout',
+    ].forEach((param) => {
+        url.searchParams.delete(param);
+    });
+
+    const query = url.searchParams.toString();
+    return `${url.pathname}${query.length > 0 ? `?${query}` : ''}${url.hash}`;
 }
