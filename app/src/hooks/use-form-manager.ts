@@ -2,9 +2,11 @@ import {useMemo, useState} from 'react';
 import {ObjectSchema, ValidationError} from 'yup';
 import {deepEquals, shallowEquals} from '../utils/equality-utils';
 
+export type FormManagerErrors = Partial<Record<string, string>>;
+
 interface FormManager<T> {
     currentItem: T | undefined | null;
-    errors: Partial<Record<keyof T, string>>;
+    errors: FormManagerErrors;
     hasNotChanged: boolean;
 
     handleInputPatch: (patch: Partial<T>) => void;
@@ -20,7 +22,7 @@ interface FormManager<T> {
 export function useFormManager<T extends { [key: string]: any }>(originalItem: T | undefined | null, schema: ObjectSchema<T>, useDeepEquals: boolean = true): FormManager<T> {
     const [editedItem, setEditedItem] = useState<T>();
     const [touchedFields, setTouchedFields] = useState<Partial<Record<keyof T, boolean>>>({});
-    const [errors, setErrors] = useState<Partial<Record<keyof T, string>>>({});
+    const [errors, setErrors] = useState<FormManagerErrors>({});
 
     const currentItem = useMemo(() => {
         return editedItem ?? originalItem;
@@ -125,10 +127,10 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
             return true;
         } catch (error) {
             if (isYupError(error)) {
-                const validationErrors: Partial<Record<keyof T, string>> = {};
+                const validationErrors: FormManagerErrors = {};
                 error.inner.forEach(err => {
                     if (err.path) {
-                        validationErrors[err.path as keyof T] = err.message;
+                        validationErrors[err.path] = err.message;
                     }
                 });
                 setErrors(validationErrors);

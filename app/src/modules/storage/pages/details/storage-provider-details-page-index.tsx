@@ -12,9 +12,14 @@ import {type StorageProviderAdditionalData} from './storage-provider-details-pag
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker-2';
 import * as yup from 'yup';
-import {goverSchemaToYup2 as goverSchemaToYup} from '../../../../utils/gover-schema-to-yup';
+import {goverSchemaToYup, mapFormManagerErrorsToComputedErrors} from '../../../../utils/gover-schema-to-yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
-import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
+import {
+    addSnackbarMessage,
+    removeSnackbarMessage,
+    SnackbarSeverity,
+    SnackbarType,
+} from '../../../../slices/shell-slice';
 import {type StorageProviderDefinition} from '../../entities/storage-provider-definition';
 import {type StorageProviderEntity, StorageProviderMetadataAttribute} from '../../entities/storage-provider-entity';
 import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
@@ -32,6 +37,7 @@ import {CheckboxFieldComponent} from '../../../../components/checkbox-field/chec
 import {format} from 'date-fns';
 import {StatusTable} from '../../../../components/status-table/status-table';
 import Sync from '@aivot/mui-material-symbols-400-outlined/dist/sync/Sync';
+import {ComputedElementErrors, DerivedRuntimeElementData} from '../../../../models/element-data';
 
 function getIndexedFieldError(
     errors: Record<string, any> | undefined,
@@ -104,6 +110,8 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     const navigate = useNavigate();
 
     const [storageProviderSchema, setStorageProviderSchema] = useState<any>(_StorageProviderSchema);
+    const [derivedElementData, setDerivedElementData] = useState<DerivedRuntimeElementData | null>(null);
+    const [clientSideValidationErrors, setClientSideValidationErrors] = useState<ComputedElementErrors | null>(null);
 
     const {
         item: originalStorageProvider,
@@ -118,7 +126,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
 
     // Extract the id of the storage provider for later usage.
     const {
-        id: storageProviderId
+        id: storageProviderId,
     } = originalStorageProvider ?? {
         id: null,
     };
@@ -182,16 +190,36 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
             setStorageProviderSchema({
                 ..._StorageProviderSchema,
                 configuration: yup.object().shape(
-                    goverSchemaToYup(definition.providerConfigLayout),
+                    goverSchemaToYup(definition.providerConfigLayout, derivedElementData?.elementStates ?? {}),
                 ),
             });
         } else {
             setStorageProviderSchema(_StorageProviderSchema);
         }
-    }, [definition]);
+    }, [definition, derivedElementData?.elementStates]);
+
+    useEffect(() => {
+        if (
+            definition?.providerConfigLayout == null ||
+            editedStorageProvider == null ||
+            Object.keys(errors).length === 0
+        ) {
+            setClientSideValidationErrors(null);
+            return;
+        }
+
+        const computedErrors = mapFormManagerErrorsToComputedErrors(
+            definition.providerConfigLayout,
+            editedStorageProvider.configuration ?? {},
+            errors,
+            {rootPath: 'configuration'},
+        );
+
+        setClientSideValidationErrors(Object.keys(computedErrors).length === 0 ? null : computedErrors);
+    }, [definition?.providerConfigLayout, editedStorageProvider, errors]);
 
     const {
-        dialog: changeBlockerDialog
+        dialog: changeBlockerDialog,
     } = useChangeBlocker({
         original: originalStorageProvider,
         edited: editedStorageProvider,
@@ -202,7 +230,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
 
     if (editedStorageProvider == null) {
         return (
-            <GenericDetailsSkeleton />
+            <GenericDetailsSkeleton/>
         );
     }
 
@@ -212,7 +240,6 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
 
             if (!validationResult) {
                 dispatch(showErrorSnackbar('Bitte überprüfen Sie Ihre Eingaben.'));
-                // TODO: Move errors from errors to configuration object
                 return;
             }
 
@@ -296,13 +323,13 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     if (editedStorageProvider.systemProvider) {
         statusTableItems.push({
             label: 'Systemanbieter',
-            icon: <HelpIconOutlined color="primary" />,
+            icon: <HelpIconOutlined color="primary"/>,
             children: 'Dieser Speicheranbieter ist ein Systemanbieter und kann nicht verändert werden.',
         });
     }
     statusTableItems.push({
         label: 'Zuletzt synchronisiert',
-        icon: <Sync />,
+        icon: <Sync/>,
         children: editedStorageProvider.lastSync
             ? format(new Date(editedStorageProvider.lastSync), 'dd.MM.yyyy – HH:mm:ss') + ' Uhr'
             : 'Noch nicht synchronisiert',
@@ -330,7 +357,9 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         }}
                     />
 
-                    Bitte beheben Sie das Problem mit dem Speicheranbieter, damit eine ordnungsgemäße Funktion gewährleistet ist. Bitte starten Sie nach der Behebung des Problems manuell die Synchronisation, damit die Verbindung geprüft und der Fehlerstatus entfernt wird.
+                    Bitte beheben Sie das Problem mit dem Speicheranbieter, damit eine ordnungsgemäße Funktion
+                    gewährleistet ist. Bitte starten Sie nach der Behebung des Problems manuell die Synchronisation,
+                    damit die Verbindung geprüft und der Fehlerstatus entfernt wird.
                 </AlertComponent>
             }
 
@@ -341,12 +370,15 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 Speicheranbieter konfigurieren
             </Typography>
             <Typography sx={{mb: 3, maxWidth: 900}}>
-                Konfigurieren Sie den Speicheranbieter, um ihn für die Ablage von Dateien zum angegebenen Verwendungszweck (Typ) nutzen zu können. Sie können die meisten Einstellungen jederzeit anpassen – bitte beachten Sie jedoch, dass bestehende Dateien bei einer Änderung des Speicherortes nicht automatisch migriert werden.
+                Konfigurieren Sie den Speicheranbieter, um ihn für die Ablage von Dateien zum angegebenen
+                Verwendungszweck (Typ) nutzen zu können. Sie können die meisten Einstellungen jederzeit anpassen – bitte
+                beachten Sie jedoch, dass bestehende Dateien bei einer Änderung des Speicherortes nicht automatisch
+                migriert werden.
             </Typography>
 
             {isExistingItem &&
                 <StatusTable
-                    sx={{ mt: 4, mb: 3 }}
+                    sx={{mt: 4, mb: 3}}
                     cardVariant="outlined"
                     items={statusTableItems}
                 />
@@ -514,7 +546,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         error={errors.maxFileSizeInBytes}
                         decimalPlaces={2}
                         suffix="MB"
-                        hint='1 Megabyte entspricht 1.000 Kilobytes oder 1.000.000 Bytes.'
+                        hint="1 Megabyte entspricht 1.000 Kilobytes oder 1.000.000 Bytes."
                     />
                 </Grid>
             </Grid>
@@ -527,8 +559,10 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     authoredElementValues={editedStorageProvider.configuration}
                     onAuthoredElementValuesChange={handleInputChange('configuration')}
                     disabled={inputsDisabled}
-                    onDerivationFinished={() => {
+                    computedErrors={clientSideValidationErrors}
+                    onDerivationFinished={(derivedElementData) => {
                         setInitialDerivationDone(true);
+                        setDerivedElementData(derivedElementData);
                     }}
                 />
             }
@@ -577,9 +611,12 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         content: (
                             <Box>
                                 <Typography>
-                                    Hier können Sie optionale Metadaten-Attribute definieren, die für Dateien mitgegeben werden können.
-                                    Diese Attribute können beispielsweise in der Dateiansicht oder bei der Suche nach Dateien verwendet werden.
-                                    Bitte beachten Sie, dass diese Einstellungen nur für den ausgewählten Anbieter gelten.
+                                    Hier können Sie optionale Metadaten-Attribute definieren, die für Dateien mitgegeben
+                                    werden können.
+                                    Diese Attribute können beispielsweise in der Dateiansicht oder bei der Suche nach
+                                    Dateien verwendet werden.
+                                    Bitte beachten Sie, dass diese Einstellungen nur für den ausgewählten Anbieter
+                                    gelten.
                                 </Typography>
                                 <ul style={{marginTop: '1rem', paddingLeft: '1.1rem'}}>
                                     <li>
@@ -616,7 +653,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     disabled={inputsDisabled || hasNotChanged}
                     variant="contained"
                     color="primary"
-                    startIcon={<SaveOutlinedIcon />}
+                    startIcon={<SaveOutlinedIcon/>}
                 >
                     Speichern
                 </Button>
@@ -644,7 +681,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         sx={{
                             marginLeft: 'auto',
                         }}
-                        startIcon={<Delete />}
+                        startIcon={<Delete/>}
                     >
                         Löschen
                     </Button>
@@ -666,7 +703,9 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     werden.
                 </Typography>
                 <AlertComponent color={'warning'}>
-                    Wenn der Speicheranbieter bereits für die Ablage von Dateien genutzt wurde, können diese Dateien nach dem Löschen des Speicheranbieters nicht mehr erreicht werden. Bitte stellen Sie sicher, dass Sie alle Dateien migriert oder gelöscht haben, bevor Sie fortfahren.
+                    Wenn der Speicheranbieter bereits für die Ablage von Dateien genutzt wurde, können diese Dateien
+                    nach dem Löschen des Speicheranbieters nicht mehr erreicht werden. Bitte stellen Sie sicher, dass
+                    Sie alle Dateien migriert oder gelöscht haben, bevor Sie fortfahren.
                 </AlertComponent>
             </ConfirmDialog>
         </Box>

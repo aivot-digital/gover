@@ -1,8 +1,8 @@
 import {ElementType} from './element-type';
 
 export enum ElementDisplayContext {
-    CitizenFacing,
-    StaffFacing,
+    CitizenFacing = 'CitizenFacing',
+    StaffFacing = 'StaffFacing',
 }
 
 const CitizenFacingBaseElements: ElementType[] = [

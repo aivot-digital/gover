@@ -1,5 +1,7 @@
 import {
+    applyComputedErrors,
     AuthoredElementValues,
+    ComputedElementErrors,
     createDerivedRuntimeElementData,
     DerivedRuntimeElementData,
 } from '../../../models/element-data';
@@ -19,6 +21,7 @@ interface ElementDerivationContextProps {
     authoredElementValues: AuthoredElementValues;
     onAuthoredElementValuesChange: (newData: AuthoredElementValues) => void;
     derivedData?: DerivedRuntimeElementData;
+    computedErrors?: ComputedElementErrors | null;
     onDerivedDataChange?: (newData: DerivedRuntimeElementData) => void;
     disabled?: boolean;
     onDerivationStarted?: (triggeringElementData: AuthoredElementValues) => void;
@@ -31,6 +34,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         authoredElementValues,
         onAuthoredElementValuesChange,
         derivedData: controlledDerivedData,
+        computedErrors,
         onDerivedDataChange,
         disabled,
         onDerivationStarted,
@@ -50,7 +54,18 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         return flattenElements(element, false);
     }, [element]);
 
-    const derivedData = controlledDerivedData ?? internalDerivedData;
+    const derivedData = useMemo(() => {
+        const baseDerivedData = controlledDerivedData ?? internalDerivedData;
+
+        if (computedErrors == null || Object.keys(computedErrors).length === 0) {
+            return baseDerivedData;
+        }
+
+        return {
+            ...baseDerivedData,
+            elementStates: applyComputedErrors(computedErrors, baseDerivedData.elementStates),
+        };
+    }, [computedErrors, controlledDerivedData, internalDerivedData]);
 
     useEffect(() => {
         if (controlledDerivedData != null) {

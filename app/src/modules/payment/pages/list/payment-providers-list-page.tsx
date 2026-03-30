@@ -3,9 +3,8 @@ import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Typography} from '@mui/material';
 import {EditOutlined} from '@mui/icons-material';
-import {useApi} from '../../../../hooks/use-api';
 import {PaymentProvidersApiService} from '../../payment-providers-api-service';
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {PaymentProviderDefinitionResponseDTO} from '../../dtos/payment-provider-definition-response-dto';
 import {PaymentProviderResponseDTO} from '../../dtos/payment-provider-response-dto';
 import Chip from '@mui/material/Chip';
@@ -16,10 +15,9 @@ import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 
-export function PaymentProvidersListPage() {
-    const api = useApi();
-    const apiService = useMemo(() => new PaymentProvidersApiService(api), [api]);
+const apiService = new PaymentProvidersApiService();
 
+export function PaymentProvidersListPage() {
     const hasAccess = useAccessGuard({
         onlyGlobalAdmin: true,
         messageType: 'snackbar',
@@ -48,7 +46,7 @@ export function PaymentProvidersListPage() {
                         actions: [
                             {
                                 label: 'Neuer Zahlungsdienstleister',
-                                icon: <AddOutlinedIcon />,
+                                icon: <AddOutlinedIcon/>,
                                 to: '/payment-providers/new',
                                 variant: 'contained',
                                 disabled: !hasAccess,
@@ -63,14 +61,17 @@ export function PaymentProvidersListPage() {
                                         variant="body1"
                                         paragraph
                                     >
-                                        Konfigurieren Sie hier Zahlungsdienstleister, die in Ihrer Gover-Instanz global verfügbar sein sollen.
-                                        Die erforderlichen Konfigurationsdaten erhalten Sie vom Zahlungsdienstleister oder finden Sie in dessen Dokumentation.
+                                        Konfigurieren Sie hier Zahlungsdienstleister, die in Ihrer Gover-Instanz global
+                                        verfügbar sein sollen.
+                                        Die erforderlichen Konfigurationsdaten erhalten Sie vom Zahlungsdienstleister
+                                        oder finden Sie in dessen Dokumentation.
                                     </Typography>
                                     <Typography
                                         variant="body1"
                                         paragraph
                                     >
-                                        Es wird empfohlen, für jeden Zahlungsdienstleister sowohl eine produktive als auch eine vorproduktive Anbindung einzurichten, um Tests zu erleichtern.
+                                        Es wird empfohlen, für jeden Zahlungsdienstleister sowohl eine produktive als
+                                        auch eine vorproduktive Anbindung einzurichten, um Tests zu erleichtern.
                                     </Typography>
                                 </>
                             ),
@@ -79,7 +80,7 @@ export function PaymentProvidersListPage() {
                     searchLabel="Zahlungsdienstleister suchen"
                     searchPlaceholder="Name der Konfiguration eingeben…"
                     fetch={(options) => {
-                        return new PaymentProvidersApiService(options.api)
+                        return new PaymentProvidersApiService()
                             .list(options.page, options.size, options.sort, options.order, {name: options.search});
                     }}
                     columnDefinitions={[
@@ -117,7 +118,11 @@ export function PaymentProvidersListPage() {
                                 return (
                                     <>
                                         {`${providerName} (Version ${params.row.providerVersion})`}
-                                        {params.row.isTestProvider && <Chip label="Test" color="warning" variant="outlined" size={"small"} sx={{ml:1}}/>}
+                                        {params.row.isTestProvider && <Chip label="Test"
+                                                                            color="warning"
+                                                                            variant="outlined"
+                                                                            size={'small'}
+                                                                            sx={{ml: 1}}/>}
                                     </>
                                 );
                             },
@@ -133,9 +138,15 @@ export function PaymentProvidersListPage() {
                             renderCell: (params) => (
                                 <>
                                     {params.row.isEnabled ?
-                                        <Chip label="Aktiv" color="success" variant="outlined" size={"small"}/>
+                                        <Chip label="Aktiv"
+                                              color="success"
+                                              variant="outlined"
+                                              size={'small'}/>
                                         :
-                                        <Chip label="Inaktiv" color="default" variant="outlined" size={"small"}/>
+                                        <Chip label="Inaktiv"
+                                              color="default"
+                                              variant="outlined"
+                                              size={'small'}/>
                                     }
                                 </>
                             ),
@@ -147,12 +158,12 @@ export function PaymentProvidersListPage() {
                     rowActionsCount={2}
                     rowActions={(item: PaymentProviderResponseDTO) => [
                         {
-                            icon: hasAccess ? <EditOutlined /> : <Visibility/>,
+                            icon: hasAccess ? <EditOutlined/> : <Visibility/>,
                             to: `/payment-providers/${item.key}`,
                             tooltip: hasAccess ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen',
                         },
                         {
-                            icon: <ScienceOutlinedIcon />,
+                            icon: <ScienceOutlinedIcon/>,
                             to: `/payment-providers/${item.key}/test`,
                             tooltip: 'Konfiguration testen',
                         }]}

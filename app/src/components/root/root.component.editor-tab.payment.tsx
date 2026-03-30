@@ -71,7 +71,7 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                     }}
                 >
                     {
-                        expanded ? <ExpandMoreOutlinedIcon /> : <ExpandLessOutlinedIcon />
+                        expanded ? <ExpandMoreOutlinedIcon/> : <ExpandLessOutlinedIcon/>
                     }
                 </IconButton>
 
@@ -79,7 +79,8 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                     variant="h5"
                     sx={{ml: 2}}
                 >
-                    Position Nr. {props.index !== undefined && (props.index + 1)}: {isStringNotNullOrEmpty(props.product.reference) ? props.product.reference : props.product.id}
+                    Position
+                    Nr. {props.index !== undefined && (props.index + 1)}: {isStringNotNullOrEmpty(props.product.reference) ? props.product.reference : props.product.id}
                 </Typography>
 
                 {
@@ -88,7 +89,7 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                         sx={{ml: 'auto'}}
                         size="small"
                         color="error"
-                        endIcon={<Delete />}
+                        endIcon={<Delete/>}
                         onClick={props.onDelete}
                     >
                         Löschen
@@ -459,7 +460,7 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                             actions={props.disabled ? [] : [
                                 {
                                     tooltip: 'Element-ID nachschlagen',
-                                    icon: <LocationSearchingIcon />,
+                                    icon: <LocationSearchingIcon/>,
                                     onClick: toggleShowElementSelectDialog,
                                 },
                             ]}
@@ -483,7 +484,8 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                             color="warning"
                             sx={{m: 0}}
                         >
-                            Bei nachgelagerten Zahlungspositionen wird die Menge im Bearbeitungsprozess durch eine Sachbearbeiter:in festgelegt.
+                            Bei nachgelagerten Zahlungspositionen wird die Menge im Bearbeitungsprozess durch eine
+                            Sachbearbeiter:in festgelegt.
                             Sie können dann einen Zahlungslink generieren und an die antragstellende Person versenden.
                         </AlertComponent>
                     }
@@ -526,7 +528,7 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
 
     useEffect(() => {
         withDelay(
-            new PaymentProvidersApiService(api)
+            new PaymentProvidersApiService()
                 .listAllOrdered('name', 'ASC', {
                     isEnabled: true,
                 }),
@@ -567,7 +569,8 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
                     title="E-Payment konfigurieren"
                     disableMarginTop
                 >
-                    Wählen Sie einen Zahlungsdienstleister aus und hinterlegen Sie Zahlungspositionen, um Online-Zahlungen über dieses Formular zu ermöglichen.
+                    Wählen Sie einen Zahlungsdienstleister aus und hinterlegen Sie Zahlungspositionen, um
+                    Online-Zahlungen über dieses Formular zu ermöglichen.
                 </ElementEditorSectionHeader>
 
                 <AlertComponent
@@ -577,7 +580,8 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
                     }}
                     title="Kein Zahlungsdienstleister hinterlegt"
                 >
-                    Sie haben noch keinen Zahlungsdienstleister hinterlegt. Wenn Sie eine Administrator:in sind, können Sie einen <Link
+                    Sie haben noch keinen Zahlungsdienstleister hinterlegt. Wenn Sie eine Administrator:in sind, können
+                    Sie einen <Link
                     to={'/payment-providers/new'}
                     target="_blank"
                     style={{color: 'inherit'}}
@@ -596,7 +600,8 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
                 title="E-Payment konfigurieren"
                 disableMarginTop
             >
-                Wählen Sie einen Zahlungsdienstleister aus und hinterlegen Sie Zahlungspositionen, um Online-Zahlungen über dieses Formular zu ermöglichen.
+                Wählen Sie einen Zahlungsdienstleister aus und hinterlegen Sie Zahlungspositionen, um Online-Zahlungen
+                über dieses Formular zu ermöglichen.
             </ElementEditorSectionHeader>
             <Grid
                 container
@@ -724,7 +729,7 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
                                     ml: 'auto',
                                 }}
                                 variant="outlined"
-                                startIcon={<AddCircleOutlineOutlinedIcon />}
+                                startIcon={<AddCircleOutlineOutlinedIcon/>}
                                 onClick={() => {
                                     props.onPatchEntity({
                                         ...props.entity,
@@ -744,7 +749,7 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
                                                     taxInformation: '',
                                                 },
                                             ],
-                                        }
+                                        },
                                     });
                                 }}
                             >
@@ -780,7 +785,7 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
                                             version: {
                                                 ...props.entity.version,
                                                 paymentProducts: products,
-                                            }
+                                            },
                                         });
                                     }}
                                     onPatch={patch => {

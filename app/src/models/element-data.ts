@@ -16,6 +16,10 @@ export interface ComputedElementState {
 
 export type ComputedElementStates = Partial<Record<string, ComputedElementState>>;
 
+export type ComputedElementError = Pick<ComputedElementState, 'error' | 'subStates'>;
+
+export type ComputedElementErrors = Partial<Record<string, ComputedElementError>>;
+
 export interface DerivedRuntimeElementData {
     effectiveValues: EffectiveElementValues;
     elementStates: ComputedElementStates;
@@ -75,4 +79,48 @@ export function hasAuthoredElementValuesSomeInput(authoredElementValues: Authore
     }
 
     return false;
+}
+
+/**
+ * Apply computed errors to a computed element state container.
+ * The computed errors will be applied recursively to all sub-states of the computed element states.
+ * Computed errors have a higher precedence than existing errors.
+ *
+ * @param computedErrors The computed errors.
+ * @param computedElementStates The existing element states.
+ * @returns The updated element states.
+ */
+export function applyComputedErrors(computedErrors: ComputedElementErrors, computedElementStates: ComputedElementStates): ComputedElementStates {
+    const nextComputedElementStates: ComputedElementStates = {
+        ...computedElementStates,
+    };
+
+    for (const [elementId, computedError] of Object.entries(computedErrors)) {
+        if (computedError == null) {
+            continue;
+        }
+
+        const previousState = computedElementStates[elementId];
+        const nextState: ComputedElementState = {
+            ...(previousState ?? {}),
+        };
+
+        if (Object.prototype.hasOwnProperty.call(computedError, 'error')) {
+            nextState.error = computedError.error ?? null;
+        }
+
+        if (Object.prototype.hasOwnProperty.call(computedError, 'subStates')) {
+            const computedSubStates = computedError.subStates;
+
+            nextState.subStates = computedSubStates == null ?
+                computedSubStates ?? null :
+                computedSubStates.map((computedSubState, index) => {
+                    return applyComputedErrors(computedSubState ?? {}, previousState?.subStates?.[index] ?? {});
+                });
+        }
+
+        nextComputedElementStates[elementId] = nextState;
+    }
+
+    return nextComputedElementStates;
 }

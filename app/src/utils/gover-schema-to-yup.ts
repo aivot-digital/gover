@@ -4,24 +4,30 @@ import {ElementType} from '../data/element-type/element-type';
 import * as yup from 'yup';
 import {NumberSchema, Schema, StringSchema} from 'yup';
 import {isAnyElementWithChildren} from '../models/elements/any-element-with-children';
-import {isReplicatingContainerLayout, ReplicatingContainerLayout} from '../models/elements/form/layout/replicating-container-layout';
+import {
+    isReplicatingContainerLayout,
+    ReplicatingContainerLayout,
+} from '../models/elements/form/layout/replicating-container-layout';
 import {TextFieldElement} from '../models/elements/form/input/text-field-element';
 import {SelectFieldElement} from '../models/elements/form/input/select-field-element';
 import {RadioFieldElement} from '../models/elements/form/input/radio-field-element';
 import {
     AuthoredElementValues,
-    ComputedElementState,
+    applyComputedErrors,
+    ComputedElementErrors,
     ComputedElementStates,
     createDerivedRuntimeElementData,
     DerivedRuntimeElementData,
 } from '../models/element-data';
-import {DataObjectItem} from '../modules/data-objects/models/data-object-item';
 import {ChipInputFieldElement} from '../models/elements/form/input/chip-input-field-element';
 import {DateRangeFieldElement} from '../models/elements/form/input/date-range-field-element';
 import {TimeRangeFieldElement} from '../models/elements/form/input/time-range-field-element';
 import {DateTimeRangeFieldElement} from '../models/elements/form/input/date-time-range-field-element';
 import {MapPointFieldElement} from '../models/elements/form/input/map-point-field-element';
-import {DomainAndUserSelectItem, DomainUserSelectFieldElement} from '../models/elements/form/input/domain-user-select-field-element';
+import {
+    DomainAndUserSelectItem,
+    DomainUserSelectFieldElement,
+} from '../models/elements/form/input/domain-user-select-field-element';
 import {
     AssignmentContextFieldElement,
     AssignmentContextValue,
@@ -34,129 +40,13 @@ import {
     normalizeDomainAndUserSelectItem,
 } from '../components/domain-user-select-field/domain-user-select-options';
 
-/**
- * @deprecated Use goverSchemaToYup2 instead
- * @param elem
- */
-export function goverSchemaToYup(elem: AnyElement): any {
-    let res: Record<string, any> = {};
 
-    if (isAnyInputElement(elem)) {
-        let fieldSchema;
-
-        switch (elem.type) {
-            case ElementType.Text:
-                fieldSchema = yup.string().trim();
-                if (elem.minCharacters) {
-                    fieldSchema = fieldSchema.min(elem.minCharacters, `Mindestens ${elem.minCharacters} Zeichen erforderlich.`);
-                }
-                if (elem.maxCharacters) {
-                    fieldSchema = fieldSchema.max(elem.maxCharacters, `Maximal ${elem.maxCharacters} Zeichen erlaubt.`);
-                }
-                if (elem.required) {
-                    fieldSchema = fieldSchema.required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`);
-                } else {
-                    fieldSchema = fieldSchema.nullable();
-                }
-                if (elem.pattern?.regex) {
-                    try {
-                        const regex = new RegExp(elem.pattern.regex);
-                        fieldSchema = fieldSchema.matches(regex, elem.pattern.message || 'Das Format der Eingabe ist ungültig.');
-                    } catch (error) {
-                        console.warn(`Ungültige Regex im Schema für Feld ${elem.id}:`, error);
-                    }
-                }
-                break;
-
-            case ElementType.Number:
-                fieldSchema = yup.number();
-                if (elem.required) {
-                    fieldSchema = fieldSchema.required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`);
-                } else {
-                    fieldSchema = fieldSchema.nullable();
-                }
-                break;
-
-            case ElementType.Select:
-                fieldSchema = yup.string().trim();
-                if (elem.required) {
-                    fieldSchema = fieldSchema.required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`);
-                } else {
-                    fieldSchema = fieldSchema.nullable();
-                }
-                if (elem.options) {
-                    const validValues = elem.options
-                        ?.map(opt => (typeof opt === 'object' && 'value' in opt ? opt.value : opt))
-                        .filter(value => typeof value === 'string' || typeof value === 'number'); // Ensure valid values
-                    if (validValues.length > 0) {
-                        fieldSchema = fieldSchema.oneOf(validValues, `Ungültiger Wert ausgewählt.`);
-                    }
-                }
-                break;
-
-            case ElementType.DataModelSelect:
-            case ElementType.DataObjectSelect:
-                fieldSchema = yup.string().trim();
-                if (elem.required) {
-                    fieldSchema = fieldSchema.required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`);
-                } else {
-                    fieldSchema = fieldSchema.nullable();
-                }
-                break;
-            case ElementType.NoCodeInput:
-                fieldSchema = noCodeInputFieldToYup(elem);
-                break;
-
-            case ElementType.ReplicatingContainer:
-                let childSchemaObject: Record<string, any> = {};
-                for (const child of elem.children ?? []) {
-                    childSchemaObject[child.id] = {
-                        inputValue: goverSchemaToYup(child)[child.id],
-                    };
-                }
-
-                const childSchema = yup
-                    .object()
-                    .shape(childSchemaObject);
-
-                fieldSchema = yup
-                    .array()
-                    .of(childSchema);
-
-                if (elem.required) {
-                    fieldSchema = fieldSchema.required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`);
-                } else {
-                    fieldSchema = fieldSchema.nullable();
-                }
-
-                break;
-
-            default:
-                console.warn(`Unhandled field type in goverSchemaToYup: ${elem.type}`);
-                fieldSchema = yup.mixed();
-        }
-
-        res[elem.id] = yup.object().shape({
-            inputValue: fieldSchema,
-        });
+export function goverSchemaToYup(elem: AnyElement, states: ComputedElementStates): Record<string, Schema> {
+    // Invisible elements will not be validated
+    if (states[elem.id]?.visible === false) {
+        return {};
     }
 
-    // If element has children, recursively generate schema
-    if (isAnyElementWithChildren(elem) && !isReplicatingContainerLayout(elem)) {
-        for (const child of elem.children ?? []) {
-            const childSchema = goverSchemaToYup(child);
-            res = {
-                ...res,
-                ...childSchema,
-            };
-        }
-    }
-
-    return res;
-}
-
-
-export function goverSchemaToYup2(elem: AnyElement): Record<string, Schema> {
     let elementDataShape: Record<string, Schema> = {};
 
     if (isAnyInputElement(elem)) {
@@ -164,7 +54,7 @@ export function goverSchemaToYup2(elem: AnyElement): Record<string, Schema> {
         const schemaMapper = YupSchemaMap[elem.type] ?? genericFieldToYup;
 
         // Generate schema for the element
-        const elementSchema = schemaMapper(elem);
+        const elementSchema = schemaMapper(elem, states);
 
         // Extend the existing shape with the new element schema
         elementDataShape = {
@@ -176,7 +66,7 @@ export function goverSchemaToYup2(elem: AnyElement): Record<string, Schema> {
     // If element has children, recursively generate schema. Omit children of replicating containers because they were handled previously.
     if (isAnyElementWithChildren(elem) && !isReplicatingContainerLayout(elem)) {
         for (const child of elem.children ?? []) {
-            const childSchema = goverSchemaToYup2(child);
+            const childSchema = goverSchemaToYup(child, states);
 
             elementDataShape = {
                 ...elementDataShape,
@@ -189,7 +79,7 @@ export function goverSchemaToYup2(elem: AnyElement): Record<string, Schema> {
 }
 
 const YupSchemaMap: {
-    [T in ElementType]?: (elem: any) => Schema;
+    [T in ElementType]?: (elem: any, states: ComputedElementStates) => Schema;
 } = {
     [ElementType.Text]: textFieldToYup,
     [ElementType.Number]: numberFieldToYup,
@@ -309,11 +199,14 @@ function dynamicSelectFieldToYup(elem: DataModelSelectFieldElement | DataObjectS
     return selectFieldSchema;
 }
 
-function replicatingContainerToYup(elem: ReplicatingContainerLayout): Schema {
+function replicatingContainerToYup(elem: ReplicatingContainerLayout, states: ComputedElementStates): Schema {
     let childShape: Record<string, Schema> = {};
 
+    let childIndex = 0;
     for (const child of elem.children ?? []) {
-        const childSchema = goverSchemaToYup2(child);
+        const childStates = states[elem.id]?.subStates?.[childIndex];
+
+        const childSchema = goverSchemaToYup(child, childStates ?? {});
         childShape = {
             ...childShape,
             ...childSchema,
@@ -701,19 +594,31 @@ function assignmentContextFieldToYup(elem: AssignmentContextFieldElement): Schem
     return assignmentContextSchema;
 }
 
-export function applyYupErrorsToElementData(
+interface MapFormManagerErrorsToComputedErrorsOptions {
+    rootPath?: string;
+}
+
+export function mapFormManagerErrorsToComputedErrors(
     rootElement: AnyElement,
     authoredElementValues: AuthoredElementValues,
-    errors: Record<string, string>,
-    baseDerivedData?: DerivedRuntimeElementData,
-): DerivedRuntimeElementData {
-    const nextDerivedData = createDerivedRuntimeElementData(baseDerivedData);
-    nextDerivedData.elementStates = {
-        ...nextDerivedData.elementStates,
-    };
+    errors: Partial<Record<string, string>> | null | undefined,
+    options?: MapFormManagerErrorsToComputedErrorsOptions,
+): ComputedElementErrors {
+    if (errors == null) {
+        return {};
+    }
+
+    const normalizedErrors = Object.entries(errors)
+        .filter((entry): entry is [string, string] => entry[1] != null && entry[1].length > 0);
+
+    if (normalizedErrors.length === 0) {
+        return {};
+    }
+
+    const rootPath = options?.rootPath ?? 'data';
 
     function buildPath(element: AnyElement, parents: Array<AnyElement | number>): string {
-        let path = 'data';
+        let path = rootPath;
 
         for (const parent of parents) {
             if (typeof parent === 'number') {
@@ -726,65 +631,122 @@ export function applyYupErrorsToElementData(
         return `${path}.${element.id}`;
     }
 
-    function applyErrors(
+    function findErrorForPath(path: string, includeDescendants: boolean): string | null {
+        const exactMatch = normalizedErrors.find(([errorPath]) => errorPath === path);
+        if (exactMatch != null) {
+            return exactMatch[1];
+        }
+
+        if (!includeDescendants) {
+            return null;
+        }
+
+        const descendantMatch = normalizedErrors.find(([errorPath]) => (
+            errorPath.startsWith(`${path}.`) ||
+            errorPath.startsWith(`${path}[`)
+        ));
+
+        return descendantMatch?.[1] ?? null;
+    }
+
+    function hasComputedElementErrors(computedErrors: ComputedElementErrors): boolean {
+        return Object.values(computedErrors).some((computedError) => {
+            if (computedError == null) {
+                return false;
+            }
+
+            if (computedError.error != null) {
+                return true;
+            }
+
+            if (computedError.subStates == null) {
+                return false;
+            }
+
+            return computedError.subStates.some((subState) => {
+                return subState != null && Object.values(subState).some((subStateError) => {
+                    return subStateError?.error != null || subStateError?.subStates != null;
+                });
+            });
+        });
+    }
+
+    function mapErrors(
         element: AnyElement,
         currentAuthoredElementValues: AuthoredElementValues,
-        currentElementStates: ComputedElementStates,
         parents: Array<AnyElement | number> = [],
-    ): ComputedElementStates {
-        const nextElementStates: ComputedElementStates = {
-            ...currentElementStates,
-        };
+    ): ComputedElementErrors {
+        let nextComputedErrors: ComputedElementErrors = {};
 
         if (isAnyInputElement(element)) {
-            const currentElementState: ComputedElementState = {
-                visible: currentElementStates[element.id]?.visible ?? true,
-                error: null,
-                override: currentElementStates[element.id]?.override ?? null,
-                valueSource: currentElementStates[element.id]?.valueSource ?? 'Authored',
-                subStates: currentElementStates[element.id]?.subStates ?? null,
-            };
-
-            const error = errors[buildPath(element, parents) as keyof DataObjectItem];
-            if (error != null) {
-                currentElementState.error = error;
-            }
+            const elementPath = buildPath(element, parents);
+            const elementError = findErrorForPath(elementPath, !isReplicatingContainerLayout(element));
 
             if (isReplicatingContainerLayout(element)) {
                 const childValues = currentAuthoredElementValues[element.id];
-                const previousSubStates = currentElementState.subStates ?? [];
-
-                currentElementState.subStates = Array.isArray(childValues) ?
+                const rowErrors = Array.isArray(childValues) ?
                     childValues.map((childValue, index) => {
                         if (childValue == null || typeof childValue !== 'object') {
-                            return previousSubStates[index] ?? {};
+                            return {};
                         }
 
-                        let childElementStates: ComputedElementStates = {
-                            ...(previousSubStates[index] ?? {}),
-                        };
-
+                        let childComputedErrors: ComputedElementErrors = {};
                         for (const child of element.children ?? []) {
-                            childElementStates = applyErrors(child, childValue as AuthoredElementValues, childElementStates, [...parents, element, index]);
+                            childComputedErrors = {
+                                ...childComputedErrors,
+                                ...mapErrors(child, childValue as AuthoredElementValues, [...parents, element, index]),
+                            };
                         }
 
-                        return childElementStates;
+                        return childComputedErrors;
                     }) :
                     [];
-            }
 
-            nextElementStates[element.id] = currentElementState;
+                if (elementError != null || rowErrors.some(hasComputedElementErrors)) {
+                    nextComputedErrors[element.id] = {
+                        ...(elementError != null ? {error: elementError} : {}),
+                        subStates: rowErrors,
+                    };
+                }
+            } else if (elementError != null) {
+                nextComputedErrors[element.id] = {
+                    error: elementError,
+                };
+            }
         }
 
         if (isAnyElementWithChildren(element) && !isReplicatingContainerLayout(element)) {
             for (const child of element.children ?? []) {
-                Object.assign(nextElementStates, applyErrors(child, currentAuthoredElementValues, nextElementStates, [...parents, element]));
+                nextComputedErrors = {
+                    ...nextComputedErrors,
+                    ...mapErrors(child, currentAuthoredElementValues, [...parents, element]),
+                };
             }
         }
 
-        return nextElementStates;
+        return nextComputedErrors;
     }
 
-    nextDerivedData.elementStates = applyErrors(rootElement, authoredElementValues, nextDerivedData.elementStates);
+    return mapErrors(rootElement, authoredElementValues);
+}
+
+export function applyYupErrorsToElementData(
+    rootElement: AnyElement,
+    authoredElementValues: AuthoredElementValues,
+    errors: Partial<Record<string, string>>,
+    baseDerivedData?: DerivedRuntimeElementData,
+): DerivedRuntimeElementData {
+    const nextDerivedData = createDerivedRuntimeElementData(baseDerivedData);
+    nextDerivedData.elementStates = applyComputedErrors(
+        mapFormManagerErrorsToComputedErrors(rootElement, authoredElementValues, errors, {rootPath: 'data'}),
+        {
+            ...nextDerivedData.elementStates,
+        },
+    );
     return nextDerivedData;
 }
+
+/**
+ * @deprecated use goverSchemaToYup
+ */
+export const goverSchemaToYup2 = goverSchemaToYup;

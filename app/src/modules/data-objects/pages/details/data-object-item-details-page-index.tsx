@@ -3,7 +3,10 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import React, {useContext, useEffect, useMemo, useState} from 'react';
-import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
+import {
+    GenericDetailsPageContext,
+    GenericDetailsPageContextType,
+} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
 import {useNavigate, useParams} from 'react-router-dom';
@@ -19,7 +22,7 @@ import {DataObjectItem} from '../../models/data-object-item';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {ConfirmDialogV2} from '../../../../dialogs/confirm-dialog/confirm-dialog-v2';
 import {useConfirmDialog} from '../../../../hooks/use-confirm-dialog';
-import {applyYupErrorsToElementData, goverSchemaToYup2} from '../../../../utils/gover-schema-to-yup';
+import {applyYupErrorsToElementData, goverSchemaToYup} from '../../../../utils/gover-schema-to-yup';
 import Grid from '@mui/material/Grid';
 import {format as formatDateTime} from 'date-fns/format';
 import {isApiError} from '../../../../models/api-error';
@@ -59,7 +62,7 @@ export function DataObjectItemDetailsPageIndex() {
     }, []);
 
     const yupSchema = useMemo(() => {
-        if (dataObjectSchema == null) {
+        if (dataObjectSchema == null || derivedData == null) {
             return yup
                 .object()
                 .required()
@@ -73,9 +76,9 @@ export function DataObjectItemDetailsPageIndex() {
                 data: yup
                     .object()
                     .required()
-                    .shape(goverSchemaToYup2(dataObjectSchema.schema)),
+                    .shape(goverSchemaToYup(dataObjectSchema.schema, derivedData.elementStates)),
             });
-    }, [dataObjectSchema]);
+    }, [dataObjectSchema, derivedData.elementStates]);
 
     const {
         item: originalDataObjectItem,
@@ -133,7 +136,7 @@ export function DataObjectItemDetailsPageIndex() {
 
     if (dataObjectSchema == null || currentDataObjectItem == null || schema == null) {
         return (
-            <GenericDetailsSkeleton />
+            <GenericDetailsSkeleton/>
         );
     }
 
@@ -336,7 +339,7 @@ export function DataObjectItemDetailsPageIndex() {
                     disabled={isBusy || hasNotChanged || !hasAccess}
                     variant="contained"
                     color="primary"
-                    startIcon={<SaveOutlinedIcon />}
+                    startIcon={<SaveOutlinedIcon/>}
                 >
                     Speichern
                 </Button>
@@ -351,7 +354,7 @@ export function DataObjectItemDetailsPageIndex() {
                         sx={{
                             marginLeft: 'auto',
                         }}
-                        startIcon={<Delete />}
+                        startIcon={<Delete/>}
                     >
                         Löschen
                     </Button>
