@@ -203,6 +203,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                 <DialogContent
                     sx={{
                         height: 'calc(100vh - 200px)',
+                        overflowY: 'auto',
                     }}
                 >
                     <Allotment vertical>
