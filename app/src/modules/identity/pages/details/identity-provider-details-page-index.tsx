@@ -23,8 +23,6 @@ import {SecretEntityResponseDTO} from '../../../secrets/dtos/secret-entity-respo
 import {SecretsApiService} from '../../../secrets/secrets-api-service';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
-import {Asset} from '../../../assets/models/asset';
-import {AssetsApiService} from '../../../assets/assets-api-service';
 import {IdentityProviderType} from '../../enums/identity-provider-type';
 import {IdentityAdditionalParameter} from '../../models/identity-additional-parameter';
 import {IdentityAttributeMapping} from '../../models/identity-attribute-mapping';
@@ -32,6 +30,7 @@ import {TableFieldComponent2} from '../../../../components/table-field/table-fie
 import {StringListInput2} from '../../../../components/string-list-input/string-list-input-2';
 import {IdentityProviderIcon} from '../../components/identity-provider-icon/identity-provider-icon';
 import {AlertComponent} from '../../../../components/alert/alert-component';
+import {ImageSelector} from '../../../assets/components/image-selector';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../../slices/loading-overlay-slice';
 import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
@@ -183,7 +182,6 @@ export function IdentityProviderDetailsPageIndex() {
         };
     }, []);
 
-    const [assets, setAssets] = useState<Asset[]>();
     const [secrets, setSecrets] = useState<SecretEntityResponseDTO[]>();
 
     const [endpointConfigUrl, setEndpointConfigUrl] = useState('');
@@ -232,11 +230,8 @@ export function IdentityProviderDetailsPageIndex() {
     const [relatedEntities, setRelatedEntities] = useState<ConstraintLinkProps[] | null>(null);
 
     useEffect(() => {
-        fetchRelatedEntities(api)
-            .then(({assets, secrets}) => {
-                setAssets(assets);
-                setSecrets(secrets);
-            })
+        fetchSecrets(api)
+            .then(setSecrets)
             .catch((err) => {
                 console.error(err);
             });
@@ -246,7 +241,7 @@ export function IdentityProviderDetailsPageIndex() {
         isBusy || identityProvider == null || !userIsAdmin
     ), [isBusy, identityProvider, userIsAdmin]);
 
-    if (identityProvider == null || assets == null || secrets == null) {
+    if (identityProvider == null || secrets == null) {
         return (
             <GenericDetailsSkeleton />
         );
@@ -287,19 +282,16 @@ export function IdentityProviderDetailsPageIndex() {
             });
     };
 
-    const handleRefreshRelatedEntities = () => {
+    const handleRefreshSecrets = () => {
         setIsBusy(true);
-        fetchRelatedEntities(api)
-            .then(({assets, secrets}) => {
-                setAssets(assets);
-                setSecrets(secrets);
-            })
+        fetchSecrets(api)
+            .then(setSecrets)
             .then(() => {
-                dispatch(showSuccessSnackbar('Auswahllisten wurden erfolgreich neu geladen.'));
+                dispatch(showSuccessSnackbar('Die Liste der Geheimnisse wurde erfolgreich neu geladen.'));
             })
             .catch((err) => {
                 console.error(err);
-                dispatch(showErrorSnackbar('Fehler beim Aktualisieren der Auswahllisten.'));
+                dispatch(showErrorSnackbar('Fehler beim Aktualisieren der Geheimnisse.'));
             })
             .finally(() => {
                 setIsBusy(false);
@@ -581,8 +573,8 @@ export function IdentityProviderDetailsPageIndex() {
                     sx={{
                         display: 'flex',
                         justifyContent: 'center',
-                        alignItems: 'center',
-                        transform: 'translateY(-10px)',
+                        alignItems: isSystemProvider ? 'center' : 'stretch',
+                        transform: isSystemProvider ? 'translateY(-10px)' : undefined,
                     }}
                     size={{
                         xs: 12,
@@ -590,22 +582,38 @@ export function IdentityProviderDetailsPageIndex() {
                     }}
                 >
                     {
-                        identityProvider.iconAssetKey &&
-                        <Box
-                            sx={{
-                                display: 'inline-block',
-                                py: 1,
-                                px: 2,
-                                border: '1px solid #ccc',
-                                borderRadius: '4px',
-                            }}
-                        >
-                            <IdentityProviderIcon
-                                name={identityProvider.name}
-                                type={identityProvider.type}
-                                iconAssetKey={identityProvider.iconAssetKey}
+                        isSystemProvider
+                            ? identityProvider.iconAssetKey &&
+                            <Box
+                                sx={{
+                                    display: 'inline-block',
+                                    py: 1,
+                                    px: 2,
+                                    border: '1px solid #ccc',
+                                    borderRadius: '4px',
+                                }}
+                            >
+                                <IdentityProviderIcon
+                                    name={identityProvider.name}
+                                    type={identityProvider.type}
+                                    iconAssetKey={identityProvider.iconAssetKey}
+                                />
+                            </Box>
+                            : <ImageSelector
+                                label="Logo-Grafik"
+                                hint="Das Logo dient im Formular als Erkennungsmerkmal. Nutzen Sie am besten eine Vektordatei (z.B. SVG) für eine optimale Darstellung. Die Datei muss den öffentlichen Zugriff zulassen."
+                                selectLabel="Logo-Grafik auswählen"
+                                value={identityProvider.iconAssetKey ?? null}
+                                onChange={(value) => {
+                                    handleInputChange('iconAssetKey')(value ?? undefined);
+                                }}
+                                size={{
+                                    aspectRatio: 3,
+                                }}
+                                disabled={inputsDisabled}
+                                required
+                                error={errors.iconAssetKey}
                             />
-                        </Box>
                     }
                 </Grid>
 
@@ -646,43 +654,6 @@ export function IdentityProviderDetailsPageIndex() {
                         </AlertComponent>
                     }
                 </Grid>
-
-                <Grid
-                    size={{
-                        xs: 12,
-                        md: 6,
-                    }}
-                >
-                    <SelectFieldComponent
-                        label="Logo-Grafik"
-                        value={identityProvider.iconAssetKey ?? undefined}
-                        onChange={(value) => {
-                            if (isStringNullOrEmpty(value)) {
-                                handleInputChange('iconAssetKey')(undefined);
-                            } else {
-                                handleInputChange('iconAssetKey')(value);
-                            }
-                        }}
-                        disabled={inputsDisabled || isSystemProvider}
-                        required
-                        options={
-                            assets
-                                .map((secret) => ({
-                                    value: secret.key,
-                                    label: secret.filename,
-                                }))
-                        }
-                        error={errors.iconAssetKey}
-                        hint={'Das Logo dient im Formular als Erkennungsmerkmal. Nutzen Sie am besten eine Vektordatei (z.B. SVG) für eine optimale Darstellung. Die Datei muss den öffentlichen Zugriff zulassen.'}
-                    />
-                </Grid>
-
-                <Grid
-                    size={{
-                        xs: 12,
-                        md: 6,
-                    }}
-                />
 
                 <Grid
                     size={{
@@ -1010,12 +981,12 @@ export function IdentityProviderDetailsPageIndex() {
                 {
                     !isSystemProvider &&
                     !inputsDisabled &&
-                    <Tooltip title={'Aktualisieren Sie die Auswahllisten für z.B. Dateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'}>
+                    <Tooltip title={'Aktualisieren Sie die Liste der Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'}>
                         <Button
-                            onClick={handleRefreshRelatedEntities}
+                            onClick={handleRefreshSecrets}
                             disabled={isBusy}
                         >
-                            Auswahllisten neu laden <HelpIconOutlined
+                            Geheimnisse neu laden <HelpIconOutlined
                             fontSize="small"
                             sx={{ml: 1}}
                         />
@@ -1088,22 +1059,9 @@ export function IdentityProviderDetailsPageIndex() {
     );
 }
 
-async function fetchRelatedEntities(api: Api): Promise<{
-    assets: Asset[];
-    secrets: SecretEntityResponseDTO[];
-}> {
-    const [assets, secrets] = await Promise
-        .all([
-            new AssetsApiService(api)
-                .listAll({
-                    contentType: 'image/',
-                    isPrivate: false,
-                }),
-            new SecretsApiService(api)
-                .listAll(),
-        ]);
-    return {
-        assets: assets.content,
-        secrets: secrets.content,
-    };
+async function fetchSecrets(api: Api): Promise<SecretEntityResponseDTO[]> {
+    const secrets = await new SecretsApiService(api)
+        .listAll();
+
+    return secrets.content;
 }

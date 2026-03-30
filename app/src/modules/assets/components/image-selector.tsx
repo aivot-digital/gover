@@ -18,6 +18,8 @@ interface ImageSelectorProps {
     value: string | null;
     onChange: (value: string | null) => void;
     disabled?: boolean;
+    required?: boolean;
+    error?: string;
 }
 
 export function ImageSelector(props: ImageSelectorProps) {
@@ -29,6 +31,8 @@ export function ImageSelector(props: ImageSelectorProps) {
         value,
         onChange,
         disabled,
+        required,
+        error,
     } = props;
 
     const [showSelectAssetDialog, setShowSelectAssetDialog] = useState(false);
@@ -43,9 +47,10 @@ export function ImageSelector(props: ImageSelectorProps) {
     }, [value]);
 
     return (
-        <Box>
+        <Box sx={{width: '100%'}}>
             <Typography>
                 {label}
+                {required ? ' *' : ''}
             </Typography>
 
             <Box
@@ -54,7 +59,7 @@ export function ImageSelector(props: ImageSelectorProps) {
                     width: 'width' in size ? size.width : '100%',
                     height: 'height' in size ? size.height : undefined,
                     aspectRatio: 'aspectRatio' in size ? size.aspectRatio : undefined,
-                    border: '1px solid #aaa',
+                    border: (theme) => `1px solid ${error != null ? theme.palette.error.main : '#aaa'}`,
                     backgroundColor: '#f0f0f0',
                     backgroundImage: link != null ? `url(${link})` : undefined,
                     backgroundSize: 'cover',
@@ -118,8 +123,22 @@ export function ImageSelector(props: ImageSelectorProps) {
                 }
             </Box>
 
+            {
+                error != null &&
+                <Typography
+                    variant="caption"
+                    color="error"
+                    sx={{display: 'block', mt: 0.75}}
+                >
+                    {error}
+                </Typography>
+            }
 
-            <Typography variant="caption">
+            <Typography
+                variant="caption"
+                color={error != null ? 'text.secondary' : undefined}
+                sx={{display: 'block', mt: error != null ? 0.25 : 0}}
+            >
                 {hint}
             </Typography>
 

@@ -1,19 +1,12 @@
-import {CrudApiService} from '../../services/crud-api-service';
 import {Api} from '../../hooks/use-api';
 import {Asset} from './models/asset';
 import {createApiPath} from '../../utils/url-path-utils';
 
-interface AssetFilter {
-    filename: string;
-    uploaderId: string;
-    contentType: string;
-    isPrivate: boolean;
-    storageProviderId: number;
-}
+export class AssetsApiService {
+    private readonly api: Api;
 
-export class AssetsApiService extends CrudApiService<Asset, Asset, Asset, Asset, Asset, string, AssetFilter> {
     public constructor(api: Api) {
-        super(api, 'assets/');
+        this.api = api;
     }
 
     public async upload(file: File, storageProviderId: number, storagePathFromRoot: string, existingAsset?: Partial<Asset>): Promise<Asset> {
