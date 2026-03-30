@@ -202,7 +202,7 @@ function dataObjectSchemaExtractDisplayFields(dataObjectSchema: DataObjectSchema
                 flex: 1,
                 type: ElementToMuiDataGridType[element.type] ?? 'string',
                 valueGetter: (_: any, row: any) => {
-                    const value = row.data[element.id]?.inputValue;
+                    const value = row.data[element.id];
 
                     if (value == null) {
                         return null;
@@ -300,7 +300,7 @@ function dataObjectSchemaExtractDisplayFields(dataObjectSchema: DataObjectSchema
                             return value;
                     }
 
-                    return row.data[element.id].inputValue;
+                    return row.data[element.id];
                 },
                 sortable: false,
             });

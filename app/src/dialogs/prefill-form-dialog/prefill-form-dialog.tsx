@@ -89,7 +89,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
         for (const key of Object.keys(elementData)) {
             const dataObject = elementData[key];
             if (dataObject != null) {
-                inputs[key] = dataObject.inputValue;
+                inputs[key] = dataObject;
             }
         }
 
