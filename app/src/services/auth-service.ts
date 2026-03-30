@@ -6,7 +6,7 @@ import {ApiError} from '../models/api-error';
 const TOKEN_URL = `${AppConfig.oidc.hostname}/realms/${AppConfig.oidc.realm}/protocol/openid-connect/token`;
 const AUTH_URL = `${AppConfig.oidc.hostname}/realms/${AppConfig.oidc.realm}/protocol/openid-connect/auth`;
 const STORAGE_KEY_JWT = 'api-jwt';
-const EXPIRATION_PADDING_SECONDS = 30; // 30 milliseconds
+const EXPIRATION_PADDING_SECONDS = 30; // 30 seconds
 
 interface JWT_TOKEN {
     token: string;
@@ -16,6 +16,11 @@ interface JWT_TOKEN {
 interface JWT {
     access: JWT_TOKEN;
     refresh: JWT_TOKEN;
+}
+
+interface ActiveRefresh {
+    refreshToken: string;
+    promise: Promise<JWT | null>;
 }
 
 interface OidcJWT {
@@ -38,6 +43,8 @@ const DefaultUnauthorizedApiError: ApiError = {
 };
 
 export class AuthService {
+    private static activeRefresh: ActiveRefresh | null = null;
+
     /**
      * Get the login URL for redirecting the user to the OIDC provider.
      */
@@ -121,25 +128,18 @@ export class AuthService {
         }
 
         // Refresh the JWT using the refresh token
-        const refreshedOidcJwt = await this.refreshJWT(storedJwt, signal);
+        const refreshedJwt = await this.refreshStoredJwt(storedJwt, signal);
 
-        // If refreshing failed, clear the stored JWT and return null
-        if (refreshedOidcJwt == null) {
-            this.setLocalStorageJWT(null);
+        // If refreshing failed, return null
+        if (refreshedJwt == null) {
             if (throwUnauthorizedException) {
                 throw DefaultUnauthorizedApiError;
             }
             return null;
         }
 
-        // Build a new JWT from the refreshed OIDC JWT
-        const newJwt = this.buildJwtFromOidc(refreshedOidcJwt);
-
-        // Store the new JWT in local storage
-        this.setLocalStorageJWT(newJwt);
-
         // Return the new access token
-        return newJwt.access.token;
+        return refreshedJwt.access.token;
     }
 
     /**
@@ -181,15 +181,41 @@ export class AuthService {
             return;
         }
 
-        const oidcJwt = await this.refreshJWT(storedJwt, signal);
+        await this.refreshStoredJwt(storedJwt, signal);
+    }
+
+    private async refreshStoredJwt(jwt: JWT, signal?: AbortSignal | null): Promise<JWT | null> {
+        const activeRefresh = AuthService.activeRefresh;
+        if (activeRefresh != null && activeRefresh.refreshToken === jwt.refresh.token) {
+            return await activeRefresh.promise;
+        }
+
+        const refreshPromise = this
+            .performRefresh(jwt, signal)
+            .finally(() => {
+                if (AuthService.activeRefresh?.promise === refreshPromise) {
+                    AuthService.activeRefresh = null;
+                }
+            });
+
+        AuthService.activeRefresh = {
+            refreshToken: jwt.refresh.token,
+            promise: refreshPromise,
+        };
+
+        return await refreshPromise;
+    }
+
+    private async performRefresh(jwt: JWT, signal?: AbortSignal | null): Promise<JWT | null> {
+        const oidcJwt = await this.refreshJWT(jwt, signal);
         if (oidcJwt == null) {
-            this.setLocalStorageJWT(null);
-            return;
+            this.setLocalStorageJWTIfRefreshTokenMatches(jwt.refresh.token, null);
+            return null;
         }
 
         const newJwt = this.buildJwtFromOidc(oidcJwt);
-
-        this.setLocalStorageJWT(newJwt);
+        this.setLocalStorageJWTIfRefreshTokenMatches(jwt.refresh.token, newJwt);
+        return newJwt;
     }
 
     /**
@@ -330,6 +356,24 @@ export class AuthService {
             const str = JSON.stringify(jwt);
             localStorage.setItem(STORAGE_KEY_JWT, str);
         }
+    }
+
+    /**
+     * Only update the stored JWT when the refresh token that was used to start the refresh
+     * is still current. This prevents stale parallel refresh attempts from overwriting or
+     * clearing a newer token that another request has already persisted.
+     *
+     * @param refreshToken The refresh token that initiated the refresh request.
+     * @param jwt The JWT to store, or null to clear it.
+     * @private
+     */
+    private setLocalStorageJWTIfRefreshTokenMatches(refreshToken: string, jwt: JWT | null): void {
+        const currentJwt = this.getLocalStorageJWT();
+        if (currentJwt == null || currentJwt.refresh.token !== refreshToken) {
+            return;
+        }
+
+        this.setLocalStorageJWT(jwt);
     }
 
     /**
