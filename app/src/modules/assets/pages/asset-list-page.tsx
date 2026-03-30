@@ -1,35 +1,35 @@
 import {GenericListPage} from '../../../components/generic-list-page/generic-list-page';
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
-import {Stack, Typography} from '@mui/material';
-import {CreateNewFolderOutlined, DownloadOutlined, EditOutlined, FolderOpenOutlined, VisibilityOutlined} from '@mui/icons-material';
+import {Breadcrumbs, Link, Stack, Typography} from '@mui/material';
+import {CreateNewFolderOutlined} from '@mui/icons-material';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {CellLink} from '../../../components/cell-link/cell-link';
 import {Asset} from '../models/asset';
 import {AssetsApiService} from '../assets-api-service';
-import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined';
-import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {getFileTypeIcon} from '../../../utils/file-type-icon';
 import DriveFolderUploadOutlinedIcon from '@mui/icons-material/DriveFolderUploadOutlined';
 import {getFileTypeLabel} from '../../../utils/file-type-label';
 import Chip from '@mui/material/Chip';
 import {CellContentWrapper} from '../../../components/cell-content-wrapper/cell-content-wrapper';
-import {copyToClipboardText} from '../../../utils/copy-to-clipboard';
-import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
+import {Link as RouterLink, useParams, useSearchParams} from 'react-router-dom';
 import {StorageProvidersApiService} from '../../storage/storage-providers-api-service';
-import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
 import {useApi} from '../../../hooks/use-api';
 import {ListControlRef} from '../../../components/generic-list/generic-list-props';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {useConfirm} from '../../../providers/confirm-provider';
+
 
 export function AssetListPage() {
     const dispatch = useAppDispatch();
     const api = useApi();
-    const navigate = useNavigate();
     const {storageProviderId} = useParams<{ storageProviderId?: string }>();
     const [searchParams] = useSearchParams();
     const listControlRef = useRef<ListControlRef>(null);
+
+    const confirm = useConfirm();
 
     const parsedStorageProviderId = useMemo(() => {
         if (storageProviderId == null) {
@@ -85,23 +85,11 @@ export function AssetListPage() {
         >
             <GenericListPage<Asset>
                 header={{
-                    icon: <DriveFolderUploadOutlinedIcon />,
+                    icon: <DriveFolderUploadOutlinedIcon/>,
                     title: headerTitle,
                     actions: [
                         {
-                            label: 'Datei hochladen',
-                            icon: <AddOutlinedIcon />,
-                            tooltip: 'Neues Dokument oder Medieninhalt anlegen',
-                            disabledTooltip: parsedStorageProviderId == null
-                                ? 'Wählen Sie zuerst einen Speicheranbieter aus.'
-                                : 'Der ausgewählte Speicheranbieter ist schreibgeschützt.',
-                            disabled: parsedStorageProviderId == null || storageProviderReadOnly,
-                            to: uploadRoute,
-                            variant: 'contained',
-                        },
-                        {
-                            label: 'Ordner erstellen',
-                            icon: <CreateNewFolderOutlined />,
+                            icon: <CreateNewFolderOutlined/>,
                             tooltip: 'Neuen Ordner anlegen',
                             disabledTooltip: parsedStorageProviderId == null
                                 ? 'Wählen Sie zuerst einen Speicheranbieter aus.'
@@ -133,37 +121,17 @@ export function AssetListPage() {
                                 }
                             },
                         },
+                        'separator',
                         {
-                            label: 'Aktuellen Ordner löschen',
-                            icon: <Delete />,
-                            tooltip: 'Aktuellen Ordner inkl. Inhalt löschen',
-                            disabledTooltip: currentFolderPath === '/'
-                                ? 'Das Wurzelverzeichnis kann nicht gelöscht werden.'
-                                : (parsedStorageProviderId == null
-                                    ? 'Wählen Sie zuerst einen Speicheranbieter aus.'
-                                    : 'Der ausgewählte Speicheranbieter ist schreibgeschützt.'),
-                            disabled: currentFolderPath === '/' || parsedStorageProviderId == null || storageProviderReadOnly,
-                            onClick: async () => {
-                                if (parsedStorageProviderId == null || storageProviderReadOnly || currentFolderPath === '/') {
-                                    return;
-                                }
-
-                                const confirmed = window.confirm(`Ordner ${currentFolderPath} und alle enthaltenen Dateien wirklich löschen?`);
-                                if (!confirmed) {
-                                    return;
-                                }
-
-                                try {
-                                    await new AssetsApiService(api).deleteFolder(parsedStorageProviderId, currentFolderPath);
-                                    const pathSegments = currentFolderPath.split('/').filter((segment) => segment.length > 0);
-                                    pathSegments.pop();
-                                    const parentPath = pathSegments.length > 0 ? `/${pathSegments.join('/')}/` : '/';
-                                    navigate(`/assets/providers/${parsedStorageProviderId}?path=${encodeURIComponent(parentPath)}`, {replace: true});
-                                    dispatch(showSuccessSnackbar('Ordner erfolgreich gelöscht.'));
-                                } catch (err) {
-                                    dispatch(showApiErrorSnackbar(err, 'Der Ordner konnte nicht gelöscht werden.'));
-                                }
-                            },
+                            label: 'Datei hochladen',
+                            icon: <AddOutlinedIcon/>,
+                            tooltip: 'Neues Dokument oder Medieninhalt anlegen',
+                            disabledTooltip: parsedStorageProviderId == null
+                                ? 'Wählen Sie zuerst einen Speicheranbieter aus.'
+                                : 'Der ausgewählte Speicheranbieter ist schreibgeschützt.',
+                            disabled: parsedStorageProviderId == null || storageProviderReadOnly,
+                            to: uploadRoute,
+                            variant: 'contained',
                         },
                     ],
                     helpDialog: {
@@ -172,12 +140,16 @@ export function AssetListPage() {
                         content: (
                             <>
                                 <Typography>
-                                    Dokumente und Medieninhalte sind Dateien, die in der Anwendung hochgeladen und verwaltet werden können.
-                                    In dieser Oberfläche können Sie die im System verfügbaren Dateien einsehen und bearbeiten.
+                                    Dokumente und Medieninhalte sind Dateien, die in der Anwendung hochgeladen und
+                                    verwaltet werden können.
+                                    In dieser Oberfläche können Sie die im System verfügbaren Dateien einsehen und
+                                    bearbeiten.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
-                                    Sie können die hochgeladenen Dateien u.A. in Formularen verwenden, um z.B. Bilder oder PDFs einzubinden.
-                                    Darüber hinaus können Systemdateien (wie Zertifikate oder Templates) z.B. für die Konfiguration von
+                                    Sie können die hochgeladenen Dateien u.A. in Formularen verwenden, um z.B. Bilder
+                                    oder PDFs einzubinden.
+                                    Darüber hinaus können Systemdateien (wie Zertifikate oder Templates) z.B. für die
+                                    Konfiguration von
                                     Zahlungsdienstleistern oder der Dokumentengenerierung genutzt werden.
                                 </Typography>
                             </>
@@ -187,8 +159,48 @@ export function AssetListPage() {
                 searchLabel="Datei suchen"
                 searchPlaceholder="Name der Datei eingeben…"
                 preSearchElements={[
-                    <Typography key="current-folder" variant="body2" sx={{alignSelf: 'center'}}>
-                        Aktueller Ordner: {currentFolderPath}
+                    <Typography
+                        key="current-folder"
+                        variant="body2"
+                        sx={{
+                            alignSelf: 'center',
+                        }}
+                    >
+                        <Breadcrumbs>
+                            {
+                                currentFolderPath
+                                    .split('/')
+                                    .map((item, index, all) => {
+                                        let path: string;
+                                        let name: string;
+
+                                        if (index === 0) {
+                                            path = `/assets/providers/${storageProviderId}`;
+                                            name = storageProviderName ?? '';
+                                        } else {
+                                            const comb = all
+                                                .slice(0, index + 1)
+                                                .join('/');
+                                            const params = new URLSearchParams();
+                                            params.set('path', comb);
+
+                                            path = `/assets/providers/${storageProviderId}?${params.toString()}`;
+                                            name = item;
+                                        }
+
+                                        return (
+                                            <Link
+                                                to={path}
+                                                key={index}
+                                                component={RouterLink}
+                                                underline="none"
+                                            >
+                                                {name}
+                                            </Link>
+                                        );
+                                    })
+                            }
+                        </Breadcrumbs>
                     </Typography>,
                 ]}
                 fetch={(options) => {
@@ -276,29 +288,37 @@ export function AssetListPage() {
                                 })();
 
                             return (
-                            <CellLink
-                                to={targetPath}
-                                title={isDirectory ? 'Ordner öffnen' : (storageProviderReadOnly ? 'Datei ansehen' : 'Datei bearbeiten')}
-                            >
-                                {String(params.value)}
-                            </CellLink>
+                                <CellLink
+                                    to={targetPath}
+                                    title={isDirectory ? 'Ordner öffnen' : (storageProviderReadOnly ? 'Datei ansehen' : 'Datei bearbeiten')}
+                                >
+                                    {String(params.value)}
+                                </CellLink>
                             );
-                        }
+                        },
                     },
                     {
                         field: 'contentType',
                         headerName: 'Dateityp',
                         flex: 1.5,
                         renderCell: (params) => {
+                            if (params.row.directory) {
+                                return null;
+                            }
+
                             const fileType = getFileTypeLabel(params.row.contentType ?? 'application/octet-stream');
                             return (
-                                <Stack direction="row" spacing={1} alignItems="center">
+                                <Stack
+                                    direction="row"
+                                    spacing={1}
+                                    alignItems="center"
+                                >
                                     <span>{params.row.directory ? 'Ordner' : fileType}</span>
                                     <Chip
                                         label={params.row.directory ? 'inode/directory' : params.row.contentType}
                                         size="small"
                                         variant={'outlined'}
-                                        sx={{ fontSize: '0.75rem' }}
+                                        sx={{fontSize: '0.75rem'}}
                                     />
                                 </Stack>
                             );
@@ -319,28 +339,17 @@ export function AssetListPage() {
                                 minute: '2-digit',
                                 hour12: false,
                             }).format(date).replace(',', ' –') + ' Uhr';
-                        }
+                        },
                     },
 
                 ]}
                 getRowIdentifier={row => row.directory ? `dir:${row.storagePathFromRoot}` : (row.key || `file:${row.storagePathFromRoot}`)}
                 noDataPlaceholder="Keine Dateien hochgeladen"
                 noSearchResultsPlaceholder="Keine Dateien gefunden"
-                rowActionsCount={3}
+                rowActionsCount={1}
                 rowActions={(item: Asset) => item.directory ? [
                     {
-                        icon: <FolderOpenOutlined />,
-                        to: (() => {
-                            const providerId = item.storageProviderId ?? parsedStorageProviderId;
-                            if (providerId == null) {
-                                return '/assets';
-                            }
-                            return `/assets/providers/${providerId}?path=${encodeURIComponent(AssetsApiService.normalizeFolderPath(item.storagePathFromRoot ?? '/'))}`;
-                        })(),
-                        tooltip: 'Ordner öffnen',
-                    },
-                    {
-                        icon: <Delete />,
+                        icon: <Delete/>,
                         tooltip: 'Ordner löschen',
                         disabled: storageProviderReadOnly,
                         onClick: async () => {
@@ -349,54 +358,40 @@ export function AssetListPage() {
                                 return;
                             }
 
-                            const confirmed = window.confirm(`Ordner ${item.storagePathFromRoot} und alle enthaltenen Dateien wirklich löschen?`);
-                            if (!confirmed) {
-                                return;
-                            }
+                            confirm({
+                                title: `Ordner ${item.filename} löschen`,
+                                children: (
+                                    <Typography>
+                                        Soll der Ordner <strong>{item.filename}</strong> wirklich gelöscht werden?
+                                        Alle darin enthaltenen Dateien und Unterordner werden ebenfalls gelöscht und
+                                        können nicht wiederhergestellt werden.
+                                        Dies kann nicht rückgängig gemacht werden.
+                                    </Typography>
+                                ),
+                                confirmationText: item.filename,
+                                confirmButtonText: 'Löschen',
+                            })
+                                .then((confirmed) => {
+                                    if (!confirmed) {
+                                        return;
+                                    }
 
-                            try {
-                                await new AssetsApiService(api).deleteFolder(providerId, AssetsApiService.normalizeFolderPath(item.storagePathFromRoot));
-                                dispatch(showSuccessSnackbar('Ordner erfolgreich gelöscht.'));
-                                listControlRef.current?.refresh();
-                            } catch (err) {
-                                dispatch(showApiErrorSnackbar(err, 'Der Ordner konnte nicht gelöscht werden.'));
-                            }
+                                    return new AssetsApiService(api)
+                                        .deleteFolder(
+                                            providerId,
+                                            AssetsApiService.normalizeFolderPath(item.storagePathFromRoot),
+                                        );
+                                })
+                                .then(() => {
+                                    dispatch(showSuccessSnackbar('Ordner erfolgreich gelöscht.'));
+                                    listControlRef.current?.refresh();
+                                })
+                                .catch((err) => {
+                                    dispatch(showApiErrorSnackbar(err, 'Der Ordner konnte nicht gelöscht werden.'));
+                                });
                         },
                     },
-                ] : [
-                    {
-                        icon: storageProviderReadOnly ? <VisibilityOutlined /> : <EditOutlined />,
-                        to: (() => {
-                            const providerId = item.storageProviderId ?? parsedStorageProviderId;
-                            if (providerId == null) {
-                                return '/assets';
-                            }
-                            return `/assets/providers/${providerId}/files/${AssetsApiService.encodeStoragePathForRoute(item.storagePathFromRoot ?? '/')}`;
-                        })(),
-                        tooltip: storageProviderReadOnly ? 'Datei ansehen' : 'Datei bearbeiten',
-                    },
-                    {
-                        icon: <ContentPasteOutlinedIcon />,
-                        onClick: async () => {
-                            const link = AssetsApiService.useAssetLinkOfAsset(item);
-                            const success = await copyToClipboardText(link);
-                            if (success) {
-                                dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
-                            } else {
-                                dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
-                            }
-                        },
-                        tooltip: item.isPrivate ? 'Öffentlicher Zugriff für Datei deaktiviert' : 'Link zur Datei in Zwischenablage kopieren',
-                        disabled: (item.isPrivate ?? false) || item.key.length === 0,
-                    },
-                    {
-                        icon: <DownloadOutlined />,
-                        href: AssetsApiService.useAssetLinkOfAsset(item) + '?download=true',
-                        tooltip: item.isPrivate ? 'Öffentlicher Zugriff für Datei deaktiviert' : 'Datei herunterladen',
-                        disabled: (item.isPrivate ?? false) || item.key.length === 0,
-
-                    },
-                ]}
+                ] : []}
                 defaultSortField="filename"
                 disableFullWidthToggle={true}
                 controlRef={listControlRef}
