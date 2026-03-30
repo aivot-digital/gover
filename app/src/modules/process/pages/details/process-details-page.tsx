@@ -71,7 +71,7 @@ import {type ProcessNodeExport} from '../../entities/process-node-export';
 import {ProcessSettingsDialog} from '../../dialogs/process-settings-dialog/process-settings-dialog';
 import {useNotImplemented} from '../../../../hooks/use-not-implemented';
 
-const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 150;
+const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 250;
 
 interface RuntimeAttachment {
     key: string;
@@ -247,6 +247,7 @@ export function ProcessDetailsPage(): ReactNode {
     const notImplemented = useNotImplemented();
 
     const [processFlow, setProcessFlow] = useState<ProcessFlow | null>(null);
+    const [isLoadingProcessFlow, setIsLoadingProcessFlow] = useState(true);
     const [runtimeData, setRuntimeData] = useState<{
         instance: ProcessInstanceEntity;
         tasks: ProcessInstanceTaskEntity[];
@@ -284,7 +285,10 @@ export function ProcessDetailsPage(): ReactNode {
 
     const [showMenuAtEl, setShowMenuAtEl] = useState<HTMLElement | null>(null);
     const [showProcessInstanceEventsDialog, setShowProcessInstanceEventsDialog] = useState(false);
-    const showProcessDetailsPageSkeleton = useDelayedVisibility(processFlow == null, PROCESS_DETAILS_PAGE_SKELETON_DELAY);
+    const showProcessDetailsPageSkeleton = useDelayedVisibility(
+        isLoadingProcessFlow && processFlow == null,
+        PROCESS_DETAILS_PAGE_SKELETON_DELAY,
+    );
 
     useEffect(() => {
         document.body.dataset.hasFlowEditor = 'true';
@@ -455,8 +459,12 @@ export function ProcessDetailsPage(): ReactNode {
     useEffect(() => {
         if (processId == null || processVersion == null) {
             setProcessFlow(null);
+            setIsLoadingProcessFlow(false);
             return;
         }
+
+        let cancelled = false;
+        setIsLoadingProcessFlow(true);
 
         Promise.all([
             new ProcessDefinitionApiService().retrieve(processId),
@@ -474,6 +482,10 @@ export function ProcessDetailsPage(): ReactNode {
             }),
         ])
             .then(([definition, version, nodes, edges]) => {
+                if (cancelled) {
+                    return;
+                }
+
                 setProcessFlow({
                     definition,
                     version,
@@ -482,7 +494,18 @@ export function ProcessDetailsPage(): ReactNode {
                 });
             })
             .catch((error) => {
+                if (cancelled) {
+                    return;
+                }
+
                 dispatch(showApiErrorSnackbar(error, 'Der Prozessfluss konnte nicht geladen werden.'));
+            })
+            .finally(() => {
+                if (cancelled) {
+                    return;
+                }
+
+                setIsLoadingProcessFlow(false);
             });
 
         new ProcessTestClaimApiService()
@@ -491,17 +514,29 @@ export function ProcessDetailsPage(): ReactNode {
                 processVersion,
             })
             .then(({content}) => {
+                if (cancelled) {
+                    return;
+                }
+
                 if (content.length > 0) {
                     const claim = content[0];
                     new UsersApiService()
                         .retrieve(claim.owningUserId)
                         .then((user) => {
+                            if (cancelled) {
+                                return;
+                            }
+
                             setCurrentTestClaim({
                                 claim,
                                 user,
                             });
                         })
                         .catch((err) => {
+                            if (cancelled) {
+                                return;
+                            }
+
                             dispatch(showApiErrorSnackbar(err, 'Der Testanspruch konnte nicht geladen werden.'));
                         });
                 } else {
@@ -509,9 +544,17 @@ export function ProcessDetailsPage(): ReactNode {
                 }
             })
             .catch((err) => {
+                if (cancelled) {
+                    return;
+                }
+
                 dispatch(showApiErrorSnackbar(err, 'Die Testansprüche konnten nicht geladen werden.'));
             });
-    }, [processId, processVersion]);
+
+        return () => {
+            cancelled = true;
+        };
+    }, [dispatch, processId, processVersion]);
 
     useEffect(() => {
         if (requiredFlowNodeProviders.length === 0) {
