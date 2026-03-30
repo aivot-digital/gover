@@ -6,10 +6,9 @@ import Science from '@aivot/mui-material-symbols-400-outlined/dist/science/Scien
 import BugReport from '@aivot/mui-material-symbols-400-outlined/dist/bug-report/BugReport';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
-import {addSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../../slices/shell-slice';
 import {ModuleIcons} from '../../../../../shells/staff/data/module-icons';
 import {ProcessActionMenu, type ProcessActionMenuItem} from './process-action-menu';
-import {useNotImplemented} from '../../../../../hooks/useNotImplemented';
+import {useNotImplemented} from '../../../../../hooks/use-not-implemented';
 
 export type ProcessDetailsPageMoreMenuEvent = 'export' | 'test' | 'instances' | 'delete';
 
