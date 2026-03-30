@@ -278,7 +278,6 @@ export function PaymentProviderDetailsPageIndex() {
         return acc;
     }, {} as Record<string, string>);
 
-
     const handleStatusChange = async (newValue: boolean) => {
         // Bei Deaktivierung
         if (newValue === false) {
