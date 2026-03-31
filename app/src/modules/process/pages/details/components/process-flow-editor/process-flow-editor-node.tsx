@@ -124,13 +124,15 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                 return theme.palette.primary.main;
             case ProcessTaskStatus.Completed:
                 return theme.palette.success.main;
+            case ProcessTaskStatus.Restarted:
+                return theme.palette.warning.main;
             case ProcessTaskStatus.Aborted:
             case ProcessTaskStatus.Failed:
                 return theme.palette.error.main;
             default:
                 return null;
         }
-    }, [associatedTask, theme.palette.error.main, theme.palette.info.main, theme.palette.primary.main, theme.palette.success.main]);
+    }, [associatedTask, theme.palette.error.main, theme.palette.info.main, theme.palette.primary.main, theme.palette.success.main, theme.palette.warning.main]);
     const nodeOutline = useMemo(() => {
         if (selectedNode?.id === node.id) {
             return `2px solid ${theme.palette.primary.light}`;

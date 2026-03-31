@@ -267,6 +267,10 @@ export function ProcessInstanceTaskListPage() {
                         {
                             icon: <Replay/>,
                             onClick: () => {
+                                if (item.status !== ProcessTaskStatus.Failed) {
+                                    return;
+                                }
+
                                 confirm({
                                     title: 'Aufgabe neu starten',
                                     children: (

@@ -33,6 +33,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -274,6 +275,13 @@ public class ProcessInstanceTaskController {
                 .orElseThrow(ResponseException::unauthorized)
                 .asSuperAdmin()
                 .orElseThrow(ResponseException::noSuperAdminPermission);
+
+        taskEntity
+                .setStatus(ProcessTaskStatus.Restarted)
+                .setUpdated(LocalDateTime.now());
+
+        taskEntity = processInstanceTaskService
+                .update(taskEntity.getId(), taskEntity);
 
         var payload = new ProcessWorker.WorkerPayload(
                 taskEntity.getProcessInstanceId(),
