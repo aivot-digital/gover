@@ -21,6 +21,8 @@ import {ListControlRef} from '../../../components/generic-list/generic-list-prop
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {useConfirm} from '../../../providers/confirm-provider';
 import {Breadcrumbs} from '../../../components/breadcrumbs/breadcrumbs';
+import {usePrompt} from '../../../providers/prompt-provider';
+import {isStringNullOrEmpty} from '../../../utils/string-utils';
 
 
 export function AssetListPage() {
@@ -31,6 +33,7 @@ export function AssetListPage() {
     const listControlRef = useRef<ListControlRef>(null);
 
     const confirm = useConfirm();
+    const prompt = usePrompt();
 
     const parsedStorageProviderId = useMemo(() => {
         if (storageProviderId == null) {
@@ -96,30 +99,44 @@ export function AssetListPage() {
                                 ? 'Wählen Sie zuerst einen Speicheranbieter aus.'
                                 : 'Der ausgewählte Speicheranbieter ist schreibgeschützt.',
                             disabled: parsedStorageProviderId == null || storageProviderReadOnly,
-                            onClick: async () => {
+                            onClick: () => {
                                 if (parsedStorageProviderId == null || storageProviderReadOnly) {
                                     return;
                                 }
 
-                                const folderName = window.prompt('Name des neuen Ordners', '');
-                                if (folderName == null) {
-                                    return;
-                                }
+                                prompt({
+                                    title: 'Neuer Ordner',
+                                    message: 'Bitte geben Sie den Namen des neuen Ordners ein.',
+                                    inputLabel: 'Names des Ordners',
+                                    confirmButtonText: 'Ordner anlegen',
+                                })
+                                    .then((folderName) => {
+                                        if (folderName == null || isStringNullOrEmpty(folderName)) {
+                                            return null;
+                                        }
 
-                                const trimmedFolderName = folderName.trim().replaceAll('/', '');
-                                if (trimmedFolderName.length === 0) {
-                                    dispatch(showErrorSnackbar('Bitte geben Sie einen gültigen Ordnernamen ein.'));
-                                    return;
-                                }
+                                        const trimmedFolderName = folderName.trim().replaceAll('/', '');
+                                        if (trimmedFolderName.length === 0) {
+                                            dispatch(showErrorSnackbar('Bitte geben Sie einen gültigen Ordnernamen ein.'));
+                                            return null;
+                                        }
 
-                                const targetPath = AssetsApiService.normalizeFolderPath(`${currentFolderPath}${trimmedFolderName}/`);
-                                try {
-                                    await new AssetsApiService(api).createFolder(parsedStorageProviderId, targetPath);
-                                    dispatch(showSuccessSnackbar('Ordner erfolgreich angelegt.'));
-                                    listControlRef.current?.refresh();
-                                } catch (err) {
-                                    dispatch(showApiErrorSnackbar(err, 'Der Ordner konnte nicht angelegt werden.'));
-                                }
+                                        const targetPath = AssetsApiService.normalizeFolderPath(`${currentFolderPath}${trimmedFolderName}/`);
+
+                                        return new AssetsApiService(api)
+                                            .createFolder(parsedStorageProviderId, targetPath)
+                                            .then(() => true);
+                                    })
+                                    .then((r) => {
+                                        if (r == null) {
+                                            return null;
+                                        }
+                                        dispatch(showSuccessSnackbar('Ordner erfolgreich angelegt.'));
+                                        listControlRef.current?.refresh();
+                                    })
+                                    .catch((err) => {
+                                        dispatch(showApiErrorSnackbar(err, 'Der Ordner konnte nicht angelegt werden.'));
+                                    });
                             },
                         },
                         'separator',
