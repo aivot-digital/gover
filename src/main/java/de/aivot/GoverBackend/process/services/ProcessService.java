@@ -15,6 +15,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class ProcessService implements EntityService<ProcessEntity, Integer> {
@@ -30,6 +31,7 @@ public class ProcessService implements EntityService<ProcessEntity, Integer> {
     @Override
     public ProcessEntity create(@Nonnull ProcessEntity entity) throws ResponseException {
         entity.setId(null);
+        entity.setAccessKey(UUID.randomUUID());
         return processDefinitionRepository.save(entity);
     }
 
