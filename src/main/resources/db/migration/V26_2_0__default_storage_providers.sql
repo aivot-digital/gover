@@ -18,14 +18,14 @@ insert into storage_providers (id,
 values (1,
         'de.aivot.core.local_disk_storage',
         1,
-        'Standard-Vorlagen',
-        'Dieser Speicheranbieter beinhaltet die Standard-Vorlagen für das System. Er ist schreibgeschützt und kann nicht gelöscht werden.',
+        'Systemdokumente',
+        'Dieser Speicheranbieter beinhaltet die standardmäßig ausgelieferten Dokumente für das System. Er ist schreibgeschützt und kann nicht gelöscht werden.',
         0,
         0,
         null,
         true,
         '{
-          "root": "./data/default/"
+          "root": "./default-assets/"
         }',
         10 * 1024 * 1024,
         true,
