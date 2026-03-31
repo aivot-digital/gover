@@ -1,6 +1,7 @@
 import React from 'react';
 import {Box, type SxProps, type Theme} from '@mui/material';
 import ReactMarkdown, {type Components} from 'react-markdown';
+import remarkGfm from 'remark-gfm'
 
 interface MarkdownContentProps {
     markdown?: string | null;
@@ -98,7 +99,15 @@ export function MarkdownContent(props: MarkdownContentProps) {
                 ...(Array.isArray(sx) ? sx : [sx]),
             ]}
         >
-            <ReactMarkdown components={{...defaultComponents, ...components}}>
+            <ReactMarkdown
+                components={{
+                    ...defaultComponents,
+                    ...components,
+                }}
+                remarkPlugins={[
+                    remarkGfm,
+                ]}
+            >
                 {markdown ?? ''}
             </ReactMarkdown>
         </Box>
