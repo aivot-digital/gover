@@ -25,6 +25,8 @@ import {GenericDetailsSkeleton} from '../../../components/generic-details-page/g
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../slices/shell-slice';
 import {Breadcrumbs} from '../../../components/breadcrumbs/breadcrumbs';
+import {showExperimentalFeatures} from '../../../hooks/use-show-experimental-features';
+import {useNotImplemented} from '../../../hooks/use-not-implemented';
 
 type UrlParamsType = {
     storageProviderId: string;
@@ -36,6 +38,7 @@ export function AssetDetailsPage() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
+    const notImplemented = useNotImplemented();
 
     const [asset, setAsset] = useState<Asset | null>(null);
     const [storageProvider, setStorageProvider] = useState<StorageProviderEntity | null>(null);
@@ -268,7 +271,13 @@ export function AssetDetailsPage() {
         {
             icon: <DriveFileMoveOutlinedIcon/>,
             tooltip: 'Datei verschieben',
-            onClick: () => setIsMoveDialogOpen(true),
+            onClick: () => {
+                if (showExperimentalFeatures()) {
+                    setIsMoveDialogOpen(true)
+                } else {
+                    notImplemented();
+                }
+            },
             disabled: !canMoveAsset,
             disabledTooltip: storageProviderReadOnly
                 ? 'Der Speicheranbieter ist schreibgeschützt. Dateien können nicht verschoben werden.'
@@ -277,7 +286,13 @@ export function AssetDetailsPage() {
         {
             icon: <ContentCopyOutlinedIcon/>,
             tooltip: 'Datei kopieren',
-            onClick: () => setIsCopyDialogOpen(true),
+            onClick: () => {
+                if (showExperimentalFeatures()) {
+                    setIsCopyDialogOpen(true)
+                } else {
+                    notImplemented();
+                }
+            },
             disabled: !canCopyAsset,
             disabledTooltip: storageProviderReadOnly
                 ? 'Der Speicheranbieter ist schreibgeschützt. Dateien können nicht kopiert werden.'
