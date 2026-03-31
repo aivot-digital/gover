@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.storage.models;
 
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.plugin.enums.PluginComponentType;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
@@ -10,6 +11,7 @@ import jakarta.annotation.Nullable;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -70,6 +72,16 @@ public interface StorageProviderDefinition<T> extends PluginComponent {
      * @return Die Klasse, die die Konfigurationsdaten für den Speicheranbieter repräsentiert.
      */
     Class<T> getConfigClass();
+
+    /**
+     * Prüft, ob die metadaten attribute korrekt sind.
+     *
+     * @param attributes Die Liste der Attribute.
+     * @throws ResponseException Wird geworfen, wenn ein Fehler vorliegt.
+     */
+    default void validateMetadataAttributes(List<StorageProviderMetadataAttribute> attributes) throws ResponseException {
+        // Do nothing as a default
+    }
 
     /**
      * Initialisiert den Speicheranbieter mit den gegebenen Konfigurationsdaten. Diese Methode wird während der Synchronisation aufgerufen, bevor der Speicheranbieter verwendet
@@ -326,6 +338,31 @@ public interface StorageProviderDefinition<T> extends PluginComponent {
                                   @Nonnull String pathFromRoot,
                                   @Nonnull InputStream data,
                                   @Nonnull StorageItemMetadata metadata) throws StorageException;
+
+    /**
+     * Aktualisiert ausschließlich die Metadaten eines bestehenden Dokuments im Speicheranbieter. Der Pfad ist relativ zum Stammverzeichnis des Speicheranbieters und muss mit einem
+     * Schrägstrich ("/") beginnen.
+     * <p>
+     * Diese Methode muss nur von Speicheranbietern implementiert werden, die Metadatenattribute unterstützen, also für die {@link #getSupportsMetadataAttributes()} {@code true}
+     * zurückgibt. Speicheranbieter ohne Metadatenunterstützung können die Standardimplementierung unverändert verwenden.
+     *
+     * @param config       Die Konfigurationsdaten für die Verbindung zum Speichersystem.
+     * @param pathFromRoot Der Pfad des Dokuments relativ zum Stammverzeichnis des Speicheranbieters.
+     * @param metadata     Die neuen Metadaten, die für das Dokument gespeichert werden sollen.
+     * @return Das aktualisierte {@link StorageDocument}-Objekt.
+     * @throws StorageException Wird geworfen, wenn der Speicheranbieter keine Metadaten unterstützt, wenn das Dokument nicht existiert oder wenn die Metadaten nicht aktualisiert
+     *                          werden konnten.
+     */
+    @Nonnull
+    default StorageDocument updateDocumentMetadata(@Nonnull T config,
+                                                   @Nonnull String pathFromRoot,
+                                                   @Nonnull StorageItemMetadata metadata) throws StorageException {
+        if (!getSupportsMetadataAttributes()) {
+            throw new StorageException("Dieser Speicheranbieter unterstützt keine Metadatenattribute.");
+        }
+
+        throw new StorageException("Die eigenständige Aktualisierung von Metadaten ist für diesen Speicheranbieter nicht implementiert.");
+    }
 
     /**
      * Ruft das Dokument im Speicheranbieter ab, das durch den angegebenen Pfad identifiziert wird. Der Pfad ist relativ zum Stammverzeichnis des Speicheranbieters und muss mit

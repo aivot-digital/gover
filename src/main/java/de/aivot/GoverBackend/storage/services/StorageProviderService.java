@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.storage.services;
 
+import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
@@ -48,9 +49,12 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
     @Override
     public StorageProviderEntity create(@Nonnull StorageProviderEntity entity) throws ResponseException {
         // Retrieve the payment provider definition
-        storageProviderDefinitionService
+        var def = storageProviderDefinitionService
                 .retrieveProviderDefinition(entity.getStorageProviderDefinitionKey(), entity.getStorageProviderDefinitionVersion())
                 .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Der ausgewählte Speicheranbieter ist nicht vorhanden"));
+
+        // Check if the metadata attributes are valid
+        def.validateMetadataAttributes(entity.getMetadataAttributes());
 
         validateMaxFileSize(entity);
 
@@ -142,6 +146,9 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
                                 existingEntity.getStorageProviderDefinitionVersion() +
                                 " ist nicht vorhanden")
                 );
+
+        // Check if the metadata attributes are valid
+        def.validateMetadataAttributes(entity.getMetadataAttributes());
 
         existingEntity.setName(entity.getName());
         existingEntity.setDescription(entity.getDescription());

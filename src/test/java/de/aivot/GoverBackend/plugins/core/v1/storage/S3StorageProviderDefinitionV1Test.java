@@ -3,16 +3,24 @@ package de.aivot.GoverBackend.plugins.core.v1.storage;
 import de.aivot.GoverBackend.secrets.repositories.SecretRepository;
 import de.aivot.GoverBackend.secrets.services.SecretService;
 import de.aivot.GoverBackend.storage.exceptions.StorageException;
+import de.aivot.GoverBackend.storage.models.StorageDocument;
 import de.aivot.GoverBackend.storage.models.StorageFolder;
+import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
 import de.aivot.GoverBackend.storage.services.KnownExtensionsService;
+import io.minio.CopyObjectArgs;
+import io.minio.Directive;
 import io.minio.ListObjectsArgs;
 import io.minio.MinioClient;
 import io.minio.Result;
+import io.minio.StatObjectArgs;
+import io.minio.StatObjectResponse;
 import io.minio.messages.Item;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -73,6 +81,33 @@ class S3StorageProviderDefinitionV1Test {
         assertEquals("/target/", copiedFolder.getPathFromRoot());
         assertEquals(List.of("/target/"), provider.deletedFolders);
         verify(client).copyObject(any());
+    }
+
+    @Test
+    void updateDocumentMetadataReplacesMetadataAndPreservesContentType() throws Exception {
+        var client = mock(MinioClient.class);
+        var statObjectResponse = mock(StatObjectResponse.class);
+        when(statObjectResponse.contentType()).thenReturn("application/pdf");
+        when(statObjectResponse.size()).thenReturn(123L);
+        when(statObjectResponse.userMetadata()).thenReturn(Map.of("color", "blue"));
+        when(client.statObject(any(StatObjectArgs.class))).thenReturn(statObjectResponse);
+
+        var provider = new TestS3StorageProviderDefinitionV1(client);
+        var config = createConfig();
+        var metadata = new StorageItemMetadata();
+        metadata.put("color", "blue");
+
+        StorageDocument updatedDocument = provider.updateDocumentMetadata(config, "/document.pdf", metadata);
+
+        var copyObjectArgsCaptor = ArgumentCaptor.forClass(CopyObjectArgs.class);
+        verify(client).copyObject(copyObjectArgsCaptor.capture());
+        var copyObjectArgs = copyObjectArgsCaptor.getValue();
+
+        assertEquals(Directive.REPLACE, copyObjectArgs.metadataDirective());
+        assertTrue(copyObjectArgs.userMetadata().values().contains("blue"));
+        assertTrue(copyObjectArgs.headers().get("Content-Type").contains("application/pdf"));
+        assertEquals("/document.pdf", updatedDocument.getPathFromRoot());
+        assertEquals("blue", updatedDocument.getMetadata().get("x-amz-meta-color"));
     }
 
     private static S3StorageProviderDefinitionV1.Config createConfig() {

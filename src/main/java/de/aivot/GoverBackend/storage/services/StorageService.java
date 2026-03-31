@@ -398,6 +398,54 @@ public class StorageService {
     }
 
     @Nonnull
+    public StorageDocument updateDocumentMetadata(@Nonnull Integer providerId,
+                                                  @Nonnull String path,
+                                                  @Nonnull StorageItemMetadata metadata) throws ResponseException {
+        var provider = retrieveProvider(providerId);
+        var definition = retrieveDefinition(provider);
+        var config = createConfig(provider, definition);
+
+        if (provider.getReadOnlyStorage()) {
+            throw ResponseException
+                    .badRequest(
+                            "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Die Metadaten von Dokumenten können nicht aktualisiert werden.",
+                            StringUtils.quote(provider.getName()),
+                            provider.getId()
+                    );
+        }
+
+        if (!definition.getSupportsMetadataAttributes()) {
+            throw ResponseException
+                    .badRequest(
+                            "Der Speicheranbieter %s (ID %d) unterstützt keine Metadatenattribute.",
+                            StringUtils.quote(provider.getName()),
+                            provider.getId()
+                    );
+        }
+
+        var filteredMetadata = filterMetadataByRegisteredAttributes(provider, metadata);
+
+        StorageDocument updatedDocument;
+        try {
+            updatedDocument = definition.updateDocumentMetadata(config, path, filteredMetadata);
+        } catch (StorageException e) {
+            throw wrapStorageException(e);
+        }
+
+        var updatedDocumentFilteredMetadata = filterMetadataByRegisteredAttributes(provider, updatedDocument.getMetadata());
+        updatedDocument.setMetadata(updatedDocumentFilteredMetadata);
+
+        var normalizedSourcePath = normalizeDocumentPath(path);
+        var normalizedUpdatedPath = normalizeDocumentPath(updatedDocument.getPathFromRoot());
+        if (!normalizedSourcePath.equals(normalizedUpdatedPath)) {
+            storageIndexItemRepository.moveDocumentPath(provider.getId(), normalizedSourcePath, normalizedUpdatedPath);
+        }
+        upsertDocumentIndexItem(provider, updatedDocument);
+
+        return updatedDocument;
+    }
+
+    @Nonnull
     public StorageDocument moveDocument(@Nonnull Integer providerId,
                                         @Nonnull String sourcePath,
                                         @Nonnull String targetPath) throws ResponseException {

@@ -9,16 +9,14 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElem
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
+import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.plugins.core.Core;
 import de.aivot.GoverBackend.secrets.entities.SecretEntity;
 import de.aivot.GoverBackend.secrets.repositories.SecretRepository;
 import de.aivot.GoverBackend.secrets.services.SecretService;
 import de.aivot.GoverBackend.storage.exceptions.StorageException;
-import de.aivot.GoverBackend.storage.models.StorageDocument;
-import de.aivot.GoverBackend.storage.models.StorageFolder;
-import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
-import de.aivot.GoverBackend.storage.models.StorageProviderDefinition;
+import de.aivot.GoverBackend.storage.models.*;
 import de.aivot.GoverBackend.storage.services.KnownExtensionsService;
 import de.aivot.GoverBackend.storage.services.StorageService;
 import de.aivot.GoverBackend.utils.StringUtils;
@@ -92,6 +90,32 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
     @Override
     public Boolean getSupportsMetadataAttributes() {
         return true;
+    }
+
+    @Override
+    public void validateMetadataAttributes(List<StorageProviderMetadataAttribute> attributes) throws ResponseException {
+        for (var attribute : attributes) {
+            if (attribute.getKey() == null) {
+                throw ResponseException.badRequest(
+                        "Der Feldname eines Metadaten-Attributs darf nicht null sein."
+                );
+            }
+
+            if (!attribute.getKey().toLowerCase().equals(attribute.getKey())) {
+                throw ResponseException.badRequest(
+                        "Der Feldname %s des Metadaten-Attributs kann nur Kleinbuchstaben enthalten.",
+                        StringUtils.quote(attribute.getKey())
+                );
+            }
+
+            if (!attribute.getKey().startsWith(S3_AMZ_PREFIX)) {
+                throw ResponseException.badRequest(
+                        "Der Feldname %s des Metadaten-Attributs muss mit %s beginnen.",
+                        StringUtils.quote(attribute.getKey()),
+                        StringUtils.quote(S3_AMZ_PREFIX)
+                );
+            }
+        }
     }
 
     @Nullable
@@ -244,8 +268,8 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                         var val = entry.getValue();
                         var key = entry.getKey().toLowerCase();
 
-                        if (!key.startsWith("x-amz-meta-")) {
-                            metadata.put("x-amz-meta-" + key, val);
+                        if (!key.startsWith(S3_AMZ_PREFIX)) {
+                            metadata.put(S3_AMZ_PREFIX + key, val);
                         } else {
                             metadata.put(key, val);
                         }
@@ -400,13 +424,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 .determineMimeType(path)
                 .orElse(StorageService.UNKNOWN_MIME_TYPE);
 
-        var userMetadata = metadata
-                .entrySet()
-                .stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        entry -> entry.getValue().toString()
-                ));
+        var userMetadata = toUserMetadata(metadata);
 
         var putObjectArgs = PutObjectArgs
                 .builder()
@@ -437,6 +455,68 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
 
     @Nonnull
     @Override
+    public StorageDocument updateDocumentMetadata(@Nonnull Config config,
+                                                  @Nonnull String pathFromRoot,
+                                                  @Nonnull StorageItemMetadata metadata) throws StorageException {
+        var client = getClient(config);
+        var statObjectArgs = StatObjectArgs
+                .builder()
+                .bucket(config.bucket)
+                .object(pathFromRoot.substring(1))
+                .build();
+
+        StatObjectResponse objectStats;
+        try {
+            objectStats = client.statObject(statObjectArgs);
+        } catch (ErrorResponseException e) {
+            if ("NoSuchKey".equals(e.errorResponse().code())) {
+                throw new StorageException("Das Dokument %s konnte nicht gefunden werden.", StringUtils.quote(pathFromRoot));
+            }
+            throw new StorageException(e, "Die Metadaten des Dokuments konnten im S3-kompatiblen Speicher nicht aktualisiert werden.");
+        } catch (InsufficientDataException | XmlParserException | ServerException | NoSuchAlgorithmException |
+                 IOException | InvalidResponseException | InvalidKeyException | InternalException e) {
+            throw new StorageException(e, "Die Metadaten des Dokuments konnten im S3-kompatiblen Speicher nicht aktualisiert werden.");
+        }
+
+        var copyObjectArgsBuilder = CopyObjectArgs
+                .builder()
+                .bucket(config.bucket)
+                .object(pathFromRoot.substring(1))
+                .source(
+                        CopySource.builder()
+                                .bucket(config.bucket)
+                                .object(pathFromRoot.substring(1))
+                                .build()
+                )
+                .metadataDirective(Directive.REPLACE)
+                .userMetadata(toUserMetadata(metadata));
+
+        if (objectStats.contentType() != null && !objectStats.contentType().isBlank()) {
+            copyObjectArgsBuilder.headers(Map.of("Content-Type", objectStats.contentType()));
+        }
+
+        try {
+            client.copyObject(copyObjectArgsBuilder.build());
+        } catch (ErrorResponseException e) {
+            if ("NoSuchKey".equals(e.errorResponse().code())) {
+                throw new StorageException("Das Dokument %s konnte nicht gefunden werden.", StringUtils.quote(pathFromRoot));
+            }
+            throw new StorageException(e, "Die Metadaten des Dokuments konnten im S3-kompatiblen Speicher nicht aktualisiert werden.");
+        } catch (InsufficientDataException | XmlParserException | ServerException | NoSuchAlgorithmException |
+                 IOException | InvalidResponseException | InvalidKeyException | InternalException e) {
+            throw new StorageException(e, "Die Metadaten des Dokuments konnten im S3-kompatiblen Speicher nicht aktualisiert werden.");
+        }
+
+        return retrieveDocument(config, pathFromRoot).orElseGet(() -> new StorageDocument(
+                pathFromRoot,
+                StringUtils.getLastPathSegment(pathFromRoot),
+                objectStats.size(),
+                metadata
+        ));
+    }
+
+    @Nonnull
+    @Override
     public Optional<StorageDocument> retrieveDocument(@Nonnull Config config, @Nonnull String path) throws StorageException {
         var client = getClient(config);
 
@@ -459,20 +539,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
             throw new StorageException(e, "Fehler beim Abrufen des Dokuments aus dem S3-kompatiblen Speicher.");
         }
 
-        // Normalize the metadata keys to lowercase
-        var metadata = new StorageItemMetadata();
-        if (response.userMetadata() != null) {
-            for (var entry : response.userMetadata().entrySet()) {
-                var val = entry.getValue();
-                var key = entry.getKey().toLowerCase();
-
-                if (!key.startsWith("x-amz-meta-")) {
-                    metadata.put("x-amz-meta-" + key, val);
-                } else {
-                    metadata.put(key, val);
-                }
-            }
-        }
+        var metadata = fromUserMetadata(response.userMetadata());
 
         return Optional.of(new StorageDocument(
                 path,
@@ -667,6 +734,41 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                  InternalException e) {
             throw new StorageException(e, "Der Ordner konnte nicht im S3-kompatiblen Speicher kopiert werden.");
         }
+    }
+
+    @Nonnull
+    private static Map<String, String> toUserMetadata(@Nonnull StorageItemMetadata metadata) {
+        return metadata
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().toString()
+                ));
+    }
+
+    private static final String S3_AMZ_PREFIX = "x-amz-meta-";
+
+    @Nonnull
+    private static StorageItemMetadata fromUserMetadata(@Nullable Map<String, String> userMetadata) {
+        var metadata = new StorageItemMetadata();
+        if (userMetadata == null) {
+            return metadata;
+        }
+
+        // Normalize the metadata keys to lowercase
+        for (var entry : userMetadata.entrySet()) {
+            var val = entry.getValue();
+            var key = entry.getKey().toLowerCase();
+
+            if (!key.startsWith(S3_AMZ_PREFIX)) {
+                metadata.put(S3_AMZ_PREFIX + key, val);
+            } else {
+                metadata.put(key, val);
+            }
+        }
+
+        return metadata;
     }
 
     /**
