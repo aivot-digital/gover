@@ -88,8 +88,8 @@ class PdfActionNodeV1Test {
                 "<html><body><main>Body</main></body></html>",
                 "<html><body><div>Header</div></body></html>",
                 "<html><body><div>Footer</div></body></html>",
-                "210mm",
-                "297mm"
+                "21cm",
+                "29.7cm"
         );
         assertEquals("report.pdf", result.getNodeData().get("fileName"));
         assertEquals("application/pdf", result.getNodeData().get("mimeType"));
