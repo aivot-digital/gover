@@ -68,6 +68,7 @@ import SwapHoriz from '@mui/icons-material/SwapHoriz';
 import UploadFile from '@aivot/mui-material-symbols-400-outlined/dist/upload-file/UploadFile';
 import {type ProcessNodeExport} from '../../entities/process-node-export';
 import {ProcessSettingsDialog} from '../../dialogs/process-settings-dialog/process-settings-dialog';
+import {ProcessTestClaimProcessInstancesDialog} from '../../dialogs/process-test-claim-process-instances-dialog';
 import {useNotImplemented} from '../../../../hooks/use-not-implemented';
 import {showExperimentalFeatures} from '../../../../hooks/use-show-experimental-features';
 
@@ -285,6 +286,7 @@ export function ProcessDetailsPage(): ReactNode {
 
     const [showMenuAtEl, setShowMenuAtEl] = useState<HTMLElement | null>(null);
     const [showProcessInstanceEventsDialog, setShowProcessInstanceEventsDialog] = useState(false);
+    const [showProcessTestClaimInstancesDialog, setShowProcessTestClaimInstancesDialog] = useState(false);
     const showProcessDetailsPageSkeleton = useDelayedVisibility(
         isLoadingProcessFlow && processFlow == null,
         PROCESS_DETAILS_PAGE_SKELETON_DELAY,
@@ -396,6 +398,8 @@ export function ProcessDetailsPage(): ReactNode {
         }
         return parseInt(instanceIdParam);
     }, [searchParams]);
+
+    const activeTestClaimId = currentTestClaim?.claim.id ?? runtimeData?.instance.createdForTestClaimId ?? null;
 
     const requiredFlowNodeProviders = useMemo(() => {
         if (processFlow == null) {
@@ -666,6 +670,19 @@ export function ProcessDetailsPage(): ReactNode {
                 dispatch(clearLoadingMessage());
             });
     }, [instanceId, dispatch]);
+
+    const handleSelectProcessTestClaimInstance = useCallback((selectedInstanceId: number): void => {
+        setShowProcessTestClaimInstancesDialog(false);
+
+        if (selectedInstanceId === instanceId) {
+            void loadRuntimeData();
+            return;
+        }
+
+        const nextSearchParams = new URLSearchParams(searchParams);
+        nextSearchParams.set('instanceId', selectedInstanceId.toString());
+        setSearchParams(nextSearchParams);
+    }, [instanceId, loadRuntimeData, searchParams, setSearchParams]);
 
     useEffect(() => {
         void loadRuntimeData();
@@ -1178,6 +1195,7 @@ export function ProcessDetailsPage(): ReactNode {
                     .then(() => {
                         setCurrentTestClaim(null);
                         setRuntimeData(null);
+                        setShowProcessTestClaimInstancesDialog(false);
                         dispatch(showSuccessSnackbar('Testanspruch wurde gelöscht.'));
 
                         if (instanceId != null) {
@@ -1503,6 +1521,17 @@ export function ProcessDetailsPage(): ReactNode {
     }, [confirm, dispatch, flowNodeProviderCache, processFlow]);
     const headerActions = useMemo<Action[]>(() => {
         const isInTestMode = currentTestClaim != null;
+        const testClaimInstanceActions: Action[] = activeTestClaimId == null ? [] : [
+            {
+                tooltip: 'Test-Vorgänge anzeigen',
+                ariaLabel: 'Test-Vorgänge anzeigen',
+                icon: ModuleIcons.submissions,
+                onClick: () => {
+                    setShowProcessTestClaimInstancesDialog(true);
+                },
+            },
+            'separator' as const,
+        ];
         const runtimeActions: Action[] = instanceId == null ? [] : [
             {
                 tooltip: 'Laufzeitdaten neu laden',
@@ -1526,6 +1555,7 @@ export function ProcessDetailsPage(): ReactNode {
         ];
 
         return [
+            ...testClaimInstanceActions,
             ...runtimeActions,
             ...(!isInTestMode ? [
                 {
@@ -1582,6 +1612,7 @@ export function ProcessDetailsPage(): ReactNode {
             },
         ];
     }, [
+        activeTestClaimId,
         currentTestClaim,
         instanceId,
         isRefreshingRuntimeData,
@@ -2057,6 +2088,16 @@ export function ProcessDetailsPage(): ReactNode {
                     taskId={null}
                 />
             }
+
+            <ProcessTestClaimProcessInstancesDialog
+                open={showProcessTestClaimInstancesDialog}
+                onClose={() => {
+                    setShowProcessTestClaimInstancesDialog(false);
+                }}
+                testClaimId={activeTestClaimId}
+                selectedInstanceId={runtimeData?.instance.id ?? instanceId}
+                onSelectInstance={handleSelectProcessTestClaimInstance}
+            />
 
             <ProcessSettingsDialog
                 open={showSettingsDialog}
