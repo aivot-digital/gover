@@ -34,6 +34,9 @@ export interface GenericDetailsPageProps<ItemType, ID, AdditionalData> {
     },
     getHeaderTitle?: (item?: ItemType, isNewItem?: boolean, notFound?: boolean) => string;
     itemRef?: RefObject<ItemType | null>;
+    onItemChange?: (item: ItemType | null) => void;
+    additionalDataRef?: RefObject<AdditionalData | null>;
+    onAdditionalDataChange?: (item: AdditionalData | null) => void;
     controlRef?: RefObject<GenericDetailsPageControlRef | null>;
     entityType?: ServerEntityType;
     isEditable?: (item: ItemType | undefined) => boolean;

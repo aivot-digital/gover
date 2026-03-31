@@ -118,6 +118,15 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
             if (currentProps.itemRef != null) {
                 currentProps.itemRef.current = null;
             }
+            if (currentProps.onItemChange != null) {
+                currentProps.onItemChange(item ?? null);
+            }
+            if (currentProps.additionalDataRef != null) {
+                currentProps.additionalDataRef.current = null;
+            }
+            if (currentProps.onAdditionalDataChange != null) {
+                currentProps.onAdditionalDataChange(additionalData ?? null);
+            }
             return;
         }
 
@@ -133,6 +142,15 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
                 setNotFound(false);
                 if (currentProps.itemRef != null) {
                     currentProps.itemRef.current = item;
+                }
+                if (currentProps.onItemChange != null) {
+                    currentProps.onItemChange(item ?? null);
+                }
+                if (currentProps.additionalDataRef != null) {
+                    currentProps.additionalDataRef.current = additionalData;
+                }
+                if (currentProps.onAdditionalDataChange != null) {
+                    currentProps.onAdditionalDataChange(additionalData ?? null);
                 }
             })
             .catch((error: ApiError) => {
