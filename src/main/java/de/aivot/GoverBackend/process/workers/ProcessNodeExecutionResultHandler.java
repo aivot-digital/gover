@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.process.workers;
 
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.mail.services.ProcessTaskMailService;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
@@ -10,6 +11,7 @@ import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionBrokenImplementation;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
+import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.repositories.ProcessEdgeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceRepository;
@@ -25,6 +27,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class ProcessNodeExecutionResultHandler {
@@ -33,18 +36,21 @@ public class ProcessNodeExecutionResultHandler {
     private final ProcessInstanceTaskRepository processInstanceTaskRepository;
     private final ProcessEdgeRepository processDefinitionEdgeRepository;
     private final UserService userService;
+    private final ProcessTaskMailService processTaskMailService;
 
     @Autowired
     public ProcessNodeExecutionResultHandler(RabbitTemplate rabbitTemplate,
                                              ProcessInstanceRepository processInstanceRepository,
                                              ProcessInstanceTaskRepository processInstanceTaskRepository,
                                              ProcessEdgeRepository processDefinitionEdgeRepository,
-                                             UserService userService) {
+                                             UserService userService,
+                                             ProcessTaskMailService processTaskMailService) {
         this.rabbitTemplate = rabbitTemplate;
         this.processInstanceRepository = processInstanceRepository;
         this.processInstanceTaskRepository = processInstanceTaskRepository;
         this.processDefinitionEdgeRepository = processDefinitionEdgeRepository;
         this.userService = userService;
+        this.processTaskMailService = processTaskMailService;
     }
 
     public void handleResult(@Nonnull ProcessNodeExecutionLogger logger,
@@ -133,6 +139,8 @@ public class ProcessNodeExecutionResultHandler {
                                 @Nonnull ProcessInstanceTaskEntity processInstanceTask,
                                 @Nullable ProcessInstanceTaskEntity previousTask,
                                 @Nonnull ProcessNodeExecutionResultTaskAssigned assigned) throws ProcessNodeExecutionException {
+        String previousAssignedUserId = processInstanceTask.getAssignedUserId();
+
         UserEntity assignedUser;
         try {
             assignedUser = userService
@@ -212,7 +220,31 @@ public class ProcessNodeExecutionResultHandler {
             );
         }
 
-        // TODO: send notification
+        if (Objects.equals(previousAssignedUserId, assignedUser.getId())) {
+            return;
+        }
+
+        if (triggeringUser != null && assignedUser.getId().equals(triggeringUser.getId())) {
+            return;
+        }
+
+        try {
+            processTaskMailService.sendAssigned(
+                    triggeringUser,
+                    assignedUser,
+                    processInstance,
+                    processInstanceTask,
+                    currentNode,
+                    provider,
+                    previousAssignedUserId != null
+            );
+        } catch (Exception e) {
+            logger.logException(new ProcessNodeExecutionExceptionUnknown(
+                    e,
+                    "Die E-Mail-Benachrichtigung fuer die zugewiesene Aufgabe an '%s' konnte nicht versendet werden.",
+                    assignedUser.getFullName()
+            ));
+        }
     }
 
     private void handleTaskComplete(@Nonnull ProcessNodeExecutionLogger logger,

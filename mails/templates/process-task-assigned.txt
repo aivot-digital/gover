@@ -1,0 +1,14 @@
+Hallo,
+
+[(${assignmentIntro})]
+Prozess: [(${process.internalTitle})] - Version [(${processInstanceTask.processVersion})]
+Aufgabe: [(${taskName})]
+Aktenzeichen: [(${fileNumbersDisplay})]
+Aufgabe erhalten: [(${startedLabel})] Uhr
+[# th:if="${deadlineLabel != null}"]Fälligkeit: [(${deadlineLabel})] Uhr
+[/]
+Zugewiesen durch: [(${assignmentSource})]
+
+Sie können die Aufgabe über den nachfolgenden Link aufrufen: [(${base.config.createUrl(taskPath)})]
+
+Diese E-Mail ist automatisch generiert. Bitte nicht antworten.
