@@ -23,6 +23,11 @@ const defaultComponents: Components = {
             />
         );
     },
+    u: ({children, ...props}) => (
+        <span style={{textDecoration: 'underline'}} {...props}>
+            {children}
+        </span>
+    ),
 };
 
 export function MarkdownContent(props: MarkdownContentProps) {
@@ -95,6 +100,10 @@ export function MarkdownContent(props: MarkdownContentProps) {
                         p: 1,
                         textAlign: 'left',
                     },
+                    '& .task-list-item': {
+                        listStyle: 'none',
+                        ml: -3,
+                    }
                 },
                 ...(Array.isArray(sx) ? sx : [sx]),
             ]}
