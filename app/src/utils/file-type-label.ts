@@ -12,6 +12,7 @@ const typeMap: Record<string, string> = {
     'application/vnd.oasis.opendocument.presentation': 'OpenDocument Präsentation (.odp)',
     'text/plain': 'Textdatei (.txt)',
     'text/rtf': 'RTF-Dokument',
+    'text/markdown': 'Markdown-Datei',
 
     // Images
     'image/jpeg': 'JPEG-Bild',
