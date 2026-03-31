@@ -319,6 +319,13 @@ class AssetControllerTest {
         when(storageIndexItemWithAssetRepository.findById(VStorageIndexItemWithAssetEntityId.of(42, "/images/existing.pdf")))
                 .thenReturn(Optional.of(new VStorageIndexItemWithAssetEntity().setMetadata(existingMetadata)))
                 .thenReturn(Optional.of(updatedIndexItem));
+        when(storageService.updateDocumentMetadata(42, "/images/existing.pdf", updatedMetadata))
+                .thenReturn(new StorageDocument(
+                        "/images/existing.pdf",
+                        "existing.pdf",
+                        7L,
+                        updatedMetadata
+                ));
         when(request.getRequestURL()).thenReturn(new StringBuffer("http://localhost/api/assets/42/files-metadata/images/existing.pdf"));
 
         var result = assetController.updateFileMetadata(jwt, 42, updatedMetadata, request);

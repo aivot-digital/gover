@@ -309,7 +309,7 @@ class LocalDiskStorageProviderDefinitionTest {
 
         // Test filename with spaces
         result = LocalDiskStorageProviderDefinitionV1.sanitizeFilename("my document.txt");
-        assertEquals("my_document.txt", result);
+        assertEquals("my document.txt", result);
 
         // Test filename with special characters
         result = LocalDiskStorageProviderDefinitionV1.sanitizeFilename("docu<>ment?.txt");

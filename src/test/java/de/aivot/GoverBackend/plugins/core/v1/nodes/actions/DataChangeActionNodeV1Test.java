@@ -115,7 +115,7 @@ class DataChangeActionNodeV1Test {
         assertEquals(
                 List.of(
                         new TaskViewEvent("Speichern", "save"),
-                        new TaskViewEvent("Speichern und abschließen", "complete")
+                        new TaskViewEvent("Speichern und abschließen", "complete", "outlined", null, "right")
                 ),
                 node.getStaffTaskViewEvents(context)
         );

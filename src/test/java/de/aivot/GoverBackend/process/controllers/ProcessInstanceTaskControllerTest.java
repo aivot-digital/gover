@@ -84,7 +84,7 @@ class ProcessInstanceTaskControllerTest {
         var user = mock(UserEntity.class);
 
         when(processInstanceTaskService.retrieve(task.getId())).thenReturn(Optional.of(task));
-        when(processInstanceTaskService.save(task)).thenReturn(task);
+        when(processInstanceTaskService.update(task.getId(), task)).thenReturn(task);
         when(userService.fromJWT(jwt)).thenReturn(Optional.of(user));
         when(user.asSuperAdmin()).thenReturn(Optional.of(user));
 
@@ -94,7 +94,7 @@ class ProcessInstanceTaskControllerTest {
         assertNotNull(result.getUpdated());
 
         var payloadCaptor = ArgumentCaptor.forClass(ProcessWorker.WorkerPayload.class);
-        verify(processInstanceTaskService).save(task);
+        verify(processInstanceTaskService).update(task.getId(), task);
         verify(rabbitTemplate).convertAndSend(
                 org.mockito.ArgumentMatchers.eq(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE),
                 payloadCaptor.capture()
@@ -115,7 +115,7 @@ class ProcessInstanceTaskControllerTest {
         var exception = assertThrows(ResponseException.class, () -> controller.rerunFailedTask(jwt, task.getId()));
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
-        verify(processInstanceTaskService, never()).save(task);
+        verify(processInstanceTaskService, never()).update(task.getId(), task);
         verifyNoInteractions(rabbitTemplate);
     }
 
