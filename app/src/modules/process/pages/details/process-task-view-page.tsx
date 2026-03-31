@@ -3,6 +3,7 @@ import {Typography} from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import AccountCircle from '@aivot/mui-material-symbols-400-outlined/dist/account-circle/AccountCircle';
 import Assignment from '@aivot/mui-material-symbols-400-outlined/dist/assignment/Assignment';
+import Replay from '@aivot/mui-material-symbols-400-outlined/dist/replay/Replay';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
 import {Chip} from '../../../../components/chip/chip';
@@ -48,6 +49,7 @@ const PROCESS_TASK_STATUS_COLORS: Record<ProcessTaskStatus, 'default' | 'info' |
     [ProcessTaskStatus.Completed]: 'success',
     [ProcessTaskStatus.Aborted]: 'error',
     [ProcessTaskStatus.Failed]: 'error',
+    [ProcessTaskStatus.Restarted]: 'warning',
 };
 
 export function createEmptyProcessTaskDetailsPageItem(): ProcessTaskDetailsPageItem {
@@ -136,6 +138,10 @@ function getProcessTaskStatusIcon(item?: ProcessTaskDetailsPageItem | null): Rea
 
     if (status === ProcessInstanceStatus.Running || status === ProcessTaskStatus.Running) {
         return <AccountCircle fontSize="small" />;
+    }
+
+    if (status === ProcessTaskStatus.Restarted) {
+        return <Replay fontSize="small" />;
     }
 
     return undefined;
