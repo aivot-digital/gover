@@ -69,6 +69,7 @@ import UploadFile from '@aivot/mui-material-symbols-400-outlined/dist/upload-fil
 import {type ProcessNodeExport} from '../../entities/process-node-export';
 import {ProcessSettingsDialog} from '../../dialogs/process-settings-dialog/process-settings-dialog';
 import {useNotImplemented} from '../../../../hooks/use-not-implemented';
+import {showExperimentalFeatures} from '../../../../hooks/use-show-experimental-features';
 
 const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 250;
 
@@ -1553,7 +1554,11 @@ export function ProcessDetailsPage(): ReactNode {
                 ariaLabel: 'Einstellungen',
                 icon: <Settings/>,
                 onClick: () => {
-                    setShowSettingsDialog(true);
+                    if (showExperimentalFeatures()) {
+                        setShowSettingsDialog(true);
+                    } else {
+                        notImplemented();
+                    }
                 },
             },
             {

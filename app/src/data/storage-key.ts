@@ -14,4 +14,6 @@ export enum StorageKey {
 
     TokenDebuggerActive = 'debug_tokens',
     CaptchaDebuggerActive = 'debug_captcha',
+
+    ShowExperimentalFeatures = 'show_experimental_features',
 }
