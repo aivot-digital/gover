@@ -114,22 +114,22 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
     public List<ProcessNodeOutput> getOutputs() {
         return List.of(
                 new ProcessNodeOutput(
-                        NODE_DATA_KEY_PAYLOAD,
+                        INITIAL_DATA_KEY_PAYLOAD,
                         "Eingangsdaten",
                         "Die Daten, die an den Auslöser übermittelt wurden"
                 ),
                 new ProcessNodeOutput(
-                        NODE_DATA_KEY_ATTACHMENTS,
+                        INITIAL_DATA_KEY_ATTACHMENTS,
                         "List der Anlagen",
                         "Die Liste aller Anlagen, welche an den Auslöser übermittelt wurden"
                 ),
                 new ProcessNodeOutput(
-                        NODE_DATA_KEY_REQUEST,
+                        INITIAL_DATA_KEY_REQUEST,
                         "Anfragedetails",
                         "Informationen über die HTTP-Anfrage an den Auslöser (HTTP-Methode, Headers, Query-Parameter)"
                 ),
                 new ProcessNodeOutput(
-                        NODE_DATA_STARTED,
+                        INITIAL_DATA_KEY_STARTED,
                         "Eingangszeitstempel",
                         "Der Zeitstempel des Dateneingangs an den Auslöser"
                 )
