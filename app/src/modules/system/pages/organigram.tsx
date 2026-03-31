@@ -48,6 +48,7 @@ const CARD_GRID_BASE_SX = {
     display: 'grid',
     gap: 2.5,
     alignItems: 'start',
+    minWidth: 0,
 };
 const CARD_GRID_PACKED_SX = {
     ...CARD_GRID_BASE_SX,
@@ -73,6 +74,7 @@ function getCardGridSx(itemCount: number) {
 function getCardItemSx(itemCount: number) {
     return {
         width: '100%',
+        minWidth: 0,
         maxWidth: itemCount < 3 ? `${CARD_MAX_WIDTH}px` : undefined,
     };
 }
@@ -413,10 +415,12 @@ function DepartmentNode(props: DepartmentNodeProps): React.ReactElement {
     const horizontalExtensionWidth = childrenIndent - iconCenterX - elbowSize + 3;
 
     return (
-        <Box sx={{width: '100%'}}>
+        <Box sx={{width: '100%', minWidth: 0}}>
             <Paper
                 variant="outlined"
                 sx={{
+                    width: '100%',
+                    minWidth: 0,
                     px: 2,
                     py: 1.75,
                     borderRadius: 2,
@@ -430,6 +434,7 @@ function DepartmentNode(props: DepartmentNodeProps): React.ReactElement {
                         display: 'flex',
                         alignItems: 'center',
                         gap: 1.25,
+                        minWidth: 0,
                         pb: 1,
                         mb: 1.25,
                         borderBottom: `1px solid ${theme.palette.divider}`,
@@ -500,6 +505,7 @@ function DepartmentNode(props: DepartmentNodeProps): React.ReactElement {
                         rel="noopener noreferrer"
                         variant="outlined"
                         size="small"
+                        sx={{flexShrink: 0}}
                     >
                         Verwalten
                     </Button>
@@ -529,6 +535,7 @@ function DepartmentNode(props: DepartmentNodeProps): React.ReactElement {
                     sx={{
                         display: 'grid',
                         gap: 2,
+                        minWidth: 0,
                         mt: 0,
                         pt: 2,
                         pl: `${childrenIndent}px`,
@@ -553,6 +560,7 @@ function DepartmentNode(props: DepartmentNodeProps): React.ReactElement {
                                 sx={{
                                     position: 'relative',
                                     zIndex: 1,
+                                    minWidth: 0,
                                     '&::before': {
                                         content: '""',
                                         position: 'absolute',
@@ -617,6 +625,8 @@ function TeamNode(props: TeamNodeProps): React.ReactElement {
         <Paper
             variant="outlined"
             sx={{
+                width: '100%',
+                minWidth: 0,
                 px: 2,
                 py: 1.75,
                 borderRadius: 2,
@@ -630,6 +640,7 @@ function TeamNode(props: TeamNodeProps): React.ReactElement {
                     display: 'flex',
                     alignItems: 'center',
                     gap: 1.25,
+                    minWidth: 0,
                     pb: 1,
                     mb: 1.25,
                     borderBottom: `1px solid ${theme.palette.divider}`,
@@ -687,7 +698,7 @@ function TeamNode(props: TeamNodeProps): React.ReactElement {
                     rel="noopener noreferrer"
                     variant="outlined"
                     size="small"
-                    sx={{ml: 'auto'}}
+                    sx={{ml: 'auto', flexShrink: 0}}
                 >
                     Verwalten
                 </Button>

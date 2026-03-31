@@ -310,10 +310,10 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                         title="Datenzuordnung"
                         sx={{mt: 8}}
                     >
-                        Definieren Sie, wie dieses Formularelement mit Daten verknüpft ist.
-                        Legen Sie fest, welcher Datenschlüssel verwendet wird, um dieses Feld an einen Datensatz in der Datenhaltung zu binden.
-                        Sie können auch ganze Pfade, z.B. „person.vorname“, verwenden, um verschachtelte Datenstrukturen abzubilden.
-                        Achten Sie darauf, dass die gewählten Schlüssel eindeutig sind und nicht mit anderen Elementen kollidieren, um Datenüberschreibungen zu vermeiden.
+                        Legen Sie fest, unter welchem Datenschlüssel der Wert dieses Feldes im Antragsdatensatz gespeichert wird.
+                        Ohne eigenen Schlüssel wird standardmäßig die Element-ID verwendet.
+                        Mit Punktnotation, z. B. „person.vorname“, können Sie Werte in verschachtelte Datenstrukturen schreiben.
+                        Achten Sie darauf, dass Datenschlüssel formularweit eindeutig bleiben, damit keine Werte unbeabsichtigt überschrieben werden.
                     </ElementEditorSectionHeader>
 
                     <TextFieldComponent
@@ -326,7 +326,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                             } as T);
                         }}
                         startIcon={'$.'}
-                        hint="Dieser Schlüssel wird statt der Feld-ID verwendet, wenn die Daten an eine HTTP-Schnittstelle gesendet werden."
+                        hint="Überschreiben Sie die Element-ID mit einem eigenen Datenschlüssel (optional). Der Wert dieses Elements wird im Formulardatensatz unter diesem Schlüssel gespeichert."
                         disabled={!editable}
                     />
 

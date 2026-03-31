@@ -241,7 +241,10 @@ async function authenticateWithOidcCode(searchParams: URLSearchParams): Promise<
         await authService
             .authenticate(code);
 
-        window.location.search = '';
+        // After the fixed OIDC callback path, restore the exact tab-local route that initiated login.
+        const postLoginRedirect = authService.consumePostLoginRedirect();
+        const fallbackRedirect = `${window.location.pathname}${window.location.hash}`;
+        window.location.replace(postLoginRedirect ?? fallbackRedirect);
     }
 
     const user = await new UsersApiService()

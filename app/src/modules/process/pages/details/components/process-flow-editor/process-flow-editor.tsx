@@ -36,7 +36,7 @@ import {
     type FlowNode,
     layoutElements,
 } from './utils/layout-utils';
-import {Box, Button, Tooltip, useTheme} from '@mui/material';
+import {Box, Tooltip, useTheme} from '@mui/material';
 import {alpha} from '@mui/material/styles';
 import {type ProcessInstanceEntity} from '../../../../entities/process-instance-entity';
 import {type ProcessInstanceTaskEntity} from '../../../../entities/process-instance-task-entity';
@@ -49,13 +49,18 @@ import LockOpen from '@mui/icons-material/LockOpen';
 import ViewRealSize from '@aivot/mui-material-symbols-400-outlined/dist/view-real-size/ViewRealSize';
 import {getLatestTaskForEdge} from './utils/runtime-task-utils';
 import {ProcessNodeType} from '../../../../services/process-node-provider-api-service';
+import {
+    CANVAS_ADD_TRIGGER_BUTTON_HEIGHT,
+    ProcessFlowEditorAddTriggerActionButton,
+    ProcessFlowEditorEmptyState,
+} from './process-flow-editor-empty-state';
 
 const FLOW_MIN_ZOOM = 0.25;
 const FLOW_MAX_ZOOM = 2;
 const INITIAL_VIEWPORT_ZOOM = 1;
 const ZOOM_EPSILON = 0.001;
-const CANVAS_ADD_TRIGGER_BUTTON_DEFAULT_X = 56;
-const CANVAS_ADD_TRIGGER_BUTTON_DEFAULT_Y = 56;
+const INITIAL_VIEWPORT_TOP_PADDING = 48;
+const EMPTY_CANVAS_ADD_TRIGGER_VERTICAL_OFFSET = 48;
 const CANVAS_TRIGGER_LANE_HEADER_GAP = 68;
 const CANVAS_ADD_TRIGGER_LAYER_THRESHOLD = 16;
 const NOOP_ADD_EDGE = (_fromNodeId: number, _toNodeId: number, _viaPortKey: string): void => {
@@ -71,6 +76,8 @@ const NOOP_START_REPLACE_NODE = (_node: ProcessNodeEntity): void => {
 const NOOP_ADD_FOLLOW_UP_NODE = (_fromNodeId: number, _viaPortKey: string): void => {
 };
 const NOOP_ADD_INBETWEEN_NODE = (_forEdgeId: number): void => {
+};
+const NOOP_ADD_TRIGGER = (): void => {
 };
 
 interface ProcessFlowEditorProps {
@@ -244,18 +251,6 @@ function ProcessFlowEditorViewportControls(props: ProcessFlowEditorViewportContr
     );
 }
 
-interface ProcessFlowEditorCanvasAddTriggerButtonProps {
-    label: string;
-    onAddTrigger: () => void;
-    position: CanvasAddTriggerButtonPosition;
-}
-
-interface CanvasAddTriggerButtonPosition {
-    x: number;
-    y: number;
-    centerVertically: boolean;
-}
-
 interface ProcessFlowEditorCanvasTriggerLaneHeaderProps {
     label: string;
     onAddTrigger: () => void;
@@ -268,64 +263,10 @@ interface CanvasTriggerLaneHeaderPosition {
     width: number;
 }
 
-type CanvasAddTriggerPresentation =
-    | {
-        type: 'button';
-        position: CanvasAddTriggerButtonPosition;
-    }
-    | {
-        type: 'lane-header';
-        position: CanvasTriggerLaneHeaderPosition;
-    };
-
-function ProcessFlowEditorCanvasAddTriggerButton(props: ProcessFlowEditorCanvasAddTriggerButtonProps): ReactNode {
-    const {
-        label,
-        onAddTrigger,
-        position,
-    } = props;
-
-    return (
-        <ViewportPortal>
-            <Box
-                className="nopan nodrag"
-                sx={{
-                    position: 'absolute',
-                    transform: `translate(${position.x}px, ${position.y}px)${position.centerVertically ? ' translateY(-50%)' : ''}`,
-                    zIndex: PROCESS_FLOW_EDGE_Z_INDEX + 2,
-                    pointerEvents: 'all',
-                }}
-            >
-                <Button
-                    variant="text"
-                    startIcon={<Add sx={{fontSize: 18}}/>}
-                    onClick={onAddTrigger}
-                    sx={{
-                        minWidth: 0,
-                        height: 46,
-                        px: 2.25,
-                        borderRadius: 1.5,
-                        border: '2px dashed rgba(148, 163, 184, 0.5)',
-                        color: 'rgba(148, 163, 184, 0.96)',
-                        boxShadow: 'none',
-                        textTransform: 'none',
-                        fontWeight: 700,
-                        fontSize: '0.95rem',
-                        letterSpacing: 0,
-                        whiteSpace: 'nowrap',
-                        backdropFilter: 'blur(2px)',
-                        '&:hover': {
-                            bgcolor: 'rgba(255, 255, 255, 0.88)',
-                            borderColor: 'rgba(100, 116, 139, 0.62)',
-                            boxShadow: 'none',
-                        },
-                    }}
-                >
-                    {label}
-                </Button>
-            </Box>
-        </ViewportPortal>
-    );
+interface FlowViewport {
+    x: number;
+    y: number;
+    zoom: number;
 }
 
 function ProcessFlowEditorCanvasTriggerLaneHeader(props: ProcessFlowEditorCanvasTriggerLaneHeaderProps): ReactNode {
@@ -355,68 +296,29 @@ function ProcessFlowEditorCanvasTriggerLaneHeader(props: ProcessFlowEditorCanvas
                         display: 'inline-flex',
                     }}
                 >
-                    <Button
-                        variant="text"
-                        startIcon={<Add sx={{fontSize: 18}}/>}
+                    <ProcessFlowEditorAddTriggerActionButton
+                        label={label}
                         onClick={onAddTrigger}
-                        sx={{
-                            minWidth: 0,
-                            height: 46,
-                            px: 2.25,
-                            borderRadius: 1.5,
-                            border: '2px dashed rgba(148, 163, 184, 0.5)',
-                            color: 'rgba(148, 163, 184, 0.96)',
-                            boxShadow: 'none',
-                            fontWeight: 700,
-                            fontSize: '0.95rem',
-                            letterSpacing: 0,
-                            textTransform: 'none',
-                            whiteSpace: 'nowrap',
-                            backdropFilter: 'blur(2px)',
-                            '&:hover': {
-                                bgcolor: 'rgba(255, 255, 255, 0.88)',
-                                borderColor: 'rgba(100, 116, 139, 0.62)',
-                                boxShadow: 'none',
-                            },
-                        }}
-                    >
-                        {label}
-                    </Button>
+                    />
                 </Box>
             </Box>
         </ViewportPortal>
     );
 }
 
-function areCanvasAddTriggerPresentationsEqual(
-    left: CanvasAddTriggerPresentation | null,
-    right: CanvasAddTriggerPresentation | null,
+function areCanvasTriggerLaneHeaderPositionsEqual(
+    left: CanvasTriggerLaneHeaderPosition | null,
+    right: CanvasTriggerLaneHeaderPosition | null,
 ): boolean {
     if (left == null || right == null) {
         return left === right;
     }
 
-    if (left.type !== right.type) {
-        return false;
-    }
-
-    if (left.type === 'button' && right.type === 'button') {
-        return (
-            left.position.x === right.position.x &&
-            left.position.y === right.position.y &&
-            left.position.centerVertically === right.position.centerVertically
-        );
-    }
-
-    if (left.type === 'lane-header' && right.type === 'lane-header') {
-        return (
-            left.position.x === right.position.x &&
-            left.position.y === right.position.y &&
-            left.position.width === right.position.width
-        );
-    }
-
-    return false;
+    return (
+        left.x === right.x &&
+        left.y === right.y &&
+        left.width === right.width
+    );
 }
 
 export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
@@ -445,16 +347,20 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const theme = useTheme();
 
     const {
-        fitView,
         getNodes,
-        setCenter,
+        setViewport,
     } = useReactFlow<FlowNode, FlowEdge>();
+    const flowDomNode = useStore((store) => store.domNode);
+    const viewportWidth = flowDomNode?.clientWidth ?? 0;
 
     const [showTargetHandles, setShowTargetHandles] = useState<boolean>(false);
     const [needsMeasuredLayout, setNeedsMeasuredLayout] = useState<boolean>(false);
     const [pendingInitialViewport, setPendingInitialViewport] = useState<boolean>(false);
+    // Keep the canvas hidden until the first viewport transform has been applied so the graph
+    // never flashes in at the default top-left origin before we center it on the start lane.
+    const [isInitialViewportReady, setIsInitialViewportReady] = useState<boolean>(processFlow.nodes.length === 0);
     const [isViewportLocked, setIsViewportLocked] = useState<boolean>(false);
-    const [canvasAddTriggerPresentation, setCanvasAddTriggerPresentation] = useState<CanvasAddTriggerPresentation | null>(null);
+    const [canvasTriggerLaneHeaderPosition, setCanvasTriggerLaneHeaderPosition] = useState<CanvasTriggerLaneHeaderPosition | null>(null);
 
     const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>([]);
@@ -462,11 +368,14 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         includeHiddenNodes: true,
     });
     const hasResolvedInitialViewportRef = useRef<boolean>(false);
-    const initialViewportNodeIdRef = useRef<number | null>(null);
     const layoutRequestIdRef = useRef<number>(0);
+    const previousProcessNodeCountRef = useRef<number>(processFlow.nodes.length > 0 ? 1 : 0);
     const runtimeDataRef = useRef<ProcessFlowEditorRuntimeData>(runtimeData);
 
     const isEditable = runtimeData == null && editable;
+    const hasProcessNodes = processFlow.nodes.length > 0;
+    const canAddTrigger = isEditable && onAddTrigger != null;
+    const handleAddTrigger = onAddTrigger ?? NOOP_ADD_TRIGGER;
     const hasAllNodeProviders = useMemo(() => (
         processFlow.nodes.every((node) => (
             nodeProviders.some((provider) => (
@@ -475,7 +384,8 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
             ))
         ))
     ), [nodeProviders, processFlow.nodes]);
-    const canvasAddTriggerLabel = processFlow.nodes.length === 0 ? 'Auslöser hinzufügen' : 'Weiterer Auslöser';
+    const emptyCanvasAddTriggerLabel = 'Auslöser hinzufügen';
+    const canvasAddTriggerLabel = hasProcessNodes ? 'Weiterer Auslöser' : emptyCanvasAddTriggerLabel;
     const fitViewOptions = useMemo(() => ({
         padding: 0.16,
         duration: 200,
@@ -512,32 +422,27 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const handleToggleViewportLock = useCallback(() => {
         setIsViewportLocked((current) => !current);
     }, []);
+    const resetInitialViewportState = useCallback((isReady: boolean) => {
+        hasResolvedInitialViewportRef.current = false;
+        setPendingInitialViewport(false);
+        setIsInitialViewportReady(isReady);
+    }, []);
     const focusInitialViewport = useCallback(async (): Promise<boolean> => {
-        const initialViewportNodeId = initialViewportNodeIdRef.current;
-        if (nodes.length === 0 || initialViewportNodeId == null) {
-            return false;
-        }
-
-        const initialZoom = Math.min(INITIAL_VIEWPORT_ZOOM, FLOW_MAX_ZOOM);
-        const selectedFlowNode = nodes.find((node) => node.id === String(initialViewportNodeId));
-        if (selectedFlowNode == null) {
-            return false;
-        }
-
-        const selectedNodeWidth = getFlowNodeWidth(selectedFlowNode);
-        const selectedNodeHeight = getFlowNodeHeight(selectedFlowNode);
-
-        await setCenter(
-            selectedFlowNode.position.x + (selectedNodeWidth / 2),
-            selectedFlowNode.position.y + (selectedNodeHeight / 2),
-            {
-                zoom: initialZoom,
-                duration: 200,
-            },
+        const initialViewport = getInitialViewport(
+            nodes,
+            viewportWidth,
+            canAddTrigger,
         );
+        if (initialViewport == null) {
+            return false;
+        }
+
+        await setViewport(initialViewport, {
+            duration: 0,
+        });
 
         return true;
-    }, [nodes, setCenter]);
+    }, [canAddTrigger, nodes, setViewport, viewportWidth]);
 
     const resolveInitialViewportDecision = useCallback(() => {
         if (hasResolvedInitialViewportRef.current) {
@@ -545,10 +450,13 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         }
 
         hasResolvedInitialViewportRef.current = true;
-        if (initialViewportNodeIdRef.current != null) {
-            setPendingInitialViewport(true);
+        if (!hasProcessNodes) {
+            setIsInitialViewportReady(true);
+            return;
         }
-    }, []);
+
+        setPendingInitialViewport(true);
+    }, [hasProcessNodes]);
 
     const layoutNodes = useCallback(async (nodeMeasurements?: ReturnType<typeof createNodeMeasurementMap>) => {
         if (!hasAllNodeProviders) {
@@ -598,15 +506,41 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     }, [runtimeData, setEdges]);
 
     useEffect(() => {
-        hasResolvedInitialViewportRef.current = false;
-        initialViewportNodeIdRef.current = selectedNode?.id ?? null;
-        setPendingInitialViewport(false);
-    }, [processFlow.definition.id, processFlow.version.processVersion]);
+        // Clear the previous graph immediately so a process/version switch never flashes stale nodes,
+        // edges, or trigger-lane controls while the next layout is still resolving.
+        setNodes([]);
+        setEdges([]);
+        setCanvasTriggerLaneHeaderPosition(null);
+        resetInitialViewportState(!hasProcessNodes);
+    }, [
+        hasProcessNodes,
+        processFlow.definition.id,
+        processFlow.version.processVersion,
+        resetInitialViewportState,
+        setEdges,
+        setNodes,
+    ]);
+
+    useEffect(() => {
+        const previousNodeCount = previousProcessNodeCountRef.current;
+        const currentNodeCount = hasProcessNodes ? 1 : 0;
+        previousProcessNodeCountRef.current = currentNodeCount;
+
+        if (previousNodeCount === currentNodeCount) {
+            return;
+        }
+
+        resetInitialViewportState(!hasProcessNodes);
+    }, [hasProcessNodes, resetInitialViewportState]);
 
     useEffect(() => {
         if (!hasAllNodeProviders) {
+            // If the graph cannot be laid out because a provider is missing, keep the editor visible
+            // instead of waiting forever for an initial viewport that will never be applied.
             setNeedsMeasuredLayout(false);
             setPendingInitialViewport(false);
+            setCanvasTriggerLaneHeaderPosition(null);
+            setIsInitialViewportReady(true);
             return;
         }
 
@@ -643,11 +577,14 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
             return;
         }
 
+        // React Flow updates node bounds asynchronously after layout. Waiting one animation frame
+        // prevents the first render from using stale bounds and showing a visible top-left jump.
         const frameHandle = requestAnimationFrame(() => {
             void focusInitialViewport()
                 .then((wasApplied) => {
                     if (wasApplied) {
                         setPendingInitialViewport(false);
+                        setIsInitialViewportReady(true);
                     }
                 });
         });
@@ -658,23 +595,13 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     }, [focusInitialViewport, needsMeasuredLayout, pendingInitialViewport]);
 
     useLayoutEffect(() => {
-        if (!isEditable || onAddTrigger == null) {
-            setCanvasAddTriggerPresentation((current) => areCanvasAddTriggerPresentationsEqual(current, null) ? current : null);
+        if (!canAddTrigger) {
+            setCanvasTriggerLaneHeaderPosition((current) => areCanvasTriggerLaneHeaderPositionsEqual(current, null) ? current : null);
             return;
         }
 
-        if (processFlow.nodes.length === 0) {
-            const defaultPresentation: CanvasAddTriggerPresentation = {
-                type: 'button',
-                position: {
-                    x: CANVAS_ADD_TRIGGER_BUTTON_DEFAULT_X,
-                    y: CANVAS_ADD_TRIGGER_BUTTON_DEFAULT_Y,
-                    centerVertically: false,
-                },
-            };
-            setCanvasAddTriggerPresentation((current) => (
-                areCanvasAddTriggerPresentationsEqual(current, defaultPresentation) ? current : defaultPresentation
-            ));
+        if (!hasProcessNodes) {
+            setCanvasTriggerLaneHeaderPosition((current) => areCanvasTriggerLaneHeaderPositionsEqual(current, null) ? current : null);
             return;
         }
 
@@ -682,26 +609,15 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
             return;
         }
 
-        const triggerNodes = nodes.filter((node) => node.data.graphNode.provider.type === ProcessNodeType.Trigger);
-        const anchorNodes = triggerNodes.length > 0 ?
-            triggerNodes :
-            getTopLayerNodes(nodes);
-        const laneMinX = Math.min(...anchorNodes.map((node) => node.position.x));
-        const laneMaxX = Math.max(...anchorNodes.map((node) => getFlowNodeRight(node)));
-        const laneTopY = Math.min(...anchorNodes.map((node) => node.position.y));
-        const nextPresentation: CanvasAddTriggerPresentation = {
-            type: 'lane-header',
-            position: {
-                x: laneMinX,
-                y: laneTopY - CANVAS_TRIGGER_LANE_HEADER_GAP,
-                width: Math.max(laneMaxX - laneMinX, MIN_NODE_WIDTH),
-            },
-        };
+        const nextPosition = getCanvasTriggerLaneHeaderPosition(nodes);
+        if (nextPosition == null) {
+            return;
+        }
 
-        setCanvasAddTriggerPresentation((current) => (
-            areCanvasAddTriggerPresentationsEqual(current, nextPresentation) ? current : nextPresentation
+        setCanvasTriggerLaneHeaderPosition((current) => (
+            areCanvasTriggerLaneHeaderPositionsEqual(current, nextPosition) ? current : nextPosition
         ));
-    }, [hasAllNodeProviders, isEditable, nodes, nodesInitialized, onAddTrigger, processFlow.nodes.length]);
+    }, [canAddTrigger, hasAllNodeProviders, hasProcessNodes, nodes, nodesInitialized]);
 
     return (
         <ProcessFlowEditorProvider
@@ -713,6 +629,8 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                     '--process-flow-editor-top-fade-color-solid': alpha(theme.palette.background.default, 0.96),
                     '--process-flow-editor-top-fade-color-mid': alpha(theme.palette.background.default, 0.72),
                     '--process-flow-editor-top-fade-color-transparent': alpha(theme.palette.background.default, 0),
+                    opacity: isInitialViewportReady ? 1 : 0,
+                    transition: 'opacity 120ms ease-out',
                 } as React.CSSProperties}
                 nodes={nodes}
                 edges={edges}
@@ -777,21 +695,21 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                 }}
             >
                 {
-                    canvasAddTriggerPresentation?.type === 'button' &&
-                    onAddTrigger != null &&
-                    <ProcessFlowEditorCanvasAddTriggerButton
-                        label={canvasAddTriggerLabel}
-                        onAddTrigger={onAddTrigger}
-                        position={canvasAddTriggerPresentation.position}
+                    !hasProcessNodes &&
+                    canAddTrigger &&
+                    <ProcessFlowEditorEmptyState
+                        label={emptyCanvasAddTriggerLabel}
+                        onAddTrigger={handleAddTrigger}
+                        verticalOffset={EMPTY_CANVAS_ADD_TRIGGER_VERTICAL_OFFSET}
                     />
                 }
                 {
-                    canvasAddTriggerPresentation?.type === 'lane-header' &&
-                    onAddTrigger != null &&
+                    canvasTriggerLaneHeaderPosition != null &&
+                    canAddTrigger &&
                     <ProcessFlowEditorCanvasTriggerLaneHeader
                         label={canvasAddTriggerLabel}
-                        onAddTrigger={onAddTrigger}
-                        position={canvasAddTriggerPresentation.position}
+                        onAddTrigger={handleAddTrigger}
+                        position={canvasTriggerLaneHeaderPosition}
                     />
                 }
                 {
@@ -892,4 +810,72 @@ function getTopLayerNodes(nodes: FlowNode[]): FlowNode[] {
 
     const topLayerY = Math.min(...nodes.map((node) => node.position.y));
     return nodes.filter((node) => Math.abs(node.position.y - topLayerY) <= CANVAS_ADD_TRIGGER_LAYER_THRESHOLD);
+}
+
+function getStartLaneNodes(nodes: FlowNode[]): FlowNode[] {
+    // Trigger nodes define the start lane. Falling back to the topmost layer keeps the initial
+    // positioning stable for incomplete graphs that do not have a trigger yet.
+    const triggerNodes = nodes.filter((node) => node.data.graphNode.provider.type === ProcessNodeType.Trigger);
+
+    if (triggerNodes.length > 0) {
+        return triggerNodes;
+    }
+
+    return getTopLayerNodes(nodes);
+}
+
+function getCanvasTriggerLaneHeaderPosition(nodes: FlowNode[]): CanvasTriggerLaneHeaderPosition | null {
+    const startLaneNodes = getStartLaneNodes(nodes);
+    if (startLaneNodes.length === 0) {
+        return null;
+    }
+
+    const laneMinX = Math.min(...startLaneNodes.map((node) => node.position.x));
+    const laneMaxX = Math.max(...startLaneNodes.map((node) => getFlowNodeRight(node)));
+    const laneTopY = Math.min(...startLaneNodes.map((node) => node.position.y));
+
+    return {
+        x: laneMinX,
+        y: laneTopY - CANVAS_TRIGGER_LANE_HEADER_GAP,
+        width: Math.max(laneMaxX - laneMinX, MIN_NODE_WIDTH),
+    };
+}
+
+function getInitialViewport(
+    nodes: FlowNode[],
+    viewportWidth: number,
+    includeAddTriggerButton: boolean,
+): FlowViewport | null {
+    if (nodes.length === 0 || viewportWidth <= 0) {
+        return null;
+    }
+
+    const initialViewportNodes = getStartLaneNodes(nodes);
+    if (initialViewportNodes.length === 0) {
+        return null;
+    }
+
+    const initialZoom = Math.min(INITIAL_VIEWPORT_ZOOM, FLOW_MAX_ZOOM);
+    const minX = Math.min(...initialViewportNodes.map((node) => node.position.x));
+    const maxX = Math.max(...initialViewportNodes.map((node) => getFlowNodeRight(node)));
+    const initialCenterX = (minX + maxX) / 2;
+    const initialTopY = getInitialViewportTopY(initialViewportNodes, includeAddTriggerButton);
+
+    return {
+        x: (viewportWidth / 2) - (initialCenterX * initialZoom),
+        y: INITIAL_VIEWPORT_TOP_PADDING - (initialTopY * initialZoom),
+        zoom: initialZoom,
+    };
+}
+
+function getInitialViewportTopY(nodes: FlowNode[], includeAddTriggerButton: boolean): number {
+    const topLayerY = Math.min(...nodes.map((node) => node.position.y));
+
+    if (!includeAddTriggerButton) {
+        return topLayerY;
+    }
+
+    // Keep the add-trigger lane header inside the initial frame so the editor starts near the
+    // top of the first lane instead of leaving a large block of whitespace above it.
+    return topLayerY - CANVAS_TRIGGER_LANE_HEADER_GAP - CANVAS_ADD_TRIGGER_BUTTON_HEIGHT;
 }

@@ -107,7 +107,7 @@ export function ProcessNodeEditorPlaceholder() {
 
             <Button
                 startIcon={<MenuBook/>}
-                variant="contained"
+                variant="outlined"
                 sx={{
                     mt: 3,
                 }}

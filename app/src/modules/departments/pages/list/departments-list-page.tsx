@@ -287,6 +287,7 @@ export function DepartmentsListPage(): React.ReactElement {
                                     sx={{
                                         display: 'grid',
                                         gap: 2.25,
+                                        minWidth: 0,
                                     }}
                                 >
                                     {
@@ -303,6 +304,7 @@ export function DepartmentsListPage(): React.ReactElement {
                                     sx={{
                                         display: 'grid',
                                         gap: 2.25,
+                                        minWidth: 0,
                                     }}
                                 >
                                     {
@@ -369,7 +371,7 @@ function DepartmentSearchResultItem(props: DepartmentSearchResultItemProps): Rea
     const addressText = result.address.length > 0 ? result.address : 'Keine Adresse hinterlegt';
 
     return (
-        <Box>
+        <Box sx={{minWidth: 0}}>
             <Breadcrumbs
                 separator="›"
                 maxItems={5}
@@ -410,6 +412,7 @@ function DepartmentSearchResultItem(props: DepartmentSearchResultItemProps): Rea
                     'display': 'flex',
                     'alignItems': 'center',
                     'gap': 1.5,
+                    'minWidth': 0,
                     'py': 1.75,
                     'px': 2,
                     'border': '1px solid',
@@ -557,12 +560,13 @@ function DepartmentTreeSkeletonItem(props: DepartmentTreeSkeletonItemProps): Rea
     const childNodes = node.children ?? [];
 
     return (
-        <Box>
+        <Box sx={{minWidth: 0}}>
             <Box
                 sx={{
                     'display': 'flex',
                     'alignItems': 'center',
                     'gap': 1.5,
+                    'minWidth': 0,
                     'py': 1.75,
                     'px': 2,
                     'border': '1px solid',
@@ -662,6 +666,7 @@ function DepartmentTreeSkeletonItem(props: DepartmentTreeSkeletonItemProps): Rea
                     sx={{
                         'display': 'grid',
                         'gap': 1.25,
+                        'minWidth': 0,
                         'mt': 0,
                         'pt': 1.5,
                         'pl': `${TREE_CONNECTOR.childrenIndent}px`,
@@ -685,6 +690,7 @@ function DepartmentTreeSkeletonItem(props: DepartmentTreeSkeletonItemProps): Rea
                                 sx={{
                                     'position': 'relative',
                                     'zIndex': 1,
+                                    'minWidth': 0,
                                     '&::before': {
                                         content: '""',
                                         position: 'absolute',
@@ -754,12 +760,13 @@ function DepartmentTreeItem(props: DepartmentTreeItemProps): React.ReactElement 
     const horizontalExtensionWidth = TREE_CONNECTOR.childrenIndent - TREE_CONNECTOR.iconCenterX - TREE_CONNECTOR.elbowSize + 3;
 
     return (
-        <Box>
+        <Box sx={{minWidth: 0}}>
             <Box
                 sx={{
                     'display': 'flex',
                     'alignItems': 'center',
                     'gap': 1.5,
+                    'minWidth': 0,
                     'py': 1.75,
                     'px': 2,
                     'border': '1px solid',
@@ -883,6 +890,7 @@ function DepartmentTreeItem(props: DepartmentTreeItemProps): React.ReactElement 
                     sx={{
                         'display': 'grid',
                         'gap': 1.25,
+                        'minWidth': 0,
                         'mt': 0,
                         'pt': 1.5,
                         'pl': `${TREE_CONNECTOR.childrenIndent}px`,
@@ -908,6 +916,7 @@ function DepartmentTreeItem(props: DepartmentTreeItemProps): React.ReactElement 
                                     sx={{
                                         'position': 'relative',
                                         'zIndex': 1,
+                                        'minWidth': 0,
                                         '&::before': {
                                             content: '""',
                                             position: 'absolute',
