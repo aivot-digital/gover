@@ -184,11 +184,13 @@ public class ProcessWorker {
             configuration = processNodeService
                     .deriveConfiguration(currentNode, false);
         } catch (ResponseException e) {
-            throw new ProcessNodeExecutionExceptionUnknown(
+            var ex = new ProcessNodeExecutionExceptionUnknown(
                     e,
                     "Die Konfiguration des Prozessknotens „%s“ konnte nicht abgeleitet werden.",
                     currentNode.resolveName(currentNodeProvider)
             );
+            logger.logException(ex);
+            throw ex;
         }
 
         var context = new ProcessNodeExecutionContextInit(
@@ -209,29 +211,33 @@ public class ProcessWorker {
             taskEntity.setStatus(ProcessTaskStatus.Failed);
             taskEntity.setFinished(LocalDateTime.now());
             processInstanceTaskRepository.save(taskEntity);
+            logger.logException(e);
             throw e;
         } catch (Exception e) {
             taskEntity.setStatus(ProcessTaskStatus.Failed);
             taskEntity.setFinished(LocalDateTime.now());
             processInstanceTaskRepository.save(taskEntity);
-            throw new ProcessNodeExecutionExceptionUnknown(
+            var ex = new ProcessNodeExecutionExceptionUnknown(
                     e,
                     "Der Prozessknoten-Funktionsanbieter „%s“ für das Prozesselement „%s“ konnte die Aufgabe nicht initialisieren.",
                     currentNodeProvider.getName(),
                     currentNode.resolveName(currentNodeProvider)
             );
+            logger.logException(ex);
+            throw ex;
         }
 
         if (initResult == null) {
             taskEntity.setStatus(ProcessTaskStatus.Failed);
             taskEntity.setFinished(LocalDateTime.now());
             processInstanceTaskRepository.save(taskEntity);
-
-            throw new ProcessNodeExecutionExceptionUnknown(
+            var ex = new ProcessNodeExecutionExceptionUnknown(
                     "Der Prozessknoten-Funktionsanbieter „%s“ für das Prozesselement „%s“ lieferte kein Ergebnis zurück.",
                     currentNodeProvider.getName(),
                     currentNode.resolveName(currentNodeProvider)
             );
+            logger.logException(ex);
+            throw ex;
         }
 
         ProcessInstanceTaskEntity previousTask;
@@ -262,6 +268,7 @@ public class ProcessWorker {
             taskEntity.setStatus(ProcessTaskStatus.Failed);
             taskEntity.setFinished(LocalDateTime.now());
             processInstanceTaskRepository.save(taskEntity);
+            logger.logException(e);
             throw e;
         }
     }
