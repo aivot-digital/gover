@@ -44,6 +44,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Component
 public class PdfActionNodeV1 implements ProcessNodeDefinition {
@@ -57,6 +58,12 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
     private static final String OUTPUT_NAME_ATTACHMENT_KEY = "attachmentKey";
     private static final String OUTPUT_NAME_STORAGE_PROVIDER_ID = "storageProviderId";
     private static final String OUTPUT_NAME_STORAGE_PATH_FROM_ROOT = "storagePathFromRoot";
+    private static final String HEADER_HTML_MARKER = "::header::";
+    private static final String FOOTER_HTML_MARKER = "::footer::";
+    private static final Pattern HTML_DOCUMENT_BLOCK_PATTERN = Pattern.compile(
+            "<html\\b.*?</html>",
+            Pattern.CASE_INSENSITIVE | Pattern.DOTALL
+    );
 
     private final PdfService pdfService;
     private final TemplateRenderService templateRenderService;
@@ -256,8 +263,9 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
             );
         }
 
+        var pdfHtmlSections = splitHtmlSections(contentHtml);
         var interpolatedContentHtml = templateRenderService
-                .interpolate(context.getProcessData(), contentHtml);
+                .interpolate(context.getProcessData(), pdfHtmlSections.contentHtml);
 
         if (StringUtils.isNullOrEmpty(interpolatedContentHtml)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
@@ -265,14 +273,19 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
             );
         }
 
+        var interpolatedHeaderHtml = templateRenderService
+                .interpolate(context.getProcessData(), pdfHtmlSections.headerHtml);
+        var interpolatedFooterHtml = templateRenderService
+                .interpolate(context.getProcessData(), pdfHtmlSections.footerHtml);
+
         byte[] pdfBytes;
         try {
             pdfBytes = pdfService.generatePdfFromHtml(
                     interpolatedContentHtml,
-                    "",
-                    "",
-                    "210mm",
-                    "297mm"
+                    interpolatedHeaderHtml,
+                    interpolatedFooterHtml,
+                    "21cm",
+                    "29.7cm"
             );
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -363,6 +376,81 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Nonnull
+    private PdfHtmlSections splitHtmlSections(@Nonnull String resolvedHtml) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        var matcher = HTML_DOCUMENT_BLOCK_PATTERN.matcher(resolvedHtml);
+        if (!matcher.find()) {
+            return new PdfHtmlSections(resolvedHtml, "", "");
+        }
+
+        matcher.reset();
+
+        String contentHtml = null;
+        String headerHtml = "";
+        String footerHtml = "";
+
+        while (matcher.find()) {
+            var htmlBlock = matcher.group();
+            var isHeaderBlock = htmlBlock.contains(HEADER_HTML_MARKER);
+            var isFooterBlock = htmlBlock.contains(FOOTER_HTML_MARKER);
+
+            if (isHeaderBlock && isFooterBlock) {
+                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                        "Ein HTML-Block der PDF-Vorlage darf nicht gleichzeitig %s und %s enthalten.",
+                        StringUtils.quote(HEADER_HTML_MARKER),
+                        StringUtils.quote(FOOTER_HTML_MARKER)
+                );
+            }
+
+            var sanitizedHtmlBlock = sanitizeHtmlBlock(htmlBlock);
+
+            if (isHeaderBlock) {
+                if (StringUtils.isNotNullOrEmpty(headerHtml)) {
+                    throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                            "Die PDF-Vorlage enthält mehrere Header-HTML-Blöcke mit %s.",
+                            StringUtils.quote(HEADER_HTML_MARKER)
+                    );
+                }
+                headerHtml = sanitizedHtmlBlock;
+                continue;
+            }
+
+            if (isFooterBlock) {
+                if (StringUtils.isNotNullOrEmpty(footerHtml)) {
+                    throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                            "Die PDF-Vorlage enthält mehrere Footer-HTML-Blöcke mit %s.",
+                            StringUtils.quote(FOOTER_HTML_MARKER)
+                    );
+                }
+                footerHtml = sanitizedHtmlBlock;
+                continue;
+            }
+
+            if (StringUtils.isNotNullOrEmpty(contentHtml)) {
+                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                        "Die PDF-Vorlage enthält mehrere HTML-Blöcke ohne Marker für den Dokumentinhalt."
+                );
+            }
+
+            contentHtml = sanitizedHtmlBlock;
+        }
+
+        if (StringUtils.isNullOrEmpty(contentHtml)) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Die PDF-Vorlage enthält keinen HTML-Block für den Dokumentinhalt."
+            );
+        }
+
+        return new PdfHtmlSections(contentHtml, headerHtml, footerHtml);
+    }
+
+    @Nonnull
+    private String sanitizeHtmlBlock(@Nonnull String htmlBlock) {
+        return htmlBlock
+                .replace(HEADER_HTML_MARKER, "")
+                .replace(FOOTER_HTML_MARKER, "");
+    }
+
+    @Nonnull
     private de.aivot.GoverBackend.asset.entities.AssetEntity retrieveAsset(@Nonnull UUID assetKey) throws ProcessNodeExecutionException {
         try {
             return assetService
@@ -391,6 +479,20 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
                     "Der Inhalt der PDF-Vorlage konnte nicht geladen werden: %s",
                     e.getMessage()
             );
+        }
+    }
+
+    private static final class PdfHtmlSections {
+        private final String contentHtml;
+        private final String headerHtml;
+        private final String footerHtml;
+
+        private PdfHtmlSections(@Nonnull String contentHtml,
+                                @Nonnull String headerHtml,
+                                @Nonnull String footerHtml) {
+            this.contentHtml = contentHtml;
+            this.headerHtml = headerHtml;
+            this.footerHtml = footerHtml;
         }
     }
 
