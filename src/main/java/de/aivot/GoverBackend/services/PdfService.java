@@ -235,10 +235,10 @@ public class PdfService {
                 : "<html><body></body></html>";
         var resolvedPaperWidth = StringUtils.isNotNullOrEmpty(paperWidth)
                 ? paperWidth
-                : "210mm";
+                : "21.0cm";
         var resolvedPaperHeight = StringUtils.isNotNullOrEmpty(paperHeight)
                 ? paperHeight
-                : "297mm";
+                : "29.7cm";
 
         var multipart = new MultipartUtils.MultipartBodyPublisher()
                 .addPart("files", "index.html", contentHtml)
@@ -248,7 +248,12 @@ public class PdfService {
                 .addPart("header", "header.html")
                 .addPart("footer", "footer.html")
                 .addPart("paperHeight", resolvedPaperHeight)
-                .addPart("paperWidth", resolvedPaperWidth);
+                .addPart("paperWidth", resolvedPaperWidth)
+                .addPart("marginTop", "2.5cm")
+                .addPart("marginBottom", "2.5cm")
+                .addPart("marginLeft", "2.5cm")
+                .addPart("marginRight", "2cm")
+                ;
 
         var convertUri = new URI("http://" + gotenbergConfig.getHost() + ":" + gotenbergConfig.getPort() + "/forms/chromium/convert/html");
 
