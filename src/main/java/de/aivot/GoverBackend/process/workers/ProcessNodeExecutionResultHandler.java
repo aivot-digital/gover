@@ -258,7 +258,6 @@ public class ProcessNodeExecutionResultHandler {
                             Bitte prüfen Sie den Aufbau Ihres Prozessmodells.
                             """,
                     currentNode.resolveName(provider),
-                    provider.getName(),
                     taskCompleted.getViaPort()
             );
         }
