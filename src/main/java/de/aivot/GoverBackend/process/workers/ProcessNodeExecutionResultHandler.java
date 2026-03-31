@@ -12,7 +12,6 @@ import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionBro
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.repositories.ProcessEdgeRepository;
-import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.GoverBackend.user.entities.UserEntity;
@@ -33,7 +32,6 @@ public class ProcessNodeExecutionResultHandler {
     private final ProcessInstanceRepository processInstanceRepository;
     private final ProcessInstanceTaskRepository processInstanceTaskRepository;
     private final ProcessEdgeRepository processDefinitionEdgeRepository;
-    private final ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository;
     private final UserService userService;
 
     @Autowired
@@ -41,12 +39,11 @@ public class ProcessNodeExecutionResultHandler {
                                              ProcessInstanceRepository processInstanceRepository,
                                              ProcessInstanceTaskRepository processInstanceTaskRepository,
                                              ProcessEdgeRepository processDefinitionEdgeRepository,
-                                             ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository, UserService userService) {
+                                             UserService userService) {
         this.rabbitTemplate = rabbitTemplate;
         this.processInstanceRepository = processInstanceRepository;
         this.processInstanceTaskRepository = processInstanceTaskRepository;
         this.processDefinitionEdgeRepository = processDefinitionEdgeRepository;
-        this.processInstanceHistoryEventRepository = processInstanceHistoryEventRepository;
         this.userService = userService;
     }
 
