@@ -61,3 +61,5 @@
 "Java-Archiv";"application/x-java-archive";"jar"
 YAML-Datei;application/yaml;yaml
 YAML-Datei;application/yaml;yml
+Markdown-Datei;text/markdown;md
+Icon-Datei;image/vnd.microsoft.icon;ico
