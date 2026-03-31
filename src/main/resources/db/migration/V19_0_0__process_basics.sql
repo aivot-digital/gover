@@ -10,6 +10,10 @@ create table processes
     -- The ID of the owning department who can create, edit and delete this process definition
     department_id     int         not null,
 
+    -- The public key of this process.
+    -- Public access to this process is done via this key.
+    access_key        uuid        not null,
+
     -- The total count of versions for this process definition
     version_count     int         not null default 0,
     -- The currently drafted version number for this process definition

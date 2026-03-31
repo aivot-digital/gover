@@ -10,6 +10,7 @@ export const EmptyProcessTemplate: ProcessExport = {
         id: 0,
         internalTitle: 'Neues Verfahren',
         departmentId: 0,
+        accessKey: '',
         versionCount: 0,
         draftedVersion: null,
         publishedVersion: null,
