@@ -1,17 +1,10 @@
 package de.aivot.GoverBackend.asset.entities;
 
 import de.aivot.GoverBackend.storage.converters.StorageItemMetadataConverter;
-import de.aivot.GoverBackend.storage.enums.StorageProviderType;
-import de.aivot.GoverBackend.storage.models.StorageDocument;
 import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.IdClass;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -54,7 +47,7 @@ public class VStorageIndexItemWithAssetEntity {
     @Nonnull
     private LocalDateTime updated;
 
-    @Nullable
+    @Nonnull
     private UUID assetKey;
 
     @Nullable
@@ -78,7 +71,7 @@ public class VStorageIndexItemWithAssetEntity {
                                             @Nonnull StorageItemMetadata metadata,
                                             @Nonnull LocalDateTime created,
                                             @Nonnull LocalDateTime updated,
-                                            @Nullable UUID assetKey,
+                                            @Nonnull UUID assetKey,
                                             @Nullable String assetUploaderId,
                                             @Nullable Boolean assetIsPrivate) {
         this.storageProviderId = storageProviderId;
@@ -196,12 +189,12 @@ public class VStorageIndexItemWithAssetEntity {
         return this;
     }
 
-    @Nullable
+    @Nonnull
     public UUID getAssetKey() {
         return assetKey;
     }
 
-    public VStorageIndexItemWithAssetEntity setAssetKey(@Nullable UUID assetKey) {
+    public VStorageIndexItemWithAssetEntity setAssetKey(@Nonnull UUID assetKey) {
         this.assetKey = assetKey;
         return this;
     }

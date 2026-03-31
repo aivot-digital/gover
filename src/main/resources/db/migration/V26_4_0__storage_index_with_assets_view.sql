@@ -21,7 +21,7 @@ SELECT sii.storage_provider_id,
        uploader_id as asset_uploader_id,
        is_private  as asset_is_private
 from storage_index_items as sii
-         left join assets as ass
+         inner join assets as ass
                    on sii.storage_provider_id = ass.storage_provider_id and
                       sii.path_from_root = ass.storage_path_from_root
          join storage_providers stp
