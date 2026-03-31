@@ -4,13 +4,14 @@ import {NoCodeDataTypeLabels} from '../../data/no-code-data-type';
 import React, {Fragment} from 'react';
 import {Table, TableBody, TableCell, TableContainer, TableRow} from '@mui/material';
 import {Collapse} from '../collapse/collapse';
+import {MarkdownContent} from '../markdown-content/markdown-content';
 
 export function OperatorInfo(props: OperatorInfoProps) {
     return (
         <>
-            <ReactMarkdown>
-                {props.operator.description}
-            </ReactMarkdown>
+            <MarkdownContent
+                markdown={props.operator.description}
+            />
 
             <Collapse
                 label="Technische Informationen"
