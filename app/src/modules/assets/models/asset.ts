@@ -10,5 +10,5 @@ export interface Asset {
     uploaderId: string;
     contentType?: string | null;
     isPrivate: boolean;
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, string>;
 }

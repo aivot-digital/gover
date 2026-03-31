@@ -1,5 +1,5 @@
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
-import {Typography} from '@mui/material';
+import {Button, Dialog, DialogActions, DialogContent, Typography} from '@mui/material';
 import {GenericDetailsPage} from '../../../components/generic-details-page/generic-details-page';
 import {Asset} from '../models/asset';
 import {AssetsApiService} from '../assets-api-service';
@@ -13,18 +13,44 @@ import {StorageProvidersApiService} from '../../storage/storage-providers-api-se
 import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {AssetDetailsPageAdditionalData} from './asset-details-page-additional-data';
-import {useApi} from '../../../hooks/use-api';
 import {PromptDialog} from '../../../dialogs/prompt-dialog/prompt-dialog';
+import SaveAs from '@aivot/mui-material-symbols-400-outlined/dist/save-as/SaveAs';
+import {downloadBlobFile} from '../../../utils/download-utils';
+import Download from '@aivot/mui-material-symbols-400-outlined/dist/download/Download';
+import {Action} from '../../../components/actions/actions-props';
+import {FileUploadComponent} from '../../../components/file-upload-field/file-upload-component';
+import SwapHoriz from '@aivot/mui-material-symbols-400-outlined/dist/swap-horiz/SwapHoriz';
+import {StorageProviderEntity} from '../../storage/entities/storage-provider-entity';
+import {GenericDetailsSkeleton} from '../../../components/generic-details-page/generic-details-skeleton';
+import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
+import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../slices/shell-slice';
+import {Breadcrumbs} from '../../../components/breadcrumbs/breadcrumbs';
+
+type UrlParamsType = {
+    storageProviderId: string;
+    '*': string;
+};
 
 export function AssetDetailsPage() {
-    const dispatch = useAppDispatch();
-    const api = useApi();
-    const navigate = useNavigate();
-    const {storageProviderId, '*': storagePathFromRoute} = useParams<{ storageProviderId: string; '*': string }>();
+    const {storageProviderId, '*': storagePathFromRoute} = useParams<UrlParamsType>();
     const [searchParams] = useSearchParams();
-    const [storageProviderReadOnly, setStorageProviderReadOnly] = useState(false);
+    const navigate = useNavigate();
+    const dispatch = useAppDispatch();
+
+    const [asset, setAsset] = useState<Asset | null>(null);
+    const [storageProvider, setStorageProvider] = useState<StorageProviderEntity | null>(null);
+
+    const [file, setFile] = useState<File[] | null>(null);
+    const [uploadError, setUploadError] = useState<string>();
+
     const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
     const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
+    const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+    const [isReplaceDialogOpen, setIsReplaceDialogOpen] = useState(false);
+
+    const storageProviderReadOnly = useMemo(() => {
+        return storageProvider?.readOnlyStorage ?? false;
+    }, [storageProvider]);
 
     const parsedStorageProviderId = useMemo(() => {
         if (storageProviderId == null) {
@@ -38,6 +64,7 @@ export function AssetDetailsPage() {
 
         return parsed;
     }, [storageProviderId]);
+
     const normalizedCurrentStoragePath = useMemo(() => {
         if (storagePathFromRoute == null || storagePathFromRoute.length === 0 || storagePathFromRoute === 'new') {
             return undefined;
@@ -49,45 +76,27 @@ export function AssetDetailsPage() {
             return undefined;
         }
     }, [storagePathFromRoute]);
+
     const defaultMoveTargetPath = useMemo(() => {
         if (normalizedCurrentStoragePath == null) {
             return '';
         }
         return normalizedCurrentStoragePath;
     }, [normalizedCurrentStoragePath]);
+
     const defaultCopyTargetPath = useMemo(() => {
         if (normalizedCurrentStoragePath == null) {
             return '';
         }
         return normalizedCurrentStoragePath;
     }, [normalizedCurrentStoragePath]);
+
     const canMoveAsset = parsedStorageProviderId != null && normalizedCurrentStoragePath != null && !storageProviderReadOnly;
     const canCopyAsset = parsedStorageProviderId != null && normalizedCurrentStoragePath != null && !storageProviderReadOnly;
+    const canRenameAsset = parsedStorageProviderId != null && normalizedCurrentStoragePath != null && !storageProviderReadOnly;
 
     const parentRoute = `/assets/providers/${storageProviderId}?path=${encodeURIComponent(AssetsApiService.normalizeFolderPath(searchParams.get('path') ?? '/'))}`;
     const detailsPath = `/assets/providers/${storageProviderId}/files/*`;
-    const headerActions = useMemo(() => {
-        return [
-            {
-                icon: <DriveFileMoveOutlinedIcon />,
-                tooltip: 'Datei verschieben',
-                onClick: () => setIsMoveDialogOpen(true),
-                disabled: !canMoveAsset,
-                disabledTooltip: storageProviderReadOnly
-                    ? 'Der Speicheranbieter ist schreibgeschützt. Dateien können nicht verschoben werden.'
-                    : 'Die Datei muss zuerst gespeichert werden, bevor sie verschoben werden kann.',
-            },
-            {
-                icon: <ContentCopyOutlinedIcon />,
-                tooltip: 'Datei kopieren',
-                onClick: () => setIsCopyDialogOpen(true),
-                disabled: !canCopyAsset,
-                disabledTooltip: storageProviderReadOnly
-                    ? 'Der Speicheranbieter ist schreibgeschützt. Dateien können nicht kopiert werden.'
-                    : 'Die Datei muss zuerst gespeichert werden, bevor sie kopiert werden kann.',
-            },
-        ];
-    }, [canMoveAsset, canCopyAsset, storageProviderReadOnly]);
 
     const handleConfirmMove = async (targetPathInput: string) => {
         setIsMoveDialogOpen(false);
@@ -102,11 +111,12 @@ export function AssetDetailsPage() {
         }
 
         try {
-            const movedAsset = await new AssetsApiService(api).moveInStorageProvider(
-                parsedStorageProviderId,
-                normalizedCurrentStoragePath,
-                normalizedTargetPath,
-            );
+            const movedAsset = await new AssetsApiService()
+                .moveInStorageProvider(
+                    parsedStorageProviderId,
+                    normalizedCurrentStoragePath,
+                    normalizedTargetPath,
+                );
 
             const parentFolder = movedAsset.storagePathFromRoot.includes('/')
                 ? AssetsApiService.normalizeFolderPath(movedAsset.storagePathFromRoot.substring(0, movedAsset.storagePathFromRoot.lastIndexOf('/')))
@@ -135,11 +145,12 @@ export function AssetDetailsPage() {
         }
 
         try {
-            const copiedAsset = await new AssetsApiService(api).copyInStorageProvider(
-                parsedStorageProviderId,
-                normalizedCurrentStoragePath,
-                normalizedTargetPath,
-            );
+            const copiedAsset = await new AssetsApiService()
+                .copyInStorageProvider(
+                    parsedStorageProviderId,
+                    normalizedCurrentStoragePath,
+                    normalizedTargetPath,
+                );
 
             const parentFolder = copiedAsset.storagePathFromRoot.includes('/')
                 ? AssetsApiService.normalizeFolderPath(copiedAsset.storagePathFromRoot.substring(0, copiedAsset.storagePathFromRoot.lastIndexOf('/')))
@@ -155,6 +166,129 @@ export function AssetDetailsPage() {
         }
     };
 
+    const handleConfirmRename = async (targetName: string) => {
+        setIsRenameDialogOpen(false);
+
+        if (asset == null || storageProvider == null) {
+            return;
+        }
+
+        const normalizedCurrentStoragePath = AssetsApiService
+            .normalizeStoragePath(asset.storagePathFromRoot);
+
+        const normalizedTargetPath = AssetsApiService
+            .normalizeStoragePath(asset.storagePathFromRoot)
+            .replace(/[^\/]*$/, targetName);
+
+        await new AssetsApiService()
+            .moveInStorageProvider(
+                storageProvider.id,
+                normalizedCurrentStoragePath,
+                normalizedTargetPath,
+            );
+
+        dispatch(showSuccessSnackbar('Datei erfolgreich umbenannt.'));
+
+        const encodedRoutePath = AssetsApiService
+            .encodeStoragePathForRoute(normalizedTargetPath);
+
+        navigate(`/assets/providers/${storageProvider.id}/files/${encodedRoutePath}`, {
+            replace: true,
+        });
+    };
+
+    const handleDownload = () => {
+        if (asset == null || storageProvider == null) {
+            return;
+        }
+
+        new AssetsApiService()
+            .downloadContentInStorageProvider(asset.storagePathFromRoot, storageProvider.id, true)
+            .then((blob) => {
+                return downloadBlobFile(asset.filename, blob);
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Beim Herunterladen ist ein Fehler aufgetreten.'));
+            });
+    };
+
+    const handleReplace = (file: File) => {
+        if (asset == null || storageProvider == null) {
+            return;
+        }
+
+        const snackbarKey = 'replace_asset';
+
+        dispatch(addSnackbarMessage({
+            key: snackbarKey,
+            type: SnackbarType.Loading,
+            severity: SnackbarSeverity.Info,
+            message: 'Datei wird ersetzt',
+        }));
+
+        new AssetsApiService()
+            .updateInStorageProvider(
+                asset.storagePathFromRoot,
+                asset,
+                storageProvider.id,
+                file,
+            )
+            .then((updatedAsset) => {
+                dispatch(showSuccessSnackbar('Datei erfolgreich ersetzt.'));
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Fehler beim Ersetzen der Datei.'));
+            })
+            .finally(() => {
+                dispatch(removeSnackbarMessage(snackbarKey));
+            });
+    };
+
+    const headerActions: Action[] = [
+        {
+            icon: <Download/>,
+            tooltip: 'Datei herunterladen',
+            onClick: handleDownload,
+        },
+        {
+            icon: <SaveAs/>,
+            tooltip: 'Datei umbenennen',
+            onClick: () => setIsRenameDialogOpen(true),
+            disabled: !canRenameAsset,
+            disabledTooltip: storageProviderReadOnly
+                ? 'Der Speicheranbieter ist schreibgeschützt. Dateien können nicht umbenannt werden.'
+                : 'Die Datei muss zuerst gespeichert werden, bevor sie umbenannt werden kann.',
+        },
+        {
+            icon: <SwapHoriz/>,
+            tooltip: 'Datei ersetzen',
+            onClick: () => setIsReplaceDialogOpen(true),
+        },
+        'separator',
+        {
+            icon: <DriveFileMoveOutlinedIcon/>,
+            tooltip: 'Datei verschieben',
+            onClick: () => setIsMoveDialogOpen(true),
+            disabled: !canMoveAsset,
+            disabledTooltip: storageProviderReadOnly
+                ? 'Der Speicheranbieter ist schreibgeschützt. Dateien können nicht verschoben werden.'
+                : 'Die Datei muss zuerst gespeichert werden, bevor sie verschoben werden kann.',
+        },
+        {
+            icon: <ContentCopyOutlinedIcon/>,
+            tooltip: 'Datei kopieren',
+            onClick: () => setIsCopyDialogOpen(true),
+            disabled: !canCopyAsset,
+            disabledTooltip: storageProviderReadOnly
+                ? 'Der Speicheranbieter ist schreibgeschützt. Dateien können nicht kopiert werden.'
+                : 'Die Datei muss zuerst gespeichert werden, bevor sie kopiert werden kann.',
+        },
+    ];
+
+    if (parsedStorageProviderId == null) {
+        return <GenericDetailsSkeleton/>;
+    }
+
     return (
         <PageWrapper
             title={storageProviderReadOnly ? 'Datei ansehen' : 'Datei bearbeiten'}
@@ -162,8 +296,14 @@ export function AssetDetailsPage() {
             background
         >
             <GenericDetailsPage<Asset, string, AssetDetailsPageAdditionalData>
+                onItemChange={setAsset}
+                onAdditionalDataChange={(res) => {
+                    if (res?.storageProvider != null) {
+                        setStorageProvider(res.storageProvider);
+                    }
+                }}
                 header={{
-                    icon: <InsertDriveFileOutlinedIcon />,
+                    icon: <InsertDriveFileOutlinedIcon/>,
                     title: storageProviderReadOnly ? 'Datei ansehen' : 'Datei bearbeiten',
                     helpDialog: {
                         title: 'Hilfe zu Dokumenten & Medieninhalten',
@@ -171,18 +311,22 @@ export function AssetDetailsPage() {
                         content: (
                             <>
                                 <Typography>
-                                    Dokumente und Medieninhalte sind Dateien, die in der Anwendung hochgeladen und verwaltet werden können.
-                                    In dieser Oberfläche können Sie die im System verfügbaren Dateien einsehen und bearbeiten.
+                                    Dokumente und Medieninhalte sind Dateien, die in der Anwendung hochgeladen und
+                                    verwaltet werden können.
+                                    In dieser Oberfläche können Sie die im System verfügbaren Dateien einsehen und
+                                    bearbeiten.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
-                                    Sie können die hochgeladenen Dateien u.A. in Formularen verwenden, um z.B. Bilder oder PDFs einzubinden.
-                                    Darüber hinaus können Systemdateien (wie Zertifikate oder Templates) z.B. für die Konfiguration von
+                                    Sie können die hochgeladenen Dateien u.A. in Formularen verwenden, um z.B. Bilder
+                                    oder PDFs einzubinden.
+                                    Darüber hinaus können Systemdateien (wie Zertifikate oder Templates) z.B. für die
+                                    Konfiguration von
                                     Zahlungsdienstleistern oder der Dokumentengenerierung genutzt werden.
                                 </Typography>
                             </>
                         ),
                     },
-                    actions: headerActions
+                    actions: headerActions,
                 }}
                 tabs={[
                     {
@@ -192,53 +336,33 @@ export function AssetDetailsPage() {
                 ]}
                 initializeItem={(api) => new AssetsApiService(api).initialize()}
                 fetchData={(api, key: string) => {
-                    if (parsedStorageProviderId == null) {
-                        return Promise.reject(new Error('No storage provider selected'));
-                    }
-
-                    return new AssetsApiService(api).retrieveInStorageProvider(
+                    return new AssetsApiService().retrieveInStorageProvider(
                         AssetsApiService.decodeStoragePathFromRoute(key),
                         parsedStorageProviderId,
                     );
                 }}
                 fetchAdditionalData={{
-                    storageProvider: async () => {
-                        if (parsedStorageProviderId == null) {
-                            throw new Error('No storage provider selected');
-                        }
-
-                        try {
-                            const provider = await new StorageProvidersApiService().retrieve(parsedStorageProviderId);
-                            setStorageProviderReadOnly(provider.readOnlyStorage);
-                            return provider;
-                        } catch (err) {
-                            setStorageProviderReadOnly(false);
-                            dispatch(showApiErrorSnackbar(err, 'Der Speicheranbieter konnte nicht geladen werden.'));
-                            throw err;
-                        }
-                    }
+                    storageProvider: () => {
+                        return new StorageProvidersApiService()
+                            .retrieve(parsedStorageProviderId);
+                    },
                 }}
                 getTabTitle={(item: Asset) => {
-                    if (item.key === "") {
+                    if (item.key === '') {
                         return 'Neue Datei';
                     } else {
                         return item.filename;
                     }
                 }}
                 getHeaderTitle={(item, isNewItem, notFound) => {
-                    if (notFound) return "Datei nicht gefunden";
-                    if (isNewItem) {
-                        return storageProviderReadOnly
-                            ? "Datei hochladen nicht möglich (schreibgeschützt)"
-                            : "Neue Datei hochladen";
+                    if (notFound || item == null || storageProvider == null) {
+                        return 'Datei nicht gefunden';
                     }
-                    return storageProviderReadOnly
-                        ? `Datei bearbeiten (eingeschränkt): ${item?.filename ?? "Unbenannt"}`
-                        : `Datei: ${item?.storagePathFromRoot ?? "Unbenannt"}`;
+                    return storageProvider.name + item.storagePathFromRoot;
                 }}
                 idParam="*"
                 parentLink={{
-                    label: "Liste der Dateien",
+                    label: 'Liste der Dateien',
                     to: parentRoute,
                 }}
                 entityType={ServerEntityType.Assets}
@@ -259,6 +383,7 @@ export function AssetDetailsPage() {
                     onCancel={() => setIsMoveDialogOpen(false)}
                 />
             }
+
             {
                 isCopyDialogOpen &&
                 <PromptDialog
@@ -273,6 +398,72 @@ export function AssetDetailsPage() {
                     onCancel={() => setIsCopyDialogOpen(false)}
                 />
             }
+
+            {
+                isRenameDialogOpen &&
+                <PromptDialog
+                    title="Datei umbenennen"
+                    inputLabel="Neuer Name"
+                    inputPlaceholder="datei.ext"
+                    defaultValue={asset?.filename ?? ''}
+                    confirmButtonText="Umbenennen"
+                    cancelButtonText="Abbrechen"
+                    onConfirm={handleConfirmRename}
+                    onCancel={() => setIsRenameDialogOpen(false)}
+                >
+                    <Typography>
+                        Geben Sie den neuen Namen für die Datei an.
+                        Bitte beachten Sie, dass dies die Datei im zugehörigen Speicheranbieter umbenennt.
+
+                    </Typography>
+                </PromptDialog>
+            }
+
+            <Dialog
+                open={isReplaceDialogOpen}
+                onClose={() => setIsReplaceDialogOpen(false)}
+            >
+                <DialogTitleWithClose onClose={() => setIsReplaceDialogOpen(false)}>
+                    Datei ersetzen
+                </DialogTitleWithClose>
+
+                <DialogContent>
+                    <Typography sx={{mb: 2, maxWidth: 900}}>
+                        {storageProvider?.readOnlyStorage
+                            ? 'Der Speicheranbieter ist schreibgeschützt. Sie können den Dateiinhalt nicht ersetzen, aber den öffentlichen Zugriff (Privatsphäre) weiterhin anpassen.'
+                            : 'Ersetzen Sie optional die Datei und bearbeiten Sie Datenschutzangaben. Metadaten können nur zusammen mit einem Datei-Upload geändert werden.'}
+                    </Typography>
+
+                    <FileUploadComponent
+                        id="asset-upload-replace"
+                        value={file ?? undefined}
+                        onChange={nextFile => {
+                            setFile(nextFile ?? null);
+                            setUploadError(undefined);
+                        }}
+                        label="Datei ersetzen"
+                        isMultifile={false}
+                        minFiles={1}
+                        maxFiles={1}
+                        required={false}
+                        error={uploadError}
+                        hint="Wählen Sie die neue Datei aus, die den aktuellen Inhalt ersetzen soll."
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        onClick={() => {
+                            if (file != null && file.length > 0) {
+                                handleReplace(file[0]);
+                            }
+                            setFile(null);
+                            setIsReplaceDialogOpen(false);
+                        }}
+                    >
+                        Ersetzen
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </PageWrapper>
     );
 }

@@ -262,6 +262,11 @@ public class AssetController {
         var filePath = getNormalizedFilePath(request);
 
         var storageProvider = getStorageProvider(storageProviderId);
+        ensureFilePathIsAvailable(
+                storageProvider.getId(),
+                filePath,
+                "Am angegebenen Pfad existiert bereits eine Datei."
+        );
 
         StorageDocument storedDocument;
         try {
@@ -377,6 +382,8 @@ public class AssetController {
                 throw ResponseException.badRequest("Der Speicheranbieter ist schreibgeschützt. Der Dateiinhalt kann nicht aktualisiert werden.");
             }
 
+            validateReplacementFileExtension(filePath, newAssetFile);
+
             try {
                 storageService
                         .storeDocument(
@@ -427,6 +434,84 @@ public class AssetController {
                         asset.getStoragePathFromRoot()
                 ))
                 .orElseThrow(ResponseException::internalServerError);
+    }
+
+    @PutMapping(
+            value = "files-metadata/**",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @Operation(
+            summary = "Update asset metadata",
+            description = "Update only the storage metadata of an existing asset without replacing the file content."
+    )
+    public VStorageIndexItemWithAssetEntity updateFileMetadata(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer storageProviderId,
+            @Nullable @RequestBody StorageItemMetadata metadata,
+            @Nonnull HttpServletRequest request
+    ) throws ResponseException {
+        var execUser = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .testSystemPermission(execUser.getId(), AssetPermissionProvider.ASSET_UPDATE);
+
+        var storageProvider = getStorageProvider(storageProviderId);
+        var filePath = getNormalizedFileMetadataPath(request);
+
+        assetRepository
+                .findByStorageProviderIdAndStoragePathFromRoot(storageProvider.getId(), filePath)
+                .orElseThrow(ResponseException::notFound);
+
+        var existingIndexItem = storageIndexItemWithAssetRepository
+                .findById(VStorageIndexItemWithAssetEntityId.of(
+                        storageProvider.getId(),
+                        filePath
+                ))
+                .orElse(null);
+
+        var updatedMetadata = metadata != null ? metadata : StorageItemMetadata.empty();
+
+        var updatedStorageElement = storageService.updateDocumentMetadata(
+                storageProvider.getId(),
+                filePath,
+                updatedMetadata
+        );
+
+        auditService
+                .create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Update,
+                        AssetEntity.class,
+                        filePath,
+                        "storagePathFromRoot",
+                        Map.of(
+                                "storageProviderId", storageProvider.getId(),
+                                "isFolder", false,
+                                "metadataUpdated", true
+                        )
+                )
+                .withDiff(
+                        Map.of("metadata", existingIndexItem != null ? existingIndexItem.getMetadata() : StorageItemMetadata.empty()),
+                        Map.of("metadata", updatedMetadata)
+                )
+                .withMessage(
+                        "Die Metadaten der Datei %s wurden von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(filePath),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
+
+        return storageIndexItemWithAssetRepository
+                .findById(VStorageIndexItemWithAssetEntityId.of(
+                        storageProvider.getId(),
+                        filePath
+                ))
+                .orElseThrow(ResponseException::internalServerError)
+                .setMetadata(updatedStorageElement.getMetadata()); // Update the metadata because of the outdated context
     }
 
     @GetMapping("files-content/**")
@@ -518,11 +603,11 @@ public class AssetController {
                     .orElseThrow(ResponseException::internalServerError);
         }
 
-        var conflictingAsset = assetRepository
-                .findByStorageProviderIdAndStoragePathFromRoot(storageProvider.getId(), targetPath);
-        if (conflictingAsset.isPresent()) {
-            throw ResponseException.conflict("Am Zielpfad existiert bereits eine Datei.");
-        }
+        ensureFilePathIsAvailable(
+                storageProvider.getId(),
+                targetPath,
+                "Am Zielpfad existiert bereits eine Datei."
+        );
 
         // After the move, there is no need to update the asset because the asset path from root is updated automatically by the database because of the foreign key reference.
         var movedDocument = storageService.moveDocument(storageProvider.getId(), sourcePath, targetPath);
@@ -777,6 +862,34 @@ public class AssetController {
     }
 
     @Nonnull
+    private static String getNormalizedFileMetadataPath(@Nonnull HttpServletRequest request) throws ResponseException {
+        var requestUrl = request
+                .getRequestURL()
+                .toString();
+
+        var marker = "/files-metadata/";
+        var markerIndex = requestUrl.indexOf(marker);
+        if (markerIndex < 0) {
+            throw ResponseException.notAcceptable("Der Root eines Speichers kann keine Datei sein.");
+        }
+
+        var normalizedPath = requestUrl.substring(markerIndex + marker.length());
+        if (normalizedPath.isBlank()) {
+            throw ResponseException.notAcceptable("Der Root eines Speichers kann keine Datei sein.");
+        }
+
+        if (!normalizedPath.startsWith("/")) {
+            normalizedPath = "/" + normalizedPath;
+        }
+
+        if (normalizedPath.endsWith("/")) {
+            throw ResponseException.notAcceptable("Der Pfad einer Datei darf nicht mit einem Schrägstrich (/) enden.");
+        }
+
+        return URLDecoder.decode(normalizedPath, StandardCharsets.UTF_8);
+    }
+
+    @Nonnull
     private static String normalizeFilePathInput(@Nonnull String path) throws ResponseException {
         var normalizedPath = path.trim();
         if (normalizedPath.isBlank()) {
@@ -789,6 +902,27 @@ public class AssetController {
             throw ResponseException.notAcceptable("Der Pfad einer Datei darf nicht mit einem Schrägstrich (/) enden.");
         }
         return normalizedPath;
+    }
+
+    private static void validateReplacementFileExtension(@Nonnull String existingFilePath,
+                                                         @Nonnull MultipartFile replacementFile) throws ResponseException {
+        var existingExtension = StringUtils.extractExtensionFromFileName(StringUtils.getLastPathSegment(existingFilePath));
+        var replacementExtension = StringUtils.extractExtensionFromFileName(replacementFile.getOriginalFilename());
+
+        if (!existingExtension.equals(replacementExtension)) {
+            throw ResponseException.badRequest("Der Dateiinhalt kann nur durch eine Datei mit derselben Dateiendung ersetzt werden.");
+        }
+    }
+
+    private void ensureFilePathIsAvailable(@Nonnull Integer storageProviderId,
+                                           @Nonnull String filePath,
+                                           @Nonnull String message) throws ResponseException {
+        var assetExists = assetRepository
+                .findByStorageProviderIdAndStoragePathFromRoot(storageProviderId, filePath)
+                .isPresent();
+        if (assetExists || storageService.getDocument(storageProviderId, filePath).isPresent()) {
+            throw ResponseException.conflict(message);
+        }
     }
 
     @Nonnull

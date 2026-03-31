@@ -5,8 +5,8 @@ import {StorageProviderEntity} from '../entities/storage-provider-entity';
 
 interface StorageMetadataAttributesEditorProps {
     storageProvider: StorageProviderEntity;
-    metadata: Record<string, unknown>;
-    onChange: (metadata: Record<string, unknown>) => void;
+    metadata: Record<string, string>;
+    onChange: (metadata: Record<string, string>) => void;
     disabled?: boolean;
 }
 

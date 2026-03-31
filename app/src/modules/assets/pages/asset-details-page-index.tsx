@@ -1,7 +1,9 @@
-import {Box, Button, Grid, Typography} from '@mui/material';
+import {Box, Button, Link, Stack, Typography} from '@mui/material';
 import React, {type FormEvent, useContext, useEffect, useMemo, useState} from 'react';
-import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../components/generic-details-page/generic-details-page-context';
-import {TextFieldComponent} from '../../../components/text-field/text-field-component';
+import {
+    GenericDetailsPageContext,
+    GenericDetailsPageContextType,
+} from '../../../components/generic-details-page/generic-details-page-context';
 import {useApi} from '../../../hooks/use-api';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
@@ -13,14 +15,11 @@ import {ConfirmDialog} from '../../../dialogs/confirm-dialog/confirm-dialog';
 import * as yup from 'yup';
 import {Asset} from '../models/asset';
 import {AssetsApiService} from '../assets-api-service';
-import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined';
 import {getFileTypeLabel} from '../../../utils/file-type-label';
 import {FileUploadComponent} from '../../../components/file-upload-field/file-upload-component';
-import {AppInfo} from '../../../app-info';
 import {hideLoadingOverlayWithTimeout, showLoadingOverlay} from '../../../slices/loading-overlay-slice';
 import {CheckboxFieldComponent} from '../../../components/checkbox-field/checkbox-field-component';
 import {GenericDetailsSkeleton} from '../../../components/generic-details-page/generic-details-skeleton';
-import {User} from '../../users/models/user';
 import {UsersApiService} from '../../users/users-api-service';
 import {resolveUserName} from '../../users/utils/resolve-user-name';
 import {format} from 'date-fns';
@@ -28,11 +27,16 @@ import {StatusTable} from '../../../components/status-table/status-table';
 import {BadgeOutlined} from '@mui/icons-material';
 import {getFileTypeIcon} from '../../../utils/file-type-icon';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
-import {copyToClipboardText} from '../../../utils/copy-to-clipboard';
+import LinkIcon from '@aivot/mui-material-symbols-400-outlined/dist/link/Link';
 import {AssetDetailsPageAdditionalData} from './asset-details-page-additional-data';
 import {StorageMetadataAttributesEditor} from '../../storage/components/storage-metadata-attributes-editor';
-import DownloadOutlined from '@mui/icons-material/DownloadOutlined';
 import {downloadBlobFile} from '../../../utils/download-utils';
+import Label from '@aivot/mui-material-symbols-400-outlined/dist/label/Label';
+import Public from '@aivot/mui-material-symbols-400-outlined/dist/public/Public';
+import {isStringNullOrEmpty} from '../../../utils/string-utils';
+import {deepEquals} from '../../../utils/equality-utils';
+import {CopyToClipboardButton} from '../../../components/copy-to-clipboard-button/copy-to-clipboard-button';
+import {Breadcrumbs} from '../../../components/breadcrumbs/breadcrumbs';
 
 export const AssetSchema = yup.object({
     filename: yup.string()
@@ -106,16 +110,24 @@ export function AssetDetailsPageIndex() {
 
     const [confirmDeleteAction, setConfirmDeleteAction] = useState<(() => void) | undefined>(undefined);
 
-    const [uploader, setUploader] = useState<User>();
+    const [uploader, setUploader] = useState<string>();
     useEffect(() => {
         if (item == null) {
             return;
         }
 
-        if(asset?.uploaderId){
+        if (isStringNullOrEmpty(item.uploaderId)) {
+            setUploader('System-Synchronisation');
+        } else {
             new UsersApiService()
                 .retrieve(item.uploaderId)
-                .then(setUploader);
+                .then((user) => {
+                    setUploader(resolveUserName(user));
+                })
+                .catch((err) => {
+                    console.error(err);
+                    setUploader(resolveUserName(undefined));
+                });
         }
     }, [item]);
 
@@ -127,7 +139,7 @@ export function AssetDetailsPageIndex() {
         return new Date(item.created);
     }, [item]);
     const storageProvider = additionalData?.storageProvider;
-    const assetMetadata = (asset?.metadata ?? {}) as Record<string, unknown>;
+    const assetMetadata = (asset?.metadata ?? {}) as Record<string, string>;
     const hasSelectedFile = file != null && file.length > 0;
     const hasPendingChanges = !hasNotChanged || hasSelectedFile;
     const isNewAsset = asset?.filename === '';
@@ -135,10 +147,13 @@ export function AssetDetailsPageIndex() {
     const canReplaceFile = !isStorageReadOnly;
     const canDeleteAsset = !isStorageReadOnly;
     const canEditPrivacy = !isNewAsset;
+    const canEditExistingMetadata = !isNewAsset && !isStorageReadOnly;
+    const metadataHasChanged = !deepEquals(item?.metadata ?? {}, asset?.metadata ?? {});
+    const privacyHasChanged = item?.isPrivate !== asset?.isPrivate;
 
     if (asset == null) {
         return (
-            <GenericDetailsSkeleton />
+            <GenericDetailsSkeleton/>
         );
     }
 
@@ -188,7 +203,7 @@ export function AssetDetailsPageIndex() {
             });
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (asset != null) {
             const validationResult = validate();
 
@@ -205,26 +220,50 @@ export function AssetDetailsPageIndex() {
                 return;
             }
 
-            apiService
-                .updateInStorageProvider(
-                    asset.storagePathFromRoot,
-                    asset,
-                    parsedStorageProviderId,
-                    file != null && file.length > 0 ? file[0] : undefined,
-                )
-                .then((updatedAsset) => {
-                    setItem(updatedAsset);
-                    reset();
-                    setFile([]);
+            const selectedFile = file != null && file.length > 0 ? file[0] : undefined;
 
-                    dispatch(showSuccessSnackbar('Änderungen an Datei erfolgreich gespeichert.'));
-                })
-                .catch(err => {
-                    dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.', true));
-                })
-                .finally(() => {
-                    setIsBusy(false);
-                });
+            try {
+                let updatedAsset = asset;
+
+                if (selectedFile != null) {
+                    updatedAsset = await apiService.updateInStorageProvider(
+                        asset.storagePathFromRoot,
+                        asset,
+                        parsedStorageProviderId,
+                        selectedFile,
+                    );
+                } else {
+                    if (metadataHasChanged) {
+                        updatedAsset = await apiService.updateMetadataInStorageProvider(
+                            asset.storagePathFromRoot,
+                            (asset.metadata ?? {}) as Record<string, unknown>,
+                            parsedStorageProviderId,
+                        );
+                    }
+
+                    if (privacyHasChanged) {
+                        updatedAsset = await apiService.updateInStorageProvider(
+                            asset.storagePathFromRoot,
+                            asset,
+                            parsedStorageProviderId,
+                        );
+                    }
+                }
+
+                setItem(updatedAsset);
+                reset();
+                setFile([]);
+
+                dispatch(showSuccessSnackbar(
+                    metadataHasChanged && !privacyHasChanged && selectedFile == null
+                        ? 'Metadaten erfolgreich gespeichert.'
+                        : 'Änderungen an Datei erfolgreich gespeichert.',
+                ));
+            } catch (err) {
+                dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.', true));
+            } finally {
+                setIsBusy(false);
+            }
         }
     };
 
@@ -253,7 +292,7 @@ export function AssetDetailsPageIndex() {
                 dispatch(showSuccessSnackbar('Die Datei wurde erfolgreich gelöscht.'));
             })
             .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Beim Löschen ist ein Fehler aufgetreten.'))
+                dispatch(showApiErrorSnackbar(err, 'Beim Löschen ist ein Fehler aufgetreten.'));
             })
             .finally(() => setIsBusy(false));
     };
@@ -313,7 +352,8 @@ export function AssetDetailsPageIndex() {
                     {
                         storageProvider != null && storageProvider.metadataAttributes.length > 0 && (
                             <Box sx={{mt: 3, maxWidth: 900}}>
-                                <Typography variant="h6" sx={{mb: 1}}>
+                                <Typography variant="h6"
+                                            sx={{mb: 1}}>
                                     Metadaten
                                 </Typography>
                                 <Typography sx={{mb: 2}}>
@@ -327,7 +367,9 @@ export function AssetDetailsPageIndex() {
                                     onChange={(metadata) => handleInputChange('metadata')(metadata as any)}
                                 />
                                 {canCreateAsset && !hasSelectedFile && (
-                                    <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
+                                    <Typography variant="body2"
+                                                color="text.secondary"
+                                                sx={{mt: 1}}>
                                         Metadaten sind bearbeitbar, sobald eine Datei ausgewählt wurde.
                                     </Typography>
                                 )}
@@ -339,6 +381,15 @@ export function AssetDetailsPageIndex() {
             {
                 asset?.contentType &&
                 <>
+                    <Breadcrumbs
+                        prefix={`/assets/providers/${storageProvider?.id}`}
+                        path={asset.storagePathFromRoot.replace('/' + asset.filename, '/')}
+                        rootLabel={storageProvider?.name ?? ''}
+                        sx={{
+                            mb: 2,
+                        }}
+                    />
+
                     <Typography
                         variant="h5"
                         sx={{mb: 1}}
@@ -349,59 +400,20 @@ export function AssetDetailsPageIndex() {
                     <Typography sx={{mb: 2, maxWidth: 900}}>
                         {isStorageReadOnly
                             ? 'Der Speicheranbieter ist schreibgeschützt. Sie können den Dateiinhalt nicht ersetzen, aber den öffentlichen Zugriff (Privatsphäre) weiterhin anpassen.'
-                            : 'Ersetzen Sie optional die Datei und bearbeiten Sie Datenschutzangaben. Metadaten können nur zusammen mit einem Datei-Upload geändert werden.'}
+                            : 'Ersetzen Sie optional die Datei, bearbeiten Sie Datenschutzangaben und aktualisieren Sie Metadaten unabhängig vom Dateiinhalt.'}
                     </Typography>
 
-                    <FileUploadComponent
-                        id="asset-upload-replace"
-                        value={file}
-                        onChange={nextFile => {
-                            if (!canReplaceFile) {
-                                return;
-                            }
-                            setFile(nextFile);
-                            setUploadError(undefined);
-                        }}
-                        label="Datei ersetzen"
-                        isMultifile={false}
-                        minFiles={1}
-                        maxFiles={1}
-                        required={false}
-                        error={uploadError}
-                        disabled={!canReplaceFile}
-                        hint={!canReplaceFile
-                            ? `${readOnlyHint} Der Dateiinhalt kann nicht ersetzt werden.`
-                            : 'Wählen Sie die neue Datei aus, die den aktuellen Inhalt ersetzen soll.'}
-                    />
-
-                    <Grid
-                        container
-                        columnSpacing={4}
-                    >
-                        <Grid
-                            size={{
-                                xs: 12,
-                                lg: 12
-                            }}>
-                            <TextFieldComponent
-                                label="Dateiname"
-                                value={asset?.filename}
-                                onChange={handleInputChange('filename')}
-                                onBlur={handleInputBlur('filename')}
-                                disabled
-                                required
-                                maxCharacters={255}
-                                minCharacters={1}
-                                error={errors.filename}
-                                hint="Der Dateiname wird aus dem Speicherindex abgeleitet und kann in diesem Schritt nicht direkt geändert werden."
-                            />
-                        </Grid>
-                    </Grid>
-
                     <StatusTable
-                        sx={{ mt: 3 }}
+                        sx={{
+                            mt: 3,
+                        }}
                         cardVariant="outlined"
                         items={[
+                            {
+                                label: 'Dateiname',
+                                icon: <Label/>,
+                                children: asset?.filename,
+                            },
                             {
                                 label: 'Dateityp',
                                 icon: getFileTypeIcon(asset?.contentType ?? 'application/octet-stream'),
@@ -409,29 +421,68 @@ export function AssetDetailsPageIndex() {
                             },
                             {
                                 label: 'Hochgeladen von',
-                                icon: <BadgeOutlined />,
-                                children: resolveUserName(uploader) + ' am ' + format(uploadedDate, 'dd.MM.yyyy') + ' – ' + format(uploadedDate, 'HH:mm') + ' Uhr',
+                                icon: <BadgeOutlined/>,
+                                children: uploader + ' am ' + format(uploadedDate, 'dd.MM.yyyy') + ' – ' + format(uploadedDate, 'HH:mm') + ' Uhr',
                             },
+                            {
+                                label: 'Zugriffsberechtigung',
+                                icon: <Public/>,
+                                children: (
+                                    <CheckboxFieldComponent
+                                        label="Öffentlichen (nicht authentifizierten) Zugriff zulassen"
+                                        value={!asset.isPrivate}
+                                        onChange={(val) => handleInputChange('isPrivate')(!val)}
+                                        disabled={!canEditPrivacy}
+                                        variant="switch"
+                                        hint="Wenn diese Option aktiviert ist, kann die Datei über einen öffentlichen Link ohne Authentifizierung abgerufen werden.
+                                              Nutzen Sie diese Option nur für Dateien, die öffentlich sein müssen und niemals für sicherheitsrelevante
+                                              Dateien wie Zertifikate. Änderungen werden erst nach dem Speichern wirksam."
+                                    />
+                                ),
+                            },
+                            ...(asset.isPrivate
+                                ? []
+                                : [
+                                    {
+                                        label: 'Link zur Datei',
+                                        icon: <LinkIcon/>,
+                                        children: (
+                                            <Stack
+                                                direction="row"
+                                                alignItems="center"
+                                                spacing={1}
+                                                sx={{
+                                                    mt: 0.5,
+                                                }}
+                                            >
+                                                <Link
+                                                    href={AssetsApiService.useAssetLinkOfAsset(asset)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                >
+                                                    {AssetsApiService.useAssetLinkOfAsset(asset)}
+                                                </Link>
+
+                                                <CopyToClipboardButton
+                                                    text={AssetsApiService.useAssetLinkOfAsset(asset)}
+                                                    successMessage="Link in Zwischenablage kopiert!"
+                                                    errorMessage="Fehler beim Kopieren des Links!"
+                                                />
+                                            </Stack>
+                                        ),
+                                    },
+                                ]
+                            ),
+
                         ]}
                     />
 
-                    <Box sx={{mt: 2, maxWidth: 900}}>
-                        <CheckboxFieldComponent
-                            label="Öffentlichen (nicht authentifizierten) Zugriff zulassen"
-                            value={!asset.isPrivate}
-                            onChange={(val) => handleInputChange('isPrivate')(!val)}
-                            disabled={!canEditPrivacy}
-                            variant="switch"
-                            hint="Wenn diese Option aktiviert ist, kann die Datei über einen öffentlichen Link ohne Authentifizierung abgerufen werden.
-                                    Nutzen Sie diese Option nur für Dateien, die öffentlich sein müssen und niemals für sicherheitsrelevante
-                                    Dateien wie Zertifikate. Änderungen werden erst nach dem Speichern wirksam."
-                        />
-                    </Box>
-
                     {
-                        storageProvider != null && storageProvider.metadataAttributes.length > 0 && (
+                        storageProvider != null &&
+                        storageProvider.metadataAttributes.length > 0 && (
                             <Box sx={{mt: 3, maxWidth: 900}}>
-                                <Typography variant="h6" sx={{mb: 1}}>
+                                <Typography variant="h6"
+                                            sx={{mb: 1}}>
                                     Metadaten
                                 </Typography>
                                 <Typography sx={{mb: 2}}>
@@ -441,46 +492,27 @@ export function AssetDetailsPageIndex() {
                                 <StorageMetadataAttributesEditor
                                     storageProvider={storageProvider}
                                     metadata={assetMetadata}
-                                    disabled={!canReplaceFile || !hasSelectedFile}
+                                    disabled={!canEditExistingMetadata}
                                     onChange={(metadata) => handleInputChange('metadata')(metadata as any)}
                                 />
-                                {canReplaceFile && !hasSelectedFile && (
-                                    <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
-                                        Metadaten sind nur bearbeitbar, wenn eine neue Datei zum Ersetzen ausgewählt wurde.
+                                {canEditExistingMetadata && (
+                                    <Typography variant="body2"
+                                                color="text.secondary"
+                                                sx={{mt: 1}}>
+                                        Metadaten können unabhängig vom Dateiinhalt geändert werden. Änderungen
+                                        werden erst nach dem Speichern wirksam.
                                     </Typography>
                                 )}
-                                {!canReplaceFile && (
-                                    <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
+                                {!canEditExistingMetadata && (
+                                    <Typography variant="body2"
+                                                color="text.secondary"
+                                                sx={{mt: 1}}>
                                         Metadaten können bei schreibgeschützten Speicheranbietern nicht geändert werden.
                                     </Typography>
                                 )}
                             </Box>
                         )
                     }
-
-                    {(!asset.isPrivate && item?.isPrivate === false) && (
-                        <Box sx={{mt: 1}}>
-                            <TextFieldComponent
-                                label="Link zum Dokument / Medieninhalt"
-                                value={AssetsApiService.useAssetLinkOfAsset(asset)}
-                                disabled
-                                onChange={() => {
-                                }}
-                                endAction={{
-                                    icon: <ContentPasteOutlinedIcon />,
-                                    onClick: async () => {
-                                        const success = await copyToClipboardText(AssetsApiService.useAssetLinkOfAsset(asset));
-                                        if (success) {
-                                            dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
-                                        } else {
-                                            dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
-                                        }
-                                    },
-                                }}
-                                hint="Kopieren Sie diesen Link um das Dokument / den Medieninhalt in Ihren Formularen zu referenzieren."
-                            />
-                        </Box>
-                    )}
                 </>
             }
             <Box
@@ -495,22 +527,10 @@ export function AssetDetailsPageIndex() {
                     disabled={isBusy || (isNewAsset ? (!canCreateAsset || !hasSelectedFile) : !hasPendingChanges)}
                     variant="contained"
                     color="primary"
-                    startIcon={<SaveOutlinedIcon />}
+                    startIcon={<SaveOutlinedIcon/>}
                 >
                     Speichern
                 </Button>
-
-                {
-                    asset.key !== '' &&
-                    <Button
-                        variant="outlined"
-                        onClick={handleDownload}
-                        disabled={isBusy || asset.key.length === 0}
-                        startIcon={<DownloadOutlined />}
-                    >
-                        Herunterladen
-                    </Button>
-                }
 
                 {
                     asset.key !== '' &&
@@ -537,13 +557,15 @@ export function AssetDetailsPageIndex() {
                         sx={{
                             marginLeft: 'auto',
                         }}
-                        startIcon={<Delete />}
+                        startIcon={<Delete/>}
                     >
                         Löschen
                     </Button>
                 }
             </Box>
+
             {changeBlocker.dialog}
+
             <ConfirmDialog
                 title="Datei löschen"
                 onCancel={() => setConfirmDeleteAction(undefined)}

@@ -1,12 +1,11 @@
-import {Api} from '../../hooks/use-api';
 import {Asset} from './models/asset';
 import {createApiPath} from '../../utils/url-path-utils';
+import {BaseApiService} from '../../services/base-api-service';
+import {Api} from '../../hooks/use-api';
 
-export class AssetsApiService {
-    private readonly api: Api;
-
-    public constructor(api: Api) {
-        this.api = api;
+export class AssetsApiService extends BaseApiService {
+    constructor(api?: Api) {
+        super();
     }
 
     public async upload(file: File, storageProviderId: number, storagePathFromRoot: string, existingAsset?: Partial<Asset>): Promise<Asset> {
@@ -20,7 +19,7 @@ export class AssetsApiService {
         formData.set('data', new Blob([JSON.stringify(data)], {type: 'application/json'}));
 
         return AssetsApiService.mapViewItemToAsset(
-            await this.api.postFormData<any>(
+            await this.postFormData<any>(
                 this.buildFileApiPath(storageProviderId, storagePathFromRoot),
                 formData,
             ),
@@ -29,7 +28,7 @@ export class AssetsApiService {
 
     public async retrieveInStorageProvider(storagePathFromRoot: string, storageProviderId: number): Promise<Asset> {
         return AssetsApiService.mapViewItemToAsset(
-            await this.api.get<any>(this.buildFileApiPath(storageProviderId, storagePathFromRoot)),
+            await this.get<any>(this.buildFileApiPath(storageProviderId, storagePathFromRoot)),
         );
     }
 
@@ -52,15 +51,24 @@ export class AssetsApiService {
         );
 
         return AssetsApiService.mapViewItemToAsset(
-            await this.api.putFormData<any>(
+            await this.putFormData<any>(
                 this.buildFileApiPath(storageProviderId, storagePathFromRoot),
                 formData,
             ),
         );
     }
 
+    public async updateMetadataInStorageProvider(storagePathFromRoot: string, metadata: Record<string, unknown>, storageProviderId: number): Promise<Asset> {
+        return AssetsApiService.mapViewItemToAsset(
+            await this.put<Record<string, unknown>, any>(
+                this.buildFileMetadataApiPath(storageProviderId, storagePathFromRoot),
+                metadata ?? {},
+            ),
+        );
+    }
+
     public async destroyInStorageProvider(storagePathFromRoot: string, storageProviderId: number): Promise<void> {
-        return await this.api.destroy<void>(this.buildFileApiPath(storageProviderId, storagePathFromRoot));
+        return await this.delete(this.buildFileApiPath(storageProviderId, storagePathFromRoot));
     }
 
     public async downloadContentInStorageProvider(storagePathFromRoot: string, storageProviderId: number, download: boolean = true): Promise<Blob> {
@@ -70,10 +78,10 @@ export class AssetsApiService {
         }
 
         const encodedPath = AssetsApiService.encodeStoragePathForRoute(normalized);
-        return await this.api.getBlob(
-            `assets/${storageProviderId}/files-content/${encodedPath}`,
+        return await this.getBlob(
+            `/api/assets/${storageProviderId}/files-content/${encodedPath}`,
             {
-                queryParams: {
+                query: {
                     download,
                 },
             },
@@ -81,22 +89,22 @@ export class AssetsApiService {
     }
 
     public async listFolderContent(storageProviderId: number, folderPath: string = '/'): Promise<Asset[]> {
-        const items = await this.api.get<any[]>(this.buildFolderApiPath(storageProviderId, folderPath));
+        const items = await this.get<any[]>(this.buildFolderApiPath(storageProviderId, folderPath));
         return items.map(AssetsApiService.mapViewItemToAsset);
     }
 
     public async createFolder(storageProviderId: number, folderPath: string): Promise<void> {
-        await this.api.post<void>(this.buildFolderApiPath(storageProviderId, folderPath), {});
+        await this.post(this.buildFolderApiPath(storageProviderId, folderPath), {});
     }
 
     public async deleteFolder(storageProviderId: number, folderPath: string): Promise<void> {
-        await this.api.destroy<void>(this.buildFolderApiPath(storageProviderId, folderPath));
+        await this.delete(this.buildFolderApiPath(storageProviderId, folderPath));
     }
 
     public async moveInStorageProvider(storageProviderId: number, sourcePathFromRoot: string, targetPathFromRoot: string): Promise<Asset> {
         return AssetsApiService.mapViewItemToAsset(
-            await this.api.post<any>(
-                `assets/${storageProviderId}/move-file/`,
+            await this.post(
+                `/api/assets/${storageProviderId}/move-file/`,
                 {
                     sourcePath: AssetsApiService.normalizeStoragePath(sourcePathFromRoot),
                     targetPath: AssetsApiService.normalizeStoragePath(targetPathFromRoot),
@@ -107,8 +115,8 @@ export class AssetsApiService {
 
     public async copyInStorageProvider(storageProviderId: number, sourcePathFromRoot: string, targetPathFromRoot: string): Promise<Asset> {
         return AssetsApiService.mapViewItemToAsset(
-            await this.api.post<any>(
-                `assets/${storageProviderId}/copy-file/`,
+            await this.post(
+                `/api/assets/${storageProviderId}/copy-file/`,
                 {
                     sourcePath: AssetsApiService.normalizeStoragePath(sourcePathFromRoot),
                     targetPath: AssetsApiService.normalizeStoragePath(targetPathFromRoot),
@@ -167,11 +175,11 @@ export class AssetsApiService {
     private buildFolderApiPath(storageProviderId: number, folderPathFromRoot: string) {
         const normalized = AssetsApiService.normalizeFolderPath(folderPathFromRoot);
         if (normalized === '/') {
-            return `assets/${storageProviderId}/folders/`;
+            return `/api/assets/${storageProviderId}/folders/`;
         }
 
         const encodedPath = AssetsApiService.encodeStoragePathForRoute(normalized);
-        return `assets/${storageProviderId}/folders/${encodedPath}/`;
+        return `/api/assets/${storageProviderId}/folders/${encodedPath}/`;
     }
 
     private buildFileApiPath(storageProviderId: number, filePathFromRoot: string) {
@@ -181,7 +189,17 @@ export class AssetsApiService {
         }
 
         const encodedPath = AssetsApiService.encodeStoragePathForRoute(normalized);
-        return `assets/${storageProviderId}/files/${encodedPath}`;
+        return `/api/assets/${storageProviderId}/files/${encodedPath}`;
+    }
+
+    private buildFileMetadataApiPath(storageProviderId: number, filePathFromRoot: string) {
+        const normalized = AssetsApiService.normalizeStoragePath(filePathFromRoot);
+        if (normalized === '/' || normalized.endsWith('/')) {
+            throw new Error('Invalid file path');
+        }
+
+        const encodedPath = AssetsApiService.encodeStoragePathForRoute(normalized);
+        return `/api/assets/${storageProviderId}/files-metadata/${encodedPath}`;
     }
 
     private static mapViewItemToAsset(raw: any): Asset {

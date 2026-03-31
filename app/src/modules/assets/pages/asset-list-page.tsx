@@ -1,7 +1,7 @@
 import {GenericListPage} from '../../../components/generic-list-page/generic-list-page';
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
-import {Breadcrumbs, Link, Stack, Typography} from '@mui/material';
+import {Link, Stack, Typography} from '@mui/material';
 import {CreateNewFolderOutlined} from '@mui/icons-material';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {CellLink} from '../../../components/cell-link/cell-link';
@@ -20,6 +20,7 @@ import {useApi} from '../../../hooks/use-api';
 import {ListControlRef} from '../../../components/generic-list/generic-list-props';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {useConfirm} from '../../../providers/confirm-provider';
+import {Breadcrumbs} from '../../../components/breadcrumbs/breadcrumbs';
 
 
 export function AssetListPage() {
@@ -159,49 +160,12 @@ export function AssetListPage() {
                 searchLabel="Datei suchen"
                 searchPlaceholder="Name der Datei eingeben…"
                 preSearchElements={[
-                    <Typography
-                        key="current-folder"
-                        variant="body2"
-                        sx={{
-                            alignSelf: 'center',
-                        }}
-                    >
-                        <Breadcrumbs>
-                            {
-                                currentFolderPath
-                                    .split('/')
-                                    .map((item, index, all) => {
-                                        let path: string;
-                                        let name: string;
-
-                                        if (index === 0) {
-                                            path = `/assets/providers/${storageProviderId}`;
-                                            name = storageProviderName ?? '';
-                                        } else {
-                                            const comb = all
-                                                .slice(0, index + 1)
-                                                .join('/');
-                                            const params = new URLSearchParams();
-                                            params.set('path', comb);
-
-                                            path = `/assets/providers/${storageProviderId}?${params.toString()}`;
-                                            name = item;
-                                        }
-
-                                        return (
-                                            <Link
-                                                to={path}
-                                                key={index}
-                                                component={RouterLink}
-                                                underline="none"
-                                            >
-                                                {name}
-                                            </Link>
-                                        );
-                                    })
-                            }
-                        </Breadcrumbs>
-                    </Typography>,
+                    <Breadcrumbs
+                        key={currentFolderPath + storageProviderName}
+                        prefix={`/assets/providers/${storageProviderId}`}
+                        path={currentFolderPath}
+                        rootLabel={storageProviderName ?? 'Alle Dateien'}
+                    />,
                 ]}
                 fetch={(options) => {
                     if (parsedStorageProviderId == null) {
