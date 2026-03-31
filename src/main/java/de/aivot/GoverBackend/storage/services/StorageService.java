@@ -13,6 +13,7 @@ import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
 import de.aivot.GoverBackend.storage.models.StorageProviderDefinition;
 import de.aivot.GoverBackend.storage.repositories.StorageIndexItemRepository;
 import de.aivot.GoverBackend.storage.repositories.StorageProviderRepository;
+import de.aivot.GoverBackend.utils.NumberUtils;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -343,12 +344,13 @@ public class StorageService {
             contentBytes = contentBuffer.toByteArray();
         } catch (IOException e) {
             if (isCausedByMaxFileSizeExceeded(e)) {
+
                 throw ResponseException
                         .badRequest(
-                                "Der Speicheranbieter %s (ID %d) erlaubt Dateien mit einer maximalen Größe von %d Bytes. Die übermittelte Datei überschreitet dieses Limit.",
+                                "Der Speicheranbieter %s (ID %d) erlaubt Dateien mit einer maximalen Größe von %s MB. Die übermittelte Datei überschreitet dieses Limit.",
                                 StringUtils.quote(provider.getName()),
                                 provider.getId(),
-                                provider.getMaxFileSizeInBytes()
+                                NumberUtils.formatGermanNumber(provider.getMaxFileSizeInMegabytes(), 2)
                         );
             }
             throw ResponseException.internalServerError(e, "Der Inhalt des Dokuments %s konnte nicht gelesen werden.", StringUtils.quote(path));
@@ -372,10 +374,10 @@ public class StorageService {
             if (isCausedByMaxFileSizeExceeded(e)) {
                 throw ResponseException
                         .badRequest(
-                                "Der Speicheranbieter %s (ID %d) erlaubt Dateien mit einer maximalen Größe von %d Bytes. Die übermittelte Datei überschreitet dieses Limit.",
+                                "Der Speicheranbieter %s (ID %d) erlaubt Dateien mit einer maximalen Größe von %s MB. Die übermittelte Datei überschreitet dieses Limit.",
                                 StringUtils.quote(provider.getName()),
                                 provider.getId(),
-                                provider.getMaxFileSizeInBytes()
+                                NumberUtils.formatGermanNumber(provider.getMaxFileSizeInMegabytes(), 2)
                         );
             }
             throw wrapStorageException(e);

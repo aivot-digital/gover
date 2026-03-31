@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.storage.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.core.converters.AuthoredElementValuesConverter;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.storage.converters.StorageProviderMetadataAttributesConverter;
@@ -15,6 +16,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.ColumnDefault;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -297,6 +299,11 @@ public class StorageProviderEntity {
     @Nonnull
     public Long getMaxFileSizeInBytes() {
         return maxFileSizeInBytes;
+    }
+
+    @JsonIgnore
+    public double getMaxFileSizeInMegabytes() {
+        return ((double) maxFileSizeInBytes) / (1000.0d * 1000.0d);
     }
 
     public StorageProviderEntity setMaxFileSizeInBytes(@Nonnull Long maxFileSizeInBytes) {
