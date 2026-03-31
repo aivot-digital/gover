@@ -274,8 +274,8 @@ public class WebhookTriggerControllerV1 {
             }
 
             var initialPayload = new HashMap<String, Object>();
-            initialPayload.put(WebhookTriggerNodeV1.DATA_KEY_PAYLOAD, payload);
-            initialPayload.put(WebhookTriggerNodeV1.DATA_KEY_ATTACHMENTS, attachments.stream().map((a) -> Map.<String, Object>of(
+            initialPayload.put(WebhookTriggerNodeV1.INITIAL_DATA_KEY_PAYLOAD, payload);
+            initialPayload.put(WebhookTriggerNodeV1.INITIAL_DATA_KEY_ATTACHMENTS, attachments.stream().map((a) -> Map.<String, Object>of(
                     "key", a.getKey(),
                     "filename", a.getFileName(),
                     "storageProviderId", a.getStorageProviderId(),
@@ -292,7 +292,9 @@ public class WebhookTriggerControllerV1 {
                             headerName -> Collections.list(request.getHeaders(headerName))
                     )));
             requestData.put("queryParameters", request.getParameterMap());
-            initialPayload.put(WebhookTriggerNodeV1.DATA_KEY_REQUEST, requestData);
+            initialPayload.put(WebhookTriggerNodeV1.INITIAL_DATA_KEY_REQUEST, requestData);
+
+            initialPayload.put(WebhookTriggerNodeV1.INITIAL_DATA_KEY_STARTED, LocalDateTime.now());
 
             createdInstance
                     .setInitialPayload(initialPayload)

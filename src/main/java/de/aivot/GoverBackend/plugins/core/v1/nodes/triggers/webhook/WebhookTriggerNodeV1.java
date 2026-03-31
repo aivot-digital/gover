@@ -36,6 +36,7 @@ import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -45,9 +46,10 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
     public static final String NODE_KEY = "webhook";
     private static final String PORT_NAME = "input";
 
-    public static final String DATA_KEY_PAYLOAD = "payload";
-    public static final String DATA_KEY_ATTACHMENTS = "attachments";
-    public static final String DATA_KEY_REQUEST = "request";
+    public static final String INITIAL_DATA_KEY_PAYLOAD = "payload";
+    public static final String INITIAL_DATA_KEY_ATTACHMENTS = "attachments";
+    public static final String INITIAL_DATA_KEY_REQUEST = "request";
+    public static final String INITIAL_DATA_KEY_STARTED = "started";
 
     private final GoverConfig goverConfig;
     private final ProcessNodeRepository processDefinitionNodeRepository;
@@ -103,6 +105,33 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
                         PORT_NAME,
                         "Dateneingang",
                         "Es wurden Daten über den Webhook empfangen."
+                )
+        );
+    }
+
+    @Nonnull
+    @Override
+    public List<ProcessNodeOutput> getOutputs() {
+        return List.of(
+                new ProcessNodeOutput(
+                        NODE_DATA_KEY_PAYLOAD,
+                        "Eingangsdaten",
+                        "Die Daten, die an den Auslöser übermittelt wurden"
+                ),
+                new ProcessNodeOutput(
+                        NODE_DATA_KEY_ATTACHMENTS,
+                        "List der Anlagen",
+                        "Die Liste aller Anlagen, welche an den Auslöser übermittelt wurden"
+                ),
+                new ProcessNodeOutput(
+                        NODE_DATA_KEY_REQUEST,
+                        "Anfragedetails",
+                        "Informationen über die HTTP-Anfrage an den Auslöser (HTTP-Methode, Headers, Query-Parameter)"
+                ),
+                new ProcessNodeOutput(
+                        NODE_DATA_STARTED,
+                        "Eingangszeitstempel",
+                        "Der Zeitstempel des Dateneingangs an den Auslöser"
                 )
         );
     }
@@ -445,14 +474,20 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
         var config = getWebhookTriggerConfig(context.getConfiguration().getEffectiveValues());
 
+        // Get the initial payload from the process instance.
+        // This payload is set by the WebhookTriggerController when the webhook is called and contains the data received via the webhook.
+        var initialPayload = context
+                .getThisProcessInstance()
+                .getInitialPayload();
+
         // Determine the result of this init execution
         var result = new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_NAME)
-                .setNodeData(context.getThisProcessInstance().getInitialPayload());
+                .setNodeData(initialPayload);
 
         // Copy the initial payload to the process data if configured
         if (config.requestBodyConfig != null && Boolean.TRUE.equals(config.requestBodyConfig.copyToProcessData)) {
-            Object payloadObj = context.getThisProcessInstance().getInitialPayload().get(DATA_KEY_PAYLOAD);
+            Object payloadObj = initialPayload.get(INITIAL_DATA_KEY_PAYLOAD);
 
             if (payloadObj == null) {
                 // If there is no payload, we can just set an empty map as process data
@@ -473,8 +508,6 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
         } else {
             result.setProcessData(Map.of());
         }
-
-        result.setNodeData(context.getThisProcessInstance().getInitialPayload());
 
         return result;
     }
