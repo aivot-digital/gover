@@ -285,6 +285,7 @@ export function ProcessNodeEditor(): ReactNode {
         })
             .then((confirm) => {
                 if (confirm) {
+                    setEditedNode(originalNode);
                     onDelete(originalNode);
                 }
             })
