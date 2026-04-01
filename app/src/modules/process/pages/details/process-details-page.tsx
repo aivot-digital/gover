@@ -49,6 +49,7 @@ import {type ProcessInstanceTaskEntity} from '../../entities/process-instance-ta
 import {type ProcessInstanceEventEntity} from '../../entities/process-instance-event-entity';
 import {ProcessInstanceApiService} from '../../services/process-instance-api-service';
 import {ProcessInstanceTaskApiService} from '../../services/process-instance-task-api-service';
+import {ProcessInstanceStatus} from '../../enums/process-instance-status';
 import {BaseApiService} from '../../../../services/base-api-service';
 import Download from '@aivot/mui-material-symbols-400-outlined/dist/download/Download';
 import {ProcessInstanceEventDialog} from '../../dialogs/process-instance-event-dialog';
@@ -400,6 +401,9 @@ export function ProcessDetailsPage(): ReactNode {
     }, [searchParams]);
 
     const activeTestClaimId = currentTestClaim?.claim.id ?? runtimeData?.instance.createdForTestClaimId ?? null;
+    const showRuntimePendingStartHint = runtimeData != null &&
+        runtimeData.instance.status === ProcessInstanceStatus.Created &&
+        runtimeData.tasks.length === 0;
 
     const requiredFlowNodeProviders = useMemo(() => {
         if (processFlow == null) {
@@ -1799,6 +1803,42 @@ export function ProcessDetailsPage(): ReactNode {
                                                             </Typography>
                                                         </Box>
                                                     )
+                                                }
+                                                topRightPanel={
+                                                    showRuntimePendingStartHint ? (
+                                                        <Box
+                                                            sx={{
+                                                                display: 'flex',
+                                                                flexDirection: 'column',
+                                                                alignItems: 'flex-start',
+                                                                gap: 0.75,
+                                                            }}
+                                                        >
+                                                            <Typography
+                                                                variant="caption"
+                                                                sx={{
+                                                                    color: 'info.dark',
+                                                                    fontWeight: 700,
+                                                                    letterSpacing: 0.3,
+                                                                    textTransform: 'uppercase',
+                                                                    lineHeight: 1.2,
+                                                                }}
+                                                            >
+                                                                Hinweis
+                                                            </Typography>
+                                                            <Typography
+                                                                variant="body2"
+                                                                sx={{
+                                                                    color: 'text.secondary',
+                                                                    fontSize: '0.8125rem',
+                                                                    fontWeight: 500,
+                                                                    lineHeight: 1.45,
+                                                                }}
+                                                            >
+                                                                Der Vorgang wartet auf den Start der automatischen abwicklung.
+                                                            </Typography>
+                                                        </Box>
+                                                    ) : undefined
                                                 }
                                                 selectedNode={selectedNode}
                                                 onSelectNode={(node) => {

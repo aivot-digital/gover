@@ -105,6 +105,7 @@ interface ProcessFlowEditorProps {
         events: ProcessInstanceEventEntity[];
     } | null;
     topLeftPanel?: ReactNode;
+    topRightPanel?: ReactNode;
 }
 
 type ProcessFlowEditorRuntimeData = ProcessFlowEditorProps['runtimeData'];
@@ -343,6 +344,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
 
         runtimeData,
         topLeftPanel,
+        topRightPanel,
     } = props;
     const theme = useTheme();
 
@@ -719,6 +721,15 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                         className="process-flow-editor-status-panel"
                     >
                         {topLeftPanel}
+                    </Panel>
+                }
+                {
+                    topRightPanel != null &&
+                    <Panel
+                        position="top-right"
+                        className="process-flow-editor-status-panel process-flow-editor-status-panel-right"
+                    >
+                        {topRightPanel}
                     </Panel>
                 }
                 <Background
