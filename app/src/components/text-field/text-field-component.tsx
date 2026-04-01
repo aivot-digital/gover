@@ -148,22 +148,7 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
     );
     const hasHelperTextContent = Boolean(helperMessage || showMaxCharacters || showMinCharacters || showSoftLimitWarning);
 
-    // Render function for IconButtons
-    const renderIconButton = (action: { icon: React.ReactNode; onClick: () => void; tooltip?: string }, key?: number) => (
-        action.tooltip ? (
-            <Tooltip
-                key={key}
-                title={action.tooltip}
-            >
-                <IconButton onClick={action.onClick}>{action.icon}</IconButton>
-            </Tooltip>
-        ) : (
-            <IconButton
-                key={key}
-                onClick={action.onClick}
-            >{action.icon}</IconButton>
-        )
-    );
+
 
     return (
         <TextField
@@ -268,18 +253,24 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
     );
 }
 
-export const renderIconButton = (action: { icon: React.ReactNode; onClick: () => void; tooltip?: string }, key?: number) => (
-    action.tooltip ? (
-        <Tooltip
-            key={key}
-            title={action.tooltip}
-        >
-            <IconButton onClick={action.onClick}>{action.icon}</IconButton>
-        </Tooltip>
-    ) : (
+// Render function for IconButtons
+export function renderIconButton(action: { icon: React.ReactNode; onClick: () => void; tooltip?: string }, key?: number) {
+    if (action.tooltip != null) {
+        return (
+            <Tooltip
+                key={key}
+                title={action.tooltip}
+            >
+                <IconButton onClick={action.onClick}>{action.icon}</IconButton>
+            </Tooltip>
+        );
+    }
+    return (
         <IconButton
             key={key}
             onClick={action.onClick}
-        >{action.icon}</IconButton>
-    )
-);
+        >
+            {action.icon}
+        </IconButton>
+    );
+}
