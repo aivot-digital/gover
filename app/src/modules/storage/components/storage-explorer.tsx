@@ -27,7 +27,6 @@ import {
 } from '@mui/material';
 import {alpha} from '@mui/material/styles';
 import {DataGrid, type GridColDef, type GridRenderCellParams} from '@mui/x-data-grid';
-import Fuse from 'fuse.js';
 import SimpleBar from 'simplebar-react';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
@@ -47,6 +46,7 @@ import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../.
 import {getFileTypeIcon} from '../../../utils/file-type-icon';
 import {type StorageProviderEntity} from '../entities/storage-provider-entity';
 import {humanizeFileSize} from '../../../utils/humanization-utils';
+import {Page} from '../../../models/dtos/page';
 
 interface StorageExplorerProps {
     providerId: number;
@@ -233,7 +233,6 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
     } = props;
 
     const dispatch = useAppDispatch();
-    const api = useMemo(() => new StorageProvidersApiService(), []);
 
     const [provider, setProvider] = useState<StorageProviderEntity>();
     const [currentPath, setCurrentPath] = useState<string>(ROOT_PATH);
@@ -263,8 +262,9 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
         if (loadFolderItems != null) {
             return loadFolderItems(providerId, normalizedPath);
         }
-        return api.getFolder(providerId, normalizedPath);
-    }, [api, loadFolderItems, providerId]);
+        return new StorageProvidersApiService()
+            .getFolder(providerId, normalizedPath);
+    }, [loadFolderItems, providerId]);
 
     // Tree is loaded on demand per expanded folder and cached to avoid repeat requests.
     const loadTreeChildren = useCallback((path: string): void => {
@@ -299,7 +299,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                     [normalizedPath]: false,
                 }));
             });
-    }, [dispatch, fetchFolderItems, folderCache, treeLoadingPaths]);
+    }, [fetchFolderItems, folderCache, treeLoadingPaths]);
 
     useEffect(() => {
         setCurrentPath(ROOT_PATH);
@@ -309,7 +309,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
         setProbedPaths({});
         setSearch('');
 
-        api
+        new StorageProvidersApiService()
             .retrieve(providerId)
             .then((loadedProvider) => {
                 setProvider(loadedProvider);
@@ -317,7 +317,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Der Speicheranbieter konnte nicht geladen werden.'));
             });
-    }, [api, dispatch, providerId]);
+    }, [providerId]);
 
     useEffect(() => {
         setIsLoading(true);
@@ -337,7 +337,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
             .finally(() => {
                 setIsLoading(false);
             });
-    }, [currentPath, dispatch, fetchFolderItems]);
+    }, [currentPath, fetchFolderItems]);
 
     const filteredItems = useMemo(() => {
         const normalizedFilter = filterMimeTypes?.map((mimeType) => mimeType.toLowerCase()) ?? [];
@@ -363,41 +363,22 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
         });
     }, [currentFolder, filterItem, filterMimeTypes]);
 
-    // Visible rows pipeline: consumer filters -> fuzzy search -> directory-first alphabetic ordering.
-    const rows = useMemo(() => {
+    const [searchResults, setSearchResults] = useState<Page<StorageIndexItem>>();
+    useEffect(() => {
         const trimmedSearch = search.trim();
 
-        let searchableItems = filteredItems;
         if (trimmedSearch.length > 0) {
-            const fuse = new Fuse(filteredItems, {
-                includeScore: true,
-                threshold: 0.38,
-                ignoreLocation: true,
-                minMatchCharLength: 2,
-                keys: [
-                    {name: 'filename', weight: 0.7},
-                    {name: 'pathFromRoot', weight: 0.2},
-                    {name: 'mimeType', weight: 0.1},
-                ],
-            });
-            searchableItems = fuse.search(trimmedSearch).map((entry) => entry.item);
+            new StorageProvidersApiService()
+                .search(providerId, trimmedSearch)
+                .then(setSearchResults);
+        } else {
+            setSearchResults(undefined);
         }
+    }, [search]);
 
-        return [...searchableItems]
-            .sort((a, b) => {
-                const aIsDirectory = isDirectory(a);
-                const bIsDirectory = isDirectory(b);
-
-                if (aIsDirectory && !bIsDirectory) {
-                    return -1;
-                }
-                if (!aIsDirectory && bIsDirectory) {
-                    return 1;
-                }
-
-                return a.filename.localeCompare(b.filename, 'de');
-            });
-    }, [filteredItems, search]);
+    const rows = useMemo(() => {
+        return searchResults?.content ?? filteredItems;
+    }, [searchResults, filteredItems]);
 
     const folderCount = rows.filter((item) => isDirectory(item)).length;
     const fileCount = rows.length - folderCount;
