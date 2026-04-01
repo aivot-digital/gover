@@ -70,7 +70,7 @@ export function UserRolesDetailsPageDepartmentMemberships() {
                     variant="h5"
                     sx={{mb: 1}}
                 >
-                    Zuggeordnete Mitarbeiter:innen
+                    Zugeordnete Mitarbeiter:innen
                 </Typography>
 
                 <Typography sx={{
