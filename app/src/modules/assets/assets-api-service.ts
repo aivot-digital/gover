@@ -130,7 +130,7 @@ export class AssetsApiService extends BaseApiService {
     }
 
     public static useAssetLinkOfAsset(asset: Asset) {
-        return this.useAssetLink(asset.key);
+        return `/api/public/assets/${asset.storageProviderId}/files${this.normalizeStoragePath(asset.storagePathFromRoot)}`;
     }
 
     public static normalizeStoragePath(storagePathFromRoot: string) {
