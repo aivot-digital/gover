@@ -10,7 +10,6 @@ import {
     diffSourcePlugin,
     DiffSourceToggleWrapper,
     headingsPlugin,
-    HighlightToggle,
     linkDialogPlugin,
     linkPlugin,
     listsPlugin,
@@ -403,7 +402,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                                             <>
                                                 <UndoRedo/>
                                                 <BlockTypeSelect/>
-                                                <BoldItalicUnderlineToggles/>
+                                                <BoldItalicUnderlineToggles options={['Bold', 'Italic']}/>
                                                 <CreateLink/>
                                                 <ListsToggle options={['bullet', 'number']}/>
                                             </> :
@@ -412,9 +411,8 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                                                 <Separator/>
                                                 <BlockTypeSelect/>
                                                 <Separator/>
-                                                <BoldItalicUnderlineToggles/>
+                                                <BoldItalicUnderlineToggles options={['Bold', 'Italic']}/>
                                                 <StrikeThroughSupSubToggles options={['Strikethrough']}/>
-                                                <HighlightToggle/>
                                                 <CodeToggle/>
                                                 <Separator/>
                                                 <CreateLink/>
