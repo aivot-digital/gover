@@ -51,7 +51,10 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
                 .retrieveProviderDefinition(entity.getStorageProviderDefinitionKey(), entity.getStorageProviderDefinitionVersion())
                 .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Der ausgewählte Speicheranbieter ist nicht vorhanden"));
 
+        // Validate the configuration of the provider
         validateProvider(def, entity);
+
+        // Validate of the systemwide max file size is exceeded
         validateMaxFileSize(entity);
 
         // Ensure the ID is null for creation
@@ -143,8 +146,6 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
                                 " ist nicht vorhanden")
                 );
 
-        validateProvider(def, entity);
-
         existingEntity.setName(entity.getName());
         existingEntity.setDescription(entity.getDescription());
         existingEntity.setMaxFileSizeInBytes(entity.getMaxFileSizeInBytes());
@@ -161,8 +162,15 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
         // Assign this here to prevent resync check failing due to overwritten data
         existingEntity.setConfiguration(entity.getConfiguration());
 
+        // Validate the metadata and configuration
+        validateProvider(def, existingEntity);
+
         var res = storageProviderRepository
                 .save(existingEntity);
+
+        if (entity.getStatus() == StorageProviderStatus.SyncPending) {
+            existingEntity.setStatusMessage(null); // Reset the status message
+        }
 
         if (shouldResync) {
             rabbitTemplate.convertAndSend(StorageSyncWorker.DO_WORK_ON_STORAGE_SYNC_QUEUE, res.getId());
@@ -206,7 +214,7 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
         // Check if the configuration is valid
         var config = storageProviderConfigurationService
                 .mapToConfig(entity, def);
-        def.validateConfiguration(config);
+        def.validateConfiguration(entity, config);
 
         // Check if the metadata attributes are valid
         def.validateMetadataAttributes(entity.getMetadataAttributes());
