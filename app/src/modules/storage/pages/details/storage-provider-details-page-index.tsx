@@ -39,6 +39,7 @@ import {StatusTable} from '../../../../components/status-table/status-table';
 import Sync from '@aivot/mui-material-symbols-400-outlined/dist/sync/Sync';
 import {ComputedElementErrors, DerivedRuntimeElementData} from '../../../../models/element-data';
 import {Hint} from '../../../../components/hint/hint';
+import {StorageProviderStatus} from '../../enums/storage-provider-status';
 
 function getIndexedFieldError(
     errors: Record<string, any> | undefined,
@@ -339,6 +340,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     return (
         <Box>
             {
+                editedStorageProvider.status == StorageProviderStatus.SyncFailed &&
                 editedStorageProvider.statusMessage != null &&
                 <AlertComponent
                     color="error"
