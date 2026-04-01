@@ -31,6 +31,7 @@ import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete'
 import MoveGroup from '@aivot/mui-material-symbols-400-outlined/dist/move-group/MoveGroup';
 import {MoveDepartmentDialog} from '../../dialogs/move-department-dialog';
 import {VDepartmentShadowedApiService} from '../../services/v-department-shadowed-api-service';
+import {VDepartmentShadowedEntity} from '../../entities/v-department-shadowed-entity';
 
 const emptyStringToNull = (value: unknown, originalValue: unknown) => {
     if (typeof originalValue === 'string' && originalValue.trim().length === 0) {
@@ -209,6 +210,7 @@ export function DepartmentsDetailsPageIndex() {
     const [relatedApplications, setRelatedApplications] = useState<ConstraintLinkProps[] | undefined>(undefined);
     const [availableThemes, setAvailableThemes] = useState<ThemeResponseDTO[]>();
     const [showMoveDialog, setShowMoveDialog] = useState(false);
+    const [inheritedDepartment, setInheritedDepartment] = useState<VDepartmentShadowedEntity | null>(null);
 
     useEffect(() => {
         new ThemesApiService(api)
@@ -221,6 +223,46 @@ export function DepartmentsDetailsPageIndex() {
                 dispatch(showErrorSnackbar('Fehler beim Laden der verfügbaren Fabschemata.'));
             });
     }, []);
+
+    useEffect(() => {
+        if (department == null) {
+            return;
+        }
+
+        if (department.id === 0) {
+            setInheritedDepartment(parentOrgUnitId != null ? additionalData?.shadowedDepartment ?? null : null);
+            return;
+        }
+
+        if (department.parentDepartmentId == null) {
+            setInheritedDepartment(null);
+            return;
+        }
+
+        let isActive = true;
+
+        new VDepartmentShadowedApiService()
+            .retrieve(department.parentDepartmentId)
+            .then((parentDepartment) => {
+                if (!isActive) {
+                    return;
+                }
+
+                setInheritedDepartment(parentDepartment);
+            })
+            .catch((error) => {
+                if (!isActive) {
+                    return;
+                }
+
+                console.error(error);
+                setInheritedDepartment(null);
+            });
+
+        return () => {
+            isActive = false;
+        };
+    }, [department?.id, department?.parentDepartmentId, parentOrgUnitId, additionalData?.shadowedDepartment]);
 
     if (department == null || availableThemes == null) {
         return (
@@ -377,6 +419,7 @@ export function DepartmentsDetailsPageIndex() {
         return [...parentPath, safeName];
     })();
     const shouldShowOrgUnitHierarchy = orgUnitPathParts.length > 1;
+    const inheritedDepartmentValues = inheritedDepartment;
 
     return (
         <Box>
@@ -487,7 +530,7 @@ export function DepartmentsDetailsPageIndex() {
                         override={department.address != null}
                         onSetOverride={handleShadowedStringOverride('address')}
                         shadowedProps={{
-                            value: additionalData?.shadowedDepartment.address ?? '',
+                            value: inheritedDepartmentValues?.address ?? '',
                             disabled: true,
                         }}
                         label="Adresse der Organisationseinheit"
@@ -540,7 +583,7 @@ export function DepartmentsDetailsPageIndex() {
                             }
                         }}
                         shadowedProps={{
-                            value: additionalData?.shadowedDepartment.themeId?.toString() ?? undefined,
+                            value: inheritedDepartmentValues?.themeId?.toString() ?? undefined,
                             disabled: true,
                         }}
                         label="Farbschema der Organisationseinheit"
@@ -598,7 +641,7 @@ export function DepartmentsDetailsPageIndex() {
                         override={department.specialSupportAddress != null}
                         onSetOverride={handleShadowedStringOverride('specialSupportAddress')}
                         shadowedProps={{
-                            value: additionalData?.shadowedDepartment.specialSupportAddress ?? '',
+                            value: inheritedDepartmentValues?.specialSupportAddress ?? '',
                             disabled: true,
                         }}
                         label="Kontakt-E-Mail-Adresse fachliche Unterstützung"
@@ -618,7 +661,7 @@ export function DepartmentsDetailsPageIndex() {
                         override={department.specialSupportPhone != null}
                         onSetOverride={handleShadowedStringOverride('specialSupportPhone')}
                         shadowedProps={{
-                            value: additionalData?.shadowedDepartment.specialSupportPhone ?? '',
+                            value: inheritedDepartmentValues?.specialSupportPhone ?? '',
                             disabled: true,
                         }}
                         label="Kontakt-Telefonnummer fachliche Unterstützung"
@@ -638,7 +681,7 @@ export function DepartmentsDetailsPageIndex() {
                         override={department.specialSupportInfo != null}
                         onSetOverride={handleShadowedStringOverride('specialSupportInfo')}
                         shadowedProps={{
-                            value: additionalData?.shadowedDepartment.specialSupportInfo ?? '',
+                            value: inheritedDepartmentValues?.specialSupportInfo ?? '',
                             disabled: true,
                         }}
                         label="Informationen zur fachliche Unterstützung"
@@ -666,7 +709,7 @@ export function DepartmentsDetailsPageIndex() {
                         override={department.technicalSupportAddress != null}
                         onSetOverride={handleShadowedStringOverride('technicalSupportAddress')}
                         shadowedProps={{
-                            value: additionalData?.shadowedDepartment.technicalSupportAddress ?? '',
+                            value: inheritedDepartmentValues?.technicalSupportAddress ?? '',
                             disabled: true,
                         }}
                         label="Kontakt-E-Mail-Adresse technische Unterstützung"
@@ -686,7 +729,7 @@ export function DepartmentsDetailsPageIndex() {
                         override={department.technicalSupportPhone != null}
                         onSetOverride={handleShadowedStringOverride('technicalSupportPhone')}
                         shadowedProps={{
-                            value: additionalData?.shadowedDepartment.technicalSupportPhone ?? '',
+                            value: inheritedDepartmentValues?.technicalSupportPhone ?? '',
                             disabled: true,
                         }}
                         label="Kontakt-Telefonnummer technische Unterstützung"
@@ -706,7 +749,7 @@ export function DepartmentsDetailsPageIndex() {
                         override={department.technicalSupportInfo != null}
                         onSetOverride={handleShadowedStringOverride('technicalSupportInfo')}
                         shadowedProps={{
-                            value: additionalData?.shadowedDepartment.technicalSupportInfo ?? '',
+                            value: inheritedDepartmentValues?.technicalSupportInfo ?? '',
                             disabled: true,
                         }}
                         label="Informationen zur technischen Unterstützung"
@@ -739,7 +782,7 @@ export function DepartmentsDetailsPageIndex() {
                     override={department.imprint != null}
                     onSetOverride={handleShadowedStringOverride('imprint')}
                     shadowedProps={{
-                        value: additionalData?.shadowedDepartment.imprint ?? '',
+                        value: inheritedDepartmentValues?.imprint ?? '',
                         disabled: true,
                     }}
                     label="Impressum"
@@ -757,7 +800,7 @@ export function DepartmentsDetailsPageIndex() {
                     override={department.commonPrivacy != null}
                     onSetOverride={handleShadowedStringOverride('commonPrivacy')}
                     shadowedProps={{
-                        value: additionalData?.shadowedDepartment.commonPrivacy ?? '',
+                        value: inheritedDepartmentValues?.commonPrivacy ?? '',
                         disabled: true,
                     }}
                     label="Datenschutzerklärung"
@@ -775,7 +818,7 @@ export function DepartmentsDetailsPageIndex() {
                     override={department.commonAccessibility != null}
                     onSetOverride={handleShadowedStringOverride('commonAccessibility')}
                     shadowedProps={{
-                        value: additionalData?.shadowedDepartment.commonAccessibility ?? '',
+                        value: inheritedDepartmentValues?.commonAccessibility ?? '',
                         disabled: true,
                     }}
                     label="Barrierefreiheitserklärung"
@@ -808,7 +851,7 @@ export function DepartmentsDetailsPageIndex() {
                 override={department.departmentMail != null}
                 onSetOverride={handleShadowedStringOverride('departmentMail')}
                 shadowedProps={{
-                    value: additionalData?.shadowedDepartment.departmentMail ?? '',
+                    value: inheritedDepartmentValues?.departmentMail ?? '',
                     disabled: true,
                 }}
                 label="Zentrale E-Mail-Adressen für Systembenachrichtigungen"
