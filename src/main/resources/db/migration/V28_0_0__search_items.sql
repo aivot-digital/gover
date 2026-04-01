@@ -6,7 +6,7 @@ SELECT text 'assets'                                                  AS origin_
        storage_provider_id::varchar || ',' || path_from_root::varchar AS id,
        to_tsvector('german', filename)                                AS searchable_element,
        filename                                                       AS search_text
-FROM v_storage_index_items_with_assets
+FROM v_storage_index_items_with_assets WHERE directory = false AND missing = false
 
 UNION ALL
 
