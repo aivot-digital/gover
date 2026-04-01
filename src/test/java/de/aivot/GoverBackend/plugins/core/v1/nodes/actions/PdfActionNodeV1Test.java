@@ -1,8 +1,10 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 
+import de.aivot.GoverBackend.asset.entities.AssetEntity;
 import de.aivot.GoverBackend.asset.repositories.VStorageIndexItemWithAssetRepository;
 import de.aivot.GoverBackend.asset.services.AssetService;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
@@ -22,10 +24,13 @@ import de.aivot.GoverBackend.storage.services.StorageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayInputStream;
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static de.aivot.GoverBackend.TestData.runtime;
@@ -48,12 +53,16 @@ class PdfActionNodeV1Test {
 
     private PdfService pdfService;
     private ProcessInstanceAttachmentService processInstanceAttachmentService;
+    private AssetService assetService;
+    private StorageService storageService;
     private PdfActionNodeV1 node;
 
     @BeforeEach
     void setUp() throws Exception {
         pdfService = mock(PdfService.class);
         processInstanceAttachmentService = mock(ProcessInstanceAttachmentService.class);
+        assetService = mock(AssetService.class);
+        storageService = mock(StorageService.class);
 
         when(pdfService.generatePdfFromHtml(anyString(), anyString(), anyString()))
                 .thenReturn("pdf-bytes".getBytes(StandardCharsets.UTF_8));
@@ -66,14 +75,7 @@ class PdfActionNodeV1Test {
                             .setStoragePathFromRoot("attachments/report.pdf");
                 });
 
-        node = new PdfActionNodeV1(
-                pdfService,
-                new PassthroughTemplateRenderService(),
-                processInstanceAttachmentService,
-                mock(AssetService.class),
-                mock(VStorageIndexItemWithAssetRepository.class),
-                mock(StorageService.class)
-        );
+        node = createNode(new PassthroughTemplateRenderService());
     }
 
     @Test
@@ -106,6 +108,34 @@ class PdfActionNodeV1Test {
         verify(pdfService, never()).generatePdfFromHtml(anyString(), anyString(), anyString());
     }
 
+    @Test
+    void init_RendersAssetTemplateBeforeSplittingHtmlSections() throws Exception {
+        var assetKey = UUID.randomUUID();
+        var html = "<html><head>{% useBlock sharedStyles %}</head><body>::header::<div>Header</div></body></html>"
+                + "<html><head>{% useBlock sharedStyles %}</head><body><main>Body</main></body></html>"
+                + "{% block sharedStyles %}<style>.shared{color:red;}</style>{% endblock %}";
+
+        when(assetService.retrieve(assetKey)).thenReturn(Optional.of(
+                new AssetEntity()
+                        .setKey(assetKey)
+                        .setPrivate(false)
+                        .setStorageProviderId(11)
+                        .setStoragePathFromRoot("templates/standardbrief.html")
+        ));
+        when(storageService.getDocumentContent(11, "templates/standardbrief.html"))
+                .thenReturn(new ByteArrayInputStream(html.getBytes(StandardCharsets.UTF_8)));
+
+        var assetNode = createNode(new TemplateRenderService(new JavascriptEngineFactoryService(List.of())));
+        var result = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, assetNode.init(assetContext(assetKey)));
+
+        verify(pdfService).generatePdfFromHtml(
+                "<html><head><style>.shared{color:red;}</style></head><body><main>Body</main></body></html>",
+                "<html><head><style>.shared{color:red;}</style></head><body><div>Header</div></body></html>",
+                ""
+        );
+        assertEquals("report.pdf", result.getNodeData().get("fileName"));
+    }
+
     private static ProcessNodeExecutionContextInit context(String html) {
         return new ProcessNodeExecutionContextInit(
                 logger(),
@@ -119,6 +149,33 @@ class PdfActionNodeV1Test {
                         PdfActionNodeV1.PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_ID, PdfActionNodeV1.PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_CODE,
                         PdfActionNodeV1.PdfActionNodeConfig.CONTENT_HTML_CODE_FIELD_ID, html
                 )
+        );
+    }
+
+    private static ProcessNodeExecutionContextInit assetContext(UUID assetKey) {
+        return new ProcessNodeExecutionContextInit(
+                logger(),
+                processNode(),
+                processInstance(),
+                task(),
+                null,
+                new ProcessExecutionData(),
+                runtime(
+                        PdfActionNodeV1.PdfActionNodeConfig.FILE_NAME_FIELD_ID, "report",
+                        PdfActionNodeV1.PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_ID, PdfActionNodeV1.PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_ASSET_KEY,
+                        PdfActionNodeV1.PdfActionNodeConfig.CONTENT_HTML_ASSET_KEY_FIELD_ID, assetKey.toString()
+                )
+        );
+    }
+
+    private PdfActionNodeV1 createNode(TemplateRenderService templateRenderService) {
+        return new PdfActionNodeV1(
+                pdfService,
+                templateRenderService,
+                processInstanceAttachmentService,
+                assetService,
+                mock(VStorageIndexItemWithAssetRepository.class),
+                storageService
         );
     }
 
