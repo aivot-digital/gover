@@ -1,7 +1,7 @@
 import {GenericListPage} from '../../../components/generic-list-page/generic-list-page';
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
-import {Link, Stack, Typography} from '@mui/material';
+import {Stack, Typography} from '@mui/material';
 import {CreateNewFolderOutlined} from '@mui/icons-material';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {CellLink} from '../../../components/cell-link/cell-link';
@@ -14,7 +14,7 @@ import DriveFolderUploadOutlinedIcon from '@mui/icons-material/DriveFolderUpload
 import {getFileTypeLabel} from '../../../utils/file-type-label';
 import Chip from '@mui/material/Chip';
 import {CellContentWrapper} from '../../../components/cell-content-wrapper/cell-content-wrapper';
-import {Link as RouterLink, useParams, useSearchParams} from 'react-router-dom';
+import {useParams, useSearchParams} from 'react-router-dom';
 import {StorageProvidersApiService} from '../../storage/storage-providers-api-service';
 import {useApi} from '../../../hooks/use-api';
 import {ListControlRef} from '../../../components/generic-list/generic-list-props';
@@ -23,6 +23,7 @@ import {useConfirm} from '../../../providers/confirm-provider';
 import {Breadcrumbs} from '../../../components/breadcrumbs/breadcrumbs';
 import {usePrompt} from '../../../providers/prompt-provider';
 import {isStringNullOrEmpty} from '../../../utils/string-utils';
+import {VStorageIndexItemWithAssetEntity} from '../../storage/entities/storage-index-item-entity';
 
 
 export function AssetListPage() {
@@ -87,7 +88,7 @@ export function AssetListPage() {
             fullWidth
             background
         >
-            <GenericListPage<Asset>
+            <GenericListPage<VStorageIndexItemWithAssetEntity>
                 header={{
                     icon: <DriveFolderUploadOutlinedIcon/>,
                     title: headerTitle,
@@ -187,7 +188,7 @@ export function AssetListPage() {
                 fetch={(options) => {
                     if (parsedStorageProviderId == null) {
                         return Promise.resolve({
-                            content: [],
+                            content: [] as VStorageIndexItemWithAssetEntity[],
                             last: true,
                             totalElements: 0,
                             totalPages: 0,
@@ -239,10 +240,10 @@ export function AssetListPage() {
                         field: 'icon',
                         headerName: '',
                         renderCell: (params) => {
-                            const fileType = getFileTypeLabel(params.row.contentType ?? 'application/octet-stream');
+                            const fileType = getFileTypeLabel(params.row.mimeType ?? 'application/octet-stream');
                             return (
                                 <CellContentWrapper title={fileType}>
-                                    {getFileTypeIcon(params.row.contentType ?? 'application/octet-stream')}
+                                    {getFileTypeIcon(params.row.mimeType ?? 'application/octet-stream')}
                                 </CellContentWrapper>
                             );
                         },
@@ -259,10 +260,10 @@ export function AssetListPage() {
                             const isDirectory = params.row.directory === true;
                             const targetPath = isDirectory
                                 ? (providerId != null
-                                    ? `/assets/providers/${providerId}?path=${encodeURIComponent(AssetsApiService.normalizeFolderPath(params.row.storagePathFromRoot ?? '/'))}`
+                                    ? `/assets/providers/${providerId}?path=${encodeURIComponent(AssetsApiService.normalizeFolderPath(params.row.pathFromRoot ?? '/'))}`
                                     : '/assets')
                                 : (() => {
-                                    const encodedPath = AssetsApiService.encodeStoragePathForRoute(params.row.storagePathFromRoot ?? '/');
+                                    const encodedPath = AssetsApiService.encodeStoragePathForRoute(params.row.pathFromRoot ?? '/');
                                     return providerId != null
                                         ? `/assets/providers/${providerId}/files/${encodedPath}`
                                         : '/assets';
@@ -287,7 +288,7 @@ export function AssetListPage() {
                                 return null;
                             }
 
-                            const fileType = getFileTypeLabel(params.row.contentType ?? 'application/octet-stream');
+                            const fileType = getFileTypeLabel(params.row.mimeType ?? 'application/octet-stream');
                             return (
                                 <Stack
                                     direction="row"
@@ -296,7 +297,7 @@ export function AssetListPage() {
                                 >
                                     <span>{params.row.directory ? 'Ordner' : fileType}</span>
                                     <Chip
-                                        label={params.row.directory ? 'inode/directory' : params.row.contentType}
+                                        label={params.row.directory ? 'inode/directory' : params.row.mimeType}
                                         size="small"
                                         variant={'outlined'}
                                         sx={{fontSize: '0.75rem'}}
@@ -322,13 +323,12 @@ export function AssetListPage() {
                             }).format(date).replace(',', ' –') + ' Uhr';
                         },
                     },
-
                 ]}
-                getRowIdentifier={row => row.directory ? `dir:${row.storagePathFromRoot}` : (row.key || `file:${row.storagePathFromRoot}`)}
+                getRowIdentifier={row => row.directory ? `dir:${row.pathFromRoot}` : (row.assetKey || `file:${row.pathFromRoot}`)}
                 noDataPlaceholder="Keine Dateien hochgeladen"
                 noSearchResultsPlaceholder="Keine Dateien gefunden"
                 rowActionsCount={1}
-                rowActions={(item: Asset) => item.directory ? [
+                rowActions={(item: VStorageIndexItemWithAssetEntity) => item.directory ? [
                     {
                         icon: <Delete/>,
                         tooltip: 'Ordner löschen',
@@ -360,7 +360,7 @@ export function AssetListPage() {
                                     return new AssetsApiService(api)
                                         .deleteFolder(
                                             providerId,
-                                            AssetsApiService.normalizeFolderPath(item.storagePathFromRoot),
+                                            AssetsApiService.normalizeFolderPath(item.pathFromRoot),
                                         );
                                 })
                                 .then(() => {

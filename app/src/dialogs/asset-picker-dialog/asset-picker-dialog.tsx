@@ -1,5 +1,15 @@
 import React, {type PropsWithChildren, useCallback, useEffect, useMemo, useState} from 'react';
-import {Alert, Box, CircularProgress, Dialog, DialogContent, MenuItem, Stack, TextField, Typography} from '@mui/material';
+import {
+    Alert,
+    Box,
+    CircularProgress,
+    Dialog,
+    DialogContent,
+    MenuItem,
+    Stack,
+    TextField,
+    Typography,
+} from '@mui/material';
 import {Link} from 'react-router-dom';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {useApi} from '../../hooks/use-api';
@@ -8,9 +18,9 @@ import {showApiErrorSnackbar, showErrorSnackbar} from '../../slices/snackbar-sli
 import {type StorageIndexItem} from '../../modules/storage/entities/storage-index-item-entity';
 import {StorageProvidersApiService} from '../../modules/storage/storage-providers-api-service';
 import {StorageProviderType} from '../../modules/storage/enums/storage-provider-type';
-import {StorageExplorer} from '../../modules/storage/components/storage-explorer';
 import {AssetsApiService} from '../../modules/assets/assets-api-service';
 import {type StorageProviderEntity} from '../../modules/storage/entities/storage-provider-entity';
+import {AssetExplorer} from '../../modules/storage/components/asset-explorer';
 
 const ASSET_KEY_METADATA_KEY = '__assetPickerAssetKey';
 const ASSET_PRIVATE_METADATA_KEY = '__assetPickerIsPrivate';
@@ -19,7 +29,7 @@ export interface AssetPickerDialogProps {
     title: string;
     show: boolean;
     mimeType?: string | string[];
-    mode?: 'private' | 'public' | 'all';
+    mode?: 'public' | 'all';
     onSelectAsset: (assetKey: string, storagePathFromRoot: string, storageProviderId: number) => void;
     onCancel: () => void;
 }
@@ -102,50 +112,6 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
             .filter((entry) => entry.length > 0);
     }, [mimeType]);
 
-    const filterSelectableItems = useCallback((item: StorageIndexItem) => {
-        if (item.directory) {
-            return true;
-        }
-
-        if (item.missing) {
-            return false;
-        }
-
-        const itemIsPrivate = item.metadata?.[ASSET_PRIVATE_METADATA_KEY] === true;
-        if (mode === 'private') {
-            return itemIsPrivate;
-        }
-
-        if (mode === 'public') {
-            return !itemIsPrivate;
-        }
-
-        return true;
-    }, [mode]);
-
-    const loadAssetFolderItems = useCallback(async (providerId: number, path: string): Promise<StorageIndexItem[]> => {
-        const items = await new AssetsApiService(api).listFolderContent(providerId, path);
-
-        return items.map((item) => ({
-            storageProviderId: item.storageProviderId,
-            storageProviderType: StorageProviderType.Assets,
-            pathFromRoot: item.storagePathFromRoot,
-            directory: item.directory ?? false,
-            isDirectory: item.directory ?? false,
-            filename: item.filename,
-            mimeType: item.contentType ?? '',
-            sizeInBytes: item.sizeInBytes ?? 0,
-            missing: item.missing ?? false,
-            metadata: {
-                ...(item.metadata ?? {}),
-                [ASSET_KEY_METADATA_KEY]: item.key,
-                [ASSET_PRIVATE_METADATA_KEY]: item.isPrivate,
-            },
-            created: item.created ?? '',
-            updated: item.created ?? '',
-        }));
-    }, [api]);
-
     const handleSelectFile = useCallback(async (item: StorageIndexItem) => {
         if (item.directory) {
             return;
@@ -156,11 +122,6 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
         const assetKey = typeof rawAssetKey === 'string'
             ? rawAssetKey
             : '';
-
-        if (mode === 'private' && !itemIsPrivate) {
-            dispatch(showErrorSnackbar('Es können nur private Assets ausgewählt werden.'));
-            return;
-        }
 
         if (mode === 'public' && itemIsPrivate) {
             dispatch(showErrorSnackbar('Es können nur öffentlich erreichbare Assets ausgewählt werden.'));
@@ -176,11 +137,6 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
             const asset = await new AssetsApiService(api).retrieveInStorageProvider(item.pathFromRoot, item.storageProviderId);
             if (asset.key.trim().length === 0) {
                 dispatch(showErrorSnackbar('Die ausgewählte Datei ist keinem Asset zugeordnet und kann nicht ausgewählt werden.'));
-                return;
-            }
-
-            if (mode === 'private' && !asset.isPrivate) {
-                dispatch(showErrorSnackbar('Es können nur private Assets ausgewählt werden.'));
                 return;
             }
 
@@ -203,13 +159,13 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
             onClose={onCancel}
         >
             <DialogTitleWithClose onClose={onCancel}>
-                {title} ({mimeType})
+                {title} ({mimeType}) {mode === 'public' && `(nur öffentlich)`}
             </DialogTitleWithClose>
 
             <DialogContent tabIndex={0}
-                sx={{
-                    paddingTop: '0.5rem !important',
-                }}
+                           sx={{
+                               paddingTop: '0.5rem !important',
+                           }}
             >
                 {children != null && (
                     <Box sx={{mb: 2}}>
@@ -230,7 +186,8 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                         disabled={isLoadingProviders || providers.length === 0}
                     >
                         {providers.map((provider) => (
-                            <MenuItem key={provider.id} value={provider.id}>
+                            <MenuItem key={provider.id}
+                                      value={provider.id}>
                                 {provider.name}
                             </MenuItem>
                         ))}
@@ -244,7 +201,8 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                             sx={{py: 3, justifyContent: 'center'}}
                         >
                             <CircularProgress size={18}/>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2"
+                                        color="text.secondary">
                                 Speicheranbieter werden geladen…
                             </Typography>
                         </Stack>
@@ -253,7 +211,8 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                     {!isLoadingProviders && providers.length === 0 && (
                         <Alert severity="info">
                             Es sind keine Asset-Speicheranbieter konfiguriert. Gehen Sie zu{' '}
-                            <Link to="/storage-providers" style={{color: 'inherit'}}>
+                            <Link to="/storage-providers"
+                                  style={{color: 'inherit'}}>
                                 Speicheranbieter
                             </Link>
                             {' '}und richten Sie einen Asset-Speicheranbieter ein.
@@ -267,12 +226,11 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                     )}
 
                     {!isLoadingProviders && selectedProviderId != null && (
-                        <StorageExplorer
+                        <AssetExplorer
                             providerId={selectedProviderId}
-                            loadFolderItems={loadAssetFolderItems}
                             onFileSelect={handleSelectFile}
-                            filterItem={filterSelectableItems}
                             filterMimeTypes={normalizedMimeTypes}
+                            filterOnlyPublic={mode === 'public'}
                             showTopNavigationBar={true}
                             minGridHeight={460}
                         />

@@ -1,7 +1,9 @@
 import {Asset} from './models/asset';
 import {createApiPath} from '../../utils/url-path-utils';
-import {BaseApiService} from '../../services/base-api-service';
+import {BaseApiService, RequestOptions} from '../../services/base-api-service';
 import {Api} from '../../hooks/use-api';
+import {VStorageIndexItemWithAssetEntity} from '../storage/entities/storage-index-item-entity';
+import {Page} from '../../models/dtos/page';
 
 export class AssetsApiService extends BaseApiService {
     constructor(api?: Api) {
@@ -88,9 +90,8 @@ export class AssetsApiService extends BaseApiService {
         );
     }
 
-    public async listFolderContent(storageProviderId: number, folderPath: string = '/'): Promise<Asset[]> {
-        const items = await this.get<any[]>(this.buildFolderApiPath(storageProviderId, folderPath));
-        return items.map(AssetsApiService.mapViewItemToAsset);
+    public async listFolderContent(storageProviderId: number, folderPath: string = '/', options?: RequestOptions): Promise<VStorageIndexItemWithAssetEntity[]> {
+        return await this.get<VStorageIndexItemWithAssetEntity[]>(this.buildFolderApiPath(storageProviderId, folderPath), options);
     }
 
     public async createFolder(storageProviderId: number, folderPath: string): Promise<void> {
@@ -234,5 +235,20 @@ export class AssetsApiService extends BaseApiService {
             missing: false,
             sizeInBytes: 0,
         };
+    }
+
+    public search(storageProviderId: number, search: string, options?: RequestOptions): Promise<Page<VStorageIndexItemWithAssetEntity>> {
+        return this.get<Page<VStorageIndexItemWithAssetEntity>>(`/api/assets/${storageProviderId}/search/`, {
+            ...options,
+            query: {
+                ...options?.query,
+                search: search,
+                limit: 64,
+            },
+        });
+    }
+
+    public retrieveByKey(key: string): Promise<VStorageIndexItemWithAssetEntity> {
+        return this.get<VStorageIndexItemWithAssetEntity>(`/api/assets-by-key/${key}/`);
     }
 }

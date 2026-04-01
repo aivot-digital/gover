@@ -577,14 +577,18 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                                     <Typography
                                         marginBottom={2}
                                     >
-                                        Die maximale Dateigröße wird unter Anderem an den folgenden Stellen berücksichtigt:
+                                        Die maximale Dateigröße wird unter Anderem an den folgenden Stellen
+                                        berücksichtigt:
 
                                         <ul>
                                             <li>Das Hochladen von Dateien &amp; Medien</li>
                                             <li>Das Übertragen von Anlagen an einen Prozess</li>
-                                            <li>Das Erstellen von Anlagen in einem Vorgang z.B. durch eine PDF-Generierung</li>
+                                            <li>Das Erstellen von Anlagen in einem Vorgang z.B. durch eine
+                                                PDF-Generierung
+                                            </li>
                                             <li>Das Importieren von Dateien als Anlagen in einen Vorgang</li>
-                                            <li>Das Übertragen von Anlagen aus einem Vorgang in einen Speicheranbieter</li>
+                                            <li>Das Übertragen von Anlagen aus einem Vorgang in einen Speicheranbieter
+                                            </li>
                                         </ul>
                                     </Typography>
 
@@ -752,10 +756,22 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     Möchten Sie diesen Speicheranbieter wirklich löschen? Diese Aktion kann nicht rückgängig gemacht
                     werden.
                 </Typography>
-                <AlertComponent color={'warning'}>
-                    Wenn der Speicheranbieter bereits für die Ablage von Dateien genutzt wurde, können diese Dateien
-                    nach dem Löschen des Speicheranbieters nicht mehr erreicht werden. Bitte stellen Sie sicher, dass
-                    Sie alle Dateien migriert oder gelöscht haben, bevor Sie fortfahren.
+                <AlertComponent
+                    color="warning"
+                    sx={{
+                        mt: 2,
+                    }}
+                >
+                    <p>
+                        Wenn der Speicheranbieter bereits für die Ablage von Dateien genutzt wurde, können diese Dateien
+                        nach dem Löschen des Speicheranbieters nicht mehr erreicht werden. Bitte stellen Sie sicher,
+                        dass
+                        Sie alle Dateien migriert oder gelöscht haben, bevor Sie fortfahren.
+                    </p>
+                    <p>
+                        Bitte beachten Sie außerdem: Die Ordner und Dokument des Speicheranbieters
+                        werden <strong>nicht</strong> gelöscht.
+                    </p>
                 </AlertComponent>
             </ConfirmDialog>
         </Box>

@@ -22,6 +22,27 @@ public interface VStorageIndexItemWithAssetRepository extends ReadOnlyRepository
                     WHERE storage_provider_id = :storageProviderId
                       AND path_from_root ~ :path
                       AND (missing = false OR :includeMissing = true)
+                      AND (
+                          :isPublic IS NULL
+                          OR (
+                              :isPublic = true
+                              AND (
+                                  directory = true
+                                  OR asset_is_private = false
+                              )
+                          )
+                          OR (
+                              :isPublic = false
+                              AND directory = false
+                              AND coalesce(asset_is_private, true) = true
+                          )
+                      )
+                      AND (
+                          directory = true
+                          OR CAST(:contentTypePattern AS TEXT) IS NULL
+                          OR coalesce(mime_type, '') = ''
+                          OR lower(mime_type) ~ :contentTypePattern
+                      )
                     ORDER BY directory DESC
                     """,
             nativeQuery = true
@@ -29,7 +50,9 @@ public interface VStorageIndexItemWithAssetRepository extends ReadOnlyRepository
     @Nonnull
     List<VStorageIndexItemWithAssetEntity> listAllInFolder(@Param("storageProviderId") Integer storageProviderId,
                                                            @Param("path") String path,
-                                                           @Param("includeMissing") boolean includeMissing);
+                                                           @Param("includeMissing") boolean includeMissing,
+                                                           @Param("contentTypePattern") String contentTypePattern,
+                                                           @Param("isPublic") Boolean isPublic);
 
     List<VStorageIndexItemWithAssetEntity> findAllByMimeType(String mimeType);
 }

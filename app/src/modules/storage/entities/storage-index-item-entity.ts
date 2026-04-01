@@ -5,7 +5,6 @@ export interface StorageIndexItem {
     storageProviderType: StorageProviderType;
     pathFromRoot: string;
     directory: boolean;
-    isDirectory?: boolean;
     filename: string;
     mimeType: string;
     sizeInBytes: number;
@@ -13,4 +12,10 @@ export interface StorageIndexItem {
     metadata: Record<string, unknown>;
     created: string;
     updated: string;
+}
+
+export interface VStorageIndexItemWithAssetEntity extends StorageIndexItem{
+    assetKey: string;
+    assetUploaderId: string;
+    assetIsPrivate: boolean;
 }

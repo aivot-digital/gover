@@ -243,7 +243,9 @@ export function ThemeDetailsPageIndex() {
                         hint="Dieses Logo wird in der Anwendung angezeigt, z.B. in der Kopfzeile."
                         selectLabel="Logo für das Farbschema auswählen"
                         value={theme.logoKey ?? null}
-                        onChange={handleInputChange('logoKey')}
+                        onChange={(key) => {
+                            handleInputChange('logoKey')(key != null ? key : undefined);
+                        }}
                         size={{
                             aspectRatio: 2, // Default aspect ratio of a logo is 2:1. See logo.tsx
                         }}
@@ -262,7 +264,9 @@ export function ThemeDetailsPageIndex() {
                         hint="Dieses Favicon wird in der Anwendung im tab"
                         selectLabel="Favicon für das Farbschema auswählen"
                         value={theme.faviconKey ?? null}
-                        onChange={handleInputChange('faviconKey')}
+                        onChange={(key) => {
+                            handleInputChange('faviconKey')(key != null ? key : undefined);
+                        }}
                         size={{
                             width: '8rem',
                             height: '8rem',

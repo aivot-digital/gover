@@ -9,8 +9,11 @@ import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +32,9 @@ public class TemplateRenderService {
     private static final String TEMPLATE_SCOPE_NAME = "__templateScope";
     private static final Set<String> IF_STOP_DIRECTIVES = Set.of("else", "endif");
     private static final Set<String> FOR_STOP_DIRECTIVES = Set.of("endfor");
+    private static final Set<String> BLOCK_STOP_DIRECTIVES = Set.of("endblock");
     private static final Pattern FOR_DIRECTIVE_PATTERN = Pattern.compile("([A-Za-z_$][\\w$]*)\\s+in\\s+(.+)", Pattern.DOTALL);
+    private static final Pattern IDENTIFIER_PATTERN = Pattern.compile("[A-Za-z_$][\\w$]*");
 
     private final JavascriptEngineFactoryService javascriptEngineFactoryService;
 
@@ -77,7 +82,8 @@ public class TemplateRenderService {
         try (var engine = javascriptEngineFactoryService.getEngine()) {
             var renderer = new TemplateRenderer(
                     new TemplateExpressionEvaluator(engine, parseResult.source()),
-                    new TemplateRenderContext(processData)
+                    new TemplateRenderContext(processData),
+                    parseResult.blocks()
             );
             return renderer.render(parseResult.nodes());
         } catch (RuntimeException e) {
@@ -110,13 +116,17 @@ public class TemplateRenderService {
 
     private record TemplateParseResult(@Nonnull TemplateSource source,
                                        @Nonnull List<TemplateNode> nodes,
+                                       @Nonnull Map<String, TemplateBlockDefinition> blocks,
                                        @Nonnull List<TemplateSyntaxDiagnostic> diagnostics) {
     }
 
     private record TemplateParseBlock(@Nonnull List<TemplateNode> nodes, @Nullable String stopDirective) {
     }
 
-    private sealed interface TemplateNode permits TextNode, PrintNode, RawNode, IfNode, ForNode {
+    private record TemplateBlockDefinition(@Nonnull List<TemplateNode> body) {
+    }
+
+    private sealed interface TemplateNode permits TextNode, PrintNode, RawNode, IfNode, ForNode, UseBlockNode {
         int sourceIndex();
     }
 
@@ -141,6 +151,9 @@ public class TemplateRenderService {
                            int sourceIndex) implements TemplateNode {
     }
 
+    private record UseBlockNode(@Nonnull String blockIdentifier, int sourceIndex) implements TemplateNode {
+    }
+
     /**
      * Scanner-based template parser.
      *
@@ -151,6 +164,7 @@ public class TemplateRenderService {
     private static final class TemplateParser {
         private final TemplateSource source;
         private final List<TemplateSyntaxDiagnostic> diagnostics = new ArrayList<>();
+        private final Map<String, TemplateBlockDefinition> blocks = new LinkedHashMap<>();
         private int index = 0;
 
         private TemplateParser(@Nonnull TemplateSource source) {
@@ -166,7 +180,14 @@ public class TemplateRenderService {
         @Nonnull
         private TemplateParseResult parse() {
             var block = parseNodes(Set.of());
-            return new TemplateParseResult(source, List.copyOf(block.nodes()), List.copyOf(diagnostics));
+            validateUseBlocks(block.nodes());
+            validateBlockCycles();
+            return new TemplateParseResult(
+                    source,
+                    List.copyOf(block.nodes()),
+                    Collections.unmodifiableMap(new LinkedHashMap<>(blocks)),
+                    List.copyOf(diagnostics)
+            );
         }
 
         /**
@@ -268,6 +289,11 @@ public class TemplateRenderService {
                 return null;
             }
 
+            if (directive.equals("endblock")) {
+                diagnostics.add(source.diagnostic(start, "Unexpected directive '{% " + directive + " %}'."));
+                return null;
+            }
+
             if (hasDirectiveKeyword(directive, "if")) {
                 nodes.add(parseIfNode(start, directive.substring(2).trim()));
                 return null;
@@ -275,6 +301,19 @@ public class TemplateRenderService {
 
             if (hasDirectiveKeyword(directive, "for")) {
                 nodes.add(parseForNode(start, directive.substring(3).trim()));
+                return null;
+            }
+
+            if (hasDirectiveKeyword(directive, "block")) {
+                parseBlockDefinition(start, directive.substring(5).trim());
+                return null;
+            }
+
+            if (hasDirectiveKeyword(directive, "useBlock")) {
+                var node = parseUseBlockNode(start, directive.substring("useBlock".length()).trim());
+                if (node != null) {
+                    nodes.add(node);
+                }
                 return null;
             }
 
@@ -329,6 +368,134 @@ public class TemplateRenderService {
             return new ForNode(variableName, expression, body.nodes(), sourceIndex);
         }
 
+        private void parseBlockDefinition(int sourceIndex, @Nonnull String identifier) {
+            if (identifier.isEmpty()) {
+                diagnostics.add(source.diagnostic(sourceIndex, "Block directive requires an identifier."));
+            } else if (!IDENTIFIER_PATTERN.matcher(identifier).matches()) {
+                diagnostics.add(source.diagnostic(sourceIndex, "Block directive must match '{% block <identifier> %}'."));
+            }
+
+            var body = parseNodes(BLOCK_STOP_DIRECTIVES);
+            if (body.stopDirective() == null) {
+                diagnostics.add(source.diagnostic(sourceIndex, "Block is missing '{% endblock %}'."));
+            }
+
+            if (!IDENTIFIER_PATTERN.matcher(identifier).matches()) {
+                return;
+            }
+
+            if (blocks.containsKey(identifier)) {
+                diagnostics.add(source.diagnostic(sourceIndex, "Block '" + identifier + "' is defined multiple times."));
+                return;
+            }
+
+            blocks.put(identifier, new TemplateBlockDefinition(body.nodes()));
+        }
+
+        @Nullable
+        private UseBlockNode parseUseBlockNode(int sourceIndex, @Nonnull String identifier) {
+            if (identifier.isEmpty()) {
+                diagnostics.add(source.diagnostic(sourceIndex, "useBlock directive requires an identifier."));
+                return null;
+            }
+            if (!IDENTIFIER_PATTERN.matcher(identifier).matches()) {
+                diagnostics.add(source.diagnostic(sourceIndex, "useBlock directive must match '{% useBlock <identifier> %}'."));
+                return null;
+            }
+            return new UseBlockNode(identifier, sourceIndex);
+        }
+
+        private void validateUseBlocks(@Nonnull List<TemplateNode> rootNodes) {
+            validateUseBlocksInNodes(rootNodes);
+            for (var block : blocks.values()) {
+                validateUseBlocksInNodes(block.body());
+            }
+        }
+
+        private void validateUseBlocksInNodes(@Nonnull List<TemplateNode> nodes) {
+            for (var node : nodes) {
+                switch (node) {
+                    case UseBlockNode useBlockNode -> {
+                        if (!blocks.containsKey(useBlockNode.blockIdentifier())) {
+                            diagnostics.add(source.diagnostic(
+                                    useBlockNode.sourceIndex(),
+                                    "useBlock directive references undefined block '" + useBlockNode.blockIdentifier() + "'."
+                            ));
+                        }
+                    }
+                    case IfNode ifNode -> {
+                        validateUseBlocksInNodes(ifNode.trueBranch());
+                        validateUseBlocksInNodes(ifNode.falseBranch());
+                    }
+                    case ForNode forNode -> validateUseBlocksInNodes(forNode.body());
+                    default -> {
+                    }
+                }
+            }
+        }
+
+        private void validateBlockCycles() {
+            var states = new HashMap<String, VisitState>();
+            for (var identifier : blocks.keySet()) {
+                detectBlockCycles(identifier, states);
+            }
+        }
+
+        private void detectBlockCycles(@Nonnull String identifier,
+                                       @Nonnull Map<String, VisitState> states) {
+            var state = states.get(identifier);
+            if (state == VisitState.VISITING || state == VisitState.VISITED) {
+                return;
+            }
+
+            states.put(identifier, VisitState.VISITING);
+            try {
+                for (var reference : collectBlockReferences(blocks.get(identifier).body())) {
+                    if (!blocks.containsKey(reference.blockIdentifier())) {
+                        continue;
+                    }
+
+                    var targetState = states.get(reference.blockIdentifier());
+                    if (targetState == VisitState.VISITING) {
+                        diagnostics.add(source.diagnostic(
+                                reference.sourceIndex(),
+                                "Circular block reference detected involving '" + reference.blockIdentifier() + "'."
+                        ));
+                        continue;
+                    }
+
+                    if (targetState != VisitState.VISITED) {
+                        detectBlockCycles(reference.blockIdentifier(), states);
+                    }
+                }
+            } finally {
+                states.put(identifier, VisitState.VISITED);
+            }
+        }
+
+        @Nonnull
+        private List<UseBlockNode> collectBlockReferences(@Nonnull List<TemplateNode> nodes) {
+            var references = new ArrayList<UseBlockNode>();
+            collectBlockReferences(nodes, references);
+            return references;
+        }
+
+        private void collectBlockReferences(@Nonnull List<TemplateNode> nodes,
+                                            @Nonnull List<UseBlockNode> references) {
+            for (var node : nodes) {
+                switch (node) {
+                    case UseBlockNode useBlockNode -> references.add(useBlockNode);
+                    case IfNode ifNode -> {
+                        collectBlockReferences(ifNode.trueBranch(), references);
+                        collectBlockReferences(ifNode.falseBranch(), references);
+                    }
+                    case ForNode forNode -> collectBlockReferences(forNode.body(), references);
+                    default -> {
+                    }
+                }
+            }
+        }
+
         private void appendText(@Nonnull List<TemplateNode> nodes, int start, int end) {
             if (start >= end) {
                 return;
@@ -358,6 +525,11 @@ public class TemplateRenderService {
             index = closeIndex + closeToken.length();
             return source.slice(contentStart, closeIndex);
         }
+
+        private enum VisitState {
+            VISITING,
+            VISITED
+        }
     }
 
     /**
@@ -369,11 +541,15 @@ public class TemplateRenderService {
     private static final class TemplateRenderer {
         private final TemplateExpressionEvaluator evaluator;
         private final TemplateRenderContext rootContext;
+        private final Map<String, TemplateBlockDefinition> blocks;
+        private final Deque<String> activeBlocks = new ArrayDeque<>();
 
         private TemplateRenderer(@Nonnull TemplateExpressionEvaluator evaluator,
-                                 @Nonnull TemplateRenderContext rootContext) {
+                                 @Nonnull TemplateRenderContext rootContext,
+                                 @Nonnull Map<String, TemplateBlockDefinition> blocks) {
             this.evaluator = evaluator;
             this.rootContext = rootContext;
+            this.blocks = blocks;
         }
 
         @Nonnull
@@ -407,7 +583,36 @@ public class TemplateRenderService {
                             renderInto(builder, forNode.body(), context.with(forNode.variableName(), item));
                         }
                     }
+                    case UseBlockNode useBlockNode -> renderBlock(builder, context, useBlockNode);
                 }
+            }
+        }
+
+        private void renderBlock(@Nonnull StringBuilder builder,
+                                 @Nonnull TemplateRenderContext context,
+                                 @Nonnull UseBlockNode useBlockNode) {
+            var block = blocks.get(useBlockNode.blockIdentifier());
+            if (block == null) {
+                throw evaluator.failure(
+                        useBlockNode.sourceIndex(),
+                        "useBlock directive references undefined block '" + useBlockNode.blockIdentifier() + "'.",
+                        null
+                );
+            }
+
+            if (activeBlocks.contains(useBlockNode.blockIdentifier())) {
+                throw evaluator.failure(
+                        useBlockNode.sourceIndex(),
+                        "Circular block reference detected involving '" + useBlockNode.blockIdentifier() + "'.",
+                        null
+                );
+            }
+
+            activeBlocks.addLast(useBlockNode.blockIdentifier());
+            try {
+                renderInto(builder, block.body(), context);
+            } finally {
+                activeBlocks.removeLast();
             }
         }
     }
