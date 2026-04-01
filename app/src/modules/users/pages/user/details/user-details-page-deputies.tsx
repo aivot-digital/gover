@@ -22,7 +22,6 @@ import {VUserDeputyWithDetailsApiService} from "../../../services/v-user-deputy-
 import {parseISO} from "date-fns/parseISO";
 import Delete from "@aivot/mui-material-symbols-400-outlined/dist/delete/Delete";
 import {useConfirm} from "../../../../../providers/confirm-provider";
-import {isPast} from "date-fns/isPast";
 import {UserDeputyApiService} from "../../../services/user-deputy-api-service";
 import {SelectUserDialog} from "../../../dialogs/select-user-dialog";
 import {UserDeputyEntity} from "../../../entities/user-deputy-entity";
@@ -30,6 +29,7 @@ import {DialogTitleWithClose} from "../../../../../components/dialog-title-with-
 import {DateFieldComponent} from "../../../../../components/date-field/date-field-component";
 import {DateFieldComponentModelMode} from "../../../../../models/elements/form/input/date-field-element";
 import {formatISODate} from "../../../../../utils/date-utils";
+import {addDays} from "date-fns/addDays";
 
 const columns: Array<GridColDef<VUserDeputyWithDetailsEntity>> = [
     {
@@ -86,6 +86,25 @@ export function UserDetailsPageDeputies() {
         messageType: 'snackbar',
     });
 
+    const deputyDateRangeError = useMemo(() => {
+        if (deputyToAdd?.untilTimestamp == null) {
+            return undefined;
+        }
+
+        const fromTimestamp = parseISO(deputyToAdd.fromTimestamp);
+        const untilTimestamp = parseISO(deputyToAdd.untilTimestamp);
+
+        if (Number.isNaN(fromTimestamp.getTime()) || Number.isNaN(untilTimestamp.getTime())) {
+            return undefined;
+        }
+
+        if (untilTimestamp.getTime() <= fromTimestamp.getTime()) {
+            return 'Das Ende der Vertretung muss nach dem Start der Vertretung liegen.';
+        }
+
+        return undefined;
+    }, [deputyToAdd?.fromTimestamp, deputyToAdd?.untilTimestamp]);
+
     const preSearchElements = useMemo(() => {
         if (!hasAccess) {
             return undefined;
@@ -112,6 +131,11 @@ export function UserDetailsPageDeputies() {
 
     const handleAddDeputy = () => {
         if (deputyToAdd == null) {
+            return;
+        }
+
+        if (deputyDateRangeError != null) {
+            dispatch(showErrorSnackbar(deputyDateRangeError));
             return;
         }
 
@@ -288,6 +312,8 @@ export function UserDetailsPageDeputies() {
                         label="Ende der Vertretung"
                         mode={DateFieldComponentModelMode.Day}
                         value={deputyToAdd?.untilTimestamp ?? undefined}
+                        minDate={deputyToAdd?.fromTimestamp != null ? addDays(parseISO(deputyToAdd.fromTimestamp), 1) : undefined}
+                        error={deputyDateRangeError}
                         onChange={(val) => {
                             if (deputyToAdd == null) {
                                 return;
@@ -302,20 +328,20 @@ export function UserDetailsPageDeputies() {
 
                 <DialogActions>
                     <Button
+                        variant="contained"
+                        onClick={() => {
+                            handleAddDeputy();
+                        }}
+                        disabled={deputyToAdd == null || deputyDateRangeError != null}
+                    >
+                        Hinzufügen
+                    </Button>
+                    <Button
                         onClick={() => {
                             setDeputyToAdd(null);
                         }}
                     >
                         Abbrechen
-                    </Button>
-                    <Button
-                        variant="contained"
-                        onClick={() => {
-                            handleAddDeputy();
-                        }}
-                        disabled={deputyToAdd == null}
-                    >
-                        Hinzufügen
                     </Button>
                 </DialogActions>
             </Dialog>
