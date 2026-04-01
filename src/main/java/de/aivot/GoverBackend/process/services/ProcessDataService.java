@@ -109,6 +109,7 @@ public class ProcessDataService {
 
         Map<String, Object> instanceData = new HashMap<>();
 
+        instanceData.put("accessKey", instance.getAccessKey());
         instanceData.put("started", instance.getStarted());
         instanceData.put("initialPayload", instance.getInitialPayload());
         instanceData.put("assignedFileNumbers", instance.getAssignedFileNumbers());
