@@ -173,6 +173,16 @@ export function UserRolesDetailsPageIndex() {
                 Seien Sie vorsichtig bei der Vergabe von Berechtigungen, insbesondere bei solchen, die Zugriff auf sensible Daten oder kritische Funktionen ermöglichen.
             </Typography>
 
+            <AlertComponent
+                color="warning"
+                title="Hinweis zum aktuellen Entwicklungsstand von Rollen und Berechtigungen"
+                sx={{mb: 3}}
+            >
+                Rollen und die damit verbundenen Berechtigungen werden in Gover derzeit noch nicht überall vollständig berücksichtigt.
+                Funktionen können unvollständig sein, sich ändern oder sich in einzelnen Bereichen noch nicht wie erwartet verhalten.
+                Bitte verlassen Sie sich daher aktuell nicht darauf, dass konfigurierte Berechtigungen bereits konsistent an allen Stellen durchgesetzt werden.
+            </AlertComponent>
+
             <Grid
                 container
                 spacing={2}
