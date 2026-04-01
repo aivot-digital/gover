@@ -19,6 +19,10 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+/**
+ * @deprecated
+ */
+@Deprecated
 @Component
 @EnableScheduling
 public class CleanupService {
