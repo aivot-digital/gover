@@ -692,7 +692,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
             <Box
                 sx={{
                     display: 'flex',
-                    marginTop: 2,
+                    marginTop: 4,
                     gap: 2,
                 }}
             >
