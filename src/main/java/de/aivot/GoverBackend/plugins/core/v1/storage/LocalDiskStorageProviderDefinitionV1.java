@@ -30,6 +30,12 @@ import java.util.Optional;
 
 @Component
 public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefinition<LocalDiskStorageProviderDefinitionV1.Config> {
+    private final LocalDiskStorageProviderDefinitionPropertiesV1 properties;
+
+    public LocalDiskStorageProviderDefinitionV1(LocalDiskStorageProviderDefinitionPropertiesV1 properties) {
+        this.properties = properties;
+    }
+
     @Nonnull
     @Override
     public String getParentPluginKey() {
@@ -73,6 +79,32 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
             return ElementPOJOMapper.createFromPOJO(Config.class);
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(e);
+        }
+    }
+
+    @Override
+    public void validateConfiguration(@Nonnull Config config) throws ResponseException {
+        var configuredAllowedLocalRoots = properties.getAllowedLocalRoots();
+        if (configuredAllowedLocalRoots == null || configuredAllowedLocalRoots.isEmpty()) {
+            throw noAllowedLocalRootsConfiguredException();
+        }
+
+        var allowedLocalRoots = configuredAllowedLocalRoots.stream()
+                .filter(path -> path != null && !path.isBlank())
+                .map(LocalDiskStorageProviderDefinitionV1::toAbsoluteNormalizedPath)
+                .toList();
+        if (allowedLocalRoots.isEmpty()) {
+            throw noAllowedLocalRootsConfiguredException();
+        }
+
+        var rootPathReal = config.getRealRootPath();
+        var isAllowedRoot = allowedLocalRoots.stream()
+                .anyMatch(rootPathReal::startsWith);
+        if (!isAllowedRoot) {
+            throw ResponseException.badRequest(
+                    "Das Stammverzeichnis %s ist nicht zulässig. Es muss unter einem der konfigurierten erlaubten lokalen Stammverzeichnisse liegen."
+                            .formatted(StringUtils.quote(rootPathReal.toString()))
+            );
         }
     }
 
@@ -129,6 +161,18 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
             return "/";
         }
         return path.endsWith("/") ? path : path + "/";
+    }
+
+    @Nonnull
+    private static Path toAbsoluteNormalizedPath(@Nonnull String path) {
+        return Path.of(path).toAbsolutePath().normalize();
+    }
+
+    @Nonnull
+    private static ResponseException noAllowedLocalRootsConfiguredException() {
+        return ResponseException.badRequest(
+                "Lokale Speicheranbieter können nicht erstellt werden, da keine erlaubten lokalen Stammverzeichnisse über storage.local.v1.allowed-local-roots konfiguriert sind."
+        );
     }
 
     @Nonnull
@@ -502,7 +546,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
 
         long size;
         try {
-            size =  Files.size(documentPathReal);
+            size = Files.size(documentPathReal);
         } catch (IOException e) {
             throw new StorageException(e,
                     "Fehler beim Lesen des Dokuments %s: %s.",
