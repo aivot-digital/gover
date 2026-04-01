@@ -281,7 +281,6 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition {
 
             try {
                 var jsResult = engine
-                        .registerGlobalObject("$", context.getProcessData().get("$"))
                         .evaluateCode(jsCode);
 
                 conditionEvaluated = jsResult.toString();

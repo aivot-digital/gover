@@ -110,7 +110,6 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition {
 
             try {
                 var result = engine
-                        .registerGlobalObject("$", context.getProcessData().get("$"))
                         .evaluateCode(jsCode);
 
                 return new ProcessNodeExecutionResultTaskCompleted()
