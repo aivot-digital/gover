@@ -55,7 +55,7 @@ class PdfActionNodeV1Test {
         pdfService = mock(PdfService.class);
         processInstanceAttachmentService = mock(ProcessInstanceAttachmentService.class);
 
-        when(pdfService.generatePdfFromHtml(anyString(), anyString(), anyString(), anyString(), anyString()))
+        when(pdfService.generatePdfFromHtml(anyString(), anyString(), anyString()))
                 .thenReturn("pdf-bytes".getBytes(StandardCharsets.UTF_8));
         when(processInstanceAttachmentService.create(any(ProcessInstanceAttachmentEntity.class)))
                 .thenAnswer(invocation -> {
@@ -87,9 +87,7 @@ class PdfActionNodeV1Test {
         verify(pdfService).generatePdfFromHtml(
                 "<html><body><main>Body</main></body></html>",
                 "<html><body><div>Header</div></body></html>",
-                "<html><body><div>Footer</div></body></html>",
-                "21cm",
-                "29.7cm"
+                "<html><body><div>Footer</div></body></html>"
         );
         assertEquals("report.pdf", result.getNodeData().get("fileName"));
         assertEquals("application/pdf", result.getNodeData().get("mimeType"));
@@ -105,7 +103,7 @@ class PdfActionNodeV1Test {
                 () -> node.init(context(html))
         );
 
-        verify(pdfService, never()).generatePdfFromHtml(anyString(), anyString(), anyString(), anyString(), anyString());
+        verify(pdfService, never()).generatePdfFromHtml(anyString(), anyString(), anyString());
     }
 
     private static ProcessNodeExecutionContextInit context(String html) {

@@ -283,9 +283,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
             pdfBytes = pdfService.generatePdfFromHtml(
                     interpolatedContentHtml,
                     interpolatedHeaderHtml,
-                    interpolatedFooterHtml,
-                    "21cm",
-                    "29.7cm"
+                    interpolatedFooterHtml
             );
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
