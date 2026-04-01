@@ -1,8 +1,11 @@
 package de.aivot.GoverBackend.plugins.core.v1.storage;
 
+import de.aivot.GoverBackend.TestData;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
 import de.aivot.GoverBackend.storage.exceptions.StorageException;
 import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
+import de.aivot.GoverBackend.storage.repositories.StorageProviderRepository;
 import de.aivot.GoverBackend.utils.StringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +18,9 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class LocalDiskStorageProviderDefinitionTest {
 
@@ -259,7 +265,7 @@ class LocalDiskStorageProviderDefinitionTest {
     void validateConfigurationRejectsWhenAllowedLocalRootsEmpty() {
         var exception = assertThrows(
                 ResponseException.class,
-                () -> createProvider(List.of()).validateConfiguration(config)
+                () -> createProvider(List.of()).validateConfiguration(providerEntity(0), config)
         );
 
         assertEquals(
@@ -274,7 +280,7 @@ class LocalDiskStorageProviderDefinitionTest {
         assertNotNull(allowedRoot);
 
         assertDoesNotThrow(() ->
-                createProvider(List.of(allowedRoot.toString())).validateConfiguration(config)
+                createProvider(List.of(allowedRoot.toString())).validateConfiguration(providerEntity(0), config)
         );
     }
 
@@ -286,13 +292,80 @@ class LocalDiskStorageProviderDefinitionTest {
 
         var exception = assertThrows(
                 ResponseException.class,
-                () -> createProvider(List.of(allowedRoot.toString())).validateConfiguration(config)
+                () -> createProvider(List.of(allowedRoot.toString())).validateConfiguration(providerEntity(0), config)
         );
 
         assertEquals(
                 "Das Stammverzeichnis %s ist nicht zulässig. Es muss unter einem der konfigurierten erlaubten lokalen Stammverzeichnisse liegen."
                         .formatted(StringUtils.quote(config.getRealRootPath().toString())),
                 exception.getMessage()
+        );
+    }
+
+    @Test
+    void validateConfigurationRejectsOverlappingParentRoot() {
+        var targetRoot = config.getRealRootPath();
+        var parentRoot = targetRoot.getParent();
+        assertNotNull(parentRoot);
+
+        var exception = assertThrows(
+                ResponseException.class,
+                () -> createProvider(
+                        List.of(parentRoot.toString()),
+                        List.of(existingProvider(7, "Parent Provider", parentRoot.toString()))
+                ).validateConfiguration(providerEntity(70), config)
+        );
+
+        assertEquals(
+                "Das Stammverzeichnis %s überschneidet sich mit dem Stammverzeichnis %s des lokalen Speicheranbieters %s mit der ID %s. Lokale Speicheranbieter dürfen keine überlappenden Stammverzeichnisse verwenden."
+                        .formatted(
+                                StringUtils.quote(targetRoot.toString()),
+                                StringUtils.quote(parentRoot.toString()),
+                                StringUtils.quote("Parent Provider"),
+                                StringUtils.quote("7")
+                        ),
+                exception.getMessage()
+        );
+    }
+
+    @Test
+    void validateConfigurationRejectsOverlappingSubpathRoot() {
+        var targetRoot = config.getRealRootPath();
+        var subpathRoot = targetRoot.resolve("subfolder");
+        var allowedRoot = targetRoot.getParent();
+        assertNotNull(allowedRoot);
+
+        var exception = assertThrows(
+                ResponseException.class,
+                () -> createProvider(
+                        List.of(allowedRoot.toString()),
+                        List.of(existingProvider(8, "Subpath Provider", subpathRoot.toString()))
+                ).validateConfiguration(providerEntity(80), config)
+        );
+
+        assertEquals(
+                "Das Stammverzeichnis %s überschneidet sich mit dem Stammverzeichnis %s des lokalen Speicheranbieters %s mit der ID %s. Lokale Speicheranbieter dürfen keine überlappenden Stammverzeichnisse verwenden."
+                        .formatted(
+                                StringUtils.quote(targetRoot.toString()),
+                                StringUtils.quote(subpathRoot.toString()),
+                                StringUtils.quote("Subpath Provider"),
+                                StringUtils.quote("8")
+                        ),
+                exception.getMessage()
+        );
+    }
+
+    @Test
+    void validateConfigurationAllowsExistingRootForSameProviderId() {
+        var targetRoot = config.getRealRootPath();
+        var allowedRoot = targetRoot.getParent();
+        assertNotNull(allowedRoot);
+
+        assertDoesNotThrow(() ->
+                createProvider(
+                        List.of(allowedRoot.toString()),
+                        List.of(existingProvider(9, "Current Provider", targetRoot.toString()))
+                ).validateConfiguration(providerEntity(9), config)
         );
     }
 
@@ -359,9 +432,31 @@ class LocalDiskStorageProviderDefinitionTest {
     }
 
     private LocalDiskStorageProviderDefinitionV1 createProvider(List<String> allowedLocalRoots) {
+        return createProvider(allowedLocalRoots, List.of());
+    }
+
+    private LocalDiskStorageProviderDefinitionV1 createProvider(List<String> allowedLocalRoots,
+                                                                List<StorageProviderEntity> existingProviders) {
+        var storageProviderRepository = mock(StorageProviderRepository.class);
+        when(storageProviderRepository.findAllByStorageProviderDefinitionKey(anyString()))
+                .thenReturn(existingProviders);
+
         return new LocalDiskStorageProviderDefinitionV1(
                 new LocalDiskStorageProviderDefinitionPropertiesV1()
-                        .setAllowedLocalRoots(allowedLocalRoots)
+                        .setAllowedLocalRoots(allowedLocalRoots),
+                storageProviderRepository
         );
+    }
+
+    private StorageProviderEntity existingProvider(int id, String name, String root) {
+        return new StorageProviderEntity()
+                .setId(id)
+                .setName(name)
+                .setConfiguration(TestData.authored("root", root));
+    }
+
+    private StorageProviderEntity providerEntity(int id) {
+        return new StorageProviderEntity()
+                .setId(id);
     }
 }

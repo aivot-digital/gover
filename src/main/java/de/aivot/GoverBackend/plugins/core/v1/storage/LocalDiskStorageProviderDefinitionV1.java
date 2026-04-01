@@ -11,11 +11,13 @@ import de.aivot.GoverBackend.enums.AlertType;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
 import de.aivot.GoverBackend.storage.exceptions.StorageException;
 import de.aivot.GoverBackend.storage.models.StorageDocument;
 import de.aivot.GoverBackend.storage.models.StorageFolder;
 import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
 import de.aivot.GoverBackend.storage.models.StorageProviderDefinition;
+import de.aivot.GoverBackend.storage.repositories.StorageProviderRepository;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -23,19 +25,20 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
 import java.util.LinkedList;
+import java.util.Objects;
 import java.util.Optional;
 
 @Component
 public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefinition<LocalDiskStorageProviderDefinitionV1.Config> {
     private final LocalDiskStorageProviderDefinitionPropertiesV1 properties;
+    private final StorageProviderRepository storageProviderRepository;
 
-    public LocalDiskStorageProviderDefinitionV1(LocalDiskStorageProviderDefinitionPropertiesV1 properties) {
+    public LocalDiskStorageProviderDefinitionV1(LocalDiskStorageProviderDefinitionPropertiesV1 properties,
+                                                StorageProviderRepository storageProviderRepository) {
         this.properties = properties;
+        this.storageProviderRepository = storageProviderRepository;
     }
 
     @Nonnull
@@ -107,7 +110,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
     }
 
     @Override
-    public void validateConfiguration(@Nonnull Config config) throws ResponseException {
+    public void validateConfiguration(@Nonnull StorageProviderEntity provider, @Nonnull Config config) throws ResponseException {
         var configuredAllowedLocalRoots = properties.getAllowedLocalRoots();
         if (configuredAllowedLocalRoots == null || configuredAllowedLocalRoots.isEmpty()) {
             throw noAllowedLocalRootsConfiguredException();
@@ -130,6 +133,8 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
                             .formatted(StringUtils.quote(rootPathReal.toString()))
             );
         }
+
+        validateNonOverlappingRootPath(provider.getId(), rootPathReal);
     }
 
     @Override
@@ -190,6 +195,50 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
     @Nonnull
     private static Path toAbsoluteNormalizedPath(@Nonnull String path) {
         return Path.of(path).toAbsolutePath().normalize();
+    }
+
+    private void validateNonOverlappingRootPath(@Nullable Integer providerId,
+                                                @Nonnull Path rootPathReal) throws ResponseException {
+        for (var existingProvider : storageProviderRepository.findAllByStorageProviderDefinitionKey(getKey())) {
+            if (Objects.equals(existingProvider.getId(), providerId)) {
+                continue;
+            }
+
+            var existingRootPath = getConfiguredRootPath(existingProvider);
+            if (existingRootPath.isEmpty()) {
+                continue;
+            }
+
+            if (pathsOverlap(rootPathReal, existingRootPath.get())) {
+                throw ResponseException.badRequest(
+                        "Das Stammverzeichnis %s überschneidet sich mit dem Stammverzeichnis %s des lokalen Speicheranbieters %s mit der ID %s. Lokale Speicheranbieter dürfen keine überlappenden Stammverzeichnisse verwenden."
+                                .formatted(
+                                        StringUtils.quote(rootPathReal.toString()),
+                                        StringUtils.quote(existingRootPath.get().toString()),
+                                        StringUtils.quote(existingProvider.getName()),
+                                        StringUtils.quote(String.valueOf(existingProvider.getId()))
+                                )
+                );
+            }
+        }
+    }
+
+    @Nonnull
+    private static Optional<Path> getConfiguredRootPath(@Nonnull StorageProviderEntity provider) {
+        var rawRoot = provider.getConfiguration().get("root");
+        if (!(rawRoot instanceof String root) || root.isBlank()) {
+            return Optional.empty();
+        }
+
+        try {
+            return Optional.of(toAbsoluteNormalizedPath(root));
+        } catch (InvalidPathException e) {
+            return Optional.empty();
+        }
+    }
+
+    private static boolean pathsOverlap(@Nonnull Path left, @Nonnull Path right) {
+        return left.startsWith(right) || right.startsWith(left);
     }
 
     @Nonnull
