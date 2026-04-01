@@ -14,6 +14,7 @@ import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceRepository;
+import de.aivot.GoverBackend.process.repositories.ProcessInstanceAttachmentRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.process.services.ProcessDataService;
@@ -102,6 +103,11 @@ class ProcessWorkerTest {
             default -> defaultValue(args);
         });
 
+        var processInstanceAttachmentRepository = createProxy(ProcessInstanceAttachmentRepository.class, (methodName, args) -> switch (methodName) {
+            case "findAllByProcessInstanceId" -> List.of();
+            default -> defaultValue(args);
+        });
+
         var resultHandler = new TestProcessNodeExecutionResultHandler();
 
         var worker = new ProcessWorker(
@@ -110,7 +116,11 @@ class ProcessWorkerTest {
                 new ProcessNodeDefinitionService(List.of(processNodeDefinition)),
                 processInstanceTaskRepository,
                 resultHandler,
-                new ProcessDataService(processInstanceTaskRepository, processNodeRepository),
+                new ProcessDataService(
+                        processInstanceTaskRepository,
+                        processNodeRepository,
+                        processInstanceAttachmentRepository
+                ),
                 new TestProcessNodeExecutionLoggerFactory(),
                 new TestProcessNodeService()
         );
