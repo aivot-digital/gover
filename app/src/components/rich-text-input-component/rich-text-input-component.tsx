@@ -1,7 +1,7 @@
 import Typography from "@mui/material/Typography";
 import {Box, SxProps} from "@mui/material";
 import {alpha, useTheme} from "@mui/material/styles";
-import {useCallback, useState} from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 import {
     BlockTypeSelect,
     BoldItalicUnderlineToggles,
@@ -22,6 +22,7 @@ import {
     StrikeThroughSupSubToggles,
     toolbarPlugin,
     UndoRedo,
+    type MDXEditorMethods,
     type Translation
 } from "@mdxeditor/editor";
 import {isStringNullOrEmpty} from "../../utils/string-utils";
@@ -94,6 +95,7 @@ export interface RichTextInputComponentProps {
 export function RichTextInputComponent(props: RichTextInputComponentProps) {
     const theme = useTheme();
     const [overlayContainer, setOverlayContainer] = useState<HTMLElement | null>(null);
+    const editorRef = useRef<MDXEditorMethods | null>(null);
     const {
         label,
         hint,
@@ -126,6 +128,18 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
     const handleOverlayContainerRef = useCallback((node: HTMLDivElement | null) => {
         setOverlayContainer(node);
     }, []);
+    const normalizedValue = value ?? '';
+
+    useEffect(() => {
+        const editor = editorRef.current;
+        if (editor == null) {
+            return;
+        }
+
+        if (editor.getMarkdown() !== normalizedValue) {
+            editor.setMarkdown(normalizedValue);
+        }
+    }, [normalizedValue]);
 
     return (
         <Box
@@ -377,10 +391,11 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                 }}
             >
                 <MDXEditor
+                    ref={editorRef}
                     className="gover-mdx-editor"
                     overlayContainer={overlayContainer}
                     translation={mdxEditorGermanTranslation}
-                    markdown={value ?? ''}
+                    markdown={normalizedValue}
                     readOnly={isReadOnly}
                     onChange={(val) => {
                         if (isStringNullOrEmpty(val)) {
