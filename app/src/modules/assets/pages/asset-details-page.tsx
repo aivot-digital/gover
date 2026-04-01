@@ -23,7 +23,13 @@ import SwapHoriz from '@aivot/mui-material-symbols-400-outlined/dist/swap-horiz/
 import {StorageProviderEntity} from '../../storage/entities/storage-provider-entity';
 import {GenericDetailsSkeleton} from '../../../components/generic-details-page/generic-details-skeleton';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
-import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../slices/shell-slice';
+import {
+    addSnackbarMessage, clearLoadingMessage,
+    removeSnackbarMessage,
+    setLoadingMessage,
+    SnackbarSeverity,
+    SnackbarType,
+} from '../../../slices/shell-slice';
 import {Breadcrumbs} from '../../../components/breadcrumbs/breadcrumbs';
 import {showExperimentalFeatures} from '../../../hooks/use-show-experimental-features';
 import {useNotImplemented} from '../../../hooks/use-not-implemented';
@@ -113,6 +119,11 @@ export function AssetDetailsPage() {
             return;
         }
 
+        dispatch(setLoadingMessage({
+            message: 'Verschiebe Datei',
+            blocking: true,
+            estimatedTime: 500,
+        }));
         try {
             const movedAsset = await new AssetsApiService()
                 .moveInStorageProvider(
@@ -132,6 +143,8 @@ export function AssetDetailsPage() {
             );
         } catch (err) {
             dispatch(showApiErrorSnackbar(err, 'Die Datei konnte nicht verschoben werden.'));
+        } finally {
+            dispatch(clearLoadingMessage());
         }
     };
 
@@ -147,6 +160,11 @@ export function AssetDetailsPage() {
             return;
         }
 
+        dispatch(setLoadingMessage({
+            message: 'Kopiere Datei',
+            blocking: true,
+            estimatedTime: 500,
+        }));
         try {
             const copiedAsset = await new AssetsApiService()
                 .copyInStorageProvider(
@@ -159,13 +177,15 @@ export function AssetDetailsPage() {
                 ? AssetsApiService.normalizeFolderPath(copiedAsset.storagePathFromRoot.substring(0, copiedAsset.storagePathFromRoot.lastIndexOf('/')))
                 : '/';
 
-            dispatch(showSuccessSnackbar('Datei erfolgreich kopiert.'));
+            dispatch(showSuccessSnackbar('Datei erfolgreich kopiert. Navigiere zur Kopie.'));
             navigate(
                 `/assets/providers/${parsedStorageProviderId}/files/${AssetsApiService.encodeStoragePathForRoute(copiedAsset.storagePathFromRoot)}?path=${encodeURIComponent(parentFolder)}`,
                 {replace: true},
             );
         } catch (err) {
             dispatch(showApiErrorSnackbar(err, 'Die Datei konnte nicht kopiert werden.'));
+        } finally {
+            dispatch(clearLoadingMessage());
         }
     };
 
