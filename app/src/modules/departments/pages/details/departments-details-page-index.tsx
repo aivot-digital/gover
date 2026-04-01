@@ -553,13 +553,13 @@ export function DepartmentsDetailsPageIndex() {
                     mb: 1,
                 }}
             >
-                Farbschema der Organisationseinheit
+                Erscheinungsbild der Organisationseinheit
             </Typography>
             <Typography sx={{mb: 2, maxWidth: 900}}>
-                Hinterlegen Sie das Standard-Farbschema, das für Formulare dieser Organisationseinheit verwendet werden soll.
-                Dieses überschreibt das System-Farbschema.
-                Bearbeiter:innen können für Formulare weiterhin ein individuelles Farbschema auswählen.
-                Wenn Sie kein Farbschema auswählen, wird das System-Farbschema verwendet.
+                Hinterlegen Sie das Standard-Erscheinungsbild, das für Formulare dieser Organisationseinheit verwendet werden soll.
+                Dieses überschreibt das Erscheinungsbild der Gover-Instanz.
+                Bearbeiter:innen können für Formulare weiterhin ein individuelles Erscheinungsbild auswählen.
+                Wenn Sie kein Erscheinungsbild auswählen, wird das Erscheinungsbild der Gover-Instanz verwendet.
             </Typography>
             <Grid
                 container
@@ -586,7 +586,7 @@ export function DepartmentsDetailsPageIndex() {
                             value: inheritedDepartmentValues?.themeId?.toString() ?? undefined,
                             disabled: true,
                         }}
-                        label="Farbschema der Organisationseinheit"
+                        label="Erscheinungsbild der Organisationseinheit"
                         value={department.themeId?.toString()}
                         onChange={(val) => {
                             if (val == null) {

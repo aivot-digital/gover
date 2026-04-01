@@ -52,7 +52,7 @@ public class ThemeService implements EntityService<ThemeEntity, Integer> {
                 .build();
 
         if (formVersionRepository.exists(formSpec)) {
-            throw ResponseException.conflict("Das Farbschema wird noch von einem oder mehreren Formularen verwendet.");
+            throw ResponseException.conflict("Das Erscheinungsbild wird noch von einem oder mehreren Formularen verwendet.");
         }
 
         var depSpec = DepartmentFilter
@@ -61,7 +61,7 @@ public class ThemeService implements EntityService<ThemeEntity, Integer> {
                 .build();
 
         if (departmentRepository.exists(depSpec)) {
-            throw ResponseException.conflict("Das Farbschema wird noch von einer oder mehreren Fachbereichen verwendet.");
+            throw ResponseException.conflict("Das Erscheinungsbild wird noch von einer oder mehreren Fachbereichen verwendet.");
         }
 
         themeRepository.delete(entity);

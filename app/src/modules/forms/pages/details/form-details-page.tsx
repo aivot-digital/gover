@@ -320,7 +320,7 @@ export function FormDetailsPage() {
             .getFormTheme(loadedForm.form.slug, loadedForm.version.version)
             .then(setTheme)
             .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Das Farbschema des Formulars konnte nicht geladen werden.'));
+                dispatch(showApiErrorSnackbar(err, 'Das Erscheinungsbild des Formulars konnte nicht geladen werden.'));
             });
     }, [loadedForm]);
 

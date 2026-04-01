@@ -21,7 +21,7 @@ const activeThemeChip = (
         color="info"
         variant="outlined"
         size="small"
-        title="Aktives Farbschema der Gover-Instanz"
+        title="Aktives Erscheinungsbild der Gover-Instanz"
         sx={{
             ml: 1,
         }}
@@ -38,17 +38,17 @@ export function ThemeListPage() {
 
     return (
         <PageWrapper
-            title="Farbschemata"
+            title="Erscheinungsbilder"
             fullWidth
             background
         >
             <GenericListPage<Theme>
                 header={{
                     icon: <PaletteOutlinedIcon />,
-                    title: 'Farbschemata',
+                    title: 'Erscheinungsbilder',
                     actions: [
                         {
-                            label: 'Neues Farbschema',
+                            label: 'Neues Erscheinungsbild',
                             icon: <AddOutlinedIcon />,
                             to: '/themes/new',
                             variant: 'contained',
@@ -56,23 +56,23 @@ export function ThemeListPage() {
                         },
                     ],
                     helpDialog: {
-                        title: 'Hilfe zu Farbschemata',
+                        title: 'Hilfe zu Erscheinungsbildern',
                         tooltip: 'Hilfe anzeigen',
                         content: (
                             <>
                                 <Typography>
-                                    Ein Farbschema ist eine Sammlung von Farben, die in der Benutzeroberfläche von Gover verwendet werden. Farbschemata können global oder für einzelne Formulare genutzt werden.
-                                    So können Sie z. B. für verschiedene Fachbereiche oder Abteilungen unterschiedliche Farbschemata anlegen und nutzen.
+                                    Ein Erscheinungsbild legt Farben, Logo und Favicon für die Benutzeroberfläche von Gover fest. Erscheinungsbilder können global oder für einzelne Formulare verwendet werden.
+                                    So können Sie z. B. für verschiedene Fachbereiche oder Abteilungen unterschiedliche Erscheinungsbilder anlegen und nutzen.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
-                                    Ein Farbschema besteht aus einem Namen und einer Liste von Farben. Bei der Auswahl der Farben sollte die Barrierfreiheit berücksichtigt werden.
+                                    Ein Erscheinungsbild besteht aus einem Namen, Farben sowie optional einem Logo und Favicon. Bei der Auswahl der Farben sollte die Barrierefreiheit berücksichtigt werden.
                                 </Typography>
                             </>
                         ),
                     },
                 }}
-                searchLabel="Farbschema suchen"
-                searchPlaceholder="Name des Farbschemas eingeben…"
+                searchLabel="Erscheinungsbild suchen"
+                searchPlaceholder="Name des Erscheinungsbildes eingeben…"
                 fetch={(options) => {
                     return new ThemesApiService(options.api)
                         .list(
@@ -101,7 +101,7 @@ export function ThemeListPage() {
                         renderCell: (params) => (
                             <CellLink
                                 to={`/themes/${params.id}`}
-                                title={hasAccess ? 'Farbschema bearbeiten' : 'Farbschema ansehen'}
+                                title={hasAccess ? 'Erscheinungsbild bearbeiten' : 'Erscheinungsbild ansehen'}
                             >
                                 {String(params.value)}
                                 {params.row.id === Number(appThemeId) && activeThemeChip}
@@ -159,19 +159,19 @@ export function ThemeListPage() {
                     },
                 ]}
                 getRowIdentifier={row => row.id.toString()}
-                noDataPlaceholder="Keine Farbschemata angelegt"
-                noSearchResultsPlaceholder="Keine Farbschemata gefunden"
+                noDataPlaceholder="Keine Erscheinungsbilder angelegt"
+                noSearchResultsPlaceholder="Keine Erscheinungsbilder gefunden"
                 rowActionsCount={2}
                 rowActions={(item: Theme) => [
                     {
                         icon: hasAccess ? <EditOutlined /> : <Visibility/>,
                         to: `/themes/${item.id}`,
-                        tooltip: hasAccess ? 'Farbschema bearbeiten' : 'Farbschema ansehen',
+                        tooltip: hasAccess ? 'Erscheinungsbild bearbeiten' : 'Erscheinungsbild ansehen',
                     },
                     {
                         icon: <DescriptionOutlined />,
                         to: `/themes/${item.id}/forms`,
-                        tooltip: 'Formulare mit diesem Schema ansehen',
+                        tooltip: 'Formulare mit diesem Erscheinungsbild ansehen',
                     },
                 ]}
                 defaultSortField="name"

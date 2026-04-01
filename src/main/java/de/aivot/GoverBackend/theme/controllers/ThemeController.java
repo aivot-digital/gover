@@ -32,7 +32,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/themes/")
-@Tag(name = "Themes", description = "Manage themes")
+@Tag(name = "Themes", description = "Manage appearance settings")
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ThemeController {
     private final ScopedAuditService auditService;
@@ -42,7 +42,7 @@ public class ThemeController {
     @Autowired
     public ThemeController(AuditService auditService,
                            ThemeService service, UserService userService) {
-        this.auditService = auditService.createScopedAuditService(ThemeController.class, "Themes");
+        this.auditService = auditService.createScopedAuditService(ThemeController.class, "Erscheinungsbilder");
         this.service = service;
         this.userService = userService;
     }
@@ -95,7 +95,7 @@ public class ThemeController {
                                 "name", createdTheme.getName()
                         ))
                 .withMessage(
-                        "Das Theme %s mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
+                        "Das Erscheinungsbild %s mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
                         StringUtils.quote(createdTheme.getName()),
                         StringUtils.quote(String.valueOf(createdTheme.getId())),
                         StringUtils.quote(user.getFullName())
@@ -156,7 +156,7 @@ public class ThemeController {
                                 "name", updatedTheme.getName()
                         ))
                 .withMessage(
-                        "Das Theme %s mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        "Das Erscheinungsbild %s mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
                         StringUtils.quote(updatedTheme.getName()),
                         StringUtils.quote(String.valueOf(updatedTheme.getId())),
                         StringUtils.quote(user.getFullName())
@@ -198,7 +198,7 @@ public class ThemeController {
                                 "name", deletedTheme.getName()
                         ))
                 .withMessage(
-                        "Das Theme %s mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
+                        "Das Erscheinungsbild %s mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
                         StringUtils.quote(deletedTheme.getName()),
                         StringUtils.quote(String.valueOf(deletedTheme.getId())),
                         StringUtils.quote(user.getFullName())

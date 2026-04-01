@@ -16,7 +16,7 @@ export const OriginTableLabels: Record<ServerEntityType, string> = {
     [ServerEntityType.Secrets]: 'Geheimnis',
     [ServerEntityType.Submissions]: 'Vorgang',
     [ServerEntityType.Teams]: 'Team',
-    [ServerEntityType.Themes]: 'Farbschema',
+    [ServerEntityType.Themes]: 'Erscheinungsbild',
     [ServerEntityType.UserRoles]: 'Domänenrolle',
     [ServerEntityType.DomainRoles]: 'Domänenrolle',
     [ServerEntityType.SystemRoles]: 'Systemrolle',
