@@ -49,7 +49,7 @@ values (4,
         true,
         '[
           {
-            "key": "X-Amz-Meta-Farbe",
+            "key": "x-amz-meta-farbe",
             "label": "Farbe",
             "description": "Die Farbe dieser Datei"
           }
