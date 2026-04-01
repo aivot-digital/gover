@@ -16,12 +16,19 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class StorageServiceTest {
@@ -97,5 +104,63 @@ class StorageServiceTest {
         assertEquals("text/markdown", savedIndexItem.getMimeType());
 
         verify(knownExtensionsService).determineMimeType("test.md");
+    }
+
+    @Test
+    void searchIndexItems_BlankSearch_ReturnsEmptyPageWithoutQueryingRepository() {
+        var result = storageService.searchIndexItems(3, "   ", false, PageRequest.of(1, 5));
+
+        assertEquals(0, result.getTotalElements());
+        assertEquals(1, result.getNumber());
+        assertEquals(5, result.getSize());
+
+        verifyNoInteractions(storageIndexItemRepository);
+    }
+
+    @Test
+    void searchIndexItems_WithoutExplicitSort_UsesDefaultOrdering() {
+        when(storageIndexItemRepository.findAll(org.mockito.ArgumentMatchers.<Specification<StorageIndexItemEntity>>any(), org.mockito.ArgumentMatchers.<Pageable>any()))
+                .thenReturn(Page.empty());
+
+        storageService.searchIndexItems(3, "readme", false, PageRequest.of(2, 25));
+
+        var pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(storageIndexItemRepository).findAll(org.mockito.ArgumentMatchers.<Specification<StorageIndexItemEntity>>any(), pageableCaptor.capture());
+
+        var effectivePageable = pageableCaptor.getValue();
+        assertEquals(2, effectivePageable.getPageNumber());
+        assertEquals(25, effectivePageable.getPageSize());
+        assertEquals(Sort.Direction.DESC, effectivePageable.getSort().getOrderFor("directory").getDirection());
+        assertEquals(Sort.Direction.ASC, effectivePageable.getSort().getOrderFor("filename").getDirection());
+        assertEquals(Sort.Direction.ASC, effectivePageable.getSort().getOrderFor("pathFromRoot").getDirection());
+    }
+
+    @Test
+    void searchIndexItems_FiltersDisallowedSortProperties() {
+        when(storageIndexItemRepository.findAll(org.mockito.ArgumentMatchers.<Specification<StorageIndexItemEntity>>any(), org.mockito.ArgumentMatchers.<Pageable>any()))
+                .thenReturn(Page.empty());
+
+        storageService.searchIndexItems(
+                3,
+                "readme",
+                false,
+                PageRequest.of(
+                        0,
+                        10,
+                        Sort.by(
+                                Sort.Order.desc("storageProviderId"),
+                                Sort.Order.asc("filename"),
+                                Sort.Order.desc("updated")
+                        )
+                )
+        );
+
+        var pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(storageIndexItemRepository).findAll(org.mockito.ArgumentMatchers.<Specification<StorageIndexItemEntity>>any(), pageableCaptor.capture());
+
+        var effectivePageable = pageableCaptor.getValue();
+        assertNull(effectivePageable.getSort().getOrderFor("storageProviderId"));
+        assertEquals(Sort.Direction.ASC, effectivePageable.getSort().getOrderFor("filename").getDirection());
+        assertEquals(Sort.Direction.DESC, effectivePageable.getSort().getOrderFor("updated").getDirection());
     }
 }

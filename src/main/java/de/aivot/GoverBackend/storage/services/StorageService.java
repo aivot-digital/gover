@@ -14,9 +14,16 @@ import de.aivot.GoverBackend.storage.models.StorageProviderDefinition;
 import de.aivot.GoverBackend.storage.repositories.StorageIndexItemRepository;
 import de.aivot.GoverBackend.storage.repositories.StorageProviderRepository;
 import de.aivot.GoverBackend.utils.NumberUtils;
+import de.aivot.GoverBackend.utils.PaginationUtils;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
@@ -180,6 +187,32 @@ public class StorageService {
                 });
 
         return rootFolder;
+    }
+
+    @Nonnull
+    public Page<StorageIndexItemEntity> searchIndexItems(@Nonnull Integer providerId,
+                                                         @Nullable String search,
+                                                         boolean includeMissing,
+                                                         @Nonnull Pageable pageable) {
+        var effectivePageable = createSearchPageable(pageable);
+
+        if (StringUtils.isNullOrEmpty(search)) {
+            return Page.empty(effectivePageable);
+        }
+
+        var searchPattern = "%" + search.trim().toLowerCase() + "%";
+        Specification<StorageIndexItemEntity> specification = (root, query, builder) -> builder.and(
+                builder.equal(root.get("storageProviderId").as(Integer.class), providerId),
+                includeMissing
+                        ? builder.conjunction()
+                        : builder.equal(root.get("missing").as(Boolean.class), false),
+                builder.or(
+                        builder.like(builder.lower(root.get("filename").as(String.class)), searchPattern),
+                        builder.like(builder.lower(root.get("pathFromRoot").as(String.class)), searchPattern)
+                )
+        );
+
+        return storageIndexItemRepository.findAll(specification, effectivePageable);
     }
 
     public void deleteFolder(@Nonnull Integer providerId, @Nonnull String path) throws ResponseException {
@@ -631,6 +664,35 @@ public class StorageService {
             return "/";
         }
         return withoutTrailingSlash.substring(0, lastSlash + 1);
+    }
+
+    @Nonnull
+    private static Pageable createSearchPageable(@Nonnull Pageable pageable) {
+        var filteredPageable = PaginationUtils.filterSorting(
+                pageable,
+                "directory",
+                "filename",
+                "pathFromRoot",
+                "mimeType",
+                "sizeInBytes",
+                "missing",
+                "created",
+                "updated"
+        );
+
+        if (filteredPageable.getSort().isSorted()) {
+            return filteredPageable;
+        }
+
+        return PageRequest.of(
+                filteredPageable.getPageNumber(),
+                filteredPageable.getPageSize(),
+                Sort.by(
+                        Sort.Order.desc("directory"),
+                        Sort.Order.asc("filename"),
+                        Sort.Order.asc("pathFromRoot")
+                )
+        );
     }
 
     @Nonnull
