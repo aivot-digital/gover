@@ -1,6 +1,5 @@
 package de.aivot.GoverBackend.storage.services;
 
-import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
@@ -8,7 +7,6 @@ import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
 import de.aivot.GoverBackend.storage.enums.StorageProviderStatus;
 import de.aivot.GoverBackend.storage.models.StorageProviderDefinition;
 import de.aivot.GoverBackend.storage.repositories.StorageProviderRepository;
-import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
@@ -53,9 +51,7 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
                 .retrieveProviderDefinition(entity.getStorageProviderDefinitionKey(), entity.getStorageProviderDefinitionVersion())
                 .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Der ausgewählte Speicheranbieter ist nicht vorhanden"));
 
-        // Check if the metadata attributes are valid
-        def.validateMetadataAttributes(entity.getMetadataAttributes());
-
+        validateProvider(def, entity);
         validateMaxFileSize(entity);
 
         // Ensure the ID is null for creation
@@ -147,8 +143,7 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
                                 " ist nicht vorhanden")
                 );
 
-        // Check if the metadata attributes are valid
-        def.validateMetadataAttributes(entity.getMetadataAttributes());
+        validateProvider(def, entity);
 
         existingEntity.setName(entity.getName());
         existingEntity.setDescription(entity.getDescription());
@@ -204,5 +199,16 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
                             .formatted(maxFileSize.toMegabytes())
             );
         }
+    }
+
+    private <T> void validateProvider(@Nonnull StorageProviderDefinition<T> def,
+                                      @Nonnull StorageProviderEntity entity) throws ResponseException {
+        // Check if the configuration is valid
+        var config = storageProviderConfigurationService
+                .mapToConfig(entity, def);
+        def.validateConfiguration(config);
+
+        // Check if the metadata attributes are valid
+        def.validateMetadataAttributes(entity.getMetadataAttributes());
     }
 }

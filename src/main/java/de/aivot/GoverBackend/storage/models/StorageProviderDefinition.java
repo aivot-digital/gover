@@ -74,12 +74,22 @@ public interface StorageProviderDefinition<T> extends PluginComponent {
     Class<T> getConfigClass();
 
     /**
-     * Prüft, ob die metadaten attribute korrekt sind.
+     * Prüft, ob die Metadaten-Attribute korrekt sind.
      *
      * @param attributes Die Liste der Attribute.
      * @throws ResponseException Wird geworfen, wenn ein Fehler vorliegt.
      */
     default void validateMetadataAttributes(List<StorageProviderMetadataAttribute> attributes) throws ResponseException {
+        // Do nothing as a default
+    }
+
+    /**
+     * Prüft, ob die Konfiguration des Speicheranbieters korrekt ist.
+     *
+     * @param config Die Konfiguration.
+     * @throws ResponseException  Wird geworfen, wenn ein Fehler vorliegt.
+     */
+    default void validateConfiguration(T config) throws ResponseException {
         // Do nothing as a default
     }
 
