@@ -14,16 +14,16 @@ public class IdentityProviderPermissionProvider implements PermissionProvider {
 
     @Override
     public String getContextLabel() {
-        return "Identity Provider";
+        return "Identitätsanbieter";
     }
 
     @Override
     public PermissionEntry[] getPermissions() {
         return new PermissionEntry[]{
-                PermissionEntry.of(IDENTITY_PROVIDER_CREATE, "Identity Provider erstellen", "Erlaubt das Erstellen von Identity Providern."),
-                PermissionEntry.of(IDENTITY_PROVIDER_READ, "Identity Provider anzeigen", "Erlaubt das Anzeigen und Auflisten von Identity Providern."),
-                PermissionEntry.of(IDENTITY_PROVIDER_UPDATE, "Identity Provider bearbeiten", "Erlaubt das Bearbeiten von Identity Providern."),
-                PermissionEntry.of(IDENTITY_PROVIDER_DELETE, "Identity Provider löschen", "Erlaubt das Löschen von Identity Providern."),
+                PermissionEntry.of(IDENTITY_PROVIDER_CREATE, "Identitätsanbieter erstellen", "Erlaubt das Erstellen von Identitätsanbietern."),
+                PermissionEntry.of(IDENTITY_PROVIDER_READ, "Identitätsanbieter anzeigen", "Erlaubt das Anzeigen und Auflisten von Identitätsanbietern."),
+                PermissionEntry.of(IDENTITY_PROVIDER_UPDATE, "Identitätsanbieter bearbeiten", "Erlaubt das Bearbeiten von Identitätsanbietern."),
+                PermissionEntry.of(IDENTITY_PROVIDER_DELETE, "IIdentitätsanbieter löschen", "Erlaubt das Löschen von Identitätsanbietern."),
         };
     }
 
