@@ -61,12 +61,36 @@ export const DepartmentSchema = yup.object({
         .max(255, 'Die E-Mail-Adresse darf maximal 255 Zeichen lang sein.')
         .optional()
         .nullable(),
+    specialSupportPhone: yup.string()
+        .transform(emptyStringToNull)
+        .trim()
+        .max(255, 'Die Telefonnummer darf maximal 255 Zeichen lang sein.')
+        .optional()
+        .nullable(),
+    specialSupportInfo: yup.string()
+        .transform(emptyStringToNull)
+        .trim()
+        .max(1024, 'Die Zusatzinformationen dürfen maximal 1024 Zeichen lang sein.')
+        .optional()
+        .nullable(),
     //.required('Die E-Mail-Adresse für fachliche Unterstützung ist ein Pflichtfeld.'),
     technicalSupportAddress: yup.string()
         .transform(emptyStringToNull)
         .trim()
         .email('Bitte eine gültige E-Mail-Adresse eingeben.')
         .max(255, 'Die E-Mail-Adresse darf maximal 255 Zeichen lang sein.')
+        .optional()
+        .nullable(),
+    technicalSupportPhone: yup.string()
+        .transform(emptyStringToNull)
+        .trim()
+        .max(255, 'Die Telefonnummer darf maximal 255 Zeichen lang sein.')
+        .optional()
+        .nullable(),
+    technicalSupportInfo: yup.string()
+        .transform(emptyStringToNull)
+        .trim()
+        .max(1024, 'Die Zusatzinformationen dürfen maximal 1024 Zeichen lang sein.')
         .optional()
         .nullable(),
     //.required('Die E-Mail-Adresse für technische Unterstützung ist ein Pflichtfeld.'),
