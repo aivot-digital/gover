@@ -4,8 +4,10 @@ import de.aivot.GoverBackend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
+import de.aivot.GoverBackend.elements.models.elements.form.content.AlertContentElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
+import de.aivot.GoverBackend.enums.AlertType;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.plugins.core.Core;
@@ -75,11 +77,33 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
     @Nullable
     @Override
     public ConfigLayoutElement getProviderConfigLayout() throws ResponseException {
+        ConfigLayoutElement config;
         try {
-            return ElementPOJOMapper.createFromPOJO(Config.class);
+            config = ElementPOJOMapper.createFromPOJO(Config.class);
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(e);
         }
+
+        var allowedRootsInfo = new AlertContentElement();
+        allowedRootsInfo.setTitle("Erlaubte lokale Stammverzeichnisse");
+        var configuredAllowedLocalRoots = properties.getAllowedLocalRoots();
+        if (configuredAllowedLocalRoots == null || configuredAllowedLocalRoots.isEmpty()) {
+            allowedRootsInfo.setAlertType(AlertType.Error);
+            allowedRootsInfo.setText("""
+                    Es sind keine erlaubten lokalen Stammverzeichnisse konfiguriert.
+                    Lokale Speicheranbieter können nicht erstellt werden, bis mindestens ein erlaubtes lokales Stammverzeichnis konfiguriert ist.
+                    """);
+        } else {
+            allowedRootsInfo.setAlertType(AlertType.Info);
+            var allowedRootsList = new StringBuilder();
+            for (var allowedRoot : configuredAllowedLocalRoots) {
+                allowedRootsList.append("- ").append(allowedRoot).append("\n");
+            }
+            allowedRootsInfo.setText("Die folgenden lokalen Stammverzeichnisse sind erlaubt:\n" + allowedRootsList);
+        }
+        config.getChildren().add(allowedRootsInfo);
+
+        return config;
     }
 
     @Override
