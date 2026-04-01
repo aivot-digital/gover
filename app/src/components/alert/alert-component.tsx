@@ -18,8 +18,9 @@ export function AlertComponent(props: PropsWithChildren<AlertComponentProps>) {
         <Alert
             severity={props.color ?? 'info'}
             sx={{
-                my: 4,
                 ...props.sx,
+                px: 2,
+                py: 1,
             }}
         >
             <Box sx={{maxWidth: '900px'}}>
