@@ -259,7 +259,7 @@ export function ThemeDetailsPageIndex() {
                 >
                     <ImageSelector
                         label="Favicon des Farbschemas"
-                        hint="Dieses Favicon wird in der Anwendung im tab"
+                        hint="Dieses Favicon wird im Browser-Tab angezeigt."
                         selectLabel="Favicon für das Farbschema auswählen"
                         value={theme.faviconKey ?? null}
                         onChange={handleInputChange('faviconKey')}

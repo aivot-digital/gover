@@ -86,7 +86,9 @@ public class ThemeService implements EntityService<ThemeEntity, Integer> {
         existingEntity.setSuccess(entity.getSuccess());
 
         var logoKey = entity.getLogoKey();
-        if (logoKey != null) {
+        if (logoKey == null) {
+            existingEntity.setLogoKey(null);
+        } else {
             var logoExists = assetRepository
                     .existsById(logoKey);
             if (logoExists) {
@@ -97,7 +99,9 @@ public class ThemeService implements EntityService<ThemeEntity, Integer> {
         }
 
         var faviconKey = entity.getFaviconKey();
-        if (faviconKey != null) {
+        if (faviconKey == null) {
+            existingEntity.setFaviconKey(null);
+        } else {
             var faviconExists = assetRepository
                     .existsById(faviconKey);
             if (faviconExists) {
