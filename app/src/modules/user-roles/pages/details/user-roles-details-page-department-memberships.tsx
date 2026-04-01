@@ -92,7 +92,7 @@ export function UserRolesDetailsPageDepartmentMemberships() {
                         return new VDepartmentMembershipWithDetailsService()
                             .list(options.page, options.size, options.sort, options.order, {
                                 domainRoleId: userRole.id,
-                                userFullName: options.search,
+                                fullName: options.search,
                             });
                     }}
                     getRowIdentifier={(item) => item.membershipId.toString()}
