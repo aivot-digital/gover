@@ -81,6 +81,7 @@ export function ProcessNodeEditorPlaceholder() {
             {
                 placeholderList.map((placeholder, index) => (
                     <Box
+                        key={index.toString()}
                         sx={{
                             display: 'flex',
                             alignItems: 'center',
