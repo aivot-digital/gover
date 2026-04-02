@@ -6,6 +6,7 @@ import {
 import {StorageProviderStatus} from './enums/storage-provider-status';
 import {StorageProviderType} from './enums/storage-provider-type';
 import {type StorageIndexItem} from './entities/storage-index-item-entity';
+import {Page} from '../../models/dtos/page';
 
 export interface StorageProviderFilter {
     name: string;
@@ -74,5 +75,14 @@ export class StorageProvidersApiService extends BaseCrudApiService<StorageProvid
 
     public async testStorageProvider(id: number, writable: boolean = false): Promise<{ success: boolean; error?: string }> {
         return await this.post<any, { success: boolean; error?: string }>(`${this.buildPath(id)}test/?writable=${writable}`, {});
+    }
+
+    public async search(storageProviderId: number, search: string): Promise<Page<StorageIndexItem>> {
+        return await this.get<Page<StorageIndexItem>>(`${this.buildPath(storageProviderId)}search/`, {
+            query: {
+                search: search,
+                limit: 64,
+            },
+        });
     }
 }

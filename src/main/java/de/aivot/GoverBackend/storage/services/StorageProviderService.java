@@ -1,6 +1,5 @@
 package de.aivot.GoverBackend.storage.services;
 
-import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
@@ -8,7 +7,6 @@ import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
 import de.aivot.GoverBackend.storage.enums.StorageProviderStatus;
 import de.aivot.GoverBackend.storage.models.StorageProviderDefinition;
 import de.aivot.GoverBackend.storage.repositories.StorageProviderRepository;
-import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
@@ -53,9 +51,10 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
                 .retrieveProviderDefinition(entity.getStorageProviderDefinitionKey(), entity.getStorageProviderDefinitionVersion())
                 .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Der ausgewählte Speicheranbieter ist nicht vorhanden"));
 
-        // Check if the metadata attributes are valid
-        def.validateMetadataAttributes(entity.getMetadataAttributes());
+        // Validate the configuration of the provider
+        validateProvider(def, entity);
 
+        // Validate of the systemwide max file size is exceeded
         validateMaxFileSize(entity);
 
         // Ensure the ID is null for creation
@@ -147,9 +146,6 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
                                 " ist nicht vorhanden")
                 );
 
-        // Check if the metadata attributes are valid
-        def.validateMetadataAttributes(entity.getMetadataAttributes());
-
         existingEntity.setName(entity.getName());
         existingEntity.setDescription(entity.getDescription());
         existingEntity.setMaxFileSizeInBytes(entity.getMaxFileSizeInBytes());
@@ -166,8 +162,15 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
         // Assign this here to prevent resync check failing due to overwritten data
         existingEntity.setConfiguration(entity.getConfiguration());
 
+        // Validate the metadata and configuration
+        validateProvider(def, existingEntity);
+
         var res = storageProviderRepository
                 .save(existingEntity);
+
+        if (entity.getStatus() == StorageProviderStatus.SyncPending) {
+            existingEntity.setStatusMessage(null); // Reset the status message
+        }
 
         if (shouldResync) {
             rabbitTemplate.convertAndSend(StorageSyncWorker.DO_WORK_ON_STORAGE_SYNC_QUEUE, res.getId());
@@ -204,5 +207,16 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
                             .formatted(maxFileSize.toMegabytes())
             );
         }
+    }
+
+    private <T> void validateProvider(@Nonnull StorageProviderDefinition<T> def,
+                                      @Nonnull StorageProviderEntity entity) throws ResponseException {
+        // Check if the configuration is valid
+        var config = storageProviderConfigurationService
+                .mapToConfig(entity, def);
+        def.validateConfiguration(entity, config);
+
+        // Check if the metadata attributes are valid
+        def.validateMetadataAttributes(entity.getMetadataAttributes());
     }
 }

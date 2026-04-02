@@ -9,6 +9,7 @@ import de.aivot.GoverBackend.asset.entities.VStorageIndexItemWithAssetEntityId;
 import de.aivot.GoverBackend.asset.permissions.AssetPermissionProvider;
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
 import de.aivot.GoverBackend.asset.repositories.VStorageIndexItemWithAssetRepository;
+import de.aivot.GoverBackend.asset.services.VStorageIndexItemWithAssetService;
 import de.aivot.GoverBackend.audit.services.AuditLogService;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -26,6 +27,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.mock.web.MockMultipartFile;
@@ -62,6 +66,9 @@ class AssetControllerTest {
     private VStorageIndexItemWithAssetRepository storageIndexItemWithAssetRepository;
 
     @Mock
+    private VStorageIndexItemWithAssetService storageIndexItemWithAssetService;
+
+    @Mock
     private StorageService storageService;
 
     @Mock
@@ -83,6 +90,7 @@ class AssetControllerTest {
                 permissionService,
                 storageProviderService,
                 storageIndexItemWithAssetRepository,
+                storageIndexItemWithAssetService,
                 storageService,
                 assetRepository
         );
@@ -332,5 +340,87 @@ class AssetControllerTest {
 
         assertEquals(updatedIndexItem, result);
         verify(storageService).updateDocumentMetadata(42, "/images/existing.pdf", updatedMetadata);
+    }
+
+    @Test
+    void listFolderContent_DelegatesFiltersToRepository() throws Exception {
+        var storageProvider = new StorageProviderEntity()
+                .setId(42)
+                .setType(StorageProviderType.Assets);
+        var expectedItems = java.util.List.of(new VStorageIndexItemWithAssetEntity()
+                .setStorageProviderId(42)
+                .setPathFromRoot("/images/folder/")
+                .setDirectory(true)
+                .setFilename("folder"));
+
+        when(storageProviderService.retrieve(42)).thenReturn(Optional.of(storageProvider));
+        when(request.getRequestURL()).thenReturn(new StringBuffer("http://localhost/api/assets/42/folders/images/"));
+        when(storageIndexItemWithAssetRepository.listAllInFolder(
+                42,
+                "^/images/([^/]+$|[^/]+/$)",
+                false,
+                "(?:^image/.*$|^application/pdf$)",
+                true
+        )).thenReturn(expectedItems);
+
+        var result = assetController.listFolderContent(jwt, 42, request, java.util.List.of("image", "application/pdf"), true);
+
+        assertEquals(expectedItems, result);
+        verify(permissionService).testSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
+        verify(storageIndexItemWithAssetRepository).listAllInFolder(
+                42,
+                "^/images/([^/]+$|[^/]+/$)",
+                false,
+                "(?:^image/.*$|^application/pdf$)",
+                true
+        );
+    }
+
+    @Test
+    void listFolderContent_PassesNullPatternWhenContentTypeFilterIsBlank() throws Exception {
+        var storageProvider = new StorageProviderEntity()
+                .setId(42)
+                .setType(StorageProviderType.Assets);
+        var expectedItems = java.util.List.<VStorageIndexItemWithAssetEntity>of();
+
+        when(storageProviderService.retrieve(42)).thenReturn(Optional.of(storageProvider));
+        when(request.getRequestURL()).thenReturn(new StringBuffer("http://localhost/api/assets/42/folders/images/"));
+        when(storageIndexItemWithAssetRepository.listAllInFolder(
+                42,
+                "^/images/([^/]+$|[^/]+/$)",
+                false,
+                null,
+                null
+        )).thenReturn(expectedItems);
+
+        var result = assetController.listFolderContent(jwt, 42, request, java.util.List.of("", " "), null);
+
+        assertEquals(expectedItems, result);
+        verify(storageIndexItemWithAssetRepository).listAllInFolder(
+                42,
+                "^/images/([^/]+$|[^/]+/$)",
+                false,
+                null,
+                null
+        );
+    }
+
+    @Test
+    void search_DelegatesToAssetIndexSearchService() throws Exception {
+        var storageProvider = new StorageProviderEntity()
+                .setId(42)
+                .setType(StorageProviderType.Assets);
+        Page<VStorageIndexItemWithAssetEntity> expectedPage = new PageImpl<>(java.util.List.of());
+        var contentTypes = java.util.List.of("application/pdf", "text/html");
+
+        when(storageProviderService.retrieve(42)).thenReturn(Optional.of(storageProvider));
+        when(storageIndexItemWithAssetService.searchIndexItems(42, "readme", contentTypes, false, PageRequest.of(0, 20)))
+                .thenReturn(expectedPage);
+
+        var result = assetController.search(jwt, 42, PageRequest.of(0, 20), "readme", contentTypes, false);
+
+        assertEquals(expectedPage, result);
+        verify(permissionService).testSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
+        verify(storageIndexItemWithAssetService).searchIndexItems(42, "readme", contentTypes, false, PageRequest.of(0, 20));
     }
 }

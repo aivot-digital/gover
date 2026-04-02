@@ -1,14 +1,13 @@
 package de.aivot.GoverBackend.storage.models;
 
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
-import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.plugin.enums.PluginComponentType;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
+import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
 import de.aivot.GoverBackend.storage.exceptions.StorageException;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.util.List;
@@ -74,12 +73,23 @@ public interface StorageProviderDefinition<T> extends PluginComponent {
     Class<T> getConfigClass();
 
     /**
-     * Prüft, ob die metadaten attribute korrekt sind.
+     * Prüft, ob die Metadaten-Attribute korrekt sind.
      *
      * @param attributes Die Liste der Attribute.
      * @throws ResponseException Wird geworfen, wenn ein Fehler vorliegt.
      */
     default void validateMetadataAttributes(List<StorageProviderMetadataAttribute> attributes) throws ResponseException {
+        // Do nothing as a default
+    }
+
+    /**
+     * Prüft, ob die Konfiguration des Speicheranbieters korrekt ist.
+     *
+     * @param provider Der Speicheranbieter.
+     * @param config   Die Konfiguration.
+     * @throws ResponseException Wird geworfen, wenn ein Fehler vorliegt.
+     */
+    default void validateConfiguration(@Nullable StorageProviderEntity provider, T config) throws ResponseException {
         // Do nothing as a default
     }
 

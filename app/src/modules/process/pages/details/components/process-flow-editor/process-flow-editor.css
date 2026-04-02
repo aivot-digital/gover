@@ -155,6 +155,10 @@
     max-width: 288px;
 }
 
+.process-flow-editor-status-panel-right.react-flow__panel {
+    max-width: 340px;
+}
+
 .process-flow-editor-status-dot {
     position: relative;
 }

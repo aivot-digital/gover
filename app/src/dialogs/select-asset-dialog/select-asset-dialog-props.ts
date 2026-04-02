@@ -4,5 +4,5 @@ export interface SelectAssetDialogProps {
     mimetype?: string;
     onSelect: (assetKey: string) => void;
     onCancel: () => void;
-    mode: 'private' | 'public' | 'all';
+    mode: 'public' | 'all';
 }

@@ -9,8 +9,8 @@ import de.aivot.GoverBackend.asset.entities.VStorageIndexItemWithAssetEntityId;
 import de.aivot.GoverBackend.asset.permissions.AssetPermissionProvider;
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
 import de.aivot.GoverBackend.asset.repositories.VStorageIndexItemWithAssetRepository;
+import de.aivot.GoverBackend.asset.services.VStorageIndexItemWithAssetService;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
-import de.aivot.GoverBackend.audit.models.AuditLogPayload;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -33,8 +33,12 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
@@ -66,6 +70,7 @@ public class AssetController {
     private final PermissionService permissionService;
     private final StorageProviderService storageProviderService;
     private final VStorageIndexItemWithAssetRepository storageIndexItemWithAssetRepository;
+    private final VStorageIndexItemWithAssetService storageIndexItemWithAssetService;
     private final StorageService storageService;
     private final AssetRepository assetRepository;
 
@@ -75,6 +80,7 @@ public class AssetController {
                            PermissionService permissionService,
                            StorageProviderService storageProviderService,
                            VStorageIndexItemWithAssetRepository storageIndexItemWithAssetRepository,
+                           VStorageIndexItemWithAssetService storageIndexItemWithAssetService,
                            StorageService storageService,
                            AssetRepository assetRepository) {
         this.auditService = auditService.createScopedAuditService(AssetController.class, MODULE_NAME);
@@ -83,6 +89,7 @@ public class AssetController {
         this.permissionService = permissionService;
         this.storageProviderService = storageProviderService;
         this.storageIndexItemWithAssetRepository = storageIndexItemWithAssetRepository;
+        this.storageIndexItemWithAssetService = storageIndexItemWithAssetService;
         this.storageService = storageService;
         this.assetRepository = assetRepository;
     }
@@ -101,7 +108,10 @@ public class AssetController {
     public List<VStorageIndexItemWithAssetEntity> listFolderContent(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer storageProviderId,
-            @Nonnull HttpServletRequest request
+            @Nonnull HttpServletRequest request,
+            @Nullable @RequestParam(required = false) List<String> contentType,
+            @Nullable @RequestParam(required = false) Boolean isPublic
+
     ) throws ResponseException {
         permissionService
                 .testSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
@@ -111,26 +121,36 @@ public class AssetController {
         var normalizedPath = getNormalizedFolderPath(request);
 
         return storageIndexItemWithAssetRepository
-                .listAllInFolder(storageProvider.getId(), "^" + normalizedPath + "([^/]+$|[^/]+/$)", false);
+                .listAllInFolder(
+                        storageProvider.getId(),
+                        "^" + normalizedPath + "([^/]+$|[^/]+/$)",
+                        false,
+                        createContentTypePattern(contentType),
+                        isPublic
+                );
     }
 
-    @GetMapping(value = "folders-tree/", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping("search/")
     @Operation(
-            summary = "Retrieve full folder tree",
-            description = "Retrieves the complete folder tree for the storage provider, starting at root. " +
-                    "This endpoint is intended for folder selection UIs (e.g. copy/move destinations)."
+            summary = "Search assets in storage provider",
+            description = "Search files and folders in the specified asset storage provider by filename or path. " +
+                    "Returns a paginated result list and supports optional filtering by content type."
     )
-    public StorageFolder getFolderTree(
+    public Page<VStorageIndexItemWithAssetEntity> search(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable Integer storageProviderId
+            @Nonnull @PathVariable Integer storageProviderId,
+            @Nonnull @ParameterObject @PageableDefault Pageable pageable,
+            @RequestParam(name = "search", defaultValue = "") String search,
+            @RequestParam(name = "contentType", required = false) List<String> contentType,
+            @Nullable @RequestParam(required = false) Boolean isPublic
     ) throws ResponseException {
         permissionService
                 .testSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
 
-        var storageProvider = getStorageProvider(storageProviderId);
+        getStorageProvider(storageProviderId);
 
-        return storageService
-                .getFolderTreeFromIndex(storageProvider.getId());
+        return storageIndexItemWithAssetService
+                .searchIndexItems(storageProviderId, search, contentType, isPublic, pageable);
     }
 
     @PostMapping(
@@ -776,6 +796,54 @@ public class AssetController {
     // endregion
 
     // region Utilities
+
+    @Nullable
+    private static String createContentTypePattern(@Nullable List<String> contentTypes) {
+        if (contentTypes == null) {
+            return null;
+        }
+
+        var patterns = contentTypes
+                .stream()
+                .filter(contentType -> !StringUtils.isNullOrEmpty(contentType))
+                .map(contentType -> contentType.trim().toLowerCase())
+                .map(AssetController::createContentTypePatternFragment)
+                .toList();
+
+        if (patterns.isEmpty()) {
+            return null;
+        }
+
+        return "(?:" + String.join("|", patterns) + ")";
+    }
+
+    @Nonnull
+    private static String createContentTypePatternFragment(@Nonnull String contentType) {
+        if (contentType.endsWith("/")) {
+            return "^" + escapeRegex(contentType) + ".*$";
+        }
+
+        if (!contentType.contains("/")) {
+            return "^" + escapeRegex(contentType + "/") + ".*$";
+        }
+
+        return "^" + escapeRegex(contentType) + "$";
+    }
+
+    @Nonnull
+    private static String escapeRegex(@Nonnull String value) {
+        var builder = new StringBuilder(value.length() * 2);
+
+        for (var i = 0; i < value.length(); i++) {
+            var character = value.charAt(i);
+            if ("\\.[]{}()*+-?^$|".indexOf(character) >= 0) {
+                builder.append('\\');
+            }
+            builder.append(character);
+        }
+
+        return builder.toString();
+    }
 
     @Nonnull
     private static String getNormalizedFolderPath(@Nonnull HttpServletRequest request) throws ResponseException {

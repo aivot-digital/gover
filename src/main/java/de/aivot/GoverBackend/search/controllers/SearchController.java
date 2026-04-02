@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.search.entities.SearchItemEntity;
 import de.aivot.GoverBackend.search.repositories.SearchEntityRepository;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -45,8 +46,14 @@ public class SearchController {
     public Page<SearchItemEntity> search(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PageableDefault Pageable pageable,
-            @Nonnull @RequestParam(defaultValue = "") String search
+            @Nonnull @RequestParam(defaultValue = "") String search,
+            @Nullable @RequestParam(required = false) String originTable
     ) throws ResponseException {
+        if (StringUtils.isNotNullOrEmpty(originTable)) {
+            return searchEntityRepository
+                    .search(search, originTable, pageable);
+        }
+
         return searchEntityRepository
                 .search(search, pageable);
     }

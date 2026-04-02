@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.thymeleaf.templatemode.TemplateMode;
+import org.springframework.web.util.HtmlUtils;
 
 import java.io.IOException;
 import java.net.URI;
@@ -47,6 +48,8 @@ import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Component
 public class PdfService {
@@ -216,44 +219,63 @@ public class PdfService {
         return generatePdfFromHtml(
                 template,
                 headerTemplate,
-                footerTemplate,
-                "210mm",
-                "297mm"
+                footerTemplate
         );
     }
 
+    private static final String GOTENBERG_ARG_FILE = "files";
+    private static final String GOTENBERG_ARG_INDEX = "index";
+    private static final String GOTENBERG_ARG_HEADER = "header";
+    private static final String GOTENBERG_ARG_FOOTER = "footer";
+    private static final String GOTENBERG_ARG_PAPER_HEIGHT = "paperHeight";
+    private static final String GOTENBERG_ARG_PAPER_WIDTH = "paperWidth";
+    private static final String GOTENBERG_ARG_MARGIN_TOP = "marginTop";
+    private static final String GOTENBERG_ARG_MARGIN_BOTTOM = "marginBottom";
+    private static final String GOTENBERG_ARG_MARGIN_LEFT = "marginLeft";
+    private static final String GOTENBERG_ARG_MARGIN_RIGHT = "marginRight";
+
+    private static final String GOTENBERG_VAL_INDEX = "index.html";
+    private static final String GOTENBERG_VAL_HEADER = "header.html";
+    private static final String GOTENBERG_VAL_FOOTER = "footer.html";
+    private static final String GOTENBERG_VAL_PAPER_HEIGHT = "29.7cm";
+    private static final String GOTENBERG_VAL_PAPER_WIDTH = "21.0cm";
+    private static final String GOTENBERG_VAL_MARGIN_TOP = "2.5cm";
+    private static final String GOTENBERG_VAL_MARGIN_BOTTOM = "2.5cm";
+    private static final String GOTENBERG_VAL_MARGIN_RIGHT = "2.0cm";
+    private static final String GOTENBERG_VAL_MARGIN_LEFT = "2.5cm";
+    private static final Pattern HTML_HEAD_TAG_PATTERN = Pattern.compile("<head\\b[^>]*>", Pattern.CASE_INSENSITIVE);
+    private static final Pattern HTML_BASE_TAG_PATTERN = Pattern.compile("<base\\b[^>]*>", Pattern.CASE_INSENSITIVE);
+
     public byte[] generatePdfFromHtml(@Nonnull String contentHtml,
                                       @Nullable String headerHtml,
-                                      @Nullable String footerHtml,
-                                      @Nullable String paperWidth,
-                                      @Nullable String paperHeight) throws IOException, InterruptedException, URISyntaxException {
-        var resolvedHeader = StringUtils.isNotNullOrEmpty(headerHtml)
-                ? headerHtml
-                : "<html><body></body></html>";
-        var resolvedFooter = StringUtils.isNotNullOrEmpty(footerHtml)
-                ? footerHtml
-                : "<html><body></body></html>";
-        var resolvedPaperWidth = StringUtils.isNotNullOrEmpty(paperWidth)
-                ? paperWidth
-                : "21.0cm";
-        var resolvedPaperHeight = StringUtils.isNotNullOrEmpty(paperHeight)
-                ? paperHeight
-                : "29.7cm";
+                                      @Nullable String footerHtml) throws IOException, InterruptedException, URISyntaxException {
+        contentHtml = injectBaseUrlIntoHTML(contentHtml);
+        headerHtml = injectBaseUrlIntoHTML(headerHtml);
+        footerHtml = injectBaseUrlIntoHTML(footerHtml);
+
+        if (contentHtml == null) {
+            throw new IllegalArgumentException("Content HTML cannot be null");
+        }
 
         var multipart = new MultipartUtils.MultipartBodyPublisher()
-                .addPart("files", "index.html", contentHtml)
-                .addPart("files", "header.html", resolvedHeader)
-                .addPart("files", "footer.html", resolvedFooter)
-                .addPart("index", "index.html")
-                .addPart("header", "header.html")
-                .addPart("footer", "footer.html")
-                .addPart("paperHeight", resolvedPaperHeight)
-                .addPart("paperWidth", resolvedPaperWidth)
-                .addPart("marginTop", "2.5cm")
-                .addPart("marginBottom", "2.5cm")
-                .addPart("marginLeft", "2.5cm")
-                .addPart("marginRight", "2cm")
-                ;
+                .addPart(GOTENBERG_ARG_FILE, GOTENBERG_VAL_INDEX, contentHtml)
+                .addPart(GOTENBERG_ARG_INDEX, GOTENBERG_VAL_INDEX)
+                .addPart(GOTENBERG_ARG_HEADER, GOTENBERG_VAL_HEADER)
+                .addPart(GOTENBERG_ARG_FOOTER, GOTENBERG_VAL_FOOTER)
+                .addPart(GOTENBERG_ARG_PAPER_HEIGHT, GOTENBERG_VAL_PAPER_HEIGHT)
+                .addPart(GOTENBERG_ARG_PAPER_WIDTH, GOTENBERG_VAL_PAPER_WIDTH)
+                .addPart(GOTENBERG_ARG_MARGIN_TOP, GOTENBERG_VAL_MARGIN_TOP)
+                .addPart(GOTENBERG_ARG_MARGIN_BOTTOM, GOTENBERG_VAL_MARGIN_BOTTOM)
+                .addPart(GOTENBERG_ARG_MARGIN_RIGHT, GOTENBERG_VAL_MARGIN_RIGHT)
+                .addPart(GOTENBERG_ARG_MARGIN_LEFT, GOTENBERG_VAL_MARGIN_LEFT);
+
+        if (StringUtils.isNotNullOrEmpty(headerHtml)) {
+            multipart.addPart(GOTENBERG_ARG_FILE, GOTENBERG_VAL_HEADER, headerHtml);
+        }
+
+        if (StringUtils.isNotNullOrEmpty(footerHtml)) {
+            multipart.addPart(GOTENBERG_ARG_FILE, GOTENBERG_VAL_FOOTER, footerHtml);
+        }
 
         var convertUri = new URI("http://" + gotenbergConfig.getHost() + ":" + gotenbergConfig.getPort() + "/forms/chromium/convert/html");
 
@@ -319,5 +341,35 @@ public class PdfService {
         }
 
         return new FormPdfContext(providerName, logoAssetKey != null ? logoAssetKey.toString() : "", logoAssetName, goverConfig, scope);
+    }
+
+    /**
+     * Injects the HTML-Tag {@code <base href="{GOVER_HOSTNAME}"/>} into the Head-Tag of the given HTML.
+     *
+     * @param originalHTML The original HTML content.
+     * @return The injected HTML content.
+     */
+    @Nullable
+    private String injectBaseUrlIntoHTML(@Nullable String originalHTML) {
+        if (StringUtils.isNullOrEmpty(originalHTML)) {
+            return originalHTML;
+        }
+
+        var baseUrl = URI.create(goverConfig.getGoverHostname()).toString();
+        var baseTag = "<base href=\"" + HtmlUtils.htmlEscape(baseUrl) + "\"/>";
+        var existingBaseTagMatcher = HTML_BASE_TAG_PATTERN.matcher(originalHTML);
+
+        if (existingBaseTagMatcher.find()) {
+            return existingBaseTagMatcher.replaceFirst(Matcher.quoteReplacement(baseTag));
+        }
+
+        var headTagMatcher = HTML_HEAD_TAG_PATTERN.matcher(originalHTML);
+        if (!headTagMatcher.find()) {
+            return originalHTML;
+        }
+
+        return new StringBuilder(originalHTML)
+                .insert(headTagMatcher.end(), baseTag)
+                .toString();
     }
 }

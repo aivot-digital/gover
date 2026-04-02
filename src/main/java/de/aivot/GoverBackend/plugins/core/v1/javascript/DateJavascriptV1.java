@@ -46,6 +46,8 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
     public String[] getMethodTypeDefinitions() {
         return new String[]{
                 "createDate(): Date;",
+                "today(): string;",
+                "now(): string;",
                 "createDate(date: Date | string | number): Date | null;",
                 "isSameDay(dateA: Date | string | number, dateB: Date | string | number): boolean;",
                 "isBefore(dateA: Date | string | number, dateB: Date | string | number): boolean;",
@@ -82,6 +84,18 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
         return LocalDate
                 .now()
                 .atStartOfDay(ZoneId.systemDefault());
+    }
+
+    @HostAccess.Export
+    public String today() {
+        var date = createDate();
+        return formatDate(date, "dd.MM.yyyy");
+    }
+
+    @HostAccess.Export
+    public String now() {
+        var date = createDate();
+        return formatDate(date, "dd.MM.yyyy hh:mm") + " Uhr";
     }
 
     @Nullable

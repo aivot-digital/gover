@@ -9,7 +9,6 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElem
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
-import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.plugins.core.Core;
 import de.aivot.GoverBackend.secrets.entities.SecretEntity;
@@ -469,7 +468,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         try {
             objectStats = client.statObject(statObjectArgs);
         } catch (ErrorResponseException e) {
-            if ("NoSuchKey".equals(e.errorResponse().code())) {
+            if ("NoSuchKey" .equals(e.errorResponse().code())) {
                 throw new StorageException("Das Dokument %s konnte nicht gefunden werden.", StringUtils.quote(pathFromRoot));
             }
             throw new StorageException(e, "Die Metadaten des Dokuments konnten im S3-kompatiblen Speicher nicht aktualisiert werden.");
@@ -498,7 +497,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         try {
             client.copyObject(copyObjectArgsBuilder.build());
         } catch (ErrorResponseException e) {
-            if ("NoSuchKey".equals(e.errorResponse().code())) {
+            if ("NoSuchKey" .equals(e.errorResponse().code())) {
                 throw new StorageException("Das Dokument %s konnte nicht gefunden werden.", StringUtils.quote(pathFromRoot));
             }
             throw new StorageException(e, "Die Metadaten des Dokuments konnten im S3-kompatiblen Speicher nicht aktualisiert werden.");
@@ -633,7 +632,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         try {
             client.copyObject(copyObjectArgs);
         } catch (ErrorResponseException e) {
-            if ("NoSuchKey".equals(e.errorResponse().code())) {
+            if ("NoSuchKey" .equals(e.errorResponse().code())) {
                 throw new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot));
             }
             throw new StorageException(e, "Das Dokument konnte nicht im S3-kompatiblen Speicher kopiert werden.");

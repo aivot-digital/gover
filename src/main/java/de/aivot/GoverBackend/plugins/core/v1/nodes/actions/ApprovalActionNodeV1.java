@@ -316,7 +316,6 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
         nodeData.put(OUTPUT_REMARK, remarkText);
         nodeData.put(OUTPUT_PROCESSED_BY_USER_ID, context.getUser().getId());
         nodeData.put(OUTPUT_PROCESSED_AT, LocalDateTime.now().toString());
-        nodeData.put(TASK_VIEW_REMARK_FIELD_ID, remarkText);
 
         var result = new ProcessNodeExecutionResultTaskCompleted();
         result.setViaPort(port);

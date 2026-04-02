@@ -23,4 +23,22 @@ public interface SearchEntityRepository extends ReadOnlyRepository<SearchItemEnt
                     """, nativeQuery = true
     )
     Page<SearchItemEntity> search(@Param("search") String search, Pageable pageable);
+
+    @Query(
+            value = """
+                        SELECT
+                            word_similarity(search_text, :search) as sim,
+                            *
+                        FROM
+                            v_search_items
+                        WHERE
+                            word_similarity(search_text, :search) > 0.1 AND
+                            origin_table = :originTable
+                        ORDER BY
+                            sim DESC;
+                    """, nativeQuery = true
+    )
+    Page<SearchItemEntity> search(@Param("search") String search,
+                                  @Param("originTable") String originTable,
+                                  Pageable pageable);
 }

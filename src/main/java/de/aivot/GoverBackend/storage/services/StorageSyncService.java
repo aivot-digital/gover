@@ -54,10 +54,31 @@ public class StorageSyncService {
     }
 
     public void syncStorageProvider(int id) {
-        var storageProvider = storageProviderRepository
-                .findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Storage provider with ID " + id + " not found."));
-        syncStorageProvider(storageProvider);
+        var storageProviderOpt = storageProviderRepository
+                .findById(id);
+
+        if (storageProviderOpt.isEmpty()) {
+            logger
+                    .atError()
+                    .setMessage("Storage provider with ID {} not found for syncing")
+                    .addArgument(id)
+                    .log();
+            return;
+        }
+
+        var storageProvider = storageProviderOpt.get();
+
+        try {
+            syncStorageProvider(storageProvider);
+        } catch (Exception e) {
+            logger
+                    .atError()
+                    .setMessage("Error syncing storage provider with ID {}: {}")
+                    .addArgument(id)
+                    .addArgument(e::getMessage)
+                    .setCause(e)
+                    .log();
+        }
     }
 
     public void syncStorageProvider(@Nonnull StorageProviderEntity storageProvider) {

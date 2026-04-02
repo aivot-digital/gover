@@ -65,7 +65,7 @@ public class StorageProviderEntity {
     private StorageProviderStatus status;
 
     @Nullable
-    @Size(max = 1024, message = "Die Statusnachricht des Speicheranbieters darf maximal 1024 Zeichen lang sein.")
+    @Size(max = 4096, message = "Die Statusnachricht des Speicheranbieters darf maximal 4096 Zeichen lang sein.")
     private String statusMessage;
 
     @Nonnull

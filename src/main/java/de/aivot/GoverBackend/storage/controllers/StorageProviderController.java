@@ -17,6 +17,7 @@ import de.aivot.GoverBackend.storage.repositories.StorageIndexItemRepository;
 import de.aivot.GoverBackend.storage.services.StorageProviderConfigurationService;
 import de.aivot.GoverBackend.storage.services.StorageProviderDefinitionService;
 import de.aivot.GoverBackend.storage.services.StorageProviderService;
+import de.aivot.GoverBackend.storage.services.StorageService;
 import de.aivot.GoverBackend.storage.services.StorageSyncWorker;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.utils.StringUtils;
@@ -57,6 +58,7 @@ public class StorageProviderController {
     private final PermissionService permissionService;
     private final RabbitTemplate rabbitTemplate;
     private final StorageIndexItemRepository storageIndexItemRepository;
+    private final StorageService storageService;
     private final StorageProviderDefinitionService storageProviderDefinitionService;
     private final StorageProviderConfigurationService storageProviderConfigurationService;
 
@@ -67,6 +69,7 @@ public class StorageProviderController {
                                      PermissionService permissionService,
                                      RabbitTemplate rabbitTemplate,
                                      StorageIndexItemRepository storageIndexItemRepository,
+                                     StorageService storageService,
                                      StorageProviderDefinitionService storageProviderDefinitionService,
                                      StorageProviderConfigurationService storageProviderConfigurationService) {
         this.auditService = auditService.createScopedAuditService(StorageProviderController.class, "Speicheranbieter");
@@ -75,6 +78,7 @@ public class StorageProviderController {
         this.permissionService = permissionService;
         this.rabbitTemplate = rabbitTemplate;
         this.storageIndexItemRepository = storageIndexItemRepository;
+        this.storageService = storageService;
         this.storageProviderDefinitionService = storageProviderDefinitionService;
         this.storageProviderConfigurationService = storageProviderConfigurationService;
     }
@@ -261,6 +265,29 @@ public class StorageProviderController {
 
         return storageIndexItemRepository
                 .listAllInFolder(id, "^" + normalizedPath + "([^/]+$|[^/]+/$)", false);
+    }
+
+    @GetMapping("{id}/search/")
+    @Operation(
+            summary = "Search Storage Provider Contents",
+            description = "Search files and folders in the specified storage provider by filename or path. Returns a paginated result list. Requires the permission " + StoragePermissionProvider.STORAGE_PROVIDER_READ + "."
+    )
+    public Page<StorageIndexItemEntity> search(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Integer id,
+            @Nonnull @ParameterObject @PageableDefault Pageable pageable,
+            @RequestParam(name = "search", defaultValue = "") String search,
+            @RequestParam(name = "includeMissing", defaultValue = "false") boolean includeMissing
+    ) throws ResponseException {
+        permissionService
+                .testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+
+        storageProviderService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        return storageService
+                .searchIndexItems(id, search, includeMissing, pageable);
     }
 
     @Nonnull

@@ -148,7 +148,8 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
         var mappedValues = new ArrayList<Map<String, Object>>();
 
         try (var engine = javascriptEngineFactoryService.getEngine()) {
-            ProcessDataService.fillJsEngineWithData(context.getProcessData(), engine);
+            ProcessDataService
+                    .fillJsEngineWithData(context.getProcessData(), engine);
 
             for (int i = 0; i < rules.size(); i++) {
                 var rule = rules.get(i);

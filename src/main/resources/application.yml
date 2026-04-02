@@ -221,6 +221,10 @@ storage:
   remoteAccessKey: "${GOVER_STORAGE_REMOTE_ACCESS_KEY:}"
   remoteSecretKey: "${GOVER_STORAGE_REMOTE_SECRET_KEY:}"
 
+  local:
+    v1:
+      allowed-local-roots: "${GOVER_STORAGE_LOCAL_ALLOWED_ROOTS:./data}"
+
 springdoc:
   apiDocs:
     path: "/api/public/docs/openapi.json"

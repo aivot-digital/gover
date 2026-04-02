@@ -1,4 +1,4 @@
-import {Box, Button, Grid, Typography} from '@mui/material';
+import {Box, Button, Grid, Stack, Typography} from '@mui/material';
 import React, {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useGenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
@@ -39,6 +39,8 @@ import {StatusTable} from '../../../../components/status-table/status-table';
 import Sync from '@aivot/mui-material-symbols-400-outlined/dist/sync/Sync';
 import {ComputedElementErrors, DerivedRuntimeElementData} from '../../../../models/element-data';
 import {useStorageProviderDetailsPageSyncContext} from './storage-provider-details-page';
+import {Hint} from '../../../../components/hint/hint';
+import {StorageProviderStatus} from '../../enums/storage-provider-status';
 
 function getIndexedFieldError(
     errors: Record<string, any> | undefined,
@@ -387,6 +389,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     return (
         <Box>
             {
+                editedStorageProvider.status == StorageProviderStatus.SyncFailed &&
                 editedStorageProvider.statusMessage != null &&
                 <AlertComponent
                     color="error"
@@ -586,17 +589,68 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         md: 6,
                     }}
                 >
-                    <NumberFieldComponent
-                        label="Maximale Dateigröße (in MB)"
-                        value={bytesToMegabytes(editedStorageProvider.maxFileSizeInBytes)}
-                        onChange={(mb) => handleInputChange('maxFileSizeInBytes')(megabytesToBytes(mb) as any)}
-                        onBlur={(mb) => handleInputBlur('maxFileSizeInBytes')(megabytesToBytes(mb) as any)}
-                        disabled={inputsDisabled}
-                        error={errors.maxFileSizeInBytes}
-                        decimalPlaces={2}
-                        suffix="MB"
-                        hint="1 Megabyte entspricht 1.000 Kilobytes oder 1.000.000 Bytes."
-                    />
+                    <Stack
+                        direction="row"
+                        gap={1}
+                    >
+                        <NumberFieldComponent
+                            label="Maximale Dateigröße (in MB)"
+                            value={bytesToMegabytes(editedStorageProvider.maxFileSizeInBytes)}
+                            onChange={(mb) => handleInputChange('maxFileSizeInBytes')(megabytesToBytes(mb) as any)}
+                            onBlur={(mb) => handleInputBlur('maxFileSizeInBytes')(megabytesToBytes(mb) as any)}
+                            disabled={inputsDisabled}
+                            error={errors.maxFileSizeInBytes}
+                            decimalPlaces={2}
+                            suffix="MB"
+                            hint="Die maximale Dateigröße die pro Datei an diesen Speicheranbieter übertragen werden kann."
+                        />
+
+                        <Hint
+                            sx={{
+                                mt: 3,
+                            }}
+                            summary="Die maximale Dateigröße die pro Datei an diesen Speicheranbieter übertragen werden kann."
+                            detailsTitle="Maximale Dateigröße"
+                            details={
+                                <>
+                                    <Typography
+                                        marginBottom={2}
+                                    >
+                                        Speicheranbieter können in der Übertragung verschiedene Limitierungen haben.
+                                        Um diesen Limitierungen gerecht zu werden, kann pro Speicheranbieter eine
+                                        maximale Dateigröße spezifiziert werden.
+                                        Die Angabe der maximalen Dateigröße erfolgt in Megabyte* und gilt pro Datei,
+                                        welche an den Speicheranbieter von Gover übertragen wird.
+                                    </Typography>
+
+                                    <Typography
+                                        marginBottom={2}
+                                    >
+                                        Die maximale Dateigröße wird unter Anderem an den folgenden Stellen
+                                        berücksichtigt:
+
+                                        <ul>
+                                            <li>Das Hochladen von Dateien &amp; Medien</li>
+                                            <li>Das Übertragen von Anlagen an einen Prozess</li>
+                                            <li>Das Erstellen von Anlagen in einem Vorgang z.B. durch eine
+                                                PDF-Generierung
+                                            </li>
+                                            <li>Das Importieren von Dateien als Anlagen in einen Vorgang</li>
+                                            <li>Das Übertragen von Anlagen aus einem Vorgang in einen Speicheranbieter
+                                            </li>
+                                        </ul>
+                                    </Typography>
+
+                                    <Typography
+                                        variant="caption"
+                                        color="textSecondary"
+                                    >
+                                        *1 Megabyte entspricht 1.000 Kilobytes oder 1.000.000 Bytes.
+                                    </Typography>
+                                </>
+                            }
+                        />
+                    </Stack>
                 </Grid>
             </Grid>
 
@@ -693,7 +747,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
             <Box
                 sx={{
                     display: 'flex',
-                    marginTop: 2,
+                    marginTop: 4,
                     gap: 2,
                 }}
             >
@@ -751,10 +805,22 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     Möchten Sie diesen Speicheranbieter wirklich löschen? Diese Aktion kann nicht rückgängig gemacht
                     werden.
                 </Typography>
-                <AlertComponent color={'warning'}>
-                    Wenn der Speicheranbieter bereits für die Ablage von Dateien genutzt wurde, können diese Dateien
-                    nach dem Löschen des Speicheranbieters nicht mehr erreicht werden. Bitte stellen Sie sicher, dass
-                    Sie alle Dateien migriert oder gelöscht haben, bevor Sie fortfahren.
+                <AlertComponent
+                    color="warning"
+                    sx={{
+                        mt: 2,
+                    }}
+                >
+                    <p>
+                        Wenn der Speicheranbieter bereits für die Ablage von Dateien genutzt wurde, können diese Dateien
+                        nach dem Löschen des Speicheranbieters nicht mehr erreicht werden. Bitte stellen Sie sicher,
+                        dass
+                        Sie alle Dateien migriert oder gelöscht haben, bevor Sie fortfahren.
+                    </p>
+                    <p>
+                        Bitte beachten Sie außerdem: Die Ordner und Dokument des Speicheranbieters
+                        werden <strong>nicht</strong> gelöscht.
+                    </p>
                 </AlertComponent>
             </ConfirmDialog>
 

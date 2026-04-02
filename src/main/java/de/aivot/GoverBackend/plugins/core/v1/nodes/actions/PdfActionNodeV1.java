@@ -283,9 +283,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
             pdfBytes = pdfService.generatePdfFromHtml(
                     interpolatedContentHtml,
                     interpolatedHeaderHtml,
-                    interpolatedFooterHtml,
-                    "21cm",
-                    "29.7cm"
+                    interpolatedFooterHtml
             );
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -293,7 +291,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
                     e,
                     "Die PDF-Erstellung wurde unterbrochen."
             );
-        } catch (URISyntaxException | java.io.IOException e) {
+        } catch (URISyntaxException | IOException e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
                     "Fehler beim Erzeugen des PDFs mit Gotenberg: %s",
@@ -366,7 +364,10 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
             }
 
             final var asset = retrieveAsset(assetKey);
-            return loadAssetContentAsString(asset.getStorageProviderId(), asset.getStoragePathFromRoot());
+            var assetTemplate = loadAssetContentAsString(asset.getStorageProviderId(), asset.getStoragePathFromRoot());
+            // Render the full asset template before splitting the individual HTML documents so shared
+            // blocks defined outside a specific <html> section remain available to all use sites.
+            return templateRenderService.interpolate(context.getProcessData(), assetTemplate);
         }
 
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(

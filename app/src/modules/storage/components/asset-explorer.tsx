@@ -39,7 +39,6 @@ import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
-import {StorageProvidersApiService} from '../storage-providers-api-service';
 import {type StorageIndexItem} from '../entities/storage-index-item-entity';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
@@ -47,12 +46,13 @@ import {getFileTypeIcon} from '../../../utils/file-type-icon';
 import {type StorageProviderEntity} from '../entities/storage-provider-entity';
 import {humanizeFileSize} from '../../../utils/humanization-utils';
 import {Page} from '../../../models/dtos/page';
+import {AssetsApiService} from '../../assets/assets-api-service';
+import {StorageProvidersApiService} from '../storage-providers-api-service';
 
 interface StorageExplorerProps {
     providerId: number;
     filterMimeTypes?: string[];
-    filterItem?: (item: StorageIndexItem) => boolean;
-    loadFolderItems?: (providerId: number, path: string) => Promise<StorageIndexItem[]>;
+    filterOnlyPublic?: boolean;
     onFileSelect?: (item: StorageIndexItem) => void;
     allowFileDownload?: boolean;
     showContainerBorder?: boolean;
@@ -215,12 +215,11 @@ function useSyncedColumnHeight(
     return height;
 }
 
-export function StorageExplorer(props: StorageExplorerProps): ReactNode {
+export function AssetExplorer(props: StorageExplorerProps): ReactNode {
     const {
         providerId,
         filterMimeTypes,
-        filterItem,
-        loadFolderItems,
+        filterOnlyPublic,
         onFileSelect,
         allowFileDownload = false,
         showContainerBorder = false,
@@ -256,12 +255,15 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
     const structureColumnHeight = useSyncedColumnHeight(rightColumnContentRef, structureHeightFallback);
     const fetchFolderItems = useCallback((path: string) => {
         const normalizedPath = normalizeDirectoryPath(path);
-        if (loadFolderItems != null) {
-            return loadFolderItems(providerId, normalizedPath);
-        }
-        return new StorageProvidersApiService()
-            .getFolder(providerId, normalizedPath);
-    }, [loadFolderItems, providerId]);
+
+        return new AssetsApiService()
+            .listFolderContent(providerId, normalizedPath, {
+                query: {
+                    contentType: filterMimeTypes,
+                    isPublic: filterOnlyPublic ? true : undefined,
+                },
+            });
+    }, [filterMimeTypes, filterOnlyPublic, providerId]);
 
     // Tree is loaded on demand per expanded folder and cached to avoid repeat requests.
     const loadTreeChildren = useCallback((path: string): void => {
@@ -336,42 +338,46 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
             });
     }, [currentPath, fetchFolderItems]);
 
-    const filteredItems = useMemo(() => {
-        const normalizedFilter = filterMimeTypes?.map((mimeType) => mimeType.toLowerCase()) ?? [];
-
-        return currentFolder.filter((item) => {
-            if (isDirectory(item)) {
-                return true;
-            }
-
-            if (normalizedFilter.length > 0) {
-                const mimeType = item.mimeType?.toLowerCase() ?? '';
-                const matchesMimeType = normalizedFilter.some((filterMimeType) => matchesMimeTypeFilter(mimeType, filterMimeType));
-                if (!matchesMimeType) {
-                    return false;
-                }
-            }
-
-            if (filterItem != null && !filterItem(item)) {
-                return false;
-            }
-
-            return true;
-        });
-    }, [currentFolder, filterItem, filterMimeTypes]);
+    const filteredItems = currentFolder;
 
     const [searchResults, setSearchResults] = useState<Page<StorageIndexItem>>();
     useEffect(() => {
         const trimmedSearch = search.trim();
 
-        if (trimmedSearch.length > 0) {
-            new StorageProvidersApiService()
-                .search(providerId, trimmedSearch)
-                .then(setSearchResults);
-        } else {
+        if (trimmedSearch.length === 0) {
             setSearchResults(undefined);
+            return;
         }
-    }, [search]);
+
+        let isActive = true;
+
+        new AssetsApiService()
+            .search(providerId, trimmedSearch, {
+                query: {
+                    contentType: filterMimeTypes,
+                    isPublic: filterOnlyPublic,
+                },
+            })
+            .then((page) => {
+                if (!isActive) {
+                    return;
+                }
+
+                setSearchResults(page);
+            })
+            .catch((err) => {
+                if (!isActive) {
+                    return;
+                }
+
+                setSearchResults(undefined);
+                dispatch(showApiErrorSnackbar(err, 'Bei der Assetsuche ist ein Fehler aufgetreten.'));
+            });
+
+        return () => {
+            isActive = false;
+        };
+    }, [dispatch, filterMimeTypes, filterOnlyPublic, providerId, search]);
 
     const rows = useMemo(() => {
         return searchResults?.content ?? filteredItems;
