@@ -94,7 +94,9 @@ public class ProcessWorker {
             process(
                     logger,
                     processInstance,
+                    payload.previousTaskId(),
                     payload.previousNodeId(),
+                    payload.previousNodePortKey(),
                     payload.nextNodeId()
             );
         } catch (ProcessNodeExecutionException exception) {
@@ -111,7 +113,9 @@ public class ProcessWorker {
 
     private void process(@Nonnull ProcessNodeExecutionLogger logger,
                          @Nonnull ProcessInstanceEntity processInstance,
+                         @Nullable Long previousTaskId,
                          @Nullable Integer previousNodeId,
+                         @Nullable String previousNodePortKey,
                          @Nonnull Integer nodeId) throws ProcessNodeExecutionException {
 
         // Fetch the current node
@@ -143,7 +147,9 @@ public class ProcessWorker {
                         processInstance.getProcessId(),
                         currentNode.getProcessVersion(),
                         currentNode.getId(),
+                        previousTaskId,
                         previousNodeId,
+                        previousNodePortKey,
                         ProcessTaskStatus.Running,
                         null,
                         LocalDateTime.now(),
@@ -241,7 +247,11 @@ public class ProcessWorker {
         }
 
         ProcessInstanceTaskEntity previousTask;
-        if (previousNodeId != null) {
+        if (previousTaskId != null) {
+            previousTask = processInstanceTaskRepository
+                    .findById(previousTaskId)
+                    .orElse(null);
+        } else if (previousNodeId != null) {
             previousTask = processInstanceTaskRepository
                     .findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(
                             processInstance.getId(),
@@ -275,7 +285,9 @@ public class ProcessWorker {
 
     public record WorkerPayload(
             @Nonnull Long processInstanceId,
+            @Nullable Long previousTaskId,
             @Nullable Integer previousNodeId,
+            @Nullable String previousNodePortKey,
             @Nonnull Integer nextNodeId
     ) implements Serializable {
 

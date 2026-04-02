@@ -219,6 +219,8 @@ class PdfActionNodeV1Test {
                 .setProcessId(PROCESS_ID)
                 .setProcessVersion(PROCESS_VERSION)
                 .setProcessNodeId(NODE_ID)
+                .setPreviousProcessInstanceTaskId(null)
+                .setPreviousProcessNodePortKey(null)
                 .setStatus(ProcessTaskStatus.Running)
                 .setStarted(now)
                 .setUpdated(now)

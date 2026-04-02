@@ -102,7 +102,10 @@ export function ProcessActionMenu(props: ProcessActionMenuProps): ReactNode {
                 ) : (
                     <MenuItem
                         key={`${item.label}-${index}`}
-                        onClick={() => {
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            event.preventDefault();
+
                             item.onClick();
                             onClose();
                         }}

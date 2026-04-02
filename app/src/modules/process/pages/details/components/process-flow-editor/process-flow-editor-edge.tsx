@@ -54,6 +54,7 @@ function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
             runtimeData.tasks,
             graphEdge.edge.fromNodeId,
             graphEdge.edge.toNodeId,
+            graphEdge.edge.viaPort,
         );
     }, [
         graphEdge,
@@ -68,6 +69,7 @@ function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
             runtimeData.tasks,
             graphEdge.edge.fromNodeId,
             graphEdge.edge.toNodeId,
+            graphEdge.edge.viaPort,
         );
     }, [
         graphEdge,

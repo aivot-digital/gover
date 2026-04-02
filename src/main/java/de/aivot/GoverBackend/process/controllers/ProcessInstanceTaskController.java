@@ -285,7 +285,9 @@ public class ProcessInstanceTaskController {
 
         var payload = new ProcessWorker.WorkerPayload(
                 taskEntity.getProcessInstanceId(),
+                taskEntity.getPreviousProcessInstanceTaskId(),
                 taskEntity.getPreviousProcessNodeId(),
+                taskEntity.getPreviousProcessNodePortKey(),
                 taskEntity.getProcessNodeId()
         );
 

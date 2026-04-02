@@ -7,7 +7,6 @@ import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import org.hibernate.annotations.ColumnDefault;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -46,7 +45,14 @@ public class ProcessInstanceTaskEntity {
     private Integer processNodeId;
 
     @Nullable
+    private Long previousProcessInstanceTaskId;
+
+    @Nullable
     private Integer previousProcessNodeId;
+
+    @Nullable
+    @Size(max = 96, message = "Der Schlüssel des vorherigen Prozessknoten-Ports darf maximal 96 Zeichen lang sein.")
+    private String previousProcessNodePortKey;
 
     @Nonnull
     @NotNull(message = "Der Aufgaben-Status darf nicht null sein.")
@@ -119,7 +125,9 @@ public class ProcessInstanceTaskEntity {
                                      @Nonnull Integer processId,
                                      @Nonnull Integer processVersion,
                                      @Nonnull Integer processNodeId,
+                                     @Nullable Long previousProcessInstanceTaskId,
                                      @Nullable Integer previousProcessNodeId,
+                                     @Nullable String previousProcessNodePortKey,
                                      @Nonnull ProcessTaskStatus status,
                                      @Nullable String statusOverride,
                                      @Nonnull LocalDateTime started,
@@ -140,7 +148,9 @@ public class ProcessInstanceTaskEntity {
         this.processId = processId;
         this.processVersion = processVersion;
         this.processNodeId = processNodeId;
+        this.previousProcessInstanceTaskId = previousProcessInstanceTaskId;
         this.previousProcessNodeId = previousProcessNodeId;
+        this.previousProcessNodePortKey = previousProcessNodePortKey;
         this.status = status;
         this.statusOverride = statusOverride;
         this.started = started;
@@ -222,12 +232,32 @@ public class ProcessInstanceTaskEntity {
     }
 
     @Nullable
+    public Long getPreviousProcessInstanceTaskId() {
+        return previousProcessInstanceTaskId;
+    }
+
+    public ProcessInstanceTaskEntity setPreviousProcessInstanceTaskId(@Nullable Long previousProcessInstanceTaskId) {
+        this.previousProcessInstanceTaskId = previousProcessInstanceTaskId;
+        return this;
+    }
+
+    @Nullable
     public Integer getPreviousProcessNodeId() {
         return previousProcessNodeId;
     }
 
     public ProcessInstanceTaskEntity setPreviousProcessNodeId(@Nullable Integer previousProcessDefinitionNodeId) {
         this.previousProcessNodeId = previousProcessDefinitionNodeId;
+        return this;
+    }
+
+    @Nullable
+    public String getPreviousProcessNodePortKey() {
+        return previousProcessNodePortKey;
+    }
+
+    public ProcessInstanceTaskEntity setPreviousProcessNodePortKey(@Nullable String previousProcessNodePortKey) {
+        this.previousProcessNodePortKey = previousProcessNodePortKey;
         return this;
     }
 

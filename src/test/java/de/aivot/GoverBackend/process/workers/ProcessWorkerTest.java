@@ -125,7 +125,7 @@ class ProcessWorkerTest {
                 new TestProcessNodeService()
         );
 
-        worker.listen(new ProcessWorker.WorkerPayload(42L, null, 11));
+        worker.listen(new ProcessWorker.WorkerPayload(42L, null, null, null, 11));
 
         assertEquals(ProcessInstanceStatus.Failed, processInstance.getStatus());
         assertEquals(1, savedProcessInstances.size());

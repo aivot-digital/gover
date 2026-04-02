@@ -10,7 +10,7 @@ import {KnownProviderIcons} from '../../../../data/known-provider-icons';
 import {ProcessFlowEditorNodeHandle} from './process-flow-editor-node-handle';
 import {useProcessFlowEditorContext} from './process-flow-editor-context';
 import {HANDLE_COLOR, HANDLE_SIZE, INTERACTIVE_HANDLE_SIZE} from './data/process-flow-constants';
-import {getFlowNodeWidth, type FlowNode} from './utils/layout-utils';
+import {type FlowNode, getFlowNodeWidth} from './utils/layout-utils';
 import {getNodeDescription, getNodeName} from './utils/node-utils';
 import {ProcessInstanceTaskStatusIcon} from '../../../../components/process-instance-task-status-icon';
 import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
@@ -25,13 +25,17 @@ import {ProcessTaskStatus} from '../../../../enums/process-task-status';
 import Link from '@mui/icons-material/Link';
 import SwapHoriz from '@mui/icons-material/SwapHoriz';
 import {ProcessActionMenu, type ProcessActionMenuItem} from '../process-action-menu';
+import {ModuleIcons} from '../../../../../../shells/staff/data/module-icons';
+import {useNavigate} from 'react-router-dom';
 
 function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
     const theme = useTheme();
     const confirm = useConfirm();
+    const navigate = useNavigate();
     const updateNodeInternals = useUpdateNodeInternals();
     const [showEventsDialog, setShowEventsDialog] = useState(false);
     const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
+    const [runtimeActionsMenuAnchorEl, setRuntimeActionsMenuAnchorEl] = useState<HTMLElement | null>(null);
 
     const {
         data,
@@ -79,6 +83,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                 runtimeData.tasks,
                 outgoingEdge.edge.fromNodeId,
                 outgoingEdge.edge.toNodeId,
+                outgoingEdge.edge.viaPort,
             );
 
             if (latestTaskForEdge != null && outgoingEdge.port != null) {
@@ -234,6 +239,24 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
             },
         ];
     }, [availableOutputPorts.length, confirm, editable, node, nodeName, onConnectNodeToExisting, onDeleteNode, onStartReplaceNode]);
+
+    const runtimeMenuItems: ProcessActionMenuItem[] = useMemo(() => {
+        if (associatedTask == null || associatedTask.status != ProcessTaskStatus.Running) {
+            return [];
+        }
+        return [
+            {
+                label: 'Aufgabe aufrufen',
+                icon: ModuleIcons.tasks,
+                onClick: () => {
+                    navigate(`/tasks/${associatedTask.processInstanceId}/${associatedTask.id}`);
+                },
+                disabled: false,
+                visible: true,
+                isDangerous: false,
+            },
+        ];
+    }, [associatedTask]);
 
     // Connecting/disconnecting ports changes the effective handle geometry of the node. React Flow
     // does not always pick that up from pure React re-renders, so force an internal recalculation
@@ -424,60 +447,77 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
 
                     {
                         associatedTask != null &&
-                            <Box
-                                sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    gap: 1,
-                                    px: 1.25,
-                                    pt: 0.75,
-                                    pb: 1.25,
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1,
+                                px: 1.25,
+                                pt: 0.75,
+                                pb: 1.25,
+                            }}
+                        >
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<News sx={{fontSize: 16}}/>}
+                                sx={runtimeActionButtonSx}
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    event.preventDefault();
+                                    setShowEventsDialog(true);
                                 }}
                             >
-                                <Button
-                                    variant="outlined"
-                                    size="small"
-                                    startIcon={<News sx={{fontSize: 16}}/>}
-                                    sx={runtimeActionButtonSx}
-                                    onClick={(event) => {
-                                        event.stopPropagation();
-                                        event.preventDefault();
-                                        setShowEventsDialog(true);
-                                    }}
-                                >
-                                    Ereignisse
-                                </Button>
+                                Ereignisse
+                            </Button>
 
-                                <Button
-                                    variant="outlined"
-                                    size="small"
-                                    startIcon={<DataObject sx={{fontSize: 16}}/>}
-                                    sx={runtimeActionButtonSx}
-                                    onClick={(event) => {
-                                        event.stopPropagation();
-                                        event.preventDefault();
+                            <Box sx={{flex: 1}}/>
 
-                                        confirm({
-                                            title: 'Elementdaten',
-                                            width: 'md',
-                                            hideCancelButton: true,
-                                            confirmButtonText: 'Schließen',
-                                            children: (
-                                                <>
-                                                    <Typography variant="h6">
-                                                        Die erzeugten Elementdaten
-                                                    </Typography>
-                                                    <ExpandableCodeBlock
-                                                        value={JSON.stringify(associatedTask?.nodeData, null, 2)}
-                                                    />
-                                                </>
-                                            ),
-                                        });
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<DataObject sx={{fontSize: 16}}/>}
+                                sx={runtimeActionButtonSx}
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    event.preventDefault();
+
+                                    confirm({
+                                        title: 'Elementdaten',
+                                        width: 'md',
+                                        hideCancelButton: true,
+                                        confirmButtonText: 'Schließen',
+                                        children: (
+                                            <>
+                                                <Typography variant="h6">
+                                                    Die erzeugten Elementdaten
+                                                </Typography>
+                                                <ExpandableCodeBlock
+                                                    value={JSON.stringify(associatedTask?.nodeData, null, 2)}
+                                                />
+                                            </>
+                                        ),
+                                    });
+                                }}
+                            >
+                                Daten
+                            </Button>
+
+                            <IconButton
+                                size="small"
+                                color="primary"
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    event.preventDefault();
+                                    setRuntimeActionsMenuAnchorEl(event.currentTarget);
+                                }}
+                            >
+                                <MoreVert
+                                    sx={{
+                                        fontSize: 16,
                                     }}
-                                >
-                                    Daten
-                                </Button>
+                                />
+                            </IconButton>
                         </Box>
                     }
                 </Paper>
@@ -489,6 +529,14 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                     setMenuAnchorEl(null);
                 }}
                 items={menuItems}
+            />
+
+            <ProcessActionMenu
+                anchorEl={runtimeActionsMenuAnchorEl}
+                onClose={() => {
+                    setRuntimeActionsMenuAnchorEl(null);
+                }}
+                items={runtimeMenuItems}
             />
 
             {

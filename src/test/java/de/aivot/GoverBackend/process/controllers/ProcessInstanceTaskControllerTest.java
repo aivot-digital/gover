@@ -102,7 +102,9 @@ class ProcessInstanceTaskControllerTest {
 
         var payload = payloadCaptor.getValue();
         assertEquals(task.getProcessInstanceId(), payload.processInstanceId());
+        assertEquals(task.getPreviousProcessInstanceTaskId(), payload.previousTaskId());
         assertEquals(task.getPreviousProcessNodeId(), payload.previousNodeId());
+        assertEquals(task.getPreviousProcessNodePortKey(), payload.previousNodePortKey());
         assertEquals(task.getProcessNodeId(), payload.nextNodeId());
     }
 
@@ -127,7 +129,9 @@ class ProcessInstanceTaskControllerTest {
                 .setProcessId(21)
                 .setProcessVersion(1)
                 .setProcessNodeId(34)
+                .setPreviousProcessInstanceTaskId(6L)
                 .setPreviousProcessNodeId(33)
+                .setPreviousProcessNodePortKey("approved")
                 .setStatus(status)
                 .setStarted(LocalDateTime.now().minusMinutes(5))
                 .setUpdated(LocalDateTime.now().minusMinutes(1))

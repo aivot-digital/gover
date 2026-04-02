@@ -7,7 +7,9 @@ export interface ProcessInstanceTaskEntity {
     processId: number;
     processVersion: number;
     processNodeId: number;
+    previousProcessInstanceTaskId: number | null;
     previousProcessNodeId: number | null;
+    previousProcessNodePortKey: string | null;
     status: ProcessTaskStatus;
     statusOverride: string | null;
     started: string; // ISO date string

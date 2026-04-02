@@ -55,6 +55,8 @@ public class ProcessStarter {
                 var payload = new ProcessWorker.WorkerPayload(
                         processInstance.getId(),
                         null,
+                        null,
+                        null,
                         initialNode.getId()
                 );
 

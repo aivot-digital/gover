@@ -777,6 +777,7 @@ function prioritizeRuntimeEdges(
                 runtimeData.tasks,
                 graphEdge.edge.fromNodeId,
                 graphEdge.edge.toNodeId,
+                graphEdge.edge.viaPort,
             ) != null
         );
         const targetZIndex = wasPerformed ? PROCESS_FLOW_EDGE_Z_INDEX + 1 : PROCESS_FLOW_EDGE_Z_INDEX;
