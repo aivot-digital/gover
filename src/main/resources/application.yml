@@ -198,10 +198,6 @@ gover:
   maxSubmissionCopyRetryCount: 3
   bootstrapAdminMail: "${GOVER_BOOTSTRAP_ADMIN_MAIL:}"
 
-  security:
-    keystorePassword: "${GOVER_SECURITY_KEYSTORE_PASSWORD}"
-    keystorePath: "${GOVER_SECURITY_KEYSTORE_PATH:./keystore.pkcs12}"
-
 # Configure the details for fetching, managing and updating the gover user data from keycloak
 keycloak:
   oidc:
