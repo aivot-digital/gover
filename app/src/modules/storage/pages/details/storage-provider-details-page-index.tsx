@@ -1,5 +1,5 @@
 import {Box, Button, Grid, Stack, Typography} from '@mui/material';
-import React, {type ReactNode, useEffect, useMemo, useState} from 'react';
+import React, {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useGenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useNavigate} from 'react-router-dom';
@@ -38,6 +38,7 @@ import {format} from 'date-fns';
 import {StatusTable} from '../../../../components/status-table/status-table';
 import Sync from '@aivot/mui-material-symbols-400-outlined/dist/sync/Sync';
 import {ComputedElementErrors, DerivedRuntimeElementData} from '../../../../models/element-data';
+import {useStorageProviderDetailsPageSyncContext} from './storage-provider-details-page';
 import {Hint} from '../../../../components/hint/hint';
 import {StorageProviderStatus} from '../../enums/storage-provider-status';
 
@@ -110,6 +111,7 @@ export const _StorageProviderSchema = {
 export function StorageProviderDetailsPageIndex(): ReactNode {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
+    const {registerSyncPreparationHandler} = useStorageProviderDetailsPageSyncContext();
 
     const [storageProviderSchema, setStorageProviderSchema] = useState<any>(_StorageProviderSchema);
     const [derivedElementData, setDerivedElementData] = useState<DerivedRuntimeElementData | null>(null);
@@ -229,53 +231,100 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     });
 
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const [showSyncConfirmDialog, setShowSyncConfirmDialog] = useState(false);
+    const syncPreparationResolverRef = useRef<((result: boolean) => void) | null>(null);
+    const hasNotChangedRef = useRef(hasNotChanged);
+    const resetRef = useRef(reset);
+
+    // Keep the latest form state available without re-registering the sync callback on every render.
+    useEffect(() => {
+        hasNotChangedRef.current = hasNotChanged;
+        resetRef.current = reset;
+    }, [hasNotChanged, reset]);
+
+    const handleSave = async (): Promise<boolean> => {
+        if (editedStorageProvider == null) {
+            return false;
+        }
+
+        const validationResult = validate();
+
+        if (!validationResult) {
+            dispatch(showErrorSnackbar('Bitte überprüfen Sie Ihre Eingaben.'));
+            return false;
+        }
+
+        setIsBusy(true);
+
+        const apiService = new StorageProvidersApiService();
+
+        try {
+            if (editedStorageProvider.id === 0) {
+                const newProvider = await apiService.create(editedStorageProvider);
+
+                setOriginalStorageProvider(newProvider);
+                reset();
+
+                dispatch(showSuccessSnackbar('Neuer Speicheranbieter erfolgreich angelegt.'));
+
+                setTimeout(() => {
+                    void navigate(`/storage-providers/${newProvider.id}`, {replace: true});
+                }, 0);
+            } else {
+                const updatedProvider = await apiService.update(editedStorageProvider.id, editedStorageProvider);
+
+                setOriginalStorageProvider(updatedProvider);
+                reset();
+
+                dispatch(showSuccessSnackbar('Änderungen am Speicheranbieter erfolgreich gespeichert.'));
+            }
+
+            return true;
+        } catch (err) {
+            dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+            return false;
+        } finally {
+            setIsBusy(false);
+        }
+    };
+
+    const resolveSyncPreparation = useCallback((result: boolean) => {
+        setShowSyncConfirmDialog(false);
+        syncPreparationResolverRef.current?.(result);
+        syncPreparationResolverRef.current = null;
+    }, []);
+
+    useEffect(() => {
+        registerSyncPreparationHandler(async () => {
+            if (hasNotChangedRef.current) {
+                // Derivation can leave a synthetic edited snapshot behind even when nothing is actually unsaved.
+                resetRef.current();
+                return true;
+            }
+
+            return await new Promise<boolean>((resolve) => {
+                syncPreparationResolverRef.current = resolve;
+                setShowSyncConfirmDialog(true);
+            });
+        });
+
+        return () => {
+            registerSyncPreparationHandler(null);
+            syncPreparationResolverRef.current?.(false);
+            syncPreparationResolverRef.current = null;
+        };
+    }, [registerSyncPreparationHandler]);
+
+    const handleSyncWithDiscard = useCallback(() => {
+        reset();
+        resolveSyncPreparation(true);
+    }, [reset, resolveSyncPreparation]);
 
     if (editedStorageProvider == null) {
         return (
             <GenericDetailsSkeleton/>
         );
     }
-
-    const handleSave = async (): Promise<void> => {
-        if (editedStorageProvider != null) {
-            const validationResult = validate();
-
-            if (!validationResult) {
-                dispatch(showErrorSnackbar('Bitte überprüfen Sie Ihre Eingaben.'));
-                return;
-            }
-
-            setIsBusy(true);
-
-            const apiService = new StorageProvidersApiService();
-
-            try {
-                if (editedStorageProvider.id === 0) {
-                    const newProvider = await apiService.create(editedStorageProvider);
-
-                    setOriginalStorageProvider(newProvider);
-                    reset();
-
-                    dispatch(showSuccessSnackbar('Neuer Speicheranbieter erfolgreich angelegt.'));
-
-                    setTimeout(() => {
-                        navigate(`/storage-providers/${newProvider.id}`, {replace: true});
-                    }, 0);
-                } else {
-                    const updatedProvider = await apiService.update(editedStorageProvider.id, editedStorageProvider);
-
-                    setOriginalStorageProvider(updatedProvider);
-                    reset();
-
-                    dispatch(showSuccessSnackbar('Änderungen am Speicheranbieter erfolgreich gespeichert.'));
-                }
-            } catch (err) {
-                dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
-            } finally {
-                setIsBusy(false);
-            }
-        }
-    };
 
     const handleDelete = async (): Promise<void> => {
         if (editedStorageProvider.id === 0) {
@@ -774,6 +823,24 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     </p>
                 </AlertComponent>
             </ConfirmDialog>
+
+            {
+                showSyncConfirmDialog &&
+                <ConfirmDialog
+                    title="Ungespeicherte Änderungen"
+                    onCancel={() => {
+                        resolveSyncPreparation(false);
+                    }}
+                    onConfirm={handleSyncWithDiscard}
+                    confirmButtonText="Verwerfen und Synchronisieren"
+                >
+                    <Typography>
+                        Es liegen ungespeicherte Änderungen vor. Wenn Sie jetzt synchronisieren, müssen diese zuerst
+                        verworfen werden. Wenn Sie die Änderungen behalten möchten, brechen Sie ab und verwenden Sie
+                        anschließend den regulären Speichern-Button.
+                    </Typography>
+                </ConfirmDialog>
+            }
         </Box>
     );
 }

@@ -32,7 +32,9 @@ import {ListControlRef} from '../../../../components/generic-list/generic-list-p
 import {Page} from '../../../../models/dtos/page';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
-import {FormResourceAccessControlDialog} from '../../../resource-access-controls/dialogs/form-resource-access-control-dialog';
+import {
+    FormResourceAccessControlDialog,
+} from '../../../resource-access-controls/dialogs/form-resource-access-control-dialog';
 import {DepartmentApiService} from '../../../departments/services/department-api-service';
 import {FormEntity} from '../../entities/form-entity';
 import {FormApiService} from '../../services/form-api-service';
@@ -70,7 +72,10 @@ const columns: GridColDef<FormListEntry>[] = [
     {
         field: 'icon',
         headerName: '',
-        renderCell: () => <CellContentWrapper sx={{alignItems: 'start', py: 2}}><DescriptionOutlinedIcon /></CellContentWrapper>,
+        renderCell: () => <CellContentWrapper sx={{
+            alignItems: 'start',
+            py: 2,
+        }}><DescriptionOutlinedIcon/></CellContentWrapper>,
         disableColumnMenu: true,
         width: 24,
         sortable: false,
@@ -176,7 +181,7 @@ const columns: GridColDef<FormListEntry>[] = [
         flex: 0.75,
         sortable: false,
         renderCell: (params) => (
-            <FormStatusChipGroup form={params.row} />
+            <FormStatusChipGroup form={params.row}/>
         ),
     },
 ];
@@ -293,7 +298,8 @@ export function FormsListPage() {
             children: (
                 <Box>
                     Für dieses Formular existiert derzeit kein aktiver Entwurf.
-                    Möchten Sie einen neuen Entwurf (Arbeitsversion) für dieses Formular anlegen um diesen zu bearbeiten?
+                    Möchten Sie einen neuen Entwurf (Arbeitsversion) für dieses Formular anlegen um diesen zu
+                    bearbeiten?
                 </Box>
             ),
         }).then((confirmed) => {
@@ -316,11 +322,11 @@ export function FormsListPage() {
                     filters={availableFilter}
                     defaultFilter="all"
                     header={{
-                        icon: <DescriptionOutlinedIcon />,
+                        icon: <DescriptionOutlinedIcon/>,
                         title: 'Formulare',
                         actions: [
                             {
-                                icon: <CloudUploadOutlinedIcon />,
+                                icon: <CloudUploadOutlinedIcon/>,
                                 onClick: () => {
                                     setShowImportFormDialog(true);
                                 },
@@ -329,7 +335,7 @@ export function FormsListPage() {
                             },
                             {
                                 label: 'Neues Formular',
-                                icon: <AddOutlinedIcon />,
+                                icon: <AddOutlinedIcon/>,
                                 onClick: () => {
                                     setNewForm({
                                         form: FormApiService.initialize(),
@@ -342,7 +348,7 @@ export function FormsListPage() {
                         helpDialog: {
                             title: 'Hilfe zu Formularen',
                             tooltip: 'Hilfe anzeigen',
-                            content: <FormsListPageHelp />,
+                            content: <FormsListPageHelp/>,
                         },
                     }}
                     searchLabel="Formular suchen"
@@ -394,12 +400,13 @@ export function FormsListPage() {
                                         variant="h5"
                                         component="h2"
                                     >
-                                        Noch keinem Fachbereich zugeordnet
+                                        Noch keiner Organisationseinheit zugeordnet
                                     </Typography>
                                     <Typography>
-                                        Eine Administrator:in muss Sie noch einem Fachbereich zuordnen und Ihnen eine Rolle
-                                        zuweisen.
-                                        Erst dann können Sie mit der Entwicklung von Formularen loslegen.
+                                        Eine Administrator:in muss Sie einer Organisationseinheit zuordnen und Ihnen
+                                        eine Domänenrolle zuweisen.
+                                        Erst dann können Sie mit der Entwicklung von Formularen beginnen. Nach der
+                                        Zuweisung müssen Sie diese Seite ggf. einmal neu laden.
                                     </Typography>
                                 </>
                             }
@@ -416,31 +423,31 @@ export function FormsListPage() {
                     rowActionsCount={4}
                     rowActions={(item: FormListEntry) => [
                         {
-                            icon: <Edit />,
+                            icon: <Edit/>,
                             to: `/forms/${item.id}/${item.draftedVersion}`,
                             tooltip: 'Formular bearbeiten',
                             visible: item.draftedVersion != null,
                         },
                         {
-                            icon: <Visibility />,
+                            icon: <Visibility/>,
                             to: `/forms/${item.id}`,
                             tooltip: 'Formular ansehen',
                             visible: item.draftedVersion === null,
                         },
                         {
-                            icon: <NewWindow />,
+                            icon: <NewWindow/>,
                             onClick: () => handleNewDraft(item),
                             tooltip: 'Neuen Entwurf anlegen',
                             visible: item.draftedVersion == null,
                             disabled: item.publishedVersion == null && item.draftedVersion != null,
                         },
                         {
-                            icon: <HomeStorage />,
+                            icon: <HomeStorage/>,
                             onClick: () => setShowFormVersionsDialogFor(item),
                             tooltip: 'Versionen anzeigen',
                         },
                         {
-                            icon: <MoreVertOutlinedIcon />,
+                            icon: <MoreVertOutlinedIcon/>,
                             onClick: (event) => setRowMenu({
                                 target: event.currentTarget as HTMLElement,
                                 form: item,
@@ -519,10 +526,16 @@ export function FormsListPage() {
                     onClose={() => {
                         setShowFormVersionsDialogFor(undefined);
                     }}
-                    onNewDraft={({form, version}) => {
+                    onNewDraft={({
+                                     form,
+                                     version,
+                                 }) => {
                         // TODO
                     }}
-                    onNewForm={({form, version}) => {
+                    onNewForm={({
+                                    form,
+                                    version,
+                                }) => {
                         setNewForm({
                             form,
                             version,

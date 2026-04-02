@@ -106,7 +106,7 @@ export function ApplicationSettings() {
             })
             .catch((err) => {
                 console.error(err);
-                dispatch(showErrorSnackbar('Farbschemata konnten nicht geladen werden'));
+                dispatch(showErrorSnackbar('Erscheinungsbilder konnten nicht geladen werden'));
             });
 
         new StorageProvidersApiService()
@@ -342,7 +342,7 @@ export function ApplicationSettings() {
                             mt: 4,
                         }}
                     >
-                        Farbschema der Gover-Instanz
+                        Erscheinungsbild der Gover-Instanz
                     </Typography>
 
                     <Typography
@@ -351,12 +351,12 @@ export function ApplicationSettings() {
                             mb: 1.6,
                         }}
                     >
-                        Sie können ein eigenes Farbschema für die Benutzeroberfläche auswählen, um Gover an Ihr Corporate Design anzugleichen (wird z.B. verwendet für Administrationsoberfläche und die Index-Seite der veröffentlichten
+                        Sie können ein eigenes Erscheinungsbild für die Benutzeroberfläche auswählen, um Gover an Ihr Corporate Design anzugleichen (wird z.B. verwendet für Administrationsoberfläche und die Index-Seite der veröffentlichten
                         Formulare).
                     </Typography>
 
                     <SelectFieldComponent
-                        label="Farbschema"
+                        label="Erscheinungsbild"
                         options={themes}
                         value={editedConfig[SystemConfigKeys.system.theme] ?? config[SystemConfigKeys.system.theme]}
                         onChange={(val) => {

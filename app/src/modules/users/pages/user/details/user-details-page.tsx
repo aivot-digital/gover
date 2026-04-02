@@ -7,8 +7,13 @@ import {stringOrDefault} from '../../../../../utils/string-utils';
 import React from 'react';
 import {PersonOutlined} from '@mui/icons-material';
 import {resolveUserName} from '../../../utils/resolve-user-name';
+import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
 
 export function UserDetailsPage() {
+    const hasAccess = useAccessGuard({
+        onlyGlobalAdmin: true,
+    });
+
     return (
         <PageWrapper
             title="Mitarbeiter:in bearbeiten"
@@ -29,13 +34,14 @@ export function UserDetailsPage() {
                                     In dieser Oberfläche können Sie die im System verfügbaren Mitarbeiter:innen einsehen.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
-                                    Informationen zu Mitarbeitenden werden von einem Identity Provider (IDP) System bereitgestellt.
-                                    Änderungen an den hier angezeigten Daten sind nur über die Verwaltungsoberfläche des IDP möglich.
+                                    Die hier gepflegten Basisdaten werden mit dem Identity Provider (IDP) synchron gehalten.
+                                    Weitergehende konto- oder sicherheitsbezogene Änderungen erfolgen direkt in der Verwaltungsoberfläche von Keycloak.
                                 </Typography>
                             </>
                         ),
                     },
                 }}
+                isEditable={() => hasAccess}
                 tabs={[
                     {
                         path: '/users/:id',

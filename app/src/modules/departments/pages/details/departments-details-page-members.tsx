@@ -49,8 +49,24 @@ export function DepartmentsDetailsPageMembers() {
     const [showSelectRolesDialogForMembership, setShowSelectRolesDialogForMembership] = useState<VDepartmentMembershipWithDetailsEntity | null>(null);
 
     const fetchMembers = useCallback((options: GenericListPropsFetchOptions<VDepartmentMembershipWithDetailsEntity>) => {
-        const filters: Partial<ListDepartmentMembershipsWithRolesFilter> = {
-            departmentId: item!.id,
+        if (item == null) {
+            // GenericList always expects an async page result. While the department details are still loading,
+            // we return an already resolved promise with an empty page instead of hitting the API with no department id.
+            return Promise.resolve({
+                content: [],
+                empty: true,
+                first: true,
+                last: true,
+                number: 0,
+                numberOfElements: 0,
+                size: options.size,
+                totalElements: 0,
+                totalPages: 0,
+            });
+        }
+
+        const filters: ListDepartmentMembershipsWithRolesFilter = {
+            departmentId: item.id,
             userSearch: options.search,
         };
 
@@ -70,7 +86,7 @@ export function DepartmentsDetailsPageMembers() {
         }
 
         return new VDepartmentMembershipWithDetailsService()
-            .list(options.page, options.size, options.sort as any, options.order, filters);
+            .listDepartmentMembershipsWithRoles(options.page, options.size, options.sort as any, options.order, filters);
     }, [item]);
 
     const buildRowActions = useCallback((membershipItem: VDepartmentMembershipWithDetailsEntity) => {

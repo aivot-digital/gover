@@ -95,7 +95,7 @@ export function AddElementDialog(props: AddElementDialogProps) {
             title={renderTitle}
             tabs={[
                 {label: 'Elemente', value: 0},
-                {label: 'Vorlagen', value: 1, hidden: props.hidePresets === true},
+                {label: 'Vorlagen', value: 1, hidden: props.hidePresets === true, disabled: true},
                 {label: 'Gover Marktplatz', value: 2, hidden: props.hideGoverStore === true},
             ]}
             activeTab={currentTab}

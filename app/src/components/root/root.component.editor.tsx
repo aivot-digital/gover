@@ -69,7 +69,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
             .then(setThemes)
             .catch((err) => {
                 console.error(err);
-                dispatch(showErrorSnackbar('Fehler beim Laden der Farbschemata!'));
+                dispatch(showErrorSnackbar('Fehler beim Laden der Erscheinungsbilder!'));
             });
     }, [api, dispatch]);
 
@@ -375,8 +375,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
                 title="Erscheinungsbild"
                 variant="h5"
             >
-                Hinterlegen Sie bei Bedarf ein abweichendes Farbschema und wählen Sie ggf. eine PDF-Vorlage, welche zur
-                Generierung des Formulars zur Offline-Einreichung verwendet wird.
+                Hinterlegen Sie bei Bedarf ein abweichendes Erscheinungsbild und wählen Sie ggf. eine PDF-Vorlage, welche zur Generierung des Formulars zur Offline-Einreichung verwendet wird.
             </ElementEditorSectionHeader>
             <Grid
                 container
@@ -402,7 +401,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
                         {
                             themes != null &&
                             <SelectFieldComponent
-                                label="Farbschema (Visuelles Erscheinungsbild)"
+                                label="Erscheinungsbild"
                                 value={props.entity?.version.themeId?.toString() ?? undefined}
                                 onChange={(val) => {
                                     props.onPatchEntity({
@@ -417,28 +416,27 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
                             />
                         }
                         <Hint
-                            summary="Sie können ein abweichendes Farbschema für dieses Formular auswählen."
-                            detailsTitle="Farbschema"
+                            summary="Sie können ein abweichendes Erscheinungsbild für dieses Formular auswählen."
+                            detailsTitle="Erscheinungsbild"
                             details={
                                 <>
                                     <p>
-                                        Sie können hier ein abweichendes Farbschema für dieses Formular auswählen.
+                                        Sie können hier ein abweichendes Erscheinungsbild für dieses Formular auswählen.
                                     </p>
                                     <p>
-                                        Farbschemata werden immer nach absteigendem Prioritätsprinzip angewendet.
-                                        Das bedeutet, dass das Farbschema mit der niedrigsten Nummer in der folgenden
-                                        Liste angewendet wird:
+                                        Erscheinungsbilder werden nach folgendem Prioritätsprinzip angewendet.
+                                        Der erste passende Eintrag in der folgenden Liste wird verwendet:
 
                                         <ol>
-                                            <li>Das Farbschema des Formulars</li>
-                                            <li>Das Farbschema des zuständigen Fachbereichs</li>
-                                            <li>Das Farbschema des bewirtschaftenden Fachbereichs</li>
-                                            <li>Das Farbschema des entwickelnden Fachbereichs</li>
-                                            <li>Das globale Farbschema der Gover-Instanz</li>
+                                            <li>Das Erscheinungsbild des Formulars</li>
+                                            <li>Das Erscheinungsbild des zuständigen Fachbereichs</li>
+                                            <li>Das Erscheinungsbild des bewirtschaftenden Fachbereichs</li>
+                                            <li>Das Erscheinungsbild des entwickelnden Fachbereichs</li>
+                                            <li>Das globale Erscheinungsbild der Gover-Instanz</li>
                                         </ol>
                                     </p>
                                     <p>
-                                        Das Farbschema setzt die Farben sowie die Logos des Formulars.
+                                        Das Erscheinungsbild legt Farben, Logo und Favicon des Formulars fest.
                                     </p>
                                 </>
                             }

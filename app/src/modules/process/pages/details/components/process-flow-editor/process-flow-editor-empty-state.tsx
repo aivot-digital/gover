@@ -95,6 +95,8 @@ export function ProcessFlowEditorEmptyState(props: ProcessFlowEditorEmptyStatePr
                 <Box
                     className="process-flow-editor-empty-state-marker"
                     aria-hidden
+                    onClick={onAddTrigger}
+                    title={'Auslöser hinzufügen'}
                 >
                     <Box className="process-flow-editor-empty-state-marker-ring process-flow-editor-empty-state-marker-ring-primary"/>
                     <Box className="process-flow-editor-empty-state-marker-ring process-flow-editor-empty-state-marker-ring-secondary"/>

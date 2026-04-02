@@ -14,16 +14,16 @@ public class ThemePermissionProvider implements PermissionProvider {
 
     @Override
     public String getContextLabel() {
-        return "Design";
+        return "Erscheinungsbild";
     }
 
     @Override
     public PermissionEntry[] getPermissions() {
         return new PermissionEntry[]{
-                PermissionEntry.of(THEME_CREATE, "Theme erstellen", "Erlaubt das Erstellen von Themes."),
-                PermissionEntry.of(THEME_READ, "Theme anzeigen", "Erlaubt das Anzeigen und Auflisten von Themes."),
-                PermissionEntry.of(THEME_UPDATE, "Theme bearbeiten", "Erlaubt das Bearbeiten von Themes."),
-                PermissionEntry.of(THEME_DELETE, "Theme löschen", "Erlaubt das Löschen von Themes."),
+                PermissionEntry.of(THEME_CREATE, "Erscheinungsbild erstellen", "Erlaubt das Erstellen von Erscheinungsbildern."),
+                PermissionEntry.of(THEME_READ, "Erscheinungsbild anzeigen", "Erlaubt das Anzeigen und Auflisten von Erscheinungsbildern."),
+                PermissionEntry.of(THEME_UPDATE, "Erscheinungsbild bearbeiten", "Erlaubt das Bearbeiten von Erscheinungsbildern."),
+                PermissionEntry.of(THEME_DELETE, "Erscheinungsbild löschen", "Erlaubt das Löschen von Erscheinungsbildern."),
         };
     }
 

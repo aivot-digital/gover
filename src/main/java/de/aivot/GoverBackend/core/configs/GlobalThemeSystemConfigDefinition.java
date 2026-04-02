@@ -32,13 +32,13 @@ public class GlobalThemeSystemConfigDefinition implements SystemConfigDefinition
     @Nonnull
     @Override
     public String getLabel() {
-        return "Globales Farbschema";
+        return "Globales Erscheinungsbild";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Das globale Farbschema, welches auf der gesamten Seite angewendet wird. Dieses wird auch verwendet, wenn kein Farbschema für ein Formular definiert ist.";
+        return "Das globale Erscheinungsbild, das in der gesamten Anwendung verwendet wird. Es wird auch genutzt, wenn für ein Formular kein eigenes Erscheinungsbild definiert ist.";
     }
 
     @Nonnull

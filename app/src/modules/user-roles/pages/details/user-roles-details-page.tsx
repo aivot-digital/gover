@@ -31,13 +31,7 @@ export function UserRolesDetailsPage() {
                                     variant="body1"
                                     component="p"
                                 >
-                                    Domänenrollen definieren Berechtigungen und Zugriffsrechte für Benutzer:innen innerhalb der Anwendung.
-                                </Typography>
-                                <Typography
-                                    variant="body1"
-                                    component="p"
-                                >
-                                    Alle Geheimnisse sind verschlüsselt und nur für autorisierte Nutzer:innen oder Dienste mit entsprechender Berechtigung zugänglich.
+                                    Verwalten Sie hier die Domänenrollen, die Berechtigungen und Zugriffsrechte für Benutzer:innen innerhalb der Anwendung definieren.
                                 </Typography>
                             </>
                         ),
@@ -50,12 +44,12 @@ export function UserRolesDetailsPage() {
                     },
                     {
                         path: '/user-roles/:id/department-memberships',
-                        label: 'Fachbereichszuordnungen',
+                        label: 'Zuordnungen in Organisationseinheiten',
                         isDisabled: (item) => !item?.id,
                     },
                     {
                         path: '/user-roles/:id/team-memberships',
-                        label: 'Teamzuordnungen',
+                        label: 'Zuordnungen in Teams',
                         isDisabled: (item) => !item?.id,
                     },
                 ]}

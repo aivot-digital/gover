@@ -119,6 +119,7 @@ export function PermissionGroupAccordion(props: PermissionGroupAccordionProps): 
                                     e.stopPropagation();
                                     onToggleGroup(group, !allSelected);
                                 }}
+                                sx={{mr: 1}}
                             >
                                 {allSelected ? 'Abwählen' : 'Auswählen'}
                             </Button>

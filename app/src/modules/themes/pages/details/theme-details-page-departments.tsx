@@ -40,11 +40,11 @@ export function ThemeDetailsPageDepartments() {
                 variant="h5"
                 sx={{mt: 1.5, mb: 1}}
             >
-                Fachbereiche mit diesem Farbschema
+                Fachbereiche mit diesem Erscheinungsbild
             </Typography>
 
             <Typography sx={{mb: 2, maxWidth: 900}}>
-                Eine Liste aller Fachbereiche, die dieses Farbschema für ihr optisches Erscheinungsbild verwenden.
+                Eine Liste aller Fachbereiche, die dieses Erscheinungsbild verwenden.
             </Typography>
 
             <GenericList<DepartmentEntity>

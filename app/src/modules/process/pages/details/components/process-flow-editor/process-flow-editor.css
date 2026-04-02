@@ -78,6 +78,7 @@
     border-radius: 999px;
     opacity: 0;
     animation: process-flow-editor-empty-state-fade-in 320ms ease-out 520ms both;
+    cursor: pointer;
 }
 
 .process-flow-editor-empty-state-marker-ring,

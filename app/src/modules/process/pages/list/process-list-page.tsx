@@ -267,13 +267,12 @@ export function ProcessListPage() {
                                         variant="h5"
                                         component="h2"
                                     >
-                                        Noch keinem Fachbereich zugeordnet
+                                        Noch keiner Organisationseinheit zugeordnet
                                     </Typography>
                                     <Typography>
-                                        Eine Administrator:in muss Sie noch einem Fachbereich zuordnen und Ihnen eine
-                                        Rolle
-                                        zuweisen.
-                                        Erst dann können Sie mit der Entwicklung von Prozessen loslegen.
+                                        Eine Administrator:in muss Sie einer Organisationseinheit zuordnen und Ihnen eine
+                                        Domänenrolle zuweisen.
+                                        Erst dann können Sie mit der Entwicklung von Prozessen beginnen. Nach der Zuweisung müssen Sie diese Seite ggf. einmal neu laden.
                                     </Typography>
                                 </>
                             }
