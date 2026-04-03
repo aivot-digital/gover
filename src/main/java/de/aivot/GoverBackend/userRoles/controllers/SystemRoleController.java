@@ -9,11 +9,9 @@ import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.userRoles.entities.SystemRoleEntity;
-import de.aivot.GoverBackend.userRoles.entities.UserRoleEntity;
 import de.aivot.GoverBackend.userRoles.filters.SystemRoleFilter;
 import de.aivot.GoverBackend.userRoles.permissions.SystemRolePermissionProvider;
 import de.aivot.GoverBackend.userRoles.services.SystemRoleService;
-import de.aivot.GoverBackend.userRoles.services.UserRoleService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -41,21 +39,18 @@ import java.util.Map;
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class SystemRoleController {
     private final ScopedAuditService auditService;
-    private final UserRoleService userRoleService;
     private final UserService userService;
     private final SystemRoleService systemRoleService;
     private final PermissionService permissionService;
 
     @Autowired
     public SystemRoleController(AuditService auditService,
-                                UserRoleService userRoleService,
                                 UserService userService,
                                 SystemRoleService systemRoleService,
                                 PermissionService permissionService) {
         this.auditService = auditService
                 .createScopedAuditService(SystemRoleController.class, "Rollen");
 
-        this.userRoleService = userRoleService;
         this.userService = userService;
         this.systemRoleService = systemRoleService;
         this.permissionService = permissionService;
@@ -213,11 +208,11 @@ public class SystemRoleController {
         permissionService
                 .testSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_DELETE);
 
-        var entity = userRoleService
+        var entity = systemRoleService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        userRoleService
+        systemRoleService
                 .deleteEntity(entity);
 
         auditService
@@ -225,7 +220,7 @@ public class SystemRoleController {
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Delete,
-                        UserRoleEntity.class,
+                        SystemRoleEntity.class,
                         entity.getId(),
                         "id",
                         Map.of(

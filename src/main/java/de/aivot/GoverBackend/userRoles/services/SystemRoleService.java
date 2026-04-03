@@ -1,8 +1,10 @@
 package de.aivot.GoverBackend.userRoles.services;
 
+import de.aivot.GoverBackend.config.services.SystemConfigService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
+import de.aivot.GoverBackend.user.configs.DefaultUserSystemRoleSystemConfigDefinition;
 import de.aivot.GoverBackend.userRoles.entities.SystemRoleEntity;
 import de.aivot.GoverBackend.userRoles.repositories.SystemRoleRepository;
 import jakarta.annotation.Nonnull;
@@ -18,10 +20,15 @@ import java.util.Optional;
 @Service
 public class SystemRoleService implements EntityService<SystemRoleEntity, Integer> {
     private final SystemRoleRepository repository;
+    private final SystemConfigService systemConfigService;
 
     @Autowired
-    public SystemRoleService(SystemRoleRepository repository) {
+    public SystemRoleService(
+            SystemRoleRepository repository,
+            SystemConfigService systemConfigService
+    ) {
         this.repository = repository;
+        this.systemConfigService = systemConfigService;
     }
 
     @Nonnull
@@ -35,6 +42,19 @@ public class SystemRoleService implements EntityService<SystemRoleEntity, Intege
 
     @Override
     public void performDelete(@Nonnull SystemRoleEntity entity) throws ResponseException {
+        var defaultSystemRoleId = systemConfigService
+                .retrieve(DefaultUserSystemRoleSystemConfigDefinition.KEY)
+                .getValueAsInteger()
+                .orElseThrow(() -> ResponseException.internalServerError(
+                        "Die konfigurierte Standard-Systemrolle für automatische Benutzerimporte ist ungültig."
+                ));
+
+        if (entity.getId().equals(defaultSystemRoleId)) {
+            throw ResponseException.conflict(
+                    "Die konfigurierte Standard-Systemrolle für automatische Benutzerimporte kann nicht gelöscht werden. Wählen Sie zuerst eine andere Standard-Systemrolle aus."
+            );
+        }
+
         // Directly delete the entity
         repository.delete(entity);
     }

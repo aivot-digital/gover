@@ -3,12 +3,9 @@ package de.aivot.GoverBackend.user.services;
 import de.aivot.GoverBackend.audit.models.AuditLogPayload;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
-import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.models.KeycloakUser;
 import de.aivot.GoverBackend.user.repositories.UserRepository;
-import de.aivot.GoverBackend.userRoles.entities.SystemRoleEntity;
-import de.aivot.GoverBackend.userRoles.repositories.SystemRoleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -31,22 +28,18 @@ public class UserSyncService {
 
     private final UserRepository userRepository;
     private final KeyCloakApiService keycloakApiService;
-
-    private final GoverConfig goverConfig;
-    private final SystemRoleRepository systemRoleRepository;
+    private final ImportedUserSystemRoleService importedUserSystemRoleService;
 
     @Autowired
     public UserSyncService(AuditService auditService,
                            UserRepository userRepository,
                            KeyCloakApiService keycloakApiService,
-                           GoverConfig goverConfig,
-                           SystemRoleRepository systemRoleRepository) {
+                           ImportedUserSystemRoleService importedUserSystemRoleService) {
         this.auditService = auditService.createScopedAuditService(UserSyncService.class, "Benutzer");
 
         this.userRepository = userRepository;
         this.keycloakApiService = keycloakApiService;
-        this.goverConfig = goverConfig;
-        this.systemRoleRepository = systemRoleRepository;
+        this.importedUserSystemRoleService = importedUserSystemRoleService;
     }
 
     @Scheduled(fixedDelay = delayInMS)
@@ -64,13 +57,9 @@ public class UserSyncService {
         Exception syncFailure = null;
 
         try {
-            var superRoleId = systemRoleRepository
-                    .findByMaxPermissions()
-                    .map(SystemRoleEntity::getId)
-                    .orElse(0);
-
-            var hasSuperAdmin = userRepository
-                    .existsBySystemRoleId(superRoleId);
+            var defaultSystemRoleId = importedUserSystemRoleService.getDefaultSystemRoleId();
+            var superRoleId = importedUserSystemRoleService.getSuperAdminRoleId();
+            var hasSuperAdmin = importedUserSystemRoleService.hasSuperAdminUser(superRoleId);
 
             var alreadyImportedUsers = userRepository
                     .findAll();
@@ -116,19 +105,22 @@ public class UserSyncService {
                         .setFirstName(newFirstName)
                         .setLastName(newLastName);
 
-                var promotedToSuperAdmin = false;
-                if (!hasSuperAdmin &&
-                        goverConfig.getBootstrapAdminMail() != null &&
-                        goverConfig.getBootstrapAdminMail().contains(userEntity.getEmail())) {
-                    if (!Objects.equals(userEntity.getSystemRoleId(), superRoleId)) {
-                        userEntity.setSystemRoleId(superRoleId);
-                        promotedToSuperAdmin = true;
-                        promotedToSuperAdminCount++;
-                    }
+                var roleResolution = importedUserSystemRoleService.resolveSystemRoleId(
+                        userEntity.getEmail(),
+                        userEntity.getSystemRoleId(),
+                        defaultSystemRoleId,
+                        superRoleId,
+                        hasSuperAdmin
+                );
+                var systemRoleChanged = !Objects.equals(userEntity.getSystemRoleId(), roleResolution.systemRoleId());
+                userEntity.setSystemRoleId(roleResolution.systemRoleId());
+
+                if (roleResolution.promotedToSuperAdmin()) {
+                    promotedToSuperAdminCount++;
                     hasSuperAdmin = true;
                 }
 
-                var hasChanged = isCreate || dataChanged || promotedToSuperAdmin;
+                var hasChanged = isCreate || dataChanged || systemRoleChanged;
                 if (hasChanged) {
                     userRepository
                             .save(userEntity);
@@ -142,7 +134,7 @@ public class UserSyncService {
                             "verified", userEntity.getVerified(),
                             "deletedInIdp", userEntity.getDeletedInIdp(),
                             "action", isCreate ? "imported" : "updated",
-                            "promotedToSuperAdmin", promotedToSuperAdmin
+                            "promotedToSuperAdmin", roleResolution.promotedToSuperAdmin()
                     ));
                 }
 
