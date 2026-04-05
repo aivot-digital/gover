@@ -11,10 +11,14 @@ import de.aivot.GoverBackend.config.models.UserConfigDefinition;
 import de.aivot.GoverBackend.config.services.UserConfigService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,8 +29,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -36,11 +38,10 @@ import java.util.stream.Collectors;
  * This controller provides functionality to list, retrieve and update user configurations.
  */
 @RestController
-@RequestMapping("/api/user-configs/{userId}/")
+@RequestMapping("/api/user-configs/")
 @Tag(
-        name = "User Configurations",
-        description = "User configurations are key-value pairs that define various settings and preferences for individual users. " +
-                      "These configurations can be used to customize the behavior of the system for each user."
+        name = OpenApiConstants.Tags.UserConfigsName,
+        description = OpenApiConstants.Tags.UserConfigDescription
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class UserConfigController {
@@ -57,7 +58,7 @@ public class UserConfigController {
                                 UserConfigService userConfigService,
                                 List<UserConfigDefinition> userConfigDefinitions,
                                 UserService userService) {
-        this.auditService = auditService.createScopedAuditService(UserConfigController.class);
+        this.auditService = auditService.createScopedAuditService(UserConfigController.class, "Nutzerkonfiguration");
         this.userConfigService = userConfigService;
         this.userConfigDefinitions = userConfigDefinitions
                 .stream()
@@ -65,12 +66,22 @@ public class UserConfigController {
         this.userService = userService;
     }
 
-    @GetMapping("")
+    @GetMapping("definitions/")
+    @Operation(
+            summary = "List User Configuration Definitions",
+            description = "Retrieve a list of all user configuration definitions. This endpoint can be used to get metadata about the available user configurations, such as their types, categories and descriptions. This is especially useful for clients to dynamically adapt to available configurations."
+    )
+    public List<UserConfigDefinition> list() throws ResponseException {
+        return userConfigService
+                .getUserConfigDefinitions();
+    }
+
+    @GetMapping("{userId}/")
     @Operation(
             summary = "List User Configurations",
             description = "Retrieve a paginated list of user configurations for a specific user with optional filtering. " +
-                          "If the special userId 'self' is used, the configurations of the authenticated user will be fetched. " +
-                          "Non system admin users can only see public configurations of other users."
+                    "If the special userId 'self' is used, the configurations of the authenticated user will be fetched. " +
+                    "Non system admin users can only see public configurations of other users."
     )
     public Page<UserConfigResponseDto> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -104,12 +115,12 @@ public class UserConfigController {
                 });
     }
 
-    @PutMapping("{key}/")
+    @PutMapping("{userId}/{key}/")
     @Operation(
             summary = "Update User Configuration",
             description = "Update the value of a specific user configuration identified by its key for a specific user. " +
-                          "If the special userId 'self' is used, the configuration of the authenticated user will be updated. " +
-                          "Users can update their own configurations, while administrators can update configurations for any user."
+                    "If the special userId 'self' is used, the configuration of the authenticated user will be updated. " +
+                    "Users can update their own configurations, while administrators can update configurations for any user."
     )
     public UserConfigResponseDto update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -141,11 +152,23 @@ public class UserConfigController {
 
         // Log the action of updating the user configuration
         auditService
-                .logAction(user, AuditAction.Update, UserConfigEntity.class, Map.of(
-                        "userId", userId,
-                        "key", key,
-                        "value", request.value()
-                ));
+                .create()
+                .withUser(user)
+                .withAuditAction(
+                        AuditAction.Update,
+                        UserConfigEntity.class,
+                        config.getKey(),
+                        "key",
+                        Map.of(
+                                "userId", userId
+                        ))
+                .withMessage(
+                        "Die Mitarbeiterkonfiguration %s für %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(config.getKey()),
+                        StringUtils.quote(config.getUserId()),
+                        StringUtils.quote(user.getFullName())
+                )
+                .log();
 
         return UserConfigResponseDto
                 .fromEntity(config, def);

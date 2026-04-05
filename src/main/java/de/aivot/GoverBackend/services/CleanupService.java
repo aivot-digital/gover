@@ -19,6 +19,10 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+/**
+ * @deprecated
+ */
+@Deprecated
 @Component
 @EnableScheduling
 public class CleanupService {
@@ -35,7 +39,7 @@ public class CleanupService {
                           SubmissionStorageService submissionStorageService,
                           ExceptionMailService exceptionMailService,
                           FormVersionService formVersionService) {
-        this.auditService = auditService.createScopedAuditService(CleanupService.class);
+        this.auditService = auditService.createScopedAuditService(CleanupService.class, "Systemwartung");
 
         this.submissionService = submissionService;
         this.submissionStorageService = submissionStorageService;
@@ -68,10 +72,17 @@ public class CleanupService {
                         .orElse(null);
 
                 if (form == null) {
-                    auditService.logError("Form with id " + submission.getFormId() + "not found for submission: " + submission.getId(), Map.of(
-                            "submissionId", submission.getId(),
-                            "formId", submission.getFormId()
-                    ));
+                    auditService.create()
+                            .setTriggerType("Error")
+                            .setMessage(
+                                    "Das Formular mit der ID " + submission.getFormId() +
+                                            " wurde für den archivierten Antrag mit der ID " + submission.getId() +
+                                            " nicht gefunden; der Löschlauf wurde für diesen Antrag übersprungen."
+                            )
+                            .setMetadata(Map.of(
+                                    "submissionId", submission.getId(),
+                                    "formId", submission.getFormId()
+                            )).log();
                     continue;
                 }
 

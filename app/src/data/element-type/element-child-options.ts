@@ -1,60 +1,91 @@
 import {ElementType} from './element-type';
 
-const BaseComponents = [
-    ElementType.Image,
-    ElementType.GroupLayout,
+export enum ElementDisplayContext {
+    CitizenFacing = 'CitizenFacing',
+    StaffFacing = 'StaffFacing',
+}
 
+const CitizenFacingBaseElements: ElementType[] = [
+    // Content
+    ElementType.Image,
     ElementType.Checkbox,
     ElementType.Date,
     ElementType.Headline,
+    ElementType.RichText,
+    ElementType.Alert,
+
+    // Inputs
     ElementType.Text,
     ElementType.Number,
-    ElementType.RichText,
     ElementType.Radio,
     ElementType.Select,
     ElementType.MultiCheckbox,
     ElementType.Spacer,
     ElementType.Table,
     ElementType.Time,
-    ElementType.Alert,
+    ElementType.DateTime,
+    ElementType.DateRange,
+    ElementType.TimeRange,
+    ElementType.DateTimeRange,
+    ElementType.MapPoint,
     ElementType.FileUpload,
+    ElementType.ChipInput,
 
+    // Layouts
     ElementType.ReplicatingContainer,
+    ElementType.GroupLayout,
 ];
 
-export const ElementChildOptions: Record<ElementType, ElementType[] | null> = {
-    [ElementType.Alert]: null,
-    [ElementType.Image]: null,
-    [ElementType.GroupLayout]: BaseComponents,
-    [ElementType.Step]: BaseComponents,
-    [ElementType.FormLayout]: [
-        ElementType.Step,
-    ],
-    [ElementType.Checkbox]: null,
-    [ElementType.Date]: null,
-    [ElementType.Headline]: null,
-    [ElementType.MultiCheckbox]: null,
-    [ElementType.Number]: null,
-    [ElementType.ReplicatingContainer]: BaseComponents,
-    [ElementType.RichText]: null,
-    [ElementType.Radio]: null,
-    [ElementType.Select]: null,
-    [ElementType.Spacer]: null,
-    [ElementType.Table]: null,
-    [ElementType.Text]: null,
-    [ElementType.Time]: null,
-    [ElementType.IntroductionStep]: null,
-    [ElementType.SummaryStep]: null,
-    [ElementType.SubmitStep]: null,
-    [ElementType.SubmittedStep]: null,
-    [ElementType.FileUpload]: null,
-    [ElementType.DialogLayout]: null,
-    [ElementType.StepperLayout]: null,
-    [ElementType.ConfigLayout]: null,
-    [ElementType.FunctionInput]: null,
-    [ElementType.CodeInput]: null,
-    [ElementType.RichTextInput]: null,
-    [ElementType.UiDefinitionInput]: null,
-    [ElementType.IdentityInput]: null,
-    [ElementType.TabLayout]: null,
+
+const StaffFacingBaseElements: ElementType[] = [
+    // Content
+    ElementType.Image,
+    ElementType.Checkbox,
+    ElementType.Date,
+    ElementType.Headline,
+    ElementType.RichText,
+    ElementType.Alert,
+
+    // Inputs
+    ElementType.Text,
+    ElementType.Number,
+    ElementType.Radio,
+    ElementType.Select,
+    ElementType.MultiCheckbox,
+    ElementType.Spacer,
+    ElementType.Table,
+    ElementType.Time,
+    ElementType.DateTime,
+    ElementType.DateRange,
+    ElementType.TimeRange,
+    ElementType.DateTimeRange,
+    ElementType.MapPoint,
+    ElementType.FileUpload,
+    ElementType.ChipInput,
+    ElementType.DataModelSelect,
+    ElementType.DataObjectSelect,
+    ElementType.RichTextInput,
+
+    // Layouts
+    ElementType.ReplicatingContainer,
+    ElementType.GroupLayout,
+];
+
+export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<ElementType, ElementType[]>>> = {
+    [ElementDisplayContext.CitizenFacing]: {
+        [ElementType.GroupLayout]: CitizenFacingBaseElements,
+        [ElementType.Step]: CitizenFacingBaseElements,
+        [ElementType.FormLayout]: [
+            ElementType.Step,
+            ElementType.IntroductionStep,
+            ElementType.SummaryStep,
+            ElementType.SubmitStep,
+        ],
+        [ElementType.ReplicatingContainer]: CitizenFacingBaseElements,
+    },
+    [ElementDisplayContext.StaffFacing]: {
+        [ElementType.GroupLayout]: StaffFacingBaseElements,
+        [ElementType.Step]: StaffFacingBaseElements,
+        [ElementType.ReplicatingContainer]: StaffFacingBaseElements,
+    },
 };

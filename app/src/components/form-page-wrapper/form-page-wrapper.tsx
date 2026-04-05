@@ -3,7 +3,7 @@ import {type FormPageWrapperProps} from './form-page-wrapper-props';
 import {PageWrapper} from '../page-wrapper/page-wrapper';
 import {Box, Button, Tab, Tabs} from '@mui/material';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export function FormPageWrapper(props: PropsWithChildren<FormPageWrapperProps>) {
     const {
@@ -110,7 +110,7 @@ export function FormPageWrapper(props: PropsWithChildren<FormPageWrapperProps>) 
                                 color="error"
                                 onClick={onDelete}
                                 variant="outlined"
-                                startIcon={<DeleteForeverOutlinedIcon
+                                startIcon={<Delete
                                     sx={{
                                         marginTop: '-4px',
                                     }}

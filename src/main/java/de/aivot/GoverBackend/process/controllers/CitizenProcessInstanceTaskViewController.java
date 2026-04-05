@@ -1,21 +1,27 @@
 package de.aivot.GoverBackend.process.controllers;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
+import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
+import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.identity.controllers.IdentityController;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
-import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessTestClaimEntity;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.filters.ProcessInstanceFilter;
 import de.aivot.GoverBackend.process.filters.ProcessInstanceTaskFilter;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextUICustomer;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
-import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.models.TaskViewEvent;
 import de.aivot.GoverBackend.process.services.*;
 import de.aivot.GoverBackend.process.workers.ProcessNodeExecutionResultHandler;
@@ -24,6 +30,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -41,22 +48,26 @@ public class CitizenProcessInstanceTaskViewController {
     private final ProcessNodeDefinitionService processNodeProviderService;
     private final ProcessNodeService processDefinitionNodeService;
     private final ProcessNodeExecutionResultHandler processNodeExecutionResultHandler;
-    private final ProcessDataService processDataService;
     private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
+    private final ElementDerivationService elementDerivationService;
+    private final TaskViewMultipartInputService taskViewMultipartInputService;
 
     public CitizenProcessInstanceTaskViewController(ProcessInstanceService processInstanceService,
                                                     ProcessInstanceTaskService processInstanceTaskService,
                                                     ProcessNodeDefinitionService processNodeProviderService,
                                                     ProcessNodeService processDefinitionNodeService,
                                                     ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
-                                                    ProcessDataService processDataService, ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory) {
+                                                    ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
+                                                    ElementDerivationService elementDerivationService,
+                                                    TaskViewMultipartInputService taskViewMultipartInputService) {
         this.processInstanceService = processInstanceService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.processNodeProviderService = processNodeProviderService;
         this.processDefinitionNodeService = processDefinitionNodeService;
         this.processNodeExecutionResultHandler = processNodeExecutionResultHandler;
-        this.processDataService = processDataService;
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
+        this.elementDerivationService = elementDerivationService;
+        this.taskViewMultipartInputService = taskViewMultipartInputService;
     }
 
     @GetMapping("")
@@ -120,7 +131,9 @@ public class CitizenProcessInstanceTaskViewController {
     public TaskViewResponse update(
             @Nonnull @PathVariable UUID procAccess,
             @Nonnull @PathVariable UUID taskAccess,
-            @Nonnull @RequestBody ElementData elementData,
+            @RequestParam(value = "inputs", required = true) String rawInputs,
+            @RequestParam(value = "files", required = false) MultipartFile[] files,
+            @RequestParam(value = "fileUris", required = false) List<String> fileUris,
             @Nullable @RequestParam(value = "event", required = true) String event,
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId
     ) throws ResponseException {
@@ -176,14 +189,35 @@ public class CitizenProcessInstanceTaskViewController {
                 .findFirst()
                 .orElseThrow(() -> ResponseException.badRequest("Invalid event: " + event));
 
-        var valueMap = ElementData
-                .toValueMap(layout, elementData);
+        AuthoredElementValues inputs;
+        try {
+            inputs = ObjectMapperFactory
+                    .getInstance()
+                    .readValue(rawInputs, AuthoredElementValues.class);
+        } catch (JsonProcessingException e) {
+            throw ResponseException.badRequest("Ungültige Eingabedaten.", e);
+        }
+        inputs = taskViewMultipartInputService.normalizeInputs(
+                inputs,
+                files,
+                fileUris,
+                taskViewData.instance.getId(),
+                taskViewData.task.getId(),
+                null
+        );
 
-        var processData = processDataService
-                .foldProcessInstanceData(
-                        taskViewData.instance,
-                        taskViewData.task.getPreviousProcessNodeId()
-                );
+        var derivedElementData = elementDerivationService.derive(
+                new ElementDerivationRequest(
+                        layout,
+                        inputs,
+                        new ElementDerivationOptions()
+                ),
+                new ElementDerivationLogger()
+        );
+
+        if (derivedElementData.hasAnyError()) {
+            throw ResponseException.badRequest("Es ist ein Fehler beim Ableiten der Eingabedaten aufgetreten. Bitte überprüfen Sie Ihre Eingaben.", derivedElementData);
+        }
 
         Optional<ProcessNodeExecutionResult> res;
         try {
@@ -191,19 +225,19 @@ public class CitizenProcessInstanceTaskViewController {
                     .provider
                     .onUpdateFromCustomer(
                             context,
-                            valueMap,
+                            inputs,
+                            derivedElementData,
                             event
                     );
         } catch (Exception e) {
+            logger.logException(e);
             throw ResponseException.internalServerError(e);
         }
 
         if (res.isEmpty()) {
-            var workingElementData = ElementData
-                    .fromValueMap(layout, taskViewData.task.getProcessData());
             return new TaskViewResponse(
                     layout,
-                    workingElementData,
+                    inputs,
                     events
             );
         }
@@ -221,7 +255,7 @@ public class CitizenProcessInstanceTaskViewController {
                             res.get()
                     );
         } catch (ProcessNodeExecutionException e) {
-            // TODO: Log error
+            logger.logException(e);
             throw ResponseException.internalServerError(e);
         }
 
@@ -303,10 +337,9 @@ public class CitizenProcessInstanceTaskViewController {
             @Nonnull
             GroupLayoutElement layout,
             @Nonnull
-            ElementData data,
+            AuthoredElementValues data,
             @Nonnull
             List<TaskViewEvent> events
     ) {
-
     }
 }

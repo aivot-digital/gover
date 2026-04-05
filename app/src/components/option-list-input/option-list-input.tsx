@@ -3,15 +3,16 @@ import React, {useCallback, useMemo, useReducer, useState} from 'react';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import {type OptionListInputProps} from './option-list-input-props';
 import {TableVirtuoso} from 'react-virtuoso';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export function OptionListInput(props: OptionListInputProps) {
     const [textInputMode, toggleTextInputMode] = useReducer((state: boolean) => !state, false);
     const [textInputBuffer, setTextInputBuffer] = useState<string>();
 
     const options = props.value ?? [];
+    const groupFieldEnabled = props.showGroupField === true;
     const isEditable = props.disabled !== true;
     const isRequired = !props.allowEmpty;
 
@@ -26,6 +27,7 @@ export function OptionListInput(props: OptionListInputProps) {
             {
                 label: '',
                 value: '',
+                group: groupFieldEnabled ? '' : undefined,
             },
         ]);
     };
@@ -107,6 +109,29 @@ export function OptionListInput(props: OptionListInputProps) {
                 </TableCell>
 
                 {
+                    groupFieldEnabled &&
+                    <TableCell>
+                        <TextField
+                            fullWidth
+                            label={props.groupLabel ?? 'Gruppe'}
+                            size="small"
+                            margin="dense"
+                            value={item.group ?? ''}
+                            onChange={(event) => {
+                                const updatedValue = [...options];
+                                updatedValue[index] = {
+                                    ...item,
+                                    group: event.target.value ?? '',
+                                };
+                                handleChange(updatedValue);
+                            }}
+                            helperText="Optional"
+                            disabled={!isEditable}
+                        />
+                    </TableCell>
+                }
+
+                {
                     isEditable &&
                     <TableCell>
                         <Tooltip title="Entfernen">
@@ -116,14 +141,14 @@ export function OptionListInput(props: OptionListInputProps) {
                                     handleRemove(index);
                                 }}
                             >
-                                <DeleteForeverOutlinedIcon />
+                                <Delete />
                             </IconButton>
                         </Tooltip>
                     </TableCell>
                 }
             </>
         );
-    }, [options, handleChange]);
+    }, [groupFieldEnabled, handleChange, isEditable, options, props.groupLabel, props.keyLabel, props.labelLabel]);
 
 
     return (
@@ -197,8 +222,14 @@ export function OptionListInput(props: OptionListInputProps) {
                     textInputMode &&
                     <TextFieldComponent
                         label="Einträge"
-                        placeholder={'Beschriftung 1|Wert 1\nBeschriftung 2|Wert 2\nBeschriftung 3|Wert 3'}
-                        value={textInputBuffer != null ? textInputBuffer : options.map((opt) => `${opt.label}|${opt.value}`).join('\n')}
+                        placeholder={groupFieldEnabled ?
+                            'Beschriftung 1|Wert 1|Gruppe 1\nBeschriftung 2|Wert 2|Gruppe 2\nBeschriftung 3|Wert 3|' :
+                            'Beschriftung 1|Wert 1\nBeschriftung 2|Wert 2\nBeschriftung 3|Wert 3'}
+                        value={textInputBuffer != null ? textInputBuffer : options.map((opt) => (
+                            groupFieldEnabled ?
+                                `${opt.label}|${opt.value}|${opt.group ?? ''}` :
+                                `${opt.label}|${opt.value}`
+                        )).join('\n')}
                         onChange={(val) => {
                             setTextInputBuffer(val ?? '');
                         }}
@@ -212,6 +243,7 @@ export function OptionListInput(props: OptionListInputProps) {
                                     return {
                                         value: (parts[1] ?? '').trim(),
                                         label: (parts[0] ?? '').trim(),
+                                        group: groupFieldEnabled ? (parts[2] ?? '').trim() : undefined,
                                     };
                                 });
                                 props.onChange(values);

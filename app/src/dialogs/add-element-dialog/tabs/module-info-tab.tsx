@@ -1,167 +1,231 @@
 import React, {useEffect, useState} from 'react';
-import {Box, DialogContent, Divider, IconButton, Tooltip, Typography} from '@mui/material';
+import {Box, Chip, Typography} from '@mui/material';
+import ExtensionOutlinedIcon from '@mui/icons-material/ExtensionOutlined';
+import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../data/system-config-keys';
 import {GoverStoreService} from '../../../services/gover-store.service';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {isStringNotNullOrEmpty} from '../../../utils/string-utils';
-import {StoreDetailModule} from '../../../models/entities/store-detail-module';
-import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
-import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import {type StoreDetailModule} from '../../../models/entities/store-detail-module';
+import {type AnyElement} from '../../../models/elements/any-element';
+import {cloneElement} from '../../../utils/clone-element';
+import {type ReactNode} from 'react';
+import {SelectionDetailsPanel} from '../../../components/selection-dialog/selection-details-panel';
 
 export function ModuleInfoTab({
-                                  moduleId,
-                                  onClose,
-                              }: {moduleId: string, onClose: () => void}) {
+    moduleId,
+    onAddElement,
+    primaryActionLabel,
+    primaryActionIcon,
+    onClose,
+}: {
+    moduleId: string,
+    onAddElement: (element: AnyElement) => void,
+    primaryActionLabel: string,
+    primaryActionIcon: ReactNode,
+    onClose: () => void,
+}) {
     const [module, setModule] = useState<StoreDetailModule>();
     const storeKey = useAppSelector(selectSystemConfigValue(SystemConfigKeys.gover.storeKey));
 
     useEffect(() => {
-        if (moduleId != null) {
-            GoverStoreService.fetchModule(moduleId, storeKey)
-                .then(setModule)
-                .catch(err => {
-                    console.error(err);
-                });
+        if (moduleId == null) {
+            return;
         }
-    }, [moduleId]);
 
-    const handleClose = () => {
-        setModule(undefined);
-        onClose();
+        GoverStoreService.fetchModule(moduleId, storeKey)
+            .then(setModule)
+            .catch((err) => {
+                console.error(err);
+            });
+    }, [moduleId, storeKey]);
+
+    const handleAddElement = () => {
+        if (module == null) {
+            return;
+        }
+
+        Promise.all([
+            GoverStoreService.fetchModuleCode(module.id, module.current_version, storeKey),
+            GoverStoreService.fetchModule(module.id, storeKey),
+        ])
+            .then(([element, detailedModule]) => {
+                const elementToAdd = cloneElement(element, true);
+                elementToAdd.storeLink = {
+                    storeId: detailedModule.id,
+                    storeVersion: detailedModule.current_version,
+                };
+                elementToAdd.name = detailedModule.title.substring(0, 30);
+                onAddElement(elementToAdd);
+            })
+            .catch((err) => {
+                console.error(err);
+            });
     };
 
-    return (
-        <DialogContent tabIndex={0}>
-
-            {
-                module == null &&
+    if (module == null) {
+        return (
+            <Box sx={{p: 2.5}}>
                 <LoadingPlaceholder/>
-            }
+            </Box>
+        );
+    }
+
+    return (
+        <SelectionDetailsPanel
+            icon={<ExtensionOutlinedIcon sx={{fontSize: 20, color: 'text.secondary'}}/>}
+            label="Gover Marktplatz"
+            title={module.title}
+            titleAdornment={(
+                <Chip
+                    size="small"
+                    label={`Version ${module.current_version}`}
+                    sx={{flexShrink: 0}}
+                />
+            )}
+            description={module.description_short}
+            primaryActionLabel={primaryActionLabel}
+            primaryActionIcon={primaryActionIcon}
+            onPrimaryAction={handleAddElement}
+            onClose={onClose}
+        >
+            <ModuleInfoSection title="Allgemein">
+                <ModuleInfoRow label="Organisation" value={`@${module.organization}`}/>
+                <ModuleInfoRow label="Sichtbarkeit" value={module.is_public ? 'Öffentlich' : 'Privat'}/>
+                {
+                    isStringNotNullOrEmpty(module.datenfeld_id) &&
+                    <ModuleInfoRow label="Datenfeld" value={`Datenfeld ${module.datenfeld_id}`}/>
+                }
+            </ModuleInfoSection>
+
+            <ModuleInfoSection title="Beschreibung">
+                <Typography variant="body2">
+                    {module.description}
+                </Typography>
+            </ModuleInfoSection>
 
             {
-                module != null &&
-                <>
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                        }}
-                    >
-                        {
-                            !module.is_public &&
-                            <Tooltip title="Privater Baustein">
-                                <LockOutlinedIcon
-                                    fontSize="small"
-                                    sx={{
-                                        marginRight: '0.25em',
-                                    }}
-                                />
-                            </Tooltip>
-                        }
-
-                        <Typography
-                            variant="h6"
-                            component="h3"
-                        >
-                            {module.title}
-                        </Typography>
-
-                        <Typography
-                            variant="caption"
-                            sx={{ml: 1}}
-                        >
-                            {module.current_version}
-                        </Typography>
-
-                        {
-                            module.is_public &&
-                            <Tooltip title="Im Store Anzeigen">
-                                <IconButton
-                                    onClick={handleClose}
-                                    size="small"
-                                    component="a"
-                                    sx={{ml: 2}}
-                                    href={`https://store.gover.digital/modules/${module.id}/`}
-                                    target="_blank"
-                                >
-                                    <OpenInNewOutlinedIcon/>
-                                </IconButton>
-                            </Tooltip>
-                        }
-
-                        <Tooltip title="Schließen">
-                            <IconButton
-                                onClick={handleClose}
-                                size="small"
-                                sx={{ml: 'auto'}}
-                            >
-                                <CloseOutlinedIcon/>
-                            </IconButton>
-                        </Tooltip>
-
-                    </Box>
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                        }}
-                    >
-                        <a
-                            href={`https://store.gover.digital/organizations/${module.organization_id}/`}
-                            target="_blank"
-                        >
-                            @{module.organization}
-                        </a>
-                    </Box>
-
-                    {
-                        module.datenfeld_id != null &&
-                        isStringNotNullOrEmpty(module.datenfeld_id) &&
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                            }}
-                        >
-                            <a
-                                href={`https://fimportal.de/detail/D/${module.datenfeld_id}`}
-                                target="_blank"
-                                rel="noreferrer noopener"
-                            >
-                                Datenfeld {module.datenfeld_id}
-                            </a>
-                        </Box>
-                    }
-
-                    <Divider sx={{my: 4}}>
-                        Informationen
-                    </Divider>
-
-                    <Box>
-                        <Typography variant="body1">
-                            {module.description}
-                        </Typography>
-                    </Box>
-
-                    {
-                        isStringNotNullOrEmpty(module.recent_changes) &&
-                        <>
-                            <Divider sx={{my: 4}}>
-                                Letzte Änderungen
-                            </Divider>
-
-                            <Box>
-                                <Typography variant="body1">
-                                    {module.recent_changes}
-                                </Typography>
-                            </Box>
-                        </>
-                    }
-                </>
+                isStringNotNullOrEmpty(module.recent_changes) &&
+                <ModuleInfoSection title="Letzte Änderungen">
+                    <Typography variant="body2">
+                        {module.recent_changes}
+                    </Typography>
+                </ModuleInfoSection>
             }
-        </DialogContent>
+
+            <ModuleInfoSection title="Weiterführende Links">
+                {
+                    module.is_public &&
+                    <Typography
+                        component="a"
+                        variant="body2"
+                        href={`https://store.gover.digital/modules/${module.id}/`}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        sx={{
+                            color: 'primary.main',
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 0.75,
+                        }}
+                    >
+                        <OpenInNewOutlinedIcon sx={{fontSize: 16}}/>
+                        Im Marktplatz anzeigen
+                    </Typography>
+                }
+
+                <Typography
+                    component="a"
+                    variant="body2"
+                    href={`https://store.gover.digital/organizations/${module.organization_id}/`}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    sx={{
+                        color: 'primary.main',
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 0.75,
+                    }}
+                >
+                    <OpenInNewOutlinedIcon sx={{fontSize: 16}}/>
+                    Organisation öffnen
+                </Typography>
+
+                {
+                    isStringNotNullOrEmpty(module.datenfeld_id) &&
+                    <Typography
+                        component="a"
+                        variant="body2"
+                        href={`https://fimportal.de/detail/D/${module.datenfeld_id}`}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        sx={{
+                            color: 'primary.main',
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 0.75,
+                        }}
+                    >
+                        <OpenInNewOutlinedIcon sx={{fontSize: 16}}/>
+                        Datenfeld öffnen
+                    </Typography>
+                }
+            </ModuleInfoSection>
+        </SelectionDetailsPanel>
+    );
+}
+
+function ModuleInfoSection({
+    title,
+    children,
+}: {
+    title: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <Box>
+            <Typography
+                variant="subtitle2"
+                sx={{
+                    mb: 1.25,
+                    fontWeight: 700,
+                }}
+            >
+                {title}
+            </Typography>
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 1.25,
+                }}
+            >
+                {children}
+            </Box>
+        </Box>
+    );
+}
+
+function ModuleInfoRow({
+    label,
+    value,
+}: {
+    label: string;
+    value: string;
+}) {
+    return (
+        <Box sx={{py: 0.25}}>
+            <Typography variant="caption" color="text.secondary">
+                {label}
+            </Typography>
+            <Typography variant="body2" sx={{mt: 0.25}}>
+                {value}
+            </Typography>
+        </Box>
     );
 }

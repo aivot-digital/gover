@@ -13,6 +13,12 @@ import java.util.Objects;
 public class CodeInputElement extends BaseInputElement<String> implements PrintableElement<String> {
     @Nullable
     private String code;
+    @Nullable
+    private String language;
+    @Nullable
+    private Integer editorHeight;
+    @Nullable
+    private Boolean wordWrap;
 
     public CodeInputElement() {
         super(ElementType.CodeInput);
@@ -47,12 +53,15 @@ public class CodeInputElement extends BaseInputElement<String> implements Printa
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         CodeInputElement that = (CodeInputElement) o;
-        return Objects.equals(code, that.code);
+        return Objects.equals(code, that.code)
+                && Objects.equals(language, that.language)
+                && Objects.equals(editorHeight, that.editorHeight)
+                && Objects.equals(wordWrap, that.wordWrap);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), code);
+        return Objects.hash(super.hashCode(), code, language, editorHeight, wordWrap);
     }
 
     // endregion
@@ -66,6 +75,36 @@ public class CodeInputElement extends BaseInputElement<String> implements Printa
 
     public CodeInputElement setCode(@Nullable String code) {
         this.code = code;
+        return this;
+    }
+
+    @Nullable
+    public String getLanguage() {
+        return language;
+    }
+
+    public CodeInputElement setLanguage(@Nullable String language) {
+        this.language = language;
+        return this;
+    }
+
+    @Nullable
+    public Integer getEditorHeight() {
+        return editorHeight;
+    }
+
+    public CodeInputElement setEditorHeight(@Nullable Integer editorHeight) {
+        this.editorHeight = editorHeight;
+        return this;
+    }
+
+    @Nullable
+    public Boolean getWordWrap() {
+        return wordWrap;
+    }
+
+    public CodeInputElement setWordWrap(@Nullable Boolean wordWrap) {
+        this.wordWrap = wordWrap;
         return this;
     }
 

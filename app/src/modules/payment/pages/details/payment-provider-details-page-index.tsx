@@ -1,37 +1,48 @@
-import {Box, Button, Typography} from '@mui/material';
-import React, {useContext, useEffect, useMemo, useState} from 'react';
-import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
+import {Box, Button, Grid, Typography} from '@mui/material';
+import React, {useEffect, useMemo, useState} from 'react';
+import {useGenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
-import {useApi} from '../../../../hooks/use-api';
 import {useNavigate} from 'react-router-dom';
-import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../../../utils/string-utils';
+import {isStringNullOrEmpty} from '../../../../utils/string-utils';
 import {PaymentProvidersApiService} from '../../payment-providers-api-service';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
-import {ViewDispatcherComponent} from '../../../../components/view-dispatcher.component';
-import {flattenElements} from '../../../../utils/flatten-elements';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
-import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {PaymentProviderAdditionalData} from './payment-provider-details-page-additional-data';
 import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
 import {PaymentProviderResponseDTO} from '../../dtos/payment-provider-response-dto';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useFormManager} from '../../../../hooks/use-form-manager';
-import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
+import {useChangeBlocker} from '../../../../hooks/use-change-blocker-2';
 import {ConstraintDialog} from '../../../../dialogs/constraint-dialog/constraint-dialog';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constraint-link-props';
 import HelpIconOutlined from '@mui/icons-material/HelpOutline';
 import Tooltip from '@mui/material/Tooltip';
 import * as yup from 'yup';
-import {goverSchemaToYup} from '../../../../utils/gover-schema-to-yup';
+import {goverSchemaToYup, mapFormManagerErrorsToComputedErrors} from '../../../../utils/gover-schema-to-yup';
 import {PaymentProviderDefinitionResponseDTO} from '../../dtos/payment-provider-definition-response-dto';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {useConfirm} from '../../../../providers/confirm-provider';
-import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import {VFormVersionWithDetailsService} from '../../../forms/services/v-form-version-with-details-api-service';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
+import {ComputedElementErrors, DerivedRuntimeElementData} from '../../../../models/element-data';
 
-export const _PaymentProviderSchema = {
+type PaymentProviderEditableFields =
+    'name' |
+    'description' |
+    'providerKey' |
+    'providerVersion' |
+    'isEnabled' |
+    'isTestProvider' |
+    'config';
+
+type PaymentProviderEditable = Pick<PaymentProviderResponseDTO, PaymentProviderEditableFields>;
+
+type PaymentProviderYupSchemaType = yup.ObjectSchema<PaymentProviderEditable>;
+
+export const BasePaymentProviderYupSchema: PaymentProviderYupSchemaType = yup.object({
     name: yup.string()
         .trim()
         .min(3, 'Der Name des Zahlungsdienstleisters muss mindestens 3 Zeichen lang sein.')
@@ -45,176 +56,213 @@ export const _PaymentProviderSchema = {
     providerKey: yup.string()
         .trim()
         .required('Der Anbieter des Zahlungsdienstleisters ist ein Pflichtfeld.'),
+    providerVersion: yup.number()
+        .min(1, 'Die Version des Zahlungsdienstleisters muss mindestens 1 sein.')
+        .required('Die Version des Zahlungsdienstleisters ist ein Pflichtfeld.'),
     isEnabled: yup.boolean()
         .default(false),
     isTestProvider: yup.boolean()
         .default(false),
-};
+    config: yup.object()
+        .required('Die Konfiguration des Zahlungsdienstleisters ist ein Pflichtfeld.'),
+});
 
 export function PaymentProviderDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const showConfirm = useConfirm();
 
-    const api = useApi();
-    const apiService = useMemo(() => new PaymentProvidersApiService(api), [api]);
-
-    const [paymentProviderSchema, setPaymentProviderSchema] = useState<any>(_PaymentProviderSchema);
+    const [derivedRuntimeConfigData, setDerivedRuntimeConfigData] = useState<DerivedRuntimeElementData | null>(null);
+    const [paymentProviderSchema, setPaymentProviderSchema] = useState<PaymentProviderYupSchemaType>(BasePaymentProviderYupSchema);
+    const [clientSideValidationErrors, setClientSideValidationErrors] = useState<ComputedElementErrors | null>(null);
 
     const {
-        item,
-        setItem,
-        isNewItem,
-        additionalData,
+        item: originalPaymentProvider,
+        setItem: setOriginalPaymentProvider,
+        isNewItem: isNewPaymentProvider,
+        additionalData = {
+            definitions: [],
+        } as PaymentProviderAdditionalData,
+        setAdditionalData,
         isBusy,
         setIsBusy,
-        setAdditionalData,
         isEditable,
-    } = useContext<GenericDetailsPageContextType<PaymentProviderResponseDTO, PaymentProviderAdditionalData>>(GenericDetailsPageContext);
-
-    useEffect(() => {
-        if (isEditable) {
-            return;
-        }
-
-        dispatch(addSnackbarMessage({
-            key: 'payment-provider-no-access',
-            message: 'Dieser Zahlungsdienstleister kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
-            severity: SnackbarSeverity.Warning,
-            type: SnackbarType.Dismissable,
-        }));
-
-        return () => {
-            dispatch(removeSnackbarMessage('payment-provider-no-access'));
-        };
-    }, [isEditable]);
+    } = useGenericDetailsPageContext<PaymentProviderResponseDTO, PaymentProviderAdditionalData>();
 
     const {
-        currentItem: paymentProvider,
+        definitions: availablePaymentProviderDefinitions,
+    } = additionalData;
+
+    const {
+        currentItem: editedPaymentProvider,
         errors,
         hasNotChanged,
         handleInputBlur,
         handleInputChange,
-        validate,
-        reset,
-    } = useFormManager<PaymentProviderResponseDTO>(item, yup.object(paymentProviderSchema) as any, true);
+        validate: validateFormManager,
+        reset: resetFormManager,
+    } = useFormManager<Pick<PaymentProviderResponseDTO, PaymentProviderEditableFields>>(
+        originalPaymentProvider,
+        paymentProviderSchema,
+        true,
+    );
 
-    const definitions = useMemo(() => {
-        return additionalData?.definitions ?? [];
-    }, [additionalData]);
+    const selectedPaymentProviderDefinition: PaymentProviderDefinitionResponseDTO | undefined = useMemo(() => {
+        return availablePaymentProviderDefinitions.find(def => (
+            def.key === editedPaymentProvider?.providerKey &&
+            def.version === editedPaymentProvider?.providerVersion
+        ));
+    }, [availablePaymentProviderDefinitions, editedPaymentProvider?.providerKey, editedPaymentProvider?.providerVersion]);
 
-    const definition: PaymentProviderDefinitionResponseDTO | undefined = useMemo(() => {
-        return definitions.find(def => def.key === paymentProvider?.providerKey);
-    }, [definitions, paymentProvider?.providerKey]);
-
-    useEffect(() => {
-        if (definition != null && definition.configLayout != null) {
-            setPaymentProviderSchema({
-                ..._PaymentProviderSchema,
-                config: yup.object().shape(
-                    goverSchemaToYup(definition.configLayout),
-                ),
-            });
-        } else {
-            setPaymentProviderSchema(_PaymentProviderSchema);
-        }
-    }, [definition]);
-
-    const changeBlocker = useChangeBlocker(item, paymentProvider, undefined, undefined, true);
+    const changeBlocker = useChangeBlocker({
+        original: originalPaymentProvider,
+        edited: editedPaymentProvider,
+        useDeepEquals: true,
+    });
 
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [showConstraintDialog, setShowConstraintDialog] = useState(false);
     const [relatedEntities, setRelatedEntities] = useState<ConstraintLinkProps[] | null>(null);
 
-    if (paymentProvider == null) {
+    useEffect(() => {
+        if (selectedPaymentProviderDefinition?.configLayout == null) {
+            setPaymentProviderSchema(BasePaymentProviderYupSchema);
+            return;
+        }
+
+        if (derivedRuntimeConfigData == null) {
+            setPaymentProviderSchema(BasePaymentProviderYupSchema);
+            return;
+        }
+
+        const configSchemaFields = goverSchemaToYup(
+            selectedPaymentProviderDefinition.configLayout,
+            derivedRuntimeConfigData.elementStates,
+        );
+        const configSchema: yup.ObjectSchema<{
+            config: Record<string, any>;
+        }> = yup.object({
+            config: yup.object(configSchemaFields),
+        });
+
+        const newSchema: PaymentProviderYupSchemaType = BasePaymentProviderYupSchema
+            .concat(configSchema);
+
+        setPaymentProviderSchema(newSchema);
+    }, [selectedPaymentProviderDefinition?.configLayout, derivedRuntimeConfigData]);
+
+    useEffect(() => {
+        if (
+            selectedPaymentProviderDefinition?.configLayout == null ||
+            editedPaymentProvider == null ||
+            Object.keys(errors).length === 0
+        ) {
+            setClientSideValidationErrors(null);
+            return;
+        }
+
+        const computedErrors = mapFormManagerErrorsToComputedErrors(
+            selectedPaymentProviderDefinition.configLayout,
+            editedPaymentProvider.config ?? {},
+            errors,
+            {rootPath: 'config'},
+        );
+
+        setClientSideValidationErrors(Object.keys(computedErrors).length === 0 ? null : computedErrors);
+    }, [editedPaymentProvider, errors, selectedPaymentProviderDefinition?.configLayout]);
+
+    if (originalPaymentProvider == null || editedPaymentProvider == null) {
         return (
-            <GenericDetailsSkeleton />
+            <GenericDetailsSkeleton/>
         );
     }
 
-    const handleRefreshDefinitions = async () => {
+    const handleRefreshDefinitions = () => {
         setIsBusy(true);
-        try {
-            const updatedDefinitions = await new PaymentProvidersApiService(api).listDefinitions();
-            setAdditionalData({
-                ...additionalData,
-                definitions: updatedDefinitions,
+
+        new PaymentProvidersApiService()
+            .listDefinitions()
+            .then((definitions) => {
+                setAdditionalData({
+                    ...additionalData,
+                    definitions: definitions,
+                });
+                dispatch(showSuccessSnackbar('Auswahllisten wurden erfolgreich neu geladen.'));
+            })
+            .catch((error) => {
+                dispatch(showApiErrorSnackbar(error, 'Fehler beim Laden der Auswahllisten'));
+            })
+            .finally(() => {
+                setIsBusy(false);
             });
-            dispatch(showSuccessSnackbar('Auswahllisten wurden erfolgreich neu geladen.'));
-        } catch (error) {
-            console.error('Fehler beim Aktualisieren der Auswahllisten', error);
-            dispatch(showErrorSnackbar('Fehler beim Aktualisieren der Auswahllisten.'));
-        } finally {
-            setIsBusy(false);
-        }
     };
 
     const handleSave = () => {
-        if (paymentProvider != null) {
+        const validationResult = validateFormManager();
 
-            const validationResult = validate();
+        if (!validationResult) {
+            dispatch(showErrorSnackbar('Bitte überprüfen Sie Ihre Eingaben.'));
+            return;
+        }
 
-            if (!validationResult) {
-                dispatch(showErrorSnackbar('Bitte überprüfen Sie Ihre Eingaben.'));
-                return;
-            }
+        setIsBusy(true);
 
-            setIsBusy(true);
+        const apiService = new PaymentProvidersApiService();
 
-            if (isStringNullOrEmpty(paymentProvider.key)) {
-                apiService
-                    .create(paymentProvider)
-                    .then((newPaymentProvider) => {
-                        setItem(newPaymentProvider);
-                        reset();
+        if (isNewPaymentProvider) {
+            apiService
+                .create(editedPaymentProvider)
+                .then((createdPaymentProvider) => {
+                    setOriginalPaymentProvider(createdPaymentProvider);
+                    resetFormManager();
 
-                        dispatch(showSuccessSnackbar('Neuer Zahlungsdienstleister erfolgreich angelegt.'));
+                    dispatch(showSuccessSnackbar('Neuer Zahlungsdienstleister erfolgreich angelegt.'));
 
-                        // use setTimeout instead of useEffect to prevent unnecessary rerender
-                        setTimeout(() => {
-                            navigate(`/payment-providers/${newPaymentProvider.key}`, {replace: true});
-                        }, 0);
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
-                    })
-                    .finally(() => {
-                        setIsBusy(false);
-                    });
-            } else {
-                apiService
-                    .update(paymentProvider.key, paymentProvider)
-                    .then((updatedPaymentProvider) => {
-                        setItem(updatedPaymentProvider);
-                        reset();
+                    // use setTimeout instead of useEffect to prevent unnecessary rerender
+                    setTimeout(() => {
+                        navigate(`/payment-providers/${createdPaymentProvider.key}`, {replace: true});
+                    }, 0);
+                })
+                .catch(err => {
+                    dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                })
+                .finally(() => {
+                    setIsBusy(false);
+                });
+        } else {
+            apiService
+                .update(originalPaymentProvider.key, editedPaymentProvider)
+                .then((updatedPaymentProvider) => {
+                    setOriginalPaymentProvider(updatedPaymentProvider);
+                    resetFormManager();
 
-                        dispatch(showSuccessSnackbar('Änderungen am Zahlungsdienstleister erfolgreich gespeichert.'));
-                    })
-                    .catch(err => {
-                        if (err.status === 409) {
-                            handleInputChange('isEnabled')(true);
-                            dispatch(showErrorSnackbar('Es existieren noch veröffentlichte Formulare, die diesen Zahlungsdienstleister verwenden'));
-                        } else {
-                            console.error(err);
-                            dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
-                        }
-                    })
-                    .finally(() => {
-                        setIsBusy(false);
-                    });
-            }
+                    dispatch(showSuccessSnackbar('Änderungen am Zahlungsdienstleister erfolgreich gespeichert.'));
+                })
+                .catch(err => {
+                    if (err.status === 409) {
+                        handleInputChange('isEnabled')(true);
+                        dispatch(showApiErrorSnackbar(err, 'Es existieren noch veröffentlichte Formulare, die diesen Zahlungsdienstleister verwenden'));
+                    } else {
+                        dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                    }
+                })
+                .finally(() => {
+                    setIsBusy(false);
+                });
         }
     };
 
     const checkAndHandleDelete = async () => {
-        if (isStringNullOrEmpty(paymentProvider.key)) return;
+        // New payment providers cannot be deleted
+        if (isNewPaymentProvider) {
+            return;
+        }
 
         setIsBusy(true);
         try {
             const formsApi = new VFormVersionWithDetailsService();
             const relatedForms = await formsApi.listAll({
-                paymentProviderKey: paymentProvider.key,
+                paymentProviderKey: originalPaymentProvider.key,
             });
 
             if (relatedForms.content.length > 0) {
@@ -227,7 +275,7 @@ export function PaymentProviderDetailsPageIndex() {
                 if (relatedForms.content.length > maxVisibleLinks) {
                     processedLinks.push({
                         label: 'Weitere Formulare anzeigen…',
-                        to: `/payment-provider/${paymentProvider.key}/forms`,
+                        to: `/payment-provider/${originalPaymentProvider.key}/forms`,
                     });
                 }
 
@@ -237,41 +285,34 @@ export function PaymentProviderDetailsPageIndex() {
                 setShowConfirmDialog(true);
             }
         } catch (error) {
-            console.error(error);
-            dispatch(showErrorSnackbar('Fehler beim Prüfen der Löschbarkeit.'));
+            dispatch(showApiErrorSnackbar(error, 'Fehler beim Prüfen der Löschbarkeit.'));
         } finally {
             setIsBusy(false);
         }
     };
 
     const handleDelete = () => {
-        if (isStringNotNullOrEmpty(paymentProvider.key)) {
-            setIsBusy(true);
+        // New payment providers cannot be deleted
+        if (isNewPaymentProvider) {
+            return;
+        }
 
-            apiService
-                .destroy(paymentProvider.key)
-                .then(() => {
-                    reset(); // prevent change blocker by resetting unsaved changes
-                    navigate('/payment-providers', {
-                        replace: true,
-                    });
-                    dispatch(showSuccessSnackbar('Der Zahlungsdienstleister wurde erfolgreich gelöscht.'));
-                })
-                .catch(err => {
-                    console.error(err);
-                    dispatch(showErrorSnackbar('Beim Löschen des Zahlungsdienstleisters ist ein Fehler aufgetreten.'));
-                    setIsBusy(false);
+        setIsBusy(true);
+
+        new PaymentProvidersApiService()
+            .destroy(originalPaymentProvider.key)
+            .then(() => {
+                resetFormManager(); // prevent change blocker by resetting unsaved changes
+                navigate('/payment-providers', {
+                    replace: true,
                 });
-        }
+                dispatch(showSuccessSnackbar('Der Zahlungsdienstleister wurde erfolgreich gelöscht.'));
+            })
+            .catch(err => {
+                dispatch(showApiErrorSnackbar(err, 'Beim Löschen des Zahlungsdienstleisters ist ein Fehler aufgetreten.'));
+                setIsBusy(false);
+            });
     };
-
-    const configErrors = Object.keys(errors).reduce((acc, key) => {
-        if (key.startsWith('config.')) {
-            acc[key.replace('config.', '')] = (errors as Record<string, string>)[key];
-        }
-        return acc;
-    }, {} as Record<string, string>);
-
 
     const handleStatusChange = async (newValue: boolean) => {
         // Bei Deaktivierung
@@ -282,10 +323,12 @@ export function PaymentProviderDetailsPageIndex() {
                 children: (
                     <>
                         <Typography gutterBottom>
-                            Wenn Sie den Zahlungsdienstleister deaktivieren, wird der Zahlungsdienstleister automatisch aus Formularen mit dem Status "In Bearbeitung" entfernt.
+                            Wenn Sie den Zahlungsdienstleister deaktivieren, wird der Zahlungsdienstleister automatisch
+                            aus Formularen mit dem Status "In Bearbeitung" entfernt.
                         </Typography>
                         <Typography gutterBottom>
-                            Bitte beachten Sie, dass Sie den Zahlungsdienstleister speichern müssen, um diese Änderung zu übernehmen.
+                            Bitte beachten Sie, dass Sie den Zahlungsdienstleister speichern müssen, um diese Änderung
+                            zu übernehmen.
                         </Typography>
                     </>
                 ),
@@ -301,32 +344,83 @@ export function PaymentProviderDetailsPageIndex() {
 
     return (
         <Box>
-            {
-                isNewItem ?
-                    <SelectFieldComponent
-                        label="Zahlungsdienstleister"
-                        required
-                        value={paymentProvider.providerKey}
-                        onChange={handleInputChange('providerKey')}
-                        options={definitions.map(def => ({
-                            value: def.key,
-                            label: def.name,
-                        }))}
-                        error={errors.providerKey}
-                        hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsdienstleisters eingeblendet wird. Der Name des Anbieters ist gegenüber antragstellenden Personen sichtbar."
-                    /> :
-                    <TextFieldComponent
-                        label="Zahlungsdienstleister"
-                        value={paymentProvider.providerKey}
-                        onChange={handleInputChange('providerKey')}
-                        disabled={true}
-                    />
-            }
+            <Grid
+                container={true}
+                spacing={2}
+            >
+                <Grid
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
+                >
+                    {
+                        isNewPaymentProvider ?
+                            <SelectFieldComponent
+                                label="Zahlungsdienstleister"
+                                required
+                                value={editedPaymentProvider.providerKey}
+                                onChange={handleInputChange('providerKey')}
+                                options={availablePaymentProviderDefinitions.map(def => ({
+                                    value: def.key,
+                                    label: def.name,
+                                    subLabel: def.description,
+                                }))}
+                                disabled={isBusy || !isEditable}
+                                error={errors.providerKey}
+                                hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsdienstleisters eingeblendet wird. Der Name des Anbieters ist gegenüber antragstellenden Personen sichtbar."
+                            /> :
+                            <TextFieldComponent
+                                label="Zahlungsdienstleister"
+                                value={originalPaymentProvider.providerKey}
+                                onChange={handleInputChange('providerKey')}
+                                disabled={true}
+                            />
+                    }
+                </Grid>
+                <Grid
+                    size={{
+                        xs: 12,
+                        md: 6,
+                    }}
+                >
+                    {
+                        isNewPaymentProvider ?
+                            <SelectFieldComponent
+                                label="Version"
+                                required
+                                value={editedPaymentProvider.providerVersion.toString()}
+                                onChange={(val) => {
+                                    if (val == null) {
+                                        handleInputChange('providerVersion')(0);
+                                    } else {
+                                        handleInputChange('providerVersion')(parseInt(val));
+                                    }
+                                }}
+                                options={availablePaymentProviderDefinitions.filter(def => {
+                                    return def.key === editedPaymentProvider.providerKey;
+                                }).map(def => ({
+                                    value: def.version.toString(),
+                                    label: `Version ${def.version.toString()}`,
+                                }))}
+                                disabled={isBusy || !isEditable || isStringNullOrEmpty(editedPaymentProvider.providerKey)}
+                                error={errors.providerVersion}
+                                hint="Bestimmt, welche Version der Konfigurationsoberfläche und Einstellungsmöglichkeiten angezeigt werden."
+                            /> :
+                            <TextFieldComponent
+                                label="Version"
+                                value={originalPaymentProvider.providerVersion > 0 ? `Version ${originalPaymentProvider.providerVersion}` : ''}
+                                onChange={() => undefined}
+                                disabled={true}
+                            />
+                    }
+                </Grid>
+            </Grid>
 
             <TextFieldComponent
                 label="Name"
                 required
-                value={paymentProvider.name}
+                value={editedPaymentProvider.name}
                 onChange={handleInputChange('name')}
                 onBlur={handleInputBlur('name')}
                 disabled={isBusy || !isEditable}
@@ -337,7 +431,7 @@ export function PaymentProviderDetailsPageIndex() {
             <TextFieldComponent
                 label="Interne Beschreibung"
                 required
-                value={paymentProvider.description}
+                value={editedPaymentProvider.description}
                 onChange={handleInputChange('description')}
                 onBlur={handleInputBlur('description')}
                 multiline={true}
@@ -347,27 +441,21 @@ export function PaymentProviderDetailsPageIndex() {
             />
 
             {
-                definition != null &&
-                definition.configLayout != null &&
-                <ViewDispatcherComponent
-                    rootElement={definition.configLayout}
-                    allElements={flattenElements(definition.configLayout)}
-                    element={definition.configLayout}
-                    isBusy={isBusy || !isEditable}
-                    isDeriving={false}
-                    elementData={paymentProvider.config}
-                    onElementDataChange={handleInputChange('config')}
-                    onElementBlur={undefined}
-                    mode="viewer"
-                    derivationTriggerIdQueue={[]}
-                    disableVisibility={true}
-                    scrollContainerRef={undefined}
+                selectedPaymentProviderDefinition != null &&
+                selectedPaymentProviderDefinition.configLayout != null &&
+                <ElementDerivationContext
+                    element={selectedPaymentProviderDefinition.configLayout}
+                    authoredElementValues={editedPaymentProvider.config}
+                    onAuthoredElementValuesChange={handleInputChange('config')}
+                    disabled={isBusy || !isEditable}
+                    onDerivationFinished={setDerivedRuntimeConfigData}
+                    computedErrors={clientSideValidationErrors}
                 />
             }
 
             <CheckboxFieldComponent
                 label="Aktiv (kann in konfigurierten Formularen genutzt werden)"
-                value={paymentProvider.isEnabled}
+                value={editedPaymentProvider.isEnabled}
                 onChange={handleStatusChange}
                 variant="switch"
                 error={errors.isEnabled}
@@ -377,7 +465,7 @@ export function PaymentProviderDetailsPageIndex() {
 
             <CheckboxFieldComponent
                 label="Es handelt sich um eine vorproduktive Konfiguration"
-                value={paymentProvider.isTestProvider}
+                value={editedPaymentProvider.isTestProvider}
                 onChange={handleInputChange('isTestProvider')}
                 variant="switch"
                 error={errors.isTestProvider}
@@ -397,7 +485,7 @@ export function PaymentProviderDetailsPageIndex() {
                     disabled={isBusy || hasNotChanged || !isEditable}
                     variant="contained"
                     color="primary"
-                    startIcon={<SaveOutlinedIcon />}
+                    startIcon={<SaveOutlinedIcon/>}
                 >
                     Speichern
                 </Button>
@@ -415,9 +503,8 @@ export function PaymentProviderDetailsPageIndex() {
                 </Tooltip>
 
                 {
-                    isStringNotNullOrEmpty(paymentProvider.key) &&
-                    item != null &&
-                    !item.isEnabled &&
+                    !isNewPaymentProvider &&
+                    !originalPaymentProvider.isEnabled &&
                     <Button
                         variant={'outlined'}
                         onClick={checkAndHandleDelete}
@@ -426,23 +513,22 @@ export function PaymentProviderDetailsPageIndex() {
                         sx={{
                             marginLeft: 'auto',
                         }}
-                        startIcon={<DeleteOutlinedIcon />}
+                        startIcon={<Delete/>}
                     >
                         Löschen
                     </Button>
                 }
 
                 {
-                    isStringNotNullOrEmpty(paymentProvider.key) &&
-                    item != null &&
-                    item.isEnabled &&
+                    !isNewPaymentProvider &&
+                    originalPaymentProvider.isEnabled &&
                     <Tooltip title="Zum Löschen muss der Zahlungsdienstleister zuerst deaktiviert und gespeichert werden.">
                         <Box sx={{ml: 'auto'}}>
                             <Button
                                 variant="outlined"
                                 disabled={true}
                                 color="error"
-                                startIcon={<DeleteOutlinedIcon />}
+                                startIcon={<Delete/>}
                             >
                                 Löschen
                             </Button>
@@ -457,12 +543,13 @@ export function PaymentProviderDetailsPageIndex() {
                 title="Zahlungsdienstleister löschen"
                 onCancel={() => setShowConfirmDialog(false)}
                 onConfirm={showConfirmDialog ? handleDelete : undefined}
-                confirmationText={paymentProvider.name}
+                confirmationText={editedPaymentProvider.name}
                 isDestructive
                 confirmButtonText="Ja, endgültig löschen"
             >
                 <Typography>
-                    Möchten Sie diesen Zahlungsdienstleister wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+                    Möchten Sie diesen Zahlungsdienstleister wirklich löschen? Diese Aktion kann nicht rückgängig
+                    gemacht werden.
                 </Typography>
 
                 <Typography
@@ -472,7 +559,8 @@ export function PaymentProviderDetailsPageIndex() {
                 >
                     <strong>Hinweis:</strong>
                     Sofern noch ausstehende Transaktionen bestehen, werden diese ebenfalls gelöscht.
-                    Eine Liste mit ausstehenden Transaktionen können Sie im Reiter <strong>Transaktionen</strong> einsehen.
+                    Eine Liste mit ausstehenden Transaktionen können Sie im
+                    Reiter <strong>Transaktionen</strong> einsehen.
                 </Typography>
             </ConfirmDialog>
 

@@ -234,7 +234,7 @@ export function UserDetailsPageDepartmentMemberships() {
                     }}
                     getRowIdentifier={(item) => item.membershipId.toString()}
                     searchLabel="Organisationseinheit suchen"
-                    searchPlaceholder="Titel der Organisationseinheit eingeben…"
+                    searchPlaceholder="Name der Organisationseinheit eingeben…"
                     defaultSortField="departmentName"
                     rowMenuItems={[]}
                     noDataPlaceholder="Keine Organisationseinheiten vorhanden"

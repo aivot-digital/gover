@@ -1,10 +1,14 @@
-import {Menu} from "../../../../../../../components/menu/menu";
-import Delete from "@aivot/mui-material-symbols-400-outlined/dist/delete/Delete";
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Download from '@aivot/mui-material-symbols-400-outlined/dist/download/Download';
+import SwapHoriz from '@mui/icons-material/SwapHoriz';
+import {ProcessActionMenu} from '../../process-action-menu';
 
 interface ProcessNodeEditorMenuProps {
     anchorEl: HTMLElement | null;
     onClose: () => void;
 
+    onExportNode: () => void;
+    onReplaceNode: () => void;
     onDeleteNode: () => void;
 }
 
@@ -13,19 +17,41 @@ export function ProcessNodeEditorMenu(props: ProcessNodeEditorMenuProps) {
         anchorEl,
         onClose,
 
+        onExportNode,
+        onReplaceNode,
         onDeleteNode,
     } = props;
 
     return (
-        <Menu
-            open={anchorEl != null}
+        <ProcessActionMenu
             anchorEl={anchorEl}
             onClose={onClose}
+            showArrow={false}
+            anchorOrigin={{
+                horizontal: 'right',
+                vertical: 'bottom',
+            }}
+            transformOrigin={{
+                horizontal: 'right',
+                vertical: 'top',
+            }}
             items={[
+                {
+                    label: 'Exportieren',
+                    onClick: onExportNode,
+                    icon: <Download/>,
+                },
+                {
+                    label: 'Ersetzen',
+                    onClick: onReplaceNode,
+                    icon: <SwapHoriz/>,
+                },
+                'separator',
                 {
                     label: 'Löschen',
                     onClick: onDeleteNode,
                     icon: <Delete/>,
+                    isDangerous: true,
                 }
             ]}
         />

@@ -10,7 +10,7 @@ import {ElementWithParents} from '../../../utils/flatten-elements';
 import {SelectElementDialog} from '../../../dialogs/select-element-dialog/select-element-dialog';
 import {useMemo, useState} from 'react';
 import {SelectFieldComponentOption} from '../../../components/select-field/select-field-component-option';
-import {NoCodeDataTypeMap} from '../data/no-code-data-type-map';
+import {elementMatchesDesiredNoCodeDataType} from '../data/no-code-data-type-map';
 
 interface NoCodeOperandEditorReferenceProps {
     allElements: ElementWithParents[];
@@ -33,23 +33,20 @@ export function NoCodeOperandEditorReference(props: NoCodeOperandEditorReference
         onAddEnclosingExpression,
     } = props;
 
-    const {
-        elementId,
-    } = operand;
+    const selectableElements = useMemo(() => {
+        return allElements;
+            // Remove this for now, because we have no current concept of how to limit this compatability.
+            //.filter((e) => elementMatchesDesiredNoCodeDataType(e.element.type, desiredType));
+    }, [allElements, desiredType]);
 
     const allElementOptions: SelectFieldComponentOption[] = useMemo(() => {
-        const relevantElements = allElements
-            .filter((e) => {
-                return NoCodeDataTypeMap[e.element.type] = desiredType;
-            });
-
-        return (relevantElements.length > 0 ? relevantElements : allElements)
+        return selectableElements
             .map((e) => ({
                 label: generateComponentTitle(e.element),
                 subLabel: generateComponentPath(e.parents),
                 value: e.element.id,
             }));
-    }, [allElements, desiredType]);
+    }, [selectableElements]);
 
     const [showSelectElementDialog, setShowSelectElementDialog] = useState(false);
 
@@ -91,10 +88,12 @@ export function NoCodeOperandEditorReference(props: NoCodeOperandEditorReference
                 muiPassTroughProps={{
                     margin: 'none',
                 }}
+                emptyStatePlaceholder="Keine passenden Elemente verfügbar"
             />
 
             <SelectElementDialog
                 allElements={allElements}
+                desiredType={desiredType}
                 open={showSelectElementDialog}
                 onSelect={(element) => {
                     setShowSelectElementDialog(false);

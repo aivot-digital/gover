@@ -3,13 +3,15 @@ import {Box, Button, IconButton, ListItemIcon, ListItemText, Menu, MenuItem} fro
 import {type ElementEditorActionsProps} from './element-editor-actions-props';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
 import LibraryAddOutlinedIcon from '@mui/icons-material/LibraryAddOutlined';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {useNotImplemented} from '../../hooks/use-not-implemented';
 
 export function ElementEditorActions(props: ElementEditorActionsProps) {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const notImplemented = useNotImplemented();
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>): void => {
         setAnchorEl(event.currentTarget);
@@ -96,7 +98,7 @@ export function ElementEditorActions(props: ElementEditorActionsProps) {
                         color="error"
                         onClick={props.onDelete}
                         variant="outlined"
-                        startIcon={<DeleteOutlinedIcon
+                        startIcon={<Delete
                             sx={{
                                 marginTop: '-4px',
                             }}
@@ -116,7 +118,8 @@ export function ElementEditorActions(props: ElementEditorActionsProps) {
                     (props.onSaveAsPreset != null) &&
                     <MenuItem
                         onClick={() => {
-                            props.onSaveAsPreset!();
+                            //props.onSaveAsPreset!();
+                            notImplemented();
                             handleClose();
                         }}
                     >

@@ -9,6 +9,7 @@ interface ActionBase {
     label?: string;
     tooltip?: string;
     disabledTooltip?: string;
+    ariaLabel?: string;
     icon: ReactNode;
     disabled?: boolean;
     visible?: boolean;

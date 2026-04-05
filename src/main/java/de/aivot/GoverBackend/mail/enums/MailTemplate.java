@@ -20,6 +20,8 @@ public enum MailTemplate implements Identifiable<String> {
 
     SmtpTest("smtp-test", null),
 
+    ProcessTaskAssigned("process-task-assigned", ProcessNotificationTaskAssignedUserConfigDefinition.KEY),
+
     SubmissionArchived("submission-archived", SubmissionNotificationArchivedUserConfigDefinition.KEY),
     SubmissionAssigned("submission-assigned", SubmissionNotificationAssignedUserConfigDefinition.KEY),
     SubmissionReassigned("submission-reassigned", SubmissionNotificationAssignedUserConfigDefinition.KEY),

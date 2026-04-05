@@ -7,7 +7,6 @@ import {Link, useNavigate, useParams} from 'react-router-dom';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
@@ -30,13 +29,14 @@ import {ImageSelector} from '../../../assets/components/image-selector';
 import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import {VFormVersionWithDetailsService} from '../../../forms/services/v-form-version-with-details-api-service';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export const ThemeSchema = yup.object({
     name: yup.string()
         .trim()
-        .min(3, 'Der Name des Farbschemas muss mindestens 3 Zeichen lang sein.')
-        .max(96, 'Der Name des Farbschemas darf maximal 96 Zeichen lang sein.')
-        .required('Der Name des Farbschemas ist ein Pflichtfeld.'),
+        .min(3, 'Der Name des Erscheinungsbildes muss mindestens 3 Zeichen lang sein.')
+        .max(96, 'Der Name des Erscheinungsbildes darf maximal 96 Zeichen lang sein.')
+        .required('Der Name des Erscheinungsbildes ist ein Pflichtfeld.'),
 });
 
 export function ThemeDetailsPageIndex() {
@@ -51,7 +51,7 @@ export function ThemeDetailsPageIndex() {
 
         dispatch(addSnackbarMessage({
             key: 'access-denied-theme-details',
-            message: 'Dieses Farbschema kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
+            message: 'Dieses Erscheinungsbild kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
             type: SnackbarType.Dismissable,
             severity: SnackbarSeverity.Warning,
         }));
@@ -117,7 +117,7 @@ export function ThemeDetailsPageIndex() {
                         setItem(newTheme);
                         reset();
 
-                        dispatch(showSuccessSnackbar('Neues Farbschema erfolgreich angelegt.'));
+                        dispatch(showSuccessSnackbar('Neues Erscheinungsbild erfolgreich angelegt.'));
 
                         // use setTimeout instead of useEffect to prevent unnecessary rerender
                         setTimeout(() => {
@@ -138,7 +138,7 @@ export function ThemeDetailsPageIndex() {
                         setItem(updatedTheme);
                         reset();
 
-                        dispatch(showSuccessSnackbar('Änderungen am Farbschema erfolgreich gespeichert.'));
+                        dispatch(showSuccessSnackbar('Änderungen am Erscheinungsbild erfolgreich gespeichert.'));
                     })
                     .catch(err => {
                         console.error(err);
@@ -200,7 +200,7 @@ export function ThemeDetailsPageIndex() {
                 navigate('/themes', {
                     replace: true,
                 });
-                dispatch(showSuccessSnackbar('Das Farbschema wurde erfolgreich gelöscht.'));
+                dispatch(showSuccessSnackbar('Das Erscheinungsbild wurde erfolgreich gelöscht.'));
             })
             .catch(() => dispatch(showErrorSnackbar('Beim Löschen ist ein Fehler aufgetreten.')))
             .finally(() => setIsBusy(false));
@@ -219,7 +219,7 @@ export function ThemeDetailsPageIndex() {
                     }}
                 >
                     <TextFieldComponent
-                        label="Name des Farbschemas"
+                        label="Name des Erscheinungsbildes"
                         value={theme.name}
                         onChange={handleInputChange('name')}
                         onBlur={handleInputBlur('name')}
@@ -239,11 +239,13 @@ export function ThemeDetailsPageIndex() {
                     }}
                 >
                     <ImageSelector
-                        label="Logo des Farbschemas"
+                        label="Logo des Erscheinungsbildes"
                         hint="Dieses Logo wird in der Anwendung angezeigt, z.B. in der Kopfzeile."
-                        selectLabel="Logo für das Farbschema auswählen"
+                        selectLabel="Logo für das Erscheinungsbild auswählen"
                         value={theme.logoKey ?? null}
-                        onChange={handleInputChange('logoKey')}
+                        onChange={(key) => {
+                            handleInputChange('logoKey')(key != null ? key : undefined);
+                        }}
                         size={{
                             aspectRatio: 2, // Default aspect ratio of a logo is 2:1. See logo.tsx
                         }}
@@ -258,11 +260,13 @@ export function ThemeDetailsPageIndex() {
                     }}
                 >
                     <ImageSelector
-                        label="Favicon des Farbschemas"
-                        hint="Dieses Favicon wird in der Anwendung im tab"
-                        selectLabel="Favicon für das Farbschema auswählen"
+                        label="Favicon des Erscheinungsbildes"
+                        hint="Dieses Favicon wird im Browser-Tab angezeigt."
+                        selectLabel="Favicon für das Erscheinungsbild auswählen"
                         value={theme.faviconKey ?? null}
-                        onChange={handleInputChange('faviconKey')}
+                        onChange={(key) => {
+                            handleInputChange('faviconKey')(key != null ? key : undefined);
+                        }}
                         size={{
                             width: '8rem',
                             height: '8rem',
@@ -275,12 +279,12 @@ export function ThemeDetailsPageIndex() {
                 themeId === appThemeId &&
                 <AlertComponent
                     color="info"
-                    title="Dies ist das aktive Farbschema der Gover-Instanz"
+                    title="Dies ist das aktive Erscheinungsbild der Gover-Instanz"
                 >
                     <Box sx={{maxWidth: 860}}>
-                        Bitte beachten Sie, dass sich Änderungen an diesem Farbschema auf die ganze Gover-Instanz
+                        Bitte beachten Sie, dass sich Änderungen an diesem Erscheinungsbild auf die ganze Gover-Instanz
                         auswirken.
-                        Sie können die Zuweisung als Farbschema für die Gover-Instanz in den <Link
+                        Sie können die Zuweisung als Standard-Erscheinungsbild für die Gover-Instanz in den <Link
                         to="/settings"
                         style={{color: 'inherit'}}
                     >Systemeinstellungen</Link> ändern.
@@ -297,7 +301,7 @@ export function ThemeDetailsPageIndex() {
                 Auswahl der Farben
             </Typography>
             <Typography sx={{mb: 2, maxWidth: 900}}>
-                Wählen Sie die Farben für das Farbschema aus. Die Farben werden in der Anwendung
+                Wählen Sie die Farben für das Erscheinungsbild aus. Die Farben werden in der Anwendung
                 verwendet, um die Benutzeroberfläche zu gestalten. Bitte beachten Sie auch die Hinweise zur Barrierefreiheit.
             </Typography>
             <Grid
@@ -376,7 +380,7 @@ export function ThemeDetailsPageIndex() {
                 sx={{mt: 4}}
                 icon={<AccessibilityNewIcon />}
             >
-                <AlertTitle>Hinweis zur Barrierefreiheit des Farbschemas</AlertTitle>
+                <AlertTitle>Hinweis zur Barrierefreiheit des Erscheinungsbildes</AlertTitle>
                 <Typography sx={{maxWidth: 860}}>
                     Bitte beachten Sie, dass ausgewählte Farben ein Kontrastverhältnis von mindestens 4.5:1 aufweisen müssen,
                     um den Anforderungen der Barrierefreiheit gemäß der <abbr title={'Web Content Accessibility Guidelines'}>WCAG</abbr> 2.1 (AA) zu entsprechen.
@@ -424,7 +428,7 @@ export function ThemeDetailsPageIndex() {
                         sx={{
                             marginLeft: 'auto',
                         }}
-                        startIcon={<DeleteOutlinedIcon />}
+                        startIcon={<Delete />}
                     >
                         Löschen
                     </Button>
@@ -434,7 +438,7 @@ export function ThemeDetailsPageIndex() {
             {changeBlocker.dialog}
 
             <ConfirmDialog
-                title="Fachbereich löschen"
+                title="Erscheinungsbild löschen"
                 onCancel={() => setConfirmDeleteAction(undefined)}
                 onConfirm={confirmDeleteAction}
                 confirmationText={theme.name}
@@ -442,22 +446,22 @@ export function ThemeDetailsPageIndex() {
                 confirmButtonText="Ja, endgültig löschen"
             >
                 <Typography>
-                    Möchten Sie diesen Fachbereich wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+                    Möchten Sie dieses Erscheinungsbild wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
                 </Typography>
             </ConfirmDialog>
 
             <ConstraintDialog
                 open={showConstraintDialog}
                 onClose={() => setShowConstraintDialog(false)}
-                message="Dieses Farbschema kann (noch) nicht gelöscht werden, da es aktuell von einem oder mehreren Formularen verwendet wird."
-                solutionText="Bitte konfigurieren Sie für diese Formulare ein anderes Farbschema und versuchen Sie es erneut:"
+                message="Dieses Erscheinungsbild kann (noch) nicht gelöscht werden, da es aktuell von einem oder mehreren Formularen verwendet wird."
+                solutionText="Bitte konfigurieren Sie für diese Formulare ein anderes Erscheinungsbild und versuchen Sie es erneut:"
                 links={relatedApplications}
             />
             <ConstraintDialog
                 open={showConstraintDefaultThemeDialog}
                 onClose={() => setConstraintDefaultThemeDialog(false)}
-                message="Dieses Farbschema kann (noch) nicht gelöscht werden, da es das aktive Farbschema der Gover-Instanz ist."
-                solutionText="Um dieses Farbschema löschen zu können, müssen Sie zuerst in den Systemeinstellungen ein anderes Farbschema als Standard festlegen."
+                message="Dieses Erscheinungsbild kann (noch) nicht gelöscht werden, da es das aktive Erscheinungsbild der Gover-Instanz ist."
+                solutionText="Um dieses Erscheinungsbild löschen zu können, müssen Sie zuerst in den Systemeinstellungen ein anderes Erscheinungsbild als Standard festlegen."
                 links={[{
                     label: 'Systemeinstellungen aufrufen',
                     to: '/settings',

@@ -2,6 +2,7 @@ import {Api} from '../hooks/use-api';
 import {NoCodeOperatorDetailsDTO} from '../models/dtos/no-code-operator-details-dto';
 import {NoCodeDataType} from '../data/no-code-data-type';
 import {NoCodeExpression} from '../models/functions/no-code-expression';
+import {DerivedRuntimeElementData} from '../models/element-data';
 
 export class NoCodeApiService {
     private readonly api: Api;
@@ -16,7 +17,7 @@ export class NoCodeApiService {
         });
     }
 
-    public async evaluateNoCode(expression: NoCodeExpression, data: any): Promise<any> {
+    public async evaluateNoCode(expression: NoCodeExpression, data: DerivedRuntimeElementData): Promise<any> {
         return this.api.post('no-code/test', {
             expression: expression,
             elementData: data

@@ -48,7 +48,7 @@ public class SubmissionNotificationPaymentFailedUserConfigDefinition implements 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Erhalten Sie eine Benachrichtigung bei Fehlern in der Online-Zahlung eines Antrags, wenn Sie dem ranghöchsten im Formular hinterlegten Fachbereich angehören.*¹";
+        return "Erhalten Sie eine Benachrichtigung bei Fehlern in der Online-Zahlung eines Antrags, wenn Sie zu der für das Formular benachrichtigten Organisationseinheit gehören (bewirtschaftend, sonst zuständig, sonst entwickelnd).";
     }
 
     @Override

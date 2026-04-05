@@ -9,17 +9,18 @@ import {ValidationCodeTabProps} from './validation-code-tab-props';
 import {Box, Button, Typography} from '@mui/material';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {Actions} from '../actions/actions';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-element-dialog';
-import {showSuccessSnackbar} from '../../slices/snackbar-slice';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import {createLowCodeContextType} from '../../utils/create-low-code-context-type';
 import {ReferenceCheck} from './components/reference-check/reference-check';
 import {editor} from 'monaco-editor';
 import {ElementValidationFunction} from '../../models/elements/element-validation-function';
 import {NoCodeEditorWrapper} from './components/no-code-editor-wrapper/no-code-editor-wrapper';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {copyToClipboardText} from '../../utils/copy-to-clipboard';
 
 const exampleValidationCode = `(function(){
     // Hier kann der Code eingefügt werden, der bestimmt, ob das Element valide ist.
@@ -217,7 +218,7 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                                                     <Actions
                                                         actions={[
                                                             {
-                                                                icon: <DeleteOutlinedIcon />,
+                                                                icon: <Delete />,
                                                                 tooltip: 'Delete Expression',
                                                                 onClick: () => {
                                                                     const updatedValidationExpressions = [
@@ -333,8 +334,13 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
 
                         dispatch(showSuccessSnackbar('Element-ID eingefügt'));
                     } else {
-                        navigator.clipboard.writeText(element.id);
-                        dispatch(showSuccessSnackbar('Element-ID kopiert'));
+                        copyToClipboardText(element.id).then((success) => {
+                            if (success) {
+                                dispatch(showSuccessSnackbar('Element-ID kopiert'));
+                            } else {
+                                dispatch(showErrorSnackbar('Element-ID konnte nicht kopiert werden'));
+                            }
+                        });
                     }
 
                     toggleShowElementSelectDialog();

@@ -1,7 +1,8 @@
 package de.aivot.GoverBackend.elements.models.elements.layout;
 
-import de.aivot.GoverBackend.core.converters.ElementDataConverter;
-import de.aivot.GoverBackend.elements.models.ElementData;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
@@ -15,7 +16,7 @@ import jakarta.annotation.Nullable;
 import java.math.BigDecimal;
 import java.util.*;
 
-public class ReplicatingContainerLayoutElement extends BaseInputElement<List<ElementData>> implements LayoutElement<BaseFormElement> {
+public class ReplicatingContainerLayoutElement extends BaseInputElement<List<AuthoredElementValues>> implements LayoutElement<BaseFormElement> {
     @Nullable
     private Integer minimumRequiredSets;
 
@@ -39,39 +40,20 @@ public class ReplicatingContainerLayoutElement extends BaseInputElement<List<Ele
     }
 
     @Override
-    public List<ElementData> formatValue(@Nullable Object value) {
+    public List<AuthoredElementValues> formatValue(@Nullable Object value) {
         if (value == null) {
             return null;
         }
 
-        List<ElementData> res = new LinkedList<>();
+        ObjectMapper om = ObjectMapperFactory.
+                getInstance();
+
+        List<AuthoredElementValues> res = new LinkedList<>();
 
         if (value instanceof Collection<?> cValue) {
-            var om = new ElementDataConverter();
-
             for (Object itemObj : cValue) {
-                switch (itemObj) {
-                    case null -> {
-                        // Skip null values
-                        continue;
-                    }
-                    case ElementData elementData -> {
-                        // If the item is already an ElementData, add it directly
-                        res.add(elementData);
-                    }
-                    case Map<?, ?> mapValue -> {
-                        try {
-                            var item = om.convertToEntityAttribute(mapValue);
-                            res.add(item);
-                        } catch (IllegalArgumentException ex) {
-                            // If conversion fails, skip this item
-                            continue;
-                        }
-                    }
-                    default -> {
-                        continue;
-                    }
-                }
+                var conv = om.convertValue(itemObj, AuthoredElementValues.class);
+                res.add(conv);
             }
         }
 
@@ -79,7 +61,7 @@ public class ReplicatingContainerLayoutElement extends BaseInputElement<List<Ele
     }
 
     @Override
-    public void performValidation(List<ElementData> value) throws ValidationException {
+    public void performValidation(List<AuthoredElementValues> value) throws ValidationException {
         if (value == null) {
             if (Boolean.TRUE.equals(getRequired())) {
                 throw new RequiredValidationException(this);
@@ -100,7 +82,7 @@ public class ReplicatingContainerLayoutElement extends BaseInputElement<List<Ele
     @Nonnull
     @Override
     public Boolean evaluate(ConditionOperator operator, Object referencedValue, Object comparedValue) {
-        Collection<ElementData> listVal = formatValue(referencedValue);
+        Collection<AuthoredElementValues> listVal = formatValue(referencedValue);
         int listValInt = listVal != null ? listVal.size() : 0;
 
         var comparedValueInt = switch (comparedValue) {

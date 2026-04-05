@@ -33,14 +33,17 @@ export function PaymentProviderDetailsPage() {
                                         variant="body1"
                                         paragraph
                                     >
-                                        Konfigurieren Sie hier Zahlungsdienstleister, die in Ihrer Gover-Instanz global verfügbar sein sollen.
-                                        Die erforderlichen Konfigurationsdaten erhalten Sie vom Zahlungsdienstleister oder finden Sie in dessen Dokumentation.
+                                        Konfigurieren Sie hier Zahlungsdienstleister, die in Ihrer Gover-Instanz global
+                                        verfügbar sein sollen.
+                                        Die erforderlichen Konfigurationsdaten erhalten Sie vom Zahlungsdienstleister
+                                        oder finden Sie in dessen Dokumentation.
                                     </Typography>
                                     <Typography
                                         variant="body1"
                                         paragraph
                                     >
-                                        Es wird empfohlen, für jeden Zahlungsdienstleister sowohl eine produktive als auch eine vorproduktive Anbindung einzurichten, um Tests zu erleichtern.
+                                        Es wird empfohlen, für jeden Zahlungsdienstleister sowohl eine produktive als
+                                        auch eine vorproduktive Anbindung einzurichten, um Tests zu erleichtern.
                                     </Typography>
                                 </>
                             ),
@@ -67,10 +70,10 @@ export function PaymentProviderDetailsPage() {
                             isDisabled: (item) => item?.key === '',
                         },
                     ]}
-                    initializeItem={(api) => new PaymentProvidersApiService(api).initialize()}
-                    fetchData={(api, id: string) => new PaymentProvidersApiService(api).retrieve(id)}
+                    initializeItem={() => new PaymentProvidersApiService().initialize()}
+                    fetchData={(api, id: string) => new PaymentProvidersApiService().retrieve(id)}
                     fetchAdditionalData={{
-                        definitions: (api: Api, id: string) => new PaymentProvidersApiService(api).listDefinitions(),
+                        definitions: (api: Api, id: string) => new PaymentProvidersApiService().listDefinitions(),
                     }}
                     getTabTitle={(item: PaymentProviderResponseDTO) => {
                         if (item.key === '') {

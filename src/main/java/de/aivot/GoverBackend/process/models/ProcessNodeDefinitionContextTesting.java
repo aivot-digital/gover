@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.process.models;
 
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.process.entities.ProcessEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessTestClaimEntity;
@@ -21,6 +22,7 @@ public record ProcessNodeDefinitionContextTesting(
         @Nonnull ProcessEntity processDefinition,
         @Nonnull ProcessVersionEntity processDefinitionVersion,
         @Nonnull ProcessNodeEntity thisNode,
-        @Nonnull ProcessTestClaimEntity testClaim
+        @Nonnull ProcessTestClaimEntity testClaim,
+        @Nonnull DerivedRuntimeElementData configuration
 ) {
 }

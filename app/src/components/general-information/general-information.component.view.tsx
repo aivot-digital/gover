@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import Box from '@mui/material/Box';
 import ListItem from '@mui/material/ListItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
@@ -28,6 +28,7 @@ import {ExpandableList} from '../expandable-list/expandable-list';
 import {IdentityButtonGroup} from '../../modules/identity/components/identity-button-group/identity-button-group';
 import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
 import {VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
+import {MarkdownContent} from '../markdown-content/markdown-content';
 
 function cleanDocuments(documents: Array<string> | undefined | null) {
     if (documents) {
@@ -47,8 +48,9 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
         value,
         setValue,
         errors,
-        elementData,
-        onElementDataChange,
+        authoredElementValues,
+        derivedData,
+        onAuthoredElementValuesChange,
     } = props;
 
     const {} = element;
@@ -259,12 +261,13 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                     Gebühren dieses Antrages
                 </Typography>
 
-                <Typography
-                    component={'div'}
-                    variant="body2"
+                <MarkdownContent
+                    markdown={props.element.expectedCosts}
                     className={'content-without-margin-on-childs'}
-                    sx={{mt: 1}}
-                    dangerouslySetInnerHTML={{__html: props.element.expectedCosts ?? ''}}
+                    sx={{
+                        mt: 1,
+                        typography: 'body2',
+                    }}
                 />
             </Box>,
         );
@@ -324,8 +327,9 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 rootElement={rootElement}
                 isBusy={props.isBusy}
                 isDeriving={props.isDeriving}
-                elementData={elementData}
-                onElementDataChange={ed => onElementDataChange(ed, [])}
+                authoredElementValues={authoredElementValues}
+                derivedData={derivedData}
+                onAuthoredElementValuesChange={ed => onAuthoredElementValuesChange(ed, [])}
                 form={application?.form!}
                 version={application?.version!}
             />
@@ -386,51 +390,57 @@ interface FormattedTextWithDialogTagsProps {
 
 function FormattedTextWithDialogTags(props: FormattedTextWithDialogTagsProps) {
     const {text} = props;
-
-    const typographyRef = useRef<HTMLSpanElement>(null);
-
     const dispatch = useAppDispatch();
+    let formattedText = text;
 
-    const formattedText = useMemo(() => {
-        let result: string = text;
+    for (const meta of [AccessibilityDialogId, PrivacyDialogId, ImprintDialogId, HelpDialogId]) {
+        const tag = meta.toLowerCase();
+        const pattern = new RegExp(`\\{${tag}\\}([\\s\\S]*?)\\{\\/${tag}\\}`, 'gi');
 
-        // Iterate over all possible dialog tags and replace them with the corresponding HTML anchor tags
-        for (const meta of [AccessibilityDialogId, PrivacyDialogId, ImprintDialogId, HelpDialogId]) {
-            const tag = meta.toLowerCase();
-
-            result = result
-                .replace(`{${tag}}`, `<a data-dialog="${tag}" style="cursor: pointer;">`)
-                .replace(`{/${tag}}`, '</a>');
-        }
-
-        return result;
-    }, [text]);
-
-    useEffect(() => {
-        const typo = typographyRef.current;
-
-        if (typo == null) {
-            return;
-        }
-
-        typo.querySelectorAll('[data-dialog]').forEach((element) => {
-            element.addEventListener('click', (event) => {
-                const target = event.target as HTMLElement;
-                const dialog = target.getAttribute('data-dialog');
-
-                if (dialog != null) {
-                    dispatch(showDialog(dialog));
-                }
-            });
-        });
-    }, [typographyRef.current]);
+        formattedText = formattedText.replace(pattern, '[$1](dialog:' + tag + ')');
+    }
 
     return (
-        <Typography
-            ref={typographyRef}
-            variant="body2"
-            dangerouslySetInnerHTML={{
-                __html: formattedText,
+        <MarkdownContent
+            markdown={formattedText}
+            sx={{
+                typography: 'body2',
+                '& a': {
+                    cursor: 'pointer',
+                },
+            }}
+            components={{
+                a: ({href, children, ...anchorProps}) => {
+                    if (href?.startsWith('dialog:')) {
+                        const dialog = href.replace('dialog:', '');
+
+                        return (
+                            <a
+                                href={href}
+                                {...anchorProps}
+                                onClick={(event) => {
+                                    event.preventDefault();
+                                    dispatch(showDialog(dialog));
+                                }}
+                            >
+                                {children}
+                            </a>
+                        );
+                    }
+
+                    const isExternalLink = href != null && /^(https?:)?\/\//.test(href);
+
+                    return (
+                        <a
+                            href={href}
+                            {...anchorProps}
+                            target={isExternalLink ? '_blank' : undefined}
+                            rel={isExternalLink ? 'noopener noreferrer' : undefined}
+                        >
+                            {children}
+                        </a>
+                    );
+                },
             }}
         />
     );

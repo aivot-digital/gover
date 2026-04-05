@@ -5,6 +5,11 @@ export interface ProcessDetailsPageContextType {
     editable: boolean;
     onSave: (node: ProcessNodeEntity) => Promise<void>;
     onDelete: (node: ProcessNodeEntity) => Promise<void>;
+    onStartReplaceNode: (node: ProcessNodeEntity) => void;
+    nodeRefreshSignal: {
+        nodeId: number | null;
+        version: number;
+    };
 }
 
 export const ProcessDetailsPageContext = createContext<ProcessDetailsPageContextType | null>(null);

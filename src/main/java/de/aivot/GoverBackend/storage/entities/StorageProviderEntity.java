@@ -1,17 +1,24 @@
 package de.aivot.GoverBackend.storage.entities;
 
-import de.aivot.GoverBackend.core.converters.ElementDataConverter;
-import de.aivot.GoverBackend.elements.models.ElementData;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import de.aivot.GoverBackend.core.converters.AuthoredElementValuesConverter;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.storage.converters.StorageProviderMetadataAttributesConverter;
 import de.aivot.GoverBackend.storage.enums.StorageProviderStatus;
 import de.aivot.GoverBackend.storage.enums.StorageProviderType;
+import de.aivot.GoverBackend.storage.models.StorageProviderMetadataAttribute;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.hibernate.annotations.ColumnDefault;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
 
 @Entity
@@ -58,14 +65,44 @@ public class StorageProviderEntity {
     private StorageProviderStatus status;
 
     @Nullable
-    @Size(max = 1024, message = "Die Statusnachricht des Speicheranbieters darf maximal 1024 Zeichen lang sein.")
+    @Size(max = 4096, message = "Die Statusnachricht des Speicheranbieters darf maximal 4096 Zeichen lang sein.")
     private String statusMessage;
+
+    @Nonnull
+    @NotNull(message = "Die Read-Only-Eigenschaft des Speicheranbieters darf nicht null sein.")
+    @ColumnDefault("FALSE")
+    private Boolean readOnlyStorage;
 
     @Nonnull
     @NotNull(message = "Die Konfiguration des Speicheranbieters darf nicht null sein.")
     @Column(columnDefinition = "jsonb")
-    @Convert(converter = ElementDataConverter.class)
-    private ElementData configuration;
+    @Convert(converter = AuthoredElementValuesConverter.class)
+    private AuthoredElementValues configuration;
+
+    @Nonnull
+    @NotNull(message = "Die maximale Dateigröße des Speicheranbieters darf nicht null sein.")
+    @Min(value = 0, message = "Die maximale Dateigröße des Speicheranbieters muss größer oder gleich 0 sein.")
+    @ColumnDefault("0")
+    private Long maxFileSizeInBytes;
+
+    @Nonnull
+    @NotNull(message = "Die Verhinderung der Löschung des Speicheranbieters darf nicht null sein.")
+    @ColumnDefault("FALSE")
+    private Boolean systemProvider;
+
+    @Nonnull
+    @NotNull(message = "Die vorproduktive Eigenschaft des Speicheranbieters darf nicht null sein.")
+    @ColumnDefault("FALSE")
+    private Boolean testProvider;
+
+    @Nonnull
+    @NotNull(message = "Die Liste der Metadatenattribute des Speicheranbieters darf nicht null sein.")
+    @Column(columnDefinition = "jsonb")
+    @Convert(converter = StorageProviderMetadataAttributesConverter.class)
+    private List<StorageProviderMetadataAttribute> metadataAttributes;
+
+    @Nullable
+    private LocalDateTime lastSync;
 
     @Nonnull
     private LocalDateTime created;
@@ -75,7 +112,7 @@ public class StorageProviderEntity {
 
     // region Signals
 
-     @PrePersist
+    @PrePersist
     protected void onCreate() {
         created = LocalDateTime.now();
         updated = created;
@@ -88,20 +125,62 @@ public class StorageProviderEntity {
 
     // endregion
 
+    // region Constructors
+
+    public StorageProviderEntity() {
+    }
+
+    public StorageProviderEntity(@Nonnull Integer id,
+                                 @Nonnull String storageProviderDefinitionKey,
+                                 @Nonnull Integer storageProviderDefinitionVersion,
+                                 @Nonnull String name,
+                                 @Nonnull String description,
+                                 @Nonnull StorageProviderType type,
+                                 @Nonnull StorageProviderStatus status,
+                                 @Nullable String statusMessage,
+                                 @Nonnull Boolean readOnlyStorage,
+                                 @Nonnull Boolean testProvider,
+                                 @Nonnull AuthoredElementValues configuration,
+                                 @Nonnull Long maxFileSizeInBytes,
+                                 @Nonnull Boolean systemProvider,
+                                 @Nonnull List<StorageProviderMetadataAttribute> metadataAttributes,
+                                 @Nullable LocalDateTime lastSync,
+                                 @Nonnull LocalDateTime created,
+                                 @Nonnull LocalDateTime updated) {
+        this.id = id;
+        this.storageProviderDefinitionKey = storageProviderDefinitionKey;
+        this.storageProviderDefinitionVersion = storageProviderDefinitionVersion;
+        this.name = name;
+        this.description = description;
+        this.type = type;
+        this.status = status;
+        this.statusMessage = statusMessage;
+        this.readOnlyStorage = readOnlyStorage;
+        this.configuration = configuration;
+        this.maxFileSizeInBytes = maxFileSizeInBytes;
+        this.systemProvider = systemProvider;
+        this.testProvider = testProvider;
+        this.metadataAttributes = metadataAttributes;
+        this.lastSync = lastSync;
+        this.created = created;
+        this.updated = updated;
+    }
+
+    // endregion
+
     // region Equals & HashCode
 
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         StorageProviderEntity that = (StorageProviderEntity) o;
-        return Objects.equals(id, that.id) && Objects.equals(storageProviderDefinitionKey, that.storageProviderDefinitionKey) && Objects.equals(storageProviderDefinitionVersion, that.storageProviderDefinitionVersion) && Objects.equals(name, that.name) && Objects.equals(description, that.description) && type == that.type && status == that.status && Objects.equals(statusMessage, that.statusMessage) && Objects.equals(configuration, that.configuration) && Objects.equals(created, that.created) && Objects.equals(updated, that.updated);
+        return Objects.equals(id, that.id) && Objects.equals(storageProviderDefinitionKey, that.storageProviderDefinitionKey) && Objects.equals(storageProviderDefinitionVersion, that.storageProviderDefinitionVersion) && Objects.equals(name, that.name) && Objects.equals(description, that.description) && type == that.type && status == that.status && Objects.equals(statusMessage, that.statusMessage) && Objects.equals(readOnlyStorage, that.readOnlyStorage) && Objects.equals(testProvider, that.testProvider) && Objects.equals(configuration, that.configuration) && Objects.equals(maxFileSizeInBytes, that.maxFileSizeInBytes) && Objects.equals(systemProvider, that.systemProvider) && Objects.equals(metadataAttributes, that.metadataAttributes) && Objects.equals(lastSync, that.lastSync) && Objects.equals(created, that.created) && Objects.equals(updated, that.updated);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, storageProviderDefinitionKey, storageProviderDefinitionVersion, name, description, type, status, statusMessage, configuration, created, updated);
+        return Objects.hash(id, storageProviderDefinitionKey, storageProviderDefinitionVersion, name, description, type, status, statusMessage, readOnlyStorage, testProvider, configuration, maxFileSizeInBytes, systemProvider, metadataAttributes, lastSync, created, updated);
     }
-
 
     // endregion
 
@@ -188,12 +267,77 @@ public class StorageProviderEntity {
     }
 
     @Nonnull
-    public ElementData getConfiguration() {
+    public Boolean getReadOnlyStorage() {
+        return readOnlyStorage;
+    }
+
+    public StorageProviderEntity setReadOnlyStorage(@Nonnull Boolean readOnly) {
+        this.readOnlyStorage = readOnly;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getTestProvider() {
+        return testProvider;
+    }
+
+    public StorageProviderEntity setTestProvider(@Nonnull Boolean testProvider) {
+        this.testProvider = testProvider;
+        return this;
+    }
+
+    @Nonnull
+    public AuthoredElementValues getConfiguration() {
         return configuration;
     }
 
-    public StorageProviderEntity setConfiguration(@Nonnull ElementData configuration) {
+    public StorageProviderEntity setConfiguration(@Nonnull AuthoredElementValues configuration) {
         this.configuration = configuration;
+        return this;
+    }
+
+    @Nonnull
+    public Long getMaxFileSizeInBytes() {
+        return maxFileSizeInBytes;
+    }
+
+    @JsonIgnore
+    public double getMaxFileSizeInMegabytes() {
+        return ((double) maxFileSizeInBytes) / (1000.0d * 1000.0d);
+    }
+
+    public StorageProviderEntity setMaxFileSizeInBytes(@Nonnull Long maxFileSizeInBytes) {
+        this.maxFileSizeInBytes = maxFileSizeInBytes;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getSystemProvider() {
+        return systemProvider;
+    }
+
+    public StorageProviderEntity setSystemProvider(@Nonnull Boolean preventDeletion) {
+        this.systemProvider = preventDeletion;
+        return this;
+    }
+
+    @Nonnull
+    public List<StorageProviderMetadataAttribute> getMetadataAttributes() {
+        return metadataAttributes;
+    }
+
+    public StorageProviderEntity setMetadataAttributes(@Nonnull List<StorageProviderMetadataAttribute> metadataAttributes) {
+        this.metadataAttributes = metadataAttributes;
+        return this;
+    }
+
+    @Nullable
+    public LocalDateTime getLastSync() {
+        return lastSync;
+    }
+
+    public StorageProviderEntity setLastSync(@Nullable LocalDateTime lastSync) {
+        this.lastSync = lastSync;
         return this;
     }
 

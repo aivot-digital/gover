@@ -16,12 +16,6 @@ const formatMap = {
     [DateFieldComponentModelMode.Year]: 'yyyy',
 };
 
-const formatReadableMap = {
-    [DateFieldComponentModelMode.Day]: 'TT.MM.JJJJ',
-    [DateFieldComponentModelMode.Month]: 'MM.JJJJ',
-    [DateFieldComponentModelMode.Year]: 'JJJJ',
-};
-
 const viewsMap: {
     [k in DateFieldComponentModelMode]: ('day' | 'month' | 'year')[];
 } = {
@@ -65,9 +59,6 @@ export function DateFieldComponent({
 
     const computedLabel = useMemo(() => {
         let computedLabel = label;
-        if (computedLabel) {
-            computedLabel += ` (${formatReadableMap[mode ?? DateFieldComponentModelMode.Day]})`;
-        }
         if (required) {
             if (computedLabel) {
                 computedLabel += ' *';
@@ -213,4 +204,3 @@ export function DateFieldComponent({
         </LocalizationProvider>
     );
 }
-

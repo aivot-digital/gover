@@ -1,4 +1,14 @@
-import {Box, Button, CircularProgress, Collapse, Step, StepContent, StepLabel, type StepProps, useTheme} from '@mui/material';
+import {
+    Box,
+    Button,
+    CircularProgress,
+    Collapse,
+    Step,
+    StepContent,
+    StepLabel,
+    type StepProps,
+    useTheme,
+} from '@mui/material';
 import React, {useEffect, useRef} from 'react';
 import {getStepIcon} from '../../data/step-icons';
 import {isStepElement} from '../../models/elements/steps/step-element';
@@ -11,22 +21,25 @@ import {type CustomStepProps} from './custom-step-props';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectDisableAutoScrollForSteps} from '../../slices/admin-settings-slice';
 
-export function CustomStep({
-                               stepIndex,
-                               isFirstStep,
-                               isLastStep,
-                               active,
-                               step,
-                               children,
-                               onNext,
-                               onPrevious,
-                               navDirection,
-                               stepRefs,
-                               scrollContainerRef,
-                               isBusy,
-                               isDeriving,
-                               ...passTroughProps
-                           }: CustomStepProps & StepProps) {
+export function CustomStep(props: CustomStepProps & StepProps) {
+    const {
+        stepIndex,
+        isFirstStep,
+        isLastStep,
+        isSubmitStep,
+        active,
+        step,
+        children,
+        onNext,
+        onPrevious,
+        navDirection,
+        stepRefs,
+        scrollContainerRef,
+        isBusy,
+        isDeriving,
+        ...passTroughProps
+    } = props;
+
     const theme = useTheme();
     const disableAutoScroll = useAppSelector(selectDisableAutoScrollForSteps);
 
@@ -165,7 +178,9 @@ export function CustomStep({
                     }}
                 >
                     {
-                        (onNext != null) &&
+                        onNext != null &&
+                        !isLastStep &&
+                        !isSubmitStep &&
                         <Button
                             variant="contained"
                             onClick={onNext}
@@ -175,7 +190,7 @@ export function CustomStep({
                             endIcon={(isBusy || isDeriving) ? <CircularProgress
                                 size="1em"
                                 color="inherit"
-                            /> : (isLastStep ? <SendOutlinedIcon /> : <ArrowForwardOutlinedIcon />)}
+                            /> : (isLastStep ? <SendOutlinedIcon/> : <ArrowForwardOutlinedIcon/>)}
                         >
                             {
                                 isDeriving && 'Berechne…'
@@ -192,6 +207,29 @@ export function CustomStep({
                         </Button>
                     }
                     {
+                        onNext != null &&
+                        isLastStep &&
+                        isSubmitStep &&
+                        <Button
+                            variant="contained"
+                            onClick={onNext}
+                            size="large"
+                            color="primary"
+                            disabled={isBusy || isDeriving}
+                            endIcon={(isBusy || isDeriving) ? <CircularProgress
+                                size="1em"
+                                color="inherit"
+                            /> : (isLastStep ? <SendOutlinedIcon/> : <ArrowForwardOutlinedIcon/>)}
+                        >
+                            {
+                                isDeriving && 'Berechne…'
+                            }
+                            {
+                                isLastStep && !isDeriving && 'Antrag verbindlich einreichen'
+                            }
+                        </Button>
+                    }
+                    {
                         !isFirstStep &&
                         (onPrevious != null) &&
                         <Button
@@ -201,7 +239,7 @@ export function CustomStep({
                             startIcon={(isBusy || isDeriving) ? <CircularProgress
                                 size="1em"
                                 color="inherit"
-                            /> : <ArrowBackOutlinedIcon />}
+                            /> : <ArrowBackOutlinedIcon/>}
                             sx={{
                                 mt: 2,
                                 [theme.breakpoints.up('md')]: {

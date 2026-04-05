@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.plugins.core.v1.operators.text;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException;
@@ -8,6 +8,7 @@ import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
+import jakarta.annotation.Nullable;
 
 import java.util.regex.Pattern;
 
@@ -78,8 +79,14 @@ public class NoCodeRegexMatchOperator extends NoCodeOperator {
         );
     }
 
+    @Nullable
     @Override
-    public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
+    public String getHumanReadableTemplate() {
+        return "„#0“ passt auf den regulären Ausdruck „#1“";
+    }
+
+    @Override
+    public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
         if (args.length != 2) {
             throw new NoCodeWrongArgumentCountException(2, args.length);
         }
@@ -87,7 +94,12 @@ public class NoCodeRegexMatchOperator extends NoCodeOperator {
         String input = castToString(args[0]);
         String regex = castToString(args[1]);
 
-        boolean matches = Pattern.matches(regex, input);
+        boolean matches;
+        try {
+            matches = Pattern.matches(regex, input);
+        } catch (Exception e) {
+            throw new NoCodeException("Ungültiger regulärer Ausdruck: " + regex);
+        }
         return new NoCodeResult(matches);
     }
 }

@@ -19,42 +19,86 @@ export function ProcessNodeEditorTestingTab(): ReactNode {
     const [layout, setLayout] = useState<GroupLayout | null>(null);
 
     useEffect(() => {
+        let cancelled = false;
+
         if (testClaim == null) {
             setLayout(null);
+            return () => {
+                cancelled = true;
+            };
         }
 
         new ProcessNodeApiService()
             .getTesting(node.id)
-            .then(setLayout)
+            .then((data) => {
+                if (cancelled) {
+                    return;
+                }
+                setLayout(data);
+            })
             .catch((err) => {
+                if (cancelled) {
+                    return;
+                }
                 dispatch(showApiErrorSnackbar(err, 'Fehler beim Laden des Test-Layouts.'));
             });
-    }, [testClaim]);
+
+        return () => {
+            cancelled = true;
+        };
+    }, [dispatch, node.id, testClaim]);
 
     if (testClaim == null) {
         return (
-            <Typography>
-                Der Prozess befindet sich aktuell nicht in der Testphase.
-                Sobald der Prozess in die Testphase wechselt, können hier zusätzliche Eigenschaften des Elemente
-                konfiguriert werden.
-            </Typography>
+            <Box
+                sx={{
+                    pt: 1,
+                    pb: 2,
+                }}
+            >
+                <Typography variant="h4">
+                    Prozesselement testen
+                </Typography>
+                <Typography variant="body1"
+                            mt={1} mb={2} maxWidth={400}>
+                    Der Prozess befindet sich aktuell nicht in der Testphase.
+                    Sobald der Prozess in die Testphase wechselt, können hier zusätzliche Eigenschaften des Elemente
+                    konfiguriert werden.
+                </Typography>
+            </Box>
         );
     }
 
     if (layout == null) {
         return (
-            <Box>
+            <Box
+                sx={{
+                    pt: 1,
+                    pb: 2,
+                }}
+            >
+                <Typography variant="h4" mb={2}>
+                    Prozesselement testen
+                </Typography>
                 <Skeleton/>
             </Box>
         );
     }
 
     return (
-        <Box>
+        <Box
+            sx={{
+                pt: 1,
+                pb: 2,
+            }}
+        >
+            <Typography variant="h4">
+                Prozesselement testen
+            </Typography>
             <ElementDerivationContext
                 element={layout}
-                elementData={{}}
-                onElementDataChange={() => {
+                authoredElementValues={{}}
+                onAuthoredElementValuesChange={() => {
                     // Nothing to do here, since the data is not persisted.
                 }}
             />

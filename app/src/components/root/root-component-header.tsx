@@ -8,12 +8,12 @@ import AccessibilityNewOutlinedIcon from '@mui/icons-material/AccessibilityNewOu
 import {AccessibilityDialogId} from '../../dialogs/accessibility-dialog/accessibility-dialog';
 import {HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
 import Balancer from 'react-wrap-balancer';
-import DeleteForever from '@aivot/mui-material-symbols-400-outlined/dist/delete-forever/DeleteForever';
 import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
 import {useConfirm} from '../../providers/confirm-provider';
 import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
 import {FormEntity} from '../../modules/forms/entities/form-entity';
 import {FormApiService} from '../../modules/forms/services/form-api-service';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 interface RootComponentHeaderProps {
     form: FormEntity;
@@ -195,7 +195,7 @@ export function RootComponentHeader(props: RootComponentHeaderProps) {
                     }}
                 >
                     <ListItemIcon>
-                        <DeleteForever />
+                        <Delete />
                     </ListItemIcon>
                     <ListItemText>
                         Alle Antragsdaten löschen

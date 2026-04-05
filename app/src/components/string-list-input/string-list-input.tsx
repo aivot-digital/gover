@@ -3,8 +3,8 @@ import React, {useState} from 'react';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import {type StringListInputProps} from './string-list-input-props';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export function StringListInput(props: StringListInputProps) {
     const {
@@ -131,7 +131,7 @@ export function StringListInput(props: StringListInputProps) {
                                                 <Button
                                                     color="error"
                                                     startIcon={
-                                                        <DeleteForeverOutlinedIcon/>
+                                                        <Delete/>
                                                     }
                                                     onClick={() => {
                                                         const updatedValue = [...value];

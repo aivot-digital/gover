@@ -4,12 +4,13 @@ import {CodeEditor} from '../code-editor/code-editor';
 import {OverrideCodeTabProps} from './override-code-tab-props';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-element-dialog';
-import {showSuccessSnackbar} from '../../slices/snackbar-slice';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {ReferenceCheck} from './components/reference-check/reference-check';
 import {createLowCodeContextType} from '../../utils/create-low-code-context-type';
 import {ElementOverrideFunction} from '../../models/elements/element-override-function';
 import {editor} from 'monaco-editor';
+import {copyToClipboardText} from '../../utils/copy-to-clipboard';
 
 const exampleOverrideCode = `(function(){
     // Hier kann der Code eingefügt werden, um die Struktur des Elements zu überschreiben.
@@ -167,8 +168,13 @@ export function OverrideCodeTab(props: OverrideCodeTabProps) {
 
                         dispatch(showSuccessSnackbar('Element-ID eingefügt'));
                     } else {
-                        navigator.clipboard.writeText(element.id);
-                        dispatch(showSuccessSnackbar('Element-ID kopiert'));
+                        copyToClipboardText(element.id).then((success) => {
+                            if (success) {
+                                dispatch(showSuccessSnackbar('Element-ID kopiert'));
+                            } else {
+                                dispatch(showErrorSnackbar('Element-ID konnte nicht kopiert werden'));
+                            }
+                        });
                     }
 
                     toggleShowElementSelectDialog();

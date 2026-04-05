@@ -3,12 +3,17 @@ import Grid from '@mui/material/Grid';
 import {type AnyElement} from '../models/elements/any-element';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
 import {views as Views} from '../views';
+import {summaries as Summaries} from '../summaries';
 import {type BaseViewProps} from '../views/base-view';
 import IconButton from '@mui/material/IconButton';
 import {ElementErrorBoundary} from './element-error-boundary/element-error-boundary';
-import {type ElementData, type ElementDataObject} from '../models/element-data';
-import {resolveErrors, resolveOverride, resolvePrefill, resolveValueForResolvedOverride, resolveVisibility} from '../utils/element-data-utils';
-import {useElementEditorNavigation} from '../hooks/use-element-editor-navigation';
+import {
+    resolveErrors,
+    resolveOverride,
+    resolveValueForResolvedOverride,
+    resolveVisibility,
+} from '../utils/element-data-utils';
+import {useElementEditorNavigationActions} from '../hooks/use-element-editor-navigation';
 import {isAnyContentElement} from '../models/elements/form/content/any-content-element';
 import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
 import {Box, Divider, ListItemIcon, ListItemText, Menu, MenuItem, Typography} from '@mui/material';
@@ -19,6 +24,9 @@ import {useAppSelector} from '../hooks/use-app-selector';
 import {selectDisableElementContextMenu, setComponentTree} from '../slices/admin-settings-slice';
 import {generateComponentTitle} from '../utils/generate-component-title';
 import JumpToElement from '@aivot/mui-material-symbols-400-outlined/dist/jump-to-element/JumpToElement';
+import {copyToClipboardText} from '../utils/copy-to-clipboard';
+import {type AuthoredElementValues, type DerivedRuntimeElementData} from '../models/element-data';
+import {BaseSummaryProps} from '../summaries/base-summary';
 
 interface DispatcherComponentProps<T extends AnyElement> {
     rootElement: AnyElement;
@@ -30,9 +38,13 @@ interface DispatcherComponentProps<T extends AnyElement> {
     isDeriving: boolean;
     mode: 'editor' | 'viewer';
 
-    elementData: ElementData;
-    onElementDataChange: (data: ElementData, triggeringElementIds: string[]) => void;
-    onElementBlur?: (data: ElementData, triggeringElementIds: string[]) => void;
+    authoredElementValues: AuthoredElementValues;
+    derivedData: DerivedRuntimeElementData;
+    rootAuthoredElementValues?: AuthoredElementValues;
+    rootDerivedData?: DerivedRuntimeElementData;
+    onAuthoredElementValuesChange: (data: AuthoredElementValues, triggeringElementIds: string[]) => void;
+    onElementBlur?: (data: AuthoredElementValues, triggeringElementIds: string[]) => void;
+    onDerivedDataChange?: (data: DerivedRuntimeElementData) => void;
 
     disableVisibility?: boolean;
     derivationTriggerIdQueue: string[];
@@ -49,94 +61,88 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         isBusy: baseIsBusy,
         isDeriving: baseIsDeriving,
         mode,
-        elementData,
-        onElementDataChange,
+        authoredElementValues,
+        derivedData,
+        rootAuthoredElementValues,
+        rootDerivedData,
+        onAuthoredElementValuesChange,
         onElementBlur,
+        onDerivedDataChange,
         disableVisibility,
         derivationTriggerIdQueue,
     } = props;
 
     const {
         id: elementId,
-        type: elementType,
     } = initialElement;
 
-    const elementDataObject: ElementDataObject = useMemo(() => {
-        return elementData[elementId] ?? {
-            $type: elementType,
-            inputValue: null,
-            previousInputValue: null,
-            isVisible: true,
-            isPrefilled: false,
-            isDirty: false,
-            computedOverride: null,
-            computedValue: null,
-            computedErrors: null,
-            value: null,
-        };
-    }, [elementData, elementId, elementType]);
-
     const element: AnyElement = useMemo(() => {
-        return resolveOverride(initialElement, elementData) as AnyElement;
-    }, [initialElement, elementData]);
+        return resolveOverride(initialElement, derivedData) as AnyElement;
+    }, [initialElement, derivedData]);
 
     const value = useMemo(() => {
-        return resolveValueForResolvedOverride(element, elementData);
-    }, [element, elementData]);
-
-    const prefilled = useMemo(() => {
-        return resolvePrefill(element, elementData);
-    }, [element, elementData]);
+        return resolveValueForResolvedOverride(element, authoredElementValues, derivedData);
+    }, [element, authoredElementValues, derivedData]);
 
     const error: string[] | undefined | null = useMemo(() => {
-        return resolveErrors(element, elementData);
-    }, [element, elementData]);
+        return resolveErrors(element, derivedData);
+    }, [element, derivedData]);
+
+    const effectiveRootAuthoredElementValues = useMemo(() => {
+        return rootAuthoredElementValues ?? authoredElementValues;
+    }, [rootAuthoredElementValues, authoredElementValues]);
+
+    const effectiveRootDerivedData = useMemo(() => {
+        return rootDerivedData ?? derivedData;
+    }, [rootDerivedData, derivedData]);
+
+    const isDisplayOnly = useMemo(() => {
+        if (isAnyInputElement(element)) {
+            return element.display == true;
+        }
+        return false;
+    }, [element]);
 
     const handleSetValue = useCallback((updatedValue: any | null | undefined, triggeringElementIds?: string[]) => {
+        if (isDisplayOnly) {
+            return;
+        }
+
         if (updatedValue == value) {
             return;
         }
 
-        const newElementData = {
-            ...elementData,
-            [elementId]: {
-                ...elementDataObject,
-                $type: elementType,
-                inputValue: updatedValue ?? null,
-                isDirty: true,
-            },
+        const newAuthoredElementValues = {
+            ...authoredElementValues,
+            [elementId]: updatedValue ?? null,
         };
 
-        onElementDataChange(newElementData, [elementId, ...(triggeringElementIds ?? [])]);
-    }, [value, elementData, elementDataObject, onElementDataChange, elementId, elementType]);
+        onAuthoredElementValuesChange(newAuthoredElementValues, [elementId, ...(triggeringElementIds ?? [])]);
+    }, [value, authoredElementValues, onAuthoredElementValuesChange, elementId, isDisplayOnly]);
 
     const handleOnBlur = useCallback((updatedValue: any | null | undefined, triggeringElementIds?: string[]) => {
         if (updatedValue == value || onElementBlur == null) {
             return;
         }
 
-        const newElementData = {
-            ...elementData,
-            [elementId]: {
-                ...elementDataObject,
-                $type: elementType,
-                inputValue: updatedValue,
-                isDirty: true,
-            },
+        const newAuthoredElementValues = {
+            ...authoredElementValues,
+            [elementId]: updatedValue ?? null,
         };
 
-        onElementBlur(newElementData, [elementId, ...(triggeringElementIds ?? [])]);
-    }, [value, elementData, onElementDataChange, elementId, elementType]);
+        onElementBlur(newAuthoredElementValues, [elementId, ...(triggeringElementIds ?? [])]);
+    }, [value, authoredElementValues, onElementBlur, elementId]);
 
-    const Component: ComponentType<BaseViewProps<typeof element, any>> | null = useMemo(() => Views[element.type], [element.type]);
+    const ViewComponent: ComponentType<BaseViewProps<typeof element, any>> | null = useMemo(() => Views[element.type], [element.type]);
+    const SummaryComponent: ComponentType<BaseSummaryProps<typeof element, any>> | null = useMemo(() => Summaries[element.type], [element.type]);
 
     const isVisible = useMemo(() => {
         if (isAnyInputElement(element) && element.technical && (mode !== 'editor' || !disableVisibility)) {
             return false;
         }
 
-        return resolveVisibility(element, elementData);
-    }, [elementData, element, mode, disableVisibility]);
+        return resolveVisibility(element, derivedData);
+    }, [derivedData, element, mode, disableVisibility]);
 
     const isBusy: boolean = useMemo(() => {
         return baseIsBusy || baseIsDeriving && (
@@ -155,12 +161,16 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         errors: error,
         value: value,
         scrollContainerRef: scrollContainerRef,
-        isBusy: isBusy || prefilled,
+        isBusy: isBusy,
         isDeriving: baseIsDeriving,
         mode: mode,
-        elementData: elementData,
-        onElementDataChange: onElementDataChange,
+        authoredElementValues: authoredElementValues,
+        derivedData: derivedData,
+        rootAuthoredElementValues: effectiveRootAuthoredElementValues,
+        rootDerivedData: effectiveRootDerivedData,
+        onAuthoredElementValuesChange: onAuthoredElementValuesChange,
         onElementBlur: onElementBlur,
+        onDerivedDataChange: onDerivedDataChange,
         disableVisibility: disableVisibility,
         derivationTriggerIdQueue: derivationTriggerIdQueue,
     }), [
@@ -173,18 +183,41 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         scrollContainerRef,
         isBusy,
         baseIsDeriving,
-        prefilled,
         mode,
-        elementData,
-        onElementDataChange,
+        authoredElementValues,
+        derivedData,
+        effectiveRootAuthoredElementValues,
+        effectiveRootDerivedData,
+        onAuthoredElementValuesChange,
         onElementBlur,
+        onDerivedDataChange,
         disableVisibility,
         derivationTriggerIdQueue,
     ]);
 
+    const summaryProps: BaseSummaryProps<typeof element, any> = useMemo(() => ({
+        model: element,
+        value: value,
+        allowStepNavigation: false,
+        showTechnical: false,
+        authoredElementValues: authoredElementValues,
+        derivedData: derivedData,
+    }), [
+        element,
+        value,
+        authoredElementValues,
+        derivedData,
+    ]);
 
+    if (!isVisible) {
+        return null;
+    }
 
-    if (Component == null || !isVisible) {
+    if (isAnyInputElement(element) && isDisplayOnly && SummaryComponent == null) {
+        return null;
+    }
+
+    if (ViewComponent == null) {
         return null;
     }
 
@@ -218,7 +251,15 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
             }
 
             <ElementErrorBoundary viewProps={viewProps}>
-                <Component {...viewProps} />
+                {
+                    isDisplayOnly &&
+                    SummaryComponent != null &&
+                    <SummaryComponent {...summaryProps} />
+                }
+                {
+                    !isDisplayOnly &&
+                    <ViewComponent {...viewProps} />
+                }
             </ElementErrorBoundary>
         </Grid>
     );
@@ -239,7 +280,7 @@ function ContextMenuButton(props: ContextMenuButtonProps) {
 
     const {
         navigateToElementEditor,
-    } = useElementEditorNavigation();
+    } = useElementEditorNavigationActions();
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
         event.stopPropagation();
@@ -259,18 +300,16 @@ function ContextMenuButton(props: ContextMenuButtonProps) {
     const handleJumpTo = () => {
         dispatch(setComponentTree(true));
         navigateToElementEditor(element.id, null);
-        handleMenuClose()
+        handleMenuClose();
     };
 
     const handleCopyId = async () => {
-        navigator.clipboard.writeText(element.id ?? '')
-            .then(() => {
-                dispatch(showSuccessSnackbar('Element-ID in Zwischenablage kopiert'));
-            })
-            .catch((error) => {
-                console.error('Failed to copy ID', error);
-                dispatch(showErrorSnackbar('Element-ID konnte nicht in Zwischenablage kopiert werden'));
-            });
+        const success = await copyToClipboardText(element.id ?? '');
+        if (success) {
+            dispatch(showSuccessSnackbar('Element-ID in Zwischenablage kopiert'));
+        } else {
+            dispatch(showErrorSnackbar('Element-ID konnte nicht in Zwischenablage kopiert werden'));
+        }
 
         handleMenuClose();
     };
@@ -312,7 +351,7 @@ function ContextMenuButton(props: ContextMenuButtonProps) {
                     backgroundColor: 'rgba(0,0,0,.05)',
                 }}
             >
-                <MoreVert sx={{fontSize: '1.25rem'}} />
+                <MoreVert sx={{fontSize: '1.25rem'}}/>
             </IconButton>
 
             <Menu
@@ -366,32 +405,31 @@ function ContextMenuButton(props: ContextMenuButtonProps) {
                     </Typography>
                 </Box>
 
-                <Divider sx={{my: 1}} />
+                <Divider sx={{my: 1}}/>
 
                 <MenuItem
                     onClick={handleEdit}
                 >
                     <ListItemIcon>
-                        <Edit fontSize="small" />
+                        <Edit fontSize="small"/>
                     </ListItemIcon>
-                    <ListItemText primary="Bearbeiten" />
+                    <ListItemText primary="Bearbeiten"/>
                 </MenuItem>
 
                 <MenuItem onClick={handleJumpTo}>
                     <ListItemIcon>
-                        <JumpToElement fontSize="small" />
+                        <JumpToElement fontSize="small"/>
                     </ListItemIcon>
-                    <ListItemText primary="Zum Element springen" />
+                    <ListItemText primary="Zum Element springen"/>
                 </MenuItem>
 
                 <MenuItem onClick={handleCopyId}>
                     <ListItemIcon>
-                        <ContentPaste fontSize="small" />
+                        <ContentPaste fontSize="small"/>
                     </ListItemIcon>
-                    <ListItemText primary="Element-ID kopieren" />
+                    <ListItemText primary="Element-ID kopieren"/>
                 </MenuItem>
             </Menu>
         </>
     );
 }
-

@@ -1,21 +1,22 @@
 package de.aivot.GoverBackend.process.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
+import de.aivot.GoverBackend.audit.models.AuditLogPayload;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
-import de.aivot.GoverBackend.permissions.data.Permissions;
-import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
+import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.process.entities.ProcessEntity;
 import de.aivot.GoverBackend.process.filters.ProcessFilter;
 import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.repositories.ProcessVersionRepository;
 import de.aivot.GoverBackend.process.services.*;
-import de.aivot.GoverBackend.teams.entities.TeamEntity;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,6 +33,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 
 
@@ -43,6 +45,8 @@ import java.util.Map;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ProcessController {
+    private static final String MODULE_NAME = "Prozesse";
+
     private final ScopedAuditService auditService;
     private final UserService userService;
     private final ProcessService processDefinitionService;
@@ -54,6 +58,7 @@ public class ProcessController {
     private final ProcessNodeService processDefinitionNodeService;
     private final ProcessEdgeService processDefinitionEdgeService;
     private final ProcessNodeDefinitionService processNodeProviderService;
+    private final ObjectMapper objectMapper;
 
     @Autowired
     public ProcessController(AuditService auditService,
@@ -66,8 +71,8 @@ public class ProcessController {
                              ProcessVersionService processDefinitionVersionService,
                              ProcessNodeService processDefinitionNodeService,
                              ProcessEdgeService processDefinitionEdgeService,
-                             ProcessNodeDefinitionService processNodeProviderService) {
-        this.auditService = auditService.createScopedAuditService(ProcessController.class);
+                             ProcessNodeDefinitionService processNodeProviderService, ObjectMapper objectMapper) {
+        this.auditService = auditService.createScopedAuditService(ProcessController.class, "Prozesse");
 
         this.userService = userService;
         this.processDefinitionService = processDefinitionService;
@@ -79,6 +84,7 @@ public class ProcessController {
         this.processDefinitionNodeService = processDefinitionNodeService;
         this.processDefinitionEdgeService = processDefinitionEdgeService;
         this.processNodeProviderService = processNodeProviderService;
+        this.objectMapper = objectMapper;
     }
 
     @GetMapping("")
@@ -131,10 +137,16 @@ public class ProcessController {
         var result = processDefinitionService
                 .create(newProcessDefinition);
 
-        auditService.logAction(execUser, AuditAction.Create, ProcessEntity.class, Map.of(
-                "id", result.getId(),
-                "name", result.getInternalTitle()
-        ));
+        auditService.create()
+                .withUser(execUser)
+                .withAuditAction(AuditAction.Create, ProcessEntity.class,
+                        result.getId(),
+                        "id"
+                ).withMessage(
+                        "Der Prozess mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(String.valueOf(result.getId())),
+                        StringUtils.quote(execUser.getFullName())
+                ).log();
 
         return result;
     }
@@ -147,13 +159,11 @@ public class ProcessController {
     )
     public ProcessEntity importProc(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @RequestBody @Valid ProcessExportService.ProcessExport processExport
+            @Nonnull @RequestBody @Valid ProcessExportService.ProcessExport exportData
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
-
-        var exportData = processExport.data();
 
         var department = departmentService
                 .retrieve(exportData.process().getDepartmentId())
@@ -173,6 +183,8 @@ public class ProcessController {
                         .version()
                         .setProcessId(newProcess.getId())
                 );
+
+        var createdNodesIds = new LinkedList<Integer>();
 
         var savedNodeIdMap = new HashMap<Integer, Integer>();
         for (var node : exportData.nodes()) {
@@ -196,25 +208,45 @@ public class ProcessController {
 
             savedNodeIdMap
                     .put(originalId, addedNode.getId());
+
+            createdNodesIds.add(addedNode.getId());
         }
 
+        var createdEdgesIds = new LinkedList<Integer>();
         for (var edge : exportData.edges()) {
             var translatedFromNodeId = savedNodeIdMap.get(edge.getFromNodeId());
             var translatedToNodeId = savedNodeIdMap.get(edge.getToNodeId());
 
-            processDefinitionEdgeService
+            var createdEdge = processDefinitionEdgeService
                     .create(edge
                             .setProcessId(newProcess.getId())
                             .setProcessVersion(newVersion.getProcessVersion())
                             .setFromNodeId(translatedFromNodeId)
                             .setToNodeId(translatedToNodeId)
                     );
+
+            createdEdgesIds.add(createdEdge.getId());
         }
 
-        auditService.logAction(execUser, AuditAction.Create, ProcessEntity.class, Map.of(
-                "id", newProcess.getId(),
-                "name", newProcess.getInternalTitle()
-        ));
+        auditService.create()
+                .withUser(execUser)
+                .withAuditAction(AuditAction.Create, ProcessEntity.class,
+                        newProcess.getId(),
+                        "id",
+                        Map.of(
+                                "imported", true,
+                                "version", newVersion.getProcessVersion(),
+                                "newNodeIds", createdNodesIds,
+                                "newEdgeIds", createdEdgesIds
+                        )
+                ).withMessage(
+                        "Der Prozess mit der ID %s wurde von der Mitarbeiter:in %s aus einem Import erstellt (Version %s, %s Knoten, %s Kanten).",
+                        StringUtils.quote(String.valueOf(newProcess.getId())),
+                        StringUtils.quote(execUser.getFullName()),
+                        StringUtils.quote(String.valueOf(newVersion.getProcessVersion())),
+                        StringUtils.quote(String.valueOf(createdNodesIds.size())),
+                        StringUtils.quote(String.valueOf(createdEdgesIds.size()))
+                ).log();
 
         return newProcess;
     }
@@ -264,6 +296,9 @@ public class ProcessController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
+        var existingMap = objectMapper
+                .convertValue(existing, Map.class);
+
         permissionService.testDepartmentPermission(
                 execUser.getId(),
                 updateDTO.getDepartmentId(),
@@ -275,10 +310,20 @@ public class ProcessController {
         var result = processDefinitionService
                 .update(id, updateDTO);
 
-        auditService.logAction(execUser, AuditAction.Update, ProcessEntity.class, Map.of(
-                "id", result.getId(),
-                "name", result.getInternalTitle()
-        ));
+        var updatedMap = objectMapper
+                .convertValue(result, Map.class);
+
+        auditService.create()
+                .withUser(execUser)
+                .withAuditAction(AuditAction.Update, ProcessEntity.class,
+                        result.getId(),
+                        "id"
+                )
+                .withDiff(existingMap, updatedMap).withMessage(
+                        "Der Prozess mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(String.valueOf(result.getId())),
+                        StringUtils.quote(execUser.getFullName())
+                ).log();
 
         return result;
     }
@@ -302,10 +347,16 @@ public class ProcessController {
         var deleted = processDefinitionService
                 .delete(id);
 
-        auditService.logAction(user, AuditAction.Delete, TeamEntity.class, Map.of(
-                "id", deleted.getId(),
-                "name", deleted.getInternalTitle()
-        ));
+        auditService.create()
+                .withUser(user)
+                .withAuditAction(AuditAction.Delete, ProcessEntity.class,
+                        deleted.getId(),
+                        "id"
+                ).withMessage(
+                        "Der Prozess mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
+                        StringUtils.quote(String.valueOf(deleted.getId())),
+                        StringUtils.quote(user.getFullName())
+                ).log();
     }
 
     @GetMapping("{id}/export/latest/")
@@ -354,11 +405,20 @@ public class ProcessController {
         var result = processExportService
                 .export(id, version);
 
-        auditService.logAction(execUser, AuditAction.Retrieve, ProcessEntity.class, Map.of(
-                "id", existing.getId(),
-                "name", existing.getInternalTitle(),
-                "export", true
-        ));
+        auditService.create()
+                .withUser(execUser)
+                .withAuditAction(AuditAction.Export, ProcessEntity.class,
+                        existing.getId(),
+                        "id"
+                )
+                .withMessage("Der Prozess %s (%d) wurde von der Mitarbeiter:in %s exportiert."
+                        .formatted(
+                                StringUtils.quote(existing.getInternalTitle()),
+                                existing.getId(),
+                                StringUtils.quote(execUser.getFullName())
+                        )
+                )
+                .log();
 
         return result;
     }

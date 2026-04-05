@@ -1,16 +1,16 @@
 package de.aivot.GoverBackend.elements.dtos;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.ElementDerivationLogItem;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 
 import java.util.List;
 
 public class ElementDerivationResponse {
-    private ElementData elementData;
+    private DerivedRuntimeElementData elementData;
     private List<ElementDerivationLogItem> logItems;
 
-    public static ElementDerivationResponse from(ElementData elementData, ElementDerivationLogger logger, boolean isAuthenticated) {
+    public static ElementDerivationResponse from(DerivedRuntimeElementData elementData, ElementDerivationLogger logger, boolean isAuthenticated) {
         if (!isAuthenticated) {
             return new ElementDerivationResponse()
                     .setElementData(elementData)
@@ -22,11 +22,11 @@ public class ElementDerivationResponse {
                 .setLogItems(logger.getLogItems());
     }
 
-    public ElementData getElementData() {
+    public DerivedRuntimeElementData getElementData() {
         return elementData;
     }
 
-    public ElementDerivationResponse setElementData(ElementData elementData) {
+    public ElementDerivationResponse setElementData(DerivedRuntimeElementData elementData) {
         this.elementData = elementData;
         return this;
     }

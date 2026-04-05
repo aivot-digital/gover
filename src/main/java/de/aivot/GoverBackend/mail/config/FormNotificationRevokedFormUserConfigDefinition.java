@@ -48,7 +48,7 @@ public class FormNotificationRevokedFormUserConfigDefinition implements UserConf
     @Nonnull
     @Override
     public String getDescription() {
-        return "Erhalten Sie eine Benachrichtigung, wenn ein Formular in einem bewirtschaftenden, zuständigen oder entwickelnden Fachbereich zurückgezogen wird, dem Sie angehören.";
+        return "Erhalten Sie eine Benachrichtigung, wenn ein Formular in einer Ihrer bewirtschaftenden, zuständigen oder entwickelnden Organisationseinheiten zurückgezogen wird.";
     }
 
     @Override

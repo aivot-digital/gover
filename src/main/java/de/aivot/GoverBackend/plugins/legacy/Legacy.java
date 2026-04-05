@@ -62,7 +62,7 @@ public class Legacy implements Plugin {
 
     @Override
     public @Nonnull String getVendorName() {
-        return "Aivot";
+        return "Aivot UG (haftungsbeschränkt)";
     }
 
     @Nonnull

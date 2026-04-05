@@ -2,10 +2,10 @@ import React, {useRef, useState} from 'react';
 import {Box, Button, FormLabel, IconButton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, useMediaQuery, useTheme} from '@mui/material';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
-import {humanizeFileSize, humanizeNumber, pluralize} from '../../utils/huminization-utils';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
+import {humanizeFileSize, humanizeNumber, pluralize} from '../../utils/humanization-utils';
 import BackupOutlinedIcon from '@mui/icons-material/BackupOutlined';
 import {FileUploadComponentProps} from './file-upload-component-props';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export function FileUploadComponent(props: FileUploadComponentProps) {
     const theme = useTheme();
@@ -16,6 +16,10 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
     const isBreakpointMdAndDown = useMediaQuery(theme.breakpoints.down('md'));
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (props.disabled) {
+            return;
+        }
+
         if (event.target.files != null && event.target.files.length > 0) {
             handleAdd(event.target.files);
         }
@@ -27,6 +31,10 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
     };
 
     const handleRemove = (file: File) => {
+        if (props.disabled) {
+            return;
+        }
+
         if (props.value == null) {
             return;
         }
@@ -40,18 +48,30 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
     };
 
     const handleDragOver: React.DragEventHandler<HTMLDivElement> = (event) => {
+        if (props.disabled) {
+            return;
+        }
+
         event.stopPropagation();
         event.preventDefault();
         setIsDraggedOver(true);
     }
 
     const handleDragLeave: React.DragEventHandler<HTMLDivElement> = (event) => {
+        if (props.disabled) {
+            return;
+        }
+
         event.stopPropagation();
         event.preventDefault();
         setIsDraggedOver(false);
     }
 
     const handleDrop: React.DragEventHandler<HTMLDivElement> = (event) => {
+        if (props.disabled) {
+            return;
+        }
+
         event.stopPropagation();
         event.preventDefault();
         handleAdd(event.dataTransfer.files);
@@ -59,6 +79,10 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
     };
 
     const handleAdd = (files: FileList) => {
+        if (props.disabled) {
+            return;
+        }
+
         const maxFiles = props.isMultifile ? (props.maxFiles != null && props.maxFiles > 0 ? props.maxFiles : null) : 1;
 
         const fileUploadItems: File[] = [
@@ -87,6 +111,7 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
         !props.isMultifile &&
         (props.value ?? []).length >= 1
     );
+    const isUploadDisabled = props.disabled || fileMaximumReached;
 
     return (
         <Box>
@@ -137,8 +162,9 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
                                                 isBreakpointMdAndDown ?
                                                     <IconButton
                                                         onClick={() => handleRemove(file)}
+                                                        disabled={props.disabled}
                                                     >
-                                                        <DeleteForeverOutlinedIcon
+                                                        <Delete
                                                             fontSize={'small'}
                                                         />
                                                     </IconButton> :
@@ -146,8 +172,9 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
                                                         color="error"
                                                         variant="outlined"
                                                         onClick={() => handleRemove(file)}
+                                                        disabled={props.disabled}
                                                         startIcon={
-                                                            <DeleteForeverOutlinedIcon
+                                                            <Delete
                                                                 fontSize={'small'}
                                                             />
                                                         }
@@ -172,9 +199,10 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
                     backgroundColor: theme.palette.grey['100'],
                     transition: 'background-color 250ms ease-in-out',
                     '&:hover': {
-                        backgroundColor: theme.palette.grey['50'],
+                        backgroundColor: isUploadDisabled ? theme.palette.grey['100'] : theme.palette.grey['50'],
                     },
-                    boxShadow: isDraggedOver ? `0 0 0.5em ${theme.palette.primary.main}` : undefined,
+                    boxShadow: isDraggedOver && !props.disabled ? `0 0 0.5em ${theme.palette.primary.main}` : undefined,
+                    opacity: props.disabled ? 0.7 : 1,
                 }}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -204,7 +232,7 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
                         onChange={handleChange}
                         onFocus={() => setIsFocused(true)}
                         onBlur={() => setIsFocused(false)}
-                        disabled={fileMaximumReached}
+                        disabled={isUploadDisabled}
                     />
 
                     <Box
@@ -216,13 +244,13 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
 
                         <BackupOutlinedIcon
                             fontSize="large"
-                            sx={{color: fileMaximumReached ? theme.palette.grey['500'] : theme.palette.grey['700']}}
+                            sx={{color: isUploadDisabled ? theme.palette.grey['500'] : theme.palette.grey['700']}}
                         />
 
                         <Typography
                             sx={{
                                 ml: 1,
-                                color: fileMaximumReached ? theme.palette.grey['500'] : undefined,
+                                color: isUploadDisabled ? theme.palette.grey['500'] : undefined,
                             }}
                         >
                             Datei per Drag & Drop auf dieses Feld hochladen
@@ -235,7 +263,7 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
                                     inputRef.current.click();
                                 }
                             }}
-                            disabled={fileMaximumReached}
+                            disabled={isUploadDisabled}
                         >
                             Datei auswählen
                         </Button>

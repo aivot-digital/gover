@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.http.MediaType;
 
+@Deprecated
 @Entity
 @Table(name = "submission_attachments")
 public class SubmissionAttachment {

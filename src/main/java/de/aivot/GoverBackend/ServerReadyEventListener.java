@@ -2,10 +2,10 @@ package de.aivot.GoverBackend;
 
 import com.beust.jcommander.Strings;
 import de.aivot.GoverBackend.models.config.GoverConfig;
-import de.aivot.GoverBackend.models.config.StorageConfig;
 import de.aivot.GoverBackend.system.properties.BuildProperties;
 import de.aivot.GoverBackend.system.properties.CORSProperties;
 import io.sentry.Sentry;
+import jakarta.annotation.Nonnull;
 import jakarta.validation.constraints.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,29 +20,25 @@ public class ServerReadyEventListener implements ApplicationListener<Application
     private static final Logger logger = LoggerFactory.getLogger(ServerReadyEventListener.class);
     private final BuildProperties buildProperties;
     private final GoverConfig goverConfig;
-    private final StorageConfig storageConfig;
     private final CORSProperties corsProperties;
 
     @Autowired
     public ServerReadyEventListener(
             BuildProperties buildProperties,
             GoverConfig goverConfig,
-            StorageConfig storageConfig,
             CORSProperties corsProperties
     ) {
         this.buildProperties = buildProperties;
         this.goverConfig = goverConfig;
-        this.storageConfig = storageConfig;
         this.corsProperties = corsProperties;
     }
 
     @Override
-    public void onApplicationEvent(@NotNull final ApplicationReadyEvent event) {
+    public void onApplicationEvent(@Nonnull @NotNull final ApplicationReadyEvent event) {
         logBuildInfo();
         logCorsConfiguration();
 
         initializeSentry();
-        initializeStorages();
     }
 
     private void logBuildInfo() {
@@ -82,23 +78,6 @@ public class ServerReadyEventListener implements ApplicationListener<Application
             logger
                     .atWarn()
                     .setMessage("Starting server without Sentry.")
-                    .log();
-        }
-    }
-
-    private void initializeStorages() {
-        if (storageConfig.localStorageEnabled()) {
-            logger
-                    .atInfo()
-                    .setMessage("Using local storage.")
-                    .addKeyValue("localStoragePath", storageConfig.getLocalStoragePath())
-                    .log();
-        } else {
-            logger
-                    .atInfo()
-                    .setMessage("Using remote storage.")
-                    .addKeyValue("remoteEndpoint", storageConfig.getRemoteEndpoint())
-                    .addKeyValue("remoteBucket", storageConfig.getRemoteBucket())
                     .log();
         }
     }

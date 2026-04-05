@@ -3,7 +3,7 @@ import {useDrop} from 'react-dnd';
 import {Box} from '@mui/material';
 import {type ElementTreeItemDropTargetProps} from './element-tree-item-drop-target-props';
 import {type AnyElementWithChildren} from '../../models/elements/any-element-with-children';
-import {ElementChildOptions} from '../../data/element-type/element-child-options';
+import {ElementChildOptions, ElementDisplayContext} from '../../data/element-type/element-child-options';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectIsDraggingTreeElement} from '../../slices/admin-settings-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
@@ -17,7 +17,7 @@ export function ElementTreeItemDropTarget<T extends AnyElementWithChildren>(prop
     } = props;
 
     const isDraggingTreeElement = useAppSelector(selectIsDraggingTreeElement);
-    const acceptedChildren: string[] = (ElementChildOptions[props.element.type] ?? []).map((e) => e.toString());
+    const acceptedChildren: string[] = (ElementChildOptions[ElementDisplayContext.CitizenFacing][props.element.type] ?? []).map((e) => e.toString());
 
     const [{isOver}, drop] = useDrop(
         () => ({

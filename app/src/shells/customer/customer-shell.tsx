@@ -13,6 +13,7 @@ import {ShellOffline} from './components/shell-offline';
 import {setSystemConfigsFromMap} from '../../slices/system-config-slice';
 import {API_EVENT_UNREACHABLE} from '../../services/base-api-service';
 import {StaffShellError} from '../staff/staff-shell-error';
+import {AlphaVersionNoticeDialog} from '../../dialogs/alpha-version-notice-dialog/alpha-version-notice-dialog';
 
 export function CustomerShell() {
     const routerError = useRouteError();
@@ -125,6 +126,7 @@ export function CustomerShell() {
                             }
                         </Box>
                     </Box>
+                    <AlphaVersionNoticeDialog />
                 </>
             }
         </>

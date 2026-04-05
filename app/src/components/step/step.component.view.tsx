@@ -13,9 +13,11 @@ export function StepComponentView(props: BaseViewProps<StepElement, void>) {
         isDeriving,
         scrollContainerRef,
         mode,
-        elementData,
-        onElementDataChange,
+        authoredElementValues,
+        derivedData,
+        onAuthoredElementValuesChange,
         onElementBlur,
+        onDerivedDataChange,
         disableVisibility,
         derivationTriggerIdQueue,
     } = props;
@@ -41,9 +43,11 @@ export function StepComponentView(props: BaseViewProps<StepElement, void>) {
                         isDeriving={isDeriving}
                         scrollContainerRef={scrollContainerRef}
                         mode={mode}
-                        elementData={elementData}
-                        onElementDataChange={onElementDataChange}
+                        authoredElementValues={authoredElementValues}
+                        derivedData={derivedData}
+                        onAuthoredElementValuesChange={onAuthoredElementValuesChange}
                         onElementBlur={onElementBlur}
+                        onDerivedDataChange={onDerivedDataChange}
                         derivationTriggerIdQueue={derivationTriggerIdQueue}
                         disableVisibility={disableVisibility}
                     />

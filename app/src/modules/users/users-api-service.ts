@@ -2,7 +2,7 @@ import {SystemUserRole, User} from './models/user';
 import {BaseCrudApiService} from '../../services/base-crud-api-service';
 
 export interface UserFilter {
-    fullName: string;
+    name: string;
     deletedInIdp: boolean;
     disabledInIdp: boolean;
     systemRoleId: number;

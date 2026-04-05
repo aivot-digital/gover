@@ -1,6 +1,8 @@
 package de.aivot.GoverBackend.payment.services;
 
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.exceptions.BadRequestException;
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.payment.exceptions.PaymentException;
 import de.aivot.GoverBackend.payment.models.PaymentItem;
@@ -22,14 +24,17 @@ public class PaymentProviderTestService {
     private final GoverConfig goverConfig;
 
     private final PaymentProviderService paymentProviderService;
+    private final PaymentProviderConfigurationService paymentProviderConfigurationService;
 
     @Autowired
     public PaymentProviderTestService(
             GoverConfig goverConfig,
-            PaymentProviderService paymentProviderService
+            PaymentProviderService paymentProviderService,
+            PaymentProviderConfigurationService paymentProviderConfigurationService
     ) {
         this.goverConfig = goverConfig;
         this.paymentProviderService = paymentProviderService;
+        this.paymentProviderConfigurationService = paymentProviderConfigurationService;
     }
 
     public PaymentProviderTestResult test(
@@ -43,8 +48,27 @@ public class PaymentProviderTestService {
                 .orElseThrow(() -> new BadRequestException("Invalid provider key"));
 
         var paymentProviderDefinition = paymentProviderService
-                .getProviderDefinition(paymentProviderEntity.getPaymentProviderDefinitionKey())
+                .getProviderDefinition(
+                        paymentProviderEntity.getPaymentProviderDefinitionKey(),
+                        paymentProviderEntity.getPaymentProviderDefinitionVersion()
+                )
                 .orElseThrow(() -> new BadRequestException("Invalid provider key"));
+
+        DerivedRuntimeElementData derivedConfiguration;
+        try {
+            derivedConfiguration = paymentProviderConfigurationService
+                    .deriveConfiguration(paymentProviderEntity, paymentProviderDefinition);
+        } catch (ResponseException e) {
+            return PaymentProviderTestResult.fromException(
+                    null,
+                    new PaymentException(
+                            e,
+                            "Die Konfiguration des Zahlungsanbieters %s (%s) konnte nicht abgeleitet werden.",
+                            paymentProviderEntity.getName(),
+                            paymentProviderEntity.getKey()
+                    )
+            );
+        }
 
         var paymentItem = new PaymentItem();
         paymentItem.setId(UUID.randomUUID().toString());
@@ -61,7 +85,7 @@ public class PaymentProviderTestService {
             paymentRequest = paymentProviderDefinition
                     .createPaymentRequest(
                             paymentProviderEntity,
-                            paymentProviderEntity.getConfig(),
+                            derivedConfiguration,
                             purpose,
                             description,
                             List.of(paymentItem),
@@ -76,7 +100,7 @@ public class PaymentProviderTestService {
             transaction = paymentProviderDefinition
                     .initiatePayment(
                             paymentProviderEntity,
-                            paymentProviderEntity.getConfig(),
+                            derivedConfiguration,
                             paymentRequest
                     );
         } catch (PaymentException e) {

@@ -1,5 +1,7 @@
 package de.aivot.GoverBackend.process.workers;
 
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
@@ -16,6 +18,7 @@ import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.process.services.ProcessDataService;
 import de.aivot.GoverBackend.process.services.ProcessNodeDefinitionService;
 import de.aivot.GoverBackend.process.services.ProcessNodeExecutionLoggerFactory;
+import de.aivot.GoverBackend.process.services.ProcessNodeService;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.amqp.core.Queue;
@@ -41,6 +44,7 @@ public class ProcessWorker {
     private final ProcessNodeExecutionResultHandler processNodeExecutionResultHandler;
     private final ProcessDataService processDataService;
     private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
+    private final ProcessNodeService processNodeService;
 
     @Autowired
     public ProcessWorker(ProcessInstanceRepository processInstanceRepository,
@@ -49,7 +53,8 @@ public class ProcessWorker {
                          ProcessInstanceTaskRepository processInstanceTaskRepository,
                          ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
                          ProcessDataService processDataService,
-                         ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory) {
+                         ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
+                         ProcessNodeService processNodeService) {
         this.processInstanceRepository = processInstanceRepository;
         this.processDefinitionNodeRepository = processDefinitionNodeRepository;
         this.processNodeProviderService = processNodeProviderService;
@@ -57,6 +62,7 @@ public class ProcessWorker {
         this.processNodeExecutionResultHandler = processNodeExecutionResultHandler;
         this.processDataService = processDataService;
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
+        this.processNodeService = processNodeService;
     }
 
     @Bean
@@ -66,27 +72,37 @@ public class ProcessWorker {
 
     @RabbitListener(queues = DO_WORK_ON_INSTANCE_QUEUE)
     public void listen(WorkerPayload payload) {
-        // Fetch the process instance
-        // If this fails, we cannot continue
-        var processInstance = processInstanceRepository
-                .findById(payload.processInstanceId)
-                .orElseThrow(() -> new RuntimeException(
-                        "Der Vorgang mit der ID „%d“ wurde nicht gefunden."
-                                .formatted(payload.processInstanceId)
-                ));
-
         var logger = processNodeExecutionLoggerFactory
-                .create(processInstance.getId(), null, null, null);
+                .create(payload.processInstanceId(), null, null, null);
+
+        ProcessInstanceEntity processInstance;
+        try {
+            // Fetch the process instance
+            // If this fails, we cannot continue
+            processInstance = processInstanceRepository
+                    .findById(payload.processInstanceId)
+                    .orElseThrow(() -> new RuntimeException(
+                            "Der Vorgang mit der ID „%d“ wurde nicht gefunden."
+                                    .formatted(payload.processInstanceId)
+                    ));
+        } catch (Exception exception) {
+            logger.logException(exception);
+            return;
+        }
 
         try {
             process(
                     logger,
                     processInstance,
+                    payload.previousTaskId(),
                     payload.previousNodeId(),
+                    payload.previousNodePortKey(),
                     payload.nextNodeId()
             );
         } catch (ProcessNodeExecutionException exception) {
             logger.logException(exception);
+            processInstance.setStatus(ProcessInstanceStatus.Failed);
+            processInstanceRepository.save(processInstance);
         } catch (Exception exception) {
             logger.logException(exception);
 
@@ -97,7 +113,9 @@ public class ProcessWorker {
 
     private void process(@Nonnull ProcessNodeExecutionLogger logger,
                          @Nonnull ProcessInstanceEntity processInstance,
+                         @Nullable Long previousTaskId,
                          @Nullable Integer previousNodeId,
+                         @Nullable String previousNodePortKey,
                          @Nonnull Integer nodeId) throws ProcessNodeExecutionException {
 
         // Fetch the current node
@@ -129,7 +147,9 @@ public class ProcessWorker {
                         processInstance.getProcessId(),
                         currentNode.getProcessVersion(),
                         currentNode.getId(),
+                        previousTaskId,
                         previousNodeId,
+                        previousNodePortKey,
                         ProcessTaskStatus.Running,
                         null,
                         LocalDateTime.now(),
@@ -165,63 +185,109 @@ public class ProcessWorker {
                         previousNodeId
                 );
 
+        DerivedRuntimeElementData configuration;
+        try {
+            configuration = processNodeService
+                    .deriveConfiguration(currentNode, false);
+        } catch (ResponseException e) {
+            var ex = new ProcessNodeExecutionExceptionUnknown(
+                    e,
+                    "Die Konfiguration des Prozessknotens „%s“ konnte nicht abgeleitet werden.",
+                    currentNode.resolveName(currentNodeProvider)
+            );
+            logger.logException(ex);
+            throw ex;
+        }
+
         var context = new ProcessNodeExecutionContextInit(
                 logger,
                 currentNode,
                 processInstance,
                 taskEntity,
                 null,
-                processData
+                processData,
+                configuration
         );
 
         ProcessNodeExecutionResult initResult;
         try {
             initResult = currentNodeProvider
                     .init(context);
+        } catch (ProcessNodeExecutionException e) {
+            taskEntity.setStatus(ProcessTaskStatus.Failed);
+            taskEntity.setFinished(LocalDateTime.now());
+            processInstanceTaskRepository.save(taskEntity);
+            logger.logException(e);
+            throw e;
         } catch (Exception e) {
             taskEntity.setStatus(ProcessTaskStatus.Failed);
+            taskEntity.setFinished(LocalDateTime.now());
             processInstanceTaskRepository.save(taskEntity);
-            throw e;
+            var ex = new ProcessNodeExecutionExceptionUnknown(
+                    e,
+                    "Der Prozessknoten-Funktionsanbieter „%s“ für das Prozesselement „%s“ konnte die Aufgabe nicht initialisieren.",
+                    currentNodeProvider.getName(),
+                    currentNode.resolveName(currentNodeProvider)
+            );
+            logger.logException(ex);
+            throw ex;
         }
 
         if (initResult == null) {
             taskEntity.setStatus(ProcessTaskStatus.Failed);
+            taskEntity.setFinished(LocalDateTime.now());
             processInstanceTaskRepository.save(taskEntity);
-
-            throw new ProcessNodeExecutionExceptionUnknown(
+            var ex = new ProcessNodeExecutionExceptionUnknown(
                     "Der Prozessknoten-Funktionsanbieter „%s“ für das Prozesselement „%s“ lieferte kein Ergebnis zurück.",
                     currentNodeProvider.getName(),
                     currentNode.resolveName(currentNodeProvider)
             );
+            logger.logException(ex);
+            throw ex;
         }
 
         ProcessInstanceTaskEntity previousTask;
-        if (previousNodeId != null) {
+        if (previousTaskId != null) {
+            previousTask = processInstanceTaskRepository
+                    .findById(previousTaskId)
+                    .orElse(null);
+        } else if (previousNodeId != null) {
             previousTask = processInstanceTaskRepository
                     .findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(
                             processInstance.getId(),
                             previousNodeId
-                    );
+                    )
+                    .orElse(null);
         } else {
             previousTask = null;
         }
 
-        processNodeExecutionResultHandler
-                .handleResult(
-                        logger,
-                        null,
-                        currentNodeProvider,
-                        currentNode,
-                        processInstance,
-                        taskEntity,
-                        previousTask,
-                        initResult
-                );
+        try {
+            processNodeExecutionResultHandler
+                    .handleResult(
+                            logger,
+                            null,
+                            currentNodeProvider,
+                            currentNode,
+                            processInstance,
+                            taskEntity,
+                            previousTask,
+                            initResult
+                    );
+        } catch (Exception e) {
+            taskEntity.setStatus(ProcessTaskStatus.Failed);
+            taskEntity.setFinished(LocalDateTime.now());
+            processInstanceTaskRepository.save(taskEntity);
+            logger.logException(e);
+            throw e;
+        }
     }
 
     public record WorkerPayload(
             @Nonnull Long processInstanceId,
+            @Nullable Long previousTaskId,
             @Nullable Integer previousNodeId,
+            @Nullable String previousNodePortKey,
             @Nonnull Integer nextNodeId
     ) implements Serializable {
 

@@ -52,7 +52,7 @@ public class ThemeService implements EntityService<ThemeEntity, Integer> {
                 .build();
 
         if (formVersionRepository.exists(formSpec)) {
-            throw ResponseException.conflict("Das Farbschema wird noch von einem oder mehreren Formularen verwendet.");
+            throw ResponseException.conflict("Das Erscheinungsbild wird noch von einem oder mehreren Formularen verwendet.");
         }
 
         var depSpec = DepartmentFilter
@@ -61,7 +61,7 @@ public class ThemeService implements EntityService<ThemeEntity, Integer> {
                 .build();
 
         if (departmentRepository.exists(depSpec)) {
-            throw ResponseException.conflict("Das Farbschema wird noch von einer oder mehreren Fachbereichen verwendet.");
+            throw ResponseException.conflict("Das Erscheinungsbild wird noch von einer oder mehreren Fachbereichen verwendet.");
         }
 
         themeRepository.delete(entity);
@@ -86,7 +86,9 @@ public class ThemeService implements EntityService<ThemeEntity, Integer> {
         existingEntity.setSuccess(entity.getSuccess());
 
         var logoKey = entity.getLogoKey();
-        if (logoKey != null) {
+        if (logoKey == null) {
+            existingEntity.setLogoKey(null);
+        } else {
             var logoExists = assetRepository
                     .existsById(logoKey);
             if (logoExists) {
@@ -97,7 +99,9 @@ public class ThemeService implements EntityService<ThemeEntity, Integer> {
         }
 
         var faviconKey = entity.getFaviconKey();
-        if (faviconKey != null) {
+        if (faviconKey == null) {
+            existingEntity.setFaviconKey(null);
+        } else {
             var faviconExists = assetRepository
                     .existsById(faviconKey);
             if (faviconExists) {

@@ -3,6 +3,8 @@ package de.aivot.GoverBackend.user.services;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
+import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
+import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.models.KeycloakUser;
 import de.aivot.GoverBackend.user.repositories.UserRepository;
@@ -16,22 +18,32 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class UserService implements EntityService<UserEntity, String> {
+    private static final List<ProcessTaskStatus> DELETION_BLOCKING_TASK_STATUSES = List.of(
+            ProcessTaskStatus.Running,
+            ProcessTaskStatus.Paused,
+            ProcessTaskStatus.Restarted
+    );
+
     private final KeyCloakApiService keyCloakApiService;
+    private final ImportedUserSystemRoleService importedUserSystemRoleService;
+    private final ProcessInstanceTaskRepository processInstanceTaskRepository;
     private final UserRepository userRepository;
 
     @Autowired
     public UserService(
             KeyCloakApiService keyCloakApiService,
+            ImportedUserSystemRoleService importedUserSystemRoleService,
+            ProcessInstanceTaskRepository processInstanceTaskRepository,
             UserRepository userRepository
     ) {
         this.keyCloakApiService = keyCloakApiService;
+        this.importedUserSystemRoleService = importedUserSystemRoleService;
+        this.processInstanceTaskRepository = processInstanceTaskRepository;
         this.userRepository = userRepository;
     }
 
@@ -127,7 +139,11 @@ public class UserService implements EntityService<UserEntity, String> {
 
         // Create user entity from Keycloak user and roles
         var userFromKeycloak = UserEntity
-                .from(keycloakUser);
+                .from(keycloakUser)
+                .setSystemRoleId(importedUserSystemRoleService
+                        .resolveSystemRoleId(keycloakUser.getEmail(), null)
+                        .systemRoleId()
+                );
 
         // Save user to database
         userRepository.save(userFromKeycloak);
@@ -192,6 +208,15 @@ public class UserService implements EntityService<UserEntity, String> {
 
     @Override
     public void performDelete(@Nonnull UserEntity entity) throws ResponseException {
+        var blockingAssignedTaskCount = processInstanceTaskRepository.countByAssignedUserIdAndStatusIn(
+                entity.getId(),
+                DELETION_BLOCKING_TASK_STATUSES
+        );
+
+        if (blockingAssignedTaskCount > 0) {
+            throw ResponseException.conflict("Die Mitarbeiter:in kann nicht gelöscht werden, da ihr noch nicht abgeschlossene Aufgaben zugewiesen sind.");
+        }
+
         keyCloakApiService
                 .deleteUser(entity.getId());
 

@@ -1,8 +1,9 @@
 package de.aivot.GoverBackend.plugins.core.v1.operators.common;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import jakarta.annotation.Nullable;
 
 public class NoCodeIsInvisibleOperator extends NoCodeIsVisibleOperator {
     @Override
@@ -56,7 +57,13 @@ public class NoCodeIsInvisibleOperator extends NoCodeIsVisibleOperator {
     }
 
     @Override
-    public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
-        return new NoCodeResult(super.performEvaluation(data, args).getValueAsBoolean());
+    public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
+        return new NoCodeResult(!super.performEvaluation(data, args).getValueAsBoolean());
+    }
+
+    @Nullable
+    @Override
+    public String getHumanReadableTemplate() {
+        return "das Feld „#0“ ist nicht sichtbar";
     }
 }

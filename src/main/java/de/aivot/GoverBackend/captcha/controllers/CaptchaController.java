@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.captcha.services.AltchaService;
 import de.aivot.GoverBackend.captcha.services.RedisCaptchaReplayGuard;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,10 +16,7 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /*
  * This controller handles the Altcha captcha verification process.
@@ -28,9 +26,8 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @Tag(
-        name = "Captcha",
-        description = "Captcha challenges are used to prevent automated abuse of the system. " +
-                      "They require clients to solve a proof-of-work challenge before performing certain actions."
+        name = OpenApiConstants.Tags.CaptchaName,
+        description = OpenApiConstants.Tags.CaptchaDescription
 )
 public class CaptchaController {
 
@@ -68,18 +65,20 @@ public class CaptchaController {
     @SecurityRequirement(name = OpenApiConfiguration.Security)
     public ResponseEntity<CaptchaVerificationResponseDTO> verify(
             @RequestBody CaptchaVerificationRequestDTO request
-    ) throws Exception {
-        if (replayGuard.isUsed(request.payload())) {
-            return ResponseEntity.status(400)
+    ) {
+        try {
+            boolean ok = altchaService.verify(request.payload());
+
+            if (!ok || replayGuard.isUsed(request.payload())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new CaptchaVerificationResponseDTO(false));
+            }
+
+            return ResponseEntity.ok(new CaptchaVerificationResponseDTO(true));
+        } catch (Exception ignored) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new CaptchaVerificationResponseDTO(false));
         }
-
-        boolean ok = altchaService.verify(request.payload());
-
-        return ok
-                ? ResponseEntity.ok(new CaptchaVerificationResponseDTO(true))
-                : ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new CaptchaVerificationResponseDTO(false));
     }
 
     @Bean

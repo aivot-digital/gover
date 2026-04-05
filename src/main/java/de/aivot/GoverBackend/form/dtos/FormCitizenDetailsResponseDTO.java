@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.form.dtos;
 
 import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
 import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
@@ -55,7 +56,9 @@ public record FormCitizenDetailsResponseDTO(
 
         if (obfuscateSteps) {
             for (var step : form.getRootElement().getChildren()) {
-                step.setChildren(List.of());
+                if (step instanceof GenericStepElement s) {
+                    s.setChildren(List.of());
+                }
             }
         }
 

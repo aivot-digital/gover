@@ -5,8 +5,8 @@ import {Actions} from '../actions/actions';
 import {Badge} from '../badge/badge';
 import {InfoDialog} from '../../dialogs/info-dialog/info-dialog';
 import {Action} from '../actions/actions-props';
-import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 import {isBadgeProps} from '../badge/badge-props';
+import Help from '@aivot/mui-material-symbols-400-outlined/dist/help/Help';
 
 export function GenericPageHeader(props: GenericPageHeaderProps) {
     const [isHelpDialogOpen, toggleIsHelpDialogOpen] = useReducer((isHelpDialogOpen) => !isHelpDialogOpen, false);
@@ -22,7 +22,7 @@ export function GenericPageHeader(props: GenericPageHeaderProps) {
 
         if (props.helpDialog) {
             _actions.push({
-                icon: <HelpOutlineOutlinedIcon />,
+                icon: <Help />,
                 tooltip: props.helpDialog.tooltip,
                 onClick: toggleIsHelpDialogOpen,
                 ignoreBusy: true,

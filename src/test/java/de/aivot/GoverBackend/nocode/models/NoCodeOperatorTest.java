@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.nocode.models;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
-import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import org.junit.jupiter.api.Test;
 
@@ -42,7 +41,7 @@ class NoCodeOperatorTest {
         }
 
         @Override
-        public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
+        public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
             return null;
         }
     };

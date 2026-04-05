@@ -21,6 +21,7 @@ export interface Api {
     post<T>(url: string, data: any, options?: ApiOptions): Promise<T>;
 
     postFormData<T>(url: string, data: FormData, options?: ApiOptions): Promise<T>;
+    putFormData<T>(url: string, data: FormData, options?: ApiOptions): Promise<T>;
 
     postFormUrlEncoded<T>(url: string, data: Record<string, string>, options?: ApiOptions): Promise<T>;
 
@@ -101,6 +102,10 @@ function baseApiServiceAsApi(): Api {
         postFormData: async <T>(url: string, data: FormData, options?: ApiOptions): Promise<T> => {
             return await api
                 .postFormData(`/api/${url}`, data, apiOptionsToRequestOptions(options));
+        },
+        putFormData: async <T>(url: string, data: FormData, options?: ApiOptions): Promise<T> => {
+            return await api
+                .putFormData(`/api/${url}`, data, apiOptionsToRequestOptions(options));
         },
         postFormUrlEncoded: async <T>(url: string, data: Record<string, string>, options?: ApiOptions): Promise<T> => {
             return await api

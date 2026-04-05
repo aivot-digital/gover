@@ -7,6 +7,7 @@ interface ProcessInstanceFilter {
     accessKey: string;
     processId: number;
     processVersion: number;
+    createdForTestClaimId: number;
     status: ProcessInstanceStatus;
     statusIsNot: ProcessInstanceStatus;
     statusOverride: string;

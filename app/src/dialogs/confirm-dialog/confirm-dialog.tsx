@@ -1,8 +1,9 @@
-import React, {type PropsWithChildren, type ReactNode, useState} from 'react';
-import {Button, Dialog, DialogActions, DialogContent, Typography} from '@mui/material';
+import React, {type PropsWithChildren, type ReactNode, useMemo, useState} from 'react';
+import {Box, Button, Dialog, DialogActions, DialogContent, Typography} from '@mui/material';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {TextFieldComponent} from '../../components/text-field/text-field-component';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {CopyToClipboardButton} from '../../components/copy-to-clipboard-button/copy-to-clipboard-button';
 
 interface ConfirmDialogProps {
     title: string;
@@ -23,6 +24,16 @@ export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>): Rea
     const requiresInput = !!props.confirmationText;
     const isConfirmDisabled = requiresInput ? inputValue !== props.confirmationText : false;
 
+    const mismatch = useMemo(() => {
+        if (!requiresInput) {
+            return false;
+        }
+        if (!inputValue) {
+            return false;
+        }
+        return inputValue !== props.confirmationText;
+    }, [inputValue, props.confirmationText, requiresInput]);
+
     return (
         <Dialog
             open={props.onConfirm != null}
@@ -38,25 +49,58 @@ export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>): Rea
                 {props.children}
                 {requiresInput && (
                     <>
-                        <Typography
-                            variant="body2"
-                            sx={{mt: 2, mb: 1}}
-                        >
+                        <Typography variant="body2"
+                                    sx={{mt: 2}}>
                             Bitte geben Sie den folgenden Text ein, um die Aktion zu bestätigen:
+                        </Typography>
+
+                        <Box
+                            sx={{
+                                mt: 2,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1,
+                                px: 1.25,
+                                py: 1,
+                                borderRadius: 1,
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                bgcolor: 'action.hover',
+                            }}
+                        >
                             <Typography
-                                component="pre"
-                                variant="body2"
-                                sx={{fontFamily: 'monospace', fontSize: 14, fontWeight: 'bold', backgroundColor: '#f0f0f0', py: 0.5, px: 1, borderRadius: 2, mt: 1}}
+                                component="code"
+                                sx={{
+                                    fontFamily: 'monospace',
+                                    fontSize: 14,
+                                    flex: 1,
+                                    minWidth: 0,
+                                    wordBreak: 'break-word',
+                                    textAlign: 'center',
+                                }}
                             >
                                 {props.confirmationText}
                             </Typography>
-                        </Typography>
+
+                            <CopyToClipboardButton
+                                text={props.confirmationText ?? ''}
+                                tooltip="Text kopieren"
+                                copiedTooltip="Kopiert!"
+                                ariaLabel="Bestätigungstext kopieren"
+                                size="small"
+                                disabled={!props.confirmationText}
+                            />
+                        </Box>
 
                         <TextFieldComponent
-                            sx={{mt: 2}}
                             label={props.inputLabel || 'Eingabe zur Bestätigung'}
                             value={inputValue}
-                            onChange={(val) => {setInputValue(val ?? '');}}
+                            onChange={(val) => {
+                                setInputValue(val ?? '');
+                            }}
+                            error={mismatch ? 'Der Text muss exakt übereinstimmen.' : undefined}
+                            debounce={600}
+                            required
                         />
                     </>
                 )}
@@ -68,7 +112,7 @@ export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>): Rea
                     variant="contained"
                     color={props.isDestructive ? 'error' : 'primary'}
                     disabled={isConfirmDisabled}
-                    startIcon={props.isDestructive ? <DeleteOutlinedIcon /> : undefined}
+                    startIcon={props.isDestructive ? <Delete/> : undefined}
                 >
                     {props.confirmButtonText || (props.isDestructive ? 'Löschen' : 'Bestätigen')}
                 </Button>

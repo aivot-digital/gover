@@ -30,6 +30,7 @@ export class ProcessDefinitionApiService extends BaseCrudApiService<
             id: 0,
             internalTitle: "",
             departmentId: 0,
+            accessKey: "",
             versionCount: 0,
             draftedVersion: null,
             publishedVersion: null,

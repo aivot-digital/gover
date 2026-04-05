@@ -1,14 +1,16 @@
 import {BaseCrudApiService} from '../../../services/base-crud-api-service';
 import {type ProcessNodeEntity} from '../entities/process-node-entity';
+import {type ProcessNodeExport} from '../entities/process-node-export';
 import {type GroupLayout} from '../../../models/elements/form/layout/group-layout';
 import {generateId} from '../../../utils/id-utils';
 
 interface ProcessDefinitionNodeFilter {
     id: number;
-    processDefinitionId: number;
-    processDefinitionVersion: number;
+    processId: number;
+    processVersion: number;
     dataKey: string;
-    codeKey: string;
+    processNodeDefinitionKey: string;
+    processNodeDefinitionVersion: number;
 }
 
 export class ProcessNodeApiService extends BaseCrudApiService<
@@ -51,5 +53,13 @@ ProcessDefinitionNodeFilter
 
     public getTesting(id: number): Promise<GroupLayout> {
         return this.get(`${this.path}${id}/testing/`);
+    }
+
+    public export(id: number): Promise<ProcessNodeExport> {
+        return this.get(`${this.path}${id}/export/`);
+    }
+
+    public import(processId: number, processVersion: number, nodeData: ProcessNodeExport): Promise<ProcessNodeEntity> {
+        return this.post(`/api/process-nodes/import/${processId}/${processVersion}/`, nodeData);
     }
 }

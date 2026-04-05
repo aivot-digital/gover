@@ -1,12 +1,17 @@
 package de.aivot.GoverBackend.storage.services;
 
-import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
-import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
+import de.aivot.GoverBackend.asset.entities.AssetEntity;
+import de.aivot.GoverBackend.asset.repositories.AssetRepository;
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.storage.entities.StorageIndexItemEntity;
 import de.aivot.GoverBackend.storage.entities.StorageIndexItemEntityId;
+import de.aivot.GoverBackend.storage.enums.StorageProviderType;
 import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
 import de.aivot.GoverBackend.storage.enums.StorageProviderStatus;
+import de.aivot.GoverBackend.storage.exceptions.StorageException;
+import de.aivot.GoverBackend.storage.models.StorageDocument;
 import de.aivot.GoverBackend.storage.models.StorageFolder;
+import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
 import de.aivot.GoverBackend.storage.models.StorageProviderDefinition;
 import de.aivot.GoverBackend.storage.repositories.StorageIndexItemRepository;
 import de.aivot.GoverBackend.storage.repositories.StorageProviderRepository;
@@ -18,32 +23,62 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class StorageSyncService {
     private static final Logger logger = LoggerFactory.getLogger(StorageSyncService.class);
+    private static final String SYSTEM_SYNC_UPLOADER_ID = null;
 
     private final KnownExtensionsService knownExtensions;
     private final StorageProviderRepository storageProviderRepository;
     private final StorageProviderDefinitionService storageProviderDefinitionService;
+    private final StorageProviderConfigurationService storageProviderConfigurationService;
     private final StorageIndexItemRepository storageIndexItemRepository;
+    private final AssetRepository assetRepository;
 
     public StorageSyncService(KnownExtensionsService knownExtensions,
                               StorageProviderRepository storageProviderRepository,
                               StorageProviderDefinitionService storageProviderDefinitionService,
-                              StorageIndexItemRepository storageIndexItemRepository) {
+                              StorageProviderConfigurationService storageProviderConfigurationService,
+                              StorageIndexItemRepository storageIndexItemRepository,
+                              AssetRepository assetRepository) {
         this.knownExtensions = knownExtensions;
         this.storageProviderRepository = storageProviderRepository;
         this.storageProviderDefinitionService = storageProviderDefinitionService;
+        this.storageProviderConfigurationService = storageProviderConfigurationService;
         this.storageIndexItemRepository = storageIndexItemRepository;
+        this.assetRepository = assetRepository;
     }
 
     public void syncStorageProvider(int id) {
-        var storageProvider = storageProviderRepository
-                .findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Storage provider with ID " + id + " not found."));
-        syncStorageProvider(storageProvider);
+        var storageProviderOpt = storageProviderRepository
+                .findById(id);
+
+        if (storageProviderOpt.isEmpty()) {
+            logger
+                    .atError()
+                    .setMessage("Storage provider with ID {} not found for syncing")
+                    .addArgument(id)
+                    .log();
+            return;
+        }
+
+        var storageProvider = storageProviderOpt.get();
+
+        try {
+            syncStorageProvider(storageProvider);
+        } catch (Exception e) {
+            logger
+                    .atError()
+                    .setMessage("Error syncing storage provider with ID {}: {}")
+                    .addArgument(id)
+                    .addArgument(e::getMessage)
+                    .setCause(e)
+                    .log();
+        }
     }
 
     public void syncStorageProvider(@Nonnull StorageProviderEntity storageProvider) {
@@ -57,7 +92,8 @@ public class StorageSyncService {
             performSync(storageProvider);
             storageProvider
                     .setStatus(StorageProviderStatus.Synced)
-                    .setStatusMessage(null);
+                    .setStatusMessage(null)
+                    .setLastSync(LocalDateTime.now());
         } catch (Exception e) {
             logger
                     .atError()
@@ -95,6 +131,7 @@ public class StorageSyncService {
                 ));
 
         var root = getRoot(storageProvider, storageDefinition);
+        var supportsMetadataAttributes = storageDefinition.getSupportsMetadataAttributes();
 
         Set<String> syncedPaths = new HashSet<>();
 
@@ -118,8 +155,10 @@ public class StorageSyncService {
                                 folder.getPathFromRoot(),
                                 true,
                                 folder.getName(),
+                                0L,
                                 StorageService.FOLDER_MIME_TYPE,
                                 false,
+                                StorageItemMetadata.empty(), // Only store metadata for documents, not for folders for now
                                 LocalDateTime.now(),
                                 LocalDateTime.now()
                         );
@@ -128,17 +167,28 @@ public class StorageSyncService {
                     folderItem
                             .setStorageProviderType(storageProvider.getType())
                             .setMimeType(StorageService.FOLDER_MIME_TYPE)
-                            .setIsDirectory(true)
-                            .setFilename(folder.getName());
+                            .setDirectory(true)
+                            .setFilename(folder.getName())
+                            .setSizeInBytes(0L)
+                            .setMissing(false)
+                            .setMetadata(StorageItemMetadata.empty());
 
                     storageIndexItemRepository.save(folderItem);
 
                     syncedPaths.add(folder.getPathFromRoot());
 
                     for (var document : folder.getDocuments()) {
+                        var filteredDocumentMetadata = supportsMetadataAttributes
+                                ? filterMetadataByRegisteredAttributes(storageProvider, document.getMetadata())
+                                : StorageItemMetadata.empty();
+
                         var docItem = storageIndexItemRepository
                                 .findById(StorageIndexItemEntityId.of(storageProvider.getId(), document.getPathFromRoot()))
                                 .orElse(null);
+
+                        var mimeType = knownExtensions
+                                .determineMimeType(document.getName())
+                                .orElse(MediaType.APPLICATION_OCTET_STREAM_VALUE);
 
                         if (docItem == null) {
                             docItem = new StorageIndexItemEntity(
@@ -147,24 +197,29 @@ public class StorageSyncService {
                                     document.getPathFromRoot(),
                                     false,
                                     document.getName(),
-                                    StorageService.UNKNOWN_MIME_TYPE,
+                                    document.getSizeInBytes(),
+                                    mimeType,
                                     false,
+                                    filteredDocumentMetadata,
                                     LocalDateTime.now(),
                                     LocalDateTime.now()
                             );
+                            storageIndexItemRepository.save(docItem);
+                        } else if (hasDocumentIndexItemChanged(docItem, storageProvider, document, mimeType, filteredDocumentMetadata)) {
+                            docItem
+                                    .setStorageProviderType(storageProvider.getType())
+                                    .setMimeType(mimeType)
+                                    .setDirectory(false)
+                                    .setFilename(document.getName())
+                                    .setSizeInBytes(document.getSizeInBytes())
+                                    .setMissing(false)
+                                    .setMetadata(filteredDocumentMetadata)
+                                    .setUpdated(LocalDateTime.now());
+
+                            storageIndexItemRepository.save(docItem);
                         }
 
-                        var mimeType = knownExtensions
-                                .determineMimeType(document.getName())
-                                .orElse(MediaType.APPLICATION_OCTET_STREAM_VALUE);
-
-                        docItem
-                                .setStorageProviderType(storageProvider.getType())
-                                .setMimeType(mimeType)
-                                .setIsDirectory(false)
-                                .setFilename(document.getName());
-
-                        storageIndexItemRepository.save(docItem);
+                        syncAssetEntityForDocument(storageProvider, docItem);
 
                         syncedPaths.add(docItem.getPathFromRoot());
                     }
@@ -186,19 +241,20 @@ public class StorageSyncService {
                         .log();
 
                 storageIndexItemRepository.save(item
-                        .setIsMissing(true)
+                        .setMissing(true)
                         .setUpdated(LocalDateTime.now()));
+
+                removeAssetEntityForMissingDocument(storageProvider, item);
             }
         }
     }
 
-    private static <T> StorageFolder getRoot(StorageProviderEntity e, StorageProviderDefinition<T> def) {
-        // Try to map the configuration to POJO for later usage
+    private <T> StorageFolder getRoot(StorageProviderEntity e, StorageProviderDefinition<T> def) {
         T config;
         try {
-            config = ElementPOJOMapper
-                    .mapToPOJO(e.getConfiguration(), def.getConfigClass());
-        } catch (ElementDataConversionException ex) {
+            config = storageProviderConfigurationService
+                    .mapToConfig(e, def);
+        } catch (ResponseException ex) {
             throw new IllegalStateException(
                     "Die Konfiguration des Speicheranbieters " +
                             e.getName() +
@@ -209,10 +265,79 @@ public class StorageSyncService {
                             " für die Speicheranbieter-Definition konnte nicht verarbeitet werden. Bitte stellen Sie sicher, dass der Speicheranbieter korrekt konfiguriert ist.", ex);
         }
 
-        // Initialize provider for usage
-        def.initializeProvider(config);
+        try {
+            // Initialize provider for usage
+            def.initializeProvider(config);
 
-        // Retrieve root folder recursively
-        return def.rootFolder(config, true);
+            // Retrieve root folder recursively
+            return def.rootFolder(config, true);
+        } catch (StorageException ex) {
+            throw new IllegalStateException(
+                    "Der Speicheranbieter " +
+                            e.getName() +
+                            " (" + e.getId() + ") konnte nicht synchronisiert werden, da auf den Speicher nicht zugegriffen werden konnte.",
+                    ex
+            );
+        }
+    }
+
+    private static StorageItemMetadata filterMetadataByRegisteredAttributes(@Nonnull StorageProviderEntity provider,
+                                                                            @Nonnull StorageItemMetadata metadata) {
+        var filteredMetadata = new StorageItemMetadata();
+
+        for (var metadataAttribute : provider.getMetadataAttributes()) {
+            var key = metadataAttribute.getKey();
+            if (metadata.containsKey(key)) {
+                filteredMetadata.put(key, metadata.get(key));
+            }
+        }
+
+        return filteredMetadata;
+    }
+
+    private static boolean hasDocumentIndexItemChanged(@Nonnull StorageIndexItemEntity existingItem,
+                                                       @Nonnull StorageProviderEntity storageProvider,
+                                                       @Nonnull StorageDocument document,
+                                                       @Nonnull String mimeType,
+                                                       @Nonnull StorageItemMetadata filteredDocumentMetadata) {
+        return !Objects.equals(existingItem.getStorageProviderType(), storageProvider.getType())
+                || !Objects.equals(existingItem.getMimeType(), mimeType)
+                || !Objects.equals(existingItem.getDirectory(), false)
+                || !Objects.equals(existingItem.getFilename(), document.getName())
+                || !Objects.equals(existingItem.getSizeInBytes(), document.getSizeInBytes())
+                || !Objects.equals(existingItem.getMissing(), false)
+                || !Objects.equals(existingItem.getMetadata(), filteredDocumentMetadata);
+    }
+
+    private void syncAssetEntityForDocument(@Nonnull StorageProviderEntity storageProvider,
+                                            @Nonnull StorageIndexItemEntity documentIndexItem) {
+        if (storageProvider.getType() != StorageProviderType.Assets) {
+            return;
+        }
+
+        var asset = assetRepository
+                .findByStorageProviderIdAndStoragePathFromRoot(storageProvider.getId(), documentIndexItem.getPathFromRoot())
+                .orElseGet(() -> new AssetEntity()
+                        .setKey(UUID.randomUUID())
+                        .setUploaderId(SYSTEM_SYNC_UPLOADER_ID)
+                        .setPrivate(true)
+                        .setStorageProviderId(storageProvider.getId())
+                        .setStoragePathFromRoot(documentIndexItem.getPathFromRoot()));
+
+        asset.setStorageProviderId(storageProvider.getId());
+        asset.setStoragePathFromRoot(documentIndexItem.getPathFromRoot());
+
+        assetRepository.save(asset);
+    }
+
+    private void removeAssetEntityForMissingDocument(@Nonnull StorageProviderEntity storageProvider,
+                                                     @Nonnull StorageIndexItemEntity indexItem) {
+        if (storageProvider.getType() != StorageProviderType.Assets || Boolean.TRUE.equals(indexItem.getDirectory())) {
+            return;
+        }
+
+        assetRepository
+                .findByStorageProviderIdAndStoragePathFromRoot(storageProvider.getId(), indexItem.getPathFromRoot())
+                .ifPresent(assetRepository::delete);
     }
 }

@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.process.services;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
@@ -16,6 +16,7 @@ import de.aivot.GoverBackend.process.repositories.ProcessRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessVersionRepository;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class ProcessNodeService implements EntityService<ProcessNodeEntity, Integer> {
@@ -57,19 +59,24 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     @Nonnull
     @Override
     public ProcessNodeEntity create(@Nonnull ProcessNodeEntity entity) throws ResponseException {
+        // No element derivation and configuration check needs to be done here.
+        // The initial create of a process node can be done without configuration checking.
+        // This allows us to create nodes without needing to provide a default, fully valid configuration.
+        // The validity of the configuration will be checked at least before the publishing of the process version.
+
+        // Set the ID to null, to force the database to assign a new, valid ID.
         entity.setId(null);
 
-        var derivedObjectItemData = deriveDataObjectItemData(entity, true);
-        entity.setConfiguration(derivedObjectItemData);
+        // Check if the referenced process node provider exists.
+        processNodeProviderService
+                .getProcessNodeDefinition(entity.getProcessNodeDefinitionKey(), entity.getProcessNodeDefinitionVersion())
+                .orElseThrow(() -> ResponseException.badRequest(
+                        "Der Prozesselement-Funktionsanbieter %s (Version %s) existiert nicht.",
+                        StringUtils.quote(entity.getProcessNodeDefinitionKey()),
+                        entity.getProcessNodeDefinitionVersion()
+                ));
 
-        /*
-        var provider = processNodeProviderService
-                .getProcessNodeProvider(entity.getCodeKey())
-                .orElseThrow(ResponseException::badRequest);
-
-        provider.validateConfiguration(entity);
-         */
-
+        // Save the process node.
         return processDefinitionNodeRepository.save(entity);
     }
 
@@ -108,6 +115,10 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     public ProcessNodeEntity performUpdate(@Nonnull Integer id,
                                            @Nonnull ProcessNodeEntity entity,
                                            @Nonnull ProcessNodeEntity existingEntity) throws ResponseException {
+        var providerChanged =
+                !existingEntity.getProcessNodeDefinitionKey().equals(entity.getProcessNodeDefinitionKey()) ||
+                existingEntity.getProcessNodeDefinitionVersion() != entity.getProcessNodeDefinitionVersion();
+
         existingEntity.setProcessId(entity.getProcessId());
         existingEntity.setProcessVersion(entity.getProcessVersion());
         existingEntity.setName(entity.getName());
@@ -120,22 +131,28 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         existingEntity.setNotes(entity.getNotes());
         existingEntity.setRequirements(entity.getRequirements());
 
-        // Derive configuration
-        var derivedObjectItemData = deriveDataObjectItemData(entity, false);
+        // A provider replacement intentionally starts from a fresh configuration. In that case we
+        // must derive the new provider defaults with skipped validation errors first, just like the
+        // create flow does, otherwise the update endpoint would reject the empty reset state before
+        // the user even has a chance to configure the new node.
+        var derivedObjectItemData = deriveConfiguration(entity, providerChanged, null);
 
         // If derivation has errors, throw bad request
         if (derivedObjectItemData.hasAnyError()) {
             throw ResponseException.badRequest(derivedObjectItemData);
         }
 
-        // Set derived configuration
-        existingEntity.setConfiguration(derivedObjectItemData);
+        existingEntity.setConfiguration(entity.getConfiguration());
+
+        if (providerChanged) {
+            return processDefinitionNodeRepository.save(existingEntity);
+        }
 
         // Fetch the provider and validate configuration
         var provider = processNodeProviderService
                 .getProcessNodeDefinition(entity.getProcessNodeDefinitionKey(), entity.getProcessNodeDefinitionVersion())
                 .orElseThrow(ResponseException::badRequest);
-        provider.validateConfiguration(entity, entity.getConfiguration());
+        provider.validateConfiguration(entity, entity.getConfiguration(), derivedObjectItemData);
 
         return processDefinitionNodeRepository.save(existingEntity);
     }
@@ -146,15 +163,21 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     }
 
     @Nonnull
-    private ElementData deriveDataObjectItemData(@Nonnull ProcessNodeEntity entity, boolean skipErrors) throws ResponseException {
-        UserEntity user = null;
-        if (SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Jwt jwt) {
+    public DerivedRuntimeElementData deriveConfiguration(@Nonnull ProcessNodeEntity entity,
+                                                         boolean skipErrors) throws ResponseException {
+        return deriveConfiguration(entity, skipErrors, null);
+    }
+
+    @Nonnull
+    public DerivedRuntimeElementData deriveConfiguration(@Nonnull ProcessNodeEntity entity,
+                                                         boolean skipErrors,
+                                                         @Nullable UserEntity user) throws ResponseException {
+        if (user == null &&
+                SecurityContextHolder.getContext().getAuthentication() != null &&
+                SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Jwt jwt) {
             user = userService
                     .fromJWT(jwt)
                     .orElseThrow(ResponseException::unauthorized);
-        }
-        if (user == null) {
-            throw ResponseException.unauthorized();
         }
 
         var processDefinition = processDefinitionRepository
@@ -185,19 +208,18 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             edo.setSkipErrorsForElementIds(List.of(ElementDerivationOptions.ALL_ELEMENTS));
         }
 
-        var edr = new ElementDerivationRequest()
-                .setElement(layout)
-                .setElementData(entity.getConfiguration())
-                .setOptions(edo);
+        var edr = new ElementDerivationRequest(
+                layout,
+                entity.getConfiguration(),
+                edo
+        );
         var dummyLogger = new ElementDerivationLogger();
         var derivedData = elementDerivationService.derive(edr, dummyLogger);
 
-        if (derivedData.hasAnyError()) {
-            throw ResponseException
-                    .badRequest(derivedData);
-        }
-
         return derivedData;
     }
-}
 
+    public Set<String> getAllUsedDataKeys(@Nonnull Integer processId, @Nonnull Integer processVersion) {
+        return processDefinitionNodeRepository.findAllDataKeysByProcessIdAndVersion(processId, processVersion);
+    }
+}

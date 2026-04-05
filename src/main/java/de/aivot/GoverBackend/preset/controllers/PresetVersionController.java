@@ -13,6 +13,7 @@ import de.aivot.GoverBackend.preset.repositories.PresetRepository;
 import de.aivot.GoverBackend.preset.repositories.PresetVersionRepository;
 import de.aivot.GoverBackend.preset.repositories.PresetVersionWithDetailsRepository;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -51,7 +52,7 @@ public class PresetVersionController {
                                    UserService userService) {
         this.repository = repository;
         this.versionRepository = versionRepository;
-        this.auditService = auditService.createScopedAuditService(PresetController.class);
+        this.auditService = auditService.createScopedAuditService(PresetVersionController.class, "Vorlagen");
         this.presetVersionWithDetailsRepository = presetVersionWithDetailsRepository;
         this.userService = userService;
     }
@@ -120,17 +121,17 @@ public class PresetVersionController {
         var savedVersion = versionRepository
                 .save(newVersion);
 
-        auditService
-                .logAction(
-                        user,
-                        AuditAction.Create,
-                        PresetVersionEntity.class,
-                        Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Create, PresetVersionEntity.class, preset.getKey(), "id", Map.of(
                                 "id", preset.getKey(),
                                 "title", preset.getTitle(),
                                 "version", savedVersion.getVersion()
-                        )
-                );
+                        )).withMessage(
+                "Die Vorlagenversion %s der Vorlage %s (Schlüssel %s) wurde von der Mitarbeiter:in %s erstellt.",
+                StringUtils.quote(String.valueOf(savedVersion.getVersion())),
+                StringUtils.quote(preset.getTitle()),
+                StringUtils.quote(String.valueOf(preset.getKey())),
+                StringUtils.quote(user.getFullName())
+        ).log();
 
         return savedVersion;
     }
@@ -199,17 +200,17 @@ public class PresetVersionController {
 
         presetVersion.setRootElement(updatedPreset.getRootElement());
 
-        auditService
-                .logAction(
-                        user,
-                        AuditAction.Update,
-                        PresetVersionEntity.class,
-                        Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Update, PresetVersionEntity.class, preset.getKey(), "id", Map.of(
                                 "id", preset.getKey(),
                                 "title", preset.getTitle(),
                                 "version", presetVersion.getVersion()
-                        )
-                );
+                        )).withMessage(
+                "Die Vorlagenversion %s der Vorlage %s (Schlüssel %s) wurde von der Mitarbeiter:in %s aktualisiert.",
+                StringUtils.quote(String.valueOf(presetVersion.getVersion())),
+                StringUtils.quote(preset.getTitle()),
+                StringUtils.quote(String.valueOf(preset.getKey())),
+                StringUtils.quote(user.getFullName())
+        ).log();
 
         return versionRepository.save(presetVersion);
     }
@@ -251,16 +252,17 @@ public class PresetVersionController {
 
         versionRepository.delete(presetVersion);
 
-        auditService.logAction(
-                user,
-                AuditAction.Delete,
-                PresetEntity.class,
-                Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Delete, PresetEntity.class, preset.getKey(), "key", Map.of(
                         "key", preset.getKey(),
                         "title", preset.getTitle(),
                         "version", presetVersion.getVersion()
-                )
-        );
+                )).withMessage(
+                "Die Vorlagenversion %s der Vorlage %s (Schlüssel %s) wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(String.valueOf(presetVersion.getVersion())),
+                StringUtils.quote(preset.getTitle()),
+                StringUtils.quote(String.valueOf(preset.getKey())),
+                StringUtils.quote(user.getFullName())
+        ).log();
     }
 
     @PutMapping("{version}/publish/")
@@ -289,16 +291,16 @@ public class PresetVersionController {
 
         presetVersion.setStatus(FormStatus.Published);
 
-        auditService.logAction(
-                user,
-                AuditAction.Update,
-                PresetVersionEntity.class,
-                Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Update, PresetVersionEntity.class, presetVersion.getPresetKey(), "key", Map.of(
                         "key", presetVersion.getPresetKey(),
                         "version", presetVersion.getVersion(),
                         "status", presetVersion.getStatus().toString()
-                )
-        );
+                )).withMessage(
+                "Die Vorlagenversion %s der Vorlage mit dem Schlüssel %s wurde von der Mitarbeiter:in %s veröffentlicht.",
+                StringUtils.quote(String.valueOf(presetVersion.getVersion())),
+                StringUtils.quote(String.valueOf(presetVersion.getPresetKey())),
+                StringUtils.quote(user.getFullName())
+        ).log();
 
         return versionRepository.save(presetVersion);
     }
@@ -329,16 +331,16 @@ public class PresetVersionController {
 
         presetVersion.setStatus(FormStatus.Revoked);
 
-        auditService.logAction(
-                user,
-                AuditAction.Update,
-                PresetVersionEntity.class,
-                Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Update, PresetVersionEntity.class, presetVersion.getPresetKey(), "key", Map.of(
                         "key", presetVersion.getPresetKey(),
                         "version", presetVersion.getVersion(),
                         "status", presetVersion.getStatus().toString()
-                )
-        );
+                )).withMessage(
+                "Die Vorlagenversion %s der Vorlage mit dem Schlüssel %s wurde von der Mitarbeiter:in %s zurückgezogen.",
+                StringUtils.quote(String.valueOf(presetVersion.getVersion())),
+                StringUtils.quote(String.valueOf(presetVersion.getPresetKey())),
+                StringUtils.quote(user.getFullName())
+        ).log();
 
         return versionRepository.save(presetVersion);
     }

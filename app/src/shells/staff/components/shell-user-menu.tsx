@@ -17,6 +17,7 @@ import OpenInNew from '@mui/icons-material/OpenInNew';
 import {AppInfo} from '../../../app-info';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {setShowAboutGoverDialog} from '../../../slices/shell-slice';
+import {StringAvatar} from '../../../components/avatar/string-avatar';
 
 interface ShellUserMenuProps {
     anchorEl: null | HTMLElement;
@@ -24,7 +25,11 @@ interface ShellUserMenuProps {
     minimizeDrawer?: boolean;
 }
 
-export function ShellUserMenu({ anchorEl, onClose, minimizeDrawer }: ShellUserMenuProps) {
+export function ShellUserMenu({
+                                  anchorEl,
+                                  onClose,
+                                  minimizeDrawer,
+                              }: ShellUserMenuProps) {
     const logout = useLogout();
     const user = useAppSelector(selectUser);
     const userName = useMemo(() => getFullName(user), [user]);
@@ -81,30 +86,64 @@ export function ShellUserMenu({ anchorEl, onClose, minimizeDrawer }: ShellUserMe
                 <Box
                     sx={{
                         px: 2,
-                        pt: .25,
-                        pb: 0.75,
+                        pl: 1.125,
+                        pt: 0.25,
+                        pb: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1.25,
+                    }}
+                >
+                    <StringAvatar name={userName}
+                                  sx={{
+                                      width: 34,
+                                      height: 34,
+                                      fontSize: 14,
+                                  }}
+                                  backgroundMode={'oklch'}/>
+
+                    <Box sx={{
                         display: 'flex',
                         flexDirection: 'column',
                         gap: 0.25,
-                    }}
-                >
-                    <Typography variant="caption" sx={{ color: 'rgba(0,0,0,0.5)', fontWeight: 500, mb: '-2px' }}>
-                        Angemeldet als
-                    </Typography>
-                    <Typography
-                        variant="body1"
-                        sx={{ fontWeight: 600, color: '#111', lineHeight: 1.2 }}
-                    >
-                        {userName || 'Unbekannte Nutzer:in'}
-                    </Typography>
+                        minWidth: 0,
+                    }}>
+                        <Typography
+                            variant="body1"
+                            sx={{
+                                fontWeight: 600,
+                                color: '#111',
+                                lineHeight: 1,
+                                mt: 0.25,
+                            }}
+                            noWrap
+                            title={userName || 'Unbekannte Nutzer:in'}
+                        >
+                            {userName || 'Unbekannte Nutzer:in'}
+                        </Typography>
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: 'rgba(0,0,0,0.5)',
+                                mt: 0.25,
+                                lineHeight: 1,
+                            }}
+                            noWrap
+                            title={user?.email || 'Unbekannte E-Mail-Adresse'}
+                        >
+                            {user?.email || 'Unbekannte E-Mail-Adresse'}
+                        </Typography>
+                    </Box>
                 </Box>
 
-                <Divider sx={{ my: 1 }} />
+                <Divider sx={{my: 1}}/>
 
                 {/* Konto */}
-                <MenuItem component={Link} to="/account" onClick={onClose}>
+                <MenuItem component={Link}
+                          to="/account"
+                          onClick={onClose}>
                     <ListItemIcon>
-                        <ManageAccountsOutlined fontSize="small" />
+                        <ManageAccountsOutlined fontSize="small"/>
                     </ListItemIcon>
                     <Typography variant="body1">Konto verwalten</Typography>
                 </MenuItem>
@@ -112,22 +151,38 @@ export function ShellUserMenu({ anchorEl, onClose, minimizeDrawer }: ShellUserMe
                 {/* Handbuch */}
                 <MenuItem onClick={() => handleExternalLink('https://docs.gover.digital')}>
                     <ListItemIcon>
-                        <DescriptionOutlined fontSize="small" />
+                        <DescriptionOutlined fontSize="small"/>
                     </ListItemIcon>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Box sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                    }}>
                         <Typography variant="body1">Handbuch</Typography>
-                        <OpenInNew fontSize="inherit" sx={{ fontSize: '1rem', opacity: 0.6 }} />
+                        <OpenInNew fontSize="inherit"
+                                   sx={{
+                                       fontSize: '1rem',
+                                       opacity: 0.6,
+                                   }}/>
                     </Box>
                 </MenuItem>
 
                 {/* Support */}
                 <MenuItem onClick={() => handleExternalLink('https://support.aivot.de')}>
                     <ListItemIcon>
-                        <HeadsetMicOutlined fontSize="small" />
+                        <HeadsetMicOutlined fontSize="small"/>
                     </ListItemIcon>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Box sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                    }}>
                         <Typography variant="body1">Supportportal</Typography>
-                        <OpenInNew fontSize="inherit" sx={{ fontSize: '1rem', opacity: 0.6 }} />
+                        <OpenInNew fontSize="inherit"
+                                   sx={{
+                                       fontSize: '1rem',
+                                       opacity: 0.6,
+                                   }}/>
                     </Box>
                 </MenuItem>
 
@@ -139,19 +194,22 @@ export function ShellUserMenu({ anchorEl, onClose, minimizeDrawer }: ShellUserMe
                     }}
                 >
                     <ListItemIcon>
-                        <InfoOutlined fontSize="small" />
+                        <InfoOutlined fontSize="small"/>
                     </ListItemIcon>
-                    <Typography variant="body1">Über Gover v{AppInfo.version === '@buildVersion' ? '5.x (DEV)' : AppInfo.version}</Typography>
+                    <Typography variant="body1">Über Gover
+                                                v{AppInfo.version === '@buildVersion' ? '5.x (DEV)' : AppInfo.version}</Typography>
                 </MenuItem>
 
-                <Divider sx={{ my: 1 }} />
+                <Divider sx={{my: 1}}/>
 
                 {/* Abmelden */}
                 <MenuItem onClick={logout}>
                     <ListItemIcon>
-                        <Logout fontSize="small" color="error" />
+                        <Logout fontSize="small"
+                                color="error"/>
                     </ListItemIcon>
-                    <Typography variant="body1" color="error">
+                    <Typography variant="body1"
+                                color="error">
                         Abmelden
                     </Typography>
                 </MenuItem>

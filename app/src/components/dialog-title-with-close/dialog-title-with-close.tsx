@@ -59,7 +59,7 @@ export const DialogTitleWithClose = (props: DialogTitleWithCloseProps) => {
                 onClose &&
                 <Tooltip title={closeTooltip ?? 'Schließen'}>
                     <IconButton
-                        aria-label="close"
+                        aria-label="Schließen"
                         onClick={onClose}
                         sx={{
                             position: 'absolute',

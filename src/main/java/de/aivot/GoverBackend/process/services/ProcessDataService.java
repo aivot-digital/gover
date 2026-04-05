@@ -1,14 +1,14 @@
 package de.aivot.GoverBackend.process.services;
 
-import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
-import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
-import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
+import de.aivot.GoverBackend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.models.ProcessExecutionData;
-import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
+import de.aivot.GoverBackend.process.repositories.ProcessInstanceAttachmentRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
+import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
@@ -16,90 +16,59 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.MatchResult;
-import java.util.regex.Pattern;
 
+/**
+ * Builds the effective process data snapshot used while executing process nodes.
+ *
+ * <p>This service intentionally stays focused on one responsibility: collecting the different process data sources
+ * into the compact map structure used throughout the process engine. Template rendering lives in {@link TemplateRenderService} now, but the shared JavaScript data contract still
+ * belongs here because process nodes outside the template renderer also depend on the same globals.
+ */
 @Service
 public class ProcessDataService {
-    private static final Pattern jsPattern = Pattern
-            .compile("\\{\\{([^{}]+)\\}\\}");
-
     private final ProcessInstanceTaskRepository processInstanceTaskRepository;
     private final ProcessNodeRepository processDefinitionNodeRepository;
-    private final JavascriptEngineFactoryService javascriptEngineFactoryService;
+    private final ProcessInstanceAttachmentRepository processInstanceAttachmentRepository;
 
     public ProcessDataService(ProcessInstanceTaskRepository processInstanceTaskRepository,
-                              ProcessNodeRepository processDefinitionNodeRepository,
-                              JavascriptEngineFactoryService javascriptEngineFactoryService) {
+                              ProcessNodeRepository processDefinitionNodeRepository, ProcessInstanceAttachmentRepository processInstanceAttachmentRepository) {
         this.processInstanceTaskRepository = processInstanceTaskRepository;
         this.processDefinitionNodeRepository = processDefinitionNodeRepository;
-        this.javascriptEngineFactoryService = javascriptEngineFactoryService;
+        this.processInstanceAttachmentRepository = processInstanceAttachmentRepository;
     }
 
-    @Nullable
-    public String interpolate(@Nonnull Map<String, Object> processData,
-                              @Nullable String string) {
-        if (string == null) {
-            return null;
-        }
-
-        var result = string;
-                //.replace("\\_", "_"); // Remove escaping for underscores because we think if markdown
-
-        List<String> matches = jsPattern
-                .matcher(result)
-                .results()
-                .map(MatchResult::group)
-                .toList();
-
-        for (String jsSnippet : matches) {
-            String interpolated;
-            try (var engine = javascriptEngineFactoryService.getEngine()) {
-                fillJsEngineWithData(processData, engine);
-
-                var code = JavascriptCode
-                        .of(jsSnippet);
-
-                interpolated = engine
-                        .evaluateCode(code)
-                        .toString();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-
-            if (interpolated != null) {
-                result = result
-                        .replace(jsSnippet, interpolated);
-            }
-        }
-
-        return result;
-    }
-
+    /**
+     * Registers the canonical process data roots on a JavaScript engine.
+     *
+     * <p>This method stays public and static because other process-related services already rely on the same process
+     * data contract. Only the reserved roots and node snapshots are exported so callers get the expected process scope without accidentally leaking every arbitrary map entry as a
+     * global variable.
+     */
     public static void fillJsEngineWithData(@Nonnull Map<String, Object> processData, JavascriptEngine engine) {
         engine
                 .registerGlobalObject("$", processData.get("$"))
-                .registerGlobalObject("$$", processData.get("$$"));
-
-        for (String key : processData.keySet()) {
-            if (key.startsWith("_")) {
-                engine.registerGlobalObject(key, processData.get(key));
-            }
-        }
+                .registerGlobalObject("$$", processData.get("$$"))
+                .registerGlobalObject("_", processData.get("_"));
     }
 
+    /**
+     * Builds the effective process data snapshot that downstream nodes consume.
+     *
+     * <p>The result intentionally flattens previous payload, instance metadata, and latest node data into a compact
+     * map because that structure can be handed directly to JavaScript evaluation without extra transformation at each call site.
+     */
     @Nonnull
     public ProcessExecutionData foldProcessInstanceData(@Nonnull ProcessInstanceEntity instance,
                                                         @Nullable Integer previousNodeId) {
-        List<ProcessNodeEntity> nodes = processDefinitionNodeRepository
+        var nodes = processDefinitionNodeRepository
                 .findAllByProcessId(
                         instance.getProcessId()
                 );
 
-        List<ProcessInstanceTaskEntity> tasks = processInstanceTaskRepository
+        var tasks = processInstanceTaskRepository
                 .getLatestTasksByProcessInstanceId(instance.getId());
 
-        ProcessInstanceTaskEntity previousTask = previousNodeId == null ?
+        var previousTask = previousNodeId == null ?
                 null :
                 tasks
                         .stream()
@@ -107,12 +76,63 @@ public class ProcessDataService {
                         .findFirst()
                         .orElse(null);
 
+        var previousNode = previousTask == null ?
+                null :
+                processDefinitionNodeRepository
+                        .findById(previousTask.getProcessNodeId())
+                        .orElse(null);
+
         var allData = new ProcessExecutionData();
-        allData.put("$", previousTask != null ? previousTask.getProcessData() : instance.getInitialPayload());
+
+        allData.put("$", getProcessData(instance, previousTask));
+        allData.put("$$", getInstanceData(instance, previousNode));
+        allData.put("_", getNodeData(tasks, nodes));
+
+        return allData;
+    }
+
+    @Nonnull
+    private Map<String, Object> getProcessData(@Nonnull ProcessInstanceEntity instance,
+                                               @Nullable ProcessInstanceTaskEntity previousTask) {
+        return previousTask != null ? previousTask.getProcessData() : instance.getInitialPayload();
+    }
+
+    @Nonnull
+    private Map<String, Object> getInstanceData(@Nonnull ProcessInstanceEntity instance,
+                                                @Nullable ProcessNodeEntity previousNode) {
+        var initialNode = processDefinitionNodeRepository
+                .findById(instance.getInitialNodeId())
+                .orElseThrow(() -> new RuntimeException("Initial node not found for process instance " + instance.getId()));
+
+        List<ProcessInstanceAttachmentEntity> allAttachments = processInstanceAttachmentRepository
+                .findAllByProcessInstanceId(instance.getId());
 
         Map<String, Object> instanceData = new HashMap<>();
-        // TODO: Specify Instance Data
-        allData.put("$$", instanceData);
+
+        instanceData.put("accessKey", instance.getAccessKey());
+        instanceData.put("started", instance.getStarted());
+        instanceData.put("initialPayload", instance.getInitialPayload());
+        instanceData.put("assignedFileNumbers", instance.getAssignedFileNumbers());
+        instanceData.put("identities", instance.getIdentities());
+        instanceData.put("assignedUserId", instance.getAssignedUserId());
+        instanceData.put("initialNodeDataKey", initialNode.getDataKey());
+        instanceData.put("previousNodeDataKey", previousNode != null ? previousNode.getDataKey() : null);
+        instanceData.put("attachments", allAttachments
+                .stream()
+                .map((att) -> Map.of(
+                        "filename", att.getFileName(),
+                        "storageProviderId", att.getStorageProviderId(),
+                        "storagePathFromRoot", att.getStoragePathFromRoot()
+                ))
+                .toList());
+
+        return instanceData;
+    }
+
+    @Nonnull
+    private Map<String, Object> getNodeData(@Nonnull List<ProcessInstanceTaskEntity> tasks,
+                                            @Nonnull List<ProcessNodeEntity> nodes) {
+        Map<String, Object> nodeData = new HashMap<>();
 
         for (ProcessInstanceTaskEntity task : tasks) {
             var node = nodes
@@ -125,9 +145,9 @@ public class ProcessDataService {
                 continue;
             }
 
-            allData.put("_" + node.getDataKey(), task.getNodeData());
+            nodeData.put(node.getDataKey(), task.getNodeData());
         }
 
-        return allData;
+        return nodeData;
     }
 }

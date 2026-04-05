@@ -13,7 +13,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import java.util.Comparator;
 import java.util.List;
 
 @RestController
@@ -54,12 +55,31 @@ public class PaymentProviderDefinitionController {
             summary = "Retrieve Payment Provider Definition",
             description = "Retrieve a specific payment provider definition by its unique key."
     )
-    public PaymentProviderDefinitionResponseDTO retrieve(
-            @Nullable @PathVariable String key
+    public PaymentProviderDefinitionResponseDTO retrieveLatest(
+            @Nonnull @PathVariable String key
     ) throws ResponseException {
         var definition = paymentProviderDefinitions
                 .stream()
                 .filter(def -> def.getKey().equals(key))
+                .max(Comparator.comparing(PaymentProviderDefinition::getMajorVersion))
+                .orElseThrow(ResponseException::notFound);
+
+        return PaymentProviderDefinitionResponseDTO
+                .from(definition);
+    }
+
+    @GetMapping("{key}/{version}/")
+    @Operation(
+            summary = "Retrieve Payment Provider Definition",
+            description = "Retrieve a specific payment provider definition by its unique key and version."
+    )
+    public PaymentProviderDefinitionResponseDTO retrieve(
+            @Nonnull @PathVariable String key,
+            @Nonnull @PathVariable Integer version
+    ) throws ResponseException {
+        var definition = paymentProviderDefinitions
+                .stream()
+                .filter(def -> def.getKey().equals(key) && def.getMajorVersion().equals(version))
                 .findFirst()
                 .orElseThrow(ResponseException::notFound);
 

@@ -16,6 +16,7 @@ export function StorageProviderDetailsPageExplore(): ReactNode {
     return (
         <StorageExplorer
             providerId={item.id}
+            showTopNavigationBar
         />
     );
 }

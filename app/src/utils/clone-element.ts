@@ -40,7 +40,6 @@ function deepCloneElement<T extends AnyElement>(element: T, skipSuffix?: boolean
             clonedChildren.push(res.clone);
         }
 
-        // @ts-expect-error
         clone.children = clonedChildren;
     }
 

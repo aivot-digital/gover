@@ -18,6 +18,7 @@ import {useAppSelector} from '../../hooks/use-app-selector';
 import {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {useElementEditorNavigation} from '../../hooks/use-element-editor-navigation';
 import {DefaultTabs} from '../element-editor/default-tabs';
+import {ElementDisplayContext} from '../../data/element-type/element-child-options';
 
 export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntity>(props: ElementTreeItemProps<T, E>) {
     const {
@@ -214,6 +215,7 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
                 limitElementTypes={props.limitElementTypes}
                 hideGoverStore={props.scope === 'data_modelling'}
                 hidePresets={props.scope === 'data_modelling'}
+                displayContext={ElementDisplayContext.CitizenFacing}
             />
 
             {

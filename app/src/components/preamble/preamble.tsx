@@ -1,5 +1,6 @@
 import {Box, Grid, useTheme} from '@mui/material';
 import React from 'react';
+import {MarkdownContent} from '../markdown-content/markdown-content';
 
 interface PreambleProps {
     text: string;
@@ -30,8 +31,8 @@ export function Preamble(props: PreambleProps) {
                             <Box
                                 sx={{maxWidth: '660px'}}
                             >
-                                <div
-                                    dangerouslySetInnerHTML={{__html: props.text ?? ''}}
+                                <MarkdownContent
+                                    markdown={props.text}
                                     className={"content-without-margin-on-childs"}
                                 />
                             </Box>
@@ -73,8 +74,8 @@ export function Preamble(props: PreambleProps) {
                                     maxWidth: '660px',
                                 }}
                             >
-                                <div
-                                    dangerouslySetInnerHTML={{__html: props.text ?? ''}}
+                                <MarkdownContent
+                                    markdown={props.text}
                                     className={"content-without-margin-on-childs"}
                                 />
                             </Box>

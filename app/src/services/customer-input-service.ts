@@ -1,8 +1,8 @@
 import {StorageScope, StorageService} from './storage-service';
 import {IdentityCustomerInputKey} from '../modules/identity/constants/identity-customer-input-key';
 import {AppInfo} from '../app-info';
-import {ElementData} from '../models/element-data';
-import {cleanElementData} from '../utils/element-data-utils';
+import {AuthoredElementValues} from '../models/element-data';
+import {cleanAuthoredElementValues} from '../utils/element-data-utils';
 import {RootElement} from '../models/elements/root-element';
 
 const MAJOR_VERSION = AppInfo.version.split('.')[0];
@@ -22,13 +22,13 @@ export class CustomerInputService {
         return null;
     }
 
-    public static loadCustomerInputState(slug: string, version: number): ElementData | null {
+    public static loadCustomerInputState(slug: string, version: number): AuthoredElementValues | null {
         const key = this.getKey(slug, version, DATA_KEY);
-        return StorageService.loadObject_unsafe<ElementData>(key);
+        return StorageService.loadObject_unsafe<AuthoredElementValues>(key);
     }
 
-    public static storeCustomerInput(slug: string, version: number, root: RootElement, state: ElementData): void {
-        const stateCopy = cleanElementData(root, state);
+    public static storeCustomerInput(slug: string, version: number, root: RootElement, state: AuthoredElementValues): void {
+        const stateCopy = cleanAuthoredElementValues(root, state);
         delete stateCopy[IdentityCustomerInputKey];
         StorageService.storeObject_unsafe(this.getKey(slug, version, DATA_KEY), stateCopy, StorageScope.Local);
         StorageService.storeString_unsafe(this.getKey(slug, version, DATE_KEY), new Date().toISOString(), StorageScope.Local);

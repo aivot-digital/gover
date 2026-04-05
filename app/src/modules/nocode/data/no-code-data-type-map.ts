@@ -29,9 +29,40 @@ export const NoCodeDataTypeMap: Record<ElementType, NoCodeDataType> = {
     [ElementType.StepperLayout]: NoCodeDataType.Runtime,
     [ElementType.ConfigLayout]: NoCodeDataType.Runtime,
     [ElementType.FunctionInput]: NoCodeDataType.Runtime,
-    [ElementType.CodeInput]: NoCodeDataType.Runtime,
-    [ElementType.RichTextInput]: NoCodeDataType.Runtime,
+    [ElementType.CodeInput]: NoCodeDataType.String,
+    [ElementType.RichTextInput]: NoCodeDataType.String,
     [ElementType.UiDefinitionInput]: NoCodeDataType.Runtime,
     [ElementType.IdentityInput]: NoCodeDataType.Runtime,
     [ElementType.TabLayout]: NoCodeDataType.Runtime,
+    [ElementType.ChipInput]: NoCodeDataType.List,
+    [ElementType.DateTime]: NoCodeDataType.Date,
+    [ElementType.DateRange]: NoCodeDataType.Object,
+    [ElementType.TimeRange]: NoCodeDataType.Object,
+    [ElementType.DateTimeRange]: NoCodeDataType.Object,
+    [ElementType.MapPoint]: NoCodeDataType.Object,
+    [ElementType.DomainAndUserSelect]: NoCodeDataType.List,
+    [ElementType.AssignmentContext]: NoCodeDataType.Object,
+    [ElementType.DataModelSelect]: NoCodeDataType.String,
+    [ElementType.DataObjectSelect]: NoCodeDataType.String,
+    [ElementType.NoCodeInput]: NoCodeDataType.Runtime,
+}
+
+export function matchesDesiredNoCodeDataType(
+    actualType: NoCodeDataType,
+    desiredType: NoCodeDataType,
+): boolean {
+    return desiredType === NoCodeDataType.Runtime ||
+        actualType === desiredType ||
+        actualType === NoCodeDataType.Runtime;
+}
+
+export function elementMatchesDesiredNoCodeDataType(
+    elementType: ElementType,
+    desiredType: NoCodeDataType | undefined,
+): boolean {
+    if (desiredType == null) {
+        return true;
+    }
+
+    return matchesDesiredNoCodeDataType(NoCodeDataTypeMap[elementType], desiredType);
 }

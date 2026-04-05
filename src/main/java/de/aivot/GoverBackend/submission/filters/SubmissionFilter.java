@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.submission.entities.Submission;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
+@Deprecated
 public class SubmissionFilter implements Filter<Submission> {
     private Integer formId;
     private Integer formVersion;

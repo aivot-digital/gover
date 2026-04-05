@@ -1,7 +1,8 @@
 import {SelectAssetDialog} from '../../../dialogs/select-asset-dialog/select-asset-dialog';
 import {useMemo, useState} from 'react';
-import {Box, Fab, Typography} from '@mui/material';
+import {Box, Fab, Stack, Typography} from '@mui/material';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {AssetsApiService} from '../assets-api-service';
 
 interface ImageSelectorProps {
@@ -15,8 +16,10 @@ interface ImageSelectorProps {
         aspectRatio: number;
     };
     value: string | null;
-    onChange: (value: string) => void;
+    onChange: (value: string | null) => void;
     disabled?: boolean;
+    required?: boolean;
+    error?: string;
 }
 
 export function ImageSelector(props: ImageSelectorProps) {
@@ -28,6 +31,8 @@ export function ImageSelector(props: ImageSelectorProps) {
         value,
         onChange,
         disabled,
+        required,
+        error,
     } = props;
 
     const [showSelectAssetDialog, setShowSelectAssetDialog] = useState(false);
@@ -42,9 +47,10 @@ export function ImageSelector(props: ImageSelectorProps) {
     }, [value]);
 
     return (
-        <Box>
+        <Box sx={{width: '100%'}}>
             <Typography>
                 {label}
+                {required ? ' *' : ''}
             </Typography>
 
             <Box
@@ -53,7 +59,7 @@ export function ImageSelector(props: ImageSelectorProps) {
                     width: 'width' in size ? size.width : '100%',
                     height: 'height' in size ? size.height : undefined,
                     aspectRatio: 'aspectRatio' in size ? size.aspectRatio : undefined,
-                    border: '1px solid #aaa',
+                    border: (theme) => `1px solid ${error != null ? theme.palette.error.main : '#aaa'}`,
                     backgroundColor: '#f0f0f0',
                     backgroundImage: link != null ? `url(${link})` : undefined,
                     backgroundSize: 'cover',
@@ -62,26 +68,77 @@ export function ImageSelector(props: ImageSelectorProps) {
                 }}
             >
                 {
+                    link == null &&
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{
+                            position: 'absolute',
+                            inset: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            textAlign: 'center',
+                            px: 2,
+                        }}
+                    >
+                        Kein Bild ausgewählt
+                    </Typography>
+                }
+                {
                     disabled !== true &&
-                    <Fab
+                    <Stack
                         sx={{
                             position: 'absolute',
                             bottom: '0.5rem',
                             right: '0.5rem',
                         }}
-                        color="inherit"
-                        size="small"
-                        onClick={() => {
-                            setShowSelectAssetDialog(true);
-                        }}
+                        direction="row"
+                        spacing={1}
                     >
-                        <Edit />
-                    </Fab>
+                        {
+                            value != null &&
+                            <Fab
+                                color="inherit"
+                                size="small"
+                                aria-label={`${label} entfernen`}
+                                onClick={() => {
+                                    onChange(null);
+                                }}
+                            >
+                                <Delete />
+                            </Fab>
+                        }
+                        <Fab
+                            color="inherit"
+                            size="small"
+                            aria-label={`${label} auswählen`}
+                            onClick={() => {
+                                setShowSelectAssetDialog(true);
+                            }}
+                        >
+                            <Edit />
+                        </Fab>
+                    </Stack>
                 }
             </Box>
 
+            {
+                error != null &&
+                <Typography
+                    variant="caption"
+                    color="error"
+                    sx={{display: 'block', mt: 0.75}}
+                >
+                    {error}
+                </Typography>
+            }
 
-            <Typography variant="caption">
+            <Typography
+                variant="caption"
+                color={error != null ? 'text.secondary' : undefined}
+                sx={{display: 'block', mt: error != null ? 0.25 : 0}}
+            >
                 {hint}
             </Typography>
 

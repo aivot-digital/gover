@@ -433,7 +433,7 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps) {
                 >
                     <b>Wichtig:</b>
                     Beim Rückgängigmachen wird geprüft, ob bestimmte Attribute noch gültig oder verfügbar sind. Sollte dies nicht der Fall sein, werden diese entfernt und müssen anschließend neu gesetzt werden. Betroffen sein können
-                    insbesondere: Formular-IDs, Schnittstellen, Statusangaben, Fachbereiche, rechtliche Hinweise, Support-Informationen, PDF-Vorlagen, Farbschemata, Zahlungsdetails sowie Testprotokolle.
+                    insbesondere: Formular-IDs, Schnittstellen, Statusangaben, Fachbereiche, rechtliche Hinweise, Support-Informationen, PDF-Vorlagen, Erscheinungsbilder, Zahlungsdetails sowie Testprotokolle.
                 </DialogContentText>
             </ConfirmDialog>
         </>

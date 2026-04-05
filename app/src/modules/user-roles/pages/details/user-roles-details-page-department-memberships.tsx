@@ -70,7 +70,7 @@ export function UserRolesDetailsPageDepartmentMemberships() {
                     variant="h5"
                     sx={{mb: 1}}
                 >
-                    Zuggeordnete Mitarbeiter:innen
+                    Zugeordnete Mitarbeiter:innen
                 </Typography>
 
                 <Typography sx={{
@@ -91,8 +91,8 @@ export function UserRolesDetailsPageDepartmentMemberships() {
                     fetch={(options) => {
                         return new VDepartmentMembershipWithDetailsService()
                             .list(options.page, options.size, options.sort, options.order, {
-                                //userRoleId: userRole.id,
-                                userFullName: options.search,
+                                domainRoleId: userRole.id,
+                                fullName: options.search,
                             });
                     }}
                     getRowIdentifier={(item) => item.membershipId.toString()}

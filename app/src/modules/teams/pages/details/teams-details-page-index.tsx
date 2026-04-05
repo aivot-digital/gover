@@ -7,7 +7,6 @@ import {useNavigate} from 'react-router-dom';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
@@ -20,6 +19,7 @@ import {ThemesApiService} from '../../../themes/themes-api-service';
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import {TeamsApiService} from '../../services/teams-api-service';
 import {TeamEntity} from "../../entities/team-entity";
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export const TeamSchema = yup.object({
     name: yup.string()
@@ -50,7 +50,7 @@ export function TeamsDetailsPageIndex() {
         dispatch(addSnackbarMessage({
             severity: SnackbarSeverity.Warning,
             type: SnackbarType.Dismissable,
-            message: 'Dieser Fachbereich kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
+            message: 'Dieses Team kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
             key: 'no-edit-permission-team',
         }));
 
@@ -72,7 +72,6 @@ export function TeamsDetailsPageIndex() {
     const apiService = useMemo(() => new TeamsApiService(), []);
     const changeBlocker = useChangeBlocker(item, team);
 
-    const [showConstraintDialog, setShowConstraintDialog] = useState(false);
     const [confirmDeleteAction, setConfirmDeleteAction] = useState<(() => void) | undefined>(undefined);
     const [relatedApplications, setRelatedApplications] = useState<ConstraintLinkProps[] | undefined>(undefined);
     const [availableThemes, setAvailableThemes] = useState<ThemeResponseDTO[]>();
@@ -168,7 +167,7 @@ export function TeamsDetailsPageIndex() {
                 navigate('/teams', {
                     replace: true,
                 });
-                dispatch(showSuccessSnackbar('Der Fachbereich wurde erfolgreich gelöscht.'));
+                dispatch(showSuccessSnackbar('Das Team wurde erfolgreich gelöscht.'));
             })
             .catch(() => dispatch(showErrorSnackbar('Beim Löschen ist ein Fehler aufgetreten.')))
             .finally(() => setIsBusy(false));
@@ -183,7 +182,7 @@ export function TeamsDetailsPageIndex() {
                     mb: 1,
                 }}
             >
-                Öffentliche Informationen des Fachbereichs
+                Öffentliche Informationen des Teams
             </Typography>
             <Typography
                 sx={{
@@ -191,7 +190,7 @@ export function TeamsDetailsPageIndex() {
                     maxWidth: 900,
                 }}
             >
-                Hinterlegen Sie grundsätzliche Informationen über diesen Fachbereich. Diese Informationen werden in der Anwendung angezeigt und sind für die Nutzer:innen sichtbar.
+                Hinterlegen Sie grundsätzliche Informationen über dieses Team. Diese Informationen werden in der Anwendung angezeigt und sind für die Nutzer:innen sichtbar.
             </Typography>
             <Grid
                 container
@@ -259,7 +258,7 @@ export function TeamsDetailsPageIndex() {
                         sx={{
                             marginLeft: 'auto',
                         }}
-                        startIcon={<DeleteOutlinedIcon />}
+                        startIcon={<Delete />}
                     >
                         Löschen
                     </Button>
@@ -269,7 +268,7 @@ export function TeamsDetailsPageIndex() {
             {changeBlocker.dialog}
 
             <ConfirmDialog
-                title="Fachbereich löschen"
+                title="Team löschen"
                 onCancel={() => setConfirmDeleteAction(undefined)}
                 onConfirm={confirmDeleteAction}
                 confirmationText={team.name ?? ''}
@@ -277,17 +276,9 @@ export function TeamsDetailsPageIndex() {
                 confirmButtonText="Ja, endgültig löschen"
             >
                 <Typography>
-                    Möchten Sie diesen Fachbereich wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+                    Möchten Sie dieses Team wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
                 </Typography>
             </ConfirmDialog>
-
-            <ConstraintDialog
-                open={showConstraintDialog}
-                onClose={() => setShowConstraintDialog(false)}
-                message="Dieser Fachbereich kann (noch) nicht gelöscht werden, da er noch für Formulare als entwickelnder, zuständiger oder bewirtschaftender Fachbereich zugewiesen ist."
-                solutionText="Bitte übertragen Sie die Formulare an einen anderen Fachbereich und versuchen Sie es erneut:"
-                links={relatedApplications}
-            />
         </Box>
     );
 }
