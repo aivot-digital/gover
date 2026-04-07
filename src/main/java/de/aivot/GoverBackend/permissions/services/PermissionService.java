@@ -78,8 +78,8 @@ public class PermissionService {
     public boolean hasDepartmentPermission(@Nonnull String userId,
                                            @Nonnull Integer departmentId,
                                            @Nonnull String permission) {
-        return vUserDepartmentPermissionRepository
-                .hasPermission(userId, departmentId, permission);
+        return vUserDepartmentPermissionRepository.hasPermission(userId, departmentId, permission)
+                || vUserSystemPermissionRepository.hasPermission(userId, permission);
     }
 
     public List<Integer> getDepartmentsWithPermission(@Nonnull String userId,
@@ -99,7 +99,7 @@ public class PermissionService {
                     .orElse("mit der ID " + departmentId);
 
             throw ResponseException.forbidden(
-                    "Sie benötigen die Berechtigung %s für die Organisationseinheit %d.",
+                    "Sie benötigen die Berechtigung %s für die Organisationseinheit %s.",
                     StringUtils.quote(permission),
                     departmentName
             );
@@ -108,12 +108,12 @@ public class PermissionService {
 
     public boolean hasInAnyDepartmentPermission(@Nonnull String userId,
                                                 @Nonnull String permission) {
-        return vUserDepartmentPermissionRepository
-                .hasPermissionInAnyDepartment(userId, permission);
+        return vUserDepartmentPermissionRepository.hasPermissionInAnyDepartment(userId, permission)
+                || vUserSystemPermissionRepository.hasPermission(userId, permission);
     }
 
     public void testInAnyDepartmentPermission(@Nonnull String userId,
-                                               @Nonnull String permission) throws ResponseException {
+                                              @Nonnull String permission) throws ResponseException {
         if (!hasInAnyDepartmentPermission(userId, permission)) {
             throw ResponseException.forbidden(
                     "Sie benötigen die Berechtigung %s in mindestens einer Organisationseinheit.",
