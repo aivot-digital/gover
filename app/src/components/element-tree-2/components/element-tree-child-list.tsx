@@ -8,11 +8,10 @@ import {ELEMENT_TREE_DND_ITEM_TYPE, ElementTreeDragItem, useElementTreeContext} 
 import {AddElementDialog} from '../../../dialogs/add-element-dialog/add-element-dialog';
 import {useTheme} from '@mui/material/styles';
 import {ELEMENT_TREE_LAYOUT} from '../element-tree-layout';
-import {generateElementIdForType} from '../../../utils/id-utils';
 import {useElementEditorNavigation} from '../../../hooks/use-element-editor-navigation';
-import {generateComponentTitle} from '../../../utils/generate-component-title';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showSuccessSnackbar} from '../../../slices/snackbar-slice';
+import {cloneElement} from '../../../utils/clone-element';
 
 interface ElementTreeChildListProps<T extends AnyElement> {
     parents: Array<AnyElement>;
@@ -124,17 +123,13 @@ export function ElementTreeChildList<T extends AnyElement>(props: ElementTreeChi
                     updatedValue.splice(index, 1);
                     onChange(updatedValue);
                 }}
-                onClone={(clonedElement) => {
+                onClone={(originalElement) => {
                     const updatedValue = [...value];
-                    const newElementId = generateElementIdForType(clonedElement.type);
-                    updatedValue.splice(index, 0, {
-                        ...clonedElement,
-                        name: (clonedElement.name ?? generateComponentTitle(element)) + ' (Kopie)',
-                        id: newElementId,
-                    });
+                    const clonedElement = cloneElement(originalElement);
+                    updatedValue.splice(index, 0, clonedElement);
                     onChange(updatedValue);
                     setTimeout(() => {
-                        navigateToElementEditor(newElementId);
+                        navigateToElementEditor(clonedElement.id);
                         dispatch(showSuccessSnackbar('Element erfolgreich dupliziert und geöffnet'));
                     }, 1);
                 }}

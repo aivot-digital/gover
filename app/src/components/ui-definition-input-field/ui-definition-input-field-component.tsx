@@ -3,7 +3,6 @@ import {Box, Button, Dialog, DialogActions, DialogContent, Typography, useTheme}
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
 import {flattenElements} from '../../utils/flatten-elements';
-import {generateComponentTitle} from '../../utils/generate-component-title';
 import {getElementNameForType} from '../../data/element-type/element-names';
 import {ElementType} from '../../data/element-type/element-type';
 import {UiDefinitionInputFieldElementItem} from '../../models/elements/form/input/ui-definition-input-field-element';
@@ -14,7 +13,16 @@ import {Allotment} from 'allotment';
 import {AuthoredElementValues} from '../../models/element-data';
 import {ElementDisplayContext} from '../../data/element-type/element-child-options';
 import {Hint} from '../hint/hint';
-import {humanizeNumber, humanizeNumberCapitalized} from '../../utils/humanization-utils';
+import {humanizeNumberCapitalized} from '../../utils/humanization-utils';
+import {ElementTreeInlineEditorContextProvider} from '../element-tree-2/components/element-tree-inline-editor-context';
+import {useElementEditorNavigation} from '../../hooks/use-element-editor-navigation';
+import {AnyElement} from '../../models/elements/any-element';
+import {generateComponentTitle} from '../../utils/generate-component-title';
+import {isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
+import {useConfirm} from '../../providers/confirm-provider';
+import {cloneElement} from '../../utils/clone-element';
+import {showSuccessSnackbar} from '../../slices/snackbar-slice';
+import {useAppDispatch} from '../../hooks/use-app-dispatch';
 
 interface UiDefinitionInputFieldComponentProps {
     label: string;
@@ -41,6 +49,8 @@ function buildSummary(value?: UiDefinitionInputFieldElementItem | null): string 
 
 export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldComponentProps) {
     const theme = useTheme();
+    const confirm = useConfirm();
+    const dispatch = useAppDispatch();
 
     const {
         label,
@@ -58,6 +68,10 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
     const [showDraftDialog, setShowDraftDialog] = useState<boolean>(false);
     const [draftValue, setDraftValue] = useState<UiDefinitionInputFieldElementItem | null>(null);
     const [inputData, setInputData] = useState<AuthoredElementValues>({});
+
+    const {
+        navigateToElementEditor,
+    } = useElementEditorNavigation();
 
     const summary = useMemo(() => {
         return buildSummary(value);
@@ -81,6 +95,86 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
             setDraftValue(generateElementWithDefaultValues(expectedRootType ?? ElementType.GroupLayout) as UiDefinitionInputFieldElementItem);
             setInputData({});
         }, 300);
+    };
+
+    const handleDeleteElement = (element: AnyElement) => {
+        if (draftValue == null) {
+            return;
+        }
+
+        confirm({
+            title: 'Element wirklich löschen',
+            children: (
+                <Typography>
+                    Wollen Sie das Element <strong>{generateComponentTitle(element)}</strong> wirklich löschen?
+                </Typography>
+            ),
+        })
+            .then((conf) => {
+                if (!conf) {
+                    return;
+                }
+
+                function deleteElementRecursive<T extends AnyElement>(currentElement: T): T {
+                    if (isAnyElementWithChildren(currentElement) && currentElement.children != null) {
+                        return {
+                            ...currentElement,
+                            children: currentElement
+                                .children
+                                .filter(child => child.id !== element.id)
+                                .map(child => deleteElementRecursive(child)),
+                        };
+                    } else {
+                        return currentElement;
+                    }
+                }
+
+                setDraftValue(deleteElementRecursive(draftValue));
+            });
+    };
+
+    const handleCloneElement = (element: AnyElement) => {
+        if (draftValue == null) {
+            return;
+        }
+
+        function cloneElementRecursive<T extends AnyElement>(currentElement: T): T {
+            if (isAnyElementWithChildren(currentElement) && currentElement.children != null) {
+                const clonedChildIndex = currentElement
+                    .children
+                    .findIndex(child => child.id == element.id);
+
+                if (clonedChildIndex !== -1) {
+                    const clone = cloneElement(element);
+
+                    const updatedChildren = [
+                        ...currentElement.children
+                    ];
+                    updatedChildren.splice(clonedChildIndex, 0, clone);
+                    dispatch(showSuccessSnackbar(`${generateComponentTitle(element)} wurde erfolgreich dupliziert.`));
+                    return {
+                        ...currentElement,
+                        children: updatedChildren,
+                    }
+                } else {
+                    return {
+                        ...currentElement,
+                        children: currentElement
+                            .children
+                            .map(child => cloneElementRecursive(child)),
+                    }
+                }
+            } else {
+                return currentElement;
+            }
+        }
+
+
+        setDraftValue(cloneElementRecursive(draftValue));
+    };
+
+    const handleNavigateToElementEditor = (element: AnyElement, tab?: string | null) => {
+        navigateToElementEditor(element.id, tab);
     };
 
     return (
@@ -152,14 +246,18 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                         details={
                             <>
                                 <Typography>
-                                    Diese UI-Definition bildet ein Layout-Element vom Typ <strong>{expectedRootTypeLabel}</strong> ab.
-                                    Über den Editor können Sie die Struktur der UI-Definition anpassen, um die gewünschte Benutzeroberfläche zu erstellen.
+                                    Diese UI-Definition bildet ein Layout-Element vom
+                                    Typ <strong>{expectedRootTypeLabel}</strong> ab.
+                                    Über den Editor können Sie die Struktur der UI-Definition anpassen, um die
+                                    gewünschte Benutzeroberfläche zu erstellen.
                                 </Typography>
                                 <Typography
                                     mt={1}
                                 >
-                                    Als Basis beziehungsweise Wurzel wird ein Element vom Typ <strong>{expectedRootTypeLabel}</strong> verwendet.
-                                    Sie können beliebig viele weitere Elemente als Kind-Elemente der Basis hinzufüge um die UI-Definition zu erweitern.
+                                    Als Basis beziehungsweise Wurzel wird ein Element vom
+                                    Typ <strong>{expectedRootTypeLabel}</strong> verwendet.
+                                    Sie können beliebig viele weitere Elemente als Kind-Elemente der Basis hinzufüge um
+                                    die UI-Definition zu erweitern.
                                 </Typography>
                             </>
                         }
@@ -226,11 +324,20 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                         overflowY: 'auto',
                                     }}
                                 >
-                                    <ElementDerivationContext
-                                        element={draftValue ?? value ?? defaultValue}
-                                        authoredElementValues={inputData}
-                                        onAuthoredElementValuesChange={setInputData}
-                                    />
+                                    <ElementTreeInlineEditorContextProvider
+                                        value={{
+                                            deleteElement: handleDeleteElement,
+                                            cloneElement: handleCloneElement,
+                                            navigateToElementEditor: handleNavigateToElementEditor,
+                                            editable: !(disabled ?? false)
+                                        }}
+                                    >
+                                        <ElementDerivationContext
+                                            element={draftValue ?? value ?? defaultValue}
+                                            authoredElementValues={inputData}
+                                            onAuthoredElementValuesChange={setInputData}
+                                        />
+                                    </ElementTreeInlineEditorContextProvider>
                                 </Box>
                             </Allotment.Pane>
                             <Allotment.Pane

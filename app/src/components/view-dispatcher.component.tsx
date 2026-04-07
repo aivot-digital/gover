@@ -3,7 +3,6 @@ import Grid from '@mui/material/Grid';
 import {type AnyElement} from '../models/elements/any-element';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
 import {views as Views} from '../views';
-import {summaries as Summaries} from '../summaries';
 import {type BaseViewProps} from '../views/base-view';
 import IconButton from '@mui/material/IconButton';
 import {ElementErrorBoundary} from './element-error-boundary/element-error-boundary';
@@ -13,7 +12,6 @@ import {
     resolveValueForResolvedOverride,
     resolveVisibility,
 } from '../utils/element-data-utils';
-import {useElementEditorNavigationActions} from '../hooks/use-element-editor-navigation';
 import {isAnyContentElement} from '../models/elements/form/content/any-content-element';
 import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
 import {Box, Divider, ListItemIcon, ListItemText, Menu, MenuItem, Typography} from '@mui/material';
@@ -26,7 +24,9 @@ import {generateComponentTitle} from '../utils/generate-component-title';
 import JumpToElement from '@aivot/mui-material-symbols-400-outlined/dist/jump-to-element/JumpToElement';
 import {copyToClipboardText} from '../utils/copy-to-clipboard';
 import {type AuthoredElementValues, type DerivedRuntimeElementData} from '../models/element-data';
-import {BaseSummaryProps} from '../summaries/base-summary';
+import {useElementTreeInlineEditorContext} from './element-tree-2/components/element-tree-inline-editor-context';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
 
 interface DispatcherComponentProps<T extends AnyElement> {
     rootElement: AnyElement;
@@ -240,9 +240,18 @@ function ContextMenuButton(props: ContextMenuButtonProps) {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
 
+    const inlineEditorContext = useElementTreeInlineEditorContext();
+
+    if (inlineEditorContext == null) {
+        return null;
+    }
+
     const {
         navigateToElementEditor,
-    } = useElementEditorNavigationActions();
+        cloneElement,
+        deleteElement,
+        editable,
+    } = inlineEditorContext;
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
         event.stopPropagation();
@@ -255,13 +264,13 @@ function ContextMenuButton(props: ContextMenuButtonProps) {
 
     const handleEdit = () => {
         dispatch(setComponentTree(true));
-        navigateToElementEditor(element.id);
+        navigateToElementEditor(element);
         handleMenuClose();
     };
 
     const handleJumpTo = () => {
         dispatch(setComponentTree(true));
-        navigateToElementEditor(element.id, null);
+        navigateToElementEditor(element, null);
         handleMenuClose();
     };
 
@@ -273,6 +282,16 @@ function ContextMenuButton(props: ContextMenuButtonProps) {
             dispatch(showErrorSnackbar('Element-ID konnte nicht in Zwischenablage kopiert werden'));
         }
 
+        handleMenuClose();
+    };
+
+    const handleCloneElement = () => {
+        cloneElement(element);
+        handleMenuClose();
+    };
+
+    const handleDeleteElement = () => {
+        deleteElement(element);
         handleMenuClose();
     };
 
@@ -375,7 +394,7 @@ function ContextMenuButton(props: ContextMenuButtonProps) {
                     <ListItemIcon>
                         <Edit fontSize="small"/>
                     </ListItemIcon>
-                    <ListItemText primary="Bearbeiten"/>
+                    <ListItemText primary={editable ? 'Bearbeiten' : 'Anzeigen'}/>
                 </MenuItem>
 
                 <MenuItem onClick={handleJumpTo}>
@@ -390,6 +409,32 @@ function ContextMenuButton(props: ContextMenuButtonProps) {
                         <ContentPaste fontSize="small"/>
                     </ListItemIcon>
                     <ListItemText primary="Element-ID kopieren"/>
+                </MenuItem>
+
+                <MenuItem
+                    onClick={handleCloneElement}
+                    disabled={!editable}
+                >
+                    <ListItemIcon>
+                        <ContentCopy fontSize="small"/>
+                    </ListItemIcon>
+                    <ListItemText primary="Element duplizieren"/>
+                </MenuItem>
+
+                <MenuItem
+                    onClick={handleDeleteElement}
+                    disabled={!editable}
+                >
+                    <ListItemIcon>
+                        <Delete fontSize="small"
+                                color="error"/>
+                    </ListItemIcon>
+                    <ListItemText
+                        primary="Element löschen"
+                        sx={{
+                            color: 'error.main',
+                        }}
+                    />
                 </MenuItem>
             </Menu>
         </>

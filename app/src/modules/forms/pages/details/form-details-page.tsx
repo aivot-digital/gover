@@ -1,4 +1,4 @@
-import {Box, Paper, ThemeProvider, useTheme} from '@mui/material';
+import {Box, Paper, ThemeProvider, Typography, useTheme} from '@mui/material';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
     clearLoadedForm,
@@ -117,6 +117,14 @@ import TouchApp from '@aivot/mui-material-symbols-400-outlined/dist/touch-app/To
 import BugReport from '@aivot/mui-material-symbols-400-outlined/dist/bug-report/BugReport';
 import {ElementEditor} from '../../../../components/element-editor/element-editor';
 import {ElementDisplayContext} from '../../../../data/element-type/element-child-options';
+import {
+    ElementTreeInlineEditorContextProvider,
+} from '../../../../components/element-tree-2/components/element-tree-inline-editor-context';
+import {AnyElement} from '../../../../models/elements/any-element';
+import {useConfirm} from '../../../../providers/confirm-provider';
+import {generateComponentTitle} from '../../../../utils/generate-component-title';
+import {isAnyElementWithChildren} from '../../../../models/elements/any-element-with-children';
+import {cloneElement} from '../../../../utils/clone-element';
 
 export const DialogSearchParam = 'dialog';
 
@@ -125,6 +133,8 @@ const versionService = new FormVersionApiService();
 
 export function FormDetailsPage() {
     const baseTheme = useTheme();
+
+    const confirm = useConfirm();
 
     const [searchParams] = useSearchParams();
     const metaDialogName = useMemo(() => searchParams.get(DialogSearchParam), [searchParams]);
@@ -712,6 +722,89 @@ export function FormDetailsPage() {
             });
         };
 
+        const handleCloneElement = (element: AnyElement) => {
+            function cloneElementRecursive<T extends AnyElement>(currentElement: T): T {
+                if (isAnyElementWithChildren(currentElement) && currentElement.children != null) {
+                    const clonedChildIndex = currentElement
+                        .children
+                        .findIndex(child => child.id == element.id);
+
+                    if (clonedChildIndex !== -1) {
+                        const clone = cloneElement(element);
+
+                        const updatedChildren = [
+                            ...currentElement.children
+                        ];
+                        updatedChildren.splice(clonedChildIndex, 0, clone);
+                        dispatch(showSuccessSnackbar(`${generateComponentTitle(element)} wurde erfolgreich dupliziert.`));
+                        return {
+                            ...currentElement,
+                            children: updatedChildren,
+                        }
+                    } else {
+                        return {
+                            ...currentElement,
+                            children: currentElement
+                                .children
+                                .map(child => cloneElementRecursive(child)),
+                        }
+                    }
+                } else {
+                    return currentElement;
+                }
+            }
+
+            handlePatch({
+                ...loadedForm,
+                version: {
+                    ...loadedForm.version,
+                    rootElement: cloneElementRecursive(loadedForm.version.rootElement),
+                },
+            });
+        };
+
+        const handleDeleteElement = (element: AnyElement) => {
+            confirm({
+                title: 'Element wirklich löschen',
+                children: (
+                    <Typography>
+                        Wollen Sie das Element <strong>{generateComponentTitle(element)}</strong> wirklich löschen?
+                    </Typography>
+                ),
+            })
+                .then((conf) => {
+                    if (!conf) {
+                        return;
+                    }
+
+                    function deleteElementRecursive<T extends AnyElement>(currentElement: T): T {
+                        if (isAnyElementWithChildren(currentElement) && currentElement.children != null) {
+                            return {
+                                ...currentElement,
+                                children: currentElement
+                                    .children
+                                    .filter(child => child.id !== element.id)
+                                    .map(child => deleteElementRecursive(child)),
+                            };
+                        } else {
+                            return currentElement;
+                        }
+                    }
+
+                    handlePatch({
+                        ...loadedForm,
+                        version: {
+                            ...loadedForm.version,
+                            rootElement: deleteElementRecursive(loadedForm.version.rootElement),
+                        },
+                    });
+                });
+        };
+
+        const handleOpenElement = (element: AnyElement, tab?: string | null) => {
+            navigateToElementEditor(element.id, tab);
+        };
+
         const moreMenuItems: FormDetailsPageMoreMenuItem[] = [
             {
                 label: 'Vorschau in neuem Tab öffnen',
@@ -916,22 +1009,31 @@ export function FormDetailsPage() {
                                         ref={scrollContainerRef}
                                     >
                                         <ThemeProvider theme={_theme}>
-                                            <ViewDispatcherComponent
-                                                rootElement={loadedForm.version.rootElement}
-                                                allElements={allElements}
-                                                element={loadedForm.version.rootElement}
-                                                scrollContainerRef={scrollContainerRef}
-                                                isBusy={false}
-                                                isDeriving={false}
-                                                mode="editor"
-                                                authoredElementValues={authoredElementValues}
-                                                derivedData={derivedData}
-                                                onAuthoredElementValuesChange={setAuthoredElementValues}
-                                                onDerivedDataChange={setDerivedData}
-                                                onElementBlur={undefined}
-                                                derivationTriggerIdQueue={[] /* Not necessary because this is kept internally by the root component view */}
-                                                disableVisibility={disableVisibility}
-                                            />
+                                            <ElementTreeInlineEditorContextProvider
+                                                value={{
+                                                    cloneElement: handleCloneElement,
+                                                    deleteElement: handleDeleteElement,
+                                                    navigateToElementEditor: handleOpenElement,
+                                                    editable: isEditable,
+                                                }}
+                                            >
+                                                <ViewDispatcherComponent
+                                                    rootElement={loadedForm.version.rootElement}
+                                                    allElements={allElements}
+                                                    element={loadedForm.version.rootElement}
+                                                    scrollContainerRef={scrollContainerRef}
+                                                    isBusy={false}
+                                                    isDeriving={false}
+                                                    mode="editor"
+                                                    authoredElementValues={authoredElementValues}
+                                                    derivedData={derivedData}
+                                                    onAuthoredElementValuesChange={setAuthoredElementValues}
+                                                    onDerivedDataChange={setDerivedData}
+                                                    onElementBlur={undefined}
+                                                    derivationTriggerIdQueue={[] /* Not necessary because this is kept internally by the root component view */}
+                                                    disableVisibility={disableVisibility}
+                                                />
+                                            </ElementTreeInlineEditorContextProvider>
 
                                             <HelpDialog
                                                 onHide={() => dispatch(showDialog(undefined))}
