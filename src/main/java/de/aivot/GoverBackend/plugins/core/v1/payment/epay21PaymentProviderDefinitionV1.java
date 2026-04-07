@@ -160,7 +160,7 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
         list.add(paymentTransactionUrlInput);
 
         var group = new GroupLayoutElement();
-        group.setType(ElementType.Group);
+        group.setType(ElementType.GroupLayout);
         group.setId("epay21Config");
         group.setChildren(list);
 

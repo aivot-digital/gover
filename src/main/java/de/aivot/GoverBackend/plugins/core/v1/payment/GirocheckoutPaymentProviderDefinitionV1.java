@@ -146,7 +146,7 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
         list.add(projectPasswordInput);
 
         var group = new GroupLayoutElement();
-        group.setType(ElementType.Group);
+        group.setType(ElementType.GroupLayout);
         group.setId("giroCheckoutConfig");
         group.setChildren(list);
 

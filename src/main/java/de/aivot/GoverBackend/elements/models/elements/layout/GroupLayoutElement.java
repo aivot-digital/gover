@@ -19,7 +19,7 @@ public class GroupLayoutElement extends BaseFormElement implements LayoutElement
     private GroupLayoutStoreLink storeLink;
 
     public GroupLayoutElement() {
-        super(ElementType.Group);
+        super(ElementType.GroupLayout);
     }
 
     // region Hash & Equals

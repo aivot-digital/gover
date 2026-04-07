@@ -20,7 +20,7 @@ public enum ElementType implements Identifiable<Integer> {
     FormLayout(0),
     Step(1),
     Alert(2),
-    Group(3),
+    GroupLayout(3),
     Checkbox(4),
     Date(5),
     Headline(6),
@@ -136,7 +136,7 @@ public enum ElementType implements Identifiable<Integer> {
             case FormLayout -> new FormLayoutElement();
             case Step -> new GenericStepElement();
             case Alert -> new AlertContentElement();
-            case Group -> new GroupLayoutElement();
+            case GroupLayout -> new GroupLayoutElement();
             case Checkbox -> new CheckboxInputElement();
             case Date -> new DateInputElement();
             case Headline -> new HeadlineContentElement();
