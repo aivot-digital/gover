@@ -9,7 +9,6 @@ export interface BaseInputElement<T extends ElementType> extends BaseFormElement
     required: boolean | null | undefined;
     disabled: boolean | null | undefined;
     technical: boolean | null | undefined;
-    display: boolean | null | undefined;
     destinationKey: string | null | undefined;
 
     validation: ElementValidationFunction | null | undefined;

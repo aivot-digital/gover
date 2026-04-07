@@ -181,4 +181,5 @@ export const editors: ElementTypesMap<EditorSet | null> = {
     [ElementType.NoCodeInput]: {
         default: NoCodeInputFieldEditor,
     },
+    [ElementType.SummaryLayout]: null,
 };

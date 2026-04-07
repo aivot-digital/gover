@@ -5,7 +5,7 @@ import {TextFieldSummary} from './text-field-summary';
 import {CheckboxFieldSummary} from './checkbox-field-summary';
 import {DateFieldSummary} from './date-field-summary';
 import {
-    MultiCheckboxFieldComponentSummary
+    MultiCheckboxFieldComponentSummary,
 } from '../components/multi-checkbox-field/multi-checkbox-field.component.summary';
 import {NumberSummary} from './number-summary';
 import {SelectFieldSummary} from './select-field-summary';
@@ -31,6 +31,7 @@ import {RichTextInputSummary} from './rich-text-input-summary';
 import {CodeInputSummary} from './code-input-summary';
 import {NoCodeInputSummary} from './no-code-input-summary';
 import {UiDefinitionInputSummary} from './ui-definition-input-summary';
+import {SummaryLayoutSummary} from './summary-layout-summary';
 
 export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.FormLayout]: RootSummary,
@@ -76,4 +77,5 @@ export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.DataModelSelect]: DataModelSelectFieldSummary,
     [ElementType.DataObjectSelect]: DataObjectSelectFieldSummary,
     [ElementType.NoCodeInput]: NoCodeInputSummary,
+    [ElementType.SummaryLayout]: SummaryLayoutSummary,
 };

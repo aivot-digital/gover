@@ -20,13 +20,13 @@ public enum ElementType implements Identifiable<Integer> {
     FormLayout(0),
     Step(1),
     Alert(2),
-    Group(3),
+    GroupLayout(3),
     Checkbox(4),
     Date(5),
     Headline(6),
     MultiCheckbox(7),
     Number(8),
-    ReplicatingContainer(9),
+    ReplicatingContainerLayout(9),
     RichText(10),
     Radio(11),
     Select(12),
@@ -60,6 +60,7 @@ public enum ElementType implements Identifiable<Integer> {
     DataModelSelect(40),
     DataObjectSelect(41),
     NoCodeInput(42),
+    SummaryLayout(43),
     ;
 
     public static final String ID_FormLayout = "0";
@@ -105,6 +106,7 @@ public enum ElementType implements Identifiable<Integer> {
     public static final String ID_DataModelSelect = "40";
     public static final String ID_DataObjectSelect = "41";
     public static final String ID_NoCodeInput = "42";
+    public static final String ID_SummaryLayout = "43";
 
     private final Integer key;
 
@@ -136,13 +138,13 @@ public enum ElementType implements Identifiable<Integer> {
             case FormLayout -> new FormLayoutElement();
             case Step -> new GenericStepElement();
             case Alert -> new AlertContentElement();
-            case Group -> new GroupLayoutElement();
+            case GroupLayout -> new GroupLayoutElement();
             case Checkbox -> new CheckboxInputElement();
             case Date -> new DateInputElement();
             case Headline -> new HeadlineContentElement();
             case MultiCheckbox -> new MultiCheckboxInputElement();
             case Number -> new NumberInputElement();
-            case ReplicatingContainer -> new ReplicatingContainerLayoutElement();
+            case ReplicatingContainerLayout -> new ReplicatingContainerLayoutElement();
             case RichText -> new RichTextContentElement();
             case Radio -> new RadioInputElement();
             case Select -> new SelectInputElement();
@@ -177,6 +179,7 @@ public enum ElementType implements Identifiable<Integer> {
             case DataModelSelect -> new DataModelSelectInputElement();
             case DataObjectSelect -> new DataObjectSelectInputElement();
             case NoCodeInput -> new NoCodeInputElement();
+            case SummaryLayout -> new SummaryLayoutElement();
             default -> throw new ElementDataConversionException("Unsupported element type: %s", type.name());
         };
     }

@@ -47,6 +47,7 @@ import {
     NoCodeInputFieldReturnType
 } from '../models/elements/form/input/no-code-input-field-element';
 import {UiDefinitionInputFieldElement} from '../models/elements/form/input/ui-definition-input-field-element';
+import {SummaryLayoutElement} from '../models/elements/form/layout/summary-layout-element';
 
 function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
     return {
@@ -77,7 +78,6 @@ function makeInputBase<T extends ElementType>(t: T, id: string): Omit<BaseInputE
         technical: undefined,
         validation: undefined,
         value: undefined,
-        display: undefined,
     };
 }
 
@@ -125,6 +125,7 @@ const elementConstructors: {
     [ElementType.DataModelSelect]: (id: string) => DataModelSelectFieldElement;
     [ElementType.DataObjectSelect]: (id: string) => DataObjectSelectFieldElement;
     [ElementType.NoCodeInput]: (id: string) => NoCodeInputFieldElement;
+    [ElementType.SummaryLayout]: (id: string) => SummaryLayoutElement;
 } = {
     [ElementType.FormLayout]: (id) => ({
         ...makeBase(ElementType.FormLayout, id),
@@ -445,6 +446,10 @@ const elementConstructors: {
         ...makeInputBase(ElementType.NoCodeInput, id),
         label: 'No-Code-Eingabe',
         returnType: NoCodeInputFieldReturnType.BOOLEAN,
+    }),
+    [ElementType.SummaryLayout]: (id) => ({
+        ...makeFormBase(ElementType.SummaryLayout, id),
+        children: [],
     }),
 };
 

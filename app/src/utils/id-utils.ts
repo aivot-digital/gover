@@ -82,6 +82,7 @@ const prefixMap: Record<ElementType, string> = {
     [ElementType.DataModelSelect]: 'dm',
     [ElementType.DataObjectSelect]: 'do',
     [ElementType.NoCodeInput]: 'nc',
+    [ElementType.SummaryLayout]: 'sy',
 };
 
 export function generateElementIdForType(type: ElementType): string {

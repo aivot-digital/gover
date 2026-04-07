@@ -14,7 +14,12 @@ export function TextFieldEditor(props: BaseEditorProps<TextFieldElement, Element
         onPatch,
         editable,
         scope,
+        hasSummaryLayoutParent,
     } = props;
+
+    if (hasSummaryLayoutParent) {
+        return null;
+    }
 
     return (
         <>

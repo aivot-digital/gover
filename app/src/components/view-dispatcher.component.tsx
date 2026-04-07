@@ -96,18 +96,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         return rootDerivedData ?? derivedData;
     }, [rootDerivedData, derivedData]);
 
-    const isDisplayOnly = useMemo(() => {
-        if (isAnyInputElement(element)) {
-            return element.display == true;
-        }
-        return false;
-    }, [element]);
-
     const handleSetValue = useCallback((updatedValue: any | null | undefined, triggeringElementIds?: string[]) => {
-        if (isDisplayOnly) {
-            return;
-        }
-
         if (updatedValue == value) {
             return;
         }
@@ -118,7 +107,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         };
 
         onAuthoredElementValuesChange(newAuthoredElementValues, [elementId, ...(triggeringElementIds ?? [])]);
-    }, [value, authoredElementValues, onAuthoredElementValuesChange, elementId, isDisplayOnly]);
+    }, [value, authoredElementValues, onAuthoredElementValuesChange, elementId]);
 
     const handleOnBlur = useCallback((updatedValue: any | null | undefined, triggeringElementIds?: string[]) => {
         if (updatedValue == value || onElementBlur == null) {
@@ -134,7 +123,6 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
     }, [value, authoredElementValues, onElementBlur, elementId]);
 
     const ViewComponent: ComponentType<BaseViewProps<typeof element, any>> | null = useMemo(() => Views[element.type], [element.type]);
-    const SummaryComponent: ComponentType<BaseSummaryProps<typeof element, any>> | null = useMemo(() => Summaries[element.type], [element.type]);
 
     const isVisible = useMemo(() => {
         if (isAnyInputElement(element) && element.technical && (mode !== 'editor' || !disableVisibility)) {
@@ -195,25 +183,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         derivationTriggerIdQueue,
     ]);
 
-    const summaryProps: BaseSummaryProps<typeof element, any> = useMemo(() => ({
-        model: element,
-        value: value,
-        allowStepNavigation: false,
-        showTechnical: false,
-        authoredElementValues: authoredElementValues,
-        derivedData: derivedData,
-    }), [
-        element,
-        value,
-        authoredElementValues,
-        derivedData,
-    ]);
-
     if (!isVisible) {
-        return null;
-    }
-
-    if (isAnyInputElement(element) && isDisplayOnly && SummaryComponent == null) {
         return null;
     }
 
@@ -251,15 +221,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
             }
 
             <ElementErrorBoundary viewProps={viewProps}>
-                {
-                    isDisplayOnly &&
-                    SummaryComponent != null &&
-                    <SummaryComponent {...summaryProps} />
-                }
-                {
-                    !isDisplayOnly &&
-                    <ViewComponent {...viewProps} />
-                }
+                <ViewComponent {...viewProps} />
             </ElementErrorBoundary>
         </Grid>
     );

@@ -35,6 +35,7 @@ import {type SvgIcon} from '@mui/material';
 import {type AnyElement} from '../../models/elements/any-element';
 import {type SvgIconComponent} from '@mui/icons-material';
 import Dashboard2 from '@aivot/mui-material-symbols-400-outlined/dist/dashboard-2/Dashboard2';
+import Segment from '@aivot/mui-material-symbols-400-outlined/dist/segment/Segment';
 
 const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.Alert]: ErrorOutlineOutlinedIcon,
@@ -80,6 +81,7 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.DataModelSelect]: FolderData,
     [ElementType.DataObjectSelect]: DataObject,
     [ElementType.NoCodeInput]: FunctionsOutlinedIcon,
+    [ElementType.SummaryLayout]: Segment,
 };
 
 export function getElementIcon(element: AnyElement): typeof SvgIcon {

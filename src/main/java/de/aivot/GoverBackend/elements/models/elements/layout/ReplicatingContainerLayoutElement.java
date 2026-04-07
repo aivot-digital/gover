@@ -36,7 +36,7 @@ public class ReplicatingContainerLayoutElement extends BaseInputElement<List<Aut
     private List<BaseFormElement> children = new LinkedList<>();
 
     public ReplicatingContainerLayoutElement() {
-        super(ElementType.ReplicatingContainer);
+        super(ElementType.ReplicatingContainerLayout);
     }
 
     @Override

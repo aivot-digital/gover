@@ -452,7 +452,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
 
     public static final String MANUAL_CONTENT_GROUP_ID = "manual_group";
 
-    @LayoutElementPOJOBinding(id = MANUAL_CONTENT_GROUP_ID, type = ElementType.Group)
+    @LayoutElementPOJOBinding(id = MANUAL_CONTENT_GROUP_ID, type = ElementType.GroupLayout)
     public static class EMailActionNodeConfigManualContent {
         public static final String SUBJECT_FIELD_ID = "manual_subject";
         public static final String CONTENT_FIELD_ID = "manual_content";
@@ -475,7 +475,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
 
     public static final String AUTOMATIC_CONTENT_GROUP_ID = "automatic_group";
 
-    @LayoutElementPOJOBinding(id = AUTOMATIC_CONTENT_GROUP_ID, type = ElementType.Group)
+    @LayoutElementPOJOBinding(id = AUTOMATIC_CONTENT_GROUP_ID, type = ElementType.GroupLayout)
     public static class EMailActionNodeConfigAutomaticContent {
         public static final String SUBJECT_FIELD_ID = "automatic_subject";
         public static final String CONTENT_FIELD_ID = "automatic_content";

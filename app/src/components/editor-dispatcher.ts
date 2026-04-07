@@ -25,6 +25,7 @@ export function EditorDispatcher<T extends AnyElement, E extends ElementTreeEnti
         onPatchEntity: props.onPatchEntity,
         editable: props.editable,
         scope: props.scope,
+        hasSummaryLayoutParent: props.hasSummaryLayoutParent,
     };
 
     return React.createElement(Component, editorProps);

@@ -14,4 +14,6 @@ export interface EditorDispatcherProps<T extends AnyElement, E extends ElementTr
     editable: boolean;
 
     scope: ElementTreeScope;
+
+    hasSummaryLayoutParent: boolean;
 }

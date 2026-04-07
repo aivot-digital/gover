@@ -164,7 +164,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
         dataContentField.setLabel("Zu prüfende Daten");
         dataContentField.setHint("Modellieren Sie eine Gover-UI, in der die freizugebenden Inhalte dargestellt werden.");
         dataContentField.setRequired(true);
-        dataContentField.setElementType(ElementType.Group);
+        dataContentField.setElementType(ElementType.GroupLayout);
         dataContentField.setVisibility(buildModeVisibility(MODE_DATA));
         layout.addChild(dataContentField);
 

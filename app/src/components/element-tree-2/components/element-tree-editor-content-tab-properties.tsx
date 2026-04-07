@@ -37,11 +37,16 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
     const {
         currentElement,
         onChangeCurrentElement,
+        parents,
     } = useElementTreeEditorContext<T>();
 
     const {
         type,
     } = currentElement;
+
+    const hasSummaryLayoutParent = useMemo(() => {
+        return parents.some(p => p.type === ElementType.SummaryLayout);
+    }, [parents]);
 
     const tabDescription = useMemo(() => {
         return getTabDescription(type);
@@ -105,19 +110,22 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                             lg: 6,
                         }}
                     >
-                        <SelectFieldComponent
-                            label="Breite des Elements in der Darstellung"
-                            value={currentElement?.weight?.toString() ?? '12'}
-                            onChange={(val) => {
-                                onChangeCurrentElement({
-                                    ...currentElement,
-                                    weight: val != null ? parseFloat(val) : 12,
-                                });
-                            }}
-                            options={WeightOptions}
-                            hint="Legen Sie die Breite des Elements für Tablets & Desktops fest. Auf Mobilgeräten wird stets die volle Breite verwendet."
-                            disabled={!editable}
-                        />
+                        {
+                            !hasSummaryLayoutParent &&
+                            <SelectFieldComponent
+                                label="Breite des Elements in der Darstellung"
+                                value={currentElement?.weight?.toString() ?? '12'}
+                                onChange={(val) => {
+                                    onChangeCurrentElement({
+                                        ...currentElement,
+                                        weight: val != null ? parseFloat(val) : 12,
+                                    });
+                                }}
+                                options={WeightOptions}
+                                hint="Legen Sie die Breite des Elements für Tablets & Desktops fest. Auf Mobilgeräten wird stets die volle Breite verwendet."
+                                disabled={!editable}
+                            />
+                        }
                     </Grid>
                 }
 
@@ -192,10 +200,12 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                 }}
                 editable={editable}
                 scope={'application' /* TODO: remove this */}
+                hasSummaryLayoutParent={hasSummaryLayoutParent}
             />
 
             {
                 isAnyInputElement(currentElement) &&
+                !hasSummaryLayoutParent &&
                 <>
                     <ElementEditorSectionHeader
                         title="Eingabeoptionen"
@@ -223,34 +233,10 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                         required: checked,
                                         disabled: false,
                                         technical: false,
-                                        display: false,
                                     });
                                 }}
                                 hint="Pflichtangaben müssen von den antragstellenden Personen ausgefüllt werden."
-                                disabled={!editable || Boolean(currentElement.disabled) || Boolean(currentElement.technical) || Boolean(currentElement.display)}
-                            />
-                        </Grid>
-                        <Grid
-                            size={{
-                                xs: 12,
-                                lg: 6,
-                                xl: 3,
-                            }}
-                        >
-                            <CheckboxFieldComponent
-                                label="Anzeigefeld"
-                                value={currentElement.display ?? undefined}
-                                onChange={(checked) => {
-                                    onChangeCurrentElement({
-                                        ...currentElement,
-                                        required: false,
-                                        disabled: false,
-                                        technical: false,
-                                        display: checked,
-                                    });
-                                }}
-                                hint="Pflichtangaben müssen von den antragstellenden Personen ausgefüllt werden."
-                                disabled={!editable || Boolean(currentElement.required) || Boolean(currentElement.disabled) || Boolean(currentElement.technical)}
+                                disabled={!editable || Boolean(currentElement.disabled) || Boolean(currentElement.technical)}
                             />
                         </Grid>
                         <Grid
@@ -269,11 +255,10 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                         required: false,
                                         disabled: checked,
                                         technical: false,
-                                        display: false,
                                     });
                                 }}
                                 hint="Deaktivierte Eingaben können nicht bearbeitet werden."
-                                disabled={!editable || Boolean(currentElement.required) || Boolean(currentElement.technical) || Boolean(currentElement.display)}
+                                disabled={!editable || Boolean(currentElement.required) || Boolean(currentElement.technical)}
                             />
                         </Grid>
                         <Grid
@@ -292,11 +277,10 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                         required: false,
                                         disabled: false,
                                         technical: checked,
-                                        display: false,
                                     });
                                 }}
                                 hint="Technische Felder sind für Antragstellende unsichtbar und nicht bearbeitbar."
-                                disabled={!editable || Boolean(currentElement.required) || Boolean(currentElement.disabled) || Boolean(currentElement.display)}
+                                disabled={!editable || Boolean(currentElement.required) || Boolean(currentElement.disabled)}
                             />
                         </Grid>
                     </Grid>
@@ -310,10 +294,13 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                         title="Datenzuordnung"
                         sx={{mt: 8}}
                     >
-                        Legen Sie fest, unter welchem Datenschlüssel der Wert dieses Feldes im Antragsdatensatz gespeichert wird.
+                        Legen Sie fest, unter welchem Datenschlüssel der Wert dieses Feldes im Antragsdatensatz
+                        gespeichert wird.
                         Ohne eigenen Schlüssel wird standardmäßig die Element-ID verwendet.
-                        Mit Punktnotation, z. B. „person.vorname“, können Sie Werte in verschachtelte Datenstrukturen schreiben.
-                        Achten Sie darauf, dass Datenschlüssel formularweit eindeutig bleiben, damit keine Werte unbeabsichtigt überschrieben werden.
+                        Mit Punktnotation, z. B. „person.vorname“, können Sie Werte in verschachtelte Datenstrukturen
+                        schreiben.
+                        Achten Sie darauf, dass Datenschlüssel formularweit eindeutig bleiben, damit keine Werte
+                        unbeabsichtigt überschrieben werden.
                     </ElementEditorSectionHeader>
 
                     <TextFieldComponent
@@ -325,13 +312,14 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                 destinationKey: val,
                             } as T);
                         }}
-                        startIcon={'$.'}
+                        startIcon="$."
                         hint="Überschreiben Sie die Element-ID mit einem eigenen Datenschlüssel (optional). Der Wert dieses Elements wird im Formulardatensatz unter diesem Schlüssel gespeichert."
                         disabled={!editable}
                     />
 
                     {
                         httpKeyProblems.length > 0 &&
+                        !hasSummaryLayoutParent &&
                         <AlertComponent
                             title="Warnungen zu Ihrem gewählten HTTP-Schnittstellenschlüssel"
                             color="warning"

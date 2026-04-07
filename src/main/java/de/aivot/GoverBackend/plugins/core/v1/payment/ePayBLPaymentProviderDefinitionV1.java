@@ -181,7 +181,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
         list.add(paymentTransactionUrlInput);
 
         var group = new GroupLayoutElement();
-        group.setType(ElementType.Group);
+        group.setType(ElementType.GroupLayout);
         group.setId("ePayBLConfig");
         group.setChildren(list);
 

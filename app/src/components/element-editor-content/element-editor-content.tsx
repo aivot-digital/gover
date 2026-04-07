@@ -216,6 +216,7 @@ export function ElementEditorContent<T extends AnyElement, E extends ElementTree
                             onPatchEntity={props.onChangeEntity}
                             editable={props.editable}
                             scope={props.scope}
+                            hasSummaryLayoutParent={false}
                         />
                     </Box>
                 );

@@ -104,7 +104,7 @@ class ElementPOJOMapperTest {
         }
     }
 
-    @LayoutElementPOJOBinding(id = "sub_element", type = ElementType.Group)
+    @LayoutElementPOJOBinding(id = "sub_element", type = ElementType.GroupLayout)
     public static class ExampleBindingSubClass {
         @InputElementPOJOBinding(id = "switch_field", type = ElementType.Checkbox, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Example Switch"),

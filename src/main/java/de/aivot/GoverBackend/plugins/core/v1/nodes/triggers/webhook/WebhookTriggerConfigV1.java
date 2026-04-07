@@ -85,7 +85,7 @@ public class WebhookTriggerConfigV1 {
     @Nullable
     public WebhookConfigAuth authConfig;
 
-    @LayoutElementPOJOBinding(id = AUTH_CONFIG_GROUP_ID, type = ElementType.Group)
+    @LayoutElementPOJOBinding(id = AUTH_CONFIG_GROUP_ID, type = ElementType.GroupLayout)
     public static class WebhookConfigAuth {
         @Nullable
         @InputElementPOJOBinding(id = AUTH_METHOD_CONFIG_KEY, type = ElementType.Select, properties = {
@@ -120,7 +120,7 @@ public class WebhookTriggerConfigV1 {
         public String authToken;
     }
 
-    @LayoutElementPOJOBinding(id = REQUEST_BODY_CONFIG_GROUP_ID, type = ElementType.Group)
+    @LayoutElementPOJOBinding(id = REQUEST_BODY_CONFIG_GROUP_ID, type = ElementType.GroupLayout)
     public static class WebhookRequestBodyConfig {
         @Nullable
         @InputElementPOJOBinding(id = REQUEST_BODY_TYPE_CONFIG_KEY, type = ElementType.Select, properties = {

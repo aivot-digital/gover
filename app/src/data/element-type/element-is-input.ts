@@ -44,4 +44,5 @@ export const ElementIsInput: Record<ElementType, boolean> = {
     [ElementType.DataModelSelect]: true,
     [ElementType.DataObjectSelect]: true,
     [ElementType.NoCodeInput]: true,
+    [ElementType.SummaryLayout]: false,
 };

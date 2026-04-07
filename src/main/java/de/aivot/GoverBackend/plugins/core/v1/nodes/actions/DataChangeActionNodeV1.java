@@ -129,7 +129,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
         layout
                 .findChild(DataChangeActionNodeConfig.DATA_DEFINITION_FIELD_ID, UiDefinitionInputElement.class)
                 .ifPresent(element -> {
-                    element.setElementType(ElementType.Group);
+                    element.setElementType(ElementType.GroupLayout);
                     element.setDisplayContext(ElementDisplayContext.StaffFacing);
                 });
 
