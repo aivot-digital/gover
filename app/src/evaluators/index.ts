@@ -66,4 +66,5 @@ export const evaluators: {
     [ElementType.DataModelSelect]: SelectEvaluator,
     [ElementType.DataObjectSelect]: SelectEvaluator,
     [ElementType.NoCodeInput]: NoCodeInputEvaluator,
+    [ElementType.SummaryLayout]: null,
 };

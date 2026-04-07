@@ -8,10 +8,11 @@ import {type ReplicatingContainerLayout} from '../../models/elements/form/layout
 import {AnyFormElement} from '../../models/elements/form/any-form-element';
 import {IdentityProviderInfo} from '../../modules/identity/models/identity-provider-info';
 import {ElementType} from '../../data/element-type/element-type';
+import {SummaryLayoutElement} from '../../models/elements/form/layout/summary-layout-element';
 
 
 export interface ElementTreeItemProps<T extends AnyElement, E extends ElementTreeEntity> {
-    parents: Array<RootElement | StepElement | GroupLayout | ReplicatingContainerLayout>;
+    parents: Array<RootElement | StepElement | GroupLayout | ReplicatingContainerLayout | SummaryLayoutElement>;
     entity: E;
     element: T;
     onPatch: (updatedElement: Partial<T>, updatedEntity: Partial<E>) => void;

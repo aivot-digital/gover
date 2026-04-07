@@ -9,6 +9,7 @@ export interface BaseEditorProps<T extends AnyElement, E extends ElementTreeEnti
     onPatchEntity: (update: Partial<E>) => void;
     editable: boolean;
     scope: ElementTreeScope;
+    hasSummaryLayoutParent: boolean;
 }
 
 export type BaseEditor<M extends AnyElement, E extends ElementTreeEntity> = (props: BaseEditorProps<M, E>) => React.ReactNode;

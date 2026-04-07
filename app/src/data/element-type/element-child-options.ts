@@ -13,6 +13,7 @@ const CitizenFacingBaseElements: ElementType[] = [
     ElementType.Headline,
     ElementType.RichText,
     ElementType.Alert,
+    ElementType.Spacer,
 
     // Inputs
     ElementType.Text,
@@ -20,7 +21,6 @@ const CitizenFacingBaseElements: ElementType[] = [
     ElementType.Radio,
     ElementType.Select,
     ElementType.MultiCheckbox,
-    ElementType.Spacer,
     ElementType.Table,
     ElementType.Time,
     ElementType.DateTime,
@@ -34,8 +34,8 @@ const CitizenFacingBaseElements: ElementType[] = [
     // Layouts
     ElementType.ReplicatingContainer,
     ElementType.GroupLayout,
+    ElementType.SummaryLayout,
 ];
-
 
 const StaffFacingBaseElements: ElementType[] = [
     // Content
@@ -45,6 +45,7 @@ const StaffFacingBaseElements: ElementType[] = [
     ElementType.Headline,
     ElementType.RichText,
     ElementType.Alert,
+    ElementType.Spacer,
 
     // Inputs
     ElementType.Text,
@@ -52,7 +53,6 @@ const StaffFacingBaseElements: ElementType[] = [
     ElementType.Radio,
     ElementType.Select,
     ElementType.MultiCheckbox,
-    ElementType.Spacer,
     ElementType.Table,
     ElementType.Time,
     ElementType.DateTime,
@@ -69,6 +69,47 @@ const StaffFacingBaseElements: ElementType[] = [
     // Layouts
     ElementType.ReplicatingContainer,
     ElementType.GroupLayout,
+    ElementType.SummaryLayout,
+];
+
+// Summaries can only contain inputs
+const CitizenFacingSummaryChildElements: ElementType[] = [
+    ElementType.Text,
+    ElementType.Number,
+    ElementType.Radio,
+    ElementType.Select,
+    ElementType.MultiCheckbox,
+    ElementType.Table,
+    ElementType.Time,
+    ElementType.DateTime,
+    ElementType.DateRange,
+    ElementType.TimeRange,
+    ElementType.DateTimeRange,
+    ElementType.MapPoint,
+    ElementType.FileUpload,
+    ElementType.ChipInput,
+    ElementType.ReplicatingContainer,
+];
+
+const StaffFacingSummaryChildElements: ElementType[] = [
+    ElementType.Text,
+    ElementType.Number,
+    ElementType.Radio,
+    ElementType.Select,
+    ElementType.MultiCheckbox,
+    ElementType.Table,
+    ElementType.Time,
+    ElementType.DateTime,
+    ElementType.DateRange,
+    ElementType.TimeRange,
+    ElementType.DateTimeRange,
+    ElementType.MapPoint,
+    ElementType.FileUpload,
+    ElementType.ChipInput,
+    ElementType.DataModelSelect,
+    ElementType.DataObjectSelect,
+    ElementType.RichTextInput,
+    ElementType.ReplicatingContainer,
 ];
 
 export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<ElementType, ElementType[]>>> = {
@@ -82,10 +123,12 @@ export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<E
             ElementType.SubmitStep,
         ],
         [ElementType.ReplicatingContainer]: CitizenFacingBaseElements,
+        [ElementType.SummaryLayout]: CitizenFacingSummaryChildElements,
     },
     [ElementDisplayContext.StaffFacing]: {
         [ElementType.GroupLayout]: StaffFacingBaseElements,
         [ElementType.Step]: StaffFacingBaseElements,
         [ElementType.ReplicatingContainer]: StaffFacingBaseElements,
+        [ElementType.SummaryLayout]: StaffFacingSummaryChildElements,
     },
 };

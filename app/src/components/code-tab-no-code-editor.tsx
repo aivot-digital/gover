@@ -11,9 +11,10 @@ import {type GroupLayout} from '../models/elements/form/layout/group-layout';
 import {ElementType} from '../data/element-type/element-type';
 import {type ConditionSet} from '../models/functions/conditions/condition-set';
 import {type ReplicatingContainerLayout} from '../models/elements/form/layout/replicating-container-layout';
+import {SummaryLayoutElement} from '../models/elements/form/layout/summary-layout-element';
 
 interface CodeTabNoCodeEditorProps {
-    parents: Array<RootElement | StepElement | GroupLayout | ReplicatingContainerLayout>;
+    parents: Array<RootElement | StepElement | GroupLayout | ReplicatingContainerLayout | SummaryLayoutElement>;
     element: AnyElement;
     func: Function;
     onChange: (func: Function) => void;

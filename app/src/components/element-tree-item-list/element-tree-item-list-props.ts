@@ -8,10 +8,11 @@ import {type ElementTreeScope} from '../element-tree/element-tree-scope';
 import {AnyFormElement} from '../../models/elements/form/any-form-element';
 import {IdentityProviderInfo} from '../../modules/identity/models/identity-provider-info';
 import {ElementType} from '../../data/element-type/element-type';
+import {SummaryLayoutElement} from '../../models/elements/form/layout/summary-layout-element';
 
 
 export interface ElementTreeItemListProps<T extends AnyElementWithChildren, E extends ElementTreeEntity> {
-    parents: Array<RootElement | StepElement | GroupLayout | ReplicatingContainerLayout>;
+    parents: Array<RootElement | StepElement | GroupLayout | ReplicatingContainerLayout | SummaryLayoutElement>;
     entity: E;
     element: T;
     isRootList?: boolean;

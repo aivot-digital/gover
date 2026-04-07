@@ -244,6 +244,7 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                 onPatchEntity={props.onChangeEntity}
                 editable={props.editable}
                 scope={props.scope}
+                hasSummaryLayoutParent={false}
             />
             {
                 isAnyInputElement(props.element) &&

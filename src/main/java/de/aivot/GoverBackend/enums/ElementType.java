@@ -60,6 +60,7 @@ public enum ElementType implements Identifiable<Integer> {
     DataModelSelect(40),
     DataObjectSelect(41),
     NoCodeInput(42),
+    SummaryLayout(43),
     ;
 
     public static final String ID_FormLayout = "0";
@@ -105,6 +106,7 @@ public enum ElementType implements Identifiable<Integer> {
     public static final String ID_DataModelSelect = "40";
     public static final String ID_DataObjectSelect = "41";
     public static final String ID_NoCodeInput = "42";
+    public static final String ID_SummaryLayout = "43";
 
     private final Integer key;
 
@@ -177,6 +179,7 @@ public enum ElementType implements Identifiable<Integer> {
             case DataModelSelect -> new DataModelSelectInputElement();
             case DataObjectSelect -> new DataObjectSelectInputElement();
             case NoCodeInput -> new NoCodeInputElement();
+            case SummaryLayout -> new SummaryLayoutElement();
             default -> throw new ElementDataConversionException("Unsupported element type: %s", type.name());
         };
     }

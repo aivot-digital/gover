@@ -1240,6 +1240,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     ),
     [ElementType.IdentityInput]: null,
     [ElementType.TabLayout]: null,
+    [ElementType.SummaryLayout]: null, // TODO: Create Information about this component
 };
 
 export function ElementInfoTab({

@@ -72,6 +72,7 @@ import java.util.UUID;
         @JsonSubTypes.Type(value = DataModelSelectInputElement.class, name = ElementType.ID_DataModelSelect),
         @JsonSubTypes.Type(value = DataObjectSelectInputElement.class, name = ElementType.ID_DataObjectSelect),
         @JsonSubTypes.Type(value = NoCodeInputElement.class, name = ElementType.ID_NoCodeInput),
+        @JsonSubTypes.Type(value = SummaryLayoutElement.class, name = ElementType.ID_SummaryLayout),
 })
 public abstract class BaseElement implements Serializable {
     @Nonnull
