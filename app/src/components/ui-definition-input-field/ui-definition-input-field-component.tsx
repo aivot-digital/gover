@@ -222,6 +222,8 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                 <Box
                                     sx={{
                                         p: 2,
+                                        height: '100%',
+                                        overflowY: 'auto',
                                     }}
                                 >
                                     <ElementDerivationContext
