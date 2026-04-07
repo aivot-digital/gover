@@ -20,6 +20,7 @@ import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import Deselect from '@aivot/mui-material-symbols-400-outlined/dist/deselect/Deselect';
 import SelectAll from '@aivot/mui-material-symbols-400-outlined/dist/select-all/SelectAll';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
+import {AlertComponent} from '../../../components/alert/alert-component';
 import {UsersApiService} from '../../users/users-api-service';
 import {User} from '../../users/models/user';
 import {TeamsApiService} from '../../teams/services/teams-api-service';
@@ -207,6 +208,7 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
     const selectedCount = activeRoleIds?.size ?? 0;
     const isLoading = roles == null || activeRoleIds == null;
     const totalRolesCount = sortedRoles.length;
+    const isNewMembership = memberships != null && memberships.length === 0;
 
     const changes = useMemo(() => {
         if (activeRoleIds == null) {
@@ -473,6 +475,14 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                         </Stack>
                     </Stack>
 
+                    {!isLoading && selectedCount === 0 && (
+                        <AlertComponent color="warning">
+                            Es wurde keine Domänenrolle ausgewählt.
+                            Die Mitarbeiter:in wird ohne Domänenrolle gespeichert und hat dadurch in dieser Domäne
+                            möglicherweise keine zusätzlichen Berechtigungen.
+                        </AlertComponent>
+                    )}
+
                     {!isLoading && sortedRoles.length === 0 && (
                         <Typography
                             variant="body2"
@@ -529,7 +539,7 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                 <Button
                     variant="contained"
                     onClick={handleSave}
-                    disabled={isLoading || !changes.hasChanges || selectedCount === 0}
+                    disabled={isLoading || (!isNewMembership && !changes.hasChanges)}
                     startIcon={<SaveOutlinedIcon/>}
                 >
                     Speichern

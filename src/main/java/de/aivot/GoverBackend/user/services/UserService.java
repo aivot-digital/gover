@@ -30,16 +30,19 @@ public class UserService implements EntityService<UserEntity, String> {
     );
 
     private final KeyCloakApiService keyCloakApiService;
+    private final ImportedUserSystemRoleService importedUserSystemRoleService;
     private final ProcessInstanceTaskRepository processInstanceTaskRepository;
     private final UserRepository userRepository;
 
     @Autowired
     public UserService(
             KeyCloakApiService keyCloakApiService,
+            ImportedUserSystemRoleService importedUserSystemRoleService,
             ProcessInstanceTaskRepository processInstanceTaskRepository,
             UserRepository userRepository
     ) {
         this.keyCloakApiService = keyCloakApiService;
+        this.importedUserSystemRoleService = importedUserSystemRoleService;
         this.processInstanceTaskRepository = processInstanceTaskRepository;
         this.userRepository = userRepository;
     }
@@ -121,7 +124,11 @@ public class UserService implements EntityService<UserEntity, String> {
 
         // Create user entity from Keycloak user and roles
         var userFromKeycloak = UserEntity
-                .from(keycloakUser);
+                .from(keycloakUser)
+                .setSystemRoleId(importedUserSystemRoleService
+                        .resolveSystemRoleId(keycloakUser.getEmail(), null)
+                        .systemRoleId()
+                );
 
         // Save user to database
         userRepository.save(userFromKeycloak);

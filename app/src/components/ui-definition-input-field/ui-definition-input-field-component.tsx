@@ -13,6 +13,8 @@ import {ElementDerivationContext} from '../../modules/elements/components/elemen
 import {Allotment} from 'allotment';
 import {AuthoredElementValues} from '../../models/element-data';
 import {ElementDisplayContext} from '../../data/element-type/element-child-options';
+import {Hint} from '../hint/hint';
+import {humanizeNumber, humanizeNumberCapitalized} from '../../utils/humanization-utils';
 
 interface UiDefinitionInputFieldComponentProps {
     label: string;
@@ -31,16 +33,10 @@ function buildSummary(value?: UiDefinitionInputFieldElementItem | null): string 
         return 'Keine UI-Definition konfiguriert';
     }
 
-    const elementCount = flattenElements(value).length;
-    const countLabel = `${elementCount} Element${elementCount === 1 ? '' : 'e'} enthalten`;
-    const rootTypeLabel = getElementNameForType(value.type);
-    const rootTitle = generateComponentTitle(value);
+    const elementCount = flattenElements(value).length - 1; // Subtract 1 to compensate for the root element of the structure.
+    const countLabel = `${humanizeNumberCapitalized(elementCount)} Element${elementCount === 1 ? '' : 'e'} enthalten`;
 
-    if (rootTitle === rootTypeLabel) {
-        return `${countLabel} - Wurzel: ${rootTypeLabel}`;
-    }
-
-    return `${countLabel} - Start: ${rootTitle}`;
+    return `${countLabel}`;
 }
 
 export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldComponentProps) {
@@ -127,8 +123,9 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                     py: 1.25,
                     minHeight: 52,
                     display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                     gap: 0.5,
                 }}
             >
@@ -149,12 +146,24 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
 
                 {
                     expectedRootTypeLabel != null &&
-                    <Typography
-                        variant="caption"
-                        color="text.secondary"
-                    >
-                        Erwarteter Wurzeltyp: {expectedRootTypeLabel}
-                    </Typography>
+                    <Hint
+                        summary={`Modellieren Sie eine UI-Struktur mit einem Element vom Typ ${expectedRootTypeLabel} als Basis.`}
+                        detailsTitle="UI-Definition"
+                        details={
+                            <>
+                                <Typography>
+                                    Diese UI-Definition bildet ein Layout-Element vom Typ <strong>{expectedRootTypeLabel}</strong> ab.
+                                    Über den Editor können Sie die Struktur der UI-Definition anpassen, um die gewünschte Benutzeroberfläche zu erstellen.
+                                </Typography>
+                                <Typography
+                                    mt={1}
+                                >
+                                    Als Basis beziehungsweise Wurzel wird ein Element vom Typ <strong>{expectedRootTypeLabel}</strong> verwendet.
+                                    Sie können beliebig viele weitere Elemente als Kind-Elemente der Basis hinzufüge um die UI-Definition zu erweitern.
+                                </Typography>
+                            </>
+                        }
+                    />
                 }
             </Box>
 
@@ -213,6 +222,8 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                 <Box
                                     sx={{
                                         p: 2,
+                                        height: '100%',
+                                        overflowY: 'auto',
                                     }}
                                 >
                                     <ElementDerivationContext

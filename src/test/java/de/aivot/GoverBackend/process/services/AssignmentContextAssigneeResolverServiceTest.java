@@ -161,6 +161,8 @@ class AssignmentContextAssigneeResolverServiceTest {
 
     private static ProcessInstanceTaskEntity task(String assignedUserId) {
         return new ProcessInstanceTaskEntity()
+                .setPreviousProcessInstanceTaskId(null)
+                .setPreviousProcessNodePortKey(null)
                 .setAssignedUserId(assignedUserId);
     }
 

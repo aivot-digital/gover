@@ -207,6 +207,8 @@ class ProcessNodeExecutionResultHandlerTest {
                 1,
                 11,
                 null,
+                null,
+                null,
                 ProcessTaskStatus.Running,
                 null,
                 LocalDateTime.now(),
@@ -280,7 +282,7 @@ class ProcessNodeExecutionResultHandlerTest {
         private final Map<String, UserEntity> users;
 
         private TestUserService(Map<String, UserEntity> users) {
-            super(null, null, null);
+            super(null, null, null, null);
             this.users = users;
         }
 

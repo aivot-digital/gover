@@ -296,6 +296,13 @@ on conflict (id) do update
         description = excluded.description,
         permissions = excluded.permissions;
 
+-- set the default system role for automatically imported users
+insert into system_configs (key,
+                            value)
+values ('users.default_system_role', '3')
+on conflict (key) do update
+    set value = excluded.value;
+
 -- fix id sequence for system_roles
 select setval('system_roles_id_seq',
               (select max(id) from system_roles));

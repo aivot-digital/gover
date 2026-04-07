@@ -31,6 +31,7 @@ import {DepartmentEntity} from '../../../../../modules/departments/entities/depa
 import {StorageProvidersApiService} from '../../../../../modules/storage/storage-providers-api-service';
 import {StorageProviderType} from '../../../../../modules/storage/enums/storage-provider-type';
 import {isStringNullOrEmpty} from '../../../../../utils/string-utils';
+import {SystemRolesApiService} from '../../../../../modules/system/services/system-roles-api-service';
 
 async function fetchSetup(): Promise<SystemSetupDTO> {
     return new SystemApiService()
@@ -67,6 +68,9 @@ export function ApplicationSettings() {
 
     const [departments, setDepartments] = useState<DepartmentEntity[]>([]);
     const [themes, setThemes] = useState<SelectFieldComponentOption[]>([]);
+    const [systemRoleOptions, setSystemRoleOptions] = useState<SelectFieldComponentOption[]>([]);
+    const [isLoadingSystemRoles, setIsLoadingSystemRoles] = useState(true);
+    const [hasSystemRolesLoadingError, setHasSystemRolesLoadingError] = useState(false);
 
     const [assetStorageProviders, setAssetStorageProviders] = useState<SelectFieldComponentOption[]>([]);
     const [attStorageProviders, setAttStorageProviders] = useState<SelectFieldComponentOption[]>([]);
@@ -74,10 +78,20 @@ export function ApplicationSettings() {
     const [isLoadingAttStorageProviders, setIsLoadingAttStorageProviders] = useState(true);
 
     const hasNotChanged = Object.keys(editedConfig).length === 0;
+    const configuredDefaultSystemRole = config[SystemConfigKeys.users.defaultSystemRole];
     const configuredAssetStorageProvider = config[SystemConfigKeys.storage.assets.default_storage_provider];
     const configuredAttachmentStorageProvider = config[SystemConfigKeys.storage.attachments.default_storage_provider];
+    const defaultSystemRoleValue = editedConfig[SystemConfigKeys.users.defaultSystemRole] ?? configuredDefaultSystemRole;
     const assetStorageProviderValue = editedConfig[SystemConfigKeys.storage.assets.default_storage_provider] ?? configuredAssetStorageProvider;
     const attachmentStorageProviderValue = editedConfig[SystemConfigKeys.storage.attachments.default_storage_provider] ?? configuredAttachmentStorageProvider;
+    const defaultSystemRoleError =
+        !isLoadingSystemRoles
+            ? systemRoleOptions.length === 0
+                ? 'Es ist keine Systemrolle vorhanden. Legen Sie zuerst eine Systemrolle an.'
+                : isStringNullOrEmpty(defaultSystemRoleValue)
+                    ? 'Bitte wählen Sie eine Standard-Systemrolle aus.'
+                    : undefined
+            : undefined;
     const assetStorageProviderError =
         !isLoadingAssetStorageProviders
             ? assetStorageProviders.length === 0
@@ -107,6 +121,25 @@ export function ApplicationSettings() {
             .catch((err) => {
                 console.error(err);
                 dispatch(showErrorSnackbar('Erscheinungsbilder konnten nicht geladen werden'));
+            });
+
+        new SystemRolesApiService()
+            .listAll()
+            .then((roles) => {
+                setSystemRoleOptions(roles.content
+                    .map((role) => ({
+                        value: role.id.toString(),
+                        label: role.name,
+                        subLabel: role.description ?? undefined,
+                    }))
+                    .sort((a, b) => a.label.localeCompare(b.label)));
+            })
+            .catch((err) => {
+                setHasSystemRolesLoadingError(true);
+                dispatch(showApiErrorSnackbar(err, 'Die Liste der Systemrollen konnte nicht geladen werden'));
+            })
+            .finally(() => {
+                setIsLoadingSystemRoles(false);
             });
 
         new StorageProvidersApiService()
@@ -227,6 +260,20 @@ export function ApplicationSettings() {
                 const fallbackProviderValue = requiredStorageProviderConfig.options[0].value;
                 normalizedEditedConfig[requiredStorageProviderConfig.key] = fallbackProviderValue;
                 appliedStorageProviderDefaults[requiredStorageProviderConfig.key] = fallbackProviderValue;
+            }
+
+            const currentDefaultSystemRole =
+                normalizedEditedConfig[SystemConfigKeys.users.defaultSystemRole] ??
+                config[SystemConfigKeys.users.defaultSystemRole];
+
+            if (isStringNullOrEmpty(currentDefaultSystemRole)) {
+                if (systemRoleOptions.length === 0) {
+                    dispatch(showErrorSnackbar('Für automatische Benutzerimporte muss mindestens eine Systemrolle vorhanden sein. Legen Sie zuerst eine Systemrolle an.'));
+                    return;
+                }
+
+                dispatch(showErrorSnackbar('Bitte wählen Sie eine Standard-Systemrolle für automatische Benutzerimporte aus.'));
+                return;
             }
 
             if (Object.keys(appliedStorageProviderDefaults).length > 0) {
@@ -398,6 +445,49 @@ export function ApplicationSettings() {
                     });
                 }}
                 disabled={!hasAccess}
+            />
+
+            <Typography
+                variant="subtitle1"
+                sx={{
+                    mt: 4,
+                }}
+            >
+                Automatische Rollenzuweisung
+            </Typography>
+            <Typography
+                sx={{
+                    maxWidth: 900,
+                    mb: 1.6,
+                }}
+            >
+                Wählen Sie hier die Systemrolle aus, die Mitarbeiter:innen automatisch erhalten sollen, wenn sie neu in Gover synchronisiert oder anderweitig importiert werden.
+            </Typography>
+            <SelectFieldComponent
+                label="Standard-Systemrolle für automatische Benutzerimporte"
+                hint={
+                    hasSystemRolesLoadingError
+                        ? 'Die Systemrollen konnten nicht geladen werden. Bitte laden Sie die Seite neu oder prüfen Sie Ihre Berechtigungen.'
+                        : 'Diese Systemrolle wird bei neuen automatischen Benutzerimporten und -synchronisationen verwendet.'
+                }
+                value={defaultSystemRoleValue}
+                onChange={(val) => {
+                    setEditedConfig({
+                        ...editedConfig,
+                        [SystemConfigKeys.users.defaultSystemRole]: val ?? '',
+                    });
+                }}
+                required
+                error={defaultSystemRoleError}
+                disabled={!hasAccess || isLoadingSystemRoles}
+                options={systemRoleOptions}
+                emptyStatePlaceholder={
+                    isLoadingSystemRoles
+                        ? 'Systemrollen werden geladen…'
+                        : hasSystemRolesLoadingError
+                            ? 'Systemrollen konnten nicht geladen werden'
+                            : 'Keine Systemrollen vorhanden'
+                }
             />
 
             <Typography

@@ -76,6 +76,8 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 1,
                 11,
                 null,
+                null,
+                null,
                 ProcessTaskStatus.Running,
                 null,
                 LocalDateTime.now(),

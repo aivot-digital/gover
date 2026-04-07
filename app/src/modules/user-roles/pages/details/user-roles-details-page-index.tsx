@@ -290,7 +290,9 @@ export function UserRolesDetailsPageIndex() {
                     Möchten Sie diese Domänenrolle wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
                 </Typography>
                 <AlertComponent color={'warning'}>
-                    Vergewissern Sie sich, dass die Domänenrolle nicht mehr benötigt wird, bevor Sie fortfahren.
+                    Wenn diese Domänenrolle noch Mitgliedschaften in Organisationseinheiten oder Teams zugewiesen ist,
+                    werden diese Zuweisungen ebenfalls entfernt. Das kann dazu führen, dass Nutzer:innen danach in
+                    ihren Domänen gegebenenfalls keine Berechtigungen mehr haben.
                 </AlertComponent>
             </ConfirmDialog>
         </Box>

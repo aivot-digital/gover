@@ -335,7 +335,9 @@ public class ProcessNodeExecutionResultHandler {
 
         var nextPayload = new ProcessWorker.WorkerPayload(
                 processInstance.getId(),
+                processInstanceTask.getId(),
                 currentNode.getId(),
+                taskCompleted.getViaPort(),
                 outEdge.get().getToNodeId()
         );
 

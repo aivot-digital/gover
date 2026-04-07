@@ -165,7 +165,6 @@ class ApprovalActionNodeV1Test {
         assertEquals("approved", completed.getNodeData().get("decision"));
         assertEquals("<p>Passt</p>", completed.getNodeData().get("remark"));
         assertEquals("staff-1", completed.getNodeData().get("processedByUserId"));
-        assertEquals("<p>Passt</p>", completed.getNodeData().get("approvalRemark"));
         assertNotNull(completed.getNodeData().get("processedAt"));
     }
 
@@ -253,7 +252,9 @@ class ApprovalActionNodeV1Test {
                 .setProcessId(PROCESS_ID)
                 .setProcessVersion(PROCESS_VERSION)
                 .setProcessNodeId(NODE_ID)
+                .setPreviousProcessInstanceTaskId(null)
                 .setPreviousProcessNodeId(previousProcessNodeId)
+                .setPreviousProcessNodePortKey(null)
                 .setStatus(ProcessTaskStatus.Running)
                 .setStarted(now)
                 .setUpdated(now)

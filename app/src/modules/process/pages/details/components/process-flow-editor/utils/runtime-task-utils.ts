@@ -69,10 +69,12 @@ export function getLatestTaskForEdge(
     tasks: ProcessInstanceTaskEntity[],
     fromNodeId: number,
     toNodeId: number,
+    viaPort: string,
 ): ProcessInstanceTaskEntity | null {
     return pickLatestTask(tasks, (task) => (
         task.previousProcessNodeId === fromNodeId &&
-        task.processNodeId === toNodeId
+        task.processNodeId === toNodeId &&
+        task.previousProcessNodePortKey === viaPort
     ));
 }
 
@@ -80,8 +82,9 @@ export function getTransferredProcessDataForEdge(
     tasks: ProcessInstanceTaskEntity[],
     fromNodeId: number,
     toNodeId: number,
+    viaPort: string,
 ): Record<string, any> | null {
-    const targetTask = getLatestTaskForEdge(tasks, fromNodeId, toNodeId);
+    const targetTask = getLatestTaskForEdge(tasks, fromNodeId, toNodeId, viaPort);
     if (targetTask == null) {
         return null;
     }
