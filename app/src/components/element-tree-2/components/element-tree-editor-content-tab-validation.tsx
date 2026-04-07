@@ -25,6 +25,7 @@ import {copyToClipboardText} from '../../../utils/copy-to-clipboard';
 import {BaseInputElement} from '../../../models/elements/form/base-input-element';
 import {useElementTreeContext} from '../element-tree-context';
 import {useElementTreeEditorContext} from './element-tree-editor-context';
+import {ElementDisplayContext} from '../../../data/element-type/element-child-options';
 
 const exampleValidationCode = `(function(){
     // Hier kann der Code eingefügt werden, der bestimmt, ob das Element valide ist.
@@ -39,6 +40,7 @@ export function ElementTreeEditorContentTabValidation() {
     const {
         editable,
         allElements,
+        displayContext,
     } = useElementTreeContext();
 
     const {
@@ -287,6 +289,7 @@ export function ElementTreeEditorContentTabValidation() {
                                                         }}
                                                         editable={editable}
                                                         desiredReturnType={NoCodeDataType.Boolean}
+                                                        contextType={displayContext === ElementDisplayContext.StaffFacing ? 'BOTH' : 'FORM'}
                                                     />
                                                 </Box>
                                             </Box>

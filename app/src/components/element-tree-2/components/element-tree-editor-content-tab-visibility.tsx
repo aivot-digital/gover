@@ -18,6 +18,7 @@ import {copyToClipboardText} from '../../../utils/copy-to-clipboard';
 import {AnyElement} from '../../../models/elements/any-element';
 import {useElementTreeContext} from '../element-tree-context';
 import {useElementTreeEditorContext} from './element-tree-editor-context';
+import {ElementDisplayContext} from '../../../data/element-type/element-child-options';
 
 const exampleVisibilityCode = `(function(){
     // Hier kann der Code eingefügt werden, der bestimmt, ob das Element sichtbar ist.
@@ -31,6 +32,7 @@ export function ElementTreeEditorContentTabVisibility<T extends AnyElement>() {
     const {
         editable,
         allElements,
+        displayContext,
     } = useElementTreeContext();
 
     const {
@@ -198,6 +200,7 @@ export function ElementTreeEditorContentTabVisibility<T extends AnyElement>() {
                             desiredReturnType={NoCodeDataType.Runtime}
                             label="Sichtbarkeit"
                             hint='Der Ausdruck muss einen Wahrheitswert (Boolean) zurückgeben. Wenn der Ausdruck "Wahr" ergibt, wird das Element angezeigt; andernfalls wird es ausgeblendet.'
+                            contextType={displayContext === ElementDisplayContext.StaffFacing ? 'BOTH' : 'FORM'}
                         />
                     )
                 }

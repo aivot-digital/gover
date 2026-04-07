@@ -10,11 +10,14 @@ import {ReferenceCheck} from '../../element-editor-code-tab/components/reference
 import {editor} from 'monaco-editor';
 import {ElementValueFunction} from '../../../models/elements/element-value-function';
 import {NoCodeDataTypeMap} from '../../../modules/nocode/data/no-code-data-type-map';
-import {NoCodeEditorWrapper} from '../../element-editor-code-tab/components/no-code-editor-wrapper/no-code-editor-wrapper';
+import {
+    NoCodeEditorWrapper,
+} from '../../element-editor-code-tab/components/no-code-editor-wrapper/no-code-editor-wrapper';
 import {copyToClipboardText} from '../../../utils/copy-to-clipboard';
 import {BaseInputElement} from '../../../models/elements/form/base-input-element';
 import {useElementTreeContext} from '../element-tree-context';
 import {useElementTreeEditorContext} from './element-tree-editor-context';
+import {ElementDisplayContext} from '../../../data/element-type/element-child-options';
 
 const exampleValueCode = `(function(){
     // Diese Funktion wird aufgerufen, um einen Wert für das Element zu berechnen.
@@ -28,6 +31,7 @@ export function ElementTreeEditorContentTabValue() {
     const {
         editable,
         allElements,
+        displayContext,
     } = useElementTreeContext();
 
     const {
@@ -152,6 +156,7 @@ export function ElementTreeEditorContentTabValue() {
                             desiredReturnType={NoCodeDataTypeMap[currentElement.type as keyof typeof NoCodeDataTypeMap]}
                             label="Dynamischer Wert"
                             hint="Der Ausdruck muss den Wert für das Element zurückliefern."
+                            contextType={displayContext === ElementDisplayContext.StaffFacing ? 'BOTH' : 'FORM'}
                         />
                     )
                 }

@@ -47,6 +47,7 @@ export function NoCodeOperandEditorSelector(props: NoCodeOperandEditorSelectorPr
                 sx={{
                     display: 'flex',
                     alignItems: 'center',
+                    flexWrap: 'wrap',
                     gap: 2,
                 }}
             >
