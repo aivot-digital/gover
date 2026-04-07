@@ -47,6 +47,11 @@ export function humanizeNumber(num: number): string {
     return num.toFixed(0);
 }
 
+export function humanizeNumberCapitalized(num: number): string {
+    const humanized = humanizeNumber(num);
+    return humanized.charAt(0).toUpperCase() + humanized.slice(1);
+}
+
 export function pluralize(num: number, singular: string, plural: string): string {
     if (num > 1) {
         return plural;
