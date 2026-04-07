@@ -703,7 +703,10 @@
                                 </ul>
                             </td>
                         </tr>
-                        <tr style="vertical-align: top">
+                        <tr
+                                th:if="${ paymentTransaction.paymentInformation.paymentMethod != null }"
+                                style="vertical-align: top"
+                        >
                             <td>
                                 <strong>Zahlungsmittel:</strong>
                             </td>
