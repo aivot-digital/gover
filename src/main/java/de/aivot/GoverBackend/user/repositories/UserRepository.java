@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.user.repositories;
 
 import de.aivot.GoverBackend.user.entities.UserEntity;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -14,6 +15,17 @@ public interface UserRepository extends JpaRepository<UserEntity, String>, JpaSp
     Boolean existsBySystemRoleId(Integer globalRole);
 
     boolean existsByEmail(String email);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE UserEntity u
+            SET u.systemRoleId = :replacementSystemRoleId
+            WHERE u.systemRoleId = :currentSystemRoleId
+            """)
+    int reassignSystemRoleId(
+            @Param("currentSystemRoleId") Integer currentSystemRoleId,
+            @Param("replacementSystemRoleId") Integer replacementSystemRoleId
+    );
 
     @Query("""
             SELECT DISTINCT u.id

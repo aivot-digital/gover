@@ -2,7 +2,7 @@ import {GenericListPage} from '../../../../../components/generic-list-page/gener
 import {PageWrapper} from '../../../../../components/page-wrapper/page-wrapper';
 import {Link, Typography} from '@mui/material';
 import {EditOutlined, MailOutlined, PeopleOutlined} from '@mui/icons-material';
-import React from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {CellLink} from '../../../../../components/cell-link/cell-link';
 import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
 import {UserFilter, UsersApiService} from '../../../users-api-service';
@@ -10,78 +10,12 @@ import {type User} from '../../../../../models/entities/user';
 import Chip from '@mui/material/Chip';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 import {UserStatusChip} from '../../../components/user-status-chip';
-import {SystemUserRole} from '../../../models/user';
 import Person from "@aivot/mui-material-symbols-400-outlined/dist/person/Person";
 import {GenericListColDef} from "../../../../../components/generic-list/generic-list-props";
 import Add from "@aivot/mui-material-symbols-400-outlined/dist/add/Add";
-
-const columns: GenericListColDef<User>[] = [
-    {
-        field: 'lastName',
-        headerName: 'Nachname',
-        flex: 1,
-        renderCell: (params) => (
-            <CellLink
-                to={`/users/${params.id}`}
-                title="Mitarbeiter:in anzeigen"
-            >
-                {String(params.value)}
-            </CellLink>
-        ),
-    },
-    {
-        field: 'firstName',
-        headerName: 'Vorname',
-        flex: 1,
-    },
-    {
-        field: 'email',
-        headerName: 'E-Mail-Adresse',
-        flex: 1,
-        renderCell: (params) => (
-            <Link
-                href={`mailto:${params.value}`}
-                title="E-Mail an Mitarbeiter:in verfassen (im Standard-Mailprogramm, wenn verfügbar)"
-                sx={{
-                    textDecoration: 'none',
-                    color: 'inherit',
-                    whiteSpace: 'nowrap',
-                }}
-            >
-                <span>{params.value}</span>
-            </Link>
-        ),
-    },
-    {
-        field: 'globalRole',
-        headerName: 'Systemrolle',
-        flex: 1,
-        renderCell: (params) => {
-            let roleLabel = 'Mitarbeiter:in';
-            if (params.row.globalRole === SystemUserRole.SystemAdmin) {
-                roleLabel = 'Systemadministrator:in';
-            } else if (params.row.globalRole === SystemUserRole.SuperAdmin) {
-                roleLabel = 'Superadministrator:in';
-            }
-            return <Chip
-                label={roleLabel}
-                size="small"
-                variant="outlined"
-            />;
-        },
-    },
-    {
-        field: 'enabled',
-        headerName: 'Status',
-        type: 'boolean',
-        renderCell: (params) => (
-            <UserStatusChip
-                userDeletedInIdp={params.row.deletedInIdp}
-                userEnabled={params.row.enabled}
-            />
-        ),
-    },
-];
+import {SystemRolesApiService} from '../../../../system/services/system-roles-api-service';
+import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
+import {showApiErrorSnackbar} from '../../../../../slices/snackbar-slice';
 
 const Filters = [
     {
@@ -99,10 +33,124 @@ const Filters = [
 ];
 
 export function UserListPage() {
+    const dispatch = useAppDispatch();
     const hasAccess = useAccessGuard({
         onlyGlobalAdmin: true,
         messageType: 'snackbar',
     });
+    const systemRolesApiService = useMemo(() => new SystemRolesApiService(), []);
+    const [systemRoleNamesById, setSystemRoleNamesById] = useState<Record<number, string>>({});
+    const [isSystemRolesLoading, setIsSystemRolesLoading] = useState(true);
+
+    useEffect(() => {
+        let isCancelled = false;
+
+        setIsSystemRolesLoading(true);
+
+        systemRolesApiService
+            .listAllOrdered('name', 'ASC')
+            .then((result) => {
+                if (isCancelled) {
+                    return;
+                }
+
+                setSystemRoleNamesById(Object.fromEntries(result.content.map((role) => [role.id, role.name])));
+            })
+            .catch((err) => {
+                if (isCancelled) {
+                    return;
+                }
+
+                setSystemRoleNamesById({});
+                dispatch(showApiErrorSnackbar(err, 'Die Systemrollen konnten nicht geladen werden.'));
+            })
+            .finally(() => {
+                if (!isCancelled) {
+                    setIsSystemRolesLoading(false);
+                }
+            });
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [dispatch, systemRolesApiService]);
+
+    const columns = useMemo<GenericListColDef<User>[]>(() => [
+        {
+            field: 'lastName',
+            headerName: 'Nachname',
+            flex: 1,
+            renderCell: (params) => (
+                <CellLink
+                    to={`/users/${params.id}`}
+                    title="Mitarbeiter:in anzeigen"
+                >
+                    {String(params.value)}
+                </CellLink>
+            ),
+        },
+        {
+            field: 'firstName',
+            headerName: 'Vorname',
+            flex: 1,
+        },
+        {
+            field: 'email',
+            headerName: 'E-Mail-Adresse',
+            flex: 1,
+            renderCell: (params) => (
+                <Link
+                    href={`mailto:${params.value}`}
+                    title="E-Mail an Mitarbeiter:in verfassen (im Standard-Mailprogramm, wenn verfügbar)"
+                    sx={{
+                        textDecoration: 'none',
+                        color: 'inherit',
+                        whiteSpace: 'nowrap',
+                    }}
+                >
+                    <span>{params.value}</span>
+                </Link>
+            ),
+        },
+        {
+            field: 'systemRoleId',
+            headerName: 'Systemrolle',
+            flex: 1,
+            renderCell: (params) => {
+                const systemRoleId = params.row.systemRoleId;
+
+                let roleLabel: string;
+                if (systemRoleId == null) {
+                    roleLabel = 'Keine Systemrolle';
+                } else if (systemRoleNamesById[systemRoleId] != null) {
+                    roleLabel = systemRoleNamesById[systemRoleId];
+                } else if (isSystemRolesLoading) {
+                    roleLabel = 'Lade Systemrolle...';
+                } else {
+                    roleLabel = `Unbekannte Rolle (#${systemRoleId})`;
+                }
+
+                return (
+                    <Chip
+                        label={roleLabel}
+                        size="small"
+                        variant="outlined"
+                    />
+                );
+            },
+        },
+        {
+            field: 'enabled',
+            headerName: 'Status',
+            type: 'boolean',
+            renderCell: (params) => (
+                <UserStatusChip
+                    userDeletedInIdp={params.row.deletedInIdp}
+                    userEnabled={params.row.enabled}
+                />
+            ),
+        },
+    ], [isSystemRolesLoading, systemRoleNamesById]);
 
     return (
         <PageWrapper

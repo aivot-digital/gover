@@ -8,6 +8,7 @@ import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.userRoles.dtos.DeleteSystemRoleResponseDto;
 import de.aivot.GoverBackend.userRoles.entities.SystemRoleEntity;
 import de.aivot.GoverBackend.userRoles.filters.SystemRoleFilter;
 import de.aivot.GoverBackend.userRoles.permissions.SystemRolePermissionProvider;
@@ -28,6 +29,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestController
@@ -195,9 +197,10 @@ public class SystemRoleController {
             description = "Delete a system role by its ID. " +
                     "This requires the permission „" + SystemRolePermissionProvider.SYSTEM_ROLE_DELETE + "“."
     )
-    public void destroy(
+    public DeleteSystemRoleResponseDto destroy(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable Integer id
+            @PathVariable Integer id,
+            @Nullable @RequestParam(required = false) Integer replacementSystemRoleId
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
@@ -212,8 +215,44 @@ public class SystemRoleController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        systemRoleService
-                .deleteEntity(entity);
+        var deleteResult = systemRoleService
+                .deleteAndMigrateUsers(entity, replacementSystemRoleId);
+
+        var auditMetadata = new LinkedHashMap<String, Object>();
+        auditMetadata.put("id", entity.getId());
+        auditMetadata.put("name", entity.getName());
+        auditMetadata.put("migratedUsersCount", deleteResult.migratedUsersCount());
+        auditMetadata.put(
+                "defaultSystemRoleForAutomaticImportsUpdated",
+                deleteResult.defaultSystemRoleForAutomaticImportsUpdated()
+        );
+        if (deleteResult.replacementRole() != null) {
+            auditMetadata.put("replacementRoleId", deleteResult.replacementRole().getId());
+            auditMetadata.put("replacementRoleName", deleteResult.replacementRole().getName());
+        }
+        if (deleteResult.newDefaultSystemRoleId() != null) {
+            auditMetadata.put("newDefaultSystemRoleId", deleteResult.newDefaultSystemRoleId());
+        }
+
+        var auditMessage = new StringBuilder(String.format(
+                "Die Systemrolle %s mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(entity.getName()),
+                StringUtils.quote(String.valueOf(entity.getId())),
+                StringUtils.quote(execUser.getFullName())
+        ));
+        if (deleteResult.migratedUsersCount() > 0 && deleteResult.replacementRole() != null) {
+            auditMessage.append(String.format(
+                    " %s Mitarbeiter:innen wurden auf die Systemrolle %s migriert.",
+                    StringUtils.quote(String.valueOf(deleteResult.migratedUsersCount())),
+                    StringUtils.quote(deleteResult.replacementRole().getName())
+            ));
+        }
+        if (deleteResult.defaultSystemRoleForAutomaticImportsUpdated() && deleteResult.replacementRole() != null) {
+            auditMessage.append(String.format(
+                    " Die Standard-Systemrolle für automatische Benutzerimporte wurde auf %s gesetzt.",
+                    StringUtils.quote(deleteResult.replacementRole().getName())
+            ));
+        }
 
         auditService
                 .create()
@@ -223,16 +262,14 @@ public class SystemRoleController {
                         SystemRoleEntity.class,
                         entity.getId(),
                         "id",
-                        Map.of(
-                                "id", entity.getId(),
-                                "name", entity.getName()
-                        ))
-                .withMessage(
-                        "Die Systemrolle %s mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
-                        StringUtils.quote(entity.getName()),
-                        StringUtils.quote(String.valueOf(entity.getId())),
-                        StringUtils.quote(execUser.getFullName())
-                )
+                        auditMetadata)
+                .withMessage(auditMessage.toString())
                 .log();
+
+        return new DeleteSystemRoleResponseDto(
+                deleteResult.migratedUsersCount(),
+                deleteResult.defaultSystemRoleForAutomaticImportsUpdated(),
+                deleteResult.newDefaultSystemRoleId()
+        );
     }
 }
