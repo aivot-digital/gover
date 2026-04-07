@@ -14,6 +14,7 @@ import InputCircle from '@aivot/mui-material-symbols-400-outlined/dist/input-cir
 import ApprovalDelegation from '@aivot/mui-material-symbols-400-outlined/dist/approval-delegation/ApprovalDelegation';
 import Counter1 from '@aivot/mui-material-symbols-400-outlined/dist/counter-1/Counter1';
 import EditNote from '@aivot/mui-material-symbols-400-outlined/dist/edit-note/EditNote';
+import AdsClick from '@aivot/mui-material-symbols-400-outlined/dist/ads-click/AdsClick';
 
 export const KnownProviderIcons: Record<string, FC<SvgIconProps>> = {
     'if': AltRoute,
@@ -30,4 +31,5 @@ export const KnownProviderIcons: Record<string, FC<SvgIconProps>> = {
     'approval': ApprovalDelegation,
     'counter': Counter1,
     'data_change': EditNote,
+    'manual_action': AdsClick,
 };

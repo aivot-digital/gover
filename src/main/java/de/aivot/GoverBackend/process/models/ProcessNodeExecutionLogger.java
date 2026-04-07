@@ -99,7 +99,7 @@ public class ProcessNodeExecutionLogger {
                 ProcessNodeExecutionLogLevel.Error,
                 true,
                 true,
-                "Prozessausfuehrungsfehler",
+                "Prozessausführungsfehler",
                 exception.getMessage() == null ? exception.getClass().getSimpleName() : exception.getMessage(),
                 details
         );
