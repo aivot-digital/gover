@@ -262,7 +262,7 @@ public class ElementDerivationService {
 
         var override = currentElement.getOverride();
 
-        if (override == null) {
+        if (override == null || override.getType() == null) {
             return null; // No override to derive if the element has no override
         }
 
@@ -380,7 +380,7 @@ public class ElementDerivationService {
 
         var vis = currentElement.getVisibility();
 
-        if (vis == null) {
+        if (vis == null || vis.getType() == null) {
             return true;
         }
 
@@ -461,7 +461,7 @@ public class ElementDerivationService {
         var valueFunction = inputElement.getValue();
 
         // If the value function is null, or an authored value exists and the element is not disabled, set the authored value as the effective value
-        if (valueFunction == null || (authoredValue != null && !Boolean.TRUE.equals(inputElement.getDisabled()))) {
+        if (valueFunction == null || valueFunction.getType() == null || (authoredValue != null && !Boolean.TRUE.equals(inputElement.getDisabled()))) {
             var sanitizedValue = sanitizeSelectEffectiveValue(
                     rootElement,
                     inputElement,
@@ -647,7 +647,7 @@ public class ElementDerivationService {
         var validation = inputElement
                 .getValidation();
 
-        if (validation == null) {
+        if (validation == null || validation.getType() == null) {
             return null;
         }
 
