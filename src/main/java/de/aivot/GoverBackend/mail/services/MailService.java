@@ -434,6 +434,10 @@ public class MailService {
         }
     }
 
+    public boolean isSendingConfigured() {
+        return !mailHost.isBlank();
+    }
+
     private String loadTemplate(String template, Map<String, Object> data, TemplateMode mode) {
         return new TemplateLoaderService()
                 .processTemplate("mail/" + template, data, mode);

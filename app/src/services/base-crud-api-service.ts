@@ -1,6 +1,6 @@
 import {Page} from '../models/dtos/page';
 import {SortOrder} from '../components/generic-list/generic-list-props';
-import {BaseApiService} from './base-api-service';
+import {BaseApiService, RequestOptions} from './base-api-service';
 
 export abstract class BaseCrudApiService<CreateRequest, ListRes, DetailsRes, UpdateRequest, Id, Filter, SortFields = keyof DetailsRes extends string ? keyof DetailsRes : never> extends BaseApiService {
     protected readonly path: string;
@@ -58,7 +58,7 @@ export abstract class BaseCrudApiService<CreateRequest, ListRes, DetailsRes, Upd
         return await this.put<UpdateRequest, DetailsRes>(this.buildPath(id), link, {});
     }
 
-    public async destroy(id: Id): Promise<void> {
-        return await this.delete(this.buildPath(id), {});
+    public async destroy(id: Id, options?: RequestOptions): Promise<void> {
+        return await this.delete(this.buildPath(id), options);
     }
 }

@@ -6,11 +6,14 @@ import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.permissions.services.PermissionService;
+import de.aivot.GoverBackend.user.dtos.CreateUserRequestDTO;
+import de.aivot.GoverBackend.user.dtos.CreateUserResponseDTO;
 import de.aivot.GoverBackend.user.dtos.SetPasswordRequestDTO;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.filters.UserFilter;
 import de.aivot.GoverBackend.user.permissions.UserPermissionProvider;
 import de.aivot.GoverBackend.user.services.KeyCloakApiService;
+import de.aivot.GoverBackend.user.services.UserProvisioningService;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,6 +40,7 @@ public class UserController {
     private final ScopedAuditService auditService;
 
     private final UserService userService;
+    private final UserProvisioningService userProvisioningService;
     private final KeyCloakApiService keyCloakApiService;
     private final PermissionService permissionService;
 
@@ -44,11 +48,13 @@ public class UserController {
     public UserController(
             AuditService auditService,
             UserService userService,
+            UserProvisioningService userProvisioningService,
             KeyCloakApiService keyCloakApiService, PermissionService permissionService) {
         this.auditService = auditService
                 .createScopedAuditService(UserController.class, "Benutzer");
 
         this.userService = userService;
+        this.userProvisioningService = userProvisioningService;
         this.keyCloakApiService = keyCloakApiService;
         this.permissionService = permissionService;
     }
@@ -111,6 +117,59 @@ public class UserController {
                         "Die Mitarbeiter:in mit der ID %s und der E-Mail-Adresse %s wurde von der Mitarbeiter:in %s erstellt.",
                         StringUtils.quote(result.getId()),
                         StringUtils.quote(result.getEmail()),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
+
+        return result;
+    }
+
+    @PostMapping("provision/")
+    @Operation(
+            summary = "Provision User",
+            description = "Create a new user in the system, set initial credentials and optionally send them by mail. Requires the user.create permission."
+    )
+    public CreateUserResponseDTO provision(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody @Valid CreateUserRequestDTO request
+    ) throws ResponseException {
+        var execUser = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService.testSystemPermission(execUser.getId(), UserPermissionProvider.USER_CREATE);
+
+        CreateUserResponseDTO result;
+        try {
+            result = userProvisioningService
+                    .provision(request);
+        } catch (Exception e) {
+            if (e instanceof ResponseException re) {
+                throw re;
+            }
+            throw ResponseException.badRequest("Fehler beim Anlegen der Mitarbeiter:in", e);
+        }
+
+        auditService
+                .create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Create,
+                        UserEntity.class,
+                        result.user().getId(),
+                        "id",
+                        Map.of(
+                                "id", result.user().getId(),
+                                "email", result.user().getEmail(),
+                                "initialCredentialsSentByEmail", result.initialCredentialsSentByEmail(),
+                                "manualCredentialHandoverRequired", result.initialCredentials() != null
+                        ))
+                .withMessage(
+                        result.initialCredentialsSentByEmail()
+                                ? "Die Mitarbeiter:in mit der ID %s und der E-Mail-Adresse %s wurde von der Mitarbeiter:in %s erstellt. Die initialen Zugangsdaten wurden automatisch per E-Mail versendet."
+                                : "Die Mitarbeiter:in mit der ID %s und der E-Mail-Adresse %s wurde von der Mitarbeiter:in %s erstellt. Die initialen Zugangsdaten müssen manuell weitergegeben werden.",
+                        StringUtils.quote(result.user().getId()),
+                        StringUtils.quote(result.user().getEmail()),
                         StringUtils.quote(execUser.getFullName())
                 )
                 .log();

@@ -9,6 +9,7 @@ interface ConfirmDialogProps {
     title: string;
     onCancel: () => void;
     onConfirm?: () => void;
+    confirmDisabled?: boolean;
     confirmationText?: string;
     inputLabel?: string;
     inputPlaceholder?: string;
@@ -22,7 +23,7 @@ export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>): Rea
     const [inputValue, setInputValue] = useState('');
 
     const requiresInput = !!props.confirmationText;
-    const isConfirmDisabled = requiresInput ? inputValue !== props.confirmationText : false;
+    const isConfirmDisabled = (requiresInput ? inputValue !== props.confirmationText : false) || props.confirmDisabled === true;
 
     const mismatch = useMemo(() => {
         if (!requiresInput) {

@@ -90,22 +90,7 @@ public class UserService implements EntityService<UserEntity, String> {
     @Nonnull
     @Override
     public UserEntity create(@Nonnull UserEntity entity) throws ResponseException {
-        var keycloakUserToCreate = KeycloakUser
-                .from(entity);
-
-        if (userRepository.existsByEmail(entity.getEmail())) {
-            throw ResponseException
-                    .badRequest("Es existiert bereits eine Mitarbeiter:in mit dieser E-Mail-Adresse.");
-        }
-
-        var createdKeycloakUser = keyCloakApiService
-                .createUser(keycloakUserToCreate);
-
-        var createdUserEntity = UserEntity
-                .from(createdKeycloakUser)
-                .setSystemRoleId(entity.getSystemRoleId());
-
-        return userRepository.save(createdUserEntity);
+        return create(entity, null, null);
     }
 
 
@@ -231,6 +216,47 @@ public class UserService implements EntityService<UserEntity, String> {
         var user = retrieve(id)
                 .orElseThrow(() -> ResponseException.notFound("Mitarbeiter:in nicht gefunden"));
 
+        keyCloakApiService.setUserPassword(id, password, false);
+
         return user;
+    }
+
+    @Nonnull
+    public UserEntity create(
+            @Nonnull UserEntity entity,
+            @Nullable String temporaryPassword,
+            @Nullable List<String> requiredActions
+    ) throws ResponseException {
+        if (userRepository.existsByEmail(entity.getEmail())) {
+            throw ResponseException
+                    .badRequest("Es existiert bereits eine Mitarbeiter:in mit dieser E-Mail-Adresse.");
+        }
+
+        var keycloakUserToCreate = KeycloakUser
+                .from(entity)
+                .setRequiredActions(requiredActions);
+
+        var createdKeycloakUser = keyCloakApiService
+                .createUser(keycloakUserToCreate);
+
+        try {
+            if (temporaryPassword != null) {
+                keyCloakApiService.setUserPassword(createdKeycloakUser.getId(), temporaryPassword, true);
+            }
+
+            var createdUserEntity = UserEntity
+                    .from(createdKeycloakUser)
+                    .setSystemRoleId(entity.getSystemRoleId());
+
+            return userRepository.save(createdUserEntity);
+        } catch (Exception e) {
+            keyCloakApiService.deleteUser(createdKeycloakUser.getId());
+
+            if (e instanceof ResponseException responseException) {
+                throw responseException;
+            }
+
+            throw ResponseException.internalServerError("Die Mitarbeiter:in konnte nicht erstellt werden.", e);
+        }
     }
 }

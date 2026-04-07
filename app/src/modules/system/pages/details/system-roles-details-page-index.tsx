@@ -10,7 +10,7 @@ import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
-import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import * as yup from 'yup';
@@ -28,8 +28,12 @@ import Grid from '@mui/material/Grid';
 import {PermissionEditor} from '../../../permissions/components/permission-editor';
 import {PermissionScope} from '../../../permissions/enums/permission-scope';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
-import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
+import {selectSystemConfigValue, setSystemConfig} from '../../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../../data/system-config-keys';
+import {UsersApiService} from '../../../users/users-api-service';
+import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
+import {type SelectFieldComponentOption} from '../../../../components/select-field/select-field-component-option';
+import {pluralize} from '../../../../utils/humanization-utils';
 
 export const SystemRoleSchema = yup.object({
     name: yup.string()
@@ -43,6 +47,14 @@ export const SystemRoleSchema = yup.object({
         .max(255, 'Die Beschreibung darf maximal 255 Zeichen lang sein.')
         .required('Die Beschreibung ist ein Pflichtfeld.'),
 });
+
+function formatAssignedUsersAreMessage(count: number): string {
+    return `Dieser Systemrolle ${pluralize(count, 'ist', 'sind')} aktuell ${count} ${pluralize(count, 'Mitarbeiter:in', 'Mitarbeiter:innen')} zugeordnet.`;
+}
+
+function formatMigratedUsersMessage(count: number, replacementRoleLabel: string): string {
+    return `${count} ${pluralize(count, 'Mitarbeiter:in', 'Mitarbeiter:innen')} ${pluralize(count, 'wurde', 'wurden')} auf die Systemrolle „${replacementRoleLabel}“ umgestellt.`;
+}
 
 export function SystemRolesDetailsPageIndex(): ReactNode {
     const dispatch = useAppDispatch();
@@ -72,7 +84,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
         return () => {
             dispatch(removeSnackbarMessage('access-denied-system-roles-details'));
         };
-    }, [isEditable]);
+    }, [dispatch, isEditable]);
 
     const {
         currentItem: editedSystemRole,
@@ -86,13 +98,136 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
     } = useFormManager<SystemRoleEntity>(systemRole, SystemRoleSchema as any);
 
     const apiService = useMemo(() => new SystemRolesApiService(), []);
+    const usersApiService = useMemo(() => new UsersApiService(), []);
 
     const changeBlocker = useChangeBlocker(systemRole, editedSystemRole);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const [replacementSystemRoleId, setReplacementSystemRoleId] = useState<string | undefined>(undefined);
+    const [assignedUsersCount, setAssignedUsersCount] = useState<number | null>(null);
+    const [isDeleteRequirementsLoading, setIsDeleteRequirementsLoading] = useState(false);
+    const [hasDeleteRequirementsLoadingError, setHasDeleteRequirementsLoadingError] = useState(false);
+    const [systemRoleOptions, setSystemRoleOptions] = useState<SelectFieldComponentOption[]>([]);
+    const [isSystemRolesLoading, setIsSystemRolesLoading] = useState(false);
+    const [hasSystemRolesLoadingError, setHasSystemRolesLoadingError] = useState(false);
 
-    const isDefaultSystemRole = useMemo(() => {
-        return systemRole?.id.toString() === defaultSystemRoleId;
-    }, [systemRole, defaultSystemRoleId]);
+    const currentSystemRoleId = editedSystemRole?.id ?? 0;
+    const isDefaultSystemRole =
+        currentSystemRoleId !== 0 &&
+        defaultSystemRoleId != null &&
+        defaultSystemRoleId.trim().length > 0 &&
+        String(currentSystemRoleId) === defaultSystemRoleId.trim();
+    const hasAssignedUsers = (assignedUsersCount ?? 0) > 0;
+    const requiresReplacementSystemRole = isDefaultSystemRole || hasAssignedUsers;
+
+    useEffect(() => {
+        if (currentSystemRoleId === 0) {
+            setAssignedUsersCount(0);
+            setIsDeleteRequirementsLoading(false);
+            setHasDeleteRequirementsLoadingError(false);
+            return;
+        }
+
+        let isCancelled = false;
+
+        setIsDeleteRequirementsLoading(true);
+        setHasDeleteRequirementsLoadingError(false);
+
+        usersApiService
+            .list(0, 1, undefined, undefined, {
+                systemRoleId: currentSystemRoleId,
+            })
+            .then((page) => {
+                if (isCancelled) {
+                    return;
+                }
+
+                setAssignedUsersCount(page.totalElements);
+            })
+            .catch((err) => {
+                if (isCancelled) {
+                    return;
+                }
+
+                setAssignedUsersCount(null);
+                setHasDeleteRequirementsLoadingError(true);
+                dispatch(showApiErrorSnackbar(
+                    err,
+                    'Es konnte nicht geprüft werden, ob dieser Systemrolle Mitarbeiter:innen zugeordnet sind.',
+                ));
+            })
+            .finally(() => {
+                if (!isCancelled) {
+                    setIsDeleteRequirementsLoading(false);
+                }
+            });
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [currentSystemRoleId, dispatch, usersApiService]);
+
+    useEffect(() => {
+        if (currentSystemRoleId === 0 || !requiresReplacementSystemRole) {
+            setSystemRoleOptions([]);
+            setIsSystemRolesLoading(false);
+            setHasSystemRolesLoadingError(false);
+            return;
+        }
+
+        let isCancelled = false;
+
+        setIsSystemRolesLoading(true);
+        setHasSystemRolesLoadingError(false);
+
+        apiService
+            .listAllOrdered('name', 'ASC')
+            .then((response) => {
+                if (isCancelled) {
+                    return;
+                }
+
+                setSystemRoleOptions(response.content
+                    .filter((role) => role.id !== currentSystemRoleId)
+                    .map((role) => ({
+                        value: String(role.id),
+                        label: role.name,
+                        subLabel: role.description ?? undefined,
+                    })));
+            })
+            .catch((err) => {
+                if (isCancelled) {
+                    return;
+                }
+
+                setSystemRoleOptions([]);
+                setHasSystemRolesLoadingError(true);
+                dispatch(showApiErrorSnackbar(err, 'Die verfügbaren Ersatz-Systemrollen konnten nicht geladen werden.'));
+            })
+            .finally(() => {
+                if (!isCancelled) {
+                    setIsSystemRolesLoading(false);
+                }
+            });
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [apiService, currentSystemRoleId, dispatch, requiresReplacementSystemRole]);
+
+    useEffect(() => {
+        if (!showConfirmDialog || !requiresReplacementSystemRole) {
+            setReplacementSystemRoleId(undefined);
+            return;
+        }
+
+        setReplacementSystemRoleId((previousValue) => {
+            if (previousValue != null && systemRoleOptions.some((option) => option.value === previousValue)) {
+                return previousValue;
+            }
+
+            return systemRoleOptions[0]?.value;
+        });
+    }, [requiresReplacementSystemRole, showConfirmDialog, systemRoleOptions]);
 
     if (editedSystemRole == null) {
         return (
@@ -100,79 +235,159 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
         );
     }
 
-    const handleSave = (): void => {
-        if (editedSystemRole != null) {
-            const validationResult = validate();
+    const selectedReplacementSystemRole = systemRoleOptions
+        .find((option) => option.value === replacementSystemRoleId);
 
-            if (!validationResult) {
-                dispatch(showErrorSnackbar('Bitte überprüfen Sie Ihre Eingaben.'));
-                return;
-            }
+    const canDeleteWithoutReplacement = !requiresReplacementSystemRole;
+    const canProvideReplacementRole = !isSystemRolesLoading && !hasSystemRolesLoadingError && systemRoleOptions.length > 0;
+    const canOpenDeleteDialog =
+        currentSystemRoleId !== 0 &&
+        !isBusy &&
+        isEditable &&
+        !isDeleteRequirementsLoading &&
+        !hasDeleteRequirementsLoadingError &&
+        (canDeleteWithoutReplacement || canProvideReplacementRole);
 
-            setIsBusy(true);
+    let deleteTooltip = 'Diese Systemrolle löschen';
+    if (isDeleteRequirementsLoading) {
+        deleteTooltip = 'Es wird geprüft, ob beim Löschen dieser Rolle eine Migration erforderlich ist.';
+    } else if (hasDeleteRequirementsLoadingError) {
+        deleteTooltip = 'Die Löschvoraussetzungen konnten nicht geprüft werden.';
+    } else if (requiresReplacementSystemRole && isSystemRolesLoading) {
+        deleteTooltip = 'Die verfügbaren Ersatz-Systemrollen werden geladen.';
+    } else if (requiresReplacementSystemRole && hasSystemRolesLoadingError) {
+        deleteTooltip = 'Die verfügbaren Ersatz-Systemrollen konnten nicht geladen werden.';
+    } else if (requiresReplacementSystemRole && systemRoleOptions.length === 0) {
+        deleteTooltip = 'Es ist keine andere Systemrolle verfügbar, auf die Nutzer:innen oder Systemeinstellungen migriert werden können.';
+    }
 
-            if (editedSystemRole.id === 0) {
-                apiService
-                    .create(editedSystemRole as any)
-                    .then((newRole) => {
-                        setItem(newRole);
-                        reset();
+    const deleteImpactTexts: string[] = [];
+    if (hasAssignedUsers && assignedUsersCount != null) {
+        deleteImpactTexts.push(
+            `${formatAssignedUsersAreMessage(assignedUsersCount)} Beim Löschen werden diese Nutzer:innen auf die ausgewählte Ersatz-Systemrolle umgestellt.`,
+        );
+    }
+    if (isDefaultSystemRole) {
+        deleteImpactTexts.push(
+            'Diese Rolle ist aktuell als Standard-Systemrolle für automatische Benutzerimporte konfiguriert. Beim Löschen wird diese Einstellung ebenfalls auf die ausgewählte Ersatz-Systemrolle geändert.',
+        );
+    }
 
-                        dispatch(showSuccessSnackbar('Neue Systemrolle erfolgreich angelegt.'));
-
-                        // use setTimeout instead of useEffect to prevent unnecessary rerender
-                        setTimeout(() => {
-                            navigate(`/system-roles/${newRole.id}`, {
-                                replace: true,
-                            })?.catch(console.error);
-                        }, 0);
-                    })
-                    .catch((err) => {
-                        console.error(err);
-                        dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
-                    })
-                    .finally(() => {
-                        setIsBusy(false);
-                    });
-            } else {
-                apiService
-                    .update(editedSystemRole.id, editedSystemRole as any)
-                    .then((updatedRole) => {
-                        setItem(updatedRole);
-                        reset();
-
-                        dispatch(showSuccessSnackbar('Änderungen an der Systemrolle erfolgreich gespeichert.'));
-                    })
-                    .catch((err) => {
-                        console.error(err);
-                        dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
-                    })
-                    .finally(() => {
-                        setIsBusy(false);
-                    });
-            }
-        }
+    const handleCloseConfirmDialog = (): void => {
+        setShowConfirmDialog(false);
+        setReplacementSystemRoleId(undefined);
     };
 
-    const handleDelete = (): void => {
-        if (editedSystemRole.id !== 0) {
-            setIsBusy(true);
+    const handleSave = (): void => {
+        const validationResult = validate();
 
+        if (!validationResult) {
+            dispatch(showErrorSnackbar('Bitte überprüfen Sie Ihre Eingaben.'));
+            return;
+        }
+
+        setIsBusy(true);
+
+        if (editedSystemRole.id === 0) {
             apiService
-                .destroy(editedSystemRole.id)
-                .then(() => {
-                    reset(); // prevent change blocker by resetting unsaved changes
-                    navigate('/system-roles', {
-                        replace: true,
-                    })?.catch(console.error);
-                    dispatch(showSuccessSnackbar('Die Systemrolle wurde erfolgreich gelöscht.'));
+                .create(editedSystemRole as any)
+                .then((newRole) => {
+                    setItem(newRole);
+                    reset();
+
+                    dispatch(showSuccessSnackbar('Neue Systemrolle erfolgreich angelegt.'));
+
+                    setTimeout(() => {
+                        navigate(`/system-roles/${newRole.id}`, {
+                            replace: true,
+                        })?.catch(console.error);
+                    }, 0);
                 })
                 .catch((err) => {
                     console.error(err);
-                    dispatch(showErrorSnackbar('Beim Löschen der Systemrolle ist ein Fehler aufgetreten.'));
+                    dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                })
+                .finally(() => {
                     setIsBusy(false);
                 });
+
+            return;
         }
+
+        apiService
+            .update(editedSystemRole.id, editedSystemRole as any)
+            .then((updatedRole) => {
+                setItem(updatedRole);
+                reset();
+
+                dispatch(showSuccessSnackbar('Änderungen an der Systemrolle erfolgreich gespeichert.'));
+            })
+            .catch((err) => {
+                console.error(err);
+                dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+            })
+            .finally(() => {
+                setIsBusy(false);
+            });
+    };
+
+    const handleDelete = (): void => {
+        if (editedSystemRole.id === 0) {
+            return;
+        }
+
+        if (requiresReplacementSystemRole && replacementSystemRoleId == null) {
+            return;
+        }
+
+        const replacementRole = selectedReplacementSystemRole;
+        const migratedUsersCount = hasAssignedUsers ? (assignedUsersCount ?? 0) : 0;
+        const defaultSystemRoleWillBeUpdated = isDefaultSystemRole && replacementSystemRoleId != null;
+        const newDefaultSystemRoleId = defaultSystemRoleWillBeUpdated ? Number(replacementSystemRoleId) : null;
+
+        setIsBusy(true);
+
+        apiService
+            .destroyWithMigration(
+                editedSystemRole.id,
+                replacementSystemRoleId != null ? Number(replacementSystemRoleId) : null,
+            )
+            .then(() => {
+                if (defaultSystemRoleWillBeUpdated && newDefaultSystemRoleId != null) {
+                    dispatch(setSystemConfig({
+                        key: SystemConfigKeys.users.defaultSystemRole,
+                        value: String(newDefaultSystemRoleId),
+                        publicConfig: false,
+                    }));
+                }
+
+                const successMessages = ['Die Systemrolle wurde erfolgreich gelöscht.'];
+                if (migratedUsersCount > 0 && replacementRole != null) {
+                    successMessages.push(
+                        formatMigratedUsersMessage(migratedUsersCount, replacementRole.label),
+                    );
+                }
+                if (defaultSystemRoleWillBeUpdated && replacementRole != null) {
+                    successMessages.push(
+                        `Die Standard-Systemrolle für automatische Benutzerimporte wurde auf „${replacementRole.label}“ gesetzt.`,
+                    );
+                }
+
+                handleCloseConfirmDialog();
+                reset();
+                dispatch(showSuccessSnackbar(successMessages.join(' ')));
+
+                navigate('/system-roles', {
+                    replace: true,
+                })?.catch(console.error);
+            })
+            .catch((err) => {
+                console.error(err);
+                dispatch(showApiErrorSnackbar(err, 'Beim Löschen der Systemrolle ist ein Fehler aufgetreten.'));
+            })
+            .finally(() => {
+                setIsBusy(false);
+            });
     };
 
     return (
@@ -275,15 +490,10 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                     </Button>
                 )}
 
-                {
-                    editedSystemRole.id !== 0 &&
+                {editedSystemRole.id !== 0 && (
                     <Tooltip
-                        title={
-                            isDefaultSystemRole
-                                ? 'Diese Systemrolle ist die Standardrolle für neue Benutzer:innen und kann daher nicht gelöscht werden.'
-                                : 'Diese Systemrolle löschen'
-                        }
-                        placement="top-start"
+                        title={deleteTooltip}
+                        arrow
                     >
                         <Box
                             component="span"
@@ -294,7 +504,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                             <Button
                                 variant="outlined"
                                 onClick={() => setShowConfirmDialog(true)}
-                                disabled={isBusy || !isEditable || isDefaultSystemRole}
+                                disabled={!canOpenDeleteDialog}
                                 color="error"
                                 startIcon={<Delete/>}
                             >
@@ -302,25 +512,49 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                             </Button>
                         </Box>
                     </Tooltip>
-                }
+                )}
             </Box>
 
             {changeBlocker.dialog}
 
             <ConfirmDialog
                 title="Systemrolle löschen"
-                onCancel={() => setShowConfirmDialog(false)}
+                onCancel={handleCloseConfirmDialog}
                 onConfirm={showConfirmDialog ? handleDelete : undefined}
+                confirmDisabled={requiresReplacementSystemRole && replacementSystemRoleId == null}
                 confirmationText={editedSystemRole.name ?? ''}
                 isDestructive
                 confirmButtonText="Ja, endgültig löschen"
             >
-                <Typography>
+                <Typography sx={{mb: 2}}>
                     Möchten Sie diese Systemrolle wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
                 </Typography>
-                <AlertComponent color={'warning'}>
-                    Vergewissern Sie sich, dass die Systemrolle nicht mehr benötigt wird, bevor Sie fortfahren.
-                </AlertComponent>
+
+                {requiresReplacementSystemRole ? (
+                    <>
+                        <AlertComponent
+                            color="warning"
+                            text={deleteImpactTexts.join('\n\n')}
+                            sx={{mb: 2}}
+                        />
+
+                        <SelectFieldComponent
+                            label="Ersatz-Systemrolle"
+                            value={replacementSystemRoleId}
+                            onChange={setReplacementSystemRoleId}
+                            options={systemRoleOptions}
+                            required
+                            disabled={isBusy || isSystemRolesLoading}
+                            hint="Alle betroffenen Nutzer:innen und gegebenenfalls die Systemeinstellung für automatische Benutzerimporte werden auf diese Rolle umgestellt."
+                            emptyStatePlaceholder="Keine Ersatz-Systemrolle verfügbar"
+                        />
+                    </>
+                ) : (
+                    <AlertComponent color="info">
+                        Diese Systemrolle ist aktuell keiner Mitarbeiter:in zugeordnet und nicht als Standard-Systemrolle
+                        für automatische Benutzerimporte konfiguriert.
+                    </AlertComponent>
+                )}
             </ConfirmDialog>
         </Box>
     );
