@@ -241,7 +241,7 @@ values (1,
             'storage_provider.delete'
             ]),
        (3,
-        'Standard-Mitarbeiter:in',
+        'Mitarbeiter:in',
         'Hat nur Zugriff auf grundlegende Funktionen und Inhalte des Systems.',
         array [
             'asset.create',
