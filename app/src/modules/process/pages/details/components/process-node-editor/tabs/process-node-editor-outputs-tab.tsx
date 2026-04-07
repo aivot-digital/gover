@@ -2,6 +2,7 @@ import {Box} from '@mui/material';
 import {useProcessNodeEditorContext} from '../process-node-editor-context';
 import {TextFieldComponent} from '../../../../../../../components/text-field/text-field-component';
 import Typography from '@mui/material/Typography';
+import {ProcessNodeOutputCard} from '../../../../../components/process-node-output-card';
 
 export function ProcessNodeEditorOutputsTab() {
     const {
@@ -89,27 +90,19 @@ export function ProcessNodeEditorOutputsTab() {
 
             <Box mt={2}>
                 {
-                    provider.outputs.map((output, index, all) => (
-                        <Box key={output.key}
-                             sx={{
-                                 borderTopLeftRadius: index === 0 ? '0.5rem' : 0,
-                                 borderTopRightRadius: index === 0 ? '0.5rem' : 0,
-                                 borderBottomLeftRadius: index === all.length - 1 ? '0.5rem' : 0,
-                                 borderBottomRightRadius: index === all.length - 1 ? '0.5rem' : 0,
-                                 border: '1px solid #ccc',
-                                 p: 1,
-                             }}
-                        >
-                            <Box>
-                            <span style={{
-                                fontWeight: 'bold',
-                            }}>{output.key}</span>
-                            </Box>
-
-                            <Typography variant="body2">
-                                {output.description}
-                            </Typography>
-                        </Box>
+                    provider.outputs.map((output) => (
+                        <ProcessNodeOutputCard
+                            key={output.key}
+                            label={output.label}
+                            outputKey={output.key}
+                            description={output.description}
+                            sx={{
+                                mb: 1,
+                                '&:last-child': {
+                                    mb: 0,
+                                },
+                            }}
+                        />
                     ))
                 }
             </Box>

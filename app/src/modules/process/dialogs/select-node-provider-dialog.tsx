@@ -22,6 +22,7 @@ import {SelectionListRow} from '../../../components/selection-dialog/selection-l
 import {SelectionDetailsPanel} from '../../../components/selection-dialog/selection-details-panel';
 import {useRetainedDialogValue} from '../../../hooks/use-retained-dialog-value';
 import {type Action} from '../../../components/actions/actions-props';
+import {ProcessNodeOutputCard} from '../components/process-node-output-card';
 
 const PROCESS_NODE_TYPE_ORDER = [
     ProcessNodeType.Trigger,
@@ -468,10 +469,11 @@ function SelectNodeProviderDetails(props: SelectNodeProviderDetailsProps): React
                 {
                     provider.outputs.length > 0 ?
                         provider.outputs.map((output) => (
-                            <SelectNodeProviderDetailsListRow
+                            <ProcessNodeOutputCard
                                 key={output.key}
-                                primary={output.label}
-                                secondary={output.description}
+                                label={output.label}
+                                outputKey={output.key}
+                                description={output.description}
                             />
                         )) :
                         <Typography variant="body2" color="text.secondary">
