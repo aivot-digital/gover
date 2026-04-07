@@ -45,8 +45,6 @@ import java.util.Map;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ProcessController {
-    private static final String MODULE_NAME = "Prozesse";
-
     private final ScopedAuditService auditService;
     private final UserService userService;
     private final ProcessService processDefinitionService;

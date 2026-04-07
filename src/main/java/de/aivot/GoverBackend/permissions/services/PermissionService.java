@@ -13,6 +13,8 @@ import jakarta.annotation.Nullable;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class PermissionService {
     private final VUserDepartmentPermissionRepository vUserDepartmentPermissionRepository;
@@ -78,6 +80,12 @@ public class PermissionService {
                                            @Nonnull String permission) {
         return vUserDepartmentPermissionRepository
                 .hasPermission(userId, departmentId, permission);
+    }
+
+    public List<Integer> getDepartmentsWithPermission(@Nonnull String userId,
+                                                      @Nonnull String permission) {
+        return vUserDepartmentPermissionRepository
+                .getDepartmentsWithPermission(userId, permission);
     }
 
     public void testDepartmentPermission(@Nonnull String userId,
