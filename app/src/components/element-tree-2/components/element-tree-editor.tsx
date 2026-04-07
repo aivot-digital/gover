@@ -14,6 +14,9 @@ import {ElementTreeEditorContextProvider} from './element-tree-editor-context';
 import {DefaultTabs} from '../../element-editor/default-tabs';
 import {ElementIsInput} from '../../../data/element-type/element-is-input';
 import {ElementTreeEditorContentDispatcher} from './element-tree-editor-content-dispatcher';
+import {Actions} from '../../actions/actions';
+import Save from '@aivot/mui-material-symbols-400-outlined/dist/save/Save';
+import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
 
 interface ElementTreeEditorProps<T extends AnyElement> {
     open: boolean;
@@ -22,6 +25,7 @@ interface ElementTreeEditorProps<T extends AnyElement> {
     onChange: (value: T) => void;
     onDelete: () => void;
     onCancel: () => void;
+    onClone: () => void;
 }
 
 export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditorProps<T>): React.ReactNode | null {
@@ -46,14 +50,17 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
         onChange,
         onDelete,
         onCancel,
+        onClone,
     } = props;
 
     const [updatedElement, setUpdatedElement] = useState<T>();
+    const [isBusy, setIsBusy] = useState<boolean>(false);
 
     // Reset the updated states when opening the editor
     useEffect(() => {
         if (open) {
             setUpdatedElement(undefined);
+            setIsBusy(false);
         }
     }, [open]);
 
@@ -84,6 +91,11 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
         }
     };
 
+    const handleClone = () => {
+        setIsBusy(true);
+        onClone();
+    };
+
     const isRoot = root === value;
 
     const drawerTheme = useMemo(() => {
@@ -107,7 +119,6 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
             },
         });
     }, [parentModalZIndex, theme]);
-
 
     return (
         <ThemeProvider theme={drawerTheme}>
@@ -299,26 +310,37 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                             gap: 2,
                         }}
                     >
-                        <Button
-                            variant="contained"
-                            onClick={() => {
-                                if (updatedElement != null) {
-                                    onChange(updatedElement);
-                                } else {
-                                    handleClose();
-                                }
-                            }}
-                        >
-                            Speichern
-                        </Button>
-
-                        <Button
-                            onClick={() => {
-                                handleClose();
-                            }}
-                        >
-                            Abbrechen
-                        </Button>
+                        <Actions
+                            actions={[
+                                {
+                                    icon: <Save/>,
+                                    label: 'Speichern',
+                                    onClick: () => {
+                                        if (updatedElement != null) {
+                                            onChange(updatedElement);
+                                        } else {
+                                            handleClose();
+                                        }
+                                    },
+                                    disabled: isBusy || updatedElement == null,
+                                    visible: editable,
+                                    variant: 'contained',
+                                },
+                                {
+                                    icon: null,
+                                    label: editable ? 'Abbrechen' : 'Schließen',
+                                    onClick: handleClose,
+                                    disabled: isBusy,
+                                },
+                                {
+                                    icon: <ContentCopy/>,
+                                    tooltip: 'Duplizieren',
+                                    onClick: handleClone,
+                                    visible: editable,
+                                    disabled: isBusy,
+                                },
+                            ]}
+                        />
 
                         <Button
                             color="error"
@@ -341,6 +363,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                                     }
                                 });
                             }}
+                            disabled={isBusy || !editable}
                         >
                             Löschen
                         </Button>

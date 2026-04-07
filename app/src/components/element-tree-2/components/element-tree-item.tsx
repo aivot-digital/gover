@@ -30,6 +30,7 @@ interface ElementTreeItemProps<T extends AnyElement> {
     value: T;
     onChange: (value: T) => void;
     onDelete: (value: T) => void;
+    onClone: (value: T) => void;
     isDraggable: boolean;
 }
 
@@ -39,6 +40,7 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
         value,
         onChange,
         onDelete,
+        onClone,
         isDraggable,
     } = props;
 
@@ -306,6 +308,9 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
                 onDelete={() => {
                     closeElementEditor();
                     onDelete(value);
+                }}
+                onClone={() => {
+                    onClone(value);
                 }}
             />
         </>

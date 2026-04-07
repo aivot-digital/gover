@@ -1,6 +1,5 @@
 import {createContext, useContext} from 'react';
 import {AnyElement} from '../../../models/elements/any-element';
-import {ElementWithParents} from '../../../utils/flatten-elements';
 
 export interface ElementTreeEditorContextType<T extends AnyElement> {
     currentElement: T;

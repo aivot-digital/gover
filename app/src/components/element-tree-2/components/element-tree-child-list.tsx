@@ -4,14 +4,15 @@ import {ElementTreeItem} from './element-tree-item';
 import Add from '@aivot/mui-material-symbols-400-outlined/dist/add/Add';
 import {useMemo, useState} from 'react';
 import {useDragLayer, useDrop} from 'react-dnd';
-import {
-    ELEMENT_TREE_DND_ITEM_TYPE,
-    ElementTreeDragItem,
-    useElementTreeContext,
-} from '../element-tree-context';
+import {ELEMENT_TREE_DND_ITEM_TYPE, ElementTreeDragItem, useElementTreeContext} from '../element-tree-context';
 import {AddElementDialog} from '../../../dialogs/add-element-dialog/add-element-dialog';
 import {useTheme} from '@mui/material/styles';
 import {ELEMENT_TREE_LAYOUT} from '../element-tree-layout';
+import {generateElementIdForType} from '../../../utils/id-utils';
+import {useElementEditorNavigation} from '../../../hooks/use-element-editor-navigation';
+import {generateComponentTitle} from '../../../utils/generate-component-title';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {showSuccessSnackbar} from '../../../slices/snackbar-slice';
 
 interface ElementTreeChildListProps<T extends AnyElement> {
     parents: Array<AnyElement>;
@@ -77,12 +78,18 @@ export function ElementTreeChildList<T extends AnyElement>(props: ElementTreeChi
         onChange,
         addNewElementLabel = 'Neues Element hinzufügen',
     } = props;
+
+    const dispatch = useAppDispatch();
     const theme = useTheme();
 
     const {
         editable,
         displayContext,
     } = useElementTreeContext();
+
+    const {
+        navigateToElementEditor,
+    } = useElementEditorNavigation();
 
     const parentPath = useMemo(() => {
         return parents.map((element) => element.id);
@@ -116,6 +123,20 @@ export function ElementTreeChildList<T extends AnyElement>(props: ElementTreeChi
                     const updatedValue = [...value];
                     updatedValue.splice(index, 1);
                     onChange(updatedValue);
+                }}
+                onClone={(clonedElement) => {
+                    const updatedValue = [...value];
+                    const newElementId = generateElementIdForType(clonedElement.type);
+                    updatedValue.splice(index, 0, {
+                        ...clonedElement,
+                        name: (clonedElement.name ?? generateComponentTitle(element)) + ' (Kopie)',
+                        id: newElementId,
+                    });
+                    onChange(updatedValue);
+                    setTimeout(() => {
+                        navigateToElementEditor(newElementId);
+                        dispatch(showSuccessSnackbar('Element erfolgreich dupliziert und geöffnet'));
+                    }, 1);
                 }}
                 isDraggable={true}
             />
