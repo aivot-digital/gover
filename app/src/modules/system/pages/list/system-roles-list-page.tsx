@@ -10,8 +10,17 @@ import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility
 import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
 import {SystemRoleEntity} from "../../entities/system-role-entity";
 import {SystemRolesApiService} from "../../services/system-roles-api-service";
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../../../data/system-config-keys';
+import {
+    DefaultUserSystemRoleBadge,
+    isDefaultUserSystemRole,
+} from '../../components/default-user-system-role-badge';
 
 export function SystemRolesListPage() {
+    const defaultSystemRoleId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.users.defaultSystemRole));
+
     const hasAccess = useAccessGuard({
         onlyGlobalAdmin: true,
         messageType: 'snackbar',
@@ -78,6 +87,10 @@ export function SystemRolesListPage() {
                                 title={hasAccess ? 'Domänenrolle bearbeiten' : 'Domänenrolle anzeigen'}
                             >
                                 {String(params.value)}
+                                {
+                                    isDefaultUserSystemRole(params.row.id, defaultSystemRoleId) &&
+                                    <DefaultUserSystemRoleBadge sx={{ml: 1}} />
+                                }
                             </CellLink>
                         ),
                     },

@@ -7,9 +7,17 @@ import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
 import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
 import {SystemRoleEntity} from "../../entities/system-role-entity";
 import {SystemRolesApiService} from "../../services/system-roles-api-service";
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../../../data/system-config-keys';
+import {
+    DefaultUserSystemRoleBadge,
+    isDefaultUserSystemRole,
+} from '../../components/default-user-system-role-badge';
 
 export function SystemRolesDetailsPage() {
     const userIsAdmin = useUserIsAdmin();
+    const defaultSystemRoleId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.users.defaultSystemRole));
 
     return (
         <PageWrapper
@@ -19,9 +27,12 @@ export function SystemRolesDetailsPage() {
         >
             <GenericDetailsPage<SystemRoleEntity, number, void>
                 isEditable={() => userIsAdmin}
-                header={{
+                header={(item, isNewItem, notFound) => ({
                     icon: ModuleIcons.roles,
                     title: 'Systemrolle bearbeiten',
+                    badge: !isNewItem && !notFound && isDefaultUserSystemRole(item?.id, defaultSystemRoleId)
+                        ? <DefaultUserSystemRoleBadge showHintIcon />
+                        : undefined,
                     helpDialog: {
                         title: 'Hilfe zu Systemrolle',
                         tooltip: 'Hilfe anzeigen',
@@ -42,7 +53,7 @@ export function SystemRolesDetailsPage() {
                             </>
                         ),
                     },
-                }}
+                })}
                 tabs={[
                     {
                         path: '/system-roles/:id',

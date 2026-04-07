@@ -1,6 +1,9 @@
-import {Box, Button, Typography} from '@mui/material';
+import {Box, Button, Tooltip, Typography} from '@mui/material';
 import React, {type ReactNode, useContext, useEffect, useMemo, useState} from 'react';
-import {GenericDetailsPageContext, type GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
+import {
+    GenericDetailsPageContext,
+    type GenericDetailsPageContextType,
+} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useNavigate} from 'react-router-dom';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
@@ -12,13 +15,21 @@ import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import * as yup from 'yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
-import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
+import {
+    addSnackbarMessage,
+    removeSnackbarMessage,
+    SnackbarSeverity,
+    SnackbarType,
+} from '../../../../slices/shell-slice';
 import {type SystemRoleEntity} from '../../entities/system-role-entity';
 import {SystemRolesApiService} from '../../services/system-roles-api-service';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import Grid from '@mui/material/Grid';
 import {PermissionEditor} from '../../../permissions/components/permission-editor';
 import {PermissionScope} from '../../../permissions/enums/permission-scope';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../../../data/system-config-keys';
 
 export const SystemRoleSchema = yup.object({
     name: yup.string()
@@ -36,6 +47,7 @@ export const SystemRoleSchema = yup.object({
 export function SystemRolesDetailsPageIndex(): ReactNode {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
+    const defaultSystemRoleId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.users.defaultSystemRole));
 
     const {
         item: systemRole,
@@ -78,9 +90,13 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
     const changeBlocker = useChangeBlocker(systemRole, editedSystemRole);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
+    const isDefaultSystemRole = useMemo(() => {
+        return systemRole?.id.toString() === defaultSystemRoleId;
+    }, [systemRole, defaultSystemRoleId]);
+
     if (editedSystemRole == null) {
         return (
-            <GenericDetailsSkeleton />
+            <GenericDetailsSkeleton/>
         );
     }
 
@@ -169,7 +185,8 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
             </Typography>
             <Typography sx={{mb: 3, maxWidth: 900}}>
                 Systemrollen definieren Berechtigungen für Benutzer:innen auf Systemebene.
-                Seien Sie vorsichtig bei der Vergabe von Berechtigungen, insbesondere bei solchen, die Zugriff auf sensible Daten oder kritische Funktionen ermöglichen.
+                Seien Sie vorsichtig bei der Vergabe von Berechtigungen, insbesondere bei solchen, die Zugriff auf
+                sensible Daten oder kritische Funktionen ermöglichen.
             </Typography>
 
             <AlertComponent
@@ -177,9 +194,12 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                 title="Hinweis zum aktuellen Entwicklungsstand von Rollen und Berechtigungen"
                 sx={{mb: 3}}
             >
-                Rollen und die damit verbundenen Berechtigungen werden in Gover derzeit noch nicht überall vollständig berücksichtigt.
-                Funktionen können unvollständig sein, sich ändern oder sich in einzelnen Bereichen noch nicht wie erwartet verhalten.
-                Bitte verlassen Sie sich daher aktuell nicht darauf, dass konfigurierte Berechtigungen bereits konsistent an allen Stellen durchgesetzt werden.
+                Rollen und die damit verbundenen Berechtigungen werden in Gover derzeit noch nicht überall vollständig
+                berücksichtigt.
+                Funktionen können unvollständig sein, sich ändern oder sich in einzelnen Bereichen noch nicht wie
+                erwartet verhalten.
+                Bitte verlassen Sie sich daher aktuell nicht darauf, dass konfigurierte Berechtigungen bereits
+                konsistent an allen Stellen durchgesetzt werden.
             </AlertComponent>
 
             <Grid
@@ -240,7 +260,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                     disabled={isBusy || hasNotChanged || !isEditable}
                     variant="contained"
                     color="primary"
-                    startIcon={<SaveOutlinedIcon />}
+                    startIcon={<SaveOutlinedIcon/>}
                 >
                     Speichern
                 </Button>
@@ -255,18 +275,34 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                     </Button>
                 )}
 
-                {editedSystemRole.id !== 0 && (
-                    <Button
-                        variant="outlined"
-                        onClick={() => setShowConfirmDialog(true)}
-                        disabled={isBusy || !isEditable}
-                        color="error"
-                        sx={{marginLeft: 'auto'}}
-                        startIcon={<Delete />}
+                {
+                    editedSystemRole.id !== 0 &&
+                    <Tooltip
+                        title={
+                            isDefaultSystemRole
+                                ? 'Diese Systemrolle ist die Standardrolle für neue Benutzer:innen und kann daher nicht gelöscht werden.'
+                                : 'Diese Systemrolle löschen'
+                        }
+                        placement="top-start"
                     >
-                        Löschen
-                    </Button>
-                )}
+                        <Box
+                            component="span"
+                            sx={{
+                                marginLeft: 'auto',
+                            }}
+                        >
+                            <Button
+                                variant="outlined"
+                                onClick={() => setShowConfirmDialog(true)}
+                                disabled={isBusy || !isEditable || isDefaultSystemRole}
+                                color="error"
+                                startIcon={<Delete/>}
+                            >
+                                Löschen
+                            </Button>
+                        </Box>
+                    </Tooltip>
+                }
             </Box>
 
             {changeBlocker.dialog}
