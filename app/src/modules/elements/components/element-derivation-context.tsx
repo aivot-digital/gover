@@ -159,7 +159,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             element={element}
             isBusy={mode === 'busy' || (disabled ?? false)}
             isDeriving={mode === 'deriving'}
-            mode="viewer"
+            mode="editor"
             authoredElementValues={authoredElementValues}
             derivedData={derivedData}
             onAuthoredElementValuesChange={handleAuthoredElementValuesChange}
