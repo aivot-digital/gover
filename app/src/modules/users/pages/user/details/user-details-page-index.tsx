@@ -1,10 +1,11 @@
-import {Box, Button, Grid, Typography} from '@mui/material';
+import {Box, Button, Grid, InputAdornment, TextField, Typography} from '@mui/material';
 import React, {useContext, useEffect, useMemo, useState} from 'react';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import LockResetOutlinedIcon from '@mui/icons-material/LockResetOutlined';
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
-import {useNavigate} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {
     GenericDetailsPageContext,
     type GenericDetailsPageContextType,
@@ -22,7 +23,7 @@ import {useFormManager} from '../../../../../hooks/use-form-manager';
 import * as yup from 'yup';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {SelectFieldComponent} from '../../../../../components/select-field-2/select-field-component';
-import {UsersApiService} from '../../../users-api-service';
+import {CreateUserResponseDTO, UsersApiService} from '../../../users-api-service';
 import {useConfirm} from '../../../../../providers/confirm-provider';
 import {SystemRolesApiService} from '../../../../system/services/system-roles-api-service';
 import {useChangeBlocker} from '../../../../../hooks/use-change-blocker';
@@ -30,20 +31,36 @@ import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarTyp
 import {createOidcPath} from '../../../../../utils/create-oidc-path';
 import {ProcessInstanceTaskApiService} from '../../../../process/services/process-instance-task-api-service';
 import {ProcessTaskStatus, ProcessTaskStatusLabels} from '../../../../process/enums/process-task-status';
+import {InfoDialog} from '../../../../../dialogs/info-dialog/info-dialog';
+import {CopyToClipboardButton} from '../../../../../components/copy-to-clipboard-button/copy-to-clipboard-button';
+import {downloadTextFile} from '../../../../../utils/download-utils';
+
+const KEYCLOAK_PERSON_NAME_MAX_CHARACTERS = 255;
+const KEYCLOAK_EMAIL_MAX_CHARACTERS = 255;
+// Mirrors Keycloak's default `person-name-prohibited-characters` validator.
+const KEYCLOAK_PERSON_NAME_REGEX = /^[^<>&"$%!#?§;*~/\\|^=\[\]{}()\u0000-\u001F\u007F]+$/;
+
+const createPersonNameSchema = (fieldLabel: 'Vorname' | 'Nachname') => yup
+    .string()
+    .trim()
+    .required(`Bitte einen ${fieldLabel === 'Vorname' ? 'Vornamen' : 'Nachnamen'} angeben.`)
+    .max(KEYCLOAK_PERSON_NAME_MAX_CHARACTERS, `${fieldLabel} darf maximal ${KEYCLOAK_PERSON_NAME_MAX_CHARACTERS} Zeichen lang sein.`)
+    .matches(
+        KEYCLOAK_PERSON_NAME_REGEX,
+        {
+            excludeEmptyString: true,
+            message: `${fieldLabel} enthält unzulässige Zeichen. Bitte entfernen Sie Sonderzeichen wie ^, <, >, &, $, %, !, #, ?, §, ;, *, ~, /, \\, |, =, [ ], { } oder ( ).`,
+        },
+    );
 
 const Schema = yup.object({
-    firstName: yup
-        .string()
-        .trim()
-        .required('Bitte einen Vornamen angeben.'),
-    lastName: yup
-        .string()
-        .trim()
-        .required('Bitte einen Nachnamen angeben.'),
+    firstName: createPersonNameSchema('Vorname'),
+    lastName: createPersonNameSchema('Nachname'),
     email: yup
         .string()
         .trim()
         .email('Bitte eine gültige E-Mail-Adresse angeben.')
+        .max(KEYCLOAK_EMAIL_MAX_CHARACTERS, `Die E-Mail-Adresse darf maximal ${KEYCLOAK_EMAIL_MAX_CHARACTERS} Zeichen lang sein.`)
         .required('Bitte eine E-Mail-Adresse angeben.'),
     enabled: yup
         .boolean()
@@ -60,9 +77,23 @@ const DELETION_BLOCKING_TASK_STATUSES = new Set<ProcessTaskStatus>([
     ProcessTaskStatus.Restarted,
 ]);
 
+type UserDetailsLocationState = {
+    userProvisioningResult?: CreateUserResponseDTO;
+};
+
+function sanitizeFilenameSegment(input: string): string {
+    return input
+        .trim()
+        .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .toLowerCase();
+}
+
 export function UserDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
+    const location = useLocation();
     const confirm = useConfirm();
 
     const {
@@ -109,6 +140,8 @@ export function UserDetailsPageIndex() {
     const [systemRoleOptions, setSystemRoleOptions] = useState<Array<{ label: string; value: number }>>([]);
     const [isSystemRolesLoading, setIsSystemRolesLoading] = useState(true);
     const [hasSystemRolesLoadingError, setHasSystemRolesLoadingError] = useState(false);
+    const [sendInitialCredentialsByEmail, setSendInitialCredentialsByEmail] = useState(false);
+    const [userProvisioningResult, setUserProvisioningResult] = useState<CreateUserResponseDTO | null>(null);
 
     const keycloakAdminConsoleUrl = useMemo(() => {
         if (editedUser?.id == null || editedUser.id.length === 0) {
@@ -144,11 +177,86 @@ export function UserDetailsPageIndex() {
             });
     }, [dispatch]);
 
+    useEffect(() => {
+        const navigationState = location.state as UserDetailsLocationState | null;
+        if (navigationState?.userProvisioningResult?.initialCredentials == null) {
+            return;
+        }
+
+        setUserProvisioningResult(navigationState.userProvisioningResult);
+        navigate(location.pathname, {
+            replace: true,
+            state: null,
+        });
+    }, [location.pathname, location.state, navigate]);
+
+    useEffect(() => {
+        if (isNewUser && user?.id === '') {
+            setSendInitialCredentialsByEmail(false);
+        }
+    }, [isNewUser, user?.id]);
+
     if (editedUser == null) {
         return (
             <GenericDetailsSkeleton />
         );
     }
+
+    const initialCredentials = userProvisioningResult?.initialCredentials;
+    const hasInitialCredentialsDeliveryError = userProvisioningResult?.initialCredentialsDeliveryError != null;
+
+    const buildInitialCredentialsExport = () => {
+        if (initialCredentials == null) {
+            return null;
+        }
+
+        return [
+            'Initiale Zugangsdaten für Gover',
+            '',
+            `Name: ${initialCredentials.fullName}`,
+            `E-Mail-Adresse: ${initialCredentials.email}`,
+            `Systemrolle: ${initialCredentials.systemRoleName}`,
+            `Temporäres Passwort: ${initialCredentials.temporaryPassword}`,
+            '',
+            'Hinweis: Nur das temporäre Passwort wird einmalig angezeigt.',
+            'Beim ersten Login muss die Mitarbeiter:in ein neues Passwort vergeben, die E-Mail-Adresse bestätigen und gegebenenfalls eine Zwei-Faktor-Authentifizierung einrichten, sofern dies in der System-Konfiguration vorgesehen ist.',
+        ].join('\n');
+    };
+
+    const handleDownloadInitialCredentials = () => {
+        const content = buildInitialCredentialsExport();
+        if (content == null || initialCredentials == null) {
+            return;
+        }
+
+        const filenameSegment = sanitizeFilenameSegment(initialCredentials.fullName);
+        const filename = filenameSegment.length > 0
+            ? `gover-zugangsdaten-${filenameSegment}.txt`
+            : 'gover-zugangsdaten.txt';
+
+        downloadTextFile(filename, content, 'text/plain;charset=utf-8');
+    };
+
+    const renderInitialCredentialField = (label: string, value: string, copyLabel: string) => (
+        <TextField
+            label={label}
+            value={value}
+            fullWidth
+            InputProps={{
+                readOnly: true,
+                endAdornment: (
+                    <InputAdornment position="end">
+                        <CopyToClipboardButton
+                            text={value}
+                            tooltip={`${copyLabel} kopieren`}
+                            copiedTooltip={`${copyLabel} kopiert`}
+                            ariaLabel={`${copyLabel} kopieren`}
+                        />
+                    </InputAdornment>
+                ),
+            }}
+        />
+    );
 
     const handleSave = () => {
         if (!validate()) {
@@ -165,16 +273,31 @@ export function UserDetailsPageIndex() {
 
         if (isNewUser) {
             new UsersApiService()
-                .create(editedUser)
-                .then((createdUser) => {
-                    setItem(createdUser);
+                .provision({
+                    user: editedUser,
+                    sendInitialCredentialsByEmail: sendInitialCredentialsByEmail,
+                })
+                .then((result) => {
+                    setItem(result.user);
                     reset();
+                    setSendInitialCredentialsByEmail(false);
 
-                    dispatch(showSuccessSnackbar('Die Mitarbeiter:in wurde erfolgreich erstellt.'));
+                    if (result.initialCredentialsSentByEmail) {
+                        dispatch(showSuccessSnackbar('Die Mitarbeiter:in wurde erfolgreich erstellt und die initialen Zugangsdaten wurden per E-Mail versendet.'));
+                    } else if (result.initialCredentialsDeliveryError != null) {
+                        dispatch(showErrorSnackbar('Die Mitarbeiter:in wurde erstellt, die E-Mail mit den initialen Zugangsdaten konnte jedoch nicht versendet werden.'));
+                    } else {
+                        dispatch(showSuccessSnackbar('Die Mitarbeiter:in wurde erfolgreich erstellt. Bitte geben Sie die initialen Zugangsdaten manuell weiter.'));
+                    }
 
                     setTimeout(() => {
-                        navigate(`/users/${createdUser.id}`, {
+                        navigate(`/users/${result.user.id}`, {
                             replace: true,
+                            state: result.initialCredentials != null
+                                ? {
+                                    userProvisioningResult: result,
+                                } satisfies UserDetailsLocationState
+                                : undefined,
                         });
                     }, 0);
                 })
@@ -326,11 +449,15 @@ export function UserDetailsPageIndex() {
                     variant="h5"
                     sx={{mb: 1}}
                 >
-                    Mitarbeiter:in verwalten
+                    {isNewUser ? 'Mitarbeiter:in anlegen' : 'Mitarbeiter:in verwalten'}
                 </Typography>
 
                 <Typography sx={{mb: 3, maxWidth: 900}}>
-                    Hier können Sie die in Gover relevanten Basisdaten und die Systemrolle dieser Mitarbeiter:in pflegen.
+                    {
+                        isNewUser
+                            ? 'Legen Sie hier eine neue Mitarbeiter:in an. Für das Konto wird ein temporäres Passwort gesetzt. Beim ersten Login muss dieses ersetzt und die E-Mail-Adresse bestätigt werden. Je nach System-Konfiguration kann zusätzlich die Einrichtung einer Zwei-Faktor-Authentifizierung erforderlich sein.'
+                            : 'Hier können Sie die in Gover relevanten Basisdaten und die Systemrolle dieser Mitarbeiter:in pflegen.'
+                    }
                 </Typography>
 
                 <Grid
@@ -344,6 +471,7 @@ export function UserDetailsPageIndex() {
                             onChange={handleInputChange('firstName')}
                             onBlur={handleInputBlur('firstName')}
                             error={errors.firstName}
+                            maxCharacters={KEYCLOAK_PERSON_NAME_MAX_CHARACTERS}
                             disabled={isBusy || !canEditUser}
                             required
                         />
@@ -355,6 +483,7 @@ export function UserDetailsPageIndex() {
                             onChange={handleInputChange('lastName')}
                             onBlur={handleInputBlur('lastName')}
                             error={errors.lastName}
+                            maxCharacters={KEYCLOAK_PERSON_NAME_MAX_CHARACTERS}
                             disabled={isBusy || !canEditUser}
                             required
                         />
@@ -366,6 +495,7 @@ export function UserDetailsPageIndex() {
                             onChange={handleInputChange('email')}
                             onBlur={handleInputBlur('email')}
                             error={errors.email}
+                            maxCharacters={KEYCLOAK_EMAIL_MAX_CHARACTERS}
                             disabled={isBusy || !canEditUser}
                             required
                         />
@@ -405,6 +535,20 @@ export function UserDetailsPageIndex() {
                             busy={isBusy}
                         />
                     </Grid>
+                    {
+                        isNewUser &&
+                        <Grid size={12}>
+                            <CheckboxFieldComponent
+                                label="Initiale Zugangsdaten automatisch per E-Mail senden"
+                                value={sendInitialCredentialsByEmail}
+                                onChange={setSendInitialCredentialsByEmail}
+                                variant="switch"
+                                disabled={isBusy || !canEditUser}
+                                busy={isBusy}
+                                hint="Wenn deaktiviert, wird das temporäre Passwort nach der Anlage einmalig angezeigt."
+                            />
+                        </Grid>
+                    }
                 </Grid>
 
                 {
@@ -486,7 +630,7 @@ export function UserDetailsPageIndex() {
                             disabled={isBusy || hasNotChanged || isSystemRolesLoading || systemRoleOptions.length === 0}
                             onClick={handleSave}
                         >
-                            Speichern
+                            {isNewUser ? 'Mitarbeiter:in anlegen' : 'Speichern'}
                         </Button>
 
                         {
@@ -565,6 +709,59 @@ export function UserDetailsPageIndex() {
                 solutionText="Bitte weisen Sie die Aufgaben einer anderen Mitarbeiter:in zu oder schließen Sie sie ab und versuchen Sie es erneut:"
                 links={relatedTasks}
             />
+
+            {
+                initialCredentials != null &&
+                <InfoDialog
+                    open
+                    onClose={() => setUserProvisioningResult(null)}
+                    title="Initiale Zugangsdaten"
+                    severity={hasInitialCredentialsDeliveryError ? 'warning' : 'info'}
+                    actions={
+                        <Button
+                            startIcon={<FileDownloadOutlinedIcon />}
+                            onClick={handleDownloadInitialCredentials}
+                        >
+                            Als Textdatei herunterladen
+                        </Button>
+                    }
+                >
+                    <Typography>
+                        {
+                            hasInitialCredentialsDeliveryError
+                                ? 'Die Mitarbeiter:in wurde erstellt, die initialen Zugangsdaten konnten jedoch nicht automatisch per E-Mail versendet werden. Bitte geben Sie die folgenden Informationen manuell weiter.'
+                                : 'Die Mitarbeiter:in wurde erstellt. Bitte geben Sie die folgenden Informationen manuell weiter.'
+                        }
+                    </Typography>
+
+                    <Grid
+                        container
+                        spacing={2}
+                        sx={{mt: 0.5}}
+                    >
+                        <Grid size={6}>
+                            {renderInitialCredentialField('Name', initialCredentials.fullName, 'Name')}
+                        </Grid>
+                        <Grid size={6}>
+                            {renderInitialCredentialField('E-Mail-Adresse', initialCredentials.email, 'E-Mail-Adresse')}
+                        </Grid>
+                        <Grid size={6}>
+                            {renderInitialCredentialField('Systemrolle', initialCredentials.systemRoleName, 'Systemrolle')}
+                        </Grid>
+                        <Grid size={6}>
+                            {renderInitialCredentialField('Temporäres Passwort', initialCredentials.temporaryPassword, 'Temporäres Passwort')}
+                        </Grid>
+                    </Grid>
+
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{mt: 2}}
+                    >
+                        Das temporäre Passwort wird an dieser Stelle einmalig angezeigt. Name, E-Mail-Adresse und Systemrolle können später weiterhin im Profil eingesehen und geändert werden. Die Mitarbeiter:in muss beim ersten Login ein neues Passwort vergeben, die E-Mail-Adresse bestätigen und gegebenenfalls eine Zwei-Faktor-Authentifizierung einrichten, sofern dies in der System-Konfiguration vorgesehen ist.
+                    </Typography>
+                </InfoDialog>
+            }
         </>
     );
 }
