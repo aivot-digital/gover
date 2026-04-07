@@ -16,6 +16,8 @@ public interface UserRepository extends JpaRepository<UserEntity, String>, JpaSp
 
     boolean existsByEmail(String email);
 
+    List<UserEntity> findAllBySystemRoleIdOrderByFullNameAsc(Integer systemRoleId);
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
             UPDATE UserEntity u

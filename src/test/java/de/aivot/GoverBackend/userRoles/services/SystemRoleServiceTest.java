@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.config.entities.SystemConfigEntity;
 import de.aivot.GoverBackend.config.services.SystemConfigService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.user.configs.DefaultUserSystemRoleSystemConfigDefinition;
+import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.repositories.UserRepository;
 import de.aivot.GoverBackend.userRoles.entities.SystemRoleEntity;
 import de.aivot.GoverBackend.userRoles.repositories.SystemRoleRepository;
@@ -65,6 +66,7 @@ class SystemRoleServiceTest {
                         .setValue("3")
                         .setPublicConfig(false));
         when(userRepository.existsBySystemRoleId(4)).thenReturn(false);
+        when(userRepository.findAllBySystemRoleIdOrderByFullNameAsc(4)).thenReturn(List.of());
 
         var service = new SystemRoleService(repository, systemConfigService, userRepository);
         var entity = new SystemRoleEntity()
@@ -81,6 +83,7 @@ class SystemRoleServiceTest {
         assertEquals(false, result.defaultSystemRoleForAutomaticImportsUpdated());
         assertNull(result.replacementRole());
         assertNull(result.newDefaultSystemRoleId());
+        assertEquals(List.of(), result.migratedUsers());
     }
 
     @Test
@@ -97,6 +100,16 @@ class SystemRoleServiceTest {
         when(systemConfigService.retrieve(DefaultUserSystemRoleSystemConfigDefinition.KEY))
                 .thenReturn(defaultSystemRoleConfig);
         when(userRepository.existsBySystemRoleId(3)).thenReturn(true);
+        when(userRepository.findAllBySystemRoleIdOrderByFullNameAsc(3)).thenReturn(List.of(
+                new UserEntity()
+                        .setId("user-1")
+                        .setFullName("Erika Musterfrau")
+                        .setEmail("erika.musterfrau@example.org"),
+                new UserEntity()
+                        .setId("user-2")
+                        .setFullName("Max Mustermann")
+                        .setEmail("max.mustermann@example.org")
+        ));
         when(userRepository.reassignSystemRoleId(3, 7)).thenReturn(5);
 
         var replacementRole = new SystemRoleEntity()
@@ -120,5 +133,9 @@ class SystemRoleServiceTest {
         assertEquals(true, result.defaultSystemRoleForAutomaticImportsUpdated());
         assertEquals(7, result.replacementRole().getId());
         assertEquals(7, result.newDefaultSystemRoleId());
+        assertEquals(2, result.migratedUsers().size());
+        assertEquals("user-1", result.migratedUsers().get(0).id());
+        assertEquals("Erika Musterfrau", result.migratedUsers().get(0).fullName());
+        assertEquals("erika.musterfrau@example.org", result.migratedUsers().get(0).email());
     }
 }

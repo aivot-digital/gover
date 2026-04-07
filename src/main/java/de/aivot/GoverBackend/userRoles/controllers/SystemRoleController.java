@@ -223,6 +223,19 @@ public class SystemRoleController {
         auditMetadata.put("name", entity.getName());
         auditMetadata.put("migratedUsersCount", deleteResult.migratedUsersCount());
         auditMetadata.put(
+                "migratedUsers",
+                deleteResult.migratedUsers()
+                        .stream()
+                        .map(user -> {
+                            var migratedUserMetadata = new LinkedHashMap<String, Object>();
+                            migratedUserMetadata.put("id", user.id());
+                            migratedUserMetadata.put("fullName", user.fullName());
+                            migratedUserMetadata.put("email", user.email());
+                            return migratedUserMetadata;
+                        })
+                        .toList()
+        );
+        auditMetadata.put(
                 "defaultSystemRoleForAutomaticImportsUpdated",
                 deleteResult.defaultSystemRoleForAutomaticImportsUpdated()
         );

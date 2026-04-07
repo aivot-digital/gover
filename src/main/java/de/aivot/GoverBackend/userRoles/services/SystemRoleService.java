@@ -17,6 +17,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -39,8 +40,16 @@ public class SystemRoleService implements EntityService<SystemRoleEntity, Intege
     public record DeleteSystemRoleResult(
             @Nullable SystemRoleEntity replacementRole,
             int migratedUsersCount,
+            @Nonnull List<MigratedUserAuditInfo> migratedUsers,
             boolean defaultSystemRoleForAutomaticImportsUpdated,
             @Nullable Integer newDefaultSystemRoleId
+    ) {
+    }
+
+    public record MigratedUserAuditInfo(
+            @Nonnull String id,
+            @Nonnull String fullName,
+            @Nullable String email
     ) {
     }
 
@@ -98,6 +107,17 @@ public class SystemRoleService implements EntityService<SystemRoleEntity, Intege
                     .orElseThrow(() -> ResponseException.badRequest("Die ausgewählte Ersatz-Systemrolle existiert nicht."));
         }
 
+        var migratedUsers = hasAssignedUsers
+                ? userRepository.findAllBySystemRoleIdOrderByFullNameAsc(roleToDeleteId)
+                .stream()
+                .map(user -> new MigratedUserAuditInfo(
+                        user.getId(),
+                        user.getFullName(),
+                        user.getEmail()
+                ))
+                .toList()
+                : List.<MigratedUserAuditInfo>of();
+
         var migratedUsersCount = 0;
         if (hasAssignedUsers && replacementRole != null) {
             migratedUsersCount = userRepository.reassignSystemRoleId(roleToDeleteId, replacementRole.getId());
@@ -117,6 +137,7 @@ public class SystemRoleService implements EntityService<SystemRoleEntity, Intege
         return new DeleteSystemRoleResult(
                 replacementRole,
                 migratedUsersCount,
+                migratedUsers,
                 defaultSystemRoleForAutomaticImportsUpdated,
                 newDefaultSystemRoleId
         );
