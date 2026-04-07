@@ -99,6 +99,9 @@ public class ElementOverrideFunctions implements Serializable {
 
     public ElementOverrideFunctions setFieldNoCodeMap(@Nullable Map<String, NoCodeOperand> fieldNoCodeMap) {
         this.fieldNoCodeMap = fieldNoCodeMap;
+        if (this.type == null && fieldNoCodeMap != null) {
+            this.type = OverrideFunctionType.NoCode;
+        }
         return this;
     }
 
@@ -109,6 +112,9 @@ public class ElementOverrideFunctions implements Serializable {
 
     public ElementOverrideFunctions setJavascriptCode(@Nullable JavascriptCode javascriptCode) {
         this.javascriptCode = javascriptCode;
+        if (this.type == null && javascriptCode != null) {
+            this.type = OverrideFunctionType.Javascript;
+        }
         return this;
     }
 
