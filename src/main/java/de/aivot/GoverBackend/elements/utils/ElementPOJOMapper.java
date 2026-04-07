@@ -162,7 +162,7 @@ public class ElementPOJOMapper {
             var classAnnotation = pojoClass
                     .getAnnotation(ReplicatingContainerLayoutElementElementPOJOBinding.class);
 
-            targetType = ElementType.ReplicatingContainer;
+            targetType = ElementType.ReplicatingContainerLayout;
             targetId = classAnnotation.id();
             targetProperties = classAnnotation.properties();
         } else if (pojoClass.isAnnotationPresent(LayoutElementPOJOBinding.class)) {

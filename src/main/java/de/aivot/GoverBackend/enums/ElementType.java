@@ -26,7 +26,7 @@ public enum ElementType implements Identifiable<Integer> {
     Headline(6),
     MultiCheckbox(7),
     Number(8),
-    ReplicatingContainer(9),
+    ReplicatingContainerLayout(9),
     RichText(10),
     Radio(11),
     Select(12),
@@ -142,7 +142,7 @@ public enum ElementType implements Identifiable<Integer> {
             case Headline -> new HeadlineContentElement();
             case MultiCheckbox -> new MultiCheckboxInputElement();
             case Number -> new NumberInputElement();
-            case ReplicatingContainer -> new ReplicatingContainerLayoutElement();
+            case ReplicatingContainerLayout -> new ReplicatingContainerLayoutElement();
             case RichText -> new RichTextContentElement();
             case Radio -> new RadioInputElement();
             case Select -> new SelectInputElement();
