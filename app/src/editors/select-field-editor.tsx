@@ -1,17 +1,18 @@
 import React, {useMemo} from 'react';
 import {type BaseEditorProps} from './base-editor';
-import {type SelectFieldElement, type SelectFieldElementOption} from '../models/elements/form/input/select-field-element';
+import {
+    type SelectFieldElement,
+    type SelectFieldElementOption,
+} from '../models/elements/form/input/select-field-element';
 import {type ElementTreeEntity} from '../components/element-tree/element-tree-entity';
 import {OptionListInput} from '../components/option-list-input/option-list-input';
 import {AutocompleteSelect} from '../components/autocomple-select/autocomplete-select';
 import {SelectFieldComponent} from '../components/select-field/select-field-component';
 import {ElementType} from '../data/element-type/element-type';
-import {flattenElements} from '../utils/flatten-elements';
-import {isLoadedForm} from '../slices/app-slice';
 import {generateComponentPath, generateComponentTitle} from '../utils/generate-component-title';
-import {useElementTreeEditorContext} from '../components/element-tree-2/components/element-tree-editor-context';
 import {useElementTreeContext} from '../components/element-tree-2/element-tree-context';
 import {SelectFieldComponentOption} from '../components/select-field-2/select-field-component';
+import Grid from '@mui/material/Grid';
 
 export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement, ElementTreeEntity>) {
     const {
@@ -45,60 +46,89 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement, Ele
 
         return relevantElements
             .filter(({element: candidate}) => candidate.type === ElementType.Select && candidate.id !== element.id)
-            .map(({element: candidate, parents}) => ({
+            .map(({
+                      element: candidate,
+                      parents,
+                  }) => ({
                 label: generateComponentTitle(candidate),
-                subLabel:generateComponentPath(parents),
+                subLabel: generateComponentPath(parents),
                 value: candidate.id,
             }));
     }, [element.id, allElements]);
 
-    return (
-        <>
-            <SelectFieldComponent
-                label="Abhängiges Auswahlfeld"
-                hint="Optional. Wenn gesetzt, werden nur Optionen angezeigt, deren Gruppenwert dem Wert des ausgewählten übergeordneten Auswahlfelds entspricht. Leere Gruppen bleiben immer sichtbar."
-                value={element.dependsOnSelectFieldId ?? undefined}
-                onChange={(dependsOnSelectFieldId) => {
-                    onPatch({
-                        dependsOnSelectFieldId,
-                    });
-                }}
-                options={dependencyOptions}
-                disabled={!editable}
-                emptyStatePlaceholder="Keine vorherigen Auswahlfelder verfügbar"
-            />
+    const hasDependency = element.dependsOnSelectFieldId != null;
 
-            <OptionListInput
-                label="Optionen"
-                addLabel="Option hinzufügen"
-                hint="Die antragstellende Person kann genau eine dieser Optionen auswählen. Der optionale Gruppenwert dient zur Vorfilterung über ein übergeordnetes Auswahlfeld."
-                noItemsHint="Bitte fügen Sie mindestens eine Option hinzu."
-                value={options}
-                onChange={(options) => {
-                    onPatch({
-                        options,
-                    });
+    return (
+        <Grid
+            container
+            columnSpacing={4}
+        >
+            <Grid
+                size={{
+                    xs: 12,
+                    lg: 6,
                 }}
-                allowEmpty={false}
-                disabled={!editable}
-                variant="outlined"
-                showGroupField
-                groupLabel="Gruppenwert"
-            />
+            >
+                <SelectFieldComponent
+                    label="Abhängiges Auswahlfeld (optional)"
+                    hint="Wählen Sie ein vorheriges Auswahlfeld aus, wenn diese Auswahl von dessen Wert abhängen soll. Dann können die Optionen über Gruppenwerte gezielt zugeordnet werden."
+                    value={element.dependsOnSelectFieldId ?? undefined}
+                    onChange={(dependsOnSelectFieldId) => {
+                        onPatch({
+                            dependsOnSelectFieldId,
+                        });
+                    }}
+                    options={dependencyOptions}
+                    disabled={!editable}
+                    emptyStatePlaceholder="Keine vorherigen Auswahlfelder verfügbar"
+                />
+            </Grid>
+            <Grid
+                size={{
+                    xs: 12,
+                }}
+            >
+                <OptionListInput
+                    label="Optionen"
+                    addLabel="Option hinzufügen"
+                    hint={hasDependency
+                        ? 'Die antragstellende Person kann genau eine dieser Optionen auswählen. Der Gruppenwert verknüpft eine Option mit dem Wert des abhängigen Auswahlfelds; leere Gruppen bleiben weiterhin immer sichtbar.'
+                        : 'Die antragstellende Person kann genau eine dieser Optionen auswählen.'}
+                    noItemsHint="Bitte fügen Sie mindestens eine Option hinzu."
+                    value={options}
+                    onChange={(options) => {
+                        onPatch({
+                            options,
+                        });
+                    }}
+                    allowEmpty={false}
+                    disabled={!editable}
+                    variant="outlined"
+                    showGroupField={hasDependency}
+                    groupLabel="Gruppenwert"
+                />
+            </Grid>
 
             {
                 scope !== 'data_modelling' &&
-                <AutocompleteSelect
-                    type={element.type}
-                    value={element.autocomplete}
-                    onChange={(val) => {
-                        onPatch({
-                            autocomplete: val,
-                        });
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
                     }}
-                    editable={editable}
-                />
+                >
+                    <AutocompleteSelect
+                        type={element.type}
+                        value={element.autocomplete}
+                        onChange={(val) => {
+                            onPatch({
+                                autocomplete: val,
+                            });
+                        }}
+                        editable={editable}
+                    />
+                </Grid>
             }
-        </>
+        </Grid>
     );
 }

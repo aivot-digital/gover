@@ -13,6 +13,7 @@ export function OptionListInput(props: OptionListInputProps) {
 
     const options = props.value ?? [];
     const groupFieldEnabled = props.showGroupField === true;
+    const groupFieldLabel = `${props.groupLabel ?? 'Gruppe'} (optional)`;
     const isEditable = props.disabled !== true;
     const isRequired = !props.allowEmpty;
 
@@ -113,7 +114,7 @@ export function OptionListInput(props: OptionListInputProps) {
                     <TableCell>
                         <TextField
                             fullWidth
-                            label={props.groupLabel ?? 'Gruppe'}
+                            label={groupFieldLabel}
                             size="small"
                             margin="dense"
                             value={item.group ?? ''}
@@ -125,7 +126,6 @@ export function OptionListInput(props: OptionListInputProps) {
                                 };
                                 handleChange(updatedValue);
                             }}
-                            helperText="Optional"
                             disabled={!isEditable}
                         />
                     </TableCell>
