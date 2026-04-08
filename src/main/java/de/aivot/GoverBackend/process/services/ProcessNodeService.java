@@ -141,12 +141,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         // must derive the new provider defaults with skipped validation errors first, just like the
         // create flow does, otherwise the update endpoint would reject the empty reset state before
         // the user even has a chance to configure the new node.
+        // Do not throw any errors if the configuration has errors.
         var derivedObjectItemData = deriveConfiguration(entity, providerChanged, null);
-
-        // If derivation has errors, throw bad request
-        if (derivedObjectItemData.hasAnyError()) {
-            throw ResponseException.badRequest(derivedObjectItemData);
-        }
 
         existingEntity.setConfiguration(entity.getConfiguration());
 
