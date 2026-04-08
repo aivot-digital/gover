@@ -16,35 +16,37 @@ export interface ElementWidthChoice extends ElementWidthOption {
 
 export const ElementWidthOptions: readonly ElementWidthOption[] = [
     {
-        label: '25%',
+        label: '25 %',
         value: 3,
     },
     {
-        label: '33%',
+        label: '33 %',
         value: 4,
     },
-    {
-        label: '37,5%',
+    /* 37,5 and 62,5 are odd additional options which are probably not necessary as 33 and 66 % give a similar result
+       todo: remove at some time if nobody misses these options */
+    /*{
+        label: '37,5 %',
         value: 4.5,
-    },
+    },*/
     {
-        label: '50%',
+        label: '50 %',
         value: 6,
     },
-    {
-        label: '62,5%',
+    /*{
+        label: '62,5 %',
         value: 7.5,
-    },
+    },*/
     {
-        label: '66%',
+        label: '66 %',
         value: 8,
     },
     {
-        label: '75%',
+        label: '75 %',
         value: 9,
     },
     {
-        label: '100%',
+        label: '100 %',
         value: 12,
     },
 ] as const;
