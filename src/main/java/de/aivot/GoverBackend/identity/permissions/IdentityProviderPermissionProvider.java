@@ -23,7 +23,7 @@ public class IdentityProviderPermissionProvider implements PermissionProvider {
                 PermissionEntry.of(IDENTITY_PROVIDER_CREATE, "Identitätsanbieter erstellen", "Erlaubt das Erstellen von Identitätsanbietern."),
                 PermissionEntry.of(IDENTITY_PROVIDER_READ, "Identitätsanbieter anzeigen", "Erlaubt das Anzeigen und Auflisten von Identitätsanbietern."),
                 PermissionEntry.of(IDENTITY_PROVIDER_UPDATE, "Identitätsanbieter bearbeiten", "Erlaubt das Bearbeiten von Identitätsanbietern."),
-                PermissionEntry.of(IDENTITY_PROVIDER_DELETE, "IIdentitätsanbieter löschen", "Erlaubt das Löschen von Identitätsanbietern."),
+                PermissionEntry.of(IDENTITY_PROVIDER_DELETE, "Identitätsanbieter löschen", "Erlaubt das Löschen von Identitätsanbietern."),
         };
     }
 
