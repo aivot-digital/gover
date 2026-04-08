@@ -85,6 +85,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
     const value = useMemo(() => {
         return resolveValueForResolvedOverride(element, authoredElementValues, derivedData);
     }, [element, authoredElementValues, derivedData]);
+    const authoredValue = authoredElementValues[elementId];
 
     const resolvedErrors: string[] | undefined | null = useMemo(() => {
         return resolveErrors(element, derivedData);
@@ -133,7 +134,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
     }, [rootDerivedData, derivedData]);
 
     const handleSetValue = useCallback((updatedValue: any | null | undefined, triggeringElementIds?: string[]) => {
-        if (updatedValue == value) {
+        if (updatedValue == authoredValue) {
             return;
         }
 
@@ -147,10 +148,10 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         };
 
         onAuthoredElementValuesChange(newAuthoredElementValues, [elementId, ...(triggeringElementIds ?? [])]);
-    }, [element, value, authoredElementValues, onAuthoredElementValuesChange, elementId]);
+    }, [authoredValue, element, value, authoredElementValues, onAuthoredElementValuesChange, elementId]);
 
     const handleOnBlur = useCallback((updatedValue: any | null | undefined, triggeringElementIds?: string[]) => {
-        if (updatedValue == value || onElementBlur == null) {
+        if (updatedValue == authoredValue || onElementBlur == null) {
             return;
         }
 
@@ -160,7 +161,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         };
 
         onElementBlur(newAuthoredElementValues, [elementId, ...(triggeringElementIds ?? [])]);
-    }, [value, authoredElementValues, onElementBlur, elementId]);
+    }, [authoredValue, authoredElementValues, onElementBlur, elementId]);
 
     const ViewComponent: ComponentType<BaseViewProps<typeof element, any>> | null = useMemo(() => Views[element.type], [element.type]);
 
