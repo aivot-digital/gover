@@ -3,7 +3,8 @@ import {type ProcessNodeEntity} from '../../../../entities/process-node-entity';
 import type {ProcessInstanceEntity} from '../../../../entities/process-instance-entity';
 import type {ProcessInstanceTaskEntity} from '../../../../entities/process-instance-task-entity';
 import type {ProcessInstanceEventEntity} from '../../../../entities/process-instance-event-entity';
-import {ProcessVersionValidationResult} from '../../../../services/process-definition-version-api-service';
+
+import {ProcessNodeProblems} from '../../../../entities/process-node-problems';
 
 export interface ProcessFlowEditorContextType {
     editable: boolean;
@@ -26,7 +27,7 @@ export interface ProcessFlowEditorContextType {
         events: ProcessInstanceEventEntity[];
     } | null;
 
-    nodeValidationResults: ProcessVersionValidationResult[];
+    nodeValidationResults: ProcessNodeProblems[];
 }
 
 export const ProcessFlowEditorContext = createContext<ProcessFlowEditorContextType | null>(null);

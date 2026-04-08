@@ -32,6 +32,8 @@ import {clearLoadingMessage, setLoadingMessage} from '../../../../../../slices/s
 import {useDelayedVisibility} from '../../../../../../hooks/use-delayed-visibility';
 import {downloadObjectFile} from '../../../../../../utils/download-utils';
 import Assignment from '@aivot/mui-material-symbols-400-outlined/dist/assignment/Assignment';
+import {ProcessNodeProblems} from '../../../../entities/process-node-problems';
+import {isDerivedRuntimeElementData} from '../../../../../../models/element-data';
 
 const PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY = 150;
 const PROCESS_NODE_EDITOR_LOADED_FEEDBACK_DURATION = 1200;
@@ -69,6 +71,8 @@ export function ProcessNodeEditor(): ReactNode {
     const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
     const [isNodeLoading, setIsNodeLoading] = useState(false);
     const [showNodeLoadedFeedback, setShowNodeLoadedFeedback] = useState(false);
+    const [problems, setProblems] = useState<ProcessNodeProblems | null>(null);
+
     const hasEditorContent = originalNode != null && layout != null && provider != null;
     const showNodeLoadingOverlay = useDelayedVisibility(isNodeLoading, PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY);
     const showInitialNodeEditorSkeleton = useDelayedVisibility(!hasEditorContent, PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY);
@@ -130,9 +134,10 @@ export function ProcessNodeEditor(): ReactNode {
         setShowNodeLoadedFeedback(false);
 
         (async () => {
-            const [node, configurationLayout] = await Promise.all([
+            const [node, configurationLayout, problems] = await Promise.all([
                 new ProcessNodeApiService().retrieve(nodeId),
                 new ProcessNodeApiService().getConfigurationLayout(nodeId),
+                new ProcessNodeApiService().validate(nodeId),
             ]);
             const nodeProvider = await new ProcessNodeProviderApiService()
                 .getNodeProvider(node.processNodeDefinitionKey, node.processNodeDefinitionVersion);
@@ -141,9 +146,10 @@ export function ProcessNodeEditor(): ReactNode {
                 node,
                 configurationLayout,
                 nodeProvider,
+                problems,
             };
         })()
-            .then(({node, configurationLayout, nodeProvider}) => {
+            .then(({node, configurationLayout, nodeProvider, problems}) => {
                 if (isCancelled) {
                     return;
                 }
@@ -151,6 +157,7 @@ export function ProcessNodeEditor(): ReactNode {
                 setEditedNode(node);
                 setLayout(configurationLayout);
                 setProvider(nodeProvider);
+                setProblems(problems);
                 if (hasEditorContent) {
                     setShowNodeLoadedFeedback(true);
                 }
@@ -260,10 +267,25 @@ export function ProcessNodeEditor(): ReactNode {
             .then(() => {
                 setOriginalNode(editedNode);
                 dispatch(showSuccessSnackbar('Der Knoten wurde erfolgreich gespeichert.'));
+
+                return new ProcessNodeApiService()
+                    .validate(editedNode.id);
+            })
+            .then((problems) => {
+                setProblems(problems);
             })
             .catch((err: any) => {
                 if (isApiError(err) && err.status === 400) {
-                    dispatch(showErrorSnackbar('Der Knoten konnte nicht gespeichert werden, da die Konfiguration ungültig ist.'));
+                    if (isDerivedRuntimeElementData(err.details)) {
+                        setProblems({
+                            node: editedNode,
+                            derivedRuntimeElementData: err.details,
+                            commonErrors: {},
+                            problems: [],
+                        });
+                    } else {
+                        dispatch(showApiErrorSnackbar(err, 'Der Knoten konnte nicht gespeichert werden, da die Konfiguration ungültig ist.'));
+                    }
                 } else {
                     dispatch(showApiErrorSnackbar(err, 'Der Knoten konnte nicht gespeichert werden.'));
                 }
@@ -505,6 +527,7 @@ export function ProcessNodeEditor(): ReactNode {
                                     setEditedNode(node);
                                 },
                                 isEditable: true,
+                                problems: problems,
                             }}
                         >
                             <Outlet/>

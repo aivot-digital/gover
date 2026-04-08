@@ -3,6 +3,7 @@ import {type ProcessNodeEntity} from '../entities/process-node-entity';
 import {type ProcessNodeExport} from '../entities/process-node-export';
 import {type GroupLayout} from '../../../models/elements/form/layout/group-layout';
 import {generateId} from '../../../utils/id-utils';
+import {ProcessNodeProblems} from '../entities/process-node-problems';
 
 interface ProcessDefinitionNodeFilter {
     id: number;
@@ -61,5 +62,13 @@ ProcessDefinitionNodeFilter
 
     public import(processId: number, processVersion: number, nodeData: ProcessNodeExport): Promise<ProcessNodeEntity> {
         return this.post(`/api/process-nodes/import/${processId}/${processVersion}/`, nodeData);
+    }
+
+    public async validate(id: number): Promise<ProcessNodeProblems | null> {
+        try {
+            return await this.get<ProcessNodeProblems>(`${this.path}${id}/problems/`);
+        } catch (err) {
+            return null;
+        }
     }
 }

@@ -27,4 +27,6 @@ public interface ProcessNodeRepository extends JpaRepository<ProcessNodeEntity, 
             @Param("processId") Integer processId,
             @Param("processVersion") Integer processVersion
     );
+
+    boolean existsByDataKeyAndIdIsNotAndProcessIdAndProcessVersion(String dataKey, Integer nodeId, Integer processId, Integer processVersion);
 }

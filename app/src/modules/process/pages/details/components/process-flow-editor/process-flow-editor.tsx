@@ -54,7 +54,8 @@ import {
     ProcessFlowEditorAddTriggerActionButton,
     ProcessFlowEditorEmptyState,
 } from './process-flow-editor-empty-state';
-import {ProcessVersionValidationResult} from '../../../../services/process-definition-version-api-service';
+
+import {ProcessNodeProblems} from '../../../../entities/process-node-problems';
 
 const FLOW_MIN_ZOOM = 0.25;
 const FLOW_MAX_ZOOM = 2;
@@ -108,7 +109,7 @@ interface ProcessFlowEditorProps {
     topLeftPanel?: ReactNode;
     topRightPanel?: ReactNode;
 
-    nodeValidationResults: ProcessVersionValidationResult[];
+    nodeValidationResults: ProcessNodeProblems[];
 }
 
 type ProcessFlowEditorRuntimeData = ProcessFlowEditorProps['runtimeData'];

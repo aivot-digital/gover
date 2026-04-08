@@ -10,6 +10,7 @@ export function ProcessNodeEditorConfigurationTab() {
         layout,
         node: localNode,
         setNode: setLocalNode,
+        problems,
     } = useProcessNodeEditorContext();
 
     const initialDerivationNodeIdRef = useRef<number | null>(null);
@@ -42,6 +43,7 @@ export function ProcessNodeEditorConfigurationTab() {
                 }}
                 required={true}
                 maxCharacters={32}
+                error={problems?.commonErrors.dataKey}
             />
 
             <TextFieldComponent
@@ -87,6 +89,7 @@ export function ProcessNodeEditorConfigurationTab() {
                         setLocalNode(localNode, true);
                     }
                 }}
+                computedErrors={problems?.derivedRuntimeElementData.elementStates}
             />
         </Box>
     );

@@ -15,8 +15,8 @@ import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
 import de.aivot.GoverBackend.process.filters.ProcessNodeFilter;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextConfig;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextTesting;
-import de.aivot.GoverBackend.process.models.ProcessNodeProblems;
 import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
+import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessTestClaimRepository;
 import de.aivot.GoverBackend.process.services.*;
 import de.aivot.GoverBackend.user.services.UserService;
@@ -40,7 +40,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/process-nodes/")
@@ -60,6 +59,7 @@ public class ProcessNodeController {
     private final ProcessVersionService processDefinitionVersionService;
     private final ProcessTestClaimRepository processTestClaimRepository;
     private final ObjectMapper objectMapper;
+    private final ProcessNodeRepository processNodeRepository;
 
     @Nonnull
     private static String createAvailableDataKey(@Nonnull String requestedDataKey,
@@ -97,7 +97,7 @@ public class ProcessNodeController {
                                  ProcessNodeExportService processNodeExportService,
                                  ProcessVersionService processDefinitionVersionService,
                                  ProcessTestClaimRepository processTestClaimRepository,
-                                 ObjectMapper objectMapper) {
+                                 ObjectMapper objectMapper, ProcessNodeRepository processNodeRepository) {
         this.auditService = auditService.createScopedAuditService(ProcessNodeController.class, "Prozesse");
         this.userService = userService;
         this.processDefinitionNodeService = processDefinitionNodeService;
@@ -108,6 +108,7 @@ public class ProcessNodeController {
         this.processDefinitionVersionService = processDefinitionVersionService;
         this.processTestClaimRepository = processTestClaimRepository;
         this.objectMapper = objectMapper;
+        this.processNodeRepository = processNodeRepository;
     }
 
     @GetMapping("")
@@ -183,6 +184,19 @@ public class ProcessNodeController {
         var existing = processDefinitionNodeService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
+
+        if (processNodeRepository.existsByDataKeyAndIdIsNotAndProcessIdAndProcessVersion(
+                updateDTO.getDataKey(),
+                existing.getId(),
+                existing.getProcessId(),
+                existing.getProcessVersion()
+        )) {
+            throw ResponseException.badRequest(
+                    String.format(
+                            "Der Datenschlüssel %s wird innerhalb dieses Prozesses bereits verwendet. Bitte vergeben Sie einen eindeutigen Datenschlüssel.",
+                            StringUtils.quote(updateDTO.getDataKey())
+                    ));
+        }
 
         var existingMap = objectMapper
                 .convertValue(existing, Map.class);

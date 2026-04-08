@@ -1,11 +1,8 @@
 import React, {type ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
 import {Box, Button, Chip, Divider, Paper, Typography} from '@mui/material';
-import {Outlet, useNavigate, useParams, useSearchParams} from 'react-router-dom';
+import {Outlet, useLocation, useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {type ProcessEntity} from '../../entities/process-entity';
-import {
-    ProcessDefinitionVersionApiService,
-    ProcessVersionValidationResult,
-} from '../../services/process-definition-version-api-service';
+import {ProcessDefinitionVersionApiService} from '../../services/process-definition-version-api-service';
 import {type ProcessNodeEntity} from '../../entities/process-node-entity';
 import {type ProcessDefinitionEdgeEntity} from '../../entities/process-definition-edge-entity';
 import {ProcessDefinitionApiService} from '../../services/process-definition-api-service';
@@ -77,6 +74,9 @@ import {useNotImplemented} from '../../../../hooks/use-not-implemented';
 import {showExperimentalFeatures} from '../../../../hooks/use-show-experimental-features';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import {getMinDisplayableAreaWidth} from '../../../../utils/display-area-utils';
+import {ProcessNodeProblems} from '../../entities/process-node-problems';
+import {addEntityHistoryItem} from '../../../../slices/entity-history-slice';
+import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 
 const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 250;
 
@@ -270,7 +270,7 @@ export function ProcessDetailsPage(): ReactNode {
     const [hasFlowNodeProviderLoadError, setHasFlowNodeProviderLoadError] = useState(false);
     const [readyFlowEditorKey, setReadyFlowEditorKey] = useState<string | null>(null);
     const [showSettingsDialog, setShowSettingsDialog] = useState(false);
-    const [nodeValidationResults, setNodeValidationResults] = useState<ProcessVersionValidationResult[]>([]);
+    const [nodeValidationResults, setNodeValidationResults] = useState<ProcessNodeProblems[]>([]);
 
     const [showAddTriggerDialog, setShowAddTriggerDialog] = useState(false);
     const [newNodeFor, setNewNodeFor] = useState<{
@@ -508,6 +508,12 @@ export function ProcessDetailsPage(): ReactNode {
                     nodes: nodes.content,
                     edges: edges.content,
                 });
+
+                dispatch(addEntityHistoryItem({
+                    link: `/processes/${processId}/versions/${processVersion}`,
+                    title: `${definition.internalTitle} (Version ${processVersion})`,
+                    type: ServerEntityType.Processes,
+                }));
             })
             .catch((error) => {
                 if (cancelled) {
