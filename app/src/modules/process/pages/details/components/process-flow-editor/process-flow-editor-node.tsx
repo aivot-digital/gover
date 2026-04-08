@@ -253,9 +253,8 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
             {
                 label: 'Aufgabe aufrufen',
                 icon: ModuleIcons.tasks,
-                onClick: () => {
-                    navigate(`/tasks/${associatedTask.processInstanceId}/${associatedTask.id}`);
-                },
+                to: `/tasks/${associatedTask.processInstanceId}/${associatedTask.id}`,
+                newTab: true,
                 disabled: false,
                 visible: true,
                 isDangerous: false,
@@ -549,6 +548,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                                     event.preventDefault();
                                     setRuntimeActionsMenuAnchorEl(event.currentTarget);
                                 }}
+                                disabled={runtimeMenuItems.length === 0}
                             >
                                 <MoreVert
                                     sx={{
