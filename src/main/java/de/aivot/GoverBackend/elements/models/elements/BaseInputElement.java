@@ -23,8 +23,6 @@ public abstract class BaseInputElement<T> extends BaseFormElement implements Inp
     @Nullable
     private Boolean technical;
     @Nullable
-    private Boolean display;
-    @Nullable
     private String destinationKey;
 
     @Nullable
@@ -126,14 +124,13 @@ public abstract class BaseInputElement<T> extends BaseFormElement implements Inp
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         BaseInputElement<?> that = (BaseInputElement<?>) o;
-        return Objects.equals(label, that.label) && Objects.equals(hint, that.hint) && Objects.equals(required, that.required) && Objects.equals(disabled, that.disabled) && Objects.equals(technical, that.technical) && Objects.equals(display, that.display) && Objects.equals(destinationKey, that.destinationKey) && Objects.equals(value, that.value) && Objects.equals(validation, that.validation);
+        return Objects.equals(label, that.label) && Objects.equals(hint, that.hint) && Objects.equals(required, that.required) && Objects.equals(disabled, that.disabled) && Objects.equals(technical, that.technical) && Objects.equals(destinationKey, that.destinationKey) && Objects.equals(value, that.value) && Objects.equals(validation, that.validation);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), label, hint, required, disabled, technical, display, destinationKey, value, validation);
+        return Objects.hash(super.hashCode(), label, hint, required, disabled, technical, destinationKey, value, validation);
     }
-
 
     // endregion
 
@@ -216,16 +213,6 @@ public abstract class BaseInputElement<T> extends BaseFormElement implements Inp
 
     public BaseInputElement<T> setValidation(@Nullable ElementValidationFunctions validation) {
         this.validation = validation;
-        return this;
-    }
-
-    @Nullable
-    public Boolean getDisplay() {
-        return display;
-    }
-
-    public BaseInputElement<T> setDisplay(@Nullable Boolean display) {
-        this.display = display;
         return this;
     }
 
