@@ -16,6 +16,7 @@ export function OptionListInput(props: OptionListInputProps) {
     const groupFieldLabel = `${props.groupLabel ?? 'Gruppe'} (optional)`;
     const isEditable = props.disabled !== true;
     const isRequired = !props.allowEmpty;
+    const isKeyFieldDisabled = props.disableKeyField === true;
 
     const hasNotEnoughItems = isRequired && options.length === 0;
     const hasEmptyField = options.some((option) => option.value.length === 0 || option.label.length === 0);
@@ -65,9 +66,11 @@ export function OptionListInput(props: OptionListInputProps) {
                         value={item.label}
                         onChange={(event) => {
                             const updatedValue = [...options];
+                            const nextLabel = event.target.value ?? '';
                             updatedValue[index] = {
                                 ...item,
-                                label: event.target.value ?? '',
+                                label: nextLabel,
+                                value: isKeyFieldDisabled ? nextLabel : item.value,
                             };
                             handleChange(updatedValue);
                         }}
@@ -102,9 +105,9 @@ export function OptionListInput(props: OptionListInputProps) {
                             };
                             handleChange(updatedValue);
                         }}
-                        error={item.value.length === 0}
-                        helperText={(item.value.length === 0) ? 'Bitte geben Sie einen Text ein, oder entfernen Sie diese Zeile.' : undefined}
-                        disabled={!isEditable}
+                        error={!isKeyFieldDisabled && item.value.length === 0}
+                        helperText={(!isKeyFieldDisabled && item.value.length === 0) ? 'Bitte geben Sie einen Text ein, oder entfernen Sie diese Zeile.' : undefined}
+                        disabled={!isEditable || isKeyFieldDisabled}
                     />
                     {/* TODO: Check if other option has the same value */}
                 </TableCell>
@@ -148,7 +151,7 @@ export function OptionListInput(props: OptionListInputProps) {
                 }
             </>
         );
-    }, [groupFieldEnabled, handleChange, isEditable, options, props.groupLabel, props.keyLabel, props.labelLabel]);
+    }, [groupFieldEnabled, handleChange, isEditable, isKeyFieldDisabled, options, props.groupLabel, props.keyLabel, props.labelLabel]);
 
 
     return (
@@ -222,10 +225,20 @@ export function OptionListInput(props: OptionListInputProps) {
                     textInputMode &&
                     <TextFieldComponent
                         label="Einträge"
-                        placeholder={groupFieldEnabled ?
+                        placeholder={isKeyFieldDisabled ?
+                            (groupFieldEnabled ?
+                                'Beschriftung 1|Gruppe 1\nBeschriftung 2|Gruppe 2\nBeschriftung 3|' :
+                                'Beschriftung 1\nBeschriftung 2\nBeschriftung 3'
+                            ) :
+                            (groupFieldEnabled ?
                             'Beschriftung 1|Wert 1|Gruppe 1\nBeschriftung 2|Wert 2|Gruppe 2\nBeschriftung 3|Wert 3|' :
-                            'Beschriftung 1|Wert 1\nBeschriftung 2|Wert 2\nBeschriftung 3|Wert 3'}
+                            'Beschriftung 1|Wert 1\nBeschriftung 2|Wert 2\nBeschriftung 3|Wert 3')}
                         value={textInputBuffer != null ? textInputBuffer : options.map((opt) => (
+                            isKeyFieldDisabled ?
+                                (groupFieldEnabled ?
+                                    `${opt.label}|${opt.group ?? ''}` :
+                                    opt.label
+                                ) :
                             groupFieldEnabled ?
                                 `${opt.label}|${opt.value}|${opt.group ?? ''}` :
                                 `${opt.label}|${opt.value}`
@@ -240,10 +253,11 @@ export function OptionListInput(props: OptionListInputProps) {
                                 const lines = val.split('\n');
                                 const values = lines.map((ln) => {
                                     const parts = ln.split('|');
+                                    const label = (parts[0] ?? '').trim();
                                     return {
-                                        value: (parts[1] ?? '').trim(),
-                                        label: (parts[0] ?? '').trim(),
-                                        group: groupFieldEnabled ? (parts[2] ?? '').trim() : undefined,
+                                        value: isKeyFieldDisabled ? label : (parts[1] ?? '').trim(),
+                                        label,
+                                        group: groupFieldEnabled ? (isKeyFieldDisabled ? (parts[1] ?? '').trim() : (parts[2] ?? '').trim()) : undefined,
                                     };
                                 });
                                 props.onChange(values);

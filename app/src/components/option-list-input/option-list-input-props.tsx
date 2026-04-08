@@ -16,6 +16,7 @@ export interface OptionListInputProps {
 
     labelLabel?: string;
     keyLabel?: string;
+    disableKeyField?: boolean;
     groupLabel?: string;
     showGroupField?: boolean;
 
