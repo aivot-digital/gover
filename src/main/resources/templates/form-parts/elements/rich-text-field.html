@@ -1,0 +1,24 @@
+<!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
+<!--/*@thymesVar id="element" type="de.aivot.GoverBackend.elements.models.elements.form.input.RichTextInputElement"*/-->
+<!--/*@thymesVar id="value" type="java.lang.Object"*/-->
+<!--/*@thymesVar id="#markdown" type="de.aivot.GoverBackend.services.pdf.MarkdownDialect"*/-->
+
+<div class="input-element text-element">
+    <div class="input">
+        <div class="label">
+            <strong th:text="${ element.label }"></strong>
+            <span th:if="${ base.isBlankPrint && element?.required != null && element?.required }">(Pflichtangabe)</span>
+        </div>
+
+        <div
+                class="content content-without-margin-on-childs"
+                th:utext="${ base.isBlankPrint ? '' : #markdown.render(element.toDisplayValue(value)) }"
+                th:style="${ (base.isBlankPrint ? 'min-height: 12em;' : '') + 'display: block;' }"
+        >
+        </div>
+    </div>
+
+    <div class="hint-wrapper">
+        <div th:insert="~{./form-parts/elements/_hint.html}"></div>
+    </div>
+</div>

@@ -12,6 +12,7 @@
 <!--/*@thymesVar id="paymentProviderDefinition" type="de.aivot.GoverBackend.payment.models.PaymentProviderDefinition"*/-->
 <!--/*@thymesVar id="#qrcode" type="de.aivot.GoverBackend.services.pdf.QrCodeDialect"*/-->
 <!--/*@thymesVar id="#numberformat" type="de.aivot.GoverBackend.services.pdf.NumberFormatDialect"*/-->
+<!--/*@thymesVar id="#markdown" type="de.aivot.GoverBackend.services.pdf.MarkdownDialect"*/-->
 
 <!DOCTYPE html>
 <html
@@ -190,12 +191,12 @@
                                 RichText
                                 *********************************************************************** */-->
                                 <th:block
-                                        th:case="Richtext"
+                                        th:case="RichText"
                                         th:if="${ base.isNotStaffPrint }"
                                 >
                                     <div
-                                            class="richtext"
-                                            th:utext="${ child.element.content }"
+                                            class="richtext content-without-margin-on-childs"
+                                            th:utext="${ #markdown.render(child.element.content) }"
                                     >
                                     </div>
                                 </th:block>
@@ -233,7 +234,7 @@
                                         <strong th:text="${ child.element.title }"></strong>
                                         <div
                                                 class="alert-title"
-                                                th:utext="${ child.element.text }"
+                                                th:utext="${ #markdown.render(child.element.text) }"
                                         ></div>
                                     </div>
                                 </th:block>
@@ -254,6 +255,16 @@
                                 <th:block th:case="Text">
                                     <div
                                             th:insert="./form-parts/elements/text-field.html"
+                                            th:with="element=${child.element}, value=${child.value}, hasValue=${child.hasValue()}"
+                                    ></div>
+                                </th:block>
+
+                                <!--/* ***********************************************************************
+                                RichTextInput
+                                *********************************************************************** */-->
+                                <th:block th:case="RichTextInput">
+                                    <div
+                                            th:insert="./form-parts/elements/rich-text-field.html"
                                             th:with="element=${child.element}, value=${child.value}, hasValue=${child.hasValue()}"
                                     ></div>
                                 </th:block>
