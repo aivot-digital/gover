@@ -1921,6 +1921,7 @@ export function ProcessDetailsPage(): ReactNode {
                                                 }}
                                                 onDeleteNode={handleDeleteNode}
                                                 runtimeData={runtimeData}
+                                                onReloadRuntimeData={loadRuntimeData}
                                             />
                                         </ReactFlowProvider> :
                                         <Paper

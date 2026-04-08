@@ -27,11 +27,15 @@ import SwapHoriz from '@mui/icons-material/SwapHoriz';
 import {ProcessActionMenu, type ProcessActionMenuItem} from '../process-action-menu';
 import {ModuleIcons} from '../../../../../../shells/staff/data/module-icons';
 import {useNavigate} from 'react-router-dom';
+import Replay from '@aivot/mui-material-symbols-400-outlined/dist/replay/Replay';
+import {ProcessInstanceTaskApiService} from '../../../../services/process-instance-task-api-service';
+import {useAppDispatch} from '../../../../../../hooks/use-app-dispatch';
+import {clearLoadingMessage, setLoadingMessage} from '../../../../../../slices/shell-slice';
 
 function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
     const theme = useTheme();
     const confirm = useConfirm();
-    const navigate = useNavigate();
+    const dispatch = useAppDispatch();
     const updateNodeInternals = useUpdateNodeInternals();
     const [showEventsDialog, setShowEventsDialog] = useState(false);
     const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
@@ -52,6 +56,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         showTargetHandles,
         runtimeData,
         nodeValidationResults,
+        onReloadRuntimeData,
     } = useProcessFlowEditorContext();
 
     const {
@@ -246,20 +251,48 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
     }, [availableOutputPorts.length, confirm, editable, node, nodeName, onConnectNodeToExisting, onDeleteNode, onStartReplaceNode]);
 
     const runtimeMenuItems: ProcessActionMenuItem[] = useMemo(() => {
-        if (associatedTask == null || associatedTask.status != ProcessTaskStatus.Running) {
-            return [];
+        const items: ProcessActionMenuItem[] = []
+
+        if (associatedTask != null) {
+            if (associatedTask.status == ProcessTaskStatus.Running) {
+                items.push({
+                    label: 'Aufgabe aufrufen',
+                    icon: ModuleIcons.tasks,
+                    to: `/tasks/${associatedTask.processInstanceId}/${associatedTask.id}`,
+                    newTab: true,
+                    disabled: false,
+                    visible: true,
+                    isDangerous: false,
+                });
+            }
+
+            if (associatedTask.status == ProcessTaskStatus.Failed) {
+                items.push({
+                    label: 'Aufgabe neu starten',
+                    icon: <Replay/>,
+                    onClick: () => {
+                        dispatch(setLoadingMessage({
+                            blocking: true,
+                            message: 'Starte Aufgabe neu',
+                            estimatedTime: 500,
+                        }))
+                        new ProcessInstanceTaskApiService()
+                            .rerunFailedTask(associatedTask.id)
+                            .then(() => {
+                                onReloadRuntimeData();
+                            })
+                            .finally(() => {
+                                dispatch(clearLoadingMessage());
+                            });
+                    },
+                    disabled: false,
+                    visible: true,
+                    isDangerous: false,
+                });
+            }
         }
-        return [
-            {
-                label: 'Aufgabe aufrufen',
-                icon: ModuleIcons.tasks,
-                to: `/tasks/${associatedTask.processInstanceId}/${associatedTask.id}`,
-                newTab: true,
-                disabled: false,
-                visible: true,
-                isDangerous: false,
-            },
-        ];
+
+        return items;
     }, [associatedTask]);
 
     // Connecting/disconnecting ports changes the effective handle geometry of the node. React Flow

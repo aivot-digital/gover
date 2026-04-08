@@ -228,6 +228,11 @@ public class ProcessNodeExecutionResultHandler {
             return;
         }
 
+        if (processInstance.getStatus() != ProcessInstanceStatus.Running) {
+            processInstance.setStatus(ProcessInstanceStatus.Running);
+            processInstanceRepository.save(processInstance);
+        }
+
         try {
             processTaskMailService.sendAssigned(
                     triggeringUser,

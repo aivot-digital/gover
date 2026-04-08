@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.elements.utils;
 
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
@@ -103,7 +104,7 @@ public class ElementPOJOMapper {
      * Extract the child items for a replicating container layout pojo. This always returns a {@link List} consisting of the child item pojo types.
      *
      * @param effectiveElementValues The effective values to extract the values from.
-     * @param field       The field to map the values to.
+     * @param field                  The field to map the values to.
      * @return The extracted list of child item pojos.
      * @throws ElementDataConversionException If there is a type mismatch or other error during extraction.
      */
@@ -149,8 +150,12 @@ public class ElementPOJOMapper {
 
         var id = annotation.id();
 
-        return elementValues
+        var valueObj = elementValues
                 .getOrDefault(id, null);
+
+        return ObjectMapperFactory
+                .getInstance()
+                .convertValue(valueObj, field.getType());
     }
 
     public static <T extends LayoutElement<C>, C extends BaseElement, S> T createFromPOJO(Class<S> pojoClass) throws ElementDataConversionException {

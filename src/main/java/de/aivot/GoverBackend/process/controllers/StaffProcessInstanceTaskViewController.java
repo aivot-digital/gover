@@ -53,6 +53,7 @@ public class StaffProcessInstanceTaskViewController {
     private final ProcessService processService;
     private final ProcessVersionService processVersionService;
     private final TaskViewMultipartInputService taskViewMultipartInputService;
+    private final ProcessDataService processDataService;
 
     public StaffProcessInstanceTaskViewController(ProcessInstanceService processInstanceService,
                                                   ProcessInstanceTaskService processInstanceTaskService,
@@ -64,7 +65,7 @@ public class StaffProcessInstanceTaskViewController {
                                                   ElementDerivationService elementDerivationService,
                                                   ProcessService processService,
                                                   ProcessVersionService processVersionService,
-                                                  TaskViewMultipartInputService taskViewMultipartInputService) {
+                                                  TaskViewMultipartInputService taskViewMultipartInputService, ProcessDataService processDataService) {
         this.processInstanceService = processInstanceService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.processNodeProviderService = processNodeProviderService;
@@ -76,6 +77,7 @@ public class StaffProcessInstanceTaskViewController {
         this.processService = processService;
         this.processVersionService = processVersionService;
         this.taskViewMultipartInputService = taskViewMultipartInputService;
+        this.processDataService = processDataService;
     }
 
     @GetMapping("")
@@ -102,6 +104,12 @@ public class StaffProcessInstanceTaskViewController {
         var logger = processNodeExecutionLoggerFactory
                 .create(taskViewData.instance().getId(), taskViewData.task().getId(), user.getId(), null);
 
+        var processData = processDataService
+                .foldProcessInstanceData(
+                        taskViewData.instance(),
+                        taskViewData.task().getPreviousProcessNodeId()
+                );
+
         var context = new ProcessNodeExecutionContextUIStaff(
                 logger,
                 taskViewData.node(),
@@ -109,7 +117,8 @@ public class StaffProcessInstanceTaskViewController {
                 taskViewData.task(),
                 null,
                 user,
-                taskViewData.derivedRuntimeElementData()
+                taskViewData.derivedRuntimeElementData(),
+                processData
         );
 
         var layout = taskViewData
@@ -160,6 +169,12 @@ public class StaffProcessInstanceTaskViewController {
         var logger = processNodeExecutionLoggerFactory
                 .create(taskViewData.instance().getId(), taskViewData.task().getId(), user.getId(), identityId);
 
+        var processData = processDataService
+                .foldProcessInstanceData(
+                        taskViewData.instance(),
+                        taskViewData.task().getPreviousProcessNodeId()
+                );
+
         var context = new ProcessNodeExecutionContextUIStaff(
                 logger,
                 taskViewData.node(),
@@ -167,7 +182,8 @@ public class StaffProcessInstanceTaskViewController {
                 taskViewData.task(),
                 null,
                 user,
-                taskViewData.derivedRuntimeElementData()
+                taskViewData.derivedRuntimeElementData(),
+                processData
         );
 
         ProcessInstanceTaskEntity previousTask;
@@ -215,6 +231,8 @@ public class StaffProcessInstanceTaskViewController {
             res = taskViewData
                     .provider
                     .onUpdateFromStaff(context, inputs, event);
+        } catch (ResponseException e) {
+            throw e;
         } catch (Exception e) {
             logger.logException(e);
             throw ResponseException.internalServerError(e);

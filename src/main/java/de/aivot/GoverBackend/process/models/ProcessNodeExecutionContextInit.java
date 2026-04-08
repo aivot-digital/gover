@@ -17,7 +17,7 @@ public class ProcessNodeExecutionContextInit extends ProcessNodeExecutionContext
      * The process data available during the execution of the node.
      */
     @Nonnull
-    private final Map<String, Object> processData;
+    private final ProcessExecutionData processData;
 
     /**
      * The configuration data available during the execution of the node.
@@ -37,7 +37,7 @@ public class ProcessNodeExecutionContextInit extends ProcessNodeExecutionContext
     }
 
     @Nonnull
-    public Map<String, Object> getProcessData() {
+    public ProcessExecutionData getProcessData() {
         return processData;
     }
 

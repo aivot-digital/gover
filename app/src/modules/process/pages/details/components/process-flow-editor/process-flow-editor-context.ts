@@ -18,6 +18,8 @@ export interface ProcessFlowEditorContextType {
     onConnectNodeToExisting: (node: ProcessNodeEntity, preferredPortKey?: string) => void;
     onStartReplaceNode: (node: ProcessNodeEntity) => void;
 
+    onReloadRuntimeData: () => void;
+
     onAddFollowUpNode: (fromNodeId: number, viaPortKey: string) => void;
     onAddInbetweenNode: (forEdgeId: number) => void;
 

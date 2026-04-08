@@ -17,6 +17,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class AssignmentContextInputElement extends BaseInputElement<AssignmentContextInputElementValue> implements PrintableElement<AssignmentContextInputElementValue> {
+    public static final String ALLOWED_TYPE_ORG_UNIT = "orgUnit";
+    public static final String ALLOWED_TYPE_TEAM = "team";
+    public static final String ALLOWED_TYPE_USER = "user";
+
     @Nullable
     private String headline;
 

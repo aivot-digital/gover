@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.javascript.models.JavascriptResult;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
+import de.aivot.GoverBackend.process.models.ProcessExecutionData;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
@@ -45,7 +46,7 @@ public class TemplateRenderService {
     /**
      * Validates only template syntax and block structure without executing any JavaScript.
      *
-     * <p>This method exists separately from {@link #interpolate(Map, String)} so the frontend can show Monaco markers
+     * <p>This method exists separately from {@link #interpolate(ProcessExecutionData, String)} so the frontend can show Monaco markers
      * before a template is rendered. The returned diagnostics are line-based on purpose because line numbers are the
      * stable unit the editor needs, while runtime expression errors are still handled during interpolation.
      */
@@ -68,7 +69,7 @@ public class TemplateRenderService {
      * consistent execution environment instead of repeatedly bootstrapping isolated engines.
      */
     @Nullable
-    public String interpolate(@Nonnull Map<String, Object> processData,
+    public String interpolate(@Nonnull ProcessExecutionData foldedProcessData,
                               @Nullable String template) {
         if (template == null) {
             return null;
@@ -82,7 +83,7 @@ public class TemplateRenderService {
         try (var engine = javascriptEngineFactoryService.getEngine()) {
             var renderer = new TemplateRenderer(
                     new TemplateExpressionEvaluator(engine, parseResult.source()),
-                    new TemplateRenderContext(processData),
+                    new TemplateRenderContext(foldedProcessData),
                     parseResult.blocks()
             );
             return renderer.render(parseResult.nodes());

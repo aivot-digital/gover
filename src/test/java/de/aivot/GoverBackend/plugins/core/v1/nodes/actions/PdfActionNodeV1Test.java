@@ -248,7 +248,7 @@ class PdfActionNodeV1Test {
         }
 
         @Override
-        public String interpolate(Map<String, Object> processData, String template) {
+        public String interpolate(Map<String, Object> foldedProcessData, String template) {
             return template;
         }
     }

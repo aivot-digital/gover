@@ -106,6 +106,7 @@ interface ProcessFlowEditorProps {
         tasks: ProcessInstanceTaskEntity[];
         events: ProcessInstanceEventEntity[];
     } | null;
+    onReloadRuntimeData: () => void;
     topLeftPanel?: ReactNode;
     topRightPanel?: ReactNode;
 
@@ -347,6 +348,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onAddTrigger,
 
         runtimeData,
+        onReloadRuntimeData,
         topLeftPanel,
         topRightPanel,
 
@@ -410,6 +412,8 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onConnectNodeToExisting: onConnectNodeToExisting ?? NOOP_CONNECT_NODE_TO_EXISTING,
         onStartReplaceNode: onStartReplaceNode ?? NOOP_START_REPLACE_NODE,
 
+        onReloadRuntimeData: onReloadRuntimeData,
+
         onAddFollowUpNode: onAddFollowUpNode ?? NOOP_ADD_FOLLOW_UP_NODE,
         onAddInbetweenNode: onAddInbetweenNode ?? NOOP_ADD_INBETWEEN_NODE,
 
@@ -426,6 +430,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onDeleteNode,
         onStartReplaceNode,
         runtimeData,
+        onReloadRuntimeData,
         selectedNode,
         showTargetHandles,
         nodeValidationResults,
