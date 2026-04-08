@@ -33,7 +33,18 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Derivation service for elements.
+ * Centralizes runtime derivation for form elements so the rest of the system can work with one
+ * consistent interpretation of a form definition.
+ * <p>
+ * Form rendering, validation, submission payload generation and process views all depend on the
+ * same questions being answered in the same order: whether an element is overridden, whether it is
+ * visible, which value is effectively active and whether that value is valid. Keeping that pipeline
+ * in one service prevents callers from re-implementing partial logic and accidentally observing
+ * different runtime states for the same form data.
+ * <p>
+ * The service also preserves contextual behavior for replicated containers. Child rows derive their
+ * own values and errors against row-local data, while still being able to reference root-level
+ * state when expressions or dependent selects need it.
  */
 @Service
 public class ElementDerivationService {
@@ -41,6 +52,18 @@ public class ElementDerivationService {
     private final NoCodeEvaluationService noCodeEvaluationService;
     private final ElementDataTransformService elementDataTransformService;
 
+    /**
+     * Wires the collaborators that execute dynamic expressions and expose the derived runtime state
+     * in the payload shape expected by those expressions.
+     *
+     * @param javascriptEngineFactoryService supplies fresh JavaScript engines so derivations do not
+     *                                       share mutable evaluator state across requests
+     * @param noCodeEvaluationService evaluates declarative expressions so the derivation pipeline can
+     *                                treat scripted and no-code rules uniformly
+     * @param elementDataTransformService builds the `$` payload view because dynamic rules should
+     *                                    reason about destination-shaped data instead of internal
+     *                                    element-id maps
+     */
     @Autowired
     public ElementDerivationService(
             JavascriptEngineFactoryService javascriptEngineFactoryService,
@@ -51,6 +74,20 @@ public class ElementDerivationService {
         this.elementDataTransformService = elementDataTransformService;
     }
 
+    /**
+     * Produces the runtime view of a form tree for one authored data set.
+     * <p>
+     * A single entry point matters because callers need the effective values and the computed
+     * element states to come from the same derivation pass. Running visibility, value derivation and
+     * validation separately would allow later stages to observe a different state than earlier ones,
+     * especially once overrides and replicated rows are involved.
+     *
+     * @param request bundles the form tree, authored values and derivation options so the pipeline
+     *                operates on one coherent snapshot
+     * @param logger captures expression output and failures because derivation is dynamic and must
+     *               remain diagnosable without changing the return type
+     * @return the effective values and computed element states that describe the form at runtime
+     */
     @Nonnull
     public DerivedRuntimeElementData derive(@Nonnull ElementDerivationRequest request,
                                             @Nonnull ElementDerivationLogger logger) {
@@ -85,6 +122,19 @@ public class ElementDerivationService {
         );
     }
 
+    /**
+     * Walks the element tree in the order required to keep later decisions dependent on earlier
+     * ones.
+     * <p>
+     * Overrides are derived first because they may change the element definition that visibility,
+     * value and validation rules should use. Visibility is derived before values so hidden elements
+     * do not accumulate stale runtime data unnecessarily. Values are derived before errors because
+     * validation must run against the value the user or the derivation logic will actually see.
+     * <p>
+     * The recursive shape also preserves row-local state for replicating containers. Each repeated
+     * item gets its own authored/effective maps and child state container so row-specific rules do
+     * not bleed into siblings.
+     */
     private void derive(
             @Nonnull JavascriptEngine javascriptEngine,
             @Nonnull BaseElement rootElement,
@@ -245,6 +295,20 @@ public class ElementDerivationService {
     }
 
 
+    /**
+     * Resolves a runtime override when the form definition allows the current element to mutate
+     * itself dynamically.
+     * <p>
+     * Overrides exist so authors can adapt labels, options or other element properties to the
+     * current runtime context without duplicating the surrounding form structure. The method keeps
+     * that flexibility constrained by forbidding changes to id and type, because the rest of the
+     * derivation pipeline relies on stable identity and stable element semantics.
+     *
+     * @return the derived replacement element, or {@code null} when the original element definition
+     * should stay in effect
+     * @throws DerivationException when dynamic override logic produces an invalid or structurally
+     *                             incompatible element
+     */
     @Nullable
     private BaseElement deriveOverride(
             @Nonnull JavascriptEngine javascriptEngine,
@@ -363,7 +427,17 @@ public class ElementDerivationService {
         return null;
     }
 
-
+    /**
+     * Determines visibility after overrides have been applied so downstream logic reasons about the
+     * element definition that is actually active.
+     * <p>
+     * Visibility is evaluated early because hiding an element is meant to short-circuit further
+     * runtime work for that branch. This keeps invisible subtrees from producing misleading values
+     * or validation errors while still allowing skip options to force a stable visible state when a
+     * caller intentionally wants to bypass the dynamic rule.
+     *
+     * @throws DerivationException when a configured visibility rule cannot be evaluated reliably
+     */
     private boolean deriveVisibility(
             @Nonnull JavascriptEngine javascriptEngine,
             @Nonnull BaseElement rootElement,
@@ -435,6 +509,24 @@ public class ElementDerivationService {
         return true;
     }
 
+    /**
+     * Chooses the effective value that should drive rendering, submission and validation for one
+     * input element.
+     * <p>
+     * User-authored data wins whenever it is present on an enabled field because preserving explicit
+     * user intent is more important than re-computing a default. Derived values are only used when
+     * the element is configured to supply one and authored input should not take precedence. The
+     * method also records the value source so downstream consumers can distinguish a retained user
+     * answer from a system-generated one.
+     * <p>
+     * Select values are sanitized before being accepted because dependent option lists can change as
+     * other inputs change. Keeping a now-invalid selection would make the runtime state internally
+     * inconsistent even if the authored data was valid earlier.
+     *
+     * @return the value that should be treated as authoritative for the current runtime state
+     * @throws DerivationException when dynamic value logic is configured but cannot yield a usable
+     *                             result
+     */
     @Nullable
     private Object deriveEffectiveValue(
             @Nonnull JavascriptEngine javascriptEngine,
@@ -531,6 +623,15 @@ public class ElementDerivationService {
         throw new DerivationException(baseElement, "Der Wert konnte nicht abgeleitet werden, da die Definition des Werteableitungsmechanismus ungültig ist.");
     }
 
+    /**
+     * Removes stale values from dependent select elements before they enter the effective runtime
+     * state.
+     * <p>
+     * Dependent selects are valid only relative to the currently selected option of another select.
+     * A previously chosen option may stop belonging to the active group after the referenced select
+     * changes. Returning {@code null} in that case forces the runtime state to reflect the currently
+     * available option set instead of silently preserving an impossible selection.
+     */
     @Nullable
     private Object sanitizeSelectEffectiveValue(
             @Nonnull BaseElement rootElement,
@@ -574,6 +675,13 @@ public class ElementDerivationService {
         return null;
     }
 
+    /**
+     * Resolves the select element that governs the current dependent select.
+     * <p>
+     * The lookup starts at the form root rather than the current branch because dependency
+     * references are id-based and should remain stable even when authors rearrange the layout
+     * hierarchy around the fields.
+     */
     @Nullable
     private SelectInputElement resolveReferencedSelectField(
             @Nonnull BaseElement rootElement,
@@ -593,6 +701,14 @@ public class ElementDerivationService {
                 .orElse(null);
     }
 
+    /**
+     * Reads the controlling select value from the nearest meaningful scope.
+     * <p>
+     * Replicated rows need local dependencies to win over root-level data, otherwise one row could
+     * accidentally validate itself against another row's selection. The fallback order therefore
+     * prefers row-local effective data, then row-local authored data, and only then falls back to
+     * root-level state.
+     */
     @Nullable
     private String resolveReferencedSelectValue(
             @Nonnull SelectInputElement referencedSelectField,
@@ -615,6 +731,19 @@ public class ElementDerivationService {
         return referencedSelectField.formatValue(rawValue);
     }
 
+    /**
+     * Derives the validation error that should be exposed for the current input element.
+     * <p>
+     * Built-in validation runs before custom rules so structural guarantees such as requiredness and
+     * type-specific constraints are enforced consistently even when authors also configured dynamic
+     * validation. Custom validation then refines that baseline with runtime-specific business rules.
+     * Returning the first relevant error keeps the element state focused on the reason that matters
+     * most for the current input.
+     * <p>
+     * Skip options and nullable non-required values are handled early because callers sometimes need
+     * a pure derivation pass without validation noise, and optional empty fields should not enter the
+     * expensive dynamic validation path.
+     */
     @Nullable
     private String deriveError(
             @Nonnull JavascriptEngine javascriptEngine,
@@ -701,6 +830,14 @@ public class ElementDerivationService {
         return null;
     }
 
+    /**
+     * Creates the shared runtime snapshot that expression evaluators consume.
+     * <p>
+     * JavaScript and no-code rules should make decisions against the same in-flight derivation state
+     * that the service itself is building. Wrapping the current effective values and computed states
+     * into one object ensures every evaluator sees the same snapshot and avoids ad-hoc argument lists
+     * that would drift apart over time.
+     */
     private DerivedRuntimeElementData createRuntimeAccumulator(@Nonnull ComputedElementStates computedElementStates,
                                                                @Nonnull EffectiveElementValues effectiveElementValues) {
         return new DerivedRuntimeElementData(
