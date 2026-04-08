@@ -77,7 +77,7 @@ export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
     [ElementType.Headline]: 'Gliedert Inhalte mit einer Überschrift.',
     [ElementType.MultiCheckbox]: 'Ermöglicht die Auswahl mehrerer Optionen.',
     [ElementType.Number]: 'Erfasst Zahlenwerte und Mengenangaben.',
-    [ElementType.ReplicatingContainer]: 'Wiederholt einen Feldblock mehrfach.',
+    [ElementType.ReplicatingContainer]: 'Wiederholt eine Elementgruppe mehrfach.',
     [ElementType.RichText]: 'Zeigt formatierten Fließtext an.',
     [ElementType.Radio]: 'Ermöglicht genau eine Auswahl per Optionsfeld.',
     [ElementType.Select]: 'Ermöglicht genau eine Auswahl im Dropdown.',
