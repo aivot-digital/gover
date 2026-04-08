@@ -15,6 +15,7 @@ import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {ElementsApiService} from '../elements-api-service';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {isApiError} from '../../../models/api-error';
+import {synchronizeAuthoredElementValuesByDestinationPath} from '../../../utils/element-data-utils';
 
 interface ElementDerivationContextProps {
     element: AnyElement;
@@ -82,8 +83,20 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
     }, [element]);
 
     const handleAuthoredElementValuesChange = async (newData: AuthoredElementValues, triggeringElementIds: string[]) => {
+        // Synchronizing before reference analysis keeps mirrored destination-path aliases and their
+        // dependents inside the same authored-data update, regardless of which subtree hosts them.
+        const synchronizedUpdate = synchronizeAuthoredElementValuesByDestinationPath(
+            element,
+            authoredElementValues,
+            newData,
+            derivedData,
+            triggeringElementIds,
+        );
+        const effectiveNewData = synchronizedUpdate.authoredElementValues;
+        const effectiveTriggeringElementIds = synchronizedUpdate.triggeringElementIds;
+
         const relevantIds: string[] = [];
-        for (const id of triggeringElementIds) {
+        for (const id of effectiveTriggeringElementIds) {
             for (const element of allElements) {
                 if (checkElementReferencesId(element, id)) {
                     if (!relevantIds.includes(element.id)) {
@@ -94,7 +107,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         }
 
         if (relevantIds.length === 0) {
-            onAuthoredElementValuesChange(newData);
+            onAuthoredElementValuesChange(effectiveNewData);
             return;
         }
 
@@ -103,7 +116,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             ...relevantIds,
         ]);
         setMode('deriving');
-        await derive(newData);
+        await derive(effectiveNewData);
         setMode('idle');
         setDerivationTriggerIdQueue((current) => {
             const updated = [...current];

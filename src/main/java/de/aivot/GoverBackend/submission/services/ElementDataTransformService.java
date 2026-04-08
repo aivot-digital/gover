@@ -87,6 +87,55 @@ public class ElementDataTransformService {
     }
 
     /**
+     * Resolves a destination key to the concrete payload path currently addressed by the active
+     * traversal context.
+     * <p>
+     * Derivation needs this view because callers want to understand where an element would write in
+     * the outbound payload without forcing the service to build that payload first. Reusing the same
+     * normalization and wildcard substitution rules as the payload writer keeps the reported path
+     * aligned with the actual export logic.
+     *
+     * @param destinationKey the destination key configured on the current element
+     * @param pathPrefixSegments an already resolved payload prefix contributed by parent structures
+     * @param replicationIndices the active replication indices used to substitute wildcard segments
+     * @return the resolved destination path, or {@code null} when the element has no destination key
+     */
+    @Nullable
+    public String resolveDestinationPath(@Nullable String destinationKey,
+                                         @Nonnull List<String> pathPrefixSegments,
+                                         @Nonnull List<Integer> replicationIndices) {
+        var resolvedSegments = resolveDestinationPathSegments(destinationKey, pathPrefixSegments, replicationIndices);
+        return resolvedSegments.isEmpty() ? null : String.join(".", resolvedSegments);
+    }
+
+    /**
+     * Resolves a destination key to its normalized path segments within the current traversal
+     * context.
+     * <p>
+     * Returning segments instead of only a string matters for replicated rows. The derivation
+     * service needs to extend a resolved container path with the current row index before resolving
+     * descendant paths, and keeping the segmented representation avoids lossy string round-trips.
+     *
+     * @param destinationKey the destination key configured on the current element
+     * @param pathPrefixSegments an already resolved payload prefix contributed by parent structures
+     * @param replicationIndices the active replication indices used to substitute wildcard segments
+     * @return the resolved path segments, or an empty list when the element has no destination key
+     */
+    @Nonnull
+    public List<String> resolveDestinationPathSegments(@Nullable String destinationKey,
+                                                       @Nonnull List<String> pathPrefixSegments,
+                                                       @Nonnull List<Integer> replicationIndices) {
+        var destinationSegments = parseDestinationKeySegments(destinationKey);
+        if (destinationSegments.isEmpty()) {
+            return List.of();
+        }
+
+        var resolvedSegments = new LinkedList<>(pathPrefixSegments);
+        resolvedSegments.addAll(substituteWildcardSegments(destinationSegments, replicationIndices));
+        return resolvedSegments;
+    }
+
+    /**
      * Traverses the element tree and delegates payload generation based on element type.
      * <p>
      * Replication indices are carried alongside the traversal so nested writes can resolve
@@ -335,15 +384,7 @@ public class ElementDataTransformService {
                                    @Nullable String destinationKey,
                                    @Nullable Object value,
                                    @Nonnull List<Integer> replicationIndices) {
-        if (StringUtils.isNullOrEmpty(destinationKey)) {
-            return;
-        }
-
-        var segments = Arrays.stream(destinationKey.split("\\."))
-                .map(String::trim)
-                .filter(StringUtils::isNotNullOrEmpty)
-                .toList();
-
+        var segments = parseDestinationKeySegments(destinationKey);
         if (segments.isEmpty()) {
             return;
         }
@@ -368,15 +409,7 @@ public class ElementDataTransformService {
     private Object readPayloadValue(@Nonnull Map<String, Object> payload,
                                     @Nullable String destinationKey,
                                     @Nonnull List<Integer> replicationIndices) {
-        if (StringUtils.isNullOrEmpty(destinationKey)) {
-            return PAYLOAD_VALUE_NOT_FOUND;
-        }
-
-        var segments = Arrays.stream(destinationKey.split("\\."))
-                .map(String::trim)
-                .filter(StringUtils::isNotNullOrEmpty)
-                .toList();
-
+        var segments = parseDestinationKeySegments(destinationKey);
         if (segments.isEmpty()) {
             return PAYLOAD_VALUE_NOT_FOUND;
         }
@@ -604,17 +637,13 @@ public class ElementDataTransformService {
     private int determineWildcardArraySize(@Nonnull Map<String, Object> payload,
                                            @Nullable String destinationKey,
                                            @Nonnull List<Integer> replicationIndices) {
-        if (StringUtils.isNullOrEmpty(destinationKey)) {
-            return -1;
-        }
-
         var segments = substituteWildcardSegments(
-                Arrays.stream(destinationKey.split("\\."))
-                        .map(String::trim)
-                        .filter(StringUtils::isNotNullOrEmpty)
-                        .toList(),
+                parseDestinationKeySegments(destinationKey),
                 replicationIndices
         );
+        if (segments.isEmpty()) {
+            return -1;
+        }
 
         Object current = payload;
         for (var segment : segments) {
@@ -648,6 +677,26 @@ public class ElementDataTransformService {
         }
 
         return -1;
+    }
+
+    /**
+     * Normalizes destination keys before any structural reasoning happens.
+     * <p>
+     * The transformation layer accepts author-entered dotted paths, but every downstream operation
+     * assumes a clean segment model. Centralizing that cleanup prevents path reporting, payload
+     * writes and payload reads from drifting apart when whitespace or empty path fragments appear in
+     * the configuration.
+     */
+    @Nonnull
+    private List<String> parseDestinationKeySegments(@Nullable String destinationKey) {
+        if (StringUtils.isNullOrEmpty(destinationKey)) {
+            return List.of();
+        }
+
+        return Arrays.stream(destinationKey.split("\\."))
+                .map(String::trim)
+                .filter(StringUtils::isNotNullOrEmpty)
+                .toList();
     }
 
     /**

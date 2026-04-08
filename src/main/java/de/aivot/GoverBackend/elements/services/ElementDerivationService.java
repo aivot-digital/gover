@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.elements.enums.EffectiveValueSource;
 import de.aivot.GoverBackend.elements.exceptions.DerivationException;
 import de.aivot.GoverBackend.elements.models.*;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
 import de.aivot.GoverBackend.elements.models.elements.InputElement;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
@@ -113,6 +114,8 @@ public class ElementDerivationService {
                 computedElementStates,
                 request.derivationOptions(),
                 true,
+                List.of(),
+                List.of(),
                 logger
         );
 
@@ -133,7 +136,9 @@ public class ElementDerivationService {
      * <p>
      * The recursive shape also preserves row-local state for replicating containers. Each repeated
      * item gets its own authored/effective maps and child state container so row-specific rules do
-     * not bleed into siblings.
+     * not bleed into siblings. The same recursion also carries payload-path context so each computed
+     * state can describe where its value would land in the outbound payload without building that
+     * payload eagerly.
      */
     private void derive(
             @Nonnull JavascriptEngine javascriptEngine,
@@ -146,6 +151,8 @@ public class ElementDerivationService {
             @Nonnull ComputedElementStates computedElementStates,
             @Nonnull ElementDerivationOptions options,
             @Nonnull Boolean isParentVisible,
+            @Nonnull List<String> destinationPathPrefixSegments,
+            @Nonnull List<Integer> replicationIndices,
             @Nonnull ElementDerivationLogger logger
     ) {
         var elementState = new ComputedElementState();
@@ -173,6 +180,13 @@ public class ElementDerivationService {
                     ? overrideElement
                     : currentElement;
             var childOptions = options.copyForUseInChild(currentElement.getId());
+            // The payload location is structural metadata, so it should reflect override decisions
+            // but remain available even when later visibility or validation logic short-circuits.
+            elementState.setDestinationPath(resolveDestinationPath(
+                    actualElement,
+                    destinationPathPrefixSegments,
+                    replicationIndices
+            ));
 
             var isVisible = isParentVisible && deriveVisibility(
                     javascriptEngine,
@@ -233,7 +247,8 @@ public class ElementDerivationService {
                 // Test if the child data is a list of child data sets.
                 if (rawEffectiveChildDataSetList instanceof List<?> effectiveChildDataSetList) {
                     // Iterate through the list of all child data sets.
-                    for (var rawEffectiveChildDataSet : effectiveChildDataSetList) {
+                    for (var itemIndex = 0; itemIndex < effectiveChildDataSetList.size(); itemIndex++) {
+                        var rawEffectiveChildDataSet = effectiveChildDataSetList.get(itemIndex);
                         if (rawEffectiveChildDataSet instanceof Map<?, ?> effectiveChildDataSet) {
                             @SuppressWarnings("unchecked")
                             var mutableEffectiveChildDataSet = (Map<String, Object>) effectiveChildDataSet;
@@ -248,6 +263,18 @@ public class ElementDerivationService {
                             var om = ObjectMapperFactory.getInstance();
                             var childAuthoredElementValues = om.convertValue(mutableEffectiveChildDataSet, AuthoredElementValues.class);
                             var childEffectiveElementValues = om.convertValue(mutableEffectiveChildDataSet, EffectiveElementValues.class);
+                            var childReplicationIndices = appendReplicationIndex(
+                                    replicationIndices,
+                                    itemIndex
+                            );
+                            // A container destination key introduces a row-local payload root, so
+                            // descendants inherit that concrete row path instead of the parent one.
+                            var childDestinationPathPrefixSegments = resolveChildDestinationPathPrefixSegments(
+                                    replicatingContainer,
+                                    destinationPathPrefixSegments,
+                                    replicationIndices,
+                                    itemIndex
+                            );
 
                             for (var currentChildElement : replicatingContainer.getChildren()) {
                                 derive(
@@ -261,6 +288,8 @@ public class ElementDerivationService {
                                         childItemElementStates,
                                         childOptions,
                                         isVisible,
+                                        childDestinationPathPrefixSegments,
+                                        childReplicationIndices,
                                         logger
                                 );
                             }
@@ -284,6 +313,8 @@ public class ElementDerivationService {
                             computedElementStates,
                             childOptions,
                             isVisible,
+                            destinationPathPrefixSegments,
+                            replicationIndices,
                             logger
                     );
                 }
@@ -844,5 +875,74 @@ public class ElementDerivationService {
                 effectiveElementValues,
                 computedElementStates
         );
+    }
+
+    /**
+     * Resolves the destination path that should be attached to the current computed state.
+     * <p>
+     * The path must be based on the effective element definition rather than the authored one,
+     * otherwise overrides that change the destination key would leave the runtime metadata out of
+     * sync with the payload export logic.
+     */
+    @Nullable
+    private String resolveDestinationPath(@Nonnull BaseElement element,
+                                          @Nonnull List<String> destinationPathPrefixSegments,
+                                          @Nonnull List<Integer> replicationIndices) {
+        if (!(element instanceof BaseInputElement<?> inputElement)) {
+            return null;
+        }
+
+        return elementDataTransformService.resolveDestinationPath(
+                inputElement.getDestinationKey(),
+                destinationPathPrefixSegments,
+                replicationIndices
+        );
+    }
+
+    /**
+     * Resolves the destination-path prefix that descendant states should inherit from a replicating
+     * container row.
+     * <p>
+     * Containers with their own destination key create a row-local payload object first and only
+     * then attach that object to the parent payload. Child states therefore need the container path
+     * plus the current row index as an inherited prefix. Containers without a destination key do not
+     * create such an intermediate payload root, so their children must keep using the existing
+     * inherited prefix.
+     */
+    @Nonnull
+    private List<String> resolveChildDestinationPathPrefixSegments(
+            @Nonnull ReplicatingContainerLayoutElement replicatingContainer,
+            @Nonnull List<String> destinationPathPrefixSegments,
+            @Nonnull List<Integer> replicationIndices,
+            int itemIndex
+    ) {
+        var containerDestinationPathSegments = elementDataTransformService.resolveDestinationPathSegments(
+                replicatingContainer.getDestinationKey(),
+                destinationPathPrefixSegments,
+                replicationIndices
+        );
+        if (containerDestinationPathSegments.isEmpty()) {
+            return destinationPathPrefixSegments;
+        }
+
+        var childDestinationPathPrefixSegments = new LinkedList<>(containerDestinationPathSegments);
+        // The row index becomes part of the inherited prefix only when the container owns the
+        // payload array, because descendants are nested inside the row object written at that slot.
+        childDestinationPathPrefixSegments.add(String.valueOf(itemIndex));
+        return childDestinationPathPrefixSegments;
+    }
+
+    /**
+     * Extends replication context for the next replicated row.
+     * <p>
+     * Wildcard substitution is positional, so nested replicated structures need an ordered list of
+     * indices instead of a single mutable cursor shared across recursion branches.
+     */
+    @Nonnull
+    private List<Integer> appendReplicationIndex(@Nonnull List<Integer> replicationIndices,
+                                                 int itemIndex) {
+        var childReplicationIndices = new LinkedList<>(replicationIndices);
+        childReplicationIndices.add(itemIndex);
+        return childReplicationIndices;
     }
 }

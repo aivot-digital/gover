@@ -319,9 +319,8 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
 
                     {
                         httpKeyProblems.length > 0 &&
-                        !hasSummaryLayoutParent &&
                         <AlertComponent
-                            title="Warnungen zu Ihrem gewählten HTTP-Schnittstellenschlüssel"
+                            title="Warnungen zu Ihrem gewählten Datenschlüssel"
                             color="warning"
                         >
                             <ul>
@@ -500,7 +499,7 @@ function collectHttpMappingProblems(element: AnyInputElement, allElements: Eleme
             problems.push(
                 <>
                     <Typography>
-                        Der HTTP-Schnittstellen-Schlüssel <strong>„{element.destinationKey}”</strong> wird bereits von
+                        Der Datenschlüssel <strong>„{element.destinationKey}”</strong> wird bereits von
                         dem
                         Formularelement <a href={createElementEditorNavigationLink(otherElement.id, DefaultTabs.properties)}>„{otherElementPath} &gt; {otherElementLabel}”</a> verwendet.
                         Dies führt dazu, dass die Daten gegebenenfalls überschrieben werden. Stellen Sie sicher, dass
@@ -521,8 +520,8 @@ function collectHttpMappingProblems(element: AnyInputElement, allElements: Eleme
             problems.push(
                 <>
                     <Typography gutterBottom>
-                        Der HTTP-Schnittstellen-Schlüssel <strong>„{element.destinationKey}”</strong> überschneidet sich
-                        mit dem HTTP-Schnittstellen-Schlüssel <strong>„{otherElement.destinationKey}”</strong> des
+                        Der Datenschlüssel <strong>„{element.destinationKey}”</strong> überschneidet sich
+                        mit dem Datenschlüssel <strong>„{otherElement.destinationKey}”</strong> des
                         Formularelements <a href={createElementEditorNavigationLink(otherElement.id, DefaultTabs.metadata)}>„{otherElementPath} &gt; {otherElementLabel}”</a>.
                         {
                             otherElementWritesParent ?

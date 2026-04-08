@@ -10,6 +10,7 @@ export interface ComputedElementState {
     visible?: boolean | null;
     error?: string | null;
     override?: AnyElement | null;
+    destinationPath?: string | null;
     valueSource?: ComputedElementValueSource | null;
     subStates?: ComputedElementStates[] | null;
 }

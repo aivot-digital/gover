@@ -16,6 +16,7 @@ import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
 import de.aivot.GoverBackend.process.filters.ProcessNodeFilter;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextConfig;
 import de.aivot.GoverBackend.process.models.ProcessNodeProblems;
+import de.aivot.GoverBackend.process.repositories.ProcessEdgeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessVersionRepository;
@@ -43,6 +44,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     private final UserService userService;
     private final ProcessRepository processDefinitionRepository;
     private final ProcessVersionRepository processDefinitionVersionRepository;
+    private final ProcessEdgeRepository processEdgeRepository;
 
     @Autowired
     public ProcessNodeService(ProcessNodeRepository processDefinitionNodeRepository,
@@ -50,13 +52,14 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                               ElementDerivationService elementDerivationService,
                               UserService userService,
                               ProcessRepository processDefinitionRepository,
-                              ProcessVersionRepository processDefinitionVersionRepository) {
+                              ProcessVersionRepository processDefinitionVersionRepository, ProcessEdgeRepository processEdgeRepository) {
         this.processDefinitionNodeRepository = processDefinitionNodeRepository;
         this.processNodeProviderService = processNodeProviderService;
         this.elementDerivationService = elementDerivationService;
         this.userService = userService;
         this.processDefinitionRepository = processDefinitionRepository;
         this.processDefinitionVersionRepository = processDefinitionVersionRepository;
+        this.processEdgeRepository = processEdgeRepository;
     }
 
     @Nonnull
@@ -299,6 +302,19 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                 layout.findChild(err.getKey(), BaseInputElement.class).ifPresentOrElse(
                         element -> problems.add(element.getLabel() + ": " + err.getValue()),
                         () -> problems.add("Element mit ID " + err.getKey() + ": " + err.getValue())
+                );
+            }
+        }
+
+        for (var ports : provider.getPorts()) {
+            var edgeExists = processEdgeRepository
+                    .existsByFromNodeIdAndViaPort(node.getId(), ports.key());
+
+            if (!edgeExists) {
+                problems.add(
+                        "Es existiert keine Verbindung von diesem Knoten über den Ausgang " +
+                                StringUtils.quote(ports.label()) +
+                                ". Alle Ausgänge müssen mit einer Verbindung zu einem anderen Knoten verbunden sein."
                 );
             }
         }

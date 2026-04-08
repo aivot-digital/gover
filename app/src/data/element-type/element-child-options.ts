@@ -8,8 +8,6 @@ export enum ElementDisplayContext {
 const CitizenFacingBaseElements: ElementType[] = [
     // Content
     ElementType.Image,
-    ElementType.Checkbox,
-    ElementType.Date,
     ElementType.Headline,
     ElementType.RichText,
     ElementType.Alert,
@@ -17,6 +15,8 @@ const CitizenFacingBaseElements: ElementType[] = [
 
     // Inputs
     ElementType.Text,
+    ElementType.Checkbox,
+    ElementType.Date,
     ElementType.Number,
     ElementType.Radio,
     ElementType.Select,
@@ -40,8 +40,6 @@ const CitizenFacingBaseElements: ElementType[] = [
 const StaffFacingBaseElements: ElementType[] = [
     // Content
     ElementType.Image,
-    ElementType.Checkbox,
-    ElementType.Date,
     ElementType.Headline,
     ElementType.RichText,
     ElementType.Alert,
@@ -49,6 +47,8 @@ const StaffFacingBaseElements: ElementType[] = [
 
     // Inputs
     ElementType.Text,
+    ElementType.Checkbox,
+    ElementType.Date,
     ElementType.Number,
     ElementType.Radio,
     ElementType.Select,
@@ -75,6 +75,8 @@ const StaffFacingBaseElements: ElementType[] = [
 // Summaries can only contain inputs
 const CitizenFacingSummaryChildElements: ElementType[] = [
     ElementType.Text,
+    ElementType.Checkbox,
+    ElementType.Date,
     ElementType.Number,
     ElementType.Radio,
     ElementType.Select,
@@ -88,11 +90,12 @@ const CitizenFacingSummaryChildElements: ElementType[] = [
     ElementType.MapPoint,
     ElementType.FileUpload,
     ElementType.ChipInput,
-    ElementType.ReplicatingContainer,
 ];
 
 const StaffFacingSummaryChildElements: ElementType[] = [
     ElementType.Text,
+    ElementType.Checkbox,
+    ElementType.Date,
     ElementType.Number,
     ElementType.Radio,
     ElementType.Select,
@@ -109,7 +112,6 @@ const StaffFacingSummaryChildElements: ElementType[] = [
     ElementType.DataModelSelect,
     ElementType.DataObjectSelect,
     ElementType.RichTextInput,
-    ElementType.ReplicatingContainer,
 ];
 
 export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<ElementType, ElementType[]>>> = {

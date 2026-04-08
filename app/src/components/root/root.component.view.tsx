@@ -54,7 +54,11 @@ import {SubmittedStepElement} from '../../models/elements/steps/submitted-step-e
 import {collectErrors, ErrorAlert} from '../error-alert/error-alert';
 import {ElementWithParents, flattenElementsWithParents} from '../../utils/flatten-elements';
 import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
-import {resolveVisibility, walkAuthoredElementValues} from '../../utils/element-data-utils';
+import {
+    resolveVisibility,
+    synchronizeAuthoredElementValuesByDestinationPath,
+    walkAuthoredElementValues,
+} from '../../utils/element-data-utils';
 import {isElementChangedByTrigger} from '../../utils/element-reference-utils';
 import {IdentityCustomerInputKey} from '../../modules/identity/constants/identity-customer-input-key';
 import {IdentityData} from '../../modules/identity/models/identity-data';
@@ -551,7 +555,19 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
 
         console.group('Start element data change', nextAuthoredElementValues, triggeringElementIds);
 
-        onAuthoredElementValuesChange(nextAuthoredElementValues, []);
+        // `RootComponentView` is the derivation owner for full form renders, so destination-path
+        // synchronization must happen here as well as in `ElementDerivationContext`.
+        const synchronizedUpdate = synchronizeAuthoredElementValuesByDestinationPath(
+            element,
+            authoredElementValues,
+            nextAuthoredElementValues,
+            derivedData,
+            triggeringElementIds,
+        );
+        const effectiveAuthoredElementValues = synchronizedUpdate.authoredElementValues;
+        const effectiveTriggeringElementIds = synchronizedUpdate.triggeringElementIds;
+
+        onAuthoredElementValuesChange(effectiveAuthoredElementValues, []);
 
         const flatCurrentElements = flattenElementsWithParents(currentStepElement, [], false);
         const flatChildren = children.map((e, i) => ({
@@ -569,7 +585,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                 (isAnyInputElement(e.element) && e.element.value != null);
         });
 
-        const relevantTriggeringElementIds = triggeringElementIds
+        const relevantTriggeringElementIds = effectiveTriggeringElementIds
             .filter((id) => allElementsToConsider.some((element) => isElementChangedByTrigger(element, id)));
 
         if (relevantTriggeringElementIds.length > 0) {
