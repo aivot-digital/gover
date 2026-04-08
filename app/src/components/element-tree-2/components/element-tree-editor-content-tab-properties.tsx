@@ -150,7 +150,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                         weight,
                                     });
                                 }}
-                                hint="Legen Sie die Breite des Elements für Tablets & Desktops fest. Auf Mobilgeräten wird stets die volle Breite verwendet."
+                                hint="Legen Sie die Breite des Elements für Tablets & Desktops fest. Auf Mobilgeräten wird die volle Breite verwendet."
                                 disabled={!editable}
                             />
                         }

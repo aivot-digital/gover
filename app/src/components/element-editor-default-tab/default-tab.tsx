@@ -171,7 +171,7 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                                     weight,
                                 });
                             }}
-                            hint="Legen Sie die Breite des Elements für Tablets & Desktops fest. Auf Mobilgeräten wird stets die volle Breite verwendet."
+                            hint="Legen Sie die Breite des Elements für Tablets & Desktops fest. Auf Mobilgeräten wird die volle Breite verwendet."
                             disabled={!props.editable}
                         />
                     </Grid>
