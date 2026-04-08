@@ -91,7 +91,6 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
         <>
             <ElementEditorSectionHeader
                 title={tabDescription.title}
-                titleSuffix={tabDescription.isElement ? '(' + getElementNameForType(type) + ')' : undefined}
                 disableMarginTop
             >
                 {tabDescription.description}

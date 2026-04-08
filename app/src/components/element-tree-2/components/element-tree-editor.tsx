@@ -97,6 +97,9 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
     };
 
     const isRoot = root === value;
+    const componentTitle = useMemo(() => generateComponentTitle(value), [value]);
+    const typeName = useMemo(() => getElementNameForType(value.type), [value.type]);
+    const showTypeSuffix = useMemo(() => componentTitle.trim() !== typeName.trim(), [componentTitle, typeName]);
 
     const drawerTheme = useMemo(() => {
         if (parentModalZIndex == null) {
@@ -166,7 +169,29 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                                 mr: 2,
                             }}
                         >
-                            {generateComponentTitle(value)} ({getElementNameForType(value.type)})
+                            {componentTitle}
+                            {
+                                showTypeSuffix &&
+                                <>
+                                    <Typography
+                                        component="span"
+                                        color={'text.secondary'}
+                                        sx={{
+                                            fontSize: 'inherit',
+                                            px: 0.5,
+                                        }}
+                                    >
+                                        –
+                                    </Typography>
+                                    <Typography
+                                        component="span"
+                                        color={'text.secondary'}
+                                        sx={{fontSize: 'inherit'}}
+                                    >
+                                        {typeName}
+                                    </Typography>
+                                </>
+                            }
                         </Typography>
 
                         <Breadcrumbs
