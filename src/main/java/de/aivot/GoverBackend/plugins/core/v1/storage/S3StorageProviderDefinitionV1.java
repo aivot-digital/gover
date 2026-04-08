@@ -4,6 +4,8 @@ import de.aivot.GoverBackend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
+import de.aivot.GoverBackend.elements.models.ComputedElementState;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
@@ -14,9 +16,13 @@ import de.aivot.GoverBackend.plugins.core.Core;
 import de.aivot.GoverBackend.secrets.entities.SecretEntity;
 import de.aivot.GoverBackend.secrets.repositories.SecretRepository;
 import de.aivot.GoverBackend.secrets.services.SecretService;
+import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
 import de.aivot.GoverBackend.storage.exceptions.StorageException;
+import de.aivot.GoverBackend.storage.filters.StorageProviderFilter;
 import de.aivot.GoverBackend.storage.models.*;
+import de.aivot.GoverBackend.storage.repositories.StorageProviderRepository;
 import de.aivot.GoverBackend.storage.services.KnownExtensionsService;
+import de.aivot.GoverBackend.storage.services.StorageProviderService;
 import de.aivot.GoverBackend.storage.services.StorageService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import io.minio.*;
@@ -42,15 +48,18 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
     private final SecretRepository secretRepository;
     private final SecretService secretService;
     private final KnownExtensionsService knownExtensionsService;
+    private final StorageProviderRepository storageProviderRepository;
 
     // TODO: Maybe cache MinioClients for better performance
 
     public S3StorageProviderDefinitionV1(SecretRepository secretRepository,
                                          SecretService secretService,
-                                         KnownExtensionsService knownExtensionsService) {
+                                         KnownExtensionsService knownExtensionsService,
+                                         StorageProviderRepository storageProviderRepository) {
         this.secretRepository = secretRepository;
         this.secretService = secretService;
         this.knownExtensionsService = knownExtensionsService;
+        this.storageProviderRepository = storageProviderRepository;
     }
 
     @Nonnull
@@ -89,6 +98,31 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
     @Override
     public Boolean getSupportsMetadataAttributes() {
         return true;
+    }
+
+    @Override
+    public void validateConfiguration(@Nonnull StorageProviderEntity provider, Config config) throws ResponseException {
+        // Check if another storage provider with this endpoint and bucket exists
+        var filter = StorageProviderFilter
+                .create()
+                .setIdIsNot(provider.getId())
+                .setStorageProviderDefinitionKey(getKey())
+                .addAdditionalProperty("endpoint", config.endpoint)
+                .addAdditionalProperty("bucket", config.bucket)
+                .build();
+
+        if (storageProviderRepository.exists(filter)) {
+            var err = String.format(
+                    "Ein anderer Speicheranbieter mit diesem Endpoint %s und Bucket %s existiert bereits.",
+                    StringUtils.quote(config.endpoint),
+                    StringUtils.quote(config.bucket)
+            );
+
+            var derivedRuntimeData = new DerivedRuntimeElementData();
+            derivedRuntimeData.getElementStates().put("endpoint", new ComputedElementState().setError(err));
+            derivedRuntimeData.getElementStates().put("bucket", new ComputedElementState().setError(err));
+            throw ResponseException.badRequest("Ein anderer Speicheranbieter mit diesem Endpoint und Bucket existiert bereits.", derivedRuntimeData);
+        }
     }
 
     @Override
@@ -468,7 +502,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         try {
             objectStats = client.statObject(statObjectArgs);
         } catch (ErrorResponseException e) {
-            if ("NoSuchKey" .equals(e.errorResponse().code())) {
+            if ("NoSuchKey".equals(e.errorResponse().code())) {
                 throw new StorageException("Das Dokument %s konnte nicht gefunden werden.", StringUtils.quote(pathFromRoot));
             }
             throw new StorageException(e, "Die Metadaten des Dokuments konnten im S3-kompatiblen Speicher nicht aktualisiert werden.");
@@ -497,7 +531,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         try {
             client.copyObject(copyObjectArgsBuilder.build());
         } catch (ErrorResponseException e) {
-            if ("NoSuchKey" .equals(e.errorResponse().code())) {
+            if ("NoSuchKey".equals(e.errorResponse().code())) {
                 throw new StorageException("Das Dokument %s konnte nicht gefunden werden.", StringUtils.quote(pathFromRoot));
             }
             throw new StorageException(e, "Die Metadaten des Dokuments konnten im S3-kompatiblen Speicher nicht aktualisiert werden.");
@@ -632,7 +666,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         try {
             client.copyObject(copyObjectArgs);
         } catch (ErrorResponseException e) {
-            if ("NoSuchKey" .equals(e.errorResponse().code())) {
+            if ("NoSuchKey".equals(e.errorResponse().code())) {
                 throw new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot));
             }
             throw new StorageException(e, "Das Dokument konnte nicht im S3-kompatiblen Speicher kopiert werden.");
