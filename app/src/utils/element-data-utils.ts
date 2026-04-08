@@ -242,3 +242,59 @@ export function cleanAuthoredElementValues(rootElement: AnyElement, authoredElem
         return value;
     });
 }
+
+
+export function filterComputedElementStates(
+    currentElement: AnyElement,
+    currentElementValues: ComputedElementStates,
+    callback: (element: AnyElement, value: ComputedElementState | null | undefined, path: Array<AnyElement | number>) => boolean,
+    parents: Array<AnyElement | number> = [],
+): ComputedElementStates {
+    const currentElementState = currentElementValues[currentElement.id];
+    const shouldKeepCurrentValue = callback(currentElement, currentElementState, parents);
+
+    let filteredValues: ComputedElementStates = {};
+
+    if (shouldKeepCurrentValue && currentElementState !== undefined) {
+        filteredValues[currentElement.id] = currentElementState;
+    }
+
+    if (isReplicatingContainerLayout(currentElement)) {
+        const filteredSubStates = (currentElementState?.subStates ?? [])
+            .map((childValues, index) => {
+                let filteredChildValue: ComputedElementStates = {};
+
+                for (const child of currentElement.children || []) {
+                    filteredChildValue = {
+                        ...filteredChildValue,
+                        ...filterComputedElementStates(child, childValues, callback, [...parents, currentElement, index]),
+                    };
+                }
+
+                return Object.keys(filteredChildValue).length > 0 ? filteredChildValue : undefined;
+            })
+            .filter((childValues): childValues is AuthoredElementValues => childValues != null);
+
+        if (filteredSubStates.length > 0) {
+            filteredValues[currentElement.id] = {
+                ...currentElementState,
+                subStates: filteredSubStates
+            };
+        } else {
+            delete filteredValues[currentElement.id];
+        }
+
+        return filteredValues;
+    }
+
+    if (isAnyElementWithChildren(currentElement)) {
+        for (const child of currentElement.children || []) {
+            filteredValues = {
+                ...filteredValues,
+                ...filterComputedElementStates(child, currentElementValues, callback, [...parents, currentElement]),
+            };
+        }
+    }
+
+    return filteredValues;
+}
