@@ -61,10 +61,33 @@ function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
     };
 }
 
+function getDefaultWeightForType(type: ElementType): number {
+    switch (type) {
+        case ElementType.Date:
+        case ElementType.Number:
+        case ElementType.Select:
+        case ElementType.Radio:
+        case ElementType.Checkbox:
+        case ElementType.MultiCheckbox:
+        case ElementType.Text:
+        case ElementType.Time:
+        case ElementType.ChipInput:
+        case ElementType.DateTime:
+        case ElementType.DateRange:
+        case ElementType.TimeRange:
+        case ElementType.DateTimeRange:
+        case ElementType.DataModelSelect:
+        case ElementType.DataObjectSelect:
+            return 6;
+        default:
+            return 12;
+    }
+}
+
 function makeFormBase<T extends ElementType>(t: T, id: string): BaseFormElement<T> {
     return {
         ...makeBase(t, id),
-        weight: 12,
+        weight: getDefaultWeightForType(t),
     };
 }
 
