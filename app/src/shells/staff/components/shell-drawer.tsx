@@ -166,7 +166,7 @@ const BaseDrawerGroups: DrawerGroup[] = [
                             {icon: ModuleIcons.identity, label: 'Identitätsanbieter', to: '/identity-providers'},
                             {icon: ModuleIcons.payment, label: 'Zahlungsanbieter', to: '/payment-providers'},
                             {icon: ModuleIcons.storage, label: 'Speicheranbieter', to: '/storage-providers'},
-                            {icon: ModuleIcons.destinations, label: 'Schnittstellen', to: '/destinations'},
+                            // {icon: ModuleIcons.destinations, label: 'Schnittstellen', to: '/destinations'},
                         ],
                     },
                     {icon: ModuleIcons.extensions, label: 'Erweiterungen', to: '/settings/extensions'},
