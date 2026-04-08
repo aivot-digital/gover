@@ -1,5 +1,5 @@
 import {Handle, type NodeProps, Position, useUpdateNodeInternals} from '@xyflow/react';
-import {Box, Button, Divider, IconButton, Paper, useTheme} from '@mui/material';
+import {Box, Button, Divider, IconButton, Paper, Tooltip, useTheme} from '@mui/material';
 import React, {type ReactNode, useEffect, useMemo, useState} from 'react';
 import Typography from '@mui/material/Typography';
 import {alpha} from '@mui/material/styles';
@@ -51,6 +51,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         onDeleteNode,
         showTargetHandles,
         runtimeData,
+        nodeValidationResults,
     } = useProcessFlowEditorContext();
 
     const {
@@ -70,6 +71,10 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
 
         return getLatestTaskForNode(runtimeData.tasks, node.id);
     }, [node.id, runtimeData]);
+
+    const associatedValidationResult = useMemo(() => {
+        return nodeValidationResults.find((result) => result.node.id === node.id) || null;
+    }, [node.id, nodeValidationResults]);
 
     const performedPortKeys = useMemo(() => {
         if (runtimeData == null) {
@@ -360,6 +365,8 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                             sx={{
                                 minWidth: 0,
                                 flex: 1,
+                                display: 'flex',
+                                alignItems: 'center',
                             }}
                         >
                             <Typography
@@ -372,6 +379,37 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                             >
                                 {nodeName}
                             </Typography>
+
+                            {
+                                associatedValidationResult != null &&
+                                <Tooltip title={
+                                    <>
+                                        {
+                                            associatedValidationResult.problems.map((problem, index) => (
+                                                <Typography
+                                                    key={problem + index.toString()}
+                                                    variant="body2"
+                                                    sx={{
+                                                        marginBottom: 1,
+                                                    }}
+                                                >
+                                                    {problem}
+                                                </Typography>
+                                            ))
+                                        }
+                                    </>
+                                }>
+                                    <Box
+                                        sx={{
+                                            marginLeft: 1,
+                                            width: '0.5rem',
+                                            height: '0.5rem',
+                                            borderRadius: '50%',
+                                            bgcolor: 'error.main',
+                                        }}
+                                    />
+                                </Tooltip>
+                            }
                         </Box>
 
                         <Box

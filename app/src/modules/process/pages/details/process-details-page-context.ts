@@ -1,5 +1,6 @@
 import React, {createContext} from 'react';
 import {type ProcessNodeEntity} from '../../entities/process-node-entity';
+import {ProcessVersionValidationResult} from '../../services/process-definition-version-api-service';
 
 export interface ProcessDetailsPageContextType {
     editable: boolean;
@@ -10,6 +11,7 @@ export interface ProcessDetailsPageContextType {
         nodeId: number | null;
         version: number;
     };
+    nodeValidationResults: ProcessVersionValidationResult[];
 }
 
 export const ProcessDetailsPageContext = createContext<ProcessDetailsPageContextType | null>(null);

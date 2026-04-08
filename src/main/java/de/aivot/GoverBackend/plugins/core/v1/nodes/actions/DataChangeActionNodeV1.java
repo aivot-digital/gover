@@ -189,9 +189,10 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Override
-    public void validateConfiguration(@Nonnull de.aivot.GoverBackend.process.entities.ProcessNodeEntity processNodeEntity,
-                                      @Nonnull AuthoredElementValues configuration,
-                                      @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
+    public Map<String, String> validateConfiguration(@Nonnull de.aivot.GoverBackend.process.entities.ProcessNodeEntity processNodeEntity,
+                                                     @Nonnull AuthoredElementValues configuration,
+                                                     @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
+        /* TODO: Fix this validation
         boolean hasErrors = false;
 
         try {
@@ -211,6 +212,9 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
         if (hasErrors) {
             throw ResponseException.badRequest(derivedRuntimeElementData);
         }
+         */
+
+        return null;
     }
 
     @Override

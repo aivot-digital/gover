@@ -1,7 +1,7 @@
-import {BaseCrudApiService} from "../../../services/base-crud-api-service";
-import {ProcessVersionEntity} from "../entities/process-version-entity";
-import {ProcessStatus} from "../enums/process-status";
-import {RetentionTimeUnit} from "../enums/retention-time-unit";
+import {BaseCrudApiService} from '../../../services/base-crud-api-service';
+import {ProcessVersionEntity} from '../entities/process-version-entity';
+import {ProcessStatus} from '../enums/process-status';
+import {ProcessNodeEntity} from '../entities/process-node-entity';
 
 interface ProcessDefinitionVersionFilter {
     processDefinitionId: number;
@@ -14,6 +14,11 @@ interface ProcessDefinitionVersionFilter {
 interface ProcessDefinitionVersionEntityId {
     processDefinitionId: number;
     processDefinitionVersion: number;
+}
+
+export interface ProcessVersionValidationResult {
+    node: ProcessNodeEntity;
+    problems: string[];
 }
 
 export class ProcessDefinitionVersionApiService extends BaseCrudApiService<
@@ -47,5 +52,9 @@ export class ProcessDefinitionVersionApiService extends BaseCrudApiService<
             published: null,
             revoked: null,
         };
+    }
+
+    public validate(id: ProcessDefinitionVersionEntityId): Promise<ProcessVersionValidationResult[]> {
+        return this.get<ProcessVersionValidationResult[]>(this.buildPath(id) + 'problems/');
     }
 }

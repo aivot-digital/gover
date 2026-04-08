@@ -15,6 +15,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface ProcessNodeDefinition extends PluginComponent {
@@ -25,8 +26,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
     }
 
     /**
-     * Get the type of the process node.
-     * This type specifies the behavior of the node in the process execution and if and how other nodes can be connected to it.
+     * Get the type of the process node. This type specifies the behavior of the node in the process execution and if and how other nodes can be connected to it.
      *
      * @return The type of the process node.
      */
@@ -34,8 +34,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
     ProcessNodeType getType();
 
     /**
-     * Get the ports of the process node.
-     * The ports are outgoing connections that can be used to connect this node to other nodes in the process definition.
+     * Get the ports of the process node. The ports are outgoing connections that can be used to connect this node to other nodes in the process definition.
      *
      * @return The ports of the process node.
      */
@@ -43,8 +42,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
     List<ProcessNodePort> getPorts();
 
     /**
-     * Get the outputs of the process node.
-     * The outputs are data produced by this node that can be mapped in the node configuration.
+     * Get the outputs of the process node. The outputs are data produced by this node that can be mapped in the node configuration.
      *
      * @return The outputs of the process node.
      */
@@ -68,8 +66,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
     }
 
     /**
-     * Get the testing layout for nodes of this provider type.
-     * This layout is used to display the node during testing of process definitions.
+     * Get the testing layout for nodes of this provider type. This layout is used to display the node during testing of process definitions.
      *
      * @param context The testing context.
      * @return The testing layout, or null if not provided.
@@ -107,11 +104,14 @@ public interface ProcessNodeDefinition extends PluginComponent {
      *
      * @param processNodeEntity         The process definition node entity to be validated.
      * @param derivedRuntimeElementData Derived Runtime Element data.
+     * @return A map of configuration field keys to an error messages for that field. If the configuration is valid, null is returned.
      * @throws ResponseException If the configuration is invalid.
      */
-    default void validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                       @Nonnull AuthoredElementValues configuration,
-                                       @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
+    @Nullable
+    default Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                      @Nonnull AuthoredElementValues configuration,
+                                                      @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
+        return null;
     }
 
     /**
@@ -124,9 +124,8 @@ public interface ProcessNodeDefinition extends PluginComponent {
     ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException;
 
     /**
-     * Get the task status layout for nodes of this provider type.
-     * This layout is used to display the status of the task in task lists and overviews.
-     * It is optional and can be null.
+     * Get the task status layout for nodes of this provider type. This layout is used to display the status of the task in task lists and overviews. It is optional and can be
+     * null.
      *
      * @param context The context to build the layout for.
      * @return The task status layout, or null if not provided.
@@ -152,8 +151,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
     }
 
     /**
-     * Get the task view events for nodes of this provider type.
-     * These events can be used to trigger actions in the task view UI.
+     * Get the task view events for nodes of this provider type. These events can be used to trigger actions in the task view UI.
      *
      * @param context The context to build the events for.
      * @return The task view events.
@@ -176,8 +174,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
     }
 
     /**
-     * Update an existing task by this node provider during process instance execution.
-     * If this returns an empty Optional, the task is considered not updated.
+     * Update an existing task by this node provider during process instance execution. If this returns an empty Optional, the task is considered not updated.
      *
      * @param context The context for the update.
      * @param update  The update data passed to this node.
@@ -231,8 +228,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
     }
 
     /**
-     * Update an existing task by this node provider during process instance execution.
-     * If this returns an empty Optional, the task is considered not updated.
+     * Update an existing task by this node provider during process instance execution. If this returns an empty Optional, the task is considered not updated.
      *
      * @param context The context for the update.
      * @param update  The update data passed to this node.

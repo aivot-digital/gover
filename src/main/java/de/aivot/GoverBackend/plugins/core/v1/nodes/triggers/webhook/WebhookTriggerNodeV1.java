@@ -438,19 +438,13 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
     }
 
     @Override
-    public void validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
+    public Map<String, String > validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
                                       @Nonnull AuthoredElementValues configuration,
                                       @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
+        var res = new HashMap<String, String>();
+
         var slug = StringUtils.toNullableTrimmedString(configuration.get(WebhookTriggerConfigV1.SLUG_CONFIG_KEY));
         var slugState = derivedRuntimeElementData.getElementStates().get(WebhookTriggerConfigV1.SLUG_CONFIG_KEY);
-        if (StringUtils.isNullOrEmpty(slug)) {
-            var errorMessage = "Der Webhook-Slug ist ein Pflichtfeld und darf nicht leer sein.";
-            slugState.setError(errorMessage);
-            throw ResponseException.badRequest(
-                    errorMessage,
-                    derivedRuntimeElementData
-            );
-        }
 
         var spec = SpecificationBuilder
                 .create(ProcessNodeEntity.class)
@@ -463,11 +457,10 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
         if (otherExists) {
             var errorMessage = String.format("Der Webhook-Slug %s wird bereits von einem anderen Webhook verwendet. Bitte wählen Sie einen eindeutigen Slug.", slug);
             slugState.setError(errorMessage);
-            throw ResponseException.badRequest(
-                    errorMessage,
-                    derivedRuntimeElementData
-            );
+            res.put(WebhookTriggerConfigV1.SLUG_CONFIG_KEY, errorMessage);
         }
+
+        return res.isEmpty() ? null : res;
     }
 
     @Override

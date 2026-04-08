@@ -3,14 +3,19 @@ package de.aivot.GoverBackend.process.services;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
+import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
+import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
+import de.aivot.GoverBackend.process.filters.ProcessNodeFilter;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextConfig;
+import de.aivot.GoverBackend.process.models.ProcessNodeProblems;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessVersionRepository;
@@ -27,9 +32,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Service
 public class ProcessNodeService implements EntityService<ProcessNodeEntity, Integer> {
@@ -117,7 +120,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                                            @Nonnull ProcessNodeEntity existingEntity) throws ResponseException {
         var providerChanged =
                 !existingEntity.getProcessNodeDefinitionKey().equals(entity.getProcessNodeDefinitionKey()) ||
-                existingEntity.getProcessNodeDefinitionVersion() != entity.getProcessNodeDefinitionVersion();
+                        existingEntity.getProcessNodeDefinitionVersion() != entity.getProcessNodeDefinitionVersion();
 
         existingEntity.setProcessId(entity.getProcessId());
         existingEntity.setProcessVersion(entity.getProcessVersion());
@@ -172,6 +175,27 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     public DerivedRuntimeElementData deriveConfiguration(@Nonnull ProcessNodeEntity entity,
                                                          boolean skipErrors,
                                                          @Nullable UserEntity user) throws ResponseException {
+        var layout = getConfigLayoutElement(entity, user);
+
+        var edo = new ElementDerivationOptions();
+
+        if (skipErrors) {
+            edo.setSkipErrorsForElementIds(List.of(ElementDerivationOptions.ALL_ELEMENTS));
+        }
+
+        var edr = new ElementDerivationRequest(
+                layout,
+                entity.getConfiguration(),
+                edo
+        );
+        var dummyLogger = new ElementDerivationLogger();
+        var derivedData = elementDerivationService.derive(edr, dummyLogger);
+
+        return derivedData;
+    }
+
+    @Nonnull
+    private ConfigLayoutElement getConfigLayoutElement(@Nonnull ProcessNodeEntity entity, @Nullable UserEntity user) throws ResponseException {
         if (user == null &&
                 SecurityContextHolder.getContext().getAuthentication() != null &&
                 SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Jwt jwt) {
@@ -199,27 +223,90 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                 entity
         );
 
-        var layout = provider
+        return provider
                 .getConfigurationLayout(context);
-
-        var edo = new ElementDerivationOptions();
-
-        if (skipErrors) {
-            edo.setSkipErrorsForElementIds(List.of(ElementDerivationOptions.ALL_ELEMENTS));
-        }
-
-        var edr = new ElementDerivationRequest(
-                layout,
-                entity.getConfiguration(),
-                edo
-        );
-        var dummyLogger = new ElementDerivationLogger();
-        var derivedData = elementDerivationService.derive(edr, dummyLogger);
-
-        return derivedData;
     }
 
     public Set<String> getAllUsedDataKeys(@Nonnull Integer processId, @Nonnull Integer processVersion) {
         return processDefinitionNodeRepository.findAllDataKeysByProcessIdAndVersion(processId, processVersion);
+    }
+
+    public List<ProcessNodeEntity> findAllByProcessIdAndProcessVersion(Integer processId, Integer processVersion) {
+        return processDefinitionNodeRepository
+                .findAllByProcessIdAndProcessVersion(processId, processVersion);
+    }
+
+    public Optional<ProcessNodeProblems> validate(Integer id) throws ResponseException {
+        var node = retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+        return validate(node);
+    }
+
+    public Optional<ProcessNodeProblems> validate(ProcessNodeEntity node) throws ResponseException {
+        var commonErrors = new HashMap<String, String>();
+        var problems = new LinkedList<String>();
+
+        if (StringUtils.isNullOrEmpty(node.getDataKey())) {
+            var commonErrorMessage = "Der Datenschlüssel darf nicht leer sein.";
+            commonErrors.put(ProcessNodeProblems.COMMON_ERROR_KEY_DATA_KEY, commonErrorMessage);
+            problems.add("Datenschlüssel: " + commonErrorMessage);
+        } else {
+            var duplicateDataKeyFilter = ProcessNodeFilter
+                    .create()
+                    .setNotId(node.getId())
+                    .setDataKey(node.getDataKey())
+                    .setProcessId(node.getProcessId())
+                    .setProcessVersion(node.getProcessVersion());
+
+            if (this.exists(duplicateDataKeyFilter)) {
+                var commonErrorMessage = "Es existiert mindestens ein weiterer Knoten mit dem selben Datenschlüssel. Datenschlüssel müssen eindeutig sein.";
+                commonErrors.put(ProcessNodeProblems.COMMON_ERROR_KEY_DATA_KEY, commonErrorMessage);
+                problems.add("Datenschlüssel: " + commonErrorMessage);
+            }
+        }
+
+        var layout = getConfigLayoutElement(node, null);
+
+        var derivedConfiguration = new DerivedRuntimeElementData();
+        try {
+            derivedConfiguration = this
+                    .deriveConfiguration(node, false);
+        } catch (ResponseException e) {
+            problems.add(e.getMessage());
+        }
+
+        ElementStreamUtils.applyAction(
+                layout,
+                derivedConfiguration.getElementStates(),
+                (e, state) -> {
+                    if (e instanceof BaseInputElement<?> input) {
+                        if (StringUtils.isNotNullOrEmpty(state.getError())) {
+                            problems.add(input.getLabel() + ": " + state.getError());
+                        }
+                    }
+                }
+        );
+
+        var provider = processNodeProviderService
+                .getProcessNodeDefinition(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
+                .orElseThrow(ResponseException::internalServerError);
+
+        var validationErrors = provider
+                .validateConfiguration(node, node.getConfiguration(), derivedConfiguration);
+
+        if (validationErrors != null) {
+            for (var err : validationErrors.entrySet()) {
+                layout.findChild(err.getKey(), BaseInputElement.class).ifPresentOrElse(
+                        element -> problems.add(element.getLabel() + ": " + err.getValue()),
+                        () -> problems.add("Element mit ID " + err.getKey() + ": " + err.getValue())
+                );
+            }
+        }
+
+        if (problems.isEmpty()) {
+            return Optional.empty();
+        } else {
+            return Optional.of(new ProcessNodeProblems(node, problems, commonErrors, derivedConfiguration));
+        }
     }
 }

@@ -15,6 +15,7 @@ import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
 import de.aivot.GoverBackend.process.filters.ProcessNodeFilter;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextConfig;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextTesting;
+import de.aivot.GoverBackend.process.models.ProcessNodeProblems;
 import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.repositories.ProcessTestClaimRepository;
 import de.aivot.GoverBackend.process.services.*;
@@ -31,6 +32,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -458,5 +461,24 @@ public class ProcessNodeController {
 
         return provider
                 .getTestingLayout(context);
+    }
+
+    @GetMapping("{id}/problems/")
+    @Operation(
+            summary = "Retrieve Process Definition Node Testing Layout",
+            description = "Retrieve the testing layout of a process definition node by its ID."
+    )
+    public Object problems(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer id
+    ) throws ResponseException {
+        var res = processDefinitionNodeService
+                .validate(id);
+
+        if (res.isPresent()) {
+            return res.get();
+        }
+
+        return new ResponseEntity<Void>(HttpStatus.NO_CONTENT);
     }
 }

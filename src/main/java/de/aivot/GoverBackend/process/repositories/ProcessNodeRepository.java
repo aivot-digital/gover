@@ -12,6 +12,8 @@ import java.util.Set;
 public interface ProcessNodeRepository extends JpaRepository<ProcessNodeEntity, Integer>, JpaSpecificationExecutor<ProcessNodeEntity> {
     List<ProcessNodeEntity> findAllByProcessId(Integer processDefinitionId);
 
+    List<ProcessNodeEntity> findAllByProcessIdAndProcessVersion(Integer processId, Integer processVersion);
+
 
     @Query(
             value = """

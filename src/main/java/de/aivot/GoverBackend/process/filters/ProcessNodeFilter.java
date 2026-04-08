@@ -1,19 +1,19 @@
 package de.aivot.GoverBackend.process.filters;
 
-import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.lib.models.Filter;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
+import jakarta.annotation.Nonnull;
 import org.springframework.data.jpa.domain.Specification;
 
-import jakarta.annotation.Nonnull;
-
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 
 public class ProcessNodeFilter implements Filter<ProcessNodeEntity> {
     private Integer id;
+    private Integer notId;
     private String name;
     private Integer processId;
     private Integer processVersion;
@@ -35,6 +35,7 @@ public class ProcessNodeFilter implements Filter<ProcessNodeEntity> {
         var builder = SpecificationBuilder
                 .create(ProcessNodeEntity.class)
                 .withEquals("id", id)
+                .withNotEquals("id", notId)
                 .withEquals("processId", processId)
                 .withEquals("processVersion", processVersion)
                 .withContains("name", name)
@@ -124,6 +125,15 @@ public class ProcessNodeFilter implements Filter<ProcessNodeEntity> {
 
     public ProcessNodeFilter addAdditionalSpecification(Specification<ProcessNodeEntity> specification) {
         additionalSpecifications.add(specification);
+        return this;
+    }
+
+    public Integer getNotId() {
+        return notId;
+    }
+
+    public ProcessNodeFilter setNotId(Integer notId) {
+        this.notId = notId;
         return this;
     }
 }

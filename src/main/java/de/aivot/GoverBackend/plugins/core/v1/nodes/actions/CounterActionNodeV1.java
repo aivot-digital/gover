@@ -172,12 +172,14 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Override
-    public void validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                      @Nonnull AuthoredElementValues configuration,
-                                      @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
-        boolean hasErrors = false;
+    public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                     @Nonnull AuthoredElementValues configuration,
+                                                     @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
+        var res = new HashMap<String, String>();
 
-        var variableField = configuration.get(VARIABLE_FIELD_ID);
+        var variableField = derivedRuntimeElementData
+                .getEffectiveValues()
+                .get(VARIABLE_FIELD_ID);
 
         var variablePath = toNullableTrimmedString(variableField);
         if (variablePath != null) {
@@ -188,11 +190,13 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition {
                         .getElementStates()
                         .get(VARIABLE_FIELD_ID)
                         .setError(e.getMessage());
-                hasErrors = true;
+                res.put(VARIABLE_FIELD_ID, e.getMessage());
             }
         }
 
-        var incrementField = configuration.get(INCREMENT_FIELD_ID);
+        var incrementField = derivedRuntimeElementData
+                .getEffectiveValues()
+                .get(INCREMENT_FIELD_ID);
         try {
             resolveIncrement(incrementField);
         } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
@@ -200,13 +204,10 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition {
                     .getElementStates()
                     .get(INCREMENT_FIELD_ID)
                     .setError(e.getMessage());
-            hasErrors = true;
+            res.put(INCREMENT_FIELD_ID, e.getMessage());
         }
 
-        if (hasErrors) {
-            throw ResponseException
-                    .badRequest(derivedRuntimeElementData);
-        }
+        return res.isEmpty() ? null : res;
     }
 
     @Override

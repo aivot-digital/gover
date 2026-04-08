@@ -54,6 +54,7 @@ import {
     ProcessFlowEditorAddTriggerActionButton,
     ProcessFlowEditorEmptyState,
 } from './process-flow-editor-empty-state';
+import {ProcessVersionValidationResult} from '../../../../services/process-definition-version-api-service';
 
 const FLOW_MIN_ZOOM = 0.25;
 const FLOW_MAX_ZOOM = 2;
@@ -106,6 +107,8 @@ interface ProcessFlowEditorProps {
     } | null;
     topLeftPanel?: ReactNode;
     topRightPanel?: ReactNode;
+
+    nodeValidationResults: ProcessVersionValidationResult[];
 }
 
 type ProcessFlowEditorRuntimeData = ProcessFlowEditorProps['runtimeData'];
@@ -345,6 +348,8 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         runtimeData,
         topLeftPanel,
         topRightPanel,
+
+        nodeValidationResults,
     } = props;
     const theme = useTheme();
 
@@ -408,6 +413,8 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onAddInbetweenNode: onAddInbetweenNode ?? NOOP_ADD_INBETWEEN_NODE,
 
         runtimeData,
+
+        nodeValidationResults,
     }), [
         isEditable,
         onAddEdge,
@@ -420,6 +427,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         runtimeData,
         selectedNode,
         showTargetHandles,
+        nodeValidationResults,
     ]);
     const handleToggleViewportLock = useCallback(() => {
         setIsViewportLocked((current) => !current);
