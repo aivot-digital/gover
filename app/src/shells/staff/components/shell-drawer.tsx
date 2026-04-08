@@ -37,6 +37,9 @@ import {AUDIT_LOG_READ_PERMISSION} from '../../../modules/audit/constants/audit-
 import {ProcessInstanceTaskApiService} from '../../../modules/process/services/process-instance-task-api-service';
 import {subscribeProcessAssignedTaskCountRefreshEvent} from '../../../modules/process/utils/process-assigned-task-count-events';
 
+export const COLLAPSED_DRAWER_WIDTH_REM = '4.25rem';
+export const EXPANDED_DRAWER_WIDTH_REM = '16.25rem';
+
 /* -----------------------------
  * Types & Navigation Structure
  * ----------------------------- */
@@ -401,7 +404,7 @@ export function ShellDrawer() {
                         py: 1.5,
 
                         borderRadius: 0,
-                        width: minimizeDrawer ? '4.25rem' : '16.25rem',
+                        width: minimizeDrawer ? COLLAPSED_DRAWER_WIDTH_REM : EXPANDED_DRAWER_WIDTH_REM,
                         backgroundColor: 'primary.dark',
                         color: 'rgba(255, 255, 255, 0.8)',
                     }}

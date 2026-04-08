@@ -75,6 +75,9 @@ import {showExperimentalFeatures} from '../../../../hooks/use-show-experimental-
 
 const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 250;
 
+const DISPLAYABLE_AREA = getMinDisplayableAreaWidth();
+const MIN_EDITOR_DRAWER_WIDTH_PX = 540;
+
 interface RuntimeAttachment {
     key: string;
     fileName: string;
@@ -1673,7 +1676,7 @@ export function ProcessDetailsPage(): ReactNode {
                 }}
             >
                 <Allotment>
-                    <Allotment.Pane minSize={760}>
+                    <Allotment.Pane minSize={DISPLAYABLE_AREA - MIN_EDITOR_DRAWER_WIDTH_PX}>
                         <Box
                             sx={{
                                 px: 2,
@@ -1951,8 +1954,8 @@ export function ProcessDetailsPage(): ReactNode {
                     </Allotment.Pane>
 
                     <Allotment.Pane
-                        minSize={560}
-                        preferredSize={560}
+                        minSize={MIN_EDITOR_DRAWER_WIDTH_PX}
+                        preferredSize={MIN_EDITOR_DRAWER_WIDTH_PX}
                     >
                         <Paper
                             sx={{
