@@ -48,7 +48,7 @@ export function AutocompleteSelect(props: AutocompleteSelectProps) {
                         component={'div'}
                         variant="body1"
                     >
-                        <b>{option.label}</b>
+                        <b>{option.label}</b>{' '}
                         ({option.value})
                     </Typography>
                     <Typography
