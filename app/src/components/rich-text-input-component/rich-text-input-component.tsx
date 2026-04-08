@@ -124,6 +124,8 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
     const buttonHoverBg = alpha(theme.palette.text.primary, 0.08);
     const buttonActiveBg = alpha(theme.palette.text.primary, 0.12);
     const accentBg = alpha(theme.palette.primary.main, 0.14);
+    const editorMinHeight = 180;
+    const editorMaxHeight = '50vh';
     const handleOverlayContainerRef = useCallback((node: HTMLDivElement | null) => {
         setOverlayContainer(node);
     }, []);
@@ -334,26 +336,31 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         boxShadow: `0 0 0 1px ${theme.palette.primary.main}`,
                     },
                     '& .gover-mdx-editor [class*="_contentEditable_"]': {
-                        minHeight: 180,
-                        maxHeight: '50vh',
+                        minHeight: editorMinHeight,
+                        maxHeight: editorMaxHeight,
                         overflowY: 'auto',
                         padding: theme.spacing(1.5, 2),
                         fontSize: theme.typography.body1.fontSize,
                         lineHeight: 1.6,
                         color: 'text.primary',
                     },
+                    '& .gover-mdx-editor .mdxeditor-diff-source-wrapper': {
+                        minHeight: 0,
+                    },
                     '& .gover-mdx-editor .cm-sourceView': {
-                        minHeight: 180,
-                        maxHeight: '50vh',
+                        minHeight: editorMinHeight,
+                        maxHeight: editorMaxHeight,
+                        overflow: 'hidden',
                     },
                     '& .gover-mdx-editor .cm-sourceView .cm-editor': {
-                        minHeight: '100%',
-                        maxHeight: '100%',
+                        maxHeight: editorMaxHeight,
+                        overflow: 'hidden',
                     },
                     '& .gover-mdx-editor .cm-sourceView .cm-scroller': {
-                        minHeight: '100%',
-                        maxHeight: '100%',
+                        minHeight: editorMinHeight,
+                        maxHeight: editorMaxHeight,
                         overflowY: 'auto',
+                        overflowX: 'auto',
                     },
                     '& .gover-mdx-editor [class*="_placeholder_"]': {
                         color: 'text.disabled',
