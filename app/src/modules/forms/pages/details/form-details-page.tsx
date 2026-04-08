@@ -125,6 +125,7 @@ import {useConfirm} from '../../../../providers/confirm-provider';
 import {generateComponentTitle} from '../../../../utils/generate-component-title';
 import {isAnyElementWithChildren} from '../../../../models/elements/any-element-with-children';
 import {cloneElement} from '../../../../utils/clone-element';
+import {useNotImplemented} from '../../../../hooks/use-not-implemented';
 
 export const DialogSearchParam = 'dialog';
 
@@ -135,6 +136,7 @@ export function FormDetailsPage() {
     const baseTheme = useTheme();
 
     const confirm = useConfirm();
+    const notImplemented = useNotImplemented();
 
     const [searchParams] = useSearchParams();
     const metaDialogName = useMemo(() => searchParams.get(DialogSearchParam), [searchParams]);
@@ -852,7 +854,8 @@ export function FormDetailsPage() {
                 label: 'Formular vorbefüllen',
                 icon: <Draw/>,
                 onClick: () => {
-                    setShowPrefillDialog(true);
+                    //setShowPrefillDialog(true);
+                    notImplemented();
                 },
             },
             'separator',
