@@ -35,6 +35,7 @@ export function ChipInputFieldView(props: BaseViewProps<ChipInputFieldElement, s
             readOnly={isBusy}
             suggestions={element.suggestions ?? undefined}
             allowDuplicates={element.allowDuplicates ?? undefined}
+            maxItems={element.maxItems ?? undefined}
         />
     );
 }

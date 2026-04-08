@@ -13,17 +13,18 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
         editable,
         onPatch,
     } = props;
+    const effectiveMaxItems = element.maxItems != null && element.maxItems > 0 ? element.maxItems : undefined;
 
     const minItemsError = (
-        element.maxItems != null &&
+        effectiveMaxItems != null &&
         element.minItems != null &&
-        element.minItems > element.maxItems
+        element.minItems > effectiveMaxItems
     );
 
     const maxItemsError = (
-        element.maxItems != null &&
+        effectiveMaxItems != null &&
         element.minItems != null &&
-        element.maxItems < element.minItems
+        effectiveMaxItems < element.minItems
     );
 
     const suggestions = (element.suggestions ?? []).map((entry) => ({
@@ -90,7 +91,7 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
                             maxItems: value,
                         });
                     }}
-                    hint="Lassen Sie das Feld leer, wenn keine Obergrenze gelten soll."
+                    hint="Geben Sie 0 oder nichts ein, um keine Maximalanzahl zu fordern."
                     error={maxItemsError ? 'Die Maximalanzahl darf nicht kleiner als die Mindestanzahl sein.' : undefined}
                     disabled={!editable}
                 />
@@ -122,40 +123,11 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
                 <OptionListInput
                     label="Vorschläge"
                     addLabel="Vorschlag hinzufügen"
-                    hint="Die Liste unterstützt bei der Eingabe und kann weiterhin frei ergänzt werden."
+                    hint="Die Liste unterstützt bei der Eingabe und kann weiterhin frei ergänzt werden. Bei Vorschlägen sind Anzeige und Wert identisch; das Wert-Feld wird automatisch aus der Anzeige übernommen."
                     noItemsHint="Derzeit sind keine Vorschläge hinterlegt."
                     value={suggestions}
                     onChange={(items) => {
-                        const originalSuggestions = element.suggestions ?? [];
-                        const normalizedSuggestions = (items ?? [])
-                            .map((entry, index) => {
-                                const originalValue = (originalSuggestions[index] ?? '');
-                                const normalizedLabel = entry.label ?? '';
-                                const normalizedValue = entry.value ?? '';
-
-                                if (normalizedLabel.trim().length === 0 && normalizedValue.trim().length === 0) {
-                                    return '';
-                                }
-
-                                if (normalizedLabel === normalizedValue) {
-                                    return normalizedLabel;
-                                }
-
-                                // Keep both editor columns usable although only one string is stored.
-                                if (normalizedLabel === originalValue && normalizedValue.trim().length > 0) {
-                                    return normalizedValue;
-                                }
-
-                                if (normalizedValue === originalValue && normalizedLabel.trim().length > 0) {
-                                    return normalizedLabel;
-                                }
-
-                                if (normalizedLabel.trim().length > 0) {
-                                    return normalizedLabel;
-                                }
-
-                                return normalizedValue;
-                            });
+                        const normalizedSuggestions = items?.map((entry) => entry.label.trim());
 
                         onPatch({
                             suggestions: normalizedSuggestions,
@@ -166,6 +138,7 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
                     variant="outlined"
                     keyLabel="Wert"
                     labelLabel="Anzeige"
+                    disableKeyField={true}
                 />
             </Grid>
         </Grid>
