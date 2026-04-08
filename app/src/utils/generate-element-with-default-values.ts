@@ -388,19 +388,16 @@ const elementConstructors: {
         label: 'Datumsspanne',
         mode: DateFieldComponentModelMode.Day,
         placeholder: undefined,
-        allowOpenRange: false,
     }),
     [ElementType.TimeRange]: (id) => ({
         ...makeInputBase(ElementType.TimeRange, id),
         label: 'Zeitspanne',
-        allowOpenRange: false,
         mode: TimeFieldComponentModelMode.Minute,
     }),
     [ElementType.DateTimeRange]: (id) => ({
         ...makeInputBase(ElementType.DateTimeRange, id),
         label: 'Datum- und Zeitspanne',
         placeholder: undefined,
-        allowOpenRange: false,
         mode: TimeFieldComponentModelMode.Minute,
     }),
     [ElementType.MapPoint]: (id) => ({

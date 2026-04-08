@@ -21,9 +21,6 @@ public class DateRangeInputElement extends BaseInputElement<RangeInputElementVal
     @Nullable
     private DateType mode;
 
-    @Nullable
-    private Boolean allowOpenRange;
-
     public DateRangeInputElement() {
         super(ElementType.DateRange);
     }
@@ -44,16 +41,12 @@ public class DateRangeInputElement extends BaseInputElement<RangeInputElementVal
         }
 
         if (Boolean.TRUE.equals(getRequired())) {
-            if (Boolean.TRUE.equals(allowOpenRange)) {
-                if (value.getStart() == null && value.getEnd() == null) {
-                    throw new RequiredValidationException(this);
-                }
-            } else if (value.getStart() == null || value.getEnd() == null) {
+            if (value.getStart() == null || value.getEnd() == null) {
                 throw new RequiredValidationException(this);
             }
         }
 
-        if (!Boolean.TRUE.equals(allowOpenRange) && ((value.getStart() == null) != (value.getEnd() == null))) {
+        if ((value.getStart() == null) != (value.getEnd() == null)) {
             throw new ValidationException(this, "Bitte geben Sie sowohl den Start- als auch den Endwert an.");
         }
 
@@ -132,7 +125,7 @@ public class DateRangeInputElement extends BaseInputElement<RangeInputElementVal
         if (!super.equals(o)) return false;
 
         DateRangeInputElement that = (DateRangeInputElement) o;
-        return Objects.equals(placeholder, that.placeholder) && mode == that.mode && Objects.equals(allowOpenRange, that.allowOpenRange);
+        return Objects.equals(placeholder, that.placeholder) && mode == that.mode;
     }
 
     @Override
@@ -140,7 +133,6 @@ public class DateRangeInputElement extends BaseInputElement<RangeInputElementVal
         int result = super.hashCode();
         result = 31 * result + Objects.hashCode(placeholder);
         result = 31 * result + Objects.hashCode(mode);
-        result = 31 * result + Objects.hashCode(allowOpenRange);
         return result;
     }
 
@@ -161,16 +153,6 @@ public class DateRangeInputElement extends BaseInputElement<RangeInputElementVal
 
     public DateRangeInputElement setMode(@Nullable DateType mode) {
         this.mode = mode;
-        return this;
-    }
-
-    @Nullable
-    public Boolean getAllowOpenRange() {
-        return allowOpenRange;
-    }
-
-    public DateRangeInputElement setAllowOpenRange(@Nullable Boolean allowOpenRange) {
-        this.allowOpenRange = allowOpenRange;
         return this;
     }
 }

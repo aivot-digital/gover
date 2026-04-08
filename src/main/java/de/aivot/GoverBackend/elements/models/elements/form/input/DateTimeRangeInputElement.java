@@ -19,9 +19,6 @@ public class DateTimeRangeInputElement extends BaseInputElement<RangeInputElemen
     private String placeholder;
 
     @Nullable
-    private Boolean allowOpenRange;
-
-    @Nullable
     private TimeType mode;
 
     public DateTimeRangeInputElement() {
@@ -44,16 +41,12 @@ public class DateTimeRangeInputElement extends BaseInputElement<RangeInputElemen
         }
 
         if (Boolean.TRUE.equals(getRequired())) {
-            if (Boolean.TRUE.equals(allowOpenRange)) {
-                if (value.getStart() == null && value.getEnd() == null) {
-                    throw new RequiredValidationException(this);
-                }
-            } else if (value.getStart() == null || value.getEnd() == null) {
+            if (value.getStart() == null || value.getEnd() == null) {
                 throw new RequiredValidationException(this);
             }
         }
 
-        if (!Boolean.TRUE.equals(allowOpenRange) && ((value.getStart() == null) != (value.getEnd() == null))) {
+        if ((value.getStart() == null) != (value.getEnd() == null)) {
             throw new ValidationException(this, "Bitte geben Sie sowohl den Start- als auch den Endwert an.");
         }
 
@@ -125,14 +118,13 @@ public class DateTimeRangeInputElement extends BaseInputElement<RangeInputElemen
         if (!super.equals(o)) return false;
 
         DateTimeRangeInputElement that = (DateTimeRangeInputElement) o;
-        return Objects.equals(placeholder, that.placeholder) && Objects.equals(allowOpenRange, that.allowOpenRange) && mode == that.mode;
+        return Objects.equals(placeholder, that.placeholder) && mode == that.mode;
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + Objects.hashCode(placeholder);
-        result = 31 * result + Objects.hashCode(allowOpenRange);
         result = 31 * result + Objects.hashCode(mode);
         return result;
     }
@@ -144,16 +136,6 @@ public class DateTimeRangeInputElement extends BaseInputElement<RangeInputElemen
 
     public DateTimeRangeInputElement setPlaceholder(@Nullable String placeholder) {
         this.placeholder = placeholder;
-        return this;
-    }
-
-    @Nullable
-    public Boolean getAllowOpenRange() {
-        return allowOpenRange;
-    }
-
-    public DateTimeRangeInputElement setAllowOpenRange(@Nullable Boolean allowOpenRange) {
-        this.allowOpenRange = allowOpenRange;
         return this;
     }
 

@@ -6,7 +6,6 @@ import {Grid} from '@mui/material';
 import {SelectFieldComponent} from '../components/select-field/select-field-component';
 import {DateFieldComponentModelMode} from '../models/elements/form/input/date-field-element';
 import {SelectFieldComponentOption} from '../components/select-field/select-field-component-option';
-import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
 
 const modes: SelectFieldComponentOption[] = [
     {
@@ -36,23 +35,6 @@ export function DateRangeFieldEditor(props: BaseEditorProps<DateRangeFieldElemen
             columnSpacing={4}
             rowSpacing={2}
         >
-            <Grid
-                size={{
-                    xs: 12,
-                }}
-            >
-                <CheckboxFieldComponent
-                    label="Offene Spanne erlauben"
-                    value={element.allowOpenRange ?? false}
-                    onChange={(checked) => {
-                        onPatch({
-                            allowOpenRange: checked,
-                        });
-                    }}
-                    hint="Wenn aktiviert, darf nur ein Grenzwert (Von oder Bis) angegeben werden."
-                    disabled={!editable}
-                />
-            </Grid>
             <Grid
                 size={{
                     xs: 12,

@@ -16,8 +16,6 @@ import java.util.Objects;
 
 public class TimeRangeInputElement extends BaseInputElement<RangeInputElementValue> implements PrintableElement<RangeInputElementValue> {
     @Nullable
-    private Boolean allowOpenRange;
-    @Nullable
     private TimeType mode;
 
     public TimeRangeInputElement() {
@@ -40,16 +38,12 @@ public class TimeRangeInputElement extends BaseInputElement<RangeInputElementVal
         }
 
         if (Boolean.TRUE.equals(getRequired())) {
-            if (Boolean.TRUE.equals(allowOpenRange)) {
-                if (value.getStart() == null && value.getEnd() == null) {
-                    throw new RequiredValidationException(this);
-                }
-            } else if (value.getStart() == null || value.getEnd() == null) {
+            if (value.getStart() == null || value.getEnd() == null) {
                 throw new RequiredValidationException(this);
             }
         }
 
-        if (!Boolean.TRUE.equals(allowOpenRange) && ((value.getStart() == null) != (value.getEnd() == null))) {
+        if ((value.getStart() == null) != (value.getEnd() == null)) {
             throw new ValidationException(this, "Bitte geben Sie sowohl den Start- als auch den Endwert an.");
         }
 
@@ -121,25 +115,14 @@ public class TimeRangeInputElement extends BaseInputElement<RangeInputElementVal
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         TimeRangeInputElement that = (TimeRangeInputElement) o;
-        return Objects.equals(allowOpenRange, that.allowOpenRange) && mode == that.mode;
+        return mode == that.mode;
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + Objects.hashCode(allowOpenRange);
         result = 31 * result + Objects.hashCode(mode);
         return result;
-    }
-
-    @Nullable
-    public Boolean getAllowOpenRange() {
-        return allowOpenRange;
-    }
-
-    public TimeRangeInputElement setAllowOpenRange(@Nullable Boolean allowOpenRange) {
-        this.allowOpenRange = allowOpenRange;
-        return this;
     }
 
     @Nullable

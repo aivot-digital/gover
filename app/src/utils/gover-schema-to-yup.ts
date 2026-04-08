@@ -281,8 +281,6 @@ function buildRangeSchema(
     elem: DateRangeFieldElement | TimeRangeFieldElement | DateTimeRangeFieldElement,
     kind: 'date' | 'time' | 'dateTime',
 ): Schema {
-    const allowOpenRange = elem.allowOpenRange === true;
-
     let rangeSchema: Schema = yup
         .object()
         .shape({
@@ -293,10 +291,6 @@ function buildRangeSchema(
             'range-complete',
             'Bitte geben Sie sowohl den Start- als auch den Endwert an.',
             (value: any) => {
-                if (allowOpenRange) {
-                    return true;
-                }
-
                 if (value == null) {
                     return true;
                 }
@@ -338,13 +332,7 @@ function buildRangeSchema(
             .test(
                 'range-filled',
                 `${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`,
-                (value: any) => {
-                    if (allowOpenRange) {
-                        return (value?.start != null && value.start.length > 0) || (value?.end != null && value.end.length > 0);
-                    }
-
-                    return value?.start != null && value.start.length > 0 && value?.end != null && value.end.length > 0;
-                },
+                (value: any) => value?.start != null && value.start.length > 0 && value?.end != null && value.end.length > 0,
             );
     } else {
         rangeSchema = rangeSchema

@@ -4,7 +4,6 @@ import {TimeFieldComponentModelMode} from './time-field-element';
 
 export interface DateTimeRangeFieldElement extends BaseInputElement<ElementType.DateTimeRange> {
     placeholder: string | null | undefined;
-    allowOpenRange: boolean | null | undefined;
     mode: TimeFieldComponentModelMode | null | undefined;
 }
 
