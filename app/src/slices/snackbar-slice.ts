@@ -10,6 +10,15 @@ export const showSuccessSnackbar = (message: string) => {
     });
 };
 
+export const showWarningSnackbar = (message: string) => {
+    return addSnackbarMessage({
+        key: new Date().getTime().toString(),
+        message,
+        severity: SnackbarSeverity.Warning,
+        type: SnackbarType.AutoHiding,
+    });
+};
+
 export const showErrorSnackbar = (message: string, persist: boolean = false) => {
     return addSnackbarMessage({
         key: new Date().getTime().toString(),
