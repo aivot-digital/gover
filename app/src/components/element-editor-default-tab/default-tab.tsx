@@ -3,8 +3,7 @@ import {type ElementEditorContentProps} from '../element-editor-content/element-
 import {Box, Grid} from '@mui/material';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {ElementType} from '../../data/element-type/element-type';
-import {SelectFieldComponent} from '../select-field/select-field-component';
-import {type AnyFormElement} from '../../models/elements/form/any-form-element';
+import {type AnyFormElement, isAnyFormElement} from '../../models/elements/form/any-form-element';
 import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 import {EditorDispatcher} from '../editor-dispatcher';
@@ -18,9 +17,38 @@ import {getElementNameForType} from '../../data/element-type/element-names';
 import {AlertComponent} from '../alert/alert-component';
 import {editors as Editors} from '../../editors';
 import {copyToClipboardText} from '../../utils/copy-to-clipboard';
+import {ElementWidthSelector} from '../element-width-selector/element-width-selector';
+import {normalizeElementWeight} from '../../utils/element-widths';
 
 export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorContentProps<T, E>) {
     const dispatch = useAppDispatch();
+
+    const normalizedWeight = React.useMemo(() => {
+        if (!isAnyFormElement(props.element)) {
+            return undefined;
+        }
+
+        return normalizeElementWeight(props.element.type, props.element.weight);
+    }, [props.element]);
+
+    React.useEffect(() => {
+        if (!isAnyFormElement(props.element)) {
+            return;
+        }
+
+        if (props.element.weight == null) {
+            return;
+        }
+
+        if (normalizedWeight === props.element.weight) {
+            return;
+        }
+
+        props.onChange({
+            // @ts-expect-error
+            weight: normalizedWeight,
+        });
+    }, [normalizedWeight, props.element, props.onChange]);
 
     const tabDescription = (() => {
         switch (props.element.type) {
@@ -133,49 +161,16 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                             lg: 6,
                         }}
                     >
-                        <SelectFieldComponent
+                        <ElementWidthSelector
                             label="Breite des Elements in der Darstellung"
-                            value={(props.element as AnyFormElement)?.weight?.toString() ?? '12'}
-                            onChange={(val) => {
+                            elementType={props.element.type}
+                            value={(props.element as AnyFormElement)?.weight}
+                            onChange={(weight) => {
                                 props.onChange({
                                     // @ts-expect-error
-                                    weight: val != null ? parseFloat(val) : 12,
+                                    weight,
                                 });
                             }}
-                            options={[
-                                {
-                                    label: '25%',
-                                    value: '3',
-                                },
-                                {
-                                    label: '33%',
-                                    value: '4',
-                                },
-                                {
-                                    label: '37,5%',
-                                    value: '4.5',
-                                },
-                                {
-                                    label: '50%',
-                                    value: '6',
-                                },
-                                {
-                                    label: '62,5%',
-                                    value: '7.5',
-                                },
-                                {
-                                    label: '66%',
-                                    value: '8',
-                                },
-                                {
-                                    label: '75%',
-                                    value: '9',
-                                },
-                                {
-                                    label: '100%',
-                                    value: '12',
-                                },
-                            ]}
                             hint="Legen Sie die Breite des Elements für Tablets & Desktops fest. Auf Mobilgeräten wird stets die volle Breite verwendet."
                             disabled={!props.editable}
                         />

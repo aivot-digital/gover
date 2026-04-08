@@ -11,7 +11,6 @@ import {copyToClipboardText} from '../../../utils/copy-to-clipboard';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import {useElementTreeContext} from '../element-tree-context';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {SelectFieldComponent} from '../../select-field/select-field-component';
 import {isAnyFormElement} from '../../../models/elements/form/any-form-element';
 import {AnyInputElement, isAnyInputElement} from '../../../models/elements/form/input/any-input-element';
 import {editors} from '../../../editors';
@@ -24,6 +23,8 @@ import {isStringNullOrEmpty} from '../../../utils/string-utils';
 import {generateComponentTitle} from '../../../utils/generate-component-title';
 import {DefaultTabs} from '../../element-editor/default-tabs';
 import {createElementEditorNavigationLink} from '../../../hooks/use-element-editor-navigation';
+import {ElementWidthSelector} from '../../element-width-selector/element-width-selector';
+import {normalizeElementWeight} from '../../../utils/element-widths';
 
 export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
     const dispatch = useAppDispatch();
@@ -58,6 +59,33 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
         }
         return [];
     }, [currentElement, allElements]);
+
+    const normalizedWeight = useMemo(() => {
+        if (!isAnyFormElement(currentElement)) {
+            return undefined;
+        }
+
+        return normalizeElementWeight(currentElement.type, currentElement.weight);
+    }, [currentElement]);
+
+    React.useEffect(() => {
+        if (!isAnyFormElement(currentElement)) {
+            return;
+        }
+
+        if (currentElement.weight == null) {
+            return;
+        }
+
+        if (normalizedWeight === currentElement.weight) {
+            return;
+        }
+
+        onChangeCurrentElement({
+            ...currentElement,
+            weight: normalizedWeight,
+        });
+    }, [currentElement, normalizedWeight, onChangeCurrentElement]);
 
     return (
         <>
@@ -112,16 +140,16 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                     >
                         {
                             !hasSummaryLayoutParent &&
-                            <SelectFieldComponent
+                            <ElementWidthSelector
                                 label="Breite des Elements in der Darstellung"
-                                value={currentElement?.weight?.toString() ?? '12'}
-                                onChange={(val) => {
+                                elementType={currentElement.type}
+                                value={currentElement.weight}
+                                onChange={(weight) => {
                                     onChangeCurrentElement({
                                         ...currentElement,
-                                        weight: val != null ? parseFloat(val) : 12,
+                                        weight,
                                     });
                                 }}
-                                options={WeightOptions}
                                 hint="Legen Sie die Breite des Elements für Tablets & Desktops fest. Auf Mobilgeräten wird stets die volle Breite verwendet."
                                 disabled={!editable}
                             />
@@ -428,42 +456,6 @@ function getTabDescription(type: ElementType) {
             };
     }
 }
-
-
-const WeightOptions = [
-    {
-        label: '25%',
-        value: '3',
-    },
-    {
-        label: '33%',
-        value: '4',
-    },
-    {
-        label: '37,5%',
-        value: '4.5',
-    },
-    {
-        label: '50%',
-        value: '6',
-    },
-    {
-        label: '62,5%',
-        value: '7.5',
-    },
-    {
-        label: '66%',
-        value: '8',
-    },
-    {
-        label: '75%',
-        value: '9',
-    },
-    {
-        label: '100%',
-        value: '12',
-    },
-];
 
 
 function collectHttpMappingProblems(element: AnyInputElement, allElements: ElementWithParents[]): ReactNode[] {
