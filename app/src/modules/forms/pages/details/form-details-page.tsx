@@ -1142,6 +1142,7 @@ export function FormDetailsPage() {
                                                     dispatch(setLoadingMessage(undefined));
                                                 });
                                         }}
+                                        derivedData={derivedData}
                                     />
                                 </Box>
 
