@@ -19,6 +19,9 @@ public class ComputedElementState implements Serializable {
     @Nullable
     private BaseElement override = null;
 
+    @Nullable
+    private String destinationPath = null;
+
     @Nonnull
     private EffectiveValueSource valueSource = EffectiveValueSource.Authored;
 
@@ -29,18 +32,6 @@ public class ComputedElementState implements Serializable {
 
     public ComputedElementState() {
 
-    }
-
-    public ComputedElementState(@Nonnull Boolean visible,
-                                @Nullable String error,
-                                @Nullable BaseElement override,
-                                @Nonnull EffectiveValueSource valueSource,
-                                @Nullable List<ComputedElementStates> subStates) {
-        this.visible = visible;
-        this.error = error;
-        this.override = override;
-        this.valueSource = valueSource;
-        this.subStates = subStates;
     }
 
     public static ComputedElementState create() {
@@ -55,12 +46,12 @@ public class ComputedElementState implements Serializable {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         ComputedElementState that = (ComputedElementState) o;
-        return Objects.equals(visible, that.visible) && Objects.equals(error, that.error) && Objects.equals(override, that.override) && valueSource == that.valueSource && Objects.equals(subStates, that.subStates);
+        return Objects.equals(visible, that.visible) && Objects.equals(error, that.error) && Objects.equals(override, that.override) && Objects.equals(destinationPath, that.destinationPath) && valueSource == that.valueSource && Objects.equals(subStates, that.subStates);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(visible, error, override, valueSource, subStates);
+        return Objects.hash(visible, error, override, destinationPath, valueSource, subStates);
     }
 
     // endregion
@@ -94,6 +85,16 @@ public class ComputedElementState implements Serializable {
 
     public ComputedElementState setOverride(@Nullable BaseElement override) {
         this.override = override;
+        return this;
+    }
+
+    @Nullable
+    public String getDestinationPath() {
+        return destinationPath;
+    }
+
+    public ComputedElementState setDestinationPath(@Nullable String destinationPath) {
+        this.destinationPath = destinationPath;
         return this;
     }
 

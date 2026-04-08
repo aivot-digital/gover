@@ -1,5 +1,5 @@
 import {Handle, type NodeProps, Position, useUpdateNodeInternals} from '@xyflow/react';
-import {Box, Button, Divider, IconButton, Paper, useTheme} from '@mui/material';
+import {Box, Button, Divider, IconButton, Paper, Tooltip, useTheme} from '@mui/material';
 import React, {type ReactNode, useEffect, useMemo, useState} from 'react';
 import Typography from '@mui/material/Typography';
 import {alpha} from '@mui/material/styles';
@@ -27,11 +27,15 @@ import SwapHoriz from '@mui/icons-material/SwapHoriz';
 import {ProcessActionMenu, type ProcessActionMenuItem} from '../process-action-menu';
 import {ModuleIcons} from '../../../../../../shells/staff/data/module-icons';
 import {useNavigate} from 'react-router-dom';
+import Replay from '@aivot/mui-material-symbols-400-outlined/dist/replay/Replay';
+import {ProcessInstanceTaskApiService} from '../../../../services/process-instance-task-api-service';
+import {useAppDispatch} from '../../../../../../hooks/use-app-dispatch';
+import {clearLoadingMessage, setLoadingMessage} from '../../../../../../slices/shell-slice';
 
 function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
     const theme = useTheme();
     const confirm = useConfirm();
-    const navigate = useNavigate();
+    const dispatch = useAppDispatch();
     const updateNodeInternals = useUpdateNodeInternals();
     const [showEventsDialog, setShowEventsDialog] = useState(false);
     const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
@@ -51,6 +55,8 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         onDeleteNode,
         showTargetHandles,
         runtimeData,
+        nodeValidationResults,
+        onReloadRuntimeData,
     } = useProcessFlowEditorContext();
 
     const {
@@ -70,6 +76,10 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
 
         return getLatestTaskForNode(runtimeData.tasks, node.id);
     }, [node.id, runtimeData]);
+
+    const associatedValidationResult = useMemo(() => {
+        return nodeValidationResults.find((result) => result.node.id === node.id) || null;
+    }, [node.id, nodeValidationResults]);
 
     const performedPortKeys = useMemo(() => {
         if (runtimeData == null) {
@@ -241,21 +251,48 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
     }, [availableOutputPorts.length, confirm, editable, node, nodeName, onConnectNodeToExisting, onDeleteNode, onStartReplaceNode]);
 
     const runtimeMenuItems: ProcessActionMenuItem[] = useMemo(() => {
-        if (associatedTask == null || associatedTask.status != ProcessTaskStatus.Running) {
-            return [];
+        const items: ProcessActionMenuItem[] = []
+
+        if (associatedTask != null) {
+            if (associatedTask.status == ProcessTaskStatus.Running) {
+                items.push({
+                    label: 'Aufgabe aufrufen',
+                    icon: ModuleIcons.tasks,
+                    to: `/tasks/${associatedTask.processInstanceId}/${associatedTask.id}`,
+                    newTab: true,
+                    disabled: false,
+                    visible: true,
+                    isDangerous: false,
+                });
+            }
+
+            if (associatedTask.status == ProcessTaskStatus.Failed) {
+                items.push({
+                    label: 'Aufgabe neu starten',
+                    icon: <Replay/>,
+                    onClick: () => {
+                        dispatch(setLoadingMessage({
+                            blocking: true,
+                            message: 'Starte Aufgabe neu',
+                            estimatedTime: 500,
+                        }))
+                        new ProcessInstanceTaskApiService()
+                            .rerunFailedTask(associatedTask.id)
+                            .then(() => {
+                                onReloadRuntimeData();
+                            })
+                            .finally(() => {
+                                dispatch(clearLoadingMessage());
+                            });
+                    },
+                    disabled: false,
+                    visible: true,
+                    isDangerous: false,
+                });
+            }
         }
-        return [
-            {
-                label: 'Aufgabe aufrufen',
-                icon: ModuleIcons.tasks,
-                onClick: () => {
-                    navigate(`/tasks/${associatedTask.processInstanceId}/${associatedTask.id}`);
-                },
-                disabled: false,
-                visible: true,
-                isDangerous: false,
-            },
-        ];
+
+        return items;
     }, [associatedTask]);
 
     // Connecting/disconnecting ports changes the effective handle geometry of the node. React Flow
@@ -360,6 +397,8 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                             sx={{
                                 minWidth: 0,
                                 flex: 1,
+                                display: 'flex',
+                                alignItems: 'center',
                             }}
                         >
                             <Typography
@@ -372,6 +411,37 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                             >
                                 {nodeName}
                             </Typography>
+
+                            {
+                                associatedValidationResult != null &&
+                                <Tooltip title={
+                                    <>
+                                        {
+                                            associatedValidationResult.problems.map((problem, index) => (
+                                                <Typography
+                                                    key={problem + index.toString()}
+                                                    variant="body2"
+                                                    sx={{
+                                                        marginBottom: 1,
+                                                    }}
+                                                >
+                                                    {problem}
+                                                </Typography>
+                                            ))
+                                        }
+                                    </>
+                                }>
+                                    <Box
+                                        sx={{
+                                            marginLeft: 1,
+                                            width: '0.5rem',
+                                            height: '0.5rem',
+                                            borderRadius: '50%',
+                                            bgcolor: 'error.main',
+                                        }}
+                                    />
+                                </Tooltip>
+                            }
                         </Box>
 
                         <Box
@@ -511,6 +581,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                                     event.preventDefault();
                                     setRuntimeActionsMenuAnchorEl(event.currentTarget);
                                 }}
+                                disabled={runtimeMenuItems.length === 0}
                             >
                                 <MoreVert
                                     sx={{

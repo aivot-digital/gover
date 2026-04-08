@@ -4,6 +4,8 @@ import type {ProcessInstanceEntity} from '../../../../entities/process-instance-
 import type {ProcessInstanceTaskEntity} from '../../../../entities/process-instance-task-entity';
 import type {ProcessInstanceEventEntity} from '../../../../entities/process-instance-event-entity';
 
+import {ProcessNodeProblems} from '../../../../entities/process-node-problems';
+
 export interface ProcessFlowEditorContextType {
     editable: boolean;
     showTargetHandles: boolean;
@@ -16,6 +18,8 @@ export interface ProcessFlowEditorContextType {
     onConnectNodeToExisting: (node: ProcessNodeEntity, preferredPortKey?: string) => void;
     onStartReplaceNode: (node: ProcessNodeEntity) => void;
 
+    onReloadRuntimeData: () => void;
+
     onAddFollowUpNode: (fromNodeId: number, viaPortKey: string) => void;
     onAddInbetweenNode: (forEdgeId: number) => void;
 
@@ -24,6 +28,8 @@ export interface ProcessFlowEditorContextType {
         tasks: ProcessInstanceTaskEntity[];
         events: ProcessInstanceEventEntity[];
     } | null;
+
+    nodeValidationResults: ProcessNodeProblems[];
 }
 
 export const ProcessFlowEditorContext = createContext<ProcessFlowEditorContextType | null>(null);

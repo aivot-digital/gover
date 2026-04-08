@@ -22,6 +22,7 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.RichTextInputEl
 import de.aivot.GoverBackend.elements.models.elements.form.input.UiDefinitionInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.SummaryLayoutElement;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
@@ -46,6 +47,8 @@ import de.aivot.GoverBackend.process.models.TaskViewEvent;
 import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.GoverBackend.submission.services.ElementDataTransformService;
+import de.aivot.GoverBackend.utils.ElementResolver;
+import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
@@ -164,7 +167,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
         dataContentField.setLabel("Zu prüfende Daten");
         dataContentField.setHint("Modellieren Sie eine Gover-UI, in der die freizugebenden Inhalte dargestellt werden.");
         dataContentField.setRequired(true);
-        dataContentField.setElementType(ElementType.GroupLayout);
+        dataContentField.setElementType(ElementType.SummaryLayout);
         dataContentField.setVisibility(buildModeVisibility(MODE_DATA));
         layout.addChild(dataContentField);
 
@@ -266,7 +269,52 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     public GroupLayoutElement getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
-        return buildStaffTaskView(loadConfigurationForUi(context));
+        var config = loadConfigurationForUi(context);
+
+        var layout = new GroupLayoutElement();
+        layout.setId(TASK_VIEW_ROOT_ID);
+
+        var children = new ArrayList<BaseFormElement>();
+        var criteriaHeadline = new HeadlineContentElement();
+        criteriaHeadline.setId("approval-criteria-headline");
+        criteriaHeadline.setContent("Freigabekriterien");
+        children.add(criteriaHeadline);
+
+        var criteriaContent = new RichTextContentElement();
+        criteriaContent.setId("approval-criteria-content");
+        criteriaContent.setContent(config.criteria());
+        children.add(criteriaContent);
+
+        var contentHeadline = new HeadlineContentElement();
+        contentHeadline.setId("approval-content-headline");
+        contentHeadline.setContent("Inhalte");
+        children.add(contentHeadline);
+
+        if (MODE_DATA.equals(config.contentMode())) {
+            children.add(config.dataContent());
+        } else {
+            var customContent = new RichTextContentElement();
+            customContent.setId("approval-custom-content");
+            customContent.setContent(config.customContent());
+            children.add(customContent);
+        }
+
+        var remarkField = new RichTextInputElement();
+        remarkField.setId(TASK_VIEW_REMARK_FIELD_ID);
+        remarkField.setLabel("Vermerk");
+        remarkField.setHint("Optionaler Vermerk zur Freigabeentscheidung.");
+        remarkField.setRequired(false);
+        remarkField.setReducedMode(true);
+        remarkField.setWeight(6.0);
+        children.add(remarkField);
+
+        var actionsSpacer = new SpacerContentElement();
+        actionsSpacer.setId(TASK_VIEW_ACTIONS_SPACER_ID);
+        actionsSpacer.setHeight("8");
+        children.add(actionsSpacer);
+
+        layout.setChildren(children);
+        return layout;
     }
 
     @Nonnull
@@ -325,54 +373,6 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Nonnull
-    private GroupLayoutElement buildStaffTaskView(@Nonnull ApprovalConfiguration config) {
-        var layout = new GroupLayoutElement();
-        layout.setId(TASK_VIEW_ROOT_ID);
-
-        var children = new ArrayList<BaseFormElement>();
-        var criteriaHeadline = new HeadlineContentElement();
-        criteriaHeadline.setId("approval-criteria-headline");
-        criteriaHeadline.setContent("Freigabekriterien");
-        children.add(criteriaHeadline);
-
-        var criteriaContent = new RichTextContentElement();
-        criteriaContent.setId("approval-criteria-content");
-        criteriaContent.setContent(config.criteria());
-        children.add(criteriaContent);
-
-        var contentHeadline = new HeadlineContentElement();
-        contentHeadline.setId("approval-content-headline");
-        contentHeadline.setContent("Inhalte");
-        children.add(contentHeadline);
-
-        if (MODE_DATA.equals(config.contentMode())) {
-            children.add(prepareReadonlyElement(config.dataContent()));
-        } else {
-            var customContent = new RichTextContentElement();
-            customContent.setId("approval-custom-content");
-            customContent.setContent(config.customContent());
-            children.add(customContent);
-        }
-
-        var remarkField = new RichTextInputElement();
-        remarkField.setId(TASK_VIEW_REMARK_FIELD_ID);
-        remarkField.setLabel("Vermerk");
-        remarkField.setHint("Optionaler Vermerk zur Freigabeentscheidung.");
-        remarkField.setRequired(false);
-        remarkField.setReducedMode(true);
-        remarkField.setWeight(6.0);
-        children.add(remarkField);
-
-        var actionsSpacer = new SpacerContentElement();
-        actionsSpacer.setId(TASK_VIEW_ACTIONS_SPACER_ID);
-        actionsSpacer.setHeight("8");
-        children.add(actionsSpacer);
-
-        layout.setChildren(children);
-        return layout;
-    }
-
-    @Nonnull
     private ApprovalConfiguration loadConfigurationForUi(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
         try {
             return loadConfiguration(context.getThisNode());
@@ -394,8 +394,8 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
 
         if (!MODE_DATA.equals(contentMode) && !MODE_CUSTOM_CONTENT.equals(contentMode)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Das Freigabe-Element ist mit einem ungültigen Inhaltsmodus '%s' konfiguriert.",
-                    contentMode
+                    "Das Freigabe-Element ist mit einem ungültigen Inhaltsmodus %s konfiguriert.",
+                    StringUtils.quote(contentMode)
             );
         }
 
@@ -482,20 +482,6 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
                         new NoCodeStaticValue(expectedMode)
                 ))
                 .recalculateReferencedIds();
-    }
-
-    @Nonnull
-    private static BaseFormElement prepareReadonlyElement(@Nonnull BaseFormElement rawElement) {
-        var copy = ObjectMapperFactory
-                .getInstance()
-                .convertValue(rawElement, BaseElement.class);
-
-        if (!(copy instanceof BaseFormElement copiedFormElement)) {
-            throw new IllegalStateException("Configured approval content is not a form element.");
-        }
-
-        markInputsDisabled(copiedFormElement);
-        return copiedFormElement;
     }
 
     private static void markInputsDisabled(@Nonnull BaseElement element) {

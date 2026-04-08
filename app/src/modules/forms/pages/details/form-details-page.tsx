@@ -212,6 +212,7 @@ export function FormDetailsPage() {
     const user = useAppSelector(selectUser);
     const metaDialog = useAppSelector((state) => state.app.showDialog);
     const [identityProviderInfos, setIdentityProviderInfos] = useState<IdentityProviderInfo[]>([]);
+    const initialDeriveKeyRef = useRef<string | undefined>(undefined);
 
     const [theme, setTheme] = useState<Theme>();
 
@@ -318,6 +319,48 @@ export function FormDetailsPage() {
             });
         fetchLockState(formId);
     }, [formId, formVersion, dispatch]);
+
+    useEffect(() => {
+        if (loadedForm == null) {
+            // Resetting the guard allows a re-open of the same form/version to trigger
+            // a fresh full derive instead of reusing stale runtime state.
+            initialDeriveKeyRef.current = undefined;
+            return;
+        }
+
+        const deriveKey = `${loadedForm.form.id}:${loadedForm.version.version}`;
+        if (initialDeriveKeyRef.current === deriveKey) {
+            return;
+        }
+        // The details page can update `loadedForm` for local edits without changing
+        // the loaded version identity, so we run the expensive full derive only once per load.
+        initialDeriveKeyRef.current = deriveKey;
+
+        dispatch(showLoadingOverlay('Sichtbarkeiten berechnen'));
+
+        withAsyncWrapper<any, ElementDerivationResponse>({
+            desiredMinRuntime: 600,
+            main: () => formService
+                .deriveForm(
+                    loadedForm.form.slug,
+                    loadedForm.version.version,
+                    authoredElementValues,
+                    {
+                        skipErrorsFor: [],
+                        skipVisibilitiesFor: disableVisibility ? ['ALL'] : [],
+                        skipValuesFor: [],
+                        skipOverridesFor: [],
+                    },
+                ),
+        })
+            .then((newState) => {
+                setDerivedData(newState.elementData);
+                dispatch(addDerivationLogItems(newState.logItems));
+            })
+            .finally(() => {
+                dispatch(hideLoadingOverlay());
+            });
+    }, [loadedForm, authoredElementValues, disableVisibility, dispatch]);
 
     useEffect(() => {
         if (loadedForm == null) {
@@ -1145,6 +1188,7 @@ export function FormDetailsPage() {
                                                     dispatch(setLoadingMessage(undefined));
                                                 });
                                         }}
+                                        derivedData={derivedData}
                                     />
                                 </Box>
 

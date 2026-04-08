@@ -12,6 +12,8 @@ import java.util.Set;
 public interface ProcessNodeRepository extends JpaRepository<ProcessNodeEntity, Integer>, JpaSpecificationExecutor<ProcessNodeEntity> {
     List<ProcessNodeEntity> findAllByProcessId(Integer processDefinitionId);
 
+    List<ProcessNodeEntity> findAllByProcessIdAndProcessVersion(Integer processId, Integer processVersion);
+
 
     @Query(
             value = """
@@ -25,4 +27,6 @@ public interface ProcessNodeRepository extends JpaRepository<ProcessNodeEntity, 
             @Param("processId") Integer processId,
             @Param("processVersion") Integer processVersion
     );
+
+    boolean existsByDataKeyAndIdIsNotAndProcessIdAndProcessVersion(String dataKey, Integer nodeId, Integer processId, Integer processVersion);
 }

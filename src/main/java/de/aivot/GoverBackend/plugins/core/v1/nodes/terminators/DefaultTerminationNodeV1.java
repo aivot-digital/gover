@@ -19,7 +19,9 @@ import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class DefaultTerminationNodeV1 implements ProcessNodeDefinition {
@@ -115,27 +117,31 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition {
     }
 
     @Override
-    public void validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                      @Nonnull AuthoredElementValues configuration, @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
+    public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                     @Nonnull AuthoredElementValues configuration,
+                                                     @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
+        var res = new HashMap<String, String>();
+
         var effectiveValues = derivedRuntimeElementData.getEffectiveValues();
 
         var retentionValue = effectiveValues.get(RETENTION_VALUE_FIELD_KEY);
         if (!(retentionValue instanceof Number)) {
-            throw ResponseException.badRequest();
+            res.put(RETENTION_VALUE_FIELD_KEY, "Ungültiger Wert für die Aufbewahrungsfrist.");
         }
 
         var retentionUnitObj = effectiveValues.get(RETENTION_UNIT_FIELD_KEY);
-        if (!(retentionUnitObj instanceof String retentionUnit)) {
-            throw ResponseException.badRequest();
+        if (retentionUnitObj instanceof String retentionUnit) {
+            if (!retentionUnit.equals(RETENTION_UNIT_DAYS) &&
+                    !retentionUnit.equals(RETENTION_UNIT_WEEKS) &&
+                    !retentionUnit.equals(RETENTION_UNIT_MONTHS) &&
+                    !retentionUnit.equals(RETENTION_UNIT_YEARS)) {
+                res.put(RETENTION_UNIT_FIELD_KEY, "Ungültiger Wert für die Einheit der Aufbewahrungsfrist.");
+            }
+        } else {
+            res.put(RETENTION_UNIT_FIELD_KEY, "Ungültiger Wert für die Einheit der Aufbewahrungsfrist.");
         }
 
-        // Check if retention unit is valid
-        if (!retentionUnit.equals(RETENTION_UNIT_DAYS) &&
-                !retentionUnit.equals(RETENTION_UNIT_WEEKS) &&
-                !retentionUnit.equals(RETENTION_UNIT_MONTHS) &&
-                !retentionUnit.equals(RETENTION_UNIT_YEARS)) {
-            throw ResponseException.badRequest("Ungültiger Wert für die Einheit der Aufbewahrungsfrist.");
-        }
+        return res.isEmpty() ? null : res;
     }
 
     @Nullable

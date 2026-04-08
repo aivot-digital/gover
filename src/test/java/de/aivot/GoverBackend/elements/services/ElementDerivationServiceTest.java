@@ -89,6 +89,161 @@ class ElementDerivationServiceTest {
     }
 
     @Test
+    void shouldExposeResolvedDestinationPathForSimpleDestinationKey() {
+        var field = new TextInputElement();
+        field.setId("field");
+        field.setDestinationKey("person.first_name");
+
+        var result = derive(
+                createRoot(List.of(field)),
+                new AuthoredElementValues(),
+                new ElementDerivationOptions()
+        );
+
+        assertEquals("person.first_name", result.getElementStates().get("field").getDestinationPath());
+    }
+
+    @Test
+    void shouldExposeResolvedDestinationPathForExplicitArrayIndex() {
+        var field = new TextInputElement();
+        field.setId("field");
+        field.setDestinationKey("members.0.first_name");
+
+        var result = derive(
+                createRoot(List.of(field)),
+                new AuthoredElementValues(),
+                new ElementDerivationOptions()
+        );
+
+        assertEquals("members.0.first_name", result.getElementStates().get("field").getDestinationPath());
+    }
+
+    @Test
+    void shouldExposeResolvedDestinationPathForReplicatingContainerChildrenWithContainerDestinationKey() {
+        var firstName = new TextInputElement();
+        firstName.setId("rowFirstName");
+        firstName.setDestinationKey("first_name");
+
+        var people = new ReplicatingContainerLayoutElement();
+        people.setId("people");
+        people.setDestinationKey("payload.people");
+        people.setChildren(new LinkedList<>(List.of(firstName)));
+
+        var firstRow = new AuthoredElementValues();
+        firstRow.put("rowFirstName", "Ada");
+
+        var secondRow = new AuthoredElementValues();
+        secondRow.put("rowFirstName", "Grace");
+
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.put("people", List.of(firstRow, secondRow));
+
+        var result = derive(
+                createRoot(List.of(people)),
+                authoredValues,
+                new ElementDerivationOptions()
+        );
+
+        assertEquals("payload.people", result.getElementStates().get("people").getDestinationPath());
+        assertEquals(
+                "payload.people.0.first_name",
+                result.getElementStates().get("people").getSubStates().get(0).get("rowFirstName").getDestinationPath()
+        );
+        assertEquals(
+                "payload.people.1.first_name",
+                result.getElementStates().get("people").getSubStates().get(1).get("rowFirstName").getDestinationPath()
+        );
+    }
+
+    @Test
+    void shouldExposeResolvedDestinationPathForWildcardInsideReplicatingContainerWithoutContainerDestinationKey() {
+        var firstName = new TextInputElement();
+        firstName.setId("rowFirstName");
+        firstName.setDestinationKey("members.*.first_name");
+
+        var people = new ReplicatingContainerLayoutElement();
+        people.setId("people");
+        people.setChildren(new LinkedList<>(List.of(firstName)));
+
+        var firstRow = new AuthoredElementValues();
+        firstRow.put("rowFirstName", "Ada");
+
+        var secondRow = new AuthoredElementValues();
+        secondRow.put("rowFirstName", "Grace");
+
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.put("people", List.of(firstRow, secondRow));
+
+        var result = derive(
+                createRoot(List.of(people)),
+                authoredValues,
+                new ElementDerivationOptions()
+        );
+
+        assertNull(result.getElementStates().get("people").getDestinationPath());
+        assertEquals(
+                "members.0.first_name",
+                result.getElementStates().get("people").getSubStates().get(0).get("rowFirstName").getDestinationPath()
+        );
+        assertEquals(
+                "members.1.first_name",
+                result.getElementStates().get("people").getSubStates().get(1).get("rowFirstName").getDestinationPath()
+        );
+    }
+
+    @Test
+    void shouldRetainBroadcastWildcardInDestinationPathOutsideReplicatingContainers() {
+        var lastName = new TextInputElement();
+        lastName.setId("rowLastName");
+        lastName.setDestinationKey("last_name");
+
+        var people = new ReplicatingContainerLayoutElement();
+        people.setId("people");
+        people.setDestinationKey("members");
+        people.setChildren(new LinkedList<>(List.of(lastName)));
+
+        var sharedFirstName = new TextInputElement();
+        sharedFirstName.setId("sharedFirstName");
+        sharedFirstName.setDestinationKey("members.*.first_name");
+
+        var firstRow = new AuthoredElementValues();
+        firstRow.put("rowLastName", "Lovelace");
+
+        var secondRow = new AuthoredElementValues();
+        secondRow.put("rowLastName", "Hopper");
+
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.put("people", List.of(firstRow, secondRow));
+        authoredValues.put("sharedFirstName", "Ada");
+
+        var result = derive(
+                createRoot(List.of(people, sharedFirstName)),
+                authoredValues,
+                new ElementDerivationOptions()
+        );
+
+        assertEquals("members.*.first_name", result.getElementStates().get("sharedFirstName").getDestinationPath());
+    }
+
+    @Test
+    void shouldUseOverrideDestinationKeyForResolvedDestinationPath() {
+        var field = new TextInputElement();
+        field.setId("field");
+        field.setDestinationKey("person.first_name");
+        field.setOverride(new ElementOverrideFunctions().setJavascriptCode(
+                JavascriptCode.of("({ type: element.type, id: element.id, destinationKey: 'person.given_name' })")
+        ));
+
+        var result = derive(
+                createRoot(List.of(field)),
+                new AuthoredElementValues(),
+                new ElementDerivationOptions()
+        );
+
+        assertEquals("person.given_name", result.getElementStates().get("field").getDestinationPath());
+    }
+
+    @Test
     void shouldSkipVisibilitiesForSkippedElementsAndChildren() {
         var child = new TextInputElement();
         child.setId("child");

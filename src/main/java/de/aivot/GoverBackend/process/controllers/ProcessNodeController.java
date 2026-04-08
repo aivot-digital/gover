@@ -16,6 +16,7 @@ import de.aivot.GoverBackend.process.filters.ProcessNodeFilter;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextConfig;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextTesting;
 import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
+import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessTestClaimRepository;
 import de.aivot.GoverBackend.process.services.*;
 import de.aivot.GoverBackend.user.services.UserService;
@@ -31,13 +32,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/process-nodes/")
@@ -57,6 +59,7 @@ public class ProcessNodeController {
     private final ProcessVersionService processDefinitionVersionService;
     private final ProcessTestClaimRepository processTestClaimRepository;
     private final ObjectMapper objectMapper;
+    private final ProcessNodeRepository processNodeRepository;
 
     @Nonnull
     private static String createAvailableDataKey(@Nonnull String requestedDataKey,
@@ -94,7 +97,7 @@ public class ProcessNodeController {
                                  ProcessNodeExportService processNodeExportService,
                                  ProcessVersionService processDefinitionVersionService,
                                  ProcessTestClaimRepository processTestClaimRepository,
-                                 ObjectMapper objectMapper) {
+                                 ObjectMapper objectMapper, ProcessNodeRepository processNodeRepository) {
         this.auditService = auditService.createScopedAuditService(ProcessNodeController.class, "Prozesse");
         this.userService = userService;
         this.processDefinitionNodeService = processDefinitionNodeService;
@@ -105,6 +108,7 @@ public class ProcessNodeController {
         this.processDefinitionVersionService = processDefinitionVersionService;
         this.processTestClaimRepository = processTestClaimRepository;
         this.objectMapper = objectMapper;
+        this.processNodeRepository = processNodeRepository;
     }
 
     @GetMapping("")
@@ -180,6 +184,19 @@ public class ProcessNodeController {
         var existing = processDefinitionNodeService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
+
+        if (processNodeRepository.existsByDataKeyAndIdIsNotAndProcessIdAndProcessVersion(
+                updateDTO.getDataKey(),
+                existing.getId(),
+                existing.getProcessId(),
+                existing.getProcessVersion()
+        )) {
+            throw ResponseException.badRequest(
+                    String.format(
+                            "Der Datenschlüssel %s wird innerhalb dieses Prozesses bereits verwendet. Bitte vergeben Sie einen eindeutigen Datenschlüssel.",
+                            StringUtils.quote(updateDTO.getDataKey())
+                    ));
+        }
 
         var existingMap = objectMapper
                 .convertValue(existing, Map.class);
@@ -458,5 +475,24 @@ public class ProcessNodeController {
 
         return provider
                 .getTestingLayout(context);
+    }
+
+    @GetMapping("{id}/problems/")
+    @Operation(
+            summary = "Retrieve Process Definition Node Testing Layout",
+            description = "Retrieve the testing layout of a process definition node by its ID."
+    )
+    public Object problems(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer id
+    ) throws ResponseException {
+        var res = processDefinitionNodeService
+                .validate(id);
+
+        if (res.isPresent()) {
+            return res.get();
+        }
+
+        return new ResponseEntity<Void>(HttpStatus.NO_CONTENT);
     }
 }

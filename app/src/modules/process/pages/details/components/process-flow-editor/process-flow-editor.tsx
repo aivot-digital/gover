@@ -55,6 +55,8 @@ import {
     ProcessFlowEditorEmptyState,
 } from './process-flow-editor-empty-state';
 
+import {ProcessNodeProblems} from '../../../../entities/process-node-problems';
+
 const FLOW_MIN_ZOOM = 0.25;
 const FLOW_MAX_ZOOM = 2;
 const INITIAL_VIEWPORT_ZOOM = 1;
@@ -104,8 +106,11 @@ interface ProcessFlowEditorProps {
         tasks: ProcessInstanceTaskEntity[];
         events: ProcessInstanceEventEntity[];
     } | null;
+    onReloadRuntimeData: () => void;
     topLeftPanel?: ReactNode;
     topRightPanel?: ReactNode;
+
+    nodeValidationResults: ProcessNodeProblems[];
 }
 
 type ProcessFlowEditorRuntimeData = ProcessFlowEditorProps['runtimeData'];
@@ -343,8 +348,11 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onAddTrigger,
 
         runtimeData,
+        onReloadRuntimeData,
         topLeftPanel,
         topRightPanel,
+
+        nodeValidationResults,
     } = props;
     const theme = useTheme();
 
@@ -404,10 +412,14 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onConnectNodeToExisting: onConnectNodeToExisting ?? NOOP_CONNECT_NODE_TO_EXISTING,
         onStartReplaceNode: onStartReplaceNode ?? NOOP_START_REPLACE_NODE,
 
+        onReloadRuntimeData: onReloadRuntimeData,
+
         onAddFollowUpNode: onAddFollowUpNode ?? NOOP_ADD_FOLLOW_UP_NODE,
         onAddInbetweenNode: onAddInbetweenNode ?? NOOP_ADD_INBETWEEN_NODE,
 
         runtimeData,
+
+        nodeValidationResults,
     }), [
         isEditable,
         onAddEdge,
@@ -418,8 +430,10 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onDeleteNode,
         onStartReplaceNode,
         runtimeData,
+        onReloadRuntimeData,
         selectedNode,
         showTargetHandles,
+        nodeValidationResults,
     ]);
     const handleToggleViewportLock = useCallback(() => {
         setIsViewportLocked((current) => !current);

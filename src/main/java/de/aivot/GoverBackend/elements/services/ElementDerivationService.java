@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.elements.enums.EffectiveValueSource;
 import de.aivot.GoverBackend.elements.exceptions.DerivationException;
 import de.aivot.GoverBackend.elements.models.*;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
 import de.aivot.GoverBackend.elements.models.elements.InputElement;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
@@ -33,7 +34,18 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Derivation service for elements.
+ * Centralizes runtime derivation for form elements so the rest of the system can work with one
+ * consistent interpretation of a form definition.
+ * <p>
+ * Form rendering, validation, submission payload generation and process views all depend on the
+ * same questions being answered in the same order: whether an element is overridden, whether it is
+ * visible, which value is effectively active and whether that value is valid. Keeping that pipeline
+ * in one service prevents callers from re-implementing partial logic and accidentally observing
+ * different runtime states for the same form data.
+ * <p>
+ * The service also preserves contextual behavior for replicated containers. Child rows derive their
+ * own values and errors against row-local data, while still being able to reference root-level
+ * state when expressions or dependent selects need it.
  */
 @Service
 public class ElementDerivationService {
@@ -41,6 +53,18 @@ public class ElementDerivationService {
     private final NoCodeEvaluationService noCodeEvaluationService;
     private final ElementDataTransformService elementDataTransformService;
 
+    /**
+     * Wires the collaborators that execute dynamic expressions and expose the derived runtime state
+     * in the payload shape expected by those expressions.
+     *
+     * @param javascriptEngineFactoryService supplies fresh JavaScript engines so derivations do not
+     *                                       share mutable evaluator state across requests
+     * @param noCodeEvaluationService evaluates declarative expressions so the derivation pipeline can
+     *                                treat scripted and no-code rules uniformly
+     * @param elementDataTransformService builds the `$` payload view because dynamic rules should
+     *                                    reason about destination-shaped data instead of internal
+     *                                    element-id maps
+     */
     @Autowired
     public ElementDerivationService(
             JavascriptEngineFactoryService javascriptEngineFactoryService,
@@ -51,6 +75,20 @@ public class ElementDerivationService {
         this.elementDataTransformService = elementDataTransformService;
     }
 
+    /**
+     * Produces the runtime view of a form tree for one authored data set.
+     * <p>
+     * A single entry point matters because callers need the effective values and the computed
+     * element states to come from the same derivation pass. Running visibility, value derivation and
+     * validation separately would allow later stages to observe a different state than earlier ones,
+     * especially once overrides and replicated rows are involved.
+     *
+     * @param request bundles the form tree, authored values and derivation options so the pipeline
+     *                operates on one coherent snapshot
+     * @param logger captures expression output and failures because derivation is dynamic and must
+     *               remain diagnosable without changing the return type
+     * @return the effective values and computed element states that describe the form at runtime
+     */
     @Nonnull
     public DerivedRuntimeElementData derive(@Nonnull ElementDerivationRequest request,
                                             @Nonnull ElementDerivationLogger logger) {
@@ -76,6 +114,8 @@ public class ElementDerivationService {
                 computedElementStates,
                 request.derivationOptions(),
                 true,
+                List.of(),
+                List.of(),
                 logger
         );
 
@@ -85,6 +125,21 @@ public class ElementDerivationService {
         );
     }
 
+    /**
+     * Walks the element tree in the order required to keep later decisions dependent on earlier
+     * ones.
+     * <p>
+     * Overrides are derived first because they may change the element definition that visibility,
+     * value and validation rules should use. Visibility is derived before values so hidden elements
+     * do not accumulate stale runtime data unnecessarily. Values are derived before errors because
+     * validation must run against the value the user or the derivation logic will actually see.
+     * <p>
+     * The recursive shape also preserves row-local state for replicating containers. Each repeated
+     * item gets its own authored/effective maps and child state container so row-specific rules do
+     * not bleed into siblings. The same recursion also carries payload-path context so each computed
+     * state can describe where its value would land in the outbound payload without building that
+     * payload eagerly.
+     */
     private void derive(
             @Nonnull JavascriptEngine javascriptEngine,
             @Nonnull BaseElement rootElement,
@@ -96,6 +151,8 @@ public class ElementDerivationService {
             @Nonnull ComputedElementStates computedElementStates,
             @Nonnull ElementDerivationOptions options,
             @Nonnull Boolean isParentVisible,
+            @Nonnull List<String> destinationPathPrefixSegments,
+            @Nonnull List<Integer> replicationIndices,
             @Nonnull ElementDerivationLogger logger
     ) {
         var elementState = new ComputedElementState();
@@ -123,6 +180,13 @@ public class ElementDerivationService {
                     ? overrideElement
                     : currentElement;
             var childOptions = options.copyForUseInChild(currentElement.getId());
+            // The payload location is structural metadata, so it should reflect override decisions
+            // but remain available even when later visibility or validation logic short-circuits.
+            elementState.setDestinationPath(resolveDestinationPath(
+                    actualElement,
+                    destinationPathPrefixSegments,
+                    replicationIndices
+            ));
 
             var isVisible = isParentVisible && deriveVisibility(
                     javascriptEngine,
@@ -183,7 +247,8 @@ public class ElementDerivationService {
                 // Test if the child data is a list of child data sets.
                 if (rawEffectiveChildDataSetList instanceof List<?> effectiveChildDataSetList) {
                     // Iterate through the list of all child data sets.
-                    for (var rawEffectiveChildDataSet : effectiveChildDataSetList) {
+                    for (var itemIndex = 0; itemIndex < effectiveChildDataSetList.size(); itemIndex++) {
+                        var rawEffectiveChildDataSet = effectiveChildDataSetList.get(itemIndex);
                         if (rawEffectiveChildDataSet instanceof Map<?, ?> effectiveChildDataSet) {
                             @SuppressWarnings("unchecked")
                             var mutableEffectiveChildDataSet = (Map<String, Object>) effectiveChildDataSet;
@@ -198,6 +263,18 @@ public class ElementDerivationService {
                             var om = ObjectMapperFactory.getInstance();
                             var childAuthoredElementValues = om.convertValue(mutableEffectiveChildDataSet, AuthoredElementValues.class);
                             var childEffectiveElementValues = om.convertValue(mutableEffectiveChildDataSet, EffectiveElementValues.class);
+                            var childReplicationIndices = appendReplicationIndex(
+                                    replicationIndices,
+                                    itemIndex
+                            );
+                            // A container destination key introduces a row-local payload root, so
+                            // descendants inherit that concrete row path instead of the parent one.
+                            var childDestinationPathPrefixSegments = resolveChildDestinationPathPrefixSegments(
+                                    replicatingContainer,
+                                    destinationPathPrefixSegments,
+                                    replicationIndices,
+                                    itemIndex
+                            );
 
                             for (var currentChildElement : replicatingContainer.getChildren()) {
                                 derive(
@@ -211,6 +288,8 @@ public class ElementDerivationService {
                                         childItemElementStates,
                                         childOptions,
                                         isVisible,
+                                        childDestinationPathPrefixSegments,
+                                        childReplicationIndices,
                                         logger
                                 );
                             }
@@ -234,6 +313,8 @@ public class ElementDerivationService {
                             computedElementStates,
                             childOptions,
                             isVisible,
+                            destinationPathPrefixSegments,
+                            replicationIndices,
                             logger
                     );
                 }
@@ -245,6 +326,20 @@ public class ElementDerivationService {
     }
 
 
+    /**
+     * Resolves a runtime override when the form definition allows the current element to mutate
+     * itself dynamically.
+     * <p>
+     * Overrides exist so authors can adapt labels, options or other element properties to the
+     * current runtime context without duplicating the surrounding form structure. The method keeps
+     * that flexibility constrained by forbidding changes to id and type, because the rest of the
+     * derivation pipeline relies on stable identity and stable element semantics.
+     *
+     * @return the derived replacement element, or {@code null} when the original element definition
+     * should stay in effect
+     * @throws DerivationException when dynamic override logic produces an invalid or structurally
+     *                             incompatible element
+     */
     @Nullable
     private BaseElement deriveOverride(
             @Nonnull JavascriptEngine javascriptEngine,
@@ -363,7 +458,17 @@ public class ElementDerivationService {
         return null;
     }
 
-
+    /**
+     * Determines visibility after overrides have been applied so downstream logic reasons about the
+     * element definition that is actually active.
+     * <p>
+     * Visibility is evaluated early because hiding an element is meant to short-circuit further
+     * runtime work for that branch. This keeps invisible subtrees from producing misleading values
+     * or validation errors while still allowing skip options to force a stable visible state when a
+     * caller intentionally wants to bypass the dynamic rule.
+     *
+     * @throws DerivationException when a configured visibility rule cannot be evaluated reliably
+     */
     private boolean deriveVisibility(
             @Nonnull JavascriptEngine javascriptEngine,
             @Nonnull BaseElement rootElement,
@@ -435,6 +540,24 @@ public class ElementDerivationService {
         return true;
     }
 
+    /**
+     * Chooses the effective value that should drive rendering, submission and validation for one
+     * input element.
+     * <p>
+     * User-authored data wins whenever it is present on an enabled field because preserving explicit
+     * user intent is more important than re-computing a default. Derived values are only used when
+     * the element is configured to supply one and authored input should not take precedence. The
+     * method also records the value source so downstream consumers can distinguish a retained user
+     * answer from a system-generated one.
+     * <p>
+     * Select values are sanitized before being accepted because dependent option lists can change as
+     * other inputs change. Keeping a now-invalid selection would make the runtime state internally
+     * inconsistent even if the authored data was valid earlier.
+     *
+     * @return the value that should be treated as authoritative for the current runtime state
+     * @throws DerivationException when dynamic value logic is configured but cannot yield a usable
+     *                             result
+     */
     @Nullable
     private Object deriveEffectiveValue(
             @Nonnull JavascriptEngine javascriptEngine,
@@ -531,6 +654,15 @@ public class ElementDerivationService {
         throw new DerivationException(baseElement, "Der Wert konnte nicht abgeleitet werden, da die Definition des Werteableitungsmechanismus ungültig ist.");
     }
 
+    /**
+     * Removes stale values from dependent select elements before they enter the effective runtime
+     * state.
+     * <p>
+     * Dependent selects are valid only relative to the currently selected option of another select.
+     * A previously chosen option may stop belonging to the active group after the referenced select
+     * changes. Returning {@code null} in that case forces the runtime state to reflect the currently
+     * available option set instead of silently preserving an impossible selection.
+     */
     @Nullable
     private Object sanitizeSelectEffectiveValue(
             @Nonnull BaseElement rootElement,
@@ -574,6 +706,13 @@ public class ElementDerivationService {
         return null;
     }
 
+    /**
+     * Resolves the select element that governs the current dependent select.
+     * <p>
+     * The lookup starts at the form root rather than the current branch because dependency
+     * references are id-based and should remain stable even when authors rearrange the layout
+     * hierarchy around the fields.
+     */
     @Nullable
     private SelectInputElement resolveReferencedSelectField(
             @Nonnull BaseElement rootElement,
@@ -593,6 +732,14 @@ public class ElementDerivationService {
                 .orElse(null);
     }
 
+    /**
+     * Reads the controlling select value from the nearest meaningful scope.
+     * <p>
+     * Replicated rows need local dependencies to win over root-level data, otherwise one row could
+     * accidentally validate itself against another row's selection. The fallback order therefore
+     * prefers row-local effective data, then row-local authored data, and only then falls back to
+     * root-level state.
+     */
     @Nullable
     private String resolveReferencedSelectValue(
             @Nonnull SelectInputElement referencedSelectField,
@@ -615,6 +762,19 @@ public class ElementDerivationService {
         return referencedSelectField.formatValue(rawValue);
     }
 
+    /**
+     * Derives the validation error that should be exposed for the current input element.
+     * <p>
+     * Built-in validation runs before custom rules so structural guarantees such as requiredness and
+     * type-specific constraints are enforced consistently even when authors also configured dynamic
+     * validation. Custom validation then refines that baseline with runtime-specific business rules.
+     * Returning the first relevant error keeps the element state focused on the reason that matters
+     * most for the current input.
+     * <p>
+     * Skip options and nullable non-required values are handled early because callers sometimes need
+     * a pure derivation pass without validation noise, and optional empty fields should not enter the
+     * expensive dynamic validation path.
+     */
     @Nullable
     private String deriveError(
             @Nonnull JavascriptEngine javascriptEngine,
@@ -701,11 +861,88 @@ public class ElementDerivationService {
         return null;
     }
 
+    /**
+     * Creates the shared runtime snapshot that expression evaluators consume.
+     * <p>
+     * JavaScript and no-code rules should make decisions against the same in-flight derivation state
+     * that the service itself is building. Wrapping the current effective values and computed states
+     * into one object ensures every evaluator sees the same snapshot and avoids ad-hoc argument lists
+     * that would drift apart over time.
+     */
     private DerivedRuntimeElementData createRuntimeAccumulator(@Nonnull ComputedElementStates computedElementStates,
                                                                @Nonnull EffectiveElementValues effectiveElementValues) {
         return new DerivedRuntimeElementData(
                 effectiveElementValues,
                 computedElementStates
         );
+    }
+
+    /**
+     * Resolves the destination path that should be attached to the current computed state.
+     * <p>
+     * The path must be based on the effective element definition rather than the authored one,
+     * otherwise overrides that change the destination key would leave the runtime metadata out of
+     * sync with the payload export logic.
+     */
+    @Nullable
+    private String resolveDestinationPath(@Nonnull BaseElement element,
+                                          @Nonnull List<String> destinationPathPrefixSegments,
+                                          @Nonnull List<Integer> replicationIndices) {
+        if (!(element instanceof BaseInputElement<?> inputElement)) {
+            return null;
+        }
+
+        return elementDataTransformService.resolveDestinationPath(
+                inputElement.getDestinationKey(),
+                destinationPathPrefixSegments,
+                replicationIndices
+        );
+    }
+
+    /**
+     * Resolves the destination-path prefix that descendant states should inherit from a replicating
+     * container row.
+     * <p>
+     * Containers with their own destination key create a row-local payload object first and only
+     * then attach that object to the parent payload. Child states therefore need the container path
+     * plus the current row index as an inherited prefix. Containers without a destination key do not
+     * create such an intermediate payload root, so their children must keep using the existing
+     * inherited prefix.
+     */
+    @Nonnull
+    private List<String> resolveChildDestinationPathPrefixSegments(
+            @Nonnull ReplicatingContainerLayoutElement replicatingContainer,
+            @Nonnull List<String> destinationPathPrefixSegments,
+            @Nonnull List<Integer> replicationIndices,
+            int itemIndex
+    ) {
+        var containerDestinationPathSegments = elementDataTransformService.resolveDestinationPathSegments(
+                replicatingContainer.getDestinationKey(),
+                destinationPathPrefixSegments,
+                replicationIndices
+        );
+        if (containerDestinationPathSegments.isEmpty()) {
+            return destinationPathPrefixSegments;
+        }
+
+        var childDestinationPathPrefixSegments = new LinkedList<>(containerDestinationPathSegments);
+        // The row index becomes part of the inherited prefix only when the container owns the
+        // payload array, because descendants are nested inside the row object written at that slot.
+        childDestinationPathPrefixSegments.add(String.valueOf(itemIndex));
+        return childDestinationPathPrefixSegments;
+    }
+
+    /**
+     * Extends replication context for the next replicated row.
+     * <p>
+     * Wildcard substitution is positional, so nested replicated structures need an ordered list of
+     * indices instead of a single mutable cursor shared across recursion branches.
+     */
+    @Nonnull
+    private List<Integer> appendReplicationIndex(@Nonnull List<Integer> replicationIndices,
+                                                 int itemIndex) {
+        var childReplicationIndices = new LinkedList<>(replicationIndices);
+        childReplicationIndices.add(itemIndex);
+        return childReplicationIndices;
     }
 }

@@ -18,6 +18,16 @@ export function LogView() {
             <Table>
                 <TableBody>
                     {
+                        logs.length === 0 &&
+                        <TableRow>
+                            <TableCell>
+                                <em>
+                                    Keine Log-Einträge vorhanden.
+                                </em>
+                            </TableCell>
+                        </TableRow>
+                    }
+                    {
                         logs.slice().reverse().map((log, index) => (
                             <TableRow
                                 key={log.timestamp.toString() + index}

@@ -1,10 +1,19 @@
 import {Divider, ListItemIcon, ListItemText, Menu, MenuItem, type PopoverOrigin} from '@mui/material';
 import React, {type ReactNode, useMemo} from 'react';
+import {Link} from 'react-router-dom';
 
 export type ProcessActionMenuItem = {
     label: string;
     icon: ReactNode;
     onClick: () => void;
+    disabled?: boolean;
+    visible?: boolean;
+    isDangerous?: boolean;
+} | {
+    label: string;
+    icon: ReactNode;
+    to: string;
+    newTab?: boolean;
     disabled?: boolean;
     visible?: boolean;
     isDangerous?: boolean;
@@ -100,38 +109,67 @@ export function ProcessActionMenu(props: ProcessActionMenuProps): ReactNode {
                 normalizedItems.map((item, index) => item === 'separator' ? (
                     <Divider key={`separator-${index}`}/>
                 ) : (
-                    <MenuItem
-                        key={`${item.label}-${index}`}
-                        onClick={(event) => {
-                            event.stopPropagation();
-                            event.preventDefault();
-
-                            item.onClick();
-                            onClose();
-                        }}
-                        disabled={item.disabled}
-                        sx={{
-                            minHeight: 42,
-                            px: 1.5,
-                            gap: 1,
-                        }}
-                    >
-                        <ListItemIcon
+                    'to' in item ? (
+                        <MenuItem
+                            component={Link}
+                            key={`${item.label}-${index}`}
+                            to={item.to}
+                            target={item.newTab ? '_blank' : '_self'}
+                            disabled={item.disabled}
                             sx={{
-                                minWidth: 32,
-                                color: item.isDangerous ? 'error.main' : 'text.secondary',
+                                minHeight: 42,
+                                px: 1.5,
+                                gap: 1,
                             }}
                         >
-                            {item.icon}
-                        </ListItemIcon>
-                        <ListItemText
-                            primary={item.label}
-                            primaryTypographyProps={{
-                                color: item.isDangerous ? 'error.main' : 'text.primary',
+                            <ListItemIcon
+                                sx={{
+                                    minWidth: 32,
+                                    color: item.isDangerous ? 'error.main' : 'text.secondary',
+                                }}
+                            >
+                                {item.icon}
+                            </ListItemIcon>
+                            <ListItemText
+                                primary={item.label}
+                                primaryTypographyProps={{
+                                    color: item.isDangerous ? 'error.main' : 'text.primary',
+                                }}
+                            />
+                        </MenuItem>
+                    ) : (
+                        <MenuItem
+                            key={`${item.label}-${index}`}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                event.preventDefault();
+
+                                item.onClick();
+                                onClose();
                             }}
-                        />
-                    </MenuItem>
-                ))
+                            disabled={item.disabled}
+                            sx={{
+                                minHeight: 42,
+                                px: 1.5,
+                                gap: 1,
+                            }}
+                        >
+                            <ListItemIcon
+                                sx={{
+                                    minWidth: 32,
+                                    color: item.isDangerous ? 'error.main' : 'text.secondary',
+                                }}
+                            >
+                                {item.icon}
+                            </ListItemIcon>
+                            <ListItemText
+                                primary={item.label}
+                                primaryTypographyProps={{
+                                    color: item.isDangerous ? 'error.main' : 'text.primary',
+                                }}
+                            />
+                        </MenuItem>
+                    )))
             }
         </Menu>
     );

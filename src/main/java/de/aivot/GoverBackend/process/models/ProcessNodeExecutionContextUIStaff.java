@@ -17,16 +17,21 @@ public class ProcessNodeExecutionContextUIStaff extends ProcessNodeExecutionCont
     @Nonnull
     private final DerivedRuntimeElementData runtimeElementData;
 
+    @Nonnull
+    private final ProcessExecutionData processData;
+
     public ProcessNodeExecutionContextUIStaff(@Nonnull ProcessNodeExecutionLogger logger,
                                               @Nonnull ProcessNodeEntity thisNode,
                                               @Nonnull ProcessInstanceEntity thisProcessInstance,
                                               @Nonnull ProcessInstanceTaskEntity thisTask,
                                               @Nullable ProcessTestClaimEntity testClaim,
                                               @Nonnull UserEntity user,
-                                              @Nonnull DerivedRuntimeElementData runtimeElementData) {
+                                              @Nonnull DerivedRuntimeElementData runtimeElementData,
+                                              @Nonnull ProcessExecutionData processData) {
         super(logger, thisNode, thisProcessInstance, thisTask, testClaim);
         this.user = user;
         this.runtimeElementData = runtimeElementData;
+        this.processData = processData;
     }
 
     @Nonnull
@@ -37,5 +42,10 @@ public class ProcessNodeExecutionContextUIStaff extends ProcessNodeExecutionCont
     @Nonnull
     public DerivedRuntimeElementData getRuntimeElementData() {
         return runtimeElementData;
+    }
+
+    @Nonnull
+    public ProcessExecutionData getProcessData() {
+        return processData;
     }
 }

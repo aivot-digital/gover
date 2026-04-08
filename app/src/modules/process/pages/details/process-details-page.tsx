@@ -1,6 +1,6 @@
 import React, {type ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
 import {Box, Button, Chip, Divider, Paper, Typography} from '@mui/material';
-import {Outlet, useNavigate, useParams, useSearchParams} from 'react-router-dom';
+import {Outlet, useLocation, useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {type ProcessEntity} from '../../entities/process-entity';
 import {ProcessDefinitionVersionApiService} from '../../services/process-definition-version-api-service';
 import {type ProcessNodeEntity} from '../../entities/process-node-entity';
@@ -72,8 +72,16 @@ import {ProcessSettingsDialog} from '../../dialogs/process-settings-dialog/proce
 import {ProcessTestClaimProcessInstancesDialog} from '../../dialogs/process-test-claim-process-instances-dialog';
 import {useNotImplemented} from '../../../../hooks/use-not-implemented';
 import {showExperimentalFeatures} from '../../../../hooks/use-show-experimental-features';
+import {AlertComponent} from '../../../../components/alert/alert-component';
+import {getMinDisplayableAreaWidth} from '../../../../utils/display-area-utils';
+import {ProcessNodeProblems} from '../../entities/process-node-problems';
+import {addEntityHistoryItem} from '../../../../slices/entity-history-slice';
+import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 
 const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 250;
+
+const DISPLAYABLE_AREA = getMinDisplayableAreaWidth();
+const MIN_EDITOR_DRAWER_WIDTH_PX = 540;
 
 interface RuntimeAttachment {
     key: string;
@@ -262,7 +270,7 @@ export function ProcessDetailsPage(): ReactNode {
     const [hasFlowNodeProviderLoadError, setHasFlowNodeProviderLoadError] = useState(false);
     const [readyFlowEditorKey, setReadyFlowEditorKey] = useState<string | null>(null);
     const [showSettingsDialog, setShowSettingsDialog] = useState(false);
-
+    const [nodeValidationResults, setNodeValidationResults] = useState<ProcessNodeProblems[]>([]);
 
     const [showAddTriggerDialog, setShowAddTriggerDialog] = useState(false);
     const [newNodeFor, setNewNodeFor] = useState<{
@@ -500,6 +508,12 @@ export function ProcessDetailsPage(): ReactNode {
                     nodes: nodes.content,
                     edges: edges.content,
                 });
+
+                dispatch(addEntityHistoryItem({
+                    link: `/processes/${processId}/versions/${processVersion}`,
+                    title: `${definition.internalTitle} (Version ${processVersion})`,
+                    type: ServerEntityType.Processes,
+                }));
             })
             .catch((error) => {
                 if (cancelled) {
@@ -1132,44 +1146,66 @@ export function ProcessDetailsPage(): ReactNode {
             });
     };
 
-    const handleTest = (): void => {
-        confirm({
-            title: 'Prozessmodellierung testen',
-            children: (
-                <Typography>
-                    Möchten Sie die Prozessmodellierung testen?
-                    Dabei wird die weitere Bearbeitung des Prozesses gesperrt, bis der Test abgeschlossen ist.
-                    Sie können den Test jederzeit abbrechen.
-                    Alle gestarteten Vorgänge werden dabei beendet und gelöscht.
-                </Typography>
-            ),
-            confirmButtonText: 'Test starten',
-        })
-            .then((confirm) => {
-                if (!confirm) {
-                    return;
-                }
-
-                return new ProcessTestClaimApiService()
-                    .create({
-                        ...ProcessTestClaimApiService.initialize(),
-                        processId,
-                        processVersion,
-                    });
-            })
-            .then((res) => {
-                if (res == null || user == null) {
-                    return;
-                }
-                setCurrentTestClaim({
-                    claim: res,
-                    user,
+    const handleTest = async (): Promise<void> => {
+        try {
+            const problems = await new ProcessDefinitionVersionApiService()
+                .validate({
+                    processDefinitionId: processId,
+                    processDefinitionVersion: processVersion,
                 });
-                dispatch(showSuccessSnackbar('Der Test wurde gestartet. Der Prozess ist nun für die Bearbeitung gesperrt.'));
-            })
-            .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Der Test konnte nicht gestartet werden.'));
+            setNodeValidationResults(problems);
+
+            const confirmed = await confirm({
+                title: 'Prozessmodellierung testen',
+                children: (
+                    <>
+                        <Typography>
+                            Möchten Sie die Prozessmodellierung testen?
+                            Dabei wird die weitere Bearbeitung des Prozesses gesperrt, bis der Test abgeschlossen ist.
+                            Sie können den Test jederzeit abbrechen.
+                            Alle gestarteten Vorgänge werden dabei beendet und gelöscht.
+                        </Typography>
+                        {
+                            problems.length > 0 &&
+                            <AlertComponent
+                                color="warning"
+                                sx={{
+                                    marginTop: '1rem',
+                                }}
+                            >
+                                Mindestens eins der Prozesselemente hat eine ungültige Konfiguration.
+                                Sie können den Test starten, es kann jedoch zu Ausführungsproblemen aufgrund der ungültigen Konfiguration kommen.
+                            </AlertComponent>
+                        }
+                    </>
+                ),
+                confirmButtonText: problems.length > 0 ? 'Test trotzdem starten' : 'Test starten',
             });
+
+            if (!confirmed) {
+                return;
+            }
+
+            const res = await new ProcessTestClaimApiService()
+                .create({
+                    ...ProcessTestClaimApiService.initialize(),
+                    processId,
+                    processVersion,
+                });
+
+            if (res == null || user == null) {
+                return;
+            }
+
+            setCurrentTestClaim({
+                claim: res,
+                user,
+            });
+
+            dispatch(showSuccessSnackbar('Der Test wurde gestartet. Der Prozess ist nun für die Bearbeitung gesperrt.'));
+        } catch (err) {
+            dispatch(showApiErrorSnackbar(err, 'Der Test konnte nicht gestartet werden.'));
+        }
     };
 
     const handleEndTestClaim = useCallback((): void => {
@@ -1673,7 +1709,7 @@ export function ProcessDetailsPage(): ReactNode {
                 }}
             >
                 <Allotment>
-                    <Allotment.Pane minSize={760}>
+                    <Allotment.Pane minSize={DISPLAYABLE_AREA - MIN_EDITOR_DRAWER_WIDTH_PX}>
                         <Box
                             sx={{
                                 px: 2,
@@ -1712,6 +1748,7 @@ export function ProcessDetailsPage(): ReactNode {
                                                 processFlow={processFlow}
                                                 nodeProviders={flowNodeProviders}
                                                 onAddTrigger={handleOpenAddTriggerDialog}
+                                                nodeValidationResults={nodeValidationResults}
                                                 topLeftPanel={
                                                     currentTestClaim == null ? undefined : (
                                                         <Box
@@ -1835,7 +1872,8 @@ export function ProcessDetailsPage(): ReactNode {
                                                                     lineHeight: 1.45,
                                                                 }}
                                                             >
-                                                                Der Vorgang wartet auf den Start der automatischen abwicklung.
+                                                                Der Vorgang wartet auf den Start der automatischen
+                                                                abwicklung.
                                                             </Typography>
                                                         </Box>
                                                     ) : undefined
@@ -1883,6 +1921,7 @@ export function ProcessDetailsPage(): ReactNode {
                                                 }}
                                                 onDeleteNode={handleDeleteNode}
                                                 runtimeData={runtimeData}
+                                                onReloadRuntimeData={loadRuntimeData}
                                             />
                                         </ReactFlowProvider> :
                                         <Paper
@@ -1951,8 +1990,8 @@ export function ProcessDetailsPage(): ReactNode {
                     </Allotment.Pane>
 
                     <Allotment.Pane
-                        minSize={560}
-                        preferredSize={560}
+                        minSize={MIN_EDITOR_DRAWER_WIDTH_PX}
+                        preferredSize={MIN_EDITOR_DRAWER_WIDTH_PX}
                     >
                         <Paper
                             sx={{
@@ -1971,7 +2010,8 @@ export function ProcessDetailsPage(): ReactNode {
                                     onSave: handleSaveNode,
                                     onDelete: handleDeleteNode,
                                     onStartReplaceNode: handleOpenReplaceNodeDialog,
-                                    nodeRefreshSignal,
+                                    nodeRefreshSignal: nodeRefreshSignal,
+                                    nodeValidationResults: nodeValidationResults,
                                 }}
                             >
                                 <Outlet/>

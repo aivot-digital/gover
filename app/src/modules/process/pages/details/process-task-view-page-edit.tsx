@@ -13,10 +13,14 @@ import {
     type TaskViewEvent,
     type TaskViewEventVariant,
 } from '../../services/process-instance-task-api-service';
-import {AuthoredElementValues} from '../../../../models/element-data';
+import {
+    AuthoredElementValues,
+    DerivedRuntimeElementData,
+    isDerivedRuntimeElementData,
+} from '../../../../models/element-data';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {clearLoadingMessage, setErrorMessage, setLoadingMessage} from '../../../../slices/shell-slice';
-import {showApiErrorSnackbar} from '../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {withDelay} from '../../../../utils/with-delay';
 import {ProcessTaskStatus} from '../../enums/process-task-status';
 import {
@@ -27,6 +31,7 @@ import {
 } from './process-task-view-page';
 import Task from '@aivot/mui-material-symbols-400-outlined/dist/task/Task';
 import {dispatchProcessAssignedTaskCountRefreshEvent} from '../../utils/process-assigned-task-count-events';
+import {isApiError} from '../../../../models/api-error';
 
 export function ProcessTaskViewPageEdit(): ReactNode {
     const dispatch = useAppDispatch();
@@ -38,6 +43,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
     const [taskView, setTaskView] = useState<TaskView>();
     const [taskInputData, setTaskInputData] = useState<AuthoredElementValues>({});
+    const [derivedErrors, setDerivedErrors] = useState<DerivedRuntimeElementData | null>(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -141,7 +147,12 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 navigate('/tasks');
             })
             .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Die Aufgabe konnte nicht verarbeitet werden.'));
+                if (isApiError(err) && isDerivedRuntimeElementData(err.details)) {
+                    dispatch(showErrorSnackbar(err.message));
+                    setDerivedErrors(err.details);
+                } else {
+                    dispatch(showApiErrorSnackbar(err, 'Die Aufgabe konnte nicht verarbeitet werden.'));
+                }
             })
             .finally(() => {
                 dispatch(clearLoadingMessage());
@@ -198,6 +209,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                                 element={taskView.layout}
                                 authoredElementValues={taskInputData}
                                 onAuthoredElementValuesChange={setTaskInputData}
+                                computedErrors={derivedErrors?.elementStates}
                             />
                         </Box>
 

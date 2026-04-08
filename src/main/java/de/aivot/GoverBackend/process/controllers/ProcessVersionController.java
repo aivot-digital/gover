@@ -12,6 +12,7 @@ import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntity;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
 import de.aivot.GoverBackend.process.filters.ProcessVersionFilter;
+import de.aivot.GoverBackend.process.models.ProcessNodeProblems;
 import de.aivot.GoverBackend.process.services.ProcessService;
 import de.aivot.GoverBackend.process.services.ProcessVersionService;
 import de.aivot.GoverBackend.user.services.UserService;
@@ -32,6 +33,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -241,5 +243,22 @@ public class ProcessVersionController {
                         StringUtils.quote(String.valueOf(deleted.getProcessId())),
                         StringUtils.quote(user.getFullName())
                 ).log();
+    }
+
+    @GetMapping("{processDefinitionId}/{processDefinitionVersion}/problems/")
+    @Operation(
+            summary = "Validate a Process Definition Version",
+            description = "Validate a process definition version by its composite ID."
+    )
+    public List<ProcessNodeProblems> validate(
+            @Nonnull @PathVariable Integer processDefinitionId,
+            @Nonnull @PathVariable Integer processDefinitionVersion
+    ) throws ResponseException {
+        var id = new ProcessVersionEntityId(processDefinitionId, processDefinitionVersion);
+        var version = processDefinitionVersionService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+        return processDefinitionVersionService
+                .validate(version);
     }
 }

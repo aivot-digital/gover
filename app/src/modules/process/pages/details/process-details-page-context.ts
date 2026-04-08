@@ -1,6 +1,8 @@
 import React, {createContext} from 'react';
 import {type ProcessNodeEntity} from '../../entities/process-node-entity';
 
+import {ProcessNodeProblems} from '../../entities/process-node-problems';
+
 export interface ProcessDetailsPageContextType {
     editable: boolean;
     onSave: (node: ProcessNodeEntity) => Promise<void>;
@@ -10,6 +12,7 @@ export interface ProcessDetailsPageContextType {
         nodeId: number | null;
         version: number;
     };
+    nodeValidationResults: ProcessNodeProblems[];
 }
 
 export const ProcessDetailsPageContext = createContext<ProcessDetailsPageContextType | null>(null);
