@@ -218,6 +218,9 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         minHeight: 46,
                         gap: 0.5,
                     },
+                    '& .mdxeditor-popup-container.gover-mdx-editor': {
+                        zIndex: `${theme.zIndex.modal + 1} !important`,
+                    },
                     '& .gover-mdx-editor [class*="_toolbarRoot_"] [role="separator"]': {
                         width: '1px',
                         height: 18,
