@@ -89,7 +89,7 @@ public interface StorageProviderDefinition<T> extends PluginComponent {
      * @param config   Die Konfiguration.
      * @throws ResponseException Wird geworfen, wenn ein Fehler vorliegt.
      */
-    default void validateConfiguration(@Nullable StorageProviderEntity provider, T config) throws ResponseException {
+    default void validateConfiguration(@Nonnull StorageProviderEntity provider, T config) throws ResponseException {
         // Do nothing as a default
     }
 
