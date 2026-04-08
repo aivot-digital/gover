@@ -18,7 +18,7 @@ import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
 import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
 import Save from '@aivot/mui-material-symbols-400-outlined/dist/save/Save';
-import {useChangeBlocker} from '../../../../../../hooks/use-change-blocker';
+import {useChangeBlocker} from '../../../../../../hooks/use-change-blocker-2';
 import {ProcessNodeEditorMenu} from './components/process-node-editor-menu';
 import {useConfirm} from '../../../../../../providers/confirm-provider';
 import {getNodeName} from '../process-flow-editor/utils/node-utils';
@@ -109,7 +109,10 @@ export function ProcessNodeEditor(): ReactNode {
     const {
         hasChanged,
         dialog: changeBlockerDialog,
-    } = useChangeBlocker(originalNode, editedNode);
+    } = useChangeBlocker({
+        original: originalNode,
+        edited: editedNode,
+    });
 
     useEffect(() => {
         let isCancelled = false;
