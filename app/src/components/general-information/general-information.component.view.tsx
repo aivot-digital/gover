@@ -10,7 +10,7 @@ import {FadingPaper} from '../fading-paper/fading-paper';
 import {Preamble} from '../preamble/preamble';
 import {selectLoadedForm, showDialog} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
+import {isStringNotNullOrEmpty, isStringNullOrEmpty, stringOrUndefined} from '../../utils/string-utils';
 import {type BaseViewProps} from '../../views/base-view';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
@@ -65,6 +65,9 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
 
     const supportingDocuments = cleanDocuments(element.supportingDocuments);
     const documentsToAttach = cleanDocuments(element.documentsToAttach);
+    const preambleText = stringOrUndefined(element.teaserText);
+    const initiativeLogoLink = stringOrUndefined(element.initiativeLogoLink);
+    const initiativeName = stringOrUndefined(element.initiativeName);
 
     useEffect(() => {
         if (application != null) {
@@ -276,16 +279,11 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
     return (
         <>
             {
-                element.teaserText != null &&
-                element.initiativeLogoLink != null &&
-                element.initiativeName != null &&
-                isStringNotNullOrEmpty(element.teaserText) &&
-                isStringNotNullOrEmpty(element.initiativeLogoLink) &&
-                isStringNotNullOrEmpty(element.initiativeName) &&
+                preambleText &&
                 <Preamble
-                    text={element.teaserText}
-                    logoLink={element.initiativeLogoLink}
-                    logoAlt={element.initiativeName}
+                    text={preambleText}
+                    logoLink={initiativeLogoLink}
+                    logoAlt={initiativeName}
                 />
             }
 
