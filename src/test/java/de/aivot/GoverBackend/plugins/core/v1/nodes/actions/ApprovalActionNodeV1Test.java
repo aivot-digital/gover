@@ -5,7 +5,7 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.AssignmentConte
 import de.aivot.GoverBackend.elements.models.elements.form.input.DomainAndUserSelectInputElementValue;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
-import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.SummaryLayoutElement;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
@@ -111,7 +111,7 @@ class ApprovalActionNodeV1Test {
     }
 
     @Test
-    void getStaffTaskViewData_RendersReadonlyConfiguredDataUi() throws Exception {
+    void getStaffTaskViewData_RendersConfiguredDataSummaryUi() throws Exception {
         var context = new ProcessNodeExecutionContextUIStaff(
                 logger(),
                 processNode(dataModeConfiguration()),
@@ -124,9 +124,9 @@ class ApprovalActionNodeV1Test {
         );
 
         var layout = node.getStaffTaskView(context);
-        var approvalField = layout.findChild("approvalValue", TextInputElement.class).orElseThrow();
+        var dataSummary = layout.findChild("approval-data-root", SummaryLayoutElement.class).orElseThrow();
         var remarkField = layout.findChild("approvalRemark", RichTextInputElement.class).orElseThrow();
-        assertTrue(Boolean.TRUE.equals(approvalField.getDisabled()));
+        assertTrue(dataSummary.findChild("approvalValue", TextInputElement.class).isPresent());
         assertTrue(Boolean.TRUE.equals(remarkField.getReducedMode()));
         assertEquals(6.0, remarkField.getWeight());
         assertTrue(layout.findChild("approval-actions-spacer").isPresent());
@@ -171,7 +171,7 @@ class ApprovalActionNodeV1Test {
     }
 
     private static AuthoredElementValues dataModeConfiguration() {
-        var contentRoot = new GroupLayoutElement();
+        var contentRoot = new SummaryLayoutElement();
         contentRoot.setId("approval-data-root");
 
         var valueField = new TextInputElement();
