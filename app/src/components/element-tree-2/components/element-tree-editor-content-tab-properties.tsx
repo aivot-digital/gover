@@ -321,13 +321,10 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                         title="Datenzuordnung"
                         sx={{mt: 8}}
                     >
-                        Legen Sie fest, unter welchem Datenschlüssel der Wert dieses Feldes im Antragsdatensatz
-                        gespeichert wird.
+                        Legen Sie fest, mit welchem Datenschlüssel der Wert dieses Feldes im Datensatz ausgelesen (soweit vorhanden) und gespeichert wird (sogenanntes 2-Way-Data-Binding).
                         Ohne eigenen Schlüssel wird standardmäßig die Element-ID verwendet.
-                        Mit Punktnotation, z. B. „person.vorname“, können Sie Werte in verschachtelte Datenstrukturen
-                        schreiben.
-                        Achten Sie darauf, dass Datenschlüssel formularweit eindeutig bleiben, damit keine Werte
-                        unbeabsichtigt überschrieben werden.
+                        Mit Punktnotation, wie beispielsweise „person.vorname“, können Sie Werte in verschachtelte Datenstrukturen
+                        schreiben und lesen.
                     </ElementEditorSectionHeader>
 
                     <TextFieldComponent
