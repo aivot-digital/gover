@@ -3,7 +3,7 @@ import React, {useMemo} from 'react';
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
 import {type SummaryLayoutElement} from '../models/elements/form/layout/summary-layout-element';
 import {SummaryDispatcherComponent} from '../components/summary-dispatcher.component';
-import {Stack} from '@mui/material';
+import {normalizeSummaryLayoutElement} from '../utils/normalize-summary-layout-elements';
 
 export function SummaryLayoutView(props: BaseViewProps<SummaryLayoutElement, any>) {
     const {
@@ -15,15 +15,19 @@ export function SummaryLayoutView(props: BaseViewProps<SummaryLayoutElement, any
         children,
     } = element;
 
+    const normalizedChildren = useMemo(() => {
+        return children.map(normalizeSummaryLayoutElement);
+    }, [children]);
+
     // TODO: Create derivation and busy state
     const pass = useMemo(() => {
         return isDeriving && hasDerivableAspects(element);
     }, [isDeriving, element]);
 
     return (
-        <Stack gap={1}>
+        <>
             {
-                children
+                normalizedChildren
                     .map((child) => (
                         <SummaryDispatcherComponent
                             key={child.id}
@@ -35,6 +39,6 @@ export function SummaryLayoutView(props: BaseViewProps<SummaryLayoutElement, any
                         />
                     ))
             }
-        </Stack>
+        </>
     );
 }
