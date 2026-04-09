@@ -5,14 +5,13 @@ import {ProcessNodeProblems} from '../../entities/process-node-problems';
 
 export interface ProcessDetailsPageContextType {
     editable: boolean;
-    onSave: (node: ProcessNodeEntity) => Promise<void>;
+    onSave: (node: ProcessNodeEntity) => Promise<ProcessNodeEntity>;
     onDelete: (node: ProcessNodeEntity) => Promise<void>;
     onStartReplaceNode: (node: ProcessNodeEntity) => void;
     nodeRefreshSignal: {
         nodeId: number | null;
         version: number;
     };
-    nodeValidationResults: ProcessNodeProblems[];
 }
 
 export const ProcessDetailsPageContext = createContext<ProcessDetailsPageContextType | null>(null);

@@ -14,4 +14,5 @@ export interface ProcessNodeEntity {
     timeLimitDays: number | null;
     requirements: string | null;
     notes: string | null;
+    savedWithErrors: boolean;
 }

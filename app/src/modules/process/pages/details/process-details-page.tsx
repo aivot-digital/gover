@@ -270,7 +270,6 @@ export function ProcessDetailsPage(): ReactNode {
     const [hasFlowNodeProviderLoadError, setHasFlowNodeProviderLoadError] = useState(false);
     const [readyFlowEditorKey, setReadyFlowEditorKey] = useState<string | null>(null);
     const [showSettingsDialog, setShowSettingsDialog] = useState(false);
-    const [nodeValidationResults, setNodeValidationResults] = useState<ProcessNodeProblems[]>([]);
 
     const [showAddTriggerDialog, setShowAddTriggerDialog] = useState(false);
     const [newNodeFor, setNewNodeFor] = useState<{
@@ -1122,9 +1121,9 @@ export function ProcessDetailsPage(): ReactNode {
         await navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}`);
     };
 
-    const handleSaveNode = async (node: ProcessNodeEntity): Promise<void> => {
+    const handleSaveNode = async (node: ProcessNodeEntity): Promise<ProcessNodeEntity> => {
         if (processFlow == null) {
-            return;
+            throw new Error('Process flow is not loaded');
         }
 
         const updated = await new ProcessNodeApiService().update(node.id, node);
@@ -1133,6 +1132,8 @@ export function ProcessDetailsPage(): ReactNode {
             ...processFlow,
             nodes: processFlow.nodes.map((n) => n.id === updated.id ? updated : n),
         });
+
+        return updated;
     };
 
     const handleExport = (): void => {
@@ -1153,7 +1154,6 @@ export function ProcessDetailsPage(): ReactNode {
                     processDefinitionId: processId,
                     processDefinitionVersion: processVersion,
                 });
-            setNodeValidationResults(problems);
 
             const confirmed = await confirm({
                 title: 'Prozessmodellierung testen',
@@ -1748,7 +1748,6 @@ export function ProcessDetailsPage(): ReactNode {
                                                 processFlow={processFlow}
                                                 nodeProviders={flowNodeProviders}
                                                 onAddTrigger={handleOpenAddTriggerDialog}
-                                                nodeValidationResults={nodeValidationResults}
                                                 topLeftPanel={
                                                     currentTestClaim == null ? undefined : (
                                                         <Box
@@ -2011,7 +2010,6 @@ export function ProcessDetailsPage(): ReactNode {
                                     onDelete: handleDeleteNode,
                                     onStartReplaceNode: handleOpenReplaceNodeDialog,
                                     nodeRefreshSignal: nodeRefreshSignal,
-                                    nodeValidationResults: nodeValidationResults,
                                 }}
                             >
                                 <Outlet/>

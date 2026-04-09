@@ -11,6 +11,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 
 import java.util.Map;
+import java.util.Objects;
 
 @Entity
 @Table(name = "process_nodes")
@@ -79,6 +80,25 @@ public class ProcessNodeEntity {
     @Size(max = 2048, message = "Die Notizen dürfen maximal 2048 Zeichen lang sein.")
     private String notes;
 
+    @Nonnull
+    private Boolean savedWithErrors = false;
+
+    // region Hash & Equals
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        ProcessNodeEntity that = (ProcessNodeEntity) o;
+        return Objects.equals(id, that.id) && Objects.equals(processId, that.processId) && Objects.equals(processVersion, that.processVersion) && Objects.equals(name, that.name) && Objects.equals(description, that.description) && Objects.equals(dataKey, that.dataKey) && Objects.equals(processNodeDefinitionKey, that.processNodeDefinitionKey) && Objects.equals(processNodeDefinitionVersion, that.processNodeDefinitionVersion) && Objects.equals(configuration, that.configuration) && Objects.equals(outputMappings, that.outputMappings) && Objects.equals(timeLimitDays, that.timeLimitDays) && Objects.equals(requirements, that.requirements) && Objects.equals(notes, that.notes) && Objects.equals(savedWithErrors, that.savedWithErrors);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, processId, processVersion, name, description, dataKey, processNodeDefinitionKey, processNodeDefinitionVersion, configuration, outputMappings, timeLimitDays, requirements, notes, savedWithErrors);
+    }
+
+    // endregion
+
     // region Utils
 
     public String resolveName(ProcessNodeDefinition provider) {
@@ -107,8 +127,8 @@ public class ProcessNodeEntity {
         return processId;
     }
 
-    public ProcessNodeEntity setProcessId(@Nonnull Integer processDefinitionId) {
-        this.processId = processDefinitionId;
+    public ProcessNodeEntity setProcessId(@Nonnull Integer processId) {
+        this.processId = processId;
         return this;
     }
 
@@ -117,8 +137,8 @@ public class ProcessNodeEntity {
         return processVersion;
     }
 
-    public ProcessNodeEntity setProcessVersion(@Nonnull Integer processDefinitionVersion) {
-        this.processVersion = processDefinitionVersion;
+    public ProcessNodeEntity setProcessVersion(@Nonnull Integer processVersion) {
+        this.processVersion = processVersion;
         return this;
     }
 
@@ -219,6 +239,16 @@ public class ProcessNodeEntity {
 
     public ProcessNodeEntity setNotes(@Nullable String notes) {
         this.notes = notes;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getSavedWithErrors() {
+        return savedWithErrors;
+    }
+
+    public ProcessNodeEntity setSavedWithErrors(@Nonnull Boolean savedWithErrors) {
+        this.savedWithErrors = savedWithErrors;
         return this;
     }
 

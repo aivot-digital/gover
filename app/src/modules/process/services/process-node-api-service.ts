@@ -45,6 +45,7 @@ ProcessDefinitionNodeFilter
             description: null,
             dataKey: generateId(5),
             configuration: {},
+            savedWithErrors: false,
         };
     }
 

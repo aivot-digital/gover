@@ -55,7 +55,6 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         onDeleteNode,
         showTargetHandles,
         runtimeData,
-        nodeValidationResults,
         onReloadRuntimeData,
     } = useProcessFlowEditorContext();
 
@@ -76,10 +75,6 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
 
         return getLatestTaskForNode(runtimeData.tasks, node.id);
     }, [node.id, runtimeData]);
-
-    const associatedValidationResult = useMemo(() => {
-        return nodeValidationResults.find((result) => result.node.id === node.id) || null;
-    }, [node.id, nodeValidationResults]);
 
     const performedPortKeys = useMemo(() => {
         if (runtimeData == null) {
@@ -413,24 +408,8 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                             </Typography>
 
                             {
-                                associatedValidationResult != null &&
-                                <Tooltip title={
-                                    <>
-                                        {
-                                            associatedValidationResult.problems.map((problem, index) => (
-                                                <Typography
-                                                    key={problem + index.toString()}
-                                                    variant="body2"
-                                                    sx={{
-                                                        marginBottom: 1,
-                                                    }}
-                                                >
-                                                    {problem}
-                                                </Typography>
-                                            ))
-                                        }
-                                    </>
-                                }>
+                                node.savedWithErrors &&
+                                <Tooltip title="Das Prozesselment enthält Fehler. Bitte überprüfen Sie die Konfiguration.">
                                     <Box
                                         sx={{
                                             marginLeft: 1,

@@ -28,8 +28,6 @@ export interface ProcessFlowEditorContextType {
         tasks: ProcessInstanceTaskEntity[];
         events: ProcessInstanceEventEntity[];
     } | null;
-
-    nodeValidationResults: ProcessNodeProblems[];
 }
 
 export const ProcessFlowEditorContext = createContext<ProcessFlowEditorContextType | null>(null);
