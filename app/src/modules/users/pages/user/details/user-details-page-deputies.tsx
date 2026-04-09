@@ -1,4 +1,4 @@
-import React, {useContext, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useContext, useMemo, useRef, useState} from 'react';
 import {type GridColDef} from '@mui/x-data-grid';
 import {GenericList} from '../../../../../components/generic-list/generic-list';
 import Box from '@mui/material/Box';
@@ -14,7 +14,7 @@ import {Button, Dialog, DialogActions, DialogContent} from "@mui/material";
 import Add from "@aivot/mui-material-symbols-400-outlined/dist/add/Add";
 import {useAppDispatch} from "../../../../../hooks/use-app-dispatch";
 import {showErrorSnackbar} from "../../../../../slices/snackbar-slice";
-import {ListControlRef} from "../../../../../components/generic-list/generic-list-props";
+import {GenericListPropsFetchOptions, ListControlRef} from "../../../../../components/generic-list/generic-list-props";
 import {setLoadingMessage} from "../../../../../slices/shell-slice";
 import {isApiError} from "../../../../../models/api-error";
 import {VUserDeputyWithDetailsEntity} from "../../../entities/v-user-deputy-with-details-entity";
@@ -66,6 +66,16 @@ const columns: Array<GridColDef<VUserDeputyWithDetailsEntity>> = [
         type: 'boolean',
     },
 ];
+
+function getDeputyPeriodLabel(item: VUserDeputyWithDetailsEntity): string {
+    const fromLabel = formatISODate(item.fromTimestamp);
+
+    if (item.untilTimestamp == null) {
+        return `ab ${fromLabel}, unbegrenzt`;
+    }
+
+    return `${fromLabel} bis ${formatISODate(item.untilTimestamp)}`;
+}
 
 export function UserDetailsPageDeputies() {
     const dispatch = useAppDispatch();
@@ -132,6 +142,14 @@ export function UserDetailsPageDeputies() {
 
     const canManageDeputies = !user.deletedInIdp;
 
+    const fetchDeputies = useCallback((options: GenericListPropsFetchOptions<VUserDeputyWithDetailsEntity>) => {
+        return new VUserDeputyWithDetailsApiService()
+            .listAllOrdered(options.sort, options.order, {
+                originalUserId: user.id,
+                deputyUserFullName: options.search,
+            });
+    }, [user.id]);
+
     const handleAddDeputy = () => {
         if (!canManageDeputies || deputyToAdd == null) {
             return;
@@ -178,9 +196,10 @@ export function UserDetailsPageDeputies() {
             children: (
                 <>
                     <Typography>
-                        Sind Sie sicher, dass Sie die Stellvertretung
-                        von <strong>{item.deputyUserFullName}</strong> löschen
-                        möchten?
+                        Sind Sie sicher, dass Sie die Stellvertretung von <strong>{item.originalUserFullName}</strong> durch <strong>{item.deputyUserFullName}</strong> löschen möchten?
+                    </Typography>
+                    <Typography sx={{mt: 2}}>
+                        Zeitraum: <strong>{getDeputyPeriodLabel(item)}</strong>
                     </Typography>
                 </>
             ),
@@ -191,7 +210,7 @@ export function UserDetailsPageDeputies() {
                 }
 
                 dispatch(setLoadingMessage({
-                    message: `Lösche Stellvertretung von ${item.deputyUserFullName}`,
+                    message: `Lösche Stellvertretung von ${item.originalUserFullName} durch ${item.deputyUserFullName}`,
                     blocking: true,
                     estimatedTime: 3000,
                 }));
@@ -218,7 +237,7 @@ export function UserDetailsPageDeputies() {
 
     return (
         <>
-            <Box sx={{pt: 2}}>
+            <Box sx={{pt: 1.5}}>
                 <Typography
                     variant="h5"
                     sx={{mb: 1}}
@@ -238,11 +257,7 @@ export function UserDetailsPageDeputies() {
                     }}
                     columnDefinitions={columns}
                     controlRef={listControlRef}
-                    fetch={(options) => new VUserDeputyWithDetailsApiService()
-                        .listAllOrdered(options.sort, options.order, {
-                            originalUserId: user?.id,
-                            deputyUserFullName: options.search,
-                        })}
+                    fetch={fetchDeputies}
                     getRowIdentifier={(item) => item.id.toString()}
                     searchLabel="Stellvertreter:in suchen"
                     searchPlaceholder="Name der Stellvertreter:in eingeben…"

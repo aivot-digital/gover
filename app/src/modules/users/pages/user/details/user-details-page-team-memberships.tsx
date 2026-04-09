@@ -267,7 +267,7 @@ export function UserDetailsPageTeamMemberships() {
 
     return (
         <>
-            <Box sx={{pt: 2}}>
+            <Box sx={{pt: 1.5}}>
                 <Typography
                     variant="h5"
                     sx={{mb: 1}}
