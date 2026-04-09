@@ -41,11 +41,13 @@ export function TeamsListPage() {
                         content: (
                             <>
                                 <Typography>
-                                    Ein Fachbereich ist eine zentrale Verwaltungseinheit in Gover und essenziell für den Betrieb der Anwendung. Er speichert wichtige Stammdaten wie Adress- und Kontaktdaten sowie rechtliche Informationen (z.
-                                    B. Impressum, Datenschutzerklärung), die in Formularen wiederverwendet werden können.
+                                    Teams fassen Mitarbeiter:innen für fachliche oder organisatorische
+                                    Aufgabenbereiche zusammen und können unabhängig von
+                                    Organisationseinheiten genutzt werden.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
-                                    Jedem Fachbereich sind Mitarbeiter:innen mit einer spezifischen Rolle zugeordnet, die deren Berechtigungen innerhalb des Fachbereichs definiert.
+                                    Teammitgliedschaften können mit Domänenrollen kombiniert werden, um
+                                    Berechtigungen gezielt innerhalb eines Teams zu vergeben.
                                 </Typography>
                             </>
                         ),
@@ -82,7 +84,7 @@ export function TeamsListPage() {
                     },
                 ]}
                 getRowIdentifier={row => row.id.toString()}
-                noDataPlaceholder="Keine Team angelegt"
+                noDataPlaceholder="Keine Teams angelegt"
                 noSearchResultsPlaceholder="Keine Teams gefunden"
                 rowActionsCount={3}
                 rowActions={(item) => [
