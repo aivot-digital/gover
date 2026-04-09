@@ -1245,12 +1245,14 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
 
 export function ElementInfoTab({
                                    type,
+                                   parentElement,
                                    onAddElement,
                                    primaryActionLabel,
                                    primaryActionIcon,
                                    onClose,
                                }: {
     type: ElementType,
+    parentElement?: AnyElement,
     onAddElement: (element: AnyElement) => void,
     primaryActionLabel: string,
     primaryActionIcon: ReactNode,
@@ -1259,7 +1261,7 @@ export function ElementInfoTab({
     const ElementIcon = getElementIconForType(type);
 
     const handleAddElement = () => {
-        const newElement = generateElementWithDefaultValues(type);
+        const newElement = generateElementWithDefaultValues(type, parentElement);
         if (newElement != null) {
             onAddElement(newElement);
         }

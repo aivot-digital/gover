@@ -114,6 +114,7 @@ export function AddElementDialog(props: AddElementDialogProps) {
                 showElementDetailsPanel ? (
                     <ElementInfoTab
                         type={showElementInfo}
+                        parentElement={props.parentElement}
                         onAddElement={handleAddElement}
                         primaryActionLabel={renderPrimaryActionLabel}
                         primaryActionIcon={renderPrimaryActionIcon}
@@ -155,6 +156,7 @@ export function AddElementDialog(props: AddElementDialogProps) {
                     currentTab === 0 &&
                     <ElementTab
                         parentType={props.parentType}
+                        parentElement={props.parentElement}
                         onAddElement={handleAddElement}
                         primaryActionLabel={renderPrimaryActionLabel}
                         primaryActionIcon={renderPrimaryActionIcon}

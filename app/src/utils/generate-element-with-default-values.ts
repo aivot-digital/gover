@@ -48,6 +48,7 @@ import {
 } from '../models/elements/form/input/no-code-input-field-element';
 import {UiDefinitionInputFieldElement} from '../models/elements/form/input/ui-definition-input-field-element';
 import {SummaryLayoutElement} from '../models/elements/form/layout/summary-layout-element';
+import {getDefaultElementWeight} from './element-widths';
 
 function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
     return {
@@ -61,33 +62,12 @@ function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
     };
 }
 
-function getDefaultWeightForType(type: ElementType): number {
-    switch (type) {
-        case ElementType.Date:
-        case ElementType.Number:
-        case ElementType.Select:
-        case ElementType.Radio:
-        case ElementType.Checkbox:
-        case ElementType.MultiCheckbox:
-        case ElementType.Text:
-        case ElementType.Time:
-        case ElementType.ChipInput:
-        case ElementType.DateTime:
-        case ElementType.DateRange:
-        case ElementType.TimeRange:
-        case ElementType.DateTimeRange:
-        case ElementType.DataModelSelect:
-        case ElementType.DataObjectSelect:
-            return 6;
-        default:
-            return 12;
-    }
-}
+let currentDefaultParentElement: AnyElement | undefined;
 
 function makeFormBase<T extends ElementType>(t: T, id: string): BaseFormElement<T> {
     return {
         ...makeBase(t, id),
-        weight: getDefaultWeightForType(t),
+        weight: getDefaultElementWeight(t, currentDefaultParentElement),
     };
 }
 
@@ -473,7 +453,14 @@ const elementConstructors: {
     }),
 };
 
-export function generateElementWithDefaultValues<T extends ElementType>(type: T): AnyElementType<T> {
+export function generateElementWithDefaultValues<T extends ElementType>(type: T, parentElement?: AnyElement): AnyElementType<T> {
     const id = generateElementIdForType(type);
-    return elementConstructors[type](id) as AnyElementType<T>;
+    const previousParentElement = currentDefaultParentElement;
+    currentDefaultParentElement = parentElement;
+
+    try {
+        return elementConstructors[type](id) as AnyElementType<T>;
+    } finally {
+        currentDefaultParentElement = previousParentElement;
+    }
 }

@@ -97,6 +97,7 @@ export function ElementTreeTree<T extends AnyElementWithChildren>(props: Element
             <AddElementDialog
                 show={showAddDialog}
                 parentType={ElementType.GroupLayout}
+                parentElement={value}
                 onAddElement={elem => {
                     onChange({
                         ...value,

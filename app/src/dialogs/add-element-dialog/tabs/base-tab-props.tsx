@@ -4,6 +4,7 @@ import {AnyElement} from '../../../models/elements/any-element';
 
 export interface BaseTabProps {
     parentType: ElementType;
+    parentElement?: AnyElement;
     onAddElement: (element: AnyElement) => void;
     primaryActionLabel: string;
     primaryActionIcon: ReactNode;

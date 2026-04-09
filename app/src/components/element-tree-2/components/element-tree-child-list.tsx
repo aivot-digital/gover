@@ -296,6 +296,7 @@ export function ElementTreeChildList<T extends AnyElement>(props: ElementTreeChi
             <AddElementDialog
                 show={showAddElementDialog}
                 parentType={parents[parents.length - 1].type}
+                parentElement={parents[parents.length - 1]}
                 onAddElement={(ele) => {
                     const updatedValue = [...value, ele];
                     onChange(updatedValue as T[]);
