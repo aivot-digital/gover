@@ -1,6 +1,6 @@
-import {Api} from '../../hooks/use-api';
 import {AuthoredElementValues, DerivedRuntimeElementData} from '../../models/element-data';
 import {AnyElement} from '../../models/elements/any-element';
+import {BaseApiService} from '../../services/base-api-service';
 
 interface ElementDerivationOptions {
     skipErrorsForElementIds: string[];
@@ -15,14 +15,8 @@ interface ElementDerivationRequest {
     derivationOptions: ElementDerivationOptions;
 }
 
-export class ElementsApiService {
-    private readonly api: Api;
-
-    public constructor(api: Api) {
-        this.api = api;
-    }
-
+export class ElementsApiService extends BaseApiService {
     public async derive(request: ElementDerivationRequest): Promise<DerivedRuntimeElementData> {
-        return await this.api.post<DerivedRuntimeElementData>('elements/derive/', request);
+        return await this.post<ElementDerivationRequest, DerivedRuntimeElementData>('/api/elements/derive/', request);
     }
 }
