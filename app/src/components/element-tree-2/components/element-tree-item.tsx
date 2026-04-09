@@ -1,5 +1,5 @@
 import {AnyElement} from '../../../models/elements/any-element';
-import {Box, Paper, Typography} from '@mui/material';
+import {Box, Divider, ListItemIcon, ListItemText, Menu, MenuItem, Paper, Typography} from '@mui/material';
 import {ELEMENT_TREE_DND_ITEM_TYPE, useElementTreeContext} from '../element-tree-context';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {getElementIconForType} from '../../../data/element-type/element-icons';
@@ -24,6 +24,14 @@ import {DefaultTabs} from '../../element-editor/default-tabs';
 import {ElementWithParents} from '../../../utils/flatten-elements';
 import OfflineBoltOutlinedIcon from '@mui/icons-material/OfflineBoltOutlined';
 import {ELEMENT_TREE_LAYOUT} from '../element-tree-layout';
+import ContentPaste from '@mui/icons-material/ContentPaste';
+import ContentCopy from '@mui/icons-material/ContentCopy';
+import DeleteOutline from '@mui/icons-material/DeleteOutline';
+import {copyToClipboardText} from '../../../utils/copy-to-clipboard';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
+import {useConfirm} from '../../../providers/confirm-provider';
+import {isSectionElementType} from '../../../models/elements/steps/step-element';
 
 interface ElementTreeItemProps<T extends AnyElement> {
     parents: Array<AnyElement>;
@@ -35,6 +43,10 @@ interface ElementTreeItemProps<T extends AnyElement> {
 }
 
 export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProps<T>) {
+    const showConfirm = useConfirm();
+    const dispatch = useAppDispatch();
+    const menuPaperRef = useRef<HTMLDivElement | null>(null);
+
     const {
         parents,
         value,
@@ -102,6 +114,7 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
     }), [editable, isDraggable, valueId, type, pathParts, parentPath]);
 
     const [isCollapsed, setIsCollapsed] = useState(true);
+    const [contextMenuPosition, setContextMenuPosition] = useState<{ mouseX: number; mouseY: number } | null>(null);
     const lastHandledExpandCommandVersionRef = useRef(0);
 
     const isHighlighted = useMemo(() => {
@@ -191,6 +204,84 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
     const hoverBackgroundColor = isActiveSearchResult ?
         'action.focus' :
         (isHighlighted ? 'action.selected' : 'action.hover');
+    const treeItemLabel = isSectionElementType(type) ? 'Abschnitt' : 'Element';
+
+    const handleContextMenuOpen = (event: React.MouseEvent<HTMLDivElement>) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setContextMenuPosition({
+            mouseX: event.clientX + 2,
+            mouseY: event.clientY - 6,
+        });
+    };
+
+    const handleContextMenuClose = () => {
+        setContextMenuPosition(null);
+    };
+
+    const handleCopyId = async () => {
+        const success = await copyToClipboardText(value.id);
+        if (success) {
+            dispatch(showSuccessSnackbar('Element-ID in Zwischenablage kopiert'));
+        } else {
+            dispatch(showErrorSnackbar('Element-ID konnte nicht in Zwischenablage kopiert werden'));
+        }
+
+        handleContextMenuClose();
+    };
+
+    const handleCloneElement = () => {
+        if (!editable) {
+            return;
+        }
+
+        onClone(value);
+        handleContextMenuClose();
+    };
+
+    const handleDeleteElement = async () => {
+        handleContextMenuClose();
+
+        if (!editable) {
+            return;
+        }
+
+        const confirmed = await showConfirm({
+            title: `${treeItemLabel} löschen`,
+            confirmButtonText: 'Löschen',
+            children: (
+                <Typography>
+                    {treeItemLabel === 'Abschnitt'
+                        ? 'Soll der Abschnitt wirklich gelöscht werden?'
+                        : 'Soll das Element wirklich gelöscht werden?'}
+                </Typography>
+            ),
+        });
+
+        if (confirmed) {
+            onDelete(value);
+        }
+    };
+
+    useEffect(() => {
+        if (contextMenuPosition == null) {
+            return;
+        }
+
+        const handleDocumentContextMenu = (event: MouseEvent) => {
+            if (menuPaperRef.current?.contains(event.target as Node)) {
+                return;
+            }
+
+            setContextMenuPosition(null);
+        };
+
+        document.addEventListener('contextmenu', handleDocumentContextMenu, true);
+
+        return () => {
+            document.removeEventListener('contextmenu', handleDocumentContextMenu, true);
+        };
+    }, [contextMenuPosition]);
 
     return (
         <>
@@ -229,6 +320,7 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
                 onDoubleClick={() => {
                     navigateToElementEditor(value.id);
                 }}
+                onContextMenu={handleContextMenuOpen}
             >
                 <Box
                     sx={{
@@ -277,6 +369,58 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
                     size="small"
                 />
             </Paper>
+
+            <Menu
+                open={contextMenuPosition != null}
+                onClose={handleContextMenuClose}
+                anchorReference="anchorPosition"
+                anchorPosition={contextMenuPosition == null ? undefined : {
+                    top: contextMenuPosition.mouseY,
+                    left: contextMenuPosition.mouseX,
+                }}
+                slotProps={{
+                    paper: {
+                        ref: menuPaperRef,
+                    },
+                }}
+            >
+                <MenuItem onClick={handleCopyId}>
+                    <ListItemIcon>
+                        <ContentPaste fontSize="small"/>
+                    </ListItemIcon>
+                    <ListItemText primary={`${treeItemLabel}-ID kopieren`}/>
+                </MenuItem>
+
+                <MenuItem
+                    onClick={handleCloneElement}
+                    disabled={!editable}
+                >
+                    <ListItemIcon>
+                        <ContentCopy fontSize="small"/>
+                    </ListItemIcon>
+                    <ListItemText primary={`${treeItemLabel} duplizieren`}/>
+                </MenuItem>
+
+                <Divider/>
+
+                <MenuItem
+                    onClick={handleDeleteElement}
+                    disabled={!editable}
+                >
+                    <ListItemIcon>
+                        <DeleteOutline
+                            fontSize="small"
+                            color="error"
+                        />
+                    </ListItemIcon>
+                    <ListItemText
+                        primary={`${treeItemLabel} löschen`}
+                        sx={{
+                            color: 'error.main',
+                        }}
+                    />
+                </MenuItem>
+            </Menu>
 
             {
                 isAnyElementWithChildren(value) &&

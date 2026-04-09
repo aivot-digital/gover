@@ -16,6 +16,7 @@ import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDown
 import KeyboardArrowRightOutlinedIcon from '@mui/icons-material/KeyboardArrowRightOutlined';
 import {getElementIcon} from '../../data/element-type/element-icons';
 import {ElementStatusIcons} from './element-status-icons';
+import {isSectionElementType} from '../../models/elements/steps/step-element';
 
 const highlightOutlineStyle = '#86FFD388 solid 2px';
 const highlightBoxShadowStyle = '0px 4px 20px rgba(179, 242, 219, 0.5)';
@@ -171,12 +172,7 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
             </Typography>
 
             {
-                (
-                    props.element.type === ElementType.IntroductionStep ||
-                    props.element.type === ElementType.Step ||
-                    props.element.type === ElementType.SummaryStep ||
-                    props.element.type === ElementType.SubmitStep
-                ) &&
+                isSectionElementType(props.element.type) &&
                 <Chip
                     sx={{
                         ml: 1,
