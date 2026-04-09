@@ -13,21 +13,50 @@ import {
 } from '@mui/material';
 import ReportOutlinedIcon from '@mui/icons-material/ReportOutlined';
 import {alpha} from '@mui/material/styles';
-import {format} from 'date-fns';
+import {format} from 'date-fns/format';
 import {AppInfo} from '../../app-info';
 import {StorageKey} from '../../data/storage-key';
 import {StorageScope, StorageService} from '../../services/storage-service';
+import {addDays} from 'date-fns/addDays'
+import {isBefore} from 'date-fns/isBefore'
 
 const alphaVersionRiskHints = [
     'Funktionen können unvollständig sein, sich ändern oder nicht wie erwartet funktionieren.',
     'Inhalte und Verhalten können sich in zukünftigen Versionen ohne Vorankündigung ändern.',
 ];
 
+function storeDismissFlag() {
+    const tomorrow = addDays(new Date(), 1);
+    tomorrow.setHours(1, 0, 0, 0);
+
+    StorageService.storeString(
+        StorageKey.AlphaVersionNoticeDismissed,
+        tomorrow.toISOString(),
+        StorageScope.Local,
+    );
+}
+
+function loadDismissFlag(): boolean {
+    const dismissedUntil = StorageService.loadString(StorageKey.AlphaVersionNoticeDismissed);
+
+    if (dismissedUntil == null) {
+        return false;
+    }
+
+    const dismissedUntilDate = new Date(dismissedUntil);
+    if (Number.isNaN(dismissedUntilDate.getTime())) {
+        return false;
+    }
+
+    return isBefore(new Date(), dismissedUntilDate);
+}
+
 export function AlphaVersionNoticeDialog(): React.ReactElement {
     const [
         open,
         setOpen,
-    ] = useState(() => !StorageService.loadFlag(StorageKey.AlphaVersionNoticeDismissed));
+    ] = useState(() => !loadDismissFlag());
+
     const [
         dismissForSession,
         setDismissForSession,
@@ -65,11 +94,7 @@ export function AlphaVersionNoticeDialog(): React.ReactElement {
 
     const handleClose = (): void => {
         if (dismissForSession) {
-            StorageService.storeFlag(
-                StorageKey.AlphaVersionNoticeDismissed,
-                true,
-                StorageScope.Session,
-            );
+            storeDismissFlag();
         }
 
         setOpen(false);
