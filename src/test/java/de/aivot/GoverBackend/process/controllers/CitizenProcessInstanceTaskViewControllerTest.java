@@ -169,7 +169,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
         private final ProcessNodeEntity node;
 
         private TestProcessNodeService(ProcessNodeEntity node) {
-            super(null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null);
             this.node = node;
         }
 

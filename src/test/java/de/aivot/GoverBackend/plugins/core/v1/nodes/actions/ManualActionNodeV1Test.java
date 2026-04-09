@@ -113,7 +113,8 @@ class ManualActionNodeV1Test {
                 ),
                 null,
                 user("staff-1"),
-                runtime(configuration())
+                runtime(configuration()),
+                null
         );
 
         var layout = node.getStaffTaskView(context);
@@ -154,7 +155,8 @@ class ManualActionNodeV1Test {
                         ),
                         null,
                         user("staff-1"),
-                        runtime(configuration())
+                        runtime(configuration()),
+                        null
                 ),
                 authored(
                         "applicantName", "Grace",
@@ -205,7 +207,8 @@ class ManualActionNodeV1Test {
                         ),
                         null,
                         user("staff-1"),
-                        runtime(configurationWithoutUi())
+                        runtime(configurationWithoutUi()),
+                        null
                 ),
                 authored("manualActionRemark", "<p>Telefonisch bestätigt.</p>"),
                 "confirm"

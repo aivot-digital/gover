@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.process.services;
 
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
+import de.aivot.GoverBackend.process.models.ProcessExecutionData;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -166,14 +167,14 @@ class TemplateRenderServiceTest {
         return new TemplateRenderService(new JavascriptEngineFactoryService(List.of()));
     }
 
-    private static Map<String, Object> createProcessData() {
-        return Map.of(
+    private static ProcessExecutionData createProcessData() {
+        return ProcessExecutionData.of(Map.of(
                 "$", Map.of(
                         "enabled", true,
                         "items", List.of("alpha", "beta")
                 ),
                 "$$", Map.of(),
                 "_unsafe", "<tag>\n"
-        );
+        ));
     }
 }

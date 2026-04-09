@@ -119,7 +119,8 @@ class ApprovalActionNodeV1Test {
                 task(77, Map.of("approvalRemark", "<p>Schon geprüft</p>"), Map.of("approvalValue", "Freizugebender Inhalt")),
                 null,
                 user("staff-1"),
-                runtime()
+                runtime(),
+                null
         );
 
         var layout = node.getStaffTaskView(context);
@@ -152,7 +153,8 @@ class ApprovalActionNodeV1Test {
                         task(77, Map.of(), Map.of("approvalValue", "Freizugebender Inhalt")),
                         null,
                         user("staff-1"),
-                        runtime()
+                        runtime(),
+                        null
                 ),
                 authored("approvalRemark", "<p>Passt</p>"),
                 "approve"

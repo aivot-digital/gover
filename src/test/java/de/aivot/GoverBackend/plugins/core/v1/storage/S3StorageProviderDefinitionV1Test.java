@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.storage.exceptions.StorageException;
 import de.aivot.GoverBackend.storage.models.StorageDocument;
 import de.aivot.GoverBackend.storage.models.StorageFolder;
 import de.aivot.GoverBackend.storage.models.StorageItemMetadata;
+import de.aivot.GoverBackend.storage.repositories.StorageProviderRepository;
 import de.aivot.GoverBackend.storage.services.KnownExtensionsService;
 import io.minio.CopyObjectArgs;
 import io.minio.Directive;
@@ -121,7 +122,7 @@ class S3StorageProviderDefinitionV1Test {
         private final List<String> deletedFolders = new LinkedList<>();
 
         private TestS3StorageProviderDefinitionV1(MinioClient client) {
-            super(mock(SecretRepository.class), mock(SecretService.class), mock(KnownExtensionsService.class));
+            super(mock(SecretRepository.class), mock(SecretService.class), mock(KnownExtensionsService.class), mock(StorageProviderRepository.class));
             this.client = client;
         }
 

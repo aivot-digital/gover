@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.process.models;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * This is the data structure used to hold process instance data during execution.
@@ -19,6 +20,12 @@ public class ProcessExecutionData extends HashMap<String, Object> {
     private static final String PROCESS_DATA_KEY = "$";
     private static final String PROCESS_METADATA_KEY = "$$";
     private static final String NODE_RESULTS_KEY = "_";
+
+    public static ProcessExecutionData of(Map<String, Object> data) {
+        ProcessExecutionData executionData = new ProcessExecutionData();
+        executionData.putAll(data);
+        return executionData;
+    }
 
     public ProcessExecutionData addProcessData(Object processData) {
         this.put(PROCESS_DATA_KEY, processData);

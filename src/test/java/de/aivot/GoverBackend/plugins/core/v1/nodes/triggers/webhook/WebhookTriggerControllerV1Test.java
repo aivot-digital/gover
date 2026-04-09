@@ -114,7 +114,7 @@ class WebhookTriggerControllerV1Test {
 
         private TestProcessNodeService(ProcessNodeEntity node,
                                        EffectiveElementValues effectiveValues) {
-            super(null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null);
             this.node = node;
             this.derivedConfiguration = new DerivedRuntimeElementData(effectiveValues, new ComputedElementStates());
         }

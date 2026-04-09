@@ -246,11 +246,6 @@ class PdfActionNodeV1Test {
         private PassthroughTemplateRenderService() {
             super(null);
         }
-
-        @Override
-        public String interpolate(Map<String, Object> foldedProcessData, String template) {
-            return template;
-        }
     }
 
     @FunctionalInterface

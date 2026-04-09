@@ -105,7 +105,8 @@ class DataChangeActionNodeV1Test {
                 ),
                 null,
                 user("staff-1"),
-                runtime(configuration())
+                runtime(configuration()),
+                null
         );
 
         var layout = node.getStaffTaskView(context);
@@ -138,7 +139,8 @@ class DataChangeActionNodeV1Test {
                 ),
                 null,
                 user("staff-1"),
-                runtime(configuration("<p>Bitte prüfen und korrigieren Sie die Personendaten.</p>"))
+                runtime(configuration("<p>Bitte prüfen und korrigieren Sie die Personendaten.</p>")),
+                null
         );
 
         var layout = node.getStaffTaskView(context);
@@ -162,7 +164,8 @@ class DataChangeActionNodeV1Test {
                         ),
                         null,
                         user("staff-1"),
-                        runtime(configuration())
+                        runtime(configuration()),
+                        null
                 ),
                 authored("applicantName", "Grace"),
                 "save"
@@ -198,7 +201,8 @@ class DataChangeActionNodeV1Test {
                         ),
                         null,
                         user("staff-1"),
-                        runtime(configuration())
+                        runtime(configuration()),
+                        null
                 ),
                 authored("applicantName", "Grace"),
                 "complete"
