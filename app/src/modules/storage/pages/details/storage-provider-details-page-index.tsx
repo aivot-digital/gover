@@ -663,6 +663,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     onAuthoredElementValuesChange={handleInputChange('configuration')}
                     disabled={inputsDisabled}
                     computedErrors={clientSideValidationErrors}
+                    computedErrorsResetToken={clientSideValidationErrors}
                     onDerivationFinished={(derivedElementData) => {
                         setInitialDerivationDone(true);
                         setDerivedElementData(derivedElementData);

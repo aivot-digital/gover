@@ -7,10 +7,9 @@ import {
 } from '../../../models/element-data';
 import {AnyElement} from '../../../models/elements/any-element';
 import {ViewDispatcherComponent} from '../../../components/view-dispatcher.component';
-import {useEffect, useMemo, useState} from 'react';
-import {flattenElements} from '../../../utils/flatten-elements';
+import {createContext, useContext, useEffect, useMemo, useState} from 'react';
+import {ElementWithParents, flattenElements, flattenElementsWithParents} from '../../../utils/flatten-elements';
 import {isAnyInputElement} from '../../../models/elements/form/input/any-input-element';
-import {useApi} from '../../../hooks/use-api';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {ElementsApiService} from '../elements-api-service';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
@@ -23,10 +22,32 @@ interface ElementDerivationContextProps {
     onAuthoredElementValuesChange: (newData: AuthoredElementValues) => void;
     derivedData?: DerivedRuntimeElementData;
     computedErrors?: ComputedElementErrors | null;
+    computedErrorsResetToken?: unknown;
     onDerivedDataChange?: (newData: DerivedRuntimeElementData) => void;
     disabled?: boolean;
     onDerivationStarted?: (triggeringElementData: AuthoredElementValues) => void;
     onDerivationFinished?: (derivedElementData: DerivedRuntimeElementData) => void;
+}
+
+interface ElementDerivationContextType {
+    renderMode: 'editor' | 'viewer';
+
+    rootElement: AnyElement;
+    allElements: ElementWithParents[];
+
+    computedErrorsResetToken?: unknown;
+}
+
+const ElementDerivationContextObject = createContext<ElementDerivationContextType | null>(null);
+
+const ElementDerivationContextProvider = ElementDerivationContextObject.Provider;
+
+export function useElementDerivationContext(): ElementDerivationContextType | null {
+    const context = useContext(ElementDerivationContextObject);
+    if (context == null) {
+        return null;
+    }
+    return context;
 }
 
 export function ElementDerivationContext(props: ElementDerivationContextProps) {
@@ -36,17 +57,19 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         onAuthoredElementValuesChange,
         derivedData: controlledDerivedData,
         computedErrors,
+        computedErrorsResetToken,
         onDerivedDataChange,
         disabled,
         onDerivationStarted,
         onDerivationFinished,
     } = props;
 
-    const api = useApi();
     const dispatch = useAppDispatch();
 
     const [mode, setMode] = useState<'deriving' | 'busy' | 'idle'>('idle');
+
     const [derivationTriggerIdQueue, setDerivationTriggerIdQueue] = useState<string[]>([]);
+
     const [internalDerivedData, setInternalDerivedData] = useState<DerivedRuntimeElementData>(
         controlledDerivedData ?? createDerivedRuntimeElementData(),
     );
@@ -54,6 +77,21 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
     const allElements = useMemo(() => {
         return flattenElements(element, false);
     }, [element]);
+
+    const effectiveComputedErrorsResetToken = computedErrorsResetToken ?? computedErrors;
+
+    const contextValue = useMemo<ElementDerivationContextType>(() => {
+        const allElements = flattenElementsWithParents(element, [], false);
+
+        return {
+            renderMode: 'editor',
+
+            rootElement: element,
+            allElements: allElements,
+
+            computedErrorsResetToken: effectiveComputedErrorsResetToken,
+        };
+    }, [effectiveComputedErrorsResetToken, element]);
 
     const derivedData = useMemo(() => {
         const baseDerivedData = controlledDerivedData ?? internalDerivedData;
@@ -136,7 +174,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
                 onDerivationStarted(authoredElementValues);
             }
 
-            const derivedRuntimeElementData = await new ElementsApiService(api)
+            const derivedRuntimeElementData = await new ElementsApiService()
                 .derive({
                     element: element,
                     authoredElementValues: authoredElementValues,
@@ -166,18 +204,22 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
     };
 
     return (
-        <ViewDispatcherComponent
-            rootElement={element}
-            allElements={allElements}
-            element={element}
-            isBusy={mode === 'busy' || (disabled ?? false)}
-            isDeriving={mode === 'deriving'}
-            mode="editor"
-            authoredElementValues={authoredElementValues}
-            derivedData={derivedData}
-            onAuthoredElementValuesChange={handleAuthoredElementValuesChange}
-            derivationTriggerIdQueue={derivationTriggerIdQueue}
-        />
+        <ElementDerivationContextProvider
+            value={contextValue}
+        >
+            <ViewDispatcherComponent
+                rootElement={element}
+                allElements={allElements}
+                element={element}
+                isBusy={mode === 'busy' || (disabled ?? false)}
+                isDeriving={mode === 'deriving'}
+                mode="editor"
+                authoredElementValues={authoredElementValues}
+                derivedData={derivedData}
+                onAuthoredElementValuesChange={handleAuthoredElementValuesChange}
+                derivationTriggerIdQueue={derivationTriggerIdQueue}
+            />
+        </ElementDerivationContextProvider>
     );
 }
 
