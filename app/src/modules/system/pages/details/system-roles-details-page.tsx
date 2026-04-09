@@ -34,7 +34,7 @@ export function SystemRolesDetailsPage() {
                         ? <DefaultUserSystemRoleBadge showHintIcon />
                         : undefined,
                     helpDialog: {
-                        title: 'Hilfe zu Systemrolle',
+                        title: 'Hilfe zu Systemrollen',
                         tooltip: 'Hilfe anzeigen',
                         content: (
                             <>
@@ -42,13 +42,16 @@ export function SystemRolesDetailsPage() {
                                     variant="body1"
                                     component="p"
                                 >
-                                    Domänenrollen definieren Berechtigungen und Zugriffsrechte für Benutzer:innen innerhalb der Anwendung.
+                                    Konfigurieren Sie hier eine Systemrolle, die Berechtigungen auf
+                                    Systemebene und damit für die gesamte Gover-Anwendung festlegt.
                                 </Typography>
                                 <Typography
                                     variant="body1"
                                     component="p"
                                 >
-                                    Alle Geheimnisse sind verschlüsselt und nur für autorisierte Nutzer:innen oder Dienste mit entsprechender Berechtigung zugänglich.
+                                    Weisen Sie Systemrollen mit Bedacht zu. Mitarbeitende mit dieser Rolle
+                                    erhalten die hinterlegten globalen Berechtigungen unabhängig von ihrer
+                                    Zugehörigkeit zu Teams oder Organisationseinheiten.
                                 </Typography>
                             </>
                         ),
@@ -80,7 +83,7 @@ export function SystemRolesDetailsPage() {
                     return `Systemrolle: ${item?.name ?? 'Unbenannt'}`;
                 }}
                 parentLink={{
-                    label: 'Liste der Systemrolle',
+                    label: 'Liste der Systemrollen',
                     to: '/system-roles',
                 }}
                 entityType={ServerEntityType.SystemRoles}
