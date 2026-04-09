@@ -53,8 +53,15 @@ ProcessDefinitionNodeFilter
         return this.get(`${this.path}${id}/configuration/`);
     }
 
-    public getTesting(id: number): Promise<GroupLayout> {
-        return this.get(`${this.path}${id}/testing/`);
+    public async getTesting(id: number): Promise<GroupLayout | null> {
+        const res = await this.fetch('GET', `${this.path}${id}/testing/`);
+        const data = await res.text();
+
+        if (res.ok && data.length === 0) {
+            return null;
+        }
+
+        return JSON.parse(data) as GroupLayout;
     }
 
     public export(id: number): Promise<ProcessNodeExport> {

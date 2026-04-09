@@ -2010,6 +2010,7 @@ export function ProcessDetailsPage(): ReactNode {
                                     onDelete: handleDeleteNode,
                                     onStartReplaceNode: handleOpenReplaceNodeDialog,
                                     nodeRefreshSignal: nodeRefreshSignal,
+                                    testClaim: currentTestClaim?.claim ?? null,
                                 }}
                             >
                                 <Outlet/>

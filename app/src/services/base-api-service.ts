@@ -99,7 +99,7 @@ export class BaseApiService {
         await this.fetch('DELETE', path, undefined, options);
     }
 
-    private async fetch(method: string, path: string, body?: any, options?: RequestOptions): Promise<Response> {
+    public async fetch(method: string, path: string, body?: any, options?: RequestOptions): Promise<Response> {
         const accessToken = await this
             .auth
             .getAccessToken(options?.abort, options?.skipAuthCheck !== true);

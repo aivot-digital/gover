@@ -7,6 +7,7 @@ import {ProcessNodeApiService} from '../../../../../services/process-node-api-se
 import {useAppDispatch} from '../../../../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../../../../../slices/snackbar-slice';
 import {ElementDerivationContext} from '../../../../../../elements/components/element-derivation-context';
+import {withDelay} from '../../../../../../../utils/with-delay';
 
 export function ProcessNodeEditorTestingTab(): ReactNode {
     const dispatch = useAppDispatch();
@@ -17,6 +18,7 @@ export function ProcessNodeEditorTestingTab(): ReactNode {
     } = useProcessNodeEditorContext();
 
     const [layout, setLayout] = useState<GroupLayout | null>(null);
+    const [noTestingLayout, setNoTestingLayout] = useState<boolean>(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -28,13 +30,20 @@ export function ProcessNodeEditorTestingTab(): ReactNode {
             };
         }
 
-        new ProcessNodeApiService()
-            .getTesting(node.id)
+        withDelay(new ProcessNodeApiService()
+                .getTesting(node.id)
+            , 1000)
             .then((data) => {
                 if (cancelled) {
                     return;
                 }
-                setLayout(data);
+                if (data == null) {
+                    setNoTestingLayout(true);
+                    setLayout(null);
+                } else {
+                    setNoTestingLayout(false);
+                    setLayout(data);
+                }
             })
             .catch((err) => {
                 if (cancelled) {
@@ -48,43 +57,6 @@ export function ProcessNodeEditorTestingTab(): ReactNode {
         };
     }, [dispatch, node.id, testClaim]);
 
-    if (testClaim == null) {
-        return (
-            <Box
-                sx={{
-                    pt: 1,
-                    pb: 2,
-                }}
-            >
-                <Typography variant="h4">
-                    Prozesselement testen
-                </Typography>
-                <Typography variant="body1"
-                            mt={1} mb={2} maxWidth={400}>
-                    Der Prozess befindet sich aktuell nicht in der Testphase.
-                    Sobald der Prozess in die Testphase wechselt, können hier zusätzliche Eigenschaften des Elemente
-                    konfiguriert werden.
-                </Typography>
-            </Box>
-        );
-    }
-
-    if (layout == null) {
-        return (
-            <Box
-                sx={{
-                    pt: 1,
-                    pb: 2,
-                }}
-            >
-                <Typography variant="h4" mb={2}>
-                    Prozesselement testen
-                </Typography>
-                <Skeleton/>
-            </Box>
-        );
-    }
-
     return (
         <Box
             sx={{
@@ -95,13 +67,53 @@ export function ProcessNodeEditorTestingTab(): ReactNode {
             <Typography variant="h4">
                 Prozesselement testen
             </Typography>
-            <ElementDerivationContext
-                element={layout}
-                authoredElementValues={{}}
-                onAuthoredElementValuesChange={() => {
-                    // Nothing to do here, since the data is not persisted.
-                }}
-            />
+
+            {
+                testClaim == null &&
+                <Typography
+                    variant="body1"
+                    my={2}
+                    maxWidth={400}
+                >
+                    Der Prozess befindet sich aktuell nicht in der Testphase.
+                    Sobald der Prozess in die Testphase wechselt, können hier zusätzliche Eigenschaften des Elemente
+                    konfiguriert werden.
+                </Typography>
+            }
+
+            {
+                testClaim != null &&
+                layout == null &&
+                !noTestingLayout &&
+                <Skeleton
+                    height={100}
+                />
+            }
+
+            {
+                testClaim != null &&
+                noTestingLayout &&
+                <Typography
+                    variant="body1"
+                    my={2}
+                    maxWidth={400}
+                >
+                    Für dieses Prozesselement sind keine weiteren Testinformationen vorhanden.
+                </Typography>
+            }
+
+            {
+                testClaim != null &&
+                !noTestingLayout &&
+                layout != null &&
+                <ElementDerivationContext
+                    element={layout}
+                    authoredElementValues={{}}
+                    onAuthoredElementValuesChange={() => {
+                        // Nothing to do here, since the data is not persisted.
+                    }}
+                />
+            }
         </Box>
     );
 }

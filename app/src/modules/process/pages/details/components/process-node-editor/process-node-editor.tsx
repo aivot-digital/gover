@@ -62,11 +62,11 @@ export function ProcessNodeEditor(): ReactNode {
         onDelete,
         onStartReplaceNode,
         nodeRefreshSignal,
+        testClaim,
     } = useProcessDetailsPageContext();
 
     const [provider, setProvider] = useState<ProcessNodeProvider | null>(null);
     const [editedNode, setEditedNode] = useState<ProcessNodeEntity | null>(null);
-    const [testClaim, setTestClaim] = useState<ProcessTestClaimEntity | null>(null);
     const [layout, setLayout] = useState<GroupLayout | null>(null);
     const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
     const [isNodeLoading, setIsNodeLoading] = useState(false);
@@ -87,29 +87,6 @@ export function ProcessNodeEditor(): ReactNode {
     })();
     const nodeRefreshVersion = nodeRefreshSignal.nodeId === nodeId ? nodeRefreshSignal.version : 0;
 
-    useEffect(() => {
-        if (originalNode == null) {
-            setTestClaim(null);
-            return;
-        }
-
-        new ProcessTestClaimApiService()
-            .listAll({
-                processId: originalNode.processId,
-                processVersion: originalNode.processVersion,
-            })
-            .then((claims) => {
-                if (claims.content.length > 0) {
-                    setTestClaim(claims.content[0]);
-                } else {
-                    setTestClaim(null);
-                }
-            })
-            .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Die Testansprüche für das Prozesselement konnten nicht geladen werden.'));
-            });
-    }, [originalNode?.processId, originalNode?.processVersion]);
-
     const {
         hasChanged,
         dialog: changeBlockerDialog,
@@ -127,7 +104,6 @@ export function ProcessNodeEditor(): ReactNode {
             setEditedNode(null);
             setLayout(null);
             setProvider(null);
-            setTestClaim(null);
         }
 
         setIsNodeLoading(true);
