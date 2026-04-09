@@ -7,7 +7,7 @@ import {
 } from '../../../models/element-data';
 import {AnyElement} from '../../../models/elements/any-element';
 import {ViewDispatcherComponent} from '../../../components/view-dispatcher.component';
-import {createContext, useContext, useEffect, useMemo, useState} from 'react';
+import React, {createContext, RefObject, useContext, useEffect, useMemo, useState} from 'react';
 import {ElementWithParents, flattenElements, flattenElementsWithParents} from '../../../utils/flatten-elements';
 import {isAnyInputElement} from '../../../models/elements/form/input/any-input-element';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
@@ -22,33 +22,60 @@ interface ElementDerivationContextProps {
     onAuthoredElementValuesChange: (newData: AuthoredElementValues) => void;
     derivedData?: DerivedRuntimeElementData;
     computedErrors?: ComputedElementErrors | null;
-    computedErrorsResetToken?: unknown;
     onDerivedDataChange?: (newData: DerivedRuntimeElementData) => void;
     disabled?: boolean;
     onDerivationStarted?: (triggeringElementData: AuthoredElementValues) => void;
     onDerivationFinished?: (derivedElementData: DerivedRuntimeElementData) => void;
+    suppressErrors?: boolean;
+}
+
+export enum ElementDerivationContextRenderMode {
+    Editor,
+    Viewer,
 }
 
 interface ElementDerivationContextType {
-    renderMode: 'editor' | 'viewer';
+    renderMode: ElementDerivationContextRenderMode;
+    isEditable: boolean;
+    showInvisible: boolean;
+    showTechnical: boolean;
+    scrollContainerRef: RefObject<HTMLDivElement | null> | null;
 
     rootElement: AnyElement;
     allElements: ElementWithParents[];
 
-    computedErrorsResetToken?: unknown;
+    authoredElementValues: AuthoredElementValues;
+    derivedRuntimeElementData: DerivedRuntimeElementData | null;
+    additionalComputedErrors: ComputedElementErrors | null;
+
+    supressErrors?: boolean;
 }
 
 const ElementDerivationContextObject = createContext<ElementDerivationContextType | null>(null);
 
 const ElementDerivationContextProvider = ElementDerivationContextObject.Provider;
 
-export function useElementDerivationContext(): ElementDerivationContextType | null {
+export function useElementDerivationContext(): ElementDerivationContextType {
     const context = useContext(ElementDerivationContextObject);
     if (context == null) {
-        return null;
+        // throw new Error('useElementDerivationContext must be used within an ElementDerivationContext');
+        return {
+            additionalComputedErrors: null,
+            allElements: [],
+            authoredElementValues: {},
+            derivedRuntimeElementData: null,
+            isEditable: false,
+            renderMode: ElementDerivationContextRenderMode.Viewer,
+            rootElement: {} as AnyElement,
+            scrollContainerRef: null,
+            showInvisible: false,
+            showTechnical: false,
+            supressErrors: false,
+        }
     }
     return context;
 }
+
 
 export function ElementDerivationContext(props: ElementDerivationContextProps) {
     const {
@@ -57,11 +84,11 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         onAuthoredElementValuesChange,
         derivedData: controlledDerivedData,
         computedErrors,
-        computedErrorsResetToken,
         onDerivedDataChange,
         disabled,
         onDerivationStarted,
         onDerivationFinished,
+        suppressErrors,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -78,25 +105,11 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         return flattenElements(element, false);
     }, [element]);
 
-    const effectiveComputedErrorsResetToken = computedErrorsResetToken ?? computedErrors;
-
-    const contextValue = useMemo<ElementDerivationContextType>(() => {
-        const allElements = flattenElementsWithParents(element, [], false);
-
-        return {
-            renderMode: 'editor',
-
-            rootElement: element,
-            allElements: allElements,
-
-            computedErrorsResetToken: effectiveComputedErrorsResetToken,
-        };
-    }, [effectiveComputedErrorsResetToken, element]);
 
     const derivedData = useMemo(() => {
         const baseDerivedData = controlledDerivedData ?? internalDerivedData;
 
-        if (computedErrors == null || Object.keys(computedErrors).length === 0) {
+        if (computedErrors == null || Object.keys(computedErrors).length === 0 || suppressErrors) {
             return baseDerivedData;
         }
 
@@ -105,6 +118,34 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             elementStates: applyComputedErrors(computedErrors, baseDerivedData.elementStates),
         };
     }, [computedErrors, controlledDerivedData, internalDerivedData]);
+
+    const contextValue = useMemo<ElementDerivationContextType>(() => {
+        const allElements = flattenElementsWithParents(element, [], false);
+
+        return {
+            renderMode: ElementDerivationContextRenderMode.Editor,
+            isEditable: !disabled,
+            showInvisible: false,
+            showTechnical: true,
+            scrollContainerRef: null,
+
+            rootElement: element,
+            allElements: allElements,
+
+            authoredElementValues: authoredElementValues,
+            derivedRuntimeElementData: derivedData,
+            additionalComputedErrors: computedErrors ?? null,
+
+            supressErrors: suppressErrors,
+        };
+    }, [
+        disabled,
+        element,
+        authoredElementValues,
+        derivedData,
+        computedErrors,
+        suppressErrors,
+    ]);
 
     useEffect(() => {
         if (controlledDerivedData != null) {

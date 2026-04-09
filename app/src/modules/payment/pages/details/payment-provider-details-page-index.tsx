@@ -1,5 +1,5 @@
 import {Box, Button, Grid, Typography} from '@mui/material';
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {useGenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useNavigate} from 'react-router-dom';
@@ -26,7 +26,9 @@ import {GenericDetailsSkeleton} from '../../../../components/generic-details-pag
 import {useConfirm} from '../../../../providers/confirm-provider';
 import {VFormVersionWithDetailsService} from '../../../forms/services/v-form-version-with-details-api-service';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
-import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
+import {
+    ElementDerivationContext,
+} from '../../../elements/components/element-derivation-context';
 import {ComputedElementErrors, DerivedRuntimeElementData} from '../../../../models/element-data';
 
 type PaymentProviderEditableFields =
@@ -458,7 +460,7 @@ export function PaymentProviderDetailsPageIndex() {
                     disabled={isBusy || !isEditable}
                     onDerivationFinished={setDerivedRuntimeConfigData}
                     computedErrors={clientSideValidationErrors}
-                    computedErrorsResetToken={clientSideValidationErrors}
+                    suppressErrors={hasNotChanged}
                 />
             }
 

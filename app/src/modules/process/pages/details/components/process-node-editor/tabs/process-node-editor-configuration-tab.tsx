@@ -90,7 +90,6 @@ export function ProcessNodeEditorConfigurationTab() {
                     }
                 }}
                 computedErrors={problems?.derivedRuntimeElementData.elementStates}
-                computedErrorsResetToken={problems?.derivedRuntimeElementData.elementStates}
             />
         </Box>
     );
