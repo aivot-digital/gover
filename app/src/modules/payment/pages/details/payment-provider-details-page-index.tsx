@@ -370,11 +370,19 @@ export function PaymentProviderDetailsPageIndex() {
                                 error={errors.providerKey}
                                 hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsdienstleisters eingeblendet wird. Der Name des Anbieters ist gegenüber antragstellenden Personen sichtbar."
                             /> :
-                            <TextFieldComponent
+                            <SelectFieldComponent
                                 label="Zahlungsdienstleister"
-                                value={originalPaymentProvider.providerKey}
+                                required
+                                value={editedPaymentProvider.providerKey}
                                 onChange={handleInputChange('providerKey')}
+                                options={availablePaymentProviderDefinitions.map(def => ({
+                                    value: def.key,
+                                    label: def.name,
+                                    subLabel: def.description,
+                                }))}
                                 disabled={true}
+                                error={errors.providerKey}
+                                hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsdienstleisters eingeblendet wird. Der Name des Anbieters ist gegenüber antragstellenden Personen sichtbar."
                             />
                     }
                 </Grid>
