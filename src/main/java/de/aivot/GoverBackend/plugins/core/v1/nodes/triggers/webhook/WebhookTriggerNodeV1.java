@@ -10,6 +10,8 @@ import de.aivot.GoverBackend.elements.models.elements.ElementVisibilityFunctions
 import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
@@ -147,6 +149,17 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
         } catch (ElementDataConversionException e) {
             throw new RuntimeException(e);
         }
+
+        // Configure the slug input
+        configLayout
+                .findChild(WebhookTriggerConfigV1.SLUG_CONFIG_KEY, TextInputElement.class)
+                .ifPresent(field -> {
+                    var pattern = new TextInputElementPattern()
+                            .setRegex("^[a-zA-Z0-9-]+$")
+                            .setMessage("Der Webhook-Slug darf nur aus Buchstaben, Zahlen und Bindestrichen bestehen.");
+                    field.setPattern(pattern);
+
+                });
 
         // Add request method select options
         configLayout
