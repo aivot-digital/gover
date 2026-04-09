@@ -31,7 +31,16 @@ export function UserRolesDetailsPage() {
                                     variant="body1"
                                     component="p"
                                 >
-                                    Verwalten Sie hier die Domänenrollen, die Berechtigungen und Zugriffsrechte für Benutzer:innen innerhalb der Anwendung definieren.
+                                    Konfigurieren Sie hier eine Domänenrolle, die Berechtigungen innerhalb
+                                    fachlicher Domänen wie Organisationseinheiten oder Teams festlegt.
+                                </Typography>
+                                <Typography
+                                    variant="body1"
+                                    component="p"
+                                >
+                                    Domänenrollen ergänzen Systemrollen um kontextbezogene Rechte. Sie
+                                    wirken nur dort, wo Mitarbeiter:innen über eine
+                                    Mitgliedschaft tatsächlich zugewiesen ist.
                                 </Typography>
                             </>
                         ),

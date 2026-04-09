@@ -10,15 +10,6 @@ import {
 import {UserRoleResponseDTO} from "../../dtos/user-role-response-dto";
 import {GenericDetailsSkeleton} from "../../../../components/generic-details-page/generic-details-skeleton";
 import {GenericList} from "../../../../components/generic-list/generic-list";
-import {
-    VTeamUserRoleAssignmentWithDetailsEntity
-} from "../../../teams/entities/v-team-user-role-assignment-with-details-entity";
-import {
-    VTeamUserRoleAssignmentWithDetailsApiService
-} from "../../../teams/services/v-team-user-role-assignment-with-details-api-service";
-import {
-    VDepartmentMembershipWithDetailsService
-} from '../../../departments/services/v-department-membership-with-details-service';
 import {VTeamMembershipWithDetailsService} from '../../../teams/services/v-team-membership-with-details-service';
 import {VTeamMembershipWithDetailsEntity} from '../../../teams/entities/v-team-membership-with-details-entity';
 
@@ -76,8 +67,8 @@ export function UserRolesDetailsPageTeamMemberships() {
                     mb: 3,
                     maxWidth: 900,
                 }}>
-                    Eine Übersicht der Mitarbeiter:innen, die dieser Rolle in verschiedenen
-                    Organisationseinheiten zugewiesen sind.
+                    Eine Übersicht der Mitarbeiter:innen, denen diese Domänenrolle in verschiedenen
+                    Teams zugewiesen sind.
                 </Typography>
 
                 <GenericList<VTeamMembershipWithDetailsEntity>
