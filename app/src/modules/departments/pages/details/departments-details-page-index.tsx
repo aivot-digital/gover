@@ -644,7 +644,7 @@ export function DepartmentsDetailsPageIndex() {
                             value: inheritedDepartmentValues?.specialSupportAddress ?? '',
                             disabled: true,
                         }}
-                        label="Kontakt-E-Mail-Adresse fachliche Unterstützung"
+                        label="Kontakt-E-Mail-Adresse für fachliche Unterstützung"
                         type="email"
                         value={department.specialSupportAddress ?? ''}
                         onChange={handleShadowedStringChange('specialSupportAddress')}
@@ -664,7 +664,7 @@ export function DepartmentsDetailsPageIndex() {
                             value: inheritedDepartmentValues?.specialSupportPhone ?? '',
                             disabled: true,
                         }}
-                        label="Kontakt-Telefonnummer fachliche Unterstützung"
+                        label="Kontakt-Telefonnummer für fachliche Unterstützung"
                         type="tel"
                         value={department.specialSupportPhone ?? ''}
                         onChange={handleShadowedStringChange('specialSupportPhone')}
@@ -684,7 +684,7 @@ export function DepartmentsDetailsPageIndex() {
                             value: inheritedDepartmentValues?.specialSupportInfo ?? '',
                             disabled: true,
                         }}
-                        label="Informationen zur fachliche Unterstützung"
+                        label="Informationen zur fachlichen Unterstützung"
                         value={department.specialSupportInfo ?? ''}
                         onChange={handleShadowedStringChange('specialSupportInfo')}
                         onBlur={handleShadowedStringBlur('specialSupportInfo')}
@@ -712,7 +712,7 @@ export function DepartmentsDetailsPageIndex() {
                             value: inheritedDepartmentValues?.technicalSupportAddress ?? '',
                             disabled: true,
                         }}
-                        label="Kontakt-E-Mail-Adresse technische Unterstützung"
+                        label="Kontakt-E-Mail-Adresse für technische Unterstützung"
                         type="email"
                         value={department.technicalSupportAddress ?? ''}
                         onChange={handleShadowedStringChange('technicalSupportAddress')}
@@ -732,7 +732,7 @@ export function DepartmentsDetailsPageIndex() {
                             value: inheritedDepartmentValues?.technicalSupportPhone ?? '',
                             disabled: true,
                         }}
-                        label="Kontakt-Telefonnummer technische Unterstützung"
+                        label="Kontakt-Telefonnummer für technische Unterstützung"
                         type="tel"
                         value={department.technicalSupportPhone ?? ''}
                         onChange={handleShadowedStringChange('technicalSupportPhone')}
