@@ -61,7 +61,7 @@ const columns: Array<GridColDef<VUserDeputyWithDetailsEntity>> = [
     },
     {
         field: 'active',
-        headerName: 'Aktuell Aktiv',
+        headerName: 'Derzeit aktiv',
         flex: 1,
         type: 'boolean',
     },
@@ -114,6 +114,7 @@ export function UserDetailsPageDeputies() {
             <Button
                 variant="contained"
                 startIcon={<Add/>}
+                disabled={user?.deletedInIdp === true}
                 onClick={() => {
                     setShowSelectUserDialog(true);
                 }}
@@ -121,7 +122,7 @@ export function UserDetailsPageDeputies() {
                 Stellvertreter:in hinzufügen
             </Button>,
         ];
-    }, [hasAccess]);
+    }, [hasAccess, user?.deletedInIdp]);
 
     if (user == null) {
         return (
@@ -129,8 +130,10 @@ export function UserDetailsPageDeputies() {
         );
     }
 
+    const canManageDeputies = !user.deletedInIdp;
+
     const handleAddDeputy = () => {
-        if (deputyToAdd == null) {
+        if (!canManageDeputies || deputyToAdd == null) {
             return;
         }
 
@@ -166,6 +169,10 @@ export function UserDetailsPageDeputies() {
     };
 
     const handleDeleteDeputy = (item: VUserDeputyWithDetailsEntity) => {
+        if (!hasAccess) {
+            return;
+        }
+
         confirm({
             title: 'Stellvertreter:in löschen',
             children: (
@@ -247,6 +254,7 @@ export function UserDetailsPageDeputies() {
                     rowActions={(item) => [
                         {
                             tooltip: 'Stellvertreter:in löschen',
+                            disabled: !hasAccess,
                             icon: <Delete/>,
                             onClick: () => {
                                 handleDeleteDeputy(item);
