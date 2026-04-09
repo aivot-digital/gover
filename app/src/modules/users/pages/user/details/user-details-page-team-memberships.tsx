@@ -1,6 +1,8 @@
 import React, {useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {type GridColDef} from '@mui/x-data-grid';
 import EditOutlined from '@mui/icons-material/EditOutlined';
+import ManageAccountsOutlined from '@mui/icons-material/ManageAccountsOutlined';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {GenericList} from '../../../../../components/generic-list/generic-list';
 import {CellLink} from '../../../../../components/cell-link/cell-link';
 import Box from '@mui/material/Box';
@@ -33,6 +35,7 @@ import {
     VTeamMembershipWithDetailsApiService
 } from "../../../../teams/services/v-team-membership-with-details-api-service";
 import {VTeamMembershipWithDetailsEntity} from "../../../../teams/entities/v-team-membership-with-details-entity";
+import {useConfirm} from "../../../../../providers/confirm-provider";
 
 
 const columns: Array<GridColDef<VTeamMembershipWithDetailsEntity>> = [
@@ -65,6 +68,7 @@ const columns: Array<GridColDef<VTeamMembershipWithDetailsEntity>> = [
 
 export function UserDetailsPageTeamMemberships() {
     const dispatch = useAppDispatch();
+    const confirm = useConfirm();
 
     const listControlRef = useRef<ListControlRef | null>(null);
 
@@ -100,12 +104,13 @@ export function UserDetailsPageTeamMemberships() {
             <Button
                 variant="contained"
                 startIcon={<Add/>}
+                disabled={user?.deletedInIdp === true}
                 onClick={() => setShowSelectNewTeamDialog(true)}
             >
                 Mitgliedschaft hinzufügen
             </Button>,
         ];
-    }, [hasAccess]);
+    }, [hasAccess, user?.deletedInIdp]);
 
     if (user == null) {
         return (
@@ -113,7 +118,14 @@ export function UserDetailsPageTeamMemberships() {
         );
     }
 
+    const canManageMemberships = !user.deletedInIdp;
+    const disabledMembershipsManagementTooltip = 'Für im Identity Provider gelöschte Mitarbeiter:innen können Mitgliedschaften und Rollen nicht mehr geändert werden.';
+
     const handleAddMembership = (user: User, team: TeamEntity, roleIdsToAdd: number[]) => {
+        if (!canManageMemberships) {
+            return;
+        }
+
         dispatch(setLoadingMessage({
             message: `Füge die Mitarbeiter:in zum Team ${team.name} hinzu`,
             blocking: true,
@@ -156,6 +168,10 @@ export function UserDetailsPageTeamMemberships() {
     };
 
     const handleUpdateMembership = (membership: VTeamMembershipWithDetailsEntity, roleIdsToAdd: number[], userRoleAssignmentIdsToRemove: number[]) => {
+        if (!canManageMemberships) {
+            return;
+        }
+
         dispatch(setLoadingMessage({
             message: `Aktualisiere Rollen der Mitarbeiter:in ${membership.userFullName}`,
             blocking: true,
@@ -195,6 +211,57 @@ export function UserDetailsPageTeamMemberships() {
             })
             .finally(() => {
                 dispatch(setLoadingMessage(undefined));
+            });
+    };
+
+    const handleDeleteMembership = (membership: VTeamMembershipWithDetailsEntity) => {
+        if (!hasAccess) {
+            return;
+        }
+
+        confirm({
+            title: 'Mitgliedschaft löschen',
+            children: (
+                <>
+                    <Typography>
+                        Durch das Entfernen der Mitarbeiter:in <strong>{membership.userFullName}</strong> aus dem Team
+                        <strong> {membership.teamName}</strong> verliert diese alle zugewiesenen Rollen und
+                        Berechtigungen in diesem Team.
+                    </Typography>
+                    <Typography sx={{mt: 2}}>
+                        Diese Aktion kann nicht rückgängig gemacht werden.
+                    </Typography>
+                </>
+            ),
+            confirmButtonText: 'Mitgliedschaft löschen',
+        })
+            .then((confirmed) => {
+                if (!confirmed) {
+                    return;
+                }
+
+                dispatch(setLoadingMessage({
+                    message: `Lösche Mitgliedschaft von ${membership.userFullName}`,
+                    blocking: true,
+                    estimatedTime: 5000,
+                }));
+
+                new TeamMembershipsApiService()
+                    .destroy(membership.membershipId)
+                    .then(() => {
+                        listControlRef.current?.refresh();
+                    })
+                    .catch((error) => {
+                        if (isApiError(error) && error.displayableToUser) {
+                            dispatch(showErrorSnackbar(error.message));
+                        } else {
+                            console.error(error);
+                            dispatch(showErrorSnackbar('Fehler beim Löschen der Mitgliedschaft'));
+                        }
+                    })
+                    .finally(() => {
+                        dispatch(setLoadingMessage(undefined));
+                    });
             });
     };
 
@@ -239,7 +306,9 @@ export function UserDetailsPageTeamMemberships() {
                     noSearchResultsPlaceholder="Keine Teams gefunden"
                     rowActions={(item) => [
                         {
-                            icon: hasAccess ? <EditOutlined/> : <Visibility/>,
+                            icon: hasAccess ? <ManageAccountsOutlined/> : <Visibility/>,
+                            disabled: !canManageMemberships,
+                            disabledTooltip: disabledMembershipsManagementTooltip,
                             onClick: () => {
                                 setShowSelectRolesDialogForMembership(item);
                             },
@@ -248,6 +317,13 @@ export function UserDetailsPageTeamMemberships() {
                             icon: hasAccess ? <EditOutlined/> : <Visibility/>,
                             to: `/teams/${item.teamId}`,
                             tooltip: hasAccess ? 'Team bearbeiten' : 'Team anzeigen',
+                        }, {
+                            icon: <Delete/>,
+                            visible: hasAccess,
+                            tooltip: 'Mitgliedschaft löschen',
+                            onClick: () => {
+                                handleDeleteMembership(item);
+                            },
                         }
                     ]}
                     preSearchElements={preSearchElements}
