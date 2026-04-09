@@ -5,7 +5,6 @@ import de.aivot.GoverBackend.elements.models.ComputedElementState;
 import de.aivot.GoverBackend.elements.models.ComputedElementStates;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
-import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
@@ -20,7 +19,6 @@ import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRep
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpStatus;
 
 import java.lang.reflect.Proxy;
 import java.time.LocalDateTime;
@@ -166,36 +164,24 @@ class CounterActionNodeV1Test {
     }
 
     @Test
-    void validateConfiguration_RejectsInvalidIncrement() {
-        var exception = assertThrows(
-                ResponseException.class,
-                () -> node.validateConfiguration(
-                        processNode(configuration("loop.count", 0L)),
-                        configuration("loop.count", 0L),
-                        validationRuntime(configuration("loop.count", 0L))
-                )
-        );
+    void validateConfiguration_ReportsInvalidIncrement() throws Exception {
+        var config = configuration("loop.count", 0L);
+        var details = validationRuntime(config);
 
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
-        assertTrue(exception.getDetails() instanceof DerivedRuntimeElementData);
+        var errors = node.validateConfiguration(processNode(config), config, details);
 
-        var details = (DerivedRuntimeElementData) exception.getDetails();
+        assertEquals("Das Inkrement muss mindestens 1 betragen.", errors.get("increment"));
         assertTrue(details.getElementStates().get("increment").getError().contains("mindestens 1"));
     }
 
     @Test
-    void validateConfiguration_RejectsInvalidVariablePath() {
+    void validateConfiguration_ReportsInvalidVariablePath() throws Exception {
         var config = configuration("loop..count", 1L);
+        var details = validationRuntime(config);
 
-        var exception = assertThrows(
-                ResponseException.class,
-                () -> node.validateConfiguration(processNode(config), config, validationRuntime(config))
-        );
+        var errors = node.validateConfiguration(processNode(config), config, details);
 
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
-        assertTrue(exception.getDetails() instanceof DerivedRuntimeElementData);
-
-        var details = (DerivedRuntimeElementData) exception.getDetails();
+        assertTrue(errors.get("variable").contains("Ungültiger Pfad"));
         assertTrue(details.getElementStates().get("variable").getError().contains("Ungültiger Pfad"));
     }
 
