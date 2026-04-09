@@ -435,6 +435,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                                     } as T);
                                 }}
                                 addNewElementLabel={isRootElement(value) ? 'Neuen Abschnitt hinzufügen' : undefined}
+                                addElementDialogTitle={isRootElement(value) ? 'Formularabschnitt hinzufügen' : undefined}
                             />
                         </ElementTreeContextProvider>
                     </DndProvider>

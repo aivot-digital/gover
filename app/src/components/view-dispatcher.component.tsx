@@ -423,6 +423,8 @@ function ContextMenuButton(props: ContextMenuButtonProps) {
                     <ListItemText primary="Element duplizieren"/>
                 </MenuItem>
 
+                <Divider/>
+
                 <MenuItem
                     onClick={handleDeleteElement}
                     disabled={!editable}

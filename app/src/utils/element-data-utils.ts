@@ -50,7 +50,7 @@ export function resolveValueForResolvedOverride(
         return effectiveValue;
     }
 
-    return authoredValue ?? effectiveValue;
+    return authoredValue;
 }
 
 export function resolveErrors(element: AnyElement, derivedData: DerivedRuntimeElementData): string[] | undefined | null {

@@ -201,6 +201,8 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
             <AddElementDialog
                 show={showAddDialog}
                 parentType={isLoadedForm(props.entity) ? props.entity.version.rootElement.type : props.entity.rootElement.type}
+                parentElement={root}
+                title={isLoadedForm(props.entity) ? 'Formularabschnitt hinzufügen' : undefined}
                 onAddElement={(element) => {
                     handleAddElement(element as AnyFormElement);
                     setShowAddDialog(false);

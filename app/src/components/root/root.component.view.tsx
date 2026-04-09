@@ -628,6 +628,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
 
             {
                 form != null &&
+                mode === 'viewer' &&
                 <CustomerInputLoader
                     form={form.form}
                     version={form.version}

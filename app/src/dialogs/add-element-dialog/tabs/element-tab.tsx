@@ -45,6 +45,7 @@ interface ElementOption {
 
 export function ElementTab({
     parentType,
+    parentElement,
     onAddElement,
     primaryActionLabel,
     primaryActionIcon,
@@ -129,7 +130,7 @@ export function ElementTab({
     ), [groupedOptions]);
 
     const handleAddElement = (type: ElementType): void => {
-        const newElement = generateElementWithDefaultValues(type);
+        const newElement = generateElementWithDefaultValues(type, parentElement);
         if (newElement != null) {
             onAddElement(newElement);
         }

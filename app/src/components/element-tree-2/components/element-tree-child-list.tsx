@@ -18,6 +18,7 @@ interface ElementTreeChildListProps<T extends AnyElement> {
     value: T[];
     onChange: (value: T[]) => void;
     addNewElementLabel?: string;
+    addElementDialogTitle?: string;
 }
 
 interface ElementTreeDropSlotProps {
@@ -76,6 +77,7 @@ export function ElementTreeChildList<T extends AnyElement>(props: ElementTreeChi
         value,
         onChange,
         addNewElementLabel = 'Neues Element hinzufügen',
+        addElementDialogTitle,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -296,6 +298,8 @@ export function ElementTreeChildList<T extends AnyElement>(props: ElementTreeChi
             <AddElementDialog
                 show={showAddElementDialog}
                 parentType={parents[parents.length - 1].type}
+                parentElement={parents[parents.length - 1]}
+                title={addElementDialogTitle}
                 onAddElement={(ele) => {
                     const updatedValue = [...value, ele];
                     onChange(updatedValue as T[]);

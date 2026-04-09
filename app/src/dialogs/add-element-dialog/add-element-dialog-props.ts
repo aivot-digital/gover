@@ -6,6 +6,7 @@ import {ElementDisplayContext} from '../../data/element-type/element-child-optio
 export interface AddElementDialogProps {
     show: boolean;
     parentType: ElementType;
+    parentElement?: AnyElement;
     onAddElement: (element: AnyElement) => void;
     onClose: () => void;
     title?: string;

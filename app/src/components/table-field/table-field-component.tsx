@@ -4,6 +4,7 @@ import React, {useMemo, useState} from 'react';
 import {formatNumStringToGermanNum} from '../../utils/format-german-numbers';
 import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import {TableFieldComponentProps} from './table-field-component-props';
+import {getSelectedRowIds, hasSelectedGridRows} from './table-field-selection';
 
 /**
  * @deprecated use TableFieldComponent2 instead
@@ -42,19 +43,11 @@ export function TableFieldComponent(props: TableFieldComponentProps) {
             return;
         }
 
-        const selectedIds = (() => {
-            if (Array.isArray(selectionModel)) {
-                return selectionModel;
-            }
-            if (selectionModel?.type === 'include' && selectionModel?.ids instanceof Set) {
-                return Array.from(selectionModel.ids);
-            }
-            return [];
-        })();
+        const selectedIds = new Set(getSelectedRowIds(selectionModel, rows.map((row) => row.id)));
 
         // Filter out the rows that are selected
         const updatedRows = value
-            .filter((_: any, index: number) => !selectedIds.includes(index));
+            .filter((_: any, index: number) => !selectedIds.has(index));
 
         // Propagate the change. If no rows are left, propagate undefined to signal that the field is empty
         props.onChange(updatedRows.length > 0 ? updatedRows : undefined);
@@ -111,18 +104,8 @@ export function TableFieldComponent(props: TableFieldComponentProps) {
     }));
 
     const hasSelectedRows = useMemo(() => {
-        if (Array.isArray(selectionModel)) {
-            return selectionModel.length > 0;
-        }
-        if (
-            typeof selectionModel === 'object' &&
-            selectionModel?.type === 'include' &&
-            selectionModel?.ids instanceof Set
-        ) {
-            return selectionModel.ids.size > 0;
-        }
-        return false;
-    }, [selectionModel]);
+        return hasSelectedGridRows(selectionModel, rows.map((row) => row.id));
+    }, [rows, selectionModel]);
 
     return (
         <>
@@ -175,6 +158,7 @@ export function TableFieldComponent(props: TableFieldComponentProps) {
                     autoHeight
 
                     checkboxSelection={!props.disabled}
+                    disableRowSelectionExcludeModel
                     onRowClick={(params, event) => {
                         event.defaultMuiPrevented = true;
                     }}

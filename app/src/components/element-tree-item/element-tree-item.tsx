@@ -210,6 +210,7 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
             <AddElementDialog
                 show={showAddDialog}
                 parentType={props.element.type}
+                parentElement={props.element}
                 onAddElement={handleAddElement}
                 onClose={toggleShowAddDialog}
                 limitElementTypes={props.limitElementTypes}

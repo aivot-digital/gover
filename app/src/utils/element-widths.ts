@@ -1,6 +1,8 @@
 import {ElementType} from '../data/element-type/element-type';
+import {AnyElement} from '../models/elements/any-element';
 
 export const DEFAULT_ELEMENT_WEIGHT = 12;
+export const COMPACT_DEFAULT_ELEMENT_WEIGHT = 6;
 
 export interface ElementWidthOption {
     value: number;
@@ -60,8 +62,46 @@ const minimumElementWeightMap: Partial<Record<ElementType, number>> = {
     [ElementType.Table]: 4,
 };
 
+const compactDefaultElementTypes = new Set<ElementType>([
+    ElementType.Date,
+    ElementType.Number,
+    ElementType.Select,
+    ElementType.Radio,
+    ElementType.Checkbox,
+    ElementType.MultiCheckbox,
+    ElementType.Text,
+    ElementType.Time,
+    ElementType.ChipInput,
+    ElementType.DateTime,
+    ElementType.DateRange,
+    ElementType.TimeRange,
+    ElementType.DateTimeRange,
+    ElementType.DataModelSelect,
+    ElementType.DataObjectSelect,
+]);
+
+function getResolvedParentElementWeight(parentElement?: AnyElement): number {
+    if (parentElement == null || !('weight' in parentElement)) {
+        return DEFAULT_ELEMENT_WEIGHT;
+    }
+
+    return parentElement.weight ?? DEFAULT_ELEMENT_WEIGHT;
+}
+
 export function getMinimumElementWeight(type: ElementType): number {
     return minimumElementWeightMap[type] ?? 3;
+}
+
+export function getDefaultElementWeight(type: ElementType, parentElement?: AnyElement): number {
+    if (!compactDefaultElementTypes.has(type)) {
+        return DEFAULT_ELEMENT_WEIGHT;
+    }
+
+    if (getResolvedParentElementWeight(parentElement) < DEFAULT_ELEMENT_WEIGHT) {
+        return DEFAULT_ELEMENT_WEIGHT;
+    }
+
+    return COMPACT_DEFAULT_ELEMENT_WEIGHT;
 }
 
 export function formatElementWeight(weight: number): string {
