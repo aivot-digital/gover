@@ -34,6 +34,7 @@ import {ProcessTaskStatus, ProcessTaskStatusLabels} from '../../../../process/en
 import {InfoDialog} from '../../../../../dialogs/info-dialog/info-dialog';
 import {CopyToClipboardButton} from '../../../../../components/copy-to-clipboard-button/copy-to-clipboard-button';
 import {downloadTextFile} from '../../../../../utils/download-utils';
+import {AlertComponent} from '../../../../../components/alert/alert-component';
 
 const KEYCLOAK_PERSON_NAME_MAX_CHARACTERS = 255;
 const KEYCLOAK_EMAIL_MAX_CHARACTERS = 255;
@@ -556,18 +557,15 @@ export function UserDetailsPageIndex() {
 
                 {
                     editedUser.deletedInIdp ? (
-                        <Typography
-                            variant="body2"
+                        <AlertComponent
+                            color="warning"
                             sx={{
-                                mt: 2,
-                                mb: 3,
-                                maxWidth: 900,
-                                color: 'warning.dark',
+                                my: 3,
                             }}
                         >
                             Dieses Konto wurde im Identity Provider bereits gelöscht. Änderungen, Passwort-Resets und weitere Verwaltungsaktionen sind nicht mehr möglich.
                             Der Datensatz bleibt in Gover erhalten, damit bestehende Zuordnungen und Historien nachvollziehbar bleiben.
-                        </Typography>
+                        </AlertComponent>
                     ) : (
                         !isNewUser &&
                         <Box
