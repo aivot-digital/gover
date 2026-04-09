@@ -146,7 +146,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
         list.add(clientSecretInput);
 
         TextInputElementPattern urlPattern = new TextInputElementPattern()
-                .setRegex("^(https?:\\/\\/)?([\\da-z.-]+)\\.([a-z.]{2,6})([\\/\\w .-]*)*\\/?$")
+                .setRegex(TextInputElementPattern.URL_REGEX)
                 .setMessage("Bitte geben Sie eine gültige URL ein (z. B. https://example.com).");
 
         var oauthUrlInput = new TextInputElement();

@@ -175,7 +175,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
         paymentTransactionUrlInput.setPlaceholder("https://epayment-stage.dataport.de/konnektor/epayment/");
         paymentTransactionUrlInput.setHint("Die Basis-URL des Zielsystems gemäß XBezahldienste-Standard. Diese wird vom Zahlungsdienstleister bereitgestellt.");
         TextInputElementPattern urlPattern = new TextInputElementPattern()
-                .setRegex("^(https?:\\/\\/)?([\\da-z.-]+)\\.([a-z.]{2,6})([\\/\\w .-]*)*\\/?$")
+                .setRegex(TextInputElementPattern.URL_REGEX)
                 .setMessage("Bitte geben Sie eine gültige URL ein (z. B. https://example.com).");
         paymentTransactionUrlInput.setPattern(urlPattern);
         list.add(paymentTransactionUrlInput);

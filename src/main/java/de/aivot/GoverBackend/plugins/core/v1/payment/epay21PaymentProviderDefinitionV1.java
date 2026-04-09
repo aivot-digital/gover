@@ -146,7 +146,7 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
         list.add(passwordInput);
 
         TextInputElementPattern urlPattern = new TextInputElementPattern();
-        urlPattern.setRegex("^(https?:\\/\\/)?([\\da-z.-]+)\\.([a-z.]{2,6})([\\/\\w .-]*)*\\/?$");
+        urlPattern.setRegex(TextInputElementPattern.URL_REGEX);
         urlPattern.setMessage("Bitte geben Sie eine gültige URL ein (z. B. https://example.com).");
 
         var paymentTransactionUrlInput = new TextInputElement();
