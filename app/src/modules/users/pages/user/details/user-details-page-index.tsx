@@ -148,7 +148,10 @@ export function UserDetailsPageIndex() {
             return undefined;
         }
 
-        return createOidcPath(`/admin/${AppConfig.oidc.realm}/console/#/realms/${AppConfig.oidc.realm}/users/${editedUser.id}`);
+        const realm = encodeURIComponent(AppConfig.oidc.realm);
+        const userId = encodeURIComponent(editedUser.id);
+
+        return createOidcPath(`/admin/${realm}/console/#/${realm}/users/${userId}/settings`);
     }, [editedUser?.id]);
 
     const canEditUser = isEditable && !user?.deletedInIdp;
