@@ -289,7 +289,7 @@ export function ProcessDetailsPage(): ReactNode {
 
     const [currentTestClaim, setCurrentTestClaim] = useState<{
         claim: ProcessTestClaimEntity;
-        user: User;
+        user: User | null;
     } | null>(null);
 
     const [showMenuAtEl, setShowMenuAtEl] = useState<HTMLElement | null>(null);
@@ -541,24 +541,37 @@ export function ProcessDetailsPage(): ReactNode {
 
                 if (content.length > 0) {
                     const claim = content[0];
+                    const claimOwnerUser = user?.id === claim.owningUserId ? user : null;
+
+                    setCurrentTestClaim({
+                        claim,
+                        user: claimOwnerUser,
+                    });
+
+                    if (claimOwnerUser != null) {
+                        return;
+                    }
+
                     new UsersApiService()
                         .retrieve(claim.owningUserId)
-                        .then((user) => {
+                        .then((claimOwnerUser) => {
                             if (cancelled) {
                                 return;
                             }
 
-                            setCurrentTestClaim({
-                                claim,
-                                user,
+                            setCurrentTestClaim((previousClaim) => {
+                                if (previousClaim?.claim.id !== claim.id) {
+                                    return previousClaim;
+                                }
+
+                                return {
+                                    claim,
+                                    user: claimOwnerUser,
+                                };
                             });
                         })
-                        .catch((err) => {
-                            if (cancelled) {
-                                return;
-                            }
-
-                            dispatch(showApiErrorSnackbar(err, 'Der Testanspruch konnte nicht geladen werden.'));
+                        .catch(() => {
+                            // Keep the claim visible even if the owning user cannot be resolved.
                         });
                 } else {
                     setCurrentTestClaim(null);
@@ -575,7 +588,7 @@ export function ProcessDetailsPage(): ReactNode {
         return () => {
             cancelled = true;
         };
-    }, [dispatch, processId, processVersion]);
+    }, [dispatch, processId, processVersion, user]);
 
     useEffect(() => {
         if (requiredFlowNodeProviders.length === 0) {
@@ -1661,6 +1674,21 @@ export function ProcessDetailsPage(): ReactNode {
         notImplemented,
         handleDeleteProcess,
     ]);
+    const currentTestClaimOwnerName = useMemo(() => {
+        if (currentTestClaim == null) {
+            return '';
+        }
+
+        if (currentTestClaim.user != null) {
+            return resolveUserName(currentTestClaim.user);
+        }
+
+        if (currentTestClaim.claim.owningUserId === user?.id && user != null) {
+            return resolveUserName(user);
+        }
+
+        return 'Unbekannte Mitarbeiter:in';
+    }, [currentTestClaim, user]);
     const connectExistingNodeSource = useMemo(() => {
         if (processFlow == null || connectExistingNodeRequest == null) {
             return null;
@@ -1823,7 +1851,7 @@ export function ProcessDetailsPage(): ReactNode {
                                                             />
                                                             <Typography
                                                                 variant="body2"
-                                                                title={resolveUserName(currentTestClaim.user)}
+                                                                title={currentTestClaimOwnerName}
                                                                 sx={{
                                                                     maxWidth: '100%',
                                                                     overflow: 'hidden',
@@ -1835,7 +1863,7 @@ export function ProcessDetailsPage(): ReactNode {
                                                                     lineHeight: 1.3,
                                                                 }}
                                                             >
-                                                                Im Test durch {resolveUserName(currentTestClaim.user)}
+                                                                Im Test durch {currentTestClaimOwnerName}
                                                             </Typography>
                                                         </Box>
                                                     )
