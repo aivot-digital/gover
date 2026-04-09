@@ -126,6 +126,9 @@ const columns: GridColDef<ProcessListEntry>[] = [
                             mt: -0.75,
                             fontSize: '0.875rem',
                             lineHeight: '1.5rem',
+                            textOverflow: 'ellipsis',
+                            overflow: 'hidden',
+                            whiteSpace: 'nowrap',
                         }}
                         color="textSecondary"
                     >
