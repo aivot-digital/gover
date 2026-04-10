@@ -196,7 +196,8 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
                 .ifPresent(field -> {
                     var options = List.of(
                             SelectInputElementOption.of(WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BASIC, "Basic Auth"),
-                            SelectInputElementOption.of(WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BEARER, "Bearer Token"),
+                            // Bearer Token is removed because it clashes with the default spring boot jwt bearer token implementation
+                            // SelectInputElementOption.of(WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BEARER, "Bearer Token"),
                             SelectInputElementOption.of(WebhookTriggerConfigV1.AUTH_METHOD_OPTION_QUERY_PARAM, "Query-Parameter")
                     );
 
@@ -307,6 +308,12 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
                                 // Set visibility for token field (bearer or query param)
                                 var keyAuthVisibility = ElementVisibilityFunctions
                                         .of(NoCodeExpression.of(
+                                                NoCodeEqualsOperator.OPERATOR_ID,
+                                                new NoCodeReference(WebhookTriggerConfigV1.AUTH_METHOD_CONFIG_KEY),
+                                                new NoCodeStaticValue(WebhookTriggerConfigV1.AUTH_METHOD_OPTION_QUERY_PARAM)
+                                        ))
+                                        /* Bearer Token is removed because it clashes with the default spring boot jwt bearer token implementation
+                                        .of(NoCodeExpression.of(
                                                 NoCodeOrOperator.OPERATOR_ID,
                                                 NoCodeExpression.of(
                                                         NoCodeEqualsOperator.OPERATOR_ID,
@@ -319,6 +326,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
                                                         new NoCodeStaticValue(WebhookTriggerConfigV1.AUTH_METHOD_OPTION_QUERY_PARAM)
                                                 )
                                         ))
+                                         */
                                         .recalculateReferencedIds();
                                 token.setVisibility(keyAuthVisibility);
                             });
@@ -411,7 +419,9 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
                         config.authConfig.authUsername,
                         config.authConfig.authPassword
                 );
-            } else if (WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BEARER.equals(config.authConfig.authMethod)) {
+            }
+            /* Bearer Token is removed because it clashes with the default spring boot jwt bearer token implementation
+            else if (WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BEARER.equals(config.authConfig.authMethod)) {
                 sb.appendLine("");
                 sb.appendLine(
                         "Da in der Knotenkonfiguration die Authentifizierung über eine Bearer Token aktiviert ist, " +
@@ -420,6 +430,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
                         config.authConfig.authToken
                 );
             }
+            */
         }
 
         var curlLines = new LinkedList<String>();
@@ -442,9 +453,12 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
         if (Boolean.TRUE.equals(config.authRequired) && config.authConfig != null) {
             if (WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BASIC.equals(config.authConfig.authMethod)) {
                 curlLines.add("--header 'Authorization: Basic " + StringUtils.encodeBase64String(config.authConfig.authUsername + ":" + config.authConfig.authPassword) + "'");
-            } else if (WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BEARER.equals(config.authConfig.authMethod)) {
+            }
+            /* Bearer Token is removed because it clashes with the default spring boot jwt bearer token implementation
+            else if (WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BEARER.equals(config.authConfig.authMethod)) {
                 curlLines.add("--header 'Authorization: Bearer " + config.authConfig.authToken + "'");
             }
+            */
         }
 
         sb.appendLine("");

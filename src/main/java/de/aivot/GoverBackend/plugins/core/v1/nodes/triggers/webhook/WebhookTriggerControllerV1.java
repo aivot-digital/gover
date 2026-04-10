@@ -4,11 +4,11 @@ import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.identity.controllers.IdentityController;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.models.dtos.HttpOptionsResponseDto;
 import de.aivot.GoverBackend.process.entities.*;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessVersionStatus;
 import de.aivot.GoverBackend.process.filters.ProcessFilter;
+import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessTestClaimRepository;
 import de.aivot.GoverBackend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.GoverBackend.process.services.ProcessInstanceService;
@@ -25,7 +25,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.support.StandardMultipartHttpServletRequest;
@@ -46,59 +45,24 @@ public class WebhookTriggerControllerV1 {
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
     private final ProcessNodeService processNodeService;
     private final ProcessService processService;
+    private final ProcessNodeRepository processNodeRepository;
 
     @Autowired
     public WebhookTriggerControllerV1(ProcessInstanceService processInstanceService,
                                       ProcessTestClaimRepository processTestClaimRepository,
                                       ProcessInstanceAttachmentService processInstanceAttachmentService,
-                                      ProcessNodeService processNodeService, ProcessService processService) {
+                                      ProcessNodeService processNodeService, ProcessService processService, ProcessNodeRepository processNodeRepository) {
         this.processInstanceService = processInstanceService;
         this.processTestClaimRepository = processTestClaimRepository;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.processNodeService = processNodeService;
         this.processService = processService;
+        this.processNodeRepository = processNodeRepository;
     }
 
-    @RequestMapping(value = "/api/public/webhooks/v1/{accessKey}/{slug}/", method = {
-            RequestMethod.OPTIONS,
-    }, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<HttpOptionsResponseDto> handleOptions(
-            @Nonnull @PathVariable UUID accessKey,
-            @Nonnull @PathVariable String slug,
-            @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey
-    ) throws ResponseException {
-        var process = getProcess(accessKey);
-        var testClaim = getTestClaim(process, testClaimAccessKey);
-        var nodeEntity = retrieveWebhookNode(process, slug, testClaim);
-        var config = getWebhookConfig(nodeEntity);
-
-        var allow = getAllow(config);
-        var response = new HttpOptionsResponseDto(
-                RequestMethod.OPTIONS.name(),
-                allow,
-                config.requestMethod,
-                getAcceptedContentType(config),
-                MediaType.APPLICATION_JSON_VALUE
-        );
-
-        return ResponseEntity
-                .ok()
-                .contentType(MediaType.APPLICATION_JSON)
-                .header(HttpHeaders.ALLOW, String.join(", ", allow))
-                .body(response);
-    }
-
-    private ProcessEntity getProcess(UUID accessKey) throws ResponseException {
-        return processService
-                .retrieve(ProcessFilter.create().setAccessKey(accessKey))
-                .orElseThrow(() -> ResponseException.notFound("Kein Prozess mit dem angegebenen Access Key gefunden."));
-    }
 
     @RequestMapping(value = "/api/public/webhooks/v1/{accessKey}/{slug}/", method = {
             RequestMethod.GET,
-            RequestMethod.POST,
-            RequestMethod.PUT,
-            RequestMethod.PATCH,
             RequestMethod.DELETE,
     }, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response handleWithoutBody(
@@ -110,19 +74,17 @@ public class WebhookTriggerControllerV1 {
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) UUID identityId,
             @Nullable @RequestHeader(name = AUTH_HEADER_NAME, required = false) String authorizationHeader
     ) throws ResponseException {
-        return handleRequest(request, accessKey, slug, new HashMap<>(), Map.of(), testClaimAccessKey, authToken, authorizationHeader);
+        return handleRequest(request, accessKey, slug, null, new HashMap<>(), Map.of(), testClaimAccessKey, authToken, authorizationHeader);
     }
 
-    @RequestMapping(value = "/api/public/webhooks/v1/{accessKey}/{slug}/", method = {
+    @RequestMapping(value = "/api/public/webhooks/v1/{accessKey}/{slug}/xml/", method = {
             RequestMethod.POST,
             RequestMethod.PUT,
             RequestMethod.PATCH,
-            RequestMethod.DELETE,
     }, consumes = {
-            MediaType.APPLICATION_JSON_VALUE,
             MediaType.APPLICATION_XML_VALUE,
     }, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response handleXmlAndJson(
+    public Response handleXml(
             @Nonnull HttpServletRequest request,
             @Nonnull @PathVariable UUID accessKey,
             @Nonnull @PathVariable String slug,
@@ -132,14 +94,33 @@ public class WebhookTriggerControllerV1 {
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) UUID identityId,
             @Nullable @RequestHeader(name = AUTH_HEADER_NAME, required = false) String authorizationHeader
     ) throws ResponseException {
-        return handleRequest(request, accessKey, slug, payload, Map.of(), testClaimAccessKey, authToken, authorizationHeader);
+        return handleRequest(request, accessKey, slug, WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_XML, payload, Map.of(), testClaimAccessKey, authToken, authorizationHeader);
     }
 
-    @RequestMapping(value = "/api/public/webhooks/v1/{accessKey}/{slug}/", method = {
+    @RequestMapping(value = "/api/public/webhooks/v1/{accessKey}/{slug}/json/", method = {
             RequestMethod.POST,
             RequestMethod.PUT,
             RequestMethod.PATCH,
-            RequestMethod.DELETE,
+    }, consumes = {
+            MediaType.APPLICATION_JSON_VALUE,
+    }, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response handleJson(
+            @Nonnull HttpServletRequest request,
+            @Nonnull @PathVariable UUID accessKey,
+            @Nonnull @PathVariable String slug,
+            @Nonnull @RequestBody Map<String, Object> payload,
+            @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
+            @Nullable @RequestParam(value = AUTH_TOKEN_QUERY_PARAM, required = false) String authToken,
+            @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) UUID identityId,
+            @Nullable @RequestHeader(name = AUTH_HEADER_NAME, required = false) String authorizationHeader
+    ) throws ResponseException {
+        return handleRequest(request, accessKey, slug, WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_JSON, payload, Map.of(), testClaimAccessKey, authToken, authorizationHeader);
+    }
+
+    @RequestMapping(value = "/api/public/webhooks/v1/{accessKey}/{slug}/form-data/", method = {
+            RequestMethod.POST,
+            RequestMethod.PUT,
+            RequestMethod.PATCH,
     }, consumes = {
             MediaType.MULTIPART_FORM_DATA_VALUE,
     }, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -162,13 +143,14 @@ public class WebhookTriggerControllerV1 {
                 payload.put(key, null);
             }
         }
-        return handleRequest(request, accessKey, slug, payload, request.getFileMap(), testClaimAccessKey, authToken, authorizationHeader);
+        return handleRequest(request, accessKey, slug, WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_FORM, payload, request.getFileMap(), testClaimAccessKey, authToken, authorizationHeader);
     }
 
     @Nonnull
     private Response handleRequest(@Nonnull HttpServletRequest request,
                                    @Nonnull UUID accessKey,
                                    @Nonnull String slug,
+                                   @Nullable String requestBody,
                                    @Nonnull Map<String, Object> payload,
                                    @Nonnull Map<String, MultipartFile> files,
                                    @Nullable String testClaimAccessKey,
@@ -176,10 +158,13 @@ public class WebhookTriggerControllerV1 {
                                    @Nullable String authorizationHeader) throws ResponseException {
         var process = getProcess(accessKey);
         var testClaim = getTestClaim(process, testClaimAccessKey);
-        var nodeEntity = retrieveWebhookNode(process, slug, testClaim);
-        var config = getWebhookConfig(nodeEntity);
+        var nodeEntities = retrieveWebhookNode(process, slug, request.getMethod(), requestBody, testClaim);
 
-        startProcess(testClaim, nodeEntity, config, request, payload, files, authToken, authorizationHeader);
+        for (var nodeEntity : nodeEntities) {
+            var config = getWebhookConfig(nodeEntity);
+
+            startProcess(testClaim, nodeEntity, config, request, payload, files, authToken, authorizationHeader);
+        }
 
         return new Response("Webhook empfangen und verarbeitet.");
     }
@@ -188,18 +173,22 @@ public class WebhookTriggerControllerV1 {
     private ProcessTestClaimEntity getTestClaim(@Nonnull ProcessEntity process,
                                                 @Nullable String testClaimAccessKey) {
         return testClaimAccessKey != null ? processTestClaimRepository
-                .findByProcessIdAndAccessKey(process.getId(), testClaimAccessKey)
-                .orElse(null) : null;
+                                            .findByProcessIdAndAccessKey(process.getId(), testClaimAccessKey)
+                                            .orElse(null) : null;
     }
 
     @Nonnull
-    private ProcessNodeEntity retrieveWebhookNode(@Nonnull ProcessEntity process,
-                                                  @Nonnull String slug,
-                                                  @Nullable ProcessTestClaimEntity testClaim) throws ResponseException {
+    private List<ProcessNodeEntity> retrieveWebhookNode(@Nonnull ProcessEntity process,
+                                                        @Nonnull String slug,
+                                                        @Nonnull String method,
+                                                        @Nullable String bodyType,
+                                                        @Nullable ProcessTestClaimEntity testClaim) throws ResponseException {
         var specBuilder = SpecificationBuilder
                 .create(ProcessNodeEntity.class)
                 .withEquals("processId", process.getId())
-                .withJsonEquals("configuration", List.of(WebhookTriggerConfigV1.SLUG_CONFIG_KEY), slug);
+                .withJsonEquals("configuration", List.of(WebhookTriggerConfigV1.SLUG_CONFIG_KEY), slug)
+                .withJsonEquals("configuration", List.of(WebhookTriggerConfigV1.REQUEST_METHOD_CONFIG_KEY), method.toUpperCase())
+                .withJsonEquals("configuration", List.of(WebhookTriggerConfigV1.REQUEST_BODY_TYPE_CONFIG_KEY), bodyType);
 
         if (testClaim != null) {
             specBuilder = specBuilder
@@ -223,9 +212,14 @@ public class WebhookTriggerControllerV1 {
             });
         }
 
-        return processNodeService
-                .retrieve(specBuilder.build())
-                .orElseThrow(() -> ResponseException.notFound("Kein Webhook-Knoten mit dem angegebenen Slug gefunden."));
+        var res = processNodeRepository
+                .findAll(specBuilder.build());
+
+        if (res.isEmpty()) {
+            throw ResponseException.notFound("Kein Webhook-Knoten mit dem angegebenen Slug gefunden.");
+        }
+
+        return res;
     }
 
     private void startProcess(@Nullable ProcessTestClaimEntity testClaimEntity,
@@ -469,6 +463,7 @@ public class WebhookTriggerControllerV1 {
                     throw ResponseException.unauthorized("Ungültiger Benutzername oder Passwort für den Webhook-Trigger-Knoten.");
                 }
                 break;
+            /* Bearer is removed, because it clashed with the default spring boot jwt bearer token handling
             case WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BEARER:
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                     throw ResponseException.unauthorized("Fehlender oder ungültiger Autorisierungs-Header für den Webhook-Trigger-Knoten.");
@@ -478,6 +473,7 @@ public class WebhookTriggerControllerV1 {
                     throw ResponseException.unauthorized("Ungültiger Token für den Webhook-Trigger-Knoten.");
                 }
                 break;
+             */
             case WebhookTriggerConfigV1.AUTH_METHOD_OPTION_QUERY_PARAM:
                 if (tokenQueryParam == null || !tokenQueryParam.equals(config.authConfig.authToken)) {
                     throw ResponseException.unauthorized("Ungültiger Token für den Webhook-Trigger-Knoten.");
@@ -490,5 +486,11 @@ public class WebhookTriggerControllerV1 {
 
     public record Response(String message) {
 
+    }
+
+    private ProcessEntity getProcess(UUID accessKey) throws ResponseException {
+        return processService
+                .retrieve(ProcessFilter.create().setAccessKey(accessKey))
+                .orElseThrow(() -> ResponseException.notFound("Kein Prozess mit dem angegebenen Access Key gefunden."));
     }
 }
