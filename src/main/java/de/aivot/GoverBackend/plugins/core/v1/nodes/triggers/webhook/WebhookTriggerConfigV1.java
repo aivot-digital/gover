@@ -60,6 +60,7 @@ public class WebhookTriggerConfigV1 {
             @ElementPOJOBindingProperty(key = "label", strValue = "Webhook-URL"),
             @ElementPOJOBindingProperty(key = "hint", strValue = "Die URL, über die der Webhook angesprochen werden kann."),
             @ElementPOJOBindingProperty(key = "required", boolValue = true),
+            @ElementPOJOBindingProperty(key = "destinationKey", strValue = WebhookTriggerConfigV1.SLUG_CONFIG_KEY),
     })
     public String slug = "";
 

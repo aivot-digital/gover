@@ -8,10 +8,12 @@ import de.aivot.GoverBackend.models.dtos.HttpOptionsResponseDto;
 import de.aivot.GoverBackend.process.entities.*;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessVersionStatus;
+import de.aivot.GoverBackend.process.filters.ProcessFilter;
 import de.aivot.GoverBackend.process.repositories.ProcessTestClaimRepository;
 import de.aivot.GoverBackend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.GoverBackend.process.services.ProcessInstanceService;
 import de.aivot.GoverBackend.process.services.ProcessNodeService;
+import de.aivot.GoverBackend.process.services.ProcessService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import jakarta.annotation.Nonnull;
@@ -43,27 +45,31 @@ public class WebhookTriggerControllerV1 {
     private final ProcessTestClaimRepository processTestClaimRepository;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
     private final ProcessNodeService processNodeService;
+    private final ProcessService processService;
 
     @Autowired
     public WebhookTriggerControllerV1(ProcessInstanceService processInstanceService,
                                       ProcessTestClaimRepository processTestClaimRepository,
                                       ProcessInstanceAttachmentService processInstanceAttachmentService,
-                                      ProcessNodeService processNodeService) {
+                                      ProcessNodeService processNodeService, ProcessService processService) {
         this.processInstanceService = processInstanceService;
         this.processTestClaimRepository = processTestClaimRepository;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.processNodeService = processNodeService;
+        this.processService = processService;
     }
 
-    @RequestMapping(value = "/api/public/webhooks/v1/{slug}/", method = {
+    @RequestMapping(value = "/api/public/webhooks/v1/{accessKey}/{slug}/", method = {
             RequestMethod.OPTIONS,
     }, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<HttpOptionsResponseDto> handleOptions(
+            @Nonnull @PathVariable UUID accessKey,
             @Nonnull @PathVariable String slug,
             @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey
     ) throws ResponseException {
-        var testClaim = getTestClaim(testClaimAccessKey);
-        var nodeEntity = retrieveWebhookNode(slug, testClaim);
+        var process = getProcess(accessKey);
+        var testClaim = getTestClaim(process, testClaimAccessKey);
+        var nodeEntity = retrieveWebhookNode(process, slug, testClaim);
         var config = getWebhookConfig(nodeEntity);
 
         var allow = getAllow(config);
@@ -82,7 +88,13 @@ public class WebhookTriggerControllerV1 {
                 .body(response);
     }
 
-    @RequestMapping(value = "/api/public/webhooks/v1/{slug}/", method = {
+    private ProcessEntity getProcess(UUID accessKey) throws ResponseException {
+        return processService
+                .retrieve(ProcessFilter.create().setAccessKey(accessKey))
+                .orElseThrow(() -> ResponseException.notFound("Kein Prozess mit dem angegebenen Access Key gefunden."));
+    }
+
+    @RequestMapping(value = "/api/public/webhooks/v1/{accessKey}/{slug}/", method = {
             RequestMethod.GET,
             RequestMethod.POST,
             RequestMethod.PUT,
@@ -91,16 +103,17 @@ public class WebhookTriggerControllerV1 {
     }, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response handleWithoutBody(
             @Nonnull HttpServletRequest request,
+            @Nonnull @PathVariable UUID accessKey,
             @Nonnull @PathVariable String slug,
             @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
             @Nullable @RequestParam(value = AUTH_TOKEN_QUERY_PARAM, required = false) String authToken,
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) UUID identityId,
             @Nullable @RequestHeader(name = AUTH_HEADER_NAME, required = false) String authorizationHeader
     ) throws ResponseException {
-        return handleRequest(request, slug, new HashMap<>(), Map.of(), testClaimAccessKey, authToken, authorizationHeader);
+        return handleRequest(request, accessKey, slug, new HashMap<>(), Map.of(), testClaimAccessKey, authToken, authorizationHeader);
     }
 
-    @RequestMapping(value = "/api/public/webhooks/v1/{slug}/", method = {
+    @RequestMapping(value = "/api/public/webhooks/v1/{accessKey}/{slug}/", method = {
             RequestMethod.POST,
             RequestMethod.PUT,
             RequestMethod.PATCH,
@@ -111,6 +124,7 @@ public class WebhookTriggerControllerV1 {
     }, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response handleXmlAndJson(
             @Nonnull HttpServletRequest request,
+            @Nonnull @PathVariable UUID accessKey,
             @Nonnull @PathVariable String slug,
             @Nonnull @RequestBody Map<String, Object> payload,
             @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
@@ -118,10 +132,10 @@ public class WebhookTriggerControllerV1 {
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) UUID identityId,
             @Nullable @RequestHeader(name = AUTH_HEADER_NAME, required = false) String authorizationHeader
     ) throws ResponseException {
-        return handleRequest(request, slug, payload, Map.of(), testClaimAccessKey, authToken, authorizationHeader);
+        return handleRequest(request, accessKey, slug, payload, Map.of(), testClaimAccessKey, authToken, authorizationHeader);
     }
 
-    @RequestMapping(value = "/api/public/webhooks/v1/{slug}/", method = {
+    @RequestMapping(value = "/api/public/webhooks/v1/{accessKey}/{slug}/", method = {
             RequestMethod.POST,
             RequestMethod.PUT,
             RequestMethod.PATCH,
@@ -131,6 +145,7 @@ public class WebhookTriggerControllerV1 {
     }, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response handleFormData(
             @Nonnull StandardMultipartHttpServletRequest request,
+            @Nonnull @PathVariable UUID accessKey,
             @Nonnull @PathVariable String slug,
             @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
             @Nullable @RequestParam(value = AUTH_TOKEN_QUERY_PARAM, required = false) String authToken,
@@ -147,19 +162,21 @@ public class WebhookTriggerControllerV1 {
                 payload.put(key, null);
             }
         }
-        return handleRequest(request, slug, payload, request.getFileMap(), testClaimAccessKey, authToken, authorizationHeader);
+        return handleRequest(request, accessKey, slug, payload, request.getFileMap(), testClaimAccessKey, authToken, authorizationHeader);
     }
 
     @Nonnull
     private Response handleRequest(@Nonnull HttpServletRequest request,
+                                   @Nonnull UUID accessKey,
                                    @Nonnull String slug,
                                    @Nonnull Map<String, Object> payload,
                                    @Nonnull Map<String, MultipartFile> files,
                                    @Nullable String testClaimAccessKey,
                                    @Nullable String authToken,
                                    @Nullable String authorizationHeader) throws ResponseException {
-        var testClaim = getTestClaim(testClaimAccessKey);
-        var nodeEntity = retrieveWebhookNode(slug, testClaim);
+        var process = getProcess(accessKey);
+        var testClaim = getTestClaim(process, testClaimAccessKey);
+        var nodeEntity = retrieveWebhookNode(process, slug, testClaim);
         var config = getWebhookConfig(nodeEntity);
 
         startProcess(testClaim, nodeEntity, config, request, payload, files, authToken, authorizationHeader);
@@ -168,17 +185,20 @@ public class WebhookTriggerControllerV1 {
     }
 
     @Nullable
-    private ProcessTestClaimEntity getTestClaim(@Nullable String testClaimAccessKey) {
+    private ProcessTestClaimEntity getTestClaim(@Nonnull ProcessEntity process,
+                                                @Nullable String testClaimAccessKey) {
         return testClaimAccessKey != null ? processTestClaimRepository
-                .findByAccessKey(testClaimAccessKey)
+                .findByProcessIdAndAccessKey(process.getId(), testClaimAccessKey)
                 .orElse(null) : null;
     }
 
     @Nonnull
-    private ProcessNodeEntity retrieveWebhookNode(@Nonnull String slug,
+    private ProcessNodeEntity retrieveWebhookNode(@Nonnull ProcessEntity process,
+                                                  @Nonnull String slug,
                                                   @Nullable ProcessTestClaimEntity testClaim) throws ResponseException {
         var specBuilder = SpecificationBuilder
                 .create(ProcessNodeEntity.class)
+                .withEquals("processId", process.getId())
                 .withJsonEquals("configuration", List.of(WebhookTriggerConfigV1.SLUG_CONFIG_KEY), slug);
 
         if (testClaim != null) {

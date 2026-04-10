@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
+import de.aivot.GoverBackend.elements.models.elements.ElementOverrideFunctions;
 import de.aivot.GoverBackend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
@@ -15,6 +16,7 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElemen
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
+import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
@@ -158,8 +160,20 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
                             .setRegex("^[a-zA-Z0-9-]+$")
                             .setMessage("Der Webhook-Slug darf nur aus Buchstaben, Zahlen und Bindestrichen bestehen.");
                     field.setPattern(pattern);
-
                 });
+
+        // Automatic Link Element
+        var linkPrefix = goverConfig.createUrlWithTrailingSlash("/api/public/webhooks/v1", context.processDefinition().getAccessKey().toString());
+
+        var linkOverride = new ElementOverrideFunctions()
+                .setJavascriptCode(JavascriptCode.of("({ ...element, content: '**Vollständige Webhook-URL:**\\n\\n" + linkPrefix + "' + $." + WebhookTriggerConfigV1.SLUG_CONFIG_KEY + " + '/'});"))
+                .withReferenceIds(WebhookTriggerConfigV1.SLUG_CONFIG_KEY);
+
+        var link = new RichTextContentElement();
+        link.setId("link");
+        link.setContent("**Vollständige Webhook-URL:**\n\n" + linkPrefix + "{Webhook-URL}");
+        link.setOverride(linkOverride);
+        configLayout.insertChildAfter(link, WebhookTriggerConfigV1.SLUG_CONFIG_KEY);
 
         // Add request method select options
         configLayout
@@ -346,10 +360,10 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
                 WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_PUT.equals(config.requestMethod);
 
         var requestContentType = requestAllowsBody ? (config.requestBodyConfig != null && WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_JSON.equals(config.requestBodyConfig.requestBodyType) ?
-                "application/json" :
-                config.requestBodyConfig != null && WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_FORM.equals(config.requestBodyConfig.requestBodyType) ?
-                        "multipart/form-data" :
-                        "application/xml") : null;
+                                                      "application/json" :
+                                                      config.requestBodyConfig != null && WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_FORM.equals(config.requestBodyConfig.requestBodyType) ?
+                                                      "multipart/form-data" :
+                                                      "application/xml") : null;
 
         var sb = new FormattedStringBuilder();
 
@@ -451,9 +465,9 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
     }
 
     @Override
-    public Map<String, String > validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                      @Nonnull AuthoredElementValues configuration,
-                                      @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
+    public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                     @Nonnull AuthoredElementValues configuration,
+                                                     @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
         var res = new HashMap<String, String>();
 
         var slug = StringUtils.toNullableTrimmedString(configuration.get(WebhookTriggerConfigV1.SLUG_CONFIG_KEY));
