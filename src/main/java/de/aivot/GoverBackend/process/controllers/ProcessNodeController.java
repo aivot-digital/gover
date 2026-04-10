@@ -487,7 +487,7 @@ public class ProcessNodeController {
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
         var res = processDefinitionNodeService
-                .validate(id);
+                .validate(id, false);
 
         if (res.isPresent()) {
             return res.get();

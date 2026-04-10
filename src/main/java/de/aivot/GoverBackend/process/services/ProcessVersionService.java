@@ -100,7 +100,7 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
 
         for (var node : nodes) {
             processNodeService
-                    .validate(node)
+                    .validate(node, true)
                     .ifPresent(res::add);
         }
 
