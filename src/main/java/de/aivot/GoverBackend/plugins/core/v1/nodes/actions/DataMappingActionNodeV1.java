@@ -141,7 +141,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
                 var sourcePath = parsePath(rule.source, rowIndex, "From Field");
                 var targetPath = parsePath(rule.target, rowIndex, "To Field");
 
-                var sourceValue = readPath(outputRoot, sourcePath, !Boolean.TRUE.equals(rule.copy));
+                var sourceValue = readPath(outputRoot, sourcePath);
                 var transformedValue = applyTransform(
                         engine,
                         rowIndex,
@@ -386,10 +386,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
     }
 
     private static Object readPath(@Nonnull Map<String, Object> sourceRoot,
-                                   @Nonnull List<PathPart> path,
-                                   boolean removeIfFound) {
-        // TODO: Implement remove if found
-
+                                   @Nonnull List<PathPart> path) {
         Object current = sourceRoot;
 
         for (var pathPart : path) {
@@ -624,14 +621,6 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
                     @ElementPOJOBindingProperty(key = "prefix", strValue = "$.")
             })
             public String target;
-
-            public static final String COPY_FIELD_ID = "copy";
-            @InputElementPOJOBinding(id = COPY_FIELD_ID, type = ElementType.Checkbox, properties = {
-                    @ElementPOJOBindingProperty(key = "label", strValue = "Wert kopieren"),
-                    @ElementPOJOBindingProperty(key = "hint", strValue = "Wenn aktiviert, wird der Wert aus dem Quellpfad kopiert, anstatt ihn zu verschieben. Das bedeutet, dass der ursprüngliche Wert im Quellpfad erhalten bleibt und zusätzlich am Zielpfad verfügbar ist."),
-                    @ElementPOJOBindingProperty(key = "variant", strValue = "switch")
-            })
-            public Boolean copy;
         }
     }
 }
