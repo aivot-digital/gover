@@ -85,7 +85,7 @@ public class ServerConfiguration implements WebMvcConfigurer {
 
     private static XmlMapper createXmlMapper() {
         JacksonXmlModule module = new JacksonXmlModule();
-        module.setXMLTextElementName("#text");
+        module.setXMLTextElementName("$text");
 
         XmlMapper mapper = new XmlMapper(module);
         mapper.configure(FromXmlParser.Feature.EMPTY_ELEMENT_AS_NULL, true);
