@@ -244,7 +244,7 @@ export function ThemeDetailsPageIndex() {
                         selectLabel="Logo für das Erscheinungsbild auswählen"
                         value={theme.logoKey ?? null}
                         onChange={(key) => {
-                            handleInputChange('logoKey')(key != null ? key : undefined);
+                            handleInputChange('logoKey')(key);
                         }}
                         size={{
                             aspectRatio: 2, // Default aspect ratio of a logo is 2:1. See logo.tsx
@@ -265,7 +265,7 @@ export function ThemeDetailsPageIndex() {
                         selectLabel="Favicon für das Erscheinungsbild auswählen"
                         value={theme.faviconKey ?? null}
                         onChange={(key) => {
-                            handleInputChange('faviconKey')(key != null ? key : undefined);
+                            handleInputChange('faviconKey')(key);
                         }}
                         size={{
                             width: '8rem',
