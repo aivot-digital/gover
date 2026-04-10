@@ -17,6 +17,7 @@ export interface ProcessFlowEditorContextType {
     onDeleteNode: (node: ProcessNodeEntity) => void | Promise<void>;
     onConnectNodeToExisting: (node: ProcessNodeEntity, preferredPortKey?: string) => void;
     onStartReplaceNode: (node: ProcessNodeEntity) => void;
+    onStartCloneNode: (node: ProcessNodeEntity) => void;
 
     onReloadRuntimeData: () => void;
 

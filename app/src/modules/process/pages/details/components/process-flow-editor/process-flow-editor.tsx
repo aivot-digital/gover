@@ -96,6 +96,7 @@ interface ProcessFlowEditorProps {
     onDeleteNode?: (node: ProcessNodeEntity) => void | Promise<void>;
     onConnectNodeToExisting?: (node: ProcessNodeEntity, preferredPortKey?: string) => void;
     onStartReplaceNode?: (node: ProcessNodeEntity) => void;
+    onStartCloneNode?: (node: ProcessNodeEntity) => void;
 
     onAddFollowUpNode?: (fromNodeId: number, viaPortKey: string) => void;
     onAddInbetweenNode?: (forEdgeId: number) => void;
@@ -340,6 +341,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onDeleteNode,
         onConnectNodeToExisting,
         onStartReplaceNode,
+        onStartCloneNode,
 
         onAddFollowUpNode,
         onAddInbetweenNode,
@@ -408,6 +410,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onDeleteNode: onDeleteNode ?? NOOP_DELETE_NODE,
         onConnectNodeToExisting: onConnectNodeToExisting ?? NOOP_CONNECT_NODE_TO_EXISTING,
         onStartReplaceNode: onStartReplaceNode ?? NOOP_START_REPLACE_NODE,
+        onStartCloneNode: onStartCloneNode ?? NOOP_START_REPLACE_NODE,
 
         onReloadRuntimeData: onReloadRuntimeData,
 

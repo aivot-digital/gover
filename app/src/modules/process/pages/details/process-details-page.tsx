@@ -77,6 +77,7 @@ import {getMinDisplayableAreaWidth} from '../../../../utils/display-area-utils';
 import {ProcessNodeProblems} from '../../entities/process-node-problems';
 import {addEntityHistoryItem} from '../../../../slices/entity-history-slice';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
+import {generateId} from '../../../../utils/id-utils';
 
 const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 250;
 
@@ -1343,6 +1344,34 @@ export function ProcessDetailsPage(): ReactNode {
             nodeId: node.id,
         });
     }, []);
+    const handleCloneNode = useCallback((node: ProcessNodeEntity): void => {
+        dispatch(setLoadingMessage({
+            blocking: false,
+            message: 'Dupliziere Prozesselement',
+            estimatedTime: 1200,
+        }));
+
+        new ProcessNodeApiService()
+            .create({
+                ...node,
+                dataKey: generateId(5),
+            })
+            .then((createdNode) => {
+                setProcessFlow((flow) => flow != null ? ({
+                    ...flow,
+                    nodes: [
+                        ...flow.nodes,
+                        createdNode,
+                    ],
+                }) : null);
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Das Prozesselement konnte nicht dupliziert werden.'));
+            })
+            .finally(() => {
+                dispatch(clearLoadingMessage());
+            })
+    }, []);
     const handleImportNode = useCallback(async (context: NodeImportContext): Promise<void> => {
         if (processFlow == null) {
             return;
@@ -1930,6 +1959,7 @@ export function ProcessDetailsPage(): ReactNode {
                                                     });
                                                 }}
                                                 onStartReplaceNode={handleOpenReplaceNodeDialog}
+                                                onStartCloneNode={handleCloneNode}
                                                 onDeleteEdge={(edgeId) => {
                                                     new ProcessDefinitionEdgeApiService()
                                                         .destroy(edgeId)

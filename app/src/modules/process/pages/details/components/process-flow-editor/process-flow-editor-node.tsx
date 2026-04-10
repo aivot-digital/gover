@@ -26,11 +26,11 @@ import Link from '@mui/icons-material/Link';
 import SwapHoriz from '@mui/icons-material/SwapHoriz';
 import {ProcessActionMenu, type ProcessActionMenuItem} from '../process-action-menu';
 import {ModuleIcons} from '../../../../../../shells/staff/data/module-icons';
-import {useNavigate} from 'react-router-dom';
 import Replay from '@aivot/mui-material-symbols-400-outlined/dist/replay/Replay';
 import {ProcessInstanceTaskApiService} from '../../../../services/process-instance-task-api-service';
 import {useAppDispatch} from '../../../../../../hooks/use-app-dispatch';
 import {clearLoadingMessage, setLoadingMessage} from '../../../../../../slices/shell-slice';
+import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
 
 function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
     const theme = useTheme();
@@ -51,6 +51,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         onAddFollowUpNode,
         onConnectNodeToExisting,
         onStartReplaceNode,
+        onStartCloneNode,
         onDeleteEdge,
         onDeleteNode,
         showTargetHandles,
@@ -215,6 +216,13 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                 icon: <SwapHoriz/>,
                 onClick: () => {
                     onStartReplaceNode(node);
+                },
+            },
+            {
+                label: 'Duplizieren',
+                icon: <ContentCopy/>,
+                onClick: () => {
+                    onStartCloneNode(node);
                 },
             },
         ] : [];
