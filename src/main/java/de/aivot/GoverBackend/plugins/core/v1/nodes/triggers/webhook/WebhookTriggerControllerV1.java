@@ -21,6 +21,7 @@ import jakarta.persistence.criteria.Subquery;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -159,8 +160,9 @@ public class WebhookTriggerControllerV1 {
                                    @Nullable String authorizationHeader) throws ResponseException {
         var testClaim = getTestClaim(testClaimAccessKey);
         var nodeEntity = retrieveWebhookNode(slug, testClaim);
+        var config = getWebhookConfig(nodeEntity);
 
-        startProcess(testClaim, nodeEntity, request, payload, files, authToken, authorizationHeader);
+        startProcess(testClaim, nodeEntity, config, request, payload, files, authToken, authorizationHeader);
 
         return new Response("Webhook empfangen und verarbeitet.");
     }
@@ -208,13 +210,12 @@ public class WebhookTriggerControllerV1 {
 
     private void startProcess(@Nullable ProcessTestClaimEntity testClaimEntity,
                               @Nonnull ProcessNodeEntity nodeEntity,
+                              @Nonnull WebhookTriggerConfigV1 config,
                               @Nonnull HttpServletRequest request,
                               @Nonnull Map<String, Object> payload,
                               @Nonnull Map<String, MultipartFile> files,
                               @Nullable String authToken,
                               @Nullable String authorizationHeader) throws ResponseException {
-        var config = getWebhookConfig(nodeEntity);
-
         // Check if the request method is correct
         if (!request.getMethod().equalsIgnoreCase(config.requestMethod)) {
             throw ResponseException.methodNotAllowed(
@@ -222,6 +223,8 @@ public class WebhookTriggerControllerV1 {
                     StringUtils.quote(config.requestMethod)
             );
         }
+
+        validateRequestContentType(config, request);
 
         // Check if authentication is required and valid
         checkAuthentication(config, authToken, authorizationHeader);
@@ -309,6 +312,59 @@ public class WebhookTriggerControllerV1 {
         }
     }
 
+    private static void validateRequestContentType(@Nonnull WebhookTriggerConfigV1 config,
+                                                   @Nonnull HttpServletRequest request) throws ResponseException {
+        var expectedContentType = getAcceptedMediaType(config);
+        if (expectedContentType == null) {
+            return;
+        }
+
+        var actualContentType = request.getContentType();
+        if (StringUtils.isNullOrEmpty(actualContentType)) {
+            if (!requestHasBody(request)) {
+                return;
+            }
+
+            throwUnexpectedContentType(null, expectedContentType);
+        }
+
+        MediaType actualMediaType;
+        try {
+            actualMediaType = MediaType.parseMediaType(actualContentType);
+        } catch (InvalidMediaTypeException e) {
+            throwUnexpectedContentType(actualContentType, expectedContentType);
+            return;
+        }
+
+        if (!expectedContentType.isCompatibleWith(actualMediaType)) {
+            throwUnexpectedContentType(actualContentType, expectedContentType);
+        }
+    }
+
+    private static boolean requestHasBody(@Nonnull HttpServletRequest request) {
+        if (request.getContentLengthLong() > 0) {
+            return true;
+        }
+
+        return !StringUtils.isNullOrEmpty(request.getHeader(HttpHeaders.TRANSFER_ENCODING));
+    }
+
+    private static void throwUnexpectedContentType(@Nullable String actualContentType,
+                                                   @Nonnull MediaType expectedContentType) throws ResponseException {
+        if (StringUtils.isNullOrEmpty(actualContentType)) {
+            throw ResponseException.unsupportedMediaType(
+                    "Ungültiger Content-Type für diesen Webhook. Erwartet wird %s.",
+                    StringUtils.quote(expectedContentType.toString())
+            );
+        }
+
+        throw ResponseException.unsupportedMediaType(
+                "Ungültiger Content-Type für diesen Webhook. Erwartet wird %s, empfangen wurde %s.",
+                StringUtils.quote(expectedContentType.toString()),
+                StringUtils.quote(actualContentType)
+        );
+    }
+
     @Nonnull
     private static List<String> getAllow(@Nonnull WebhookTriggerConfigV1 config) {
         var allow = new LinkedHashSet<String>();
@@ -323,21 +379,27 @@ public class WebhookTriggerControllerV1 {
 
     @Nullable
     private static String getAcceptedContentType(@Nonnull WebhookTriggerConfigV1 config) {
+        var acceptedMediaType = getAcceptedMediaType(config);
+        return acceptedMediaType != null ? acceptedMediaType.toString() : null;
+    }
+
+    @Nullable
+    private static MediaType getAcceptedMediaType(@Nonnull WebhookTriggerConfigV1 config) {
         if (!requestAllowsBody(config)) {
             return null;
         }
 
         if (config.requestBodyConfig != null &&
                 WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_JSON.equals(config.requestBodyConfig.requestBodyType)) {
-            return MediaType.APPLICATION_JSON_VALUE;
+            return MediaType.APPLICATION_JSON;
         }
 
         if (config.requestBodyConfig != null &&
                 WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_FORM.equals(config.requestBodyConfig.requestBodyType)) {
-            return MediaType.MULTIPART_FORM_DATA_VALUE;
+            return MediaType.MULTIPART_FORM_DATA;
         }
 
-        return MediaType.APPLICATION_XML_VALUE;
+        return MediaType.APPLICATION_XML;
     }
 
     private static boolean requestAllowsBody(@Nonnull WebhookTriggerConfigV1 config) {

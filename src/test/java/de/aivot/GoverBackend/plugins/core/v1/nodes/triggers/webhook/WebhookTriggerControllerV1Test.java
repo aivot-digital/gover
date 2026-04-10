@@ -5,6 +5,7 @@ import de.aivot.GoverBackend.elements.models.ComputedElementStates;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.repositories.ProcessTestClaimRepository;
 import de.aivot.GoverBackend.process.services.ProcessInstanceAttachmentService;
@@ -25,7 +26,12 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class WebhookTriggerControllerV1Test {
     @Test
@@ -80,8 +86,119 @@ class WebhookTriggerControllerV1Test {
         assertEquals(MediaType.APPLICATION_JSON_VALUE, body.returnedContentType());
     }
 
+    @Test
+    void handleFormDataShouldRejectMultipartWhenJsonIsConfigured() throws ResponseException {
+        var fixture = createControllerFixture(
+                WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST,
+                WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_JSON
+        );
+        var request = mock(org.springframework.web.multipart.support.StandardMultipartHttpServletRequest.class);
+        when(request.getMethod()).thenReturn(WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST);
+        when(request.getContentType()).thenReturn(MediaType.MULTIPART_FORM_DATA_VALUE);
+        when(request.getParameterMap()).thenReturn(java.util.Map.of());
+        when(request.getFileMap()).thenReturn(java.util.Map.of());
+
+        var exception = assertThrows(
+                ResponseException.class,
+                () -> fixture.controller().handleFormData(request, "example-slug", null, null, null, null)
+        );
+
+        assertEquals(HttpStatus.UNSUPPORTED_MEDIA_TYPE, exception.getStatus());
+        verify(fixture.processInstanceService(), never()).create(any());
+    }
+
+    @Test
+    void handleXmlAndJsonShouldRejectJsonWhenXmlIsConfigured() throws ResponseException {
+        var fixture = createControllerFixture(
+                WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST,
+                WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_XML
+        );
+        var request = mock(jakarta.servlet.http.HttpServletRequest.class);
+        when(request.getMethod()).thenReturn(WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST);
+        when(request.getContentType()).thenReturn(MediaType.APPLICATION_JSON_VALUE);
+
+        var exception = assertThrows(
+                ResponseException.class,
+                () -> fixture.controller().handleXmlAndJson(request, "example-slug", java.util.Map.of("key", "value"), null, null, null, null)
+        );
+
+        assertEquals(HttpStatus.UNSUPPORTED_MEDIA_TYPE, exception.getStatus());
+        verify(fixture.processInstanceService(), never()).create(any());
+    }
+
+    @Test
+    void handleWithoutBodyShouldRejectUnsupportedContentTypeWhenBodyIsPresent() throws ResponseException {
+        var fixture = createControllerFixture(
+                WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST,
+                WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_JSON
+        );
+        var request = mock(jakarta.servlet.http.HttpServletRequest.class);
+        when(request.getMethod()).thenReturn(WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST);
+        when(request.getContentType()).thenReturn(MediaType.TEXT_PLAIN_VALUE);
+        when(request.getContentLengthLong()).thenReturn(4L);
+
+        var exception = assertThrows(
+                ResponseException.class,
+                () -> fixture.controller().handleWithoutBody(request, "example-slug", null, null, null, null)
+        );
+
+        assertEquals(HttpStatus.UNSUPPORTED_MEDIA_TYPE, exception.getStatus());
+        verify(fixture.processInstanceService(), never()).create(any());
+    }
+
+    @Test
+    void handleXmlAndJsonShouldAcceptMatchingJsonContentType() throws ResponseException {
+        var fixture = createControllerFixture(
+                WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST,
+                WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_JSON
+        );
+        var request = mock(jakarta.servlet.http.HttpServletRequest.class);
+        when(request.getMethod()).thenReturn(WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST);
+        when(request.getContentType()).thenReturn(MediaType.APPLICATION_JSON_VALUE);
+        when(request.getHeaderNames()).thenReturn(java.util.Collections.emptyEnumeration());
+        when(request.getParameterMap()).thenReturn(java.util.Map.of());
+
+        var response = fixture.controller().handleXmlAndJson(
+                request,
+                "example-slug",
+                java.util.Map.of("key", "value"),
+                null,
+                null,
+                null,
+                null
+        );
+
+        assertEquals("Webhook empfangen und verarbeitet.", response.message());
+        verify(fixture.processInstanceService()).create(any(ProcessInstanceEntity.class));
+    }
+
+    @Test
+    void handleWithoutBodyShouldAllowEmptyRequestsWithoutContentType() throws ResponseException {
+        var fixture = createControllerFixture(
+                WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST,
+                WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_JSON
+        );
+        var request = mock(jakarta.servlet.http.HttpServletRequest.class);
+        when(request.getMethod()).thenReturn(WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST);
+        when(request.getContentType()).thenReturn(null);
+        when(request.getContentLengthLong()).thenReturn(0L);
+        when(request.getHeader(HttpHeaders.TRANSFER_ENCODING)).thenReturn(null);
+        when(request.getHeaderNames()).thenReturn(java.util.Collections.emptyEnumeration());
+        when(request.getParameterMap()).thenReturn(java.util.Map.of());
+
+        var response = fixture.controller().handleWithoutBody(request, "example-slug", null, null, null, null);
+
+        assertEquals("Webhook empfangen und verarbeitet.", response.message());
+        verify(fixture.processInstanceService()).create(any(ProcessInstanceEntity.class));
+    }
+
     private static WebhookTriggerControllerV1 createController(String requestMethod,
-                                                               String requestBodyType) {
+                                                               String requestBodyType) throws ResponseException {
+        return createControllerFixture(requestMethod, requestBodyType).controller();
+    }
+
+    private static TestControllerFixture createControllerFixture(String requestMethod,
+                                                                 String requestBodyType) throws ResponseException {
         var node = new ProcessNodeEntity()
                 .setId(1)
                 .setProcessId(1)
@@ -100,12 +217,25 @@ class WebhookTriggerControllerV1Test {
             effectiveValues.put(WebhookTriggerConfigV1.REQUEST_BODY_TYPE_CONFIG_KEY, requestBodyType);
         }
 
-        return new WebhookTriggerControllerV1(
-                mock(ProcessInstanceService.class),
+        var processInstanceService = mock(ProcessInstanceService.class);
+        when(processInstanceService.create(any(ProcessInstanceEntity.class))).thenAnswer(invocation -> {
+            var entity = invocation.getArgument(0, ProcessInstanceEntity.class);
+            entity.setId(1L);
+            return entity;
+        });
+
+        var controller = new WebhookTriggerControllerV1(
+                processInstanceService,
                 mock(ProcessTestClaimRepository.class),
                 mock(ProcessInstanceAttachmentService.class),
                 new TestProcessNodeService(node, effectiveValues)
         );
+
+        return new TestControllerFixture(controller, processInstanceService);
+    }
+
+    private record TestControllerFixture(WebhookTriggerControllerV1 controller,
+                                         ProcessInstanceService processInstanceService) {
     }
 
     private static final class TestProcessNodeService extends ProcessNodeService {

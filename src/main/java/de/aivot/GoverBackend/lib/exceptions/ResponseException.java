@@ -220,6 +220,14 @@ public class ResponseException extends Exception {
         return new ResponseException(HttpStatus.METHOD_NOT_ALLOWED, String.format(format, args));
     }
 
+    public static ResponseException unsupportedMediaType(String message) {
+        return new ResponseException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, message);
+    }
+
+    public static ResponseException unsupportedMediaType(String format, Object... args) {
+        return ResponseException.unsupportedMediaType(String.format(format, args));
+    }
+
     // endregion
 
     // region Getter
