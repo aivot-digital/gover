@@ -1132,7 +1132,9 @@ export function ProcessDetailsPage(): ReactNode {
             ],
         });
 
-        await navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}`);
+        if (selectedNode?.id === node.id) {
+            await navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}`);
+        }
     };
 
     const handleSaveNode = async (node: ProcessNodeEntity): Promise<ProcessNodeEntity> => {
