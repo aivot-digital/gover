@@ -417,7 +417,9 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         headingsPlugin(),
                         quotePlugin(),
                         listsPlugin(),
-                        linkPlugin(),
+                        linkPlugin({
+                            disableAutoLink: true,
+                        }),
                         linkDialogPlugin(),
                         toolbarPlugin({
                             toolbarContents: () => (
