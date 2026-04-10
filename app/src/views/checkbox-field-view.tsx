@@ -36,6 +36,7 @@ export function CheckboxFieldView(props: BaseViewProps<CheckboxFieldElement, boo
             disabled={isDisabled}
             required={element.required ?? false}
             busy={isBusy}
+            variant={element.variant ?? undefined}
         />
     );
 }
