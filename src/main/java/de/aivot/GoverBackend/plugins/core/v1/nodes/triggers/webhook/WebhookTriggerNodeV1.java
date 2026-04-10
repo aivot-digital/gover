@@ -166,12 +166,49 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
         var linkPrefix = goverConfig.createUrlWithTrailingSlash("/api/public/webhooks/v1", context.processDefinition().getAccessKey().toString());
 
         var linkOverride = new ElementOverrideFunctions()
-                .setJavascriptCode(JavascriptCode.of("({ ...element, content: '**Vollständige Webhook-URL:**\\n\\n" + linkPrefix + "' + $." + WebhookTriggerConfigV1.SLUG_CONFIG_KEY + " + '/'});"))
-                .withReferenceIds(WebhookTriggerConfigV1.SLUG_CONFIG_KEY);
+                .setJavascriptCode(JavascriptCode.of("""
+                        (() => {
+                            const slug = ctx.effectiveValues.%s || '{Webhook-URL}';
+                            const requestMethod = ctx.effectiveValues.%s;
+                            const requestBodyType = ctx.effectiveValues.%s;
+                            const authRequired = ctx.effectiveValues.%s === true;
+                            const authMethod = ctx.effectiveValues.%s;
+                            const authToken = ctx.effectiveValues.%s ?? '';
+                            const requestAllowsBody = requestMethod === '%s' || requestMethod === '%s' || requestMethod === '%s';
+                            const requestBodySuffix = requestAllowsBody
+                                ? requestBodyType === '%s'
+                                    ? 'json/'
+                                    : requestBodyType === '%s'
+                                        ? 'form-data/'
+                                        : 'xml/'
+                                : '';
+                            let link = '%s' + slug + '/' + requestBodySuffix;
+                            if (authRequired && authMethod === '%s') {
+                                link += '?%s=' + authToken;
+                            }
+                            return { ...element, content: `**Vollständige Webhook-URL:**\\n\\n${link}` };
+                        })();
+                        """,
+                        WebhookTriggerConfigV1.SLUG_CONFIG_KEY,
+                        WebhookTriggerConfigV1.REQUEST_METHOD_CONFIG_KEY,
+                        WebhookTriggerConfigV1.REQUEST_BODY_TYPE_CONFIG_KEY,
+                        WebhookTriggerConfigV1.AUTH_REQUIRED_CONFIG_KEY,
+                        WebhookTriggerConfigV1.AUTH_METHOD_CONFIG_KEY,
+                        WebhookTriggerConfigV1.AUTH_TOKEN_CONFIG_KEY,
+                        WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST,
+                        WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_PATCH,
+                        WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_PUT,
+                        WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_JSON,
+                        WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_FORM,
+                        linkPrefix,
+                        WebhookTriggerConfigV1.AUTH_METHOD_OPTION_QUERY_PARAM,
+                        WebhookTriggerControllerV1.AUTH_TOKEN_QUERY_PARAM
+                ))
+                .recalculateReferencedIds();
 
         var link = new RichTextContentElement();
         link.setId("link");
-        link.setContent("**Vollständige Webhook-URL:**\n\n" + linkPrefix + "{Webhook-URL}");
+        link.setContent("**Vollständige Webhook-URL:**\n\n" + linkPrefix + "{Webhook-URL}/xml/");
         link.setOverride(linkOverride);
         configLayout.insertChildAfter(link, WebhookTriggerConfigV1.SLUG_CONFIG_KEY);
 
@@ -352,20 +389,22 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
         layout.setId("layout");
         layout.setChildren(new LinkedList<>());
 
-        var triggerUrl = String.format(
-                "%s?%s=%s",
-                goverConfig.createUrlWithTrailingSlash("/api/public/webhooks/v1", config.slug),
+        var requestAllowsBody = requestMethodAllowsBody(config.requestMethod);
+
+        var triggerUrl = appendQueryParameter(
+                createWebhookUrl(
+                        context.processDefinition().getAccessKey().toString(),
+                        config.slug,
+                        config.requestMethod,
+                        config.requestBodyConfig != null ? config.requestBodyConfig.requestBodyType : null
+                ),
                 WebhookTriggerControllerV1.TEST_CLAIM_QUERY_PARAM,
                 context.testClaim().getAccessKey()
         );
 
-        if (config.authConfig != null && Boolean.TRUE.equals(config.authRequired) && WebhookTriggerConfigV1.AUTH_METHOD_OPTION_QUERY_PARAM.equals(config.authConfig.authMethod)) {
-            triggerUrl += String.format("&%s=%s", WebhookTriggerControllerV1.AUTH_TOKEN_QUERY_PARAM, config.authConfig.authToken);
+        if (usesQueryParamAuthentication(config.authRequired, config.authConfig)) {
+            triggerUrl = appendQueryParameter(triggerUrl, WebhookTriggerControllerV1.AUTH_TOKEN_QUERY_PARAM, config.authConfig.authToken);
         }
-
-        var requestAllowsBody = WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST.equals(config.requestMethod) ||
-                WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_PATCH.equals(config.requestMethod) ||
-                WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_PUT.equals(config.requestMethod);
 
         var requestContentType = requestAllowsBody ? (config.requestBodyConfig != null && WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_JSON.equals(config.requestBodyConfig.requestBodyType) ?
                                                       "application/json" :
@@ -544,6 +583,61 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
         }
 
         return result;
+    }
+
+    private boolean requestMethodAllowsBody(@Nullable String requestMethod) {
+        return WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST.equals(requestMethod) ||
+                WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_PATCH.equals(requestMethod) ||
+                WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_PUT.equals(requestMethod);
+    }
+
+    @Nullable
+    private String resolveRequestBodyPathSegment(@Nullable String requestMethod,
+                                                 @Nullable String requestBodyType) {
+        if (!requestMethodAllowsBody(requestMethod)) {
+            return null;
+        }
+
+        if (WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_JSON.equals(requestBodyType)) {
+            return "json";
+        }
+
+        if (WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_FORM.equals(requestBodyType)) {
+            return "form-data";
+        }
+
+        return "xml";
+    }
+
+    @Nonnull
+    private String createWebhookUrl(@Nonnull String processAccessKey,
+                                    @Nullable String slug,
+                                    @Nullable String requestMethod,
+                                    @Nullable String requestBodyType) {
+        return goverConfig.createUrlWithTrailingSlash(
+                "/api/public/webhooks/v1",
+                processAccessKey,
+                slug,
+                resolveRequestBodyPathSegment(requestMethod, requestBodyType)
+        );
+    }
+
+    private boolean usesQueryParamAuthentication(@Nullable Boolean authRequired,
+                                                 @Nullable WebhookTriggerConfigV1.WebhookConfigAuth authConfig) {
+        return Boolean.TRUE.equals(authRequired) &&
+                authConfig != null &&
+                WebhookTriggerConfigV1.AUTH_METHOD_OPTION_QUERY_PARAM.equals(authConfig.authMethod);
+    }
+
+    @Nonnull
+    private String appendQueryParameter(@Nonnull String url,
+                                        @Nonnull String parameterName,
+                                        @Nullable Object parameterValue) {
+        return url +
+                (url.contains("?") ? "&" : "?") +
+                parameterName +
+                "=" +
+                (parameterValue == null ? "" : parameterValue);
     }
 
     @Nonnull
