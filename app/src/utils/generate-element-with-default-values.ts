@@ -319,8 +319,8 @@ const elementConstructors: {
     }),
     [ElementType.SubmitStep]: (id) => ({
         ...makeFormBase(ElementType.SubmitStep, id),
-        textPreSubmit: 'Sie können Ihren Antrag nun verbindlich bei der zuständigen/bewirtschaftenden Stelle einreichen. Nach der Einreichung können Sie sich den Antrag für Ihre Unterlagen herunterladen oder zusenden lassen.',
-        textPostSubmit: 'Sie können Ihren Antrag herunterladen oder sich per E-Mail zuschicken lassen. Wir empfehlen Ihnen, den Antrag anschließend zu Ihren Unterlagen zu nehmen.',
+        textPreSubmit: 'Sie können Ihre Angaben nun verbindlich an die zuständige/bewirtschaftende Stelle übermitteln. Bitte prüfen Sie vor dem Absenden noch einmal alle Inhalte sorgfältig.',
+        textPostSubmit: 'Ihre Angaben wurden erfolgreich übermittelt. Die zuständige/bewirtschaftende Stelle kann diese nun bearbeiten. Sofern weitere Schritte erforderlich sind, erhalten Sie dazu gesonderte Hinweise.',
         textProcessingTime: undefined,
         documentsToReceive: undefined,
     disableConfetti: false,
