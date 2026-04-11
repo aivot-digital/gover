@@ -68,6 +68,8 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
     const [showDraftDialog, setShowDraftDialog] = useState<boolean>(false);
     const [draftValue, setDraftValue] = useState<UiDefinitionInputFieldElementItem | null>(null);
     const [inputData, setInputData] = useState<AuthoredElementValues>({});
+    const [highlightElementId, setHighlightElementId] = useState<string | null>(null);
+    const [highlightElementSignal, setHighlightElementSignal] = useState(0);
 
     const {
         navigateToElementEditor,
@@ -175,6 +177,12 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
 
     const handleNavigateToElementEditor = (element: AnyElement, tab?: string | null) => {
         navigateToElementEditor(element.id, tab);
+    };
+
+    const handleHighlightElementInTree = (element: AnyElement) => {
+        setHighlightElementId(element.id);
+        setHighlightElementSignal((prev) => prev + 1);
+        navigateToElementEditor(element.id, null);
     };
 
     return (
@@ -329,6 +337,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                             deleteElement: handleDeleteElement,
                                             cloneElement: handleCloneElement,
                                             navigateToElementEditor: handleNavigateToElementEditor,
+                                            highlightElementInTree: handleHighlightElementInTree,
                                             editable: !(disabled ?? false)
                                         }}
                                     >
@@ -352,6 +361,8 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                     parentModalZIndex={theme.zIndex.modal}
                                     displayContext={displayContext}
                                     allowElementIdEditing={false}
+                                    highlightElementId={highlightElementId}
+                                    highlightElementSignal={highlightElementSignal}
                                 />
                             </Allotment.Pane>
                         </Allotment>

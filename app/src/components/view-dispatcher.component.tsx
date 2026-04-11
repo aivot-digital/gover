@@ -250,6 +250,7 @@ function ContextMenuButton(props: ContextMenuButtonProps) {
 
     const {
         navigateToElementEditor,
+        highlightElementInTree,
         cloneElement,
         deleteElement,
         editable,
@@ -270,9 +271,9 @@ function ContextMenuButton(props: ContextMenuButtonProps) {
         handleMenuClose();
     };
 
-    const handleJumpTo = () => {
+    const handleHighlightInTree = () => {
         dispatch(setComponentTree(true));
-        navigateToElementEditor(element, null);
+        highlightElementInTree(element);
         handleMenuClose();
     };
 
@@ -396,14 +397,14 @@ function ContextMenuButton(props: ContextMenuButtonProps) {
                     <ListItemIcon>
                         <Edit fontSize="small"/>
                     </ListItemIcon>
-                    <ListItemText primary={editable ? 'Bearbeiten' : 'Anzeigen'}/>
+                    <ListItemText primary={editable ? 'Element bearbeiten' : 'Element anzeigen'}/>
                 </MenuItem>
 
-                <MenuItem onClick={handleJumpTo}>
+                <MenuItem onClick={handleHighlightInTree}>
                     <ListItemIcon>
                         <JumpToElement fontSize="small"/>
                     </ListItemIcon>
-                    <ListItemText primary="Zum Element springen"/>
+                    <ListItemText primary="Element in Struktur hervorheben"/>
                 </MenuItem>
 
                 <MenuItem onClick={handleCopyId}>

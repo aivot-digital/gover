@@ -28,6 +28,8 @@ export interface ElementTreeContextType {
     moveElement: (dragItem: ElementTreeDragItem, targetParentPath: string[], targetIndex: number) => void;
     expandCommand: ElementTreeExpandCommand;
     activeSearchResultPath?: string[];
+    highlightedElementId?: string | null;
+    highlightedElementSignal?: number;
     allElements: ElementWithParents[];
     displayContext: ElementDisplayContext;
     allowElementIdEditing: boolean;

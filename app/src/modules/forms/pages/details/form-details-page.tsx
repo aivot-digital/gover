@@ -187,6 +187,8 @@ export function FormDetailsPage() {
     const [showMoreMenuAtEl, setShowMoreMenuAtEl] = useState<HTMLElement | null>(null);
     const [formToDelete, setFormToDelete] = useState<FormEntity>();
     const showDeveloperTools = useAppSelector(selectDevToolsTab);
+    const [highlightElementId, setHighlightElementId] = useState<string | null>(null);
+    const [highlightElementSignal, setHighlightElementSignal] = useState(0);
 
     const [authoredElementValues, setAuthoredElementValues] = useState<AuthoredElementValues>({});
     const [derivedData, setDerivedData] = useState<DerivedRuntimeElementData>(createDerivedRuntimeElementData());
@@ -850,6 +852,12 @@ export function FormDetailsPage() {
             navigateToElementEditor(element.id, tab);
         };
 
+        const handleHighlightElementInTree = (element: AnyElement) => {
+            setHighlightElementId(element.id);
+            setHighlightElementSignal((prev) => prev + 1);
+            navigateToElementEditor(element.id, null);
+        };
+
         const moreMenuItems: FormDetailsPageMoreMenuItem[] = [
             {
                 label: 'Vorschau in neuem Tab öffnen',
@@ -1060,6 +1068,7 @@ export function FormDetailsPage() {
                                                     cloneElement: handleCloneElement,
                                                     deleteElement: handleDeleteElement,
                                                     navigateToElementEditor: handleOpenElement,
+                                                    highlightElementInTree: handleHighlightElementInTree,
                                                     editable: isEditable,
                                                 }}
                                             >
@@ -1136,6 +1145,8 @@ export function FormDetailsPage() {
                                                 editable={isEditable}
                                                 displayContext={ElementDisplayContext.CitizenFacing}
                                                 allowElementIdEditing={false}
+                                                highlightElementId={highlightElementId}
+                                                highlightElementSignal={highlightElementSignal}
                                             />
                                         </Paper>
                                     </Allotment.Pane>
