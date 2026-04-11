@@ -25,6 +25,7 @@ import {setErrorMessage} from '../../slices/shell-slice';
 import {isApiError} from '../../models/api-error';
 import {FormApiService} from '../../modules/forms/services/form-api-service';
 import {formCitizenDetailsResponseDTO} from '../../modules/forms/dtos/form-citizen-details-response-dto';
+import {stringOrUndefined} from '../../utils/string-utils';
 
 export const DialogSearchParam = 'dialog';
 
@@ -120,13 +121,17 @@ export function CustomerFormPage() {
         );
     } else {
         const allElements = flattenElements(form.version.rootElement);
+        const pageTitle = stringOrUndefined(form.version.rootElement.tabTitle) ??
+            stringOrUndefined(form.version.publicTitle) ??
+            stringOrUndefined(form.version.rootElement.headline) ??
+            '';
 
         return (
             <ThemeProvider theme={_theme}>
                 <SnackbarProvider>
                     <MetaElement
                         faviconUrl={new FormApiService().getFormFaviconLink(form.form.slug, form.version.version)}
-                        title={form.version.rootElement.tabTitle ?? form.version.rootElement.headline ?? ''}
+                        title={pageTitle}
                         titlePrefix={provider}
                     />
 
