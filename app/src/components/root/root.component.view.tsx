@@ -284,7 +284,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
             return;
         }
 
-        // Check if introduction step
+        // Advance from the current non-final step to the next section
         if (currentStep === 0) {
             dispatch(nextStep());
         }
