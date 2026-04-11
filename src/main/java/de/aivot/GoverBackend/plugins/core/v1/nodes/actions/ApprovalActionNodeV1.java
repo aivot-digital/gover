@@ -6,10 +6,8 @@ import de.aivot.GoverBackend.elements.enums.ValueFunctionType;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
-import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
 import de.aivot.GoverBackend.elements.models.elements.ElementValueFunctions;
 import de.aivot.GoverBackend.elements.models.elements.ElementVisibilityFunctions;
-import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.form.content.HeadlineContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.content.SpacerContentElement;
@@ -22,7 +20,6 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.RichTextInputEl
 import de.aivot.GoverBackend.elements.models.elements.form.input.UiDefinitionInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
-import de.aivot.GoverBackend.elements.models.elements.layout.SummaryLayoutElement;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
@@ -47,13 +44,12 @@ import de.aivot.GoverBackend.process.models.TaskViewEvent;
 import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.GoverBackend.submission.services.ElementDataTransformService;
-import de.aivot.GoverBackend.utils.ElementResolver;
+import de.aivot.GoverBackend.utils.IsoTimestampUtils;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -363,7 +359,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
         nodeData.put(OUTPUT_DECISION, decision);
         nodeData.put(OUTPUT_REMARK, remarkText);
         nodeData.put(OUTPUT_PROCESSED_BY_USER_ID, context.getUser().getId());
-        nodeData.put(OUTPUT_PROCESSED_AT, LocalDateTime.now().toString());
+        nodeData.put(OUTPUT_PROCESSED_AT, IsoTimestampUtils.nowUtc());
 
         var result = new ProcessNodeExecutionResultTaskCompleted();
         result.setViaPort(port);

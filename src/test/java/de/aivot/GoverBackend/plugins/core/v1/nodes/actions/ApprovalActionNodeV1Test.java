@@ -29,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,7 @@ import java.util.UUID;
 
 import static de.aivot.GoverBackend.TestData.authored;
 import static de.aivot.GoverBackend.TestData.runtime;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -167,7 +169,10 @@ class ApprovalActionNodeV1Test {
         assertEquals("approved", completed.getNodeData().get("decision"));
         assertEquals("<p>Passt</p>", completed.getNodeData().get("remark"));
         assertEquals("staff-1", completed.getNodeData().get("processedByUserId"));
-        assertNotNull(completed.getNodeData().get("processedAt"));
+        var processedAt = completed.getNodeData().get("processedAt");
+        assertNotNull(processedAt);
+        assertTrue(processedAt.toString().endsWith("Z"));
+        assertDoesNotThrow(() -> Instant.parse(processedAt.toString()));
     }
 
     private static AuthoredElementValues dataModeConfiguration() {
