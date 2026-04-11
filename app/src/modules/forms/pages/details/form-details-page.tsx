@@ -882,7 +882,7 @@ export function FormDetailsPage() {
             },
             'separator',
             {
-                label: 'Formular exportieren (.gov)',
+                label: 'Formular exportieren (.json)',
                 icon: <FileExport/>,
                 onClick: () => {
                     setShowExportFormDialog(true);
