@@ -14,6 +14,7 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.TimeRangeInputE
 import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.IntroductionStepElement;
+import de.aivot.GoverBackend.department.entities.DepartmentEntity;
 import de.aivot.GoverBackend.enums.DateType;
 import de.aivot.GoverBackend.enums.TimeType;
 import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
@@ -338,6 +339,73 @@ class TemplateLoaderServiceTest {
         assertTrue(html.contains("Alexanderplatz, Berlin"));
         assertTrue(html.contains("52.520008") || html.contains("52,520008"));
         assertTrue(html.contains("13.404954") || html.contains("13,404954"));
+    }
+
+    @Test
+    void formTemplate_BlankPrintDoesNotForcePageBreakBeforeFirstStepWithoutIntroductionStep() {
+        var firstStepElement = new GenericStepElement()
+                .setTitle("Erster Abschnitt");
+        var secondStepElement = new GenericStepElement()
+                .setTitle("Zweiter Abschnitt");
+
+        var form = new VFormVersionWithDetailsEntity()
+                .setSlug("testformular-ohne-intro")
+                .setPublicTitle("Testformular")
+                .setRootElement(new FormLayoutElement().setChildren(List.of(firstStepElement, secondStepElement)));
+        var department = new DepartmentEntity()
+                .setName("Formularservice")
+                .setAddress("Musterstrasse 1");
+
+        var html = new TemplateLoaderService().processTemplate(
+                "form.html",
+                Map.of(
+                        "base", createBaseContext(FormPdfScope.Blank),
+                        "form", form,
+                        "department", department,
+                        "elements", List.of(
+                                new PdfElement(firstStepElement, null, List.of()),
+                                new PdfElement(secondStepElement, null, List.of())
+                        ),
+                        "attachments", List.of()
+                ),
+                TemplateMode.HTML
+        );
+
+        assertEquals(1, countOccurrences(html, "<section class=\"step page-break-before\">"));
+    }
+
+    @Test
+    void formTemplate_BlankPrintKeepsPageBreakBeforeFirstStepWhenIntroductionStepExists() {
+        var introductionStep = new IntroductionStepElement();
+        var firstStepElement = new GenericStepElement()
+                .setTitle("Erster Abschnitt");
+        var secondStepElement = new GenericStepElement()
+                .setTitle("Zweiter Abschnitt");
+
+        var form = new VFormVersionWithDetailsEntity()
+                .setSlug("testformular-mit-intro")
+                .setPublicTitle("Testformular")
+                .setRootElement(new FormLayoutElement().setChildren(List.of(introductionStep, firstStepElement, secondStepElement)));
+        var department = new DepartmentEntity()
+                .setName("Formularservice")
+                .setAddress("Musterstrasse 1");
+
+        var html = new TemplateLoaderService().processTemplate(
+                "form.html",
+                Map.of(
+                        "base", createBaseContext(FormPdfScope.Blank),
+                        "form", form,
+                        "department", department,
+                        "elements", List.of(
+                                new PdfElement(firstStepElement, null, List.of()),
+                                new PdfElement(secondStepElement, null, List.of())
+                        ),
+                        "attachments", List.of()
+                ),
+                TemplateMode.HTML
+        );
+
+        assertEquals(2, countOccurrences(html, "<section class=\"step page-break-before\">"));
     }
 
     private int countOccurrences(String haystack, String needle) {
